@@ -1,0 +1,479 @@
+@import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap");
+@import "tailwindcss";
+@import "../../vendor/livewire/flux/dist/flux.css";
+
+@source "../views";
+@source "../js";
+@source "../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php";
+@source "../../vendor/livewire/flux-pro/stubs/**/*.blade.php";
+@source "../../vendor/livewire/flux/stubs/**/*.blade.php";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+    --font-sans: "Montserrat", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+    --font-serif: "Playfair Display", ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+
+    --color-mc-cream: #fcf9f1;
+    --color-mc-gold: #c5a25d;
+    --color-mc-gold-deep: #8b6914;
+    --color-mc-gold-border: #d4af37;
+
+    /* Meal Craft admin brand (semantic + legacy aliases) */
+    --color-brand-primary: #6E8C47;
+    --color-brand-secondary: #d8a933;
+    --color-brand-accent: #8f55a8;
+    --color-brand-on-primary: #ffffff;
+    --color-button-grey: #364153;
+
+    --color-brand-green: var(--color-brand-primary);
+    --color-brand-gold: var(--color-brand-secondary);
+    --color-brand-purple: var(--color-brand-accent);
+    --color-brand-red: #c44f5d;
+    --color-brand-blue: #2f4c9b;
+
+    --color-zinc-50: #fafafa;
+    --color-zinc-100: #f5f5f5;
+    --color-zinc-200: #e5e5e5;
+    --color-zinc-300: #d4d4d4;
+    --color-zinc-400: #a3a3a3;
+    --color-zinc-500: #737373;
+    --color-zinc-600: #525252;
+    --color-zinc-700: #404040;
+    --color-zinc-800: #262626;
+    --color-zinc-900: #171717;
+    --color-zinc-950: #0a0a0a;
+
+    --radius-pill: 9999px;
+
+    /* Flux primary buttons & rings: olive default, gold hover (see components layer) */
+    --color-accent: var(--color-brand-primary);
+    --color-accent-content: var(--color-brand-primary);
+    --color-accent-foreground: var(--color-brand-on-primary);
+}
+
+@layer theme {
+    .dark {
+        --color-accent: var(--color-brand-primary);
+        --color-accent-content: var(--color-brand-primary);
+        --color-accent-foreground: var(--color-brand-on-primary);
+    }
+}
+
+@layer base {
+
+    *,
+    ::after,
+    ::before,
+    ::backdrop,
+    ::file-selector-button {
+        border-color: var(--color-gray-200, currentColor);
+    }
+
+    html {
+        font-family: var(--font-sans);
+    }
+
+    body {
+        @apply antialiased bg-mc-cream text-slate-900;
+        font-family: var(--font-sans);
+    }
+}
+
+[data-flux-field]:not(ui-radio, ui-checkbox) {
+    @apply grid gap-2;
+}
+
+[data-flux-label] {
+    @apply !mb-0 !leading-tight;
+}
+
+input:focus[data-flux-control],
+textarea:focus[data-flux-control],
+select:focus[data-flux-control] {
+    @apply outline-hidden ring-2 ring-accent ring-offset-2 ring-offset-white dark:ring-offset-zinc-900;
+}
+
+/**
+ * Admin shell: Meal Craft sidebar + Flux primary actions
+ */
+@layer components {
+    .meal-craft-admin-sidebar {
+        @apply border-e border-white/15 bg-brand-primary text-white;
+    }
+
+    .meal-craft-admin-sidebar [data-flux-sidebar-item] {
+        @apply border-transparent text-white/90;
+    }
+
+    .meal-craft-admin-sidebar [data-flux-sidebar-item]:not([data-current]):hover {
+        @apply bg-white/10 text-white;
+    }
+
+    .meal-craft-admin-sidebar [data-flux-sidebar-item][data-current] {
+        @apply border-transparent bg-brand-secondary/25 text-white shadow-none;
+    }
+
+    .meal-craft-admin-sidebar [data-flux-sidebar-item] svg {
+        @apply text-white/85;
+    }
+
+    .meal-craft-admin-sidebar [data-flux-sidebar-item]:hover svg,
+    .meal-craft-admin-sidebar [data-flux-sidebar-item][data-current] svg {
+        @apply text-white;
+    }
+
+    .meal-craft-admin-sidebar [data-flux-sidebar-collapse] button {
+        @apply text-white/90 hover:bg-white/10 hover:text-white;
+    }
+
+    .meal-craft-admin-sidebar [data-flux-sidebar-collapse] button svg {
+        @apply text-white/90;
+    }
+
+    .meal-craft-admin-sidebar [data-flux-sidebar-group] .text-zinc-400 {
+        @apply text-white/65;
+    }
+
+    .meal-craft-admin-sidebar [data-flux-sidebar-profile] {
+        @apply hover:bg-white/10;
+    }
+
+    .meal-craft-admin-sidebar [data-flux-sidebar-profile] .text-zinc-500 {
+        @apply text-white/90 group-hover:text-white;
+    }
+
+    .meal-craft-admin-sidebar [data-flux-sidebar-profile] .text-zinc-400 {
+        @apply text-white/80 group-hover:text-white;
+    }
+
+    .meal-craft-admin-sidebar [data-flux-sidebar-brand] > div:last-child {
+        @apply text-white;
+    }
+
+    .meal-craft-admin-header {
+        @apply border-b border-white/15 bg-brand-primary text-white;
+    }
+
+    .meal-craft-admin-header [data-flux-sidebar-toggle],
+    .meal-craft-admin-header button {
+        @apply text-white hover:bg-white/10;
+    }
+
+    /* Flux primary: gold hover per brand spec */
+    [data-flux-button][class*="bg-[var(--color-accent)]"]:hover {
+        background-color: var(--color-brand-secondary) !important;
+    }
+
+    /* Ingredient ERP table */
+    .meal-craft-data-table thead th {
+        @apply border-b border-brand-primary/20 bg-brand-primary/10 font-semibold text-stone-800 dark:border-brand-primary/25 dark:bg-brand-primary/15 dark:text-stone-100;
+    }
+
+    .meal-craft-data-table tbody tr:nth-child(even) td {
+        @apply bg-brand-primary/[0.07] dark:bg-brand-primary/10;
+    }
+
+    .meal-craft-data-table tbody tr:nth-child(odd) td {
+        @apply bg-white dark:bg-neutral-900;
+    }
+
+    /**
+     * Vertical logo: Figma frame 240×344 (same as exported PNG).
+     */
+    .mc-logo-vertical {
+        position: relative;
+        overflow: hidden;
+        width: 100%;
+        max-width: 240px;
+        margin-left: auto;
+        margin-right: auto;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+
+    .mc-logo-vertical img {
+        display: block;
+        width: 100%;
+        height: auto;
+        object-fit: contain;
+    }
+
+    /**
+     * Fortify auth (login/register/etc.): Figma-aligned.
+     * Declared here so these styles always ship; arbitrary Tailwind classes used only in
+     * auth Blade files are often missing from the Vite bundle until `npm run build` runs.
+     */
+    .mc-auth-body {
+        min-height: 100vh;
+        min-height: 100svh;
+        background-color: #fff !important;
+        color: #364153;
+        font-family: var(--font-sans);
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+
+    .mc-auth-outer {
+        display: flex;
+        min-height: 100svh;
+        width: 100%;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 10px;
+        box-sizing: border-box;
+    }
+
+    /**
+     * Figma node 2485:4605 "Log in screen": bg #F9FAFB, p-50, rounded-15, shadow, flex col gap-40 center.
+     */
+    .mc-auth-card {
+        display: flex;
+        width: 100%;
+        max-width: 592px;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 40px;
+        overflow: hidden;
+        border-radius: 15px;
+        background-color: #f9fafb;
+        box-shadow: 0 4px 4px rgba(0, 0, 0, 0.25);
+        padding: 50px;
+        box-sizing: border-box;
+    }
+
+    .mc-auth-slot-contents {
+        display: contents;
+    }
+
+    .mc-auth-col {
+        width: 100%;
+        max-width: 492px;
+    }
+
+    .mc-auth-session {
+        flex-shrink: 0;
+    }
+
+    .mc-auth-field-error {
+        margin: 0;
+        width: 100%;
+        max-width: 492px;
+        font-size: 0.875rem;
+        line-height: 1.25;
+        color: #dc2626;
+    }
+
+    .mc-auth-intro {
+        display: flex;
+        width: 100%;
+        max-width: 492px;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        gap: 19px;
+    }
+
+    .mc-auth-heading {
+        margin: 0;
+        text-align: center;
+        color: #000;
+        font-size: 24px;
+        font-family: var(--font-sans);
+        font-weight: 600;
+        line-height: 1.2;
+    }
+
+    .mc-auth-subheading {
+        margin: 0;
+        text-align: center;
+        color: #000;
+        font-size: 16px;
+        font-family: var(--font-sans);
+        font-weight: 400;
+        line-height: 1.5;
+    }
+
+    .mc-auth-label {
+        color: #000;
+        font-size: 16px;
+        font-family: var(--font-sans);
+        font-weight: 500;
+        line-height: 1.25;
+    }
+
+    .mc-auth-email-stack .mc-auth-label {
+        align-self: stretch;
+    }
+
+    .mc-auth-password-label-row .mc-auth-label {
+        align-self: center;
+        width: auto;
+        margin: 0;
+    }
+
+    .mc-auth-remember-row .mc-auth-label {
+        align-self: center;
+        width: auto;
+        margin: 0;
+    }
+
+    .mc-auth-form {
+        display: flex;
+        width: 100%;
+        max-width: 492px;
+        flex-direction: column;
+        align-items: center;
+        gap: 40px;
+    }
+
+    .mc-auth-email-stack {
+        display: flex;
+        width: 100%;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .mc-auth-password-stack {
+        display: flex;
+        width: 100%;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .mc-auth-password-label-row {
+        display: flex;
+        width: 100%;
+        max-width: 492px;
+        min-height: 12px;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
+    }
+
+    .mc-auth-input-control {
+        display: block;
+        box-sizing: border-box;
+        height: 50px;
+        width: 492px;
+        max-width: 100%;
+        border-radius: 15px;
+        border: 1px solid #e5e7eb;
+        background-color: #fff;
+        padding: 14px 18px 14px 17px;
+        font-family: var(--font-sans);
+        font-size: 12px;
+        line-height: 1.25;
+        color: #364153;
+    }
+
+    .mc-auth-input-control::placeholder {
+        color: #9ca3af;
+    }
+
+    .mc-auth-input-control:focus {
+        outline: none;
+        border-color: #6e8c47;
+        box-shadow: 0 0 0 2px rgba(110, 140, 71, 0.3);
+    }
+
+    .mc-auth-link {
+        flex-shrink: 0;
+        font-size: 16px;
+        font-family: var(--font-sans);
+        font-weight: 500;
+        line-height: 1.25;
+        color: #6e8c47;
+        text-decoration: none;
+    }
+
+    .mc-auth-link:hover {
+        text-decoration: underline;
+        text-underline-offset: 2px;
+    }
+
+    .mc-auth-footer {
+        display: flex;
+        width: 100%;
+        max-width: 277px;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
+        font-size: 16px;
+        font-family: var(--font-sans);
+        font-weight: 500;
+        line-height: 1.25;
+        color: #000;
+    }
+
+    .mc-auth-footer a {
+        color: #6e8c47;
+        text-decoration: underline;
+        text-underline-offset: 2px;
+    }
+
+    .mc-auth-footer a:hover {
+        color: #5a7539;
+    }
+
+    .mc-auth-logo-link {
+        flex-shrink: 0;
+        margin-left: auto;
+        margin-right: auto;
+        display: flex;
+        width: fit-content;
+        flex-direction: column;
+        align-items: center;
+        border-radius: 0.5rem;
+    }
+
+    .mc-auth-logo-link:focus {
+        outline: none;
+    }
+
+    .mc-auth-logo-link:focus-visible {
+        outline: 2px solid #6e8c47;
+        outline-offset: 2px;
+    }
+
+    .mc-auth-checkbox {
+        height: 20px;
+        width: 20px;
+        flex-shrink: 0;
+        border-radius: 5px;
+        border: 1px solid #e5e7eb;
+        background-color: #fff;
+        accent-color: #6e8c47;
+        box-shadow: 0 4px 4px rgba(0, 0, 0, 0.25);
+    }
+
+    .mc-auth-checkbox:focus {
+        outline: none;
+        box-shadow: 0 0 0 2px rgba(110, 140, 71, 0.4);
+    }
+
+    .mc-auth-remember-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .mc-auth-submit-wrap {
+        display: flex;
+        justify-content: center;
+    }
+
+    .mc-auth-login-submit {
+        box-sizing: border-box;
+        width: 190px;
+        min-height: 50px;
+        padding: 13px 24px;
+    }
+}

@@ -1,0 +1,22 @@
+{
+  "name": "Meal Craft",
+  "tagline": "ANTI-INFLAMMATORY SMART KITCHEN",
+  "colors": {
+    "primary": "#D8A933",
+    "secondary": "#6E8C47",
+    "accent": "#8F55A8",
+    "danger": "#C44F5D",
+    "info": "#2F4C9B",
+    "background": "#FFFFFF",
+    "surface": "#F8FAFC",
+    "text": "#0F172A"
+  },
+  "fonts": {
+    "sans": "Montserrat",
+    "heading": "Montserrat"
+  },
+  "logo": {
+    "default": "resources/branding/logo/logo.svg",
+    "vertical": "images/branding/meal-craft-logo-vertical.png"
+  }
+}

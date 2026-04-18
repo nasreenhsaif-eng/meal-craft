@@ -1,0 +1,44 @@
+{
+    "$schema": "https://www.schemastore.org/package.json",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "build": "vite build",
+        "dev": "vite",
+        "storybook": "storybook dev -p 6006",
+        "build-storybook": "storybook build"
+    },
+    "dependencies": {
+        "@google/generative-ai": "^0.24.1",
+        "@tailwindcss/vite": "^4.1.11",
+        "@vitejs/plugin-react": "^6.0.1",
+        "autoprefixer": "^10.4.20",
+        "axios": "^1.7.4",
+        "concurrently": "^9.0.1",
+        "framer-motion": "^12.38.0",
+        "laravel-vite-plugin": "^3.0.0",
+        "react": "^19.2.4",
+        "react-dom": "^19.2.4",
+        "tailwindcss": "^4.0.7",
+        "vite": "^8.0.0"
+    },
+    "optionalDependencies": {
+        "@rollup/rollup-linux-x64-gnu": "4.9.5",
+        "@tailwindcss/oxide-linux-x64-gnu": "^4.0.1",
+        "lightningcss-linux-x64-gnu": "^1.29.1"
+    },
+    "devDependencies": {
+        "storybook": "^10.3.5",
+        "@storybook/react-vite": "^10.3.5",
+        "@chromatic-com/storybook": "^5.1.2",
+        "@storybook/addon-vitest": "^10.3.5",
+        "@storybook/addon-a11y": "^10.3.5",
+        "@storybook/addon-docs": "^10.3.5",
+        "@storybook/addon-onboarding": "^10.3.5",
+        "prop-types": "^15.8.1",
+        "vitest": "^4.1.4",
+        "playwright": "^1.59.1",
+        "@vitest/browser-playwright": "^4.1.4",
+        "@vitest/coverage-v8": "^4.1.4"
+    }
+}
