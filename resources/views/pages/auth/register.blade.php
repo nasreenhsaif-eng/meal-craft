@@ -1,6 +1,6 @@
 <x-layouts::auth :title="__('Register')">
     <div class="flex flex-col items-center gap-10 font-['Montserrat']">
-        <a href="{{ route('home') }}" wire:navigate class="flex w-full flex-col items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-[#6E8C47] focus-visible:ring-offset-2 rounded-lg">
+        <a href="{{ route('home') }}" wire:navigate class="flex w-full flex-col items-center rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-[#556C37] focus-visible:ring-offset-2">
             <span class="sr-only">{{ config('app.name', 'Meal Craft') }}</span>
             <x-application-logo mode="vertical" />
         </a>
@@ -88,7 +88,11 @@
 
         <div class="flex w-full max-w-[492px] flex-wrap items-center justify-center gap-1 text-center text-base font-medium text-black">
             <span>{{ __('Already have an account?') }}</span>
-            <a href="{{ route('login') }}" wire:navigate class="text-[#6E8C47] underline underline-offset-2 hover:text-[#5a7539]">
+            <a
+                href="{{ route('login') }}"
+                wire:navigate
+                class="font-semibold text-[#556C37] underline underline-offset-2 transition-colors hover:text-[#3E4F28] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#556C37] focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+            >
                 {{ __('Log in') }}
             </a>
         </div>

@@ -16,13 +16,29 @@ enum MealType: string
     {
         return match ($this) {
             self::Breakfast => __('Breakfast'),
-            self::Main => __('Main'),
+            self::Main => __('Meal'),
             self::Soup => __('Soup'),
-            self::Salad => __('Salad'),
+            self::Salad => __('Side salad'),
             self::Dessert => __('Dessert'),
             self::BaseRecipe => __('Base recipe'),
             self::Snack => __('Snack'),
         };
+    }
+
+    /**
+     * Meal types that should appear in end-user dropdowns.
+     *
+     * @return list<self>
+     */
+    public static function dropdownCases(): array
+    {
+        return [
+            self::Breakfast,
+            self::Main,
+            self::Soup,
+            self::Salad,
+            self::Dessert,
+        ];
     }
 
     /**

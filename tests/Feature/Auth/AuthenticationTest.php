@@ -8,7 +8,6 @@ test('login screen can be rendered', function () {
 
     $response->assertOk();
     $response->assertSee('Meal Craft', false);
-    $response->assertSee('meal-craft-logo-vertical', false);
 });
 
 test('users can authenticate using the login screen', function () {

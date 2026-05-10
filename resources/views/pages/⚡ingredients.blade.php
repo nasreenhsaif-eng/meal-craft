@@ -1384,7 +1384,10 @@ new #[Title('Ingredients')] class extends Component {
      */
     public function getIngredientsProperty()
     {
-        $query = Ingredient::query()->latest();
+        // Smart Kitchen sorting: keep "in stock" (verified) at top.
+        $query = Ingredient::query()
+            ->orderByDesc('is_verified')
+            ->orderBy('name');
 
         if (trim($this->libraryTableSearch) !== '') {
             $term = '%'.addcslashes(trim($this->libraryTableSearch), '%_\\').'%';
@@ -1396,23 +1399,24 @@ new #[Title('Ingredients')] class extends Component {
 
 }; ?>
 
-<section class="w-full space-y-6">
+<section class="w-full space-y-5">
     <div class="flex items-center justify-between">
         <div>
-            <flux:heading size="xl">{{ __('Ingredients') }}</flux:heading>
+            <flux:heading size="xl">{{ __('Ingredients — Smart Kitchen') }}</flux:heading>
             <flux:text class="text-neutral-600 dark:text-neutral-300">
-                {{ __('This page is local-only. It only uses the ingredient data you upload via CSV or enter manually. Search filters the table below.') }}
+                {{ __('Smart Kitchen ingredient library — local-only (CSV import + manual entry). Search filters the table below.') }}
             </flux:text>
         </div>
         <flux:badge>{{ __('Meal Craft') }}</flux:badge>
     </div>
 
-    <flux:input
+    <x-mc-input
         wire:model.live.debounce.300ms="libraryTableSearch"
         type="search"
         :label="__('Search saved ingredients')"
-        :placeholder="__('Filter by name…')"
+        placeholder="{{ __('Filter by name…') }}"
         class="max-w-xl"
+        autocomplete="off"
     />
 
     <details
@@ -1454,29 +1458,31 @@ new #[Title('Ingredients')] class extends Component {
             </flux:callout>
         @endif
         <div class="grid gap-4 md:grid-cols-2">
-            <flux:input wire:model.blur="name" :label="__('Ingredient Name')" type="text" />
-            <flux:select wire:model.live="category" :label="__('Ingredient Category')">
-                <option value="">{{ __('Choose a category') }}</option>
-                @foreach (['Proteins', 'Fats', 'Grains', 'Vegetables', 'Fruits', 'Dairy', 'Legumes', 'Spices', 'Pantry', 'Liquids', 'Other'] as $cat)
-                    <option value="{{ $cat }}">{{ $cat }}</option>
-                @endforeach
-            </flux:select>
+            <x-mc-input wire:model.blur="name" :label="__('Ingredient Name')" type="text" class="max-w-none" />
+            <x-mc-dropdown-textinput
+                wire:key="ingredient-category-{{ $this->category }}"
+                class="max-w-none"
+                :label="__('Ingredient Category')"
+                :value="$this->category"
+                wireModel="category"
+                :options="['Proteins', 'Fats', 'Grains', 'Vegetables', 'Fruits', 'Dairy', 'Legumes', 'Spices', 'Pantry', 'Liquids', 'Other']"
+            />
 
-            <flux:input wire:model="calories" :label="__('Calories (per 100g)')" type="number" step="0.01" min="0" />
-            <flux:input wire:model="protein" :label="__('Protein (g)')" type="number" step="0.01" min="0" />
-            <flux:input wire:model="carbs" :label="__('Carbs (g)')" type="number" step="0.01" min="0" />
-            <flux:input wire:model="fat" :label="__('Fat (g)')" type="number" step="0.01" min="0" />
+            <x-mc-input wire:model="calories" :label="__('Calories (per 100g)')" type="number" step="0.01" min="0" class="max-w-none" />
+            <x-mc-input wire:model="protein" :label="__('Protein (g)')" type="number" step="0.01" min="0" class="max-w-none" />
+            <x-mc-input wire:model="carbs" :label="__('Carbs (g)')" type="number" step="0.01" min="0" class="max-w-none" />
+            <x-mc-input wire:model="fat" :label="__('Fat (g)')" type="number" step="0.01" min="0" class="max-w-none" />
         </div>
 
-        <div class="mt-4">
-            <flux:textarea wire:model="micronutrients" :label="__('Micronutrients JSON')" rows="5" />
+        <div class="mt-5">
+            <x-mc-textarea wire:model="micronutrients" :label="__('Micronutrients JSON')" rows="5" class="max-w-none" />
             <flux:text class="mt-2 text-xs text-neutral-500 dark:text-neutral-400">
                 {{ __('Tip: include keys like vitamin_b9 (folate), vitamin_b12, magnesium, iron, zinc so SC Highlights can light up automatically.') }}
             </flux:text>
         </div>
 
         <div class="mt-4 flex flex-wrap items-center gap-3">
-            <flux:button type="button" wire:click="saveIngredient" variant="primary">
+            <flux:button type="button" wire:click="saveIngredient" variant="primary" class="!rounded-[12px] !bg-[#5A6B44] !text-white hover:!bg-[#4F5F3D] active:!bg-[#3E4F28]">
                 {{ $this->editingIngredientId ? __('Update Ingredient') : __('Add Ingredient') }}
             </flux:button>
             @if ($this->editingIngredientId)
@@ -1571,46 +1577,51 @@ new #[Title('Ingredients')] class extends Component {
                 </div>
             @endif
         </div>
-        <div class="relative mt-4 max-h-[600px] overflow-x-auto overflow-y-auto rounded-lg shadow-md">
+        <div class="relative mt-4 max-h-[600px] overflow-x-auto overflow-y-auto rounded-[12px] border border-[#E5E7EB] bg-[#FFFFFF] shadow-sm">
             <table class="meal-craft-data-table min-w-full text-sm">
                 <thead class="sticky top-0 z-20 text-left">
-                    <tr>
-                        <th class="sticky left-0 z-30 w-12 px-3 py-2">
+                    <tr class="border-b border-[#E5E7EB] bg-[#F8F9F6]">
+                        <th class="sticky left-0 z-30 w-12 bg-[#F8F9F6] px-3 py-2.5 align-middle font-montserrat text-sm font-bold text-[#5A6B44] transition-colors duration-150 hover:bg-[#F0F1ED] hover:text-[#4F5F3D]">
                             <flux:checkbox
                                 wire:model.live="selectAll"
                                 :label="__('Select all')"
                             />
                         </th>
-                        <th class="sticky left-12 z-30 px-3 py-2 shadow-sm">
+                        <th class="sticky left-12 z-30 border-r border-[#E5E7EB] bg-[#F8F9F6] px-3 py-2.5 font-montserrat text-sm font-bold text-[#5A6B44] shadow-sm transition-colors duration-150 hover:bg-[#F0F1ED] hover:text-[#4F5F3D]">
                             {{ __('Ingredient') }}
                         </th>
-                        <th class="px-3 py-2">{{ __('FDC') }}</th>
-                        <th class="px-3 py-2">{{ __('Verified') }}</th>
-                        <th class="px-3 py-2">{{ __('SC Highlights') }}</th>
-                        <th class="px-3 py-2 text-right">{{ __('Calories') }}</th>
-                        <th class="px-3 py-2 text-right">{{ __('Protein') }}</th>
-                        <th class="px-3 py-2 text-right">{{ __('Carbs') }}</th>
-                        <th class="px-3 py-2 text-right">{{ __('Fat') }}</th>
-                        <th class="px-3 py-2 text-right">{{ __('Vitamin A') }}</th>
-                        <th class="px-3 py-2 text-right">{{ __('B6') }}</th>
-                        <th class="px-3 py-2 text-right">{{ __('B9 Folate') }}</th>
-                        <th class="px-3 py-2 text-right">{{ __('B12') }}</th>
-                        <th class="px-3 py-2 text-right">{{ __('Vitamin C') }}</th>
-                        <th class="px-3 py-2 text-right">{{ __('Vitamin D') }}</th>
-                        <th class="px-3 py-2 text-right">{{ __('Vitamin E') }}</th>
-                        <th class="px-3 py-2 text-right">{{ __('Fiber') }}</th>
-                        <th class="px-3 py-2 text-right">{{ __('Calcium') }}</th>
-                        <th class="px-3 py-2 text-right">{{ __('Iron') }}</th>
-                        <th class="px-3 py-2 text-right">{{ __('Magnesium') }}</th>
-                        <th class="px-3 py-2 text-right">{{ __('Potassium') }}</th>
-                        <th class="px-3 py-2 text-right">{{ __('Zinc (mg)') }}</th>
-                        <th class="px-3 py-2 text-right">{{ __('Sodium (mg)') }}</th>
-                        <th class="px-3 py-2 text-right">{{ __('Sugar (g)') }}</th>
-                        <th class="px-3 py-2 text-right">{{ __('Vitamin K (mcg)') }}</th>
+                        <th class="bg-[#F8F9F6] px-3 py-2.5 font-montserrat text-sm font-bold text-[#5A6B44] transition-colors duration-150 hover:bg-[#F0F1ED] hover:text-[#4F5F3D]">{{ __('Status') }}</th>
+                        <th class="bg-[#F8F9F6] px-3 py-2.5 font-montserrat text-sm font-bold text-[#5A6B44] transition-colors duration-150 hover:bg-[#F0F1ED] hover:text-[#4F5F3D]">{{ __('FDC') }}</th>
+                        <th class="bg-[#F8F9F6] px-3 py-2.5 font-montserrat text-sm font-bold text-[#5A6B44] transition-colors duration-150 hover:bg-[#F0F1ED] hover:text-[#4F5F3D]">{{ __('SC Highlights') }}</th>
+                        <th class="bg-[#F8F9F6] px-3 py-2.5 text-right font-montserrat text-sm font-bold text-[#5A6B44] transition-colors duration-150 hover:bg-[#F0F1ED] hover:text-[#4F5F3D]">{{ __('Calories') }}</th>
+                        <th class="bg-[#F8F9F6] px-3 py-2.5 text-right font-montserrat text-sm font-bold text-[#5A6B44] transition-colors duration-150 hover:bg-[#F0F1ED] hover:text-[#4F5F3D]">{{ __('Protein') }}</th>
+                        <th class="bg-[#F8F9F6] px-3 py-2.5 text-right font-montserrat text-sm font-bold text-[#5A6B44] transition-colors duration-150 hover:bg-[#F0F1ED] hover:text-[#4F5F3D]">{{ __('Carbs') }}</th>
+                        <th class="bg-[#F8F9F6] px-3 py-2.5 text-right font-montserrat text-sm font-bold text-[#5A6B44] transition-colors duration-150 hover:bg-[#F0F1ED] hover:text-[#4F5F3D]">{{ __('Fat') }}</th>
+                        <th class="bg-[#F8F9F6] px-3 py-2.5 text-right font-montserrat text-sm font-bold text-[#5A6B44] transition-colors duration-150 hover:bg-[#F0F1ED] hover:text-[#4F5F3D]">{{ __('Vitamin A') }}</th>
+                        <th class="bg-[#F8F9F6] px-3 py-2.5 text-right font-montserrat text-sm font-bold text-[#5A6B44] transition-colors duration-150 hover:bg-[#F0F1ED] hover:text-[#4F5F3D]">{{ __('B6') }}</th>
+                        <th class="bg-[#F8F9F6] px-3 py-2.5 text-right font-montserrat text-sm font-bold text-[#5A6B44] transition-colors duration-150 hover:bg-[#F0F1ED] hover:text-[#4F5F3D]">{{ __('B9 Folate') }}</th>
+                        <th class="bg-[#F8F9F6] px-3 py-2.5 text-right font-montserrat text-sm font-bold text-[#5A6B44] transition-colors duration-150 hover:bg-[#F0F1ED] hover:text-[#4F5F3D]">{{ __('B12') }}</th>
+                        <th class="bg-[#F8F9F6] px-3 py-2.5 text-right font-montserrat text-sm font-bold text-[#5A6B44] transition-colors duration-150 hover:bg-[#F0F1ED] hover:text-[#4F5F3D]">{{ __('Vitamin C') }}</th>
+                        <th class="bg-[#F8F9F6] px-3 py-2.5 text-right font-montserrat text-sm font-bold text-[#5A6B44] transition-colors duration-150 hover:bg-[#F0F1ED] hover:text-[#4F5F3D]">{{ __('Vitamin D') }}</th>
+                        <th class="bg-[#F8F9F6] px-3 py-2.5 text-right font-montserrat text-sm font-bold text-[#5A6B44] transition-colors duration-150 hover:bg-[#F0F1ED] hover:text-[#4F5F3D]">{{ __('Vitamin E') }}</th>
+                        <th class="bg-[#F8F9F6] px-3 py-2.5 text-right font-montserrat text-sm font-bold text-[#5A6B44] transition-colors duration-150 hover:bg-[#F0F1ED] hover:text-[#4F5F3D]">{{ __('Fiber') }}</th>
+                        <th class="bg-[#F8F9F6] px-3 py-2.5 text-right font-montserrat text-sm font-bold text-[#5A6B44] transition-colors duration-150 hover:bg-[#F0F1ED] hover:text-[#4F5F3D]">{{ __('Calcium') }}</th>
+                        <th class="bg-[#F8F9F6] px-3 py-2.5 text-right font-montserrat text-sm font-bold text-[#5A6B44] transition-colors duration-150 hover:bg-[#F0F1ED] hover:text-[#4F5F3D]">{{ __('Iron') }}</th>
+                        <th class="bg-[#F8F9F6] px-3 py-2.5 text-right font-montserrat text-sm font-bold text-[#5A6B44] transition-colors duration-150 hover:bg-[#F0F1ED] hover:text-[#4F5F3D]">{{ __('Magnesium') }}</th>
+                        <th class="bg-[#F8F9F6] px-3 py-2.5 text-right font-montserrat text-sm font-bold text-[#5A6B44] transition-colors duration-150 hover:bg-[#F0F1ED] hover:text-[#4F5F3D]">{{ __('Potassium') }}</th>
+                        <th class="bg-[#F8F9F6] px-3 py-2.5 text-right font-montserrat text-sm font-bold text-[#5A6B44] transition-colors duration-150 hover:bg-[#F0F1ED] hover:text-[#4F5F3D]">{{ __('Zinc (mg)') }}</th>
+                        <th class="bg-[#F8F9F6] px-3 py-2.5 text-right font-montserrat text-sm font-bold text-[#5A6B44] transition-colors duration-150 hover:bg-[#F0F1ED] hover:text-[#4F5F3D]">{{ __('Sodium (mg)') }}</th>
+                        <th class="bg-[#F8F9F6] px-3 py-2.5 text-right font-montserrat text-sm font-bold text-[#5A6B44] transition-colors duration-150 hover:bg-[#F0F1ED] hover:text-[#4F5F3D]">{{ __('Sugar (g)') }}</th>
+                        <th class="bg-[#F8F9F6] px-3 py-2.5 text-right font-montserrat text-sm font-bold text-[#5A6B44] transition-colors duration-150 hover:bg-[#F0F1ED] hover:text-[#4F5F3D]">{{ __('Vitamin K (mcg)') }}</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse ($this->ingredients as $ingredient)
+                        @php
+                            $isInStock = (bool) $ingredient->is_verified;
+                            $rowMuted = $isInStock ? '' : 'text-[#71717a]';
+                            $rowStrike = $isInStock ? '' : 'line-through';
+                        @endphp
                         <tr wire:key="ingredient-{{ $ingredient->id }}" class="border-b border-neutral-100 dark:border-neutral-800">
                             <td class="sticky left-0 z-10 px-3 py-2 align-top">
                                 <input
@@ -1623,7 +1634,7 @@ new #[Title('Ingredients')] class extends Component {
                             </td>
                             <td class="sticky left-12 z-10 border-r border-neutral-200 px-3 py-2 shadow-sm dark:border-neutral-800">
                                 <div class="space-y-2">
-                                    <flux:text class="font-medium whitespace-nowrap">{{ $ingredient->name }}</flux:text>
+                                    <flux:text class="font-medium whitespace-nowrap font-montserrat {{ $rowMuted }} {{ $rowStrike }}">{{ $ingredient->name }}</flux:text>
                                     <flux:text class="text-xs text-neutral-500 dark:text-neutral-400">
                                         {{ __('Use Advanced (above) for manual edits.') }}
                                     </flux:text>
@@ -1632,14 +1643,10 @@ new #[Title('Ingredients')] class extends Component {
                                     </div>
                                 </div>
                             </td>
-                            <td class="px-3 py-2 font-mono text-xs">{{ $ingredient->fdc_id ?? '—' }}</td>
-                            <td class="px-3 py-2">
-                                @if ($ingredient->is_verified)
-                                    <span class="text-lg text-green-600 dark:text-green-400" title="{{ __('Verified') }}">✓</span>
-                                @else
-                                    <span class="text-neutral-400">—</span>
-                                @endif
+                            <td class="px-3 py-2 font-montserrat text-xs font-bold {{ $isInStock ? 'text-[#5A6B44]' : 'text-[#71717a]' }}">
+                                {{ $isInStock ? __('In Stock') : __('Out of Stock') }}
                             </td>
+                            <td class="px-3 py-2 font-mono text-xs">{{ $ingredient->fdc_id ?? '—' }}</td>
                             <td class="px-3 py-2">
                                 @php
                                     $h = $ingredient->highlights;

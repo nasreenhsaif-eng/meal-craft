@@ -2,8 +2,10 @@
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="dark">
     <head>
         @include('partials.head')
+        @include('partials.admin-intro-inline')
     </head>
     <body class="min-h-screen bg-mc-cream dark:bg-zinc-900">
+        <div id="mc-admin-shell" class="min-h-screen">
         <flux:sidebar sticky collapsible="mobile" class="meal-craft-admin-sidebar">
             <flux:sidebar.header>
                 <x-app-logo :sidebar="true" href="{{ route('dashboard') }}" wire:navigate />
@@ -26,6 +28,9 @@
                     </flux:sidebar.item>
                     <flux:sidebar.item icon="squares-2x2" :href="route('meal-plans.four-week')" :current="request()->routeIs('meal-plans.four-week')" wire:navigate>
                         {{ __('4-week plans') }}
+                    </flux:sidebar.item>
+                    <flux:sidebar.item icon="clipboard-document-list" :href="route('consultation.crafted-for-you')" :current="request()->routeIs('consultation.crafted-for-you')">
+                        {{ __('Consultation') }}
                     </flux:sidebar.item>
                 </flux:sidebar.group>
             </flux:sidebar.nav>
@@ -99,6 +104,10 @@
 
         {{ $slot }}
 
+        </div>
+        <div id="mc-intro-root"></div>
+
         @fluxScripts
+        @vite(['resources/js/admin-intro.jsx'])
     </body>
 </html>

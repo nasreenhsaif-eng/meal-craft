@@ -14,9 +14,5 @@
   "fonts": {
     "sans": "Montserrat",
     "heading": "Montserrat"
-  },
-  "logo": {
-    "default": "resources/branding/logo/logo.svg",
-    "vertical": "images/branding/meal-craft-logo-vertical.png"
   }
 }

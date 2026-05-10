@@ -37,8 +37,4 @@ return [
         'sans' => $brandKit['fonts']['sans'] ?? 'Montserrat',
         'heading' => $brandKit['fonts']['heading'] ?? 'Montserrat',
     ],
-    'logo' => [
-        'default' => $brandKit['logo']['default'] ?? 'resources/branding/logo/logo.svg',
-        'vertical' => $brandKit['logo']['vertical'] ?? 'images/branding/meal-craft-logo-vertical.png',
-    ],
 ];

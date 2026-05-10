@@ -12,9 +12,21 @@ const dirname = typeof __dirname !== 'undefined' ? __dirname : path.dirname(file
 // More info at: https://storybook.js.org/docs/next/writing-tests/integrations/vitest-addon
 export default defineConfig({
   plugins: [laravel({
-    input: ['resources/css/app.css', 'resources/js/app.js', 'resources/js/ingredient-analyzer.jsx'],
+    input: [
+      'resources/css/app.css',
+      'resources/js/app.js',
+      'resources/js/admin-intro.jsx',
+      'resources/js/ingredient-analyzer.jsx',
+      'resources/js/auth-login.jsx',
+      'resources/js/consultation-crafted-for-you.jsx',
+    ],
     refresh: true
   }), react(), tailwindcss()],
+  resolve: {
+    alias: {
+      '@': path.join(dirname, 'src'),
+    },
+  },
   server: {
     cors: true,
     watch: {

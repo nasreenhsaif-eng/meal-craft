@@ -1,0 +1,74 @@
+/**
+ * Full-bleed Storybook preview (Canvas + Docs).
+ * Imported from `preview.js` so it ships in dev and `build-storybook` (Vite does not always merge `preview-head.html` into the iframe).
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700&display=swap');
+
+/* Outer iframe gutter — this padding was visually “pinching” full-width backgrounds */
+.sb-wrapper {
+    padding: 0 !important;
+}
+
+@media (max-width: 700px) {
+    .sb-wrapper {
+        padding: 0 !important;
+    }
+}
+
+@media (max-width: 500px) {
+    .sb-wrapper {
+        padding: 0 !important;
+    }
+}
+
+/* Fallback if any story still uses `layout: centered` */
+.sb-show-main.sb-main-centered {
+    align-items: stretch !important;
+}
+
+.sb-show-main.sb-main-centered #storybook-root {
+    box-sizing: border-box !important;
+    max-width: none !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+html,
+body {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+}
+
+#storybook-root {
+    width: 100% !important;
+    max-width: none !important;
+}
+
+/* React mount — prevent stray margins from clipping full-bleed backgrounds */
+#root {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    min-height: 100%;
+}
+
+/* Docs tab embedded previews */
+.docs-story,
+.sbdocs .docs-story,
+[class*='docs-story'] {
+    max-width: none !important;
+    width: 100% !important;
+    padding: 0 !important;
+}
+
+.sb-story,
+.sb-preview,
+[class*='sb-preview'] {
+    max-width: none !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+}

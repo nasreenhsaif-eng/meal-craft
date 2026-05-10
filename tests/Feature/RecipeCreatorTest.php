@@ -6,12 +6,30 @@ use App\Models\Ingredient;
 use App\Models\Meal;
 use App\Models\User;
 use App\Services\RecipeNutritionCalculator;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Livewire\Livewire;
 
 test('authenticated users can view meals hub', function () {
     $this->actingAs(User::factory()->create());
 
     $this->get(route('meals.index'))->assertOk();
+});
+
+test('meal type dropdown shows only five types', function () {
+    $this->actingAs(User::factory()->create());
+
+    $response = $this->get(route('meals.index'));
+
+    $response->assertOk();
+
+    $response->assertSee(__('Breakfast'), escape: false);
+    $response->assertSee(__('Meal'), escape: false);
+    $response->assertSee(__('Soup'), escape: false);
+    $response->assertSee(__('Side salad'), escape: false);
+    $response->assertSee(__('Dessert'), escape: false);
+
+    $response->assertDontSee(__('Snack'), escape: false);
+    $response->assertDontSee(__('Base recipe'), escape: false);
 });
 
 test('authenticated users can view meal edit route on the hub', function () {
@@ -86,7 +104,9 @@ test('meal hub loads full ingredient list ordered by name', function () {
         'is_verified' => true,
     ]);
 
-    $options = Livewire::test('pages::meals')->get('ingredientOptions');
+    $component = Livewire::test('pages::meals');
+
+    $options = $component->instance()->ingredientSearchResults(0);
 
     expect($options)->toHaveCount(2)
         ->and($options->first()->name)->toBe('Apple Rings')
@@ -144,7 +164,7 @@ test('meal list filter limits saved meals by meal type', function () {
 
     $paginator = $component->get('filteredMeals');
 
-    expect($paginator)->toBeInstanceOf(\Illuminate\Pagination\LengthAwarePaginator::class)
+    expect($paginator)->toBeInstanceOf(LengthAwarePaginator::class)
         ->and($paginator->total())->toBe(1)
         ->and(collect($paginator->items())->first()->name)->toBe('Tomato Soup');
 });

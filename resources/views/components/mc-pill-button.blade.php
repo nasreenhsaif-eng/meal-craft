@@ -5,7 +5,7 @@
 
 @php
     // Figma: Montserrat 500, pill, primary default/hover/active per spec
-    $base = 'inline-flex items-center justify-center rounded-full font-["Montserrat"] font-medium transition-all duration-200';
+    $base = 'inline-flex items-center justify-center rounded-full font-sans font-semibold transition-all duration-200';
 
     $sizes = [
         'md' => 'h-[50px] px-6 text-[16px]',

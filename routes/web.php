@@ -11,6 +11,7 @@ Route::get('/', function () {
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::view('dashboard', 'pages.dashboard')->name('dashboard');
+    Route::view('consultation/crafted-for-you', 'pages.consultation.crafted-for-you')->name('consultation.crafted-for-you');
     Route::livewire('ingredients', 'pages::ingredients')->name('ingredients.index');
     Route::livewire('meals', 'pages::meals')->name('meals.index');
     Route::livewire('meals/{meal}/edit', 'pages::meals')->name('meals.edit');

@@ -905,7 +905,7 @@ new #[Title('Meals')] class extends Component {
                 <div class="grid gap-4 md:grid-cols-2">
                     <flux:input wire:model.blur="name" :label="__('Meal name')" type="text" />
                     <flux:select wire:model.live="mealType" :label="__('Meal type')">
-                        @foreach (MealType::cases() as $typeCase)
+                        @foreach (MealType::dropdownCases() as $typeCase)
                             <option value="{{ $typeCase->value }}">{{ $typeCase->label() }}</option>
                         @endforeach
                     </flux:select>
@@ -1278,7 +1278,7 @@ new #[Title('Meals')] class extends Component {
                     <div class="min-w-0 flex-1 sm:max-w-xs">
                         <flux:select wire:model.live="selectedMealType" class="w-full">
                             <option value="">{{ __('All types') }}</option>
-                            @foreach (MealType::cases() as $typeCase)
+                            @foreach (MealType::dropdownCases() as $typeCase)
                                 <option value="{{ $typeCase->value }}">{{ $typeCase->label() }}</option>
                             @endforeach
                         </flux:select>
