@@ -1,10 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Button from '../../Components/Atoms/Button.jsx';
 import PillButton from '../../Components/Atoms/Button/Button.jsx';
-/** Stacked 3D / Netflix ribbon carousel — sole meal-picker UI for this flow (no legacy carousel). */
-import StackedDeckCarousel from '../../Components/StackedDeckCarousel.jsx';
-/** Carousel deck card — `MealCardClientViewNano` is the component built for this flow (see file docblock there). */
-import MealCardClientViewNano from '../../Components/MealCardClientViewNano.jsx';
+import ChooseYourMeals, { DEFAULT_FULL_CRAFT_MAX_SELECTIONS, MealSlotCarousel } from '../../Components/Consultation/ChooseYourMeals.jsx';
 import SquareCheckbox from '../../Components/Atoms/SquareCheckbox.jsx';
 import { MealCraftLogoAnimatedIdentity } from '../../Components/Atoms/Logo/MealCraftLogoAnimated.jsx';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -17,12 +14,13 @@ const CRAFTS = [
     {
         key: 'full',
         title: 'Full Craft',
-        description: 'Breakfast, 2 Meals, Side Salad, Dessert',
+        description: '1 Breakfast, 2 Main Meals, 1 Side Salad, 1 Dessert, Soup of the Day (optional)',
         slots: [
             { id: 'breakfast', label: 'Breakfast', count: 1 },
             { id: 'meal', label: 'Meals', count: 2 },
             { id: 'sidesalad', label: 'Side salad', count: 1 },
             { id: 'dessert', label: 'Dessert', count: 1 },
+            { id: 'soup', label: 'Soup of the Day', count: 1, optional: true },
         ],
     },
     {
@@ -380,70 +378,6 @@ export default function CraftedForYouPage({ closeHref } = {}) {
         return MOCK_MEALS.filter((m) => (desiredType ? m.mealType === desiredType : true));
     }
 
-    /**
-     * @param {object} p
-     * @param {string} p.title
-     * @param {typeof MOCK_MEALS} p.cards
-     * @param {string[]} p.selectedIds
-     * @param {number} p.maxSelected
-     * @param {(meal: (typeof MOCK_MEALS)[number]) => void} p.onSelect Meal chosen / toggled — drives radiant border + SELECTED.
-     * @param {string} [p.deckScopeKey]
-     */
-    function SelectionCarousel({ title, cards, selectedIds, maxSelected, onSelect, deckScopeKey }) {
-        const selectedSet = new Set(selectedIds);
-        const atLimit = selectedIds.length >= maxSelected;
-
-        /** Single card component for every breakpoint: `StackedDeckCarousel` switches 3D stack (&lt;768px) vs triplicated ribbon (≥768px). */
-        return (
-            <div className="overflow-visible py-1">
-                <div className="min-w-0">
-                    <p className="font-montserrat text-sm font-bold tracking-tight text-[#262A22]">{title}</p>
-                    <p className="mt-1 font-body text-sm text-[#555555]">
-                        {maxSelected === 2 ? 'Select exactly 2' : 'Select 1'} • {selectedIds.length}/{maxSelected}{' '}
-                        selected • Swipe the deck to browse
-                    </p>
-                </div>
-
-                <div
-                    className="relative mx-auto mt-5 flex min-h-[calc(min(90vw,320px)+9rem)] w-full max-w-full justify-center overflow-x-visible overflow-y-visible py-3 [-webkit-overflow-scrolling:touch]"
-                    data-consultation-deck=""
-                >
-                    {cards.length === 0 ? (
-                        <p className="font-body text-sm text-[#666666]">No options match this slot yet.</p>
-                    ) : (
-                        <StackedDeckCarousel
-                            title=""
-                            meals={cards}
-                            deckScopeKey={deckScopeKey}
-                            getKey={(m) => m.id}
-                            renderCard={(m, _idx, { isFront, deckLayout }) => {
-                                const isSelected = selectedSet.has(m.id);
-                                const isDisabled = !isSelected && atLimit;
-                                return (
-                                    <MealCardClientViewNano
-                                        deck
-                                        ribbon={deckLayout === 'ribbon'}
-                                        deckStackRole={isFront ? 'front' : 'back'}
-                                        title={m.title}
-                                        imageUrl={m.imageUrl}
-                                        macros={m.macros}
-                                        selected={isSelected}
-                                        disabled={isDisabled}
-                                        imageLoading={isFront ? 'eager' : 'lazy'}
-                                        imageAlt={m.title}
-                                        onToggleSelected={() => onSelect(m)}
-                                        onViewDetails={() => {}}
-                                        className={isDisabled ? 'opacity-60 grayscale' : ''}
-                                    />
-                                );
-                            }}
-                        />
-                    )}
-                </div>
-            </div>
-        );
-    }
-
     const slotTemplate = useMemo(() => {
         if (!craft) {
             return [];
@@ -598,9 +532,14 @@ export default function CraftedForYouPage({ closeHref } = {}) {
                         ? 'Side salads'
                         : s.id === 'dessert'
                           ? 'Desserts'
-                          : 'Soup of the day',
+                          : s.id === 'soup'
+                            ? s.optional
+                              ? 'Soup of the Day (optional)'
+                              : 'Soup'
+                            : 'Slot',
             count: s.count,
             selectionKey: s.id === 'breakfast' ? 'breakfasts' : s.id === 'meal' ? 'meals' : s.id === 'sidesalad' ? 'sideSalads' : s.id === 'dessert' ? 'desserts' : 'soup',
+            optional: Boolean(s.optional),
         }));
     }, [craft, dayCraftChoice, businessCraftChoice]);
 
@@ -623,40 +562,10 @@ export default function CraftedForYouPage({ closeHref } = {}) {
                       : (s.sideSalads?.length ?? 0) === 1;
             return hasMeal && hasSide;
         }
-        return requiredSlotsByCraft.every((slot) => (s[slot.selectionKey]?.length ?? 0) === slot.count);
+        return requiredSlotsByCraft
+            .filter((slot) => !slot.optional)
+            .every((slot) => (s[slot.selectionKey]?.length ?? 0) === slot.count);
     }, [craft, curationDay, requiredSlotsByCraft, selectedByDay, businessSideChoiceByDay]);
-
-    /** Review sidebar + calorie strip: same ids as deck selection (`selectedByDay`). */
-    const currentSelectionSummary = useMemo(() => {
-        if (curationDay === null || !craft) {
-            return [];
-        }
-        const s = selectedByDay[curationDay] ?? {
-            breakfasts: [],
-            meals: [],
-            sideSalads: [],
-            desserts: [],
-            soup: [],
-        };
-        const join = (/** @type {string[]} */ ids) =>
-            ids.length ? ids.map((id) => mealTitleById(id)).join(' · ') : '—';
-
-        if (craft.key === 'business') {
-            const side = businessSideChoiceByDay[curationDay] ?? 'soup';
-            const sideKey = side === 'soup' ? 'soup' : side === 'dessert' ? 'desserts' : 'sideSalads';
-            const sideLabel = side === 'soup' ? 'Soup' : side === 'dessert' ? 'Dessert' : 'Side salad';
-
-            return [
-                { label: 'Meal options', value: join(s.meals ?? []) },
-                { label: sideLabel, value: join(s[sideKey] ?? []) },
-            ];
-        }
-
-        return requiredSlotsByCraft.map((slot) => ({
-            label: slot.label,
-            value: join(s[slot.selectionKey] ?? []),
-        }));
-    }, [businessSideChoiceByDay, craft, curationDay, requiredSlotsByCraft, selectedByDay]);
 
     return (
         <div className={`min-h-screen ${PAGE_BG} px-4 py-4 font-sans md:px-4 pb-24 sm:pb-4`}>
@@ -872,91 +781,107 @@ export default function CraftedForYouPage({ closeHref } = {}) {
 
                 {/* Screens 3..X — Daily Curation (one day per screen) */}
                 {isCurationScreen ? (
-                    <section className="overflow-visible rounded-[12px] border border-gray-200 bg-white shadow-sm">
-                        <div className="border-b border-gray-200 p-6">
-                            <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-                                <div>
-                                    <h2 className="font-montserrat text-[16px] font-bold tracking-tight text-[#262A22]">
-                                        {curationDay ? `CRAFTING YOUR ${WEEKDAY_LONG[curationDay - 1]?.toUpperCase() ?? ''}` : 'Daily Curation'}
-                                    </h2>
-                                    <p className="mt-1 font-body text-sm text-[#555555]">
-                                        Day {curationIndex + 1} of {totalCurationDays}
-                                    </p>
-                                </div>
-                                <p className="font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#555555]">
-                                    {craft ? craft.title : ''}
-                                </p>
-                            </div>
-                        </div>
+                    <>
+                        {curationDay ? (() => {
+                            const day = curationDay;
+                            const daySelections = selectedByDay[day] ?? {
+                                breakfasts: [],
+                                meals: [],
+                                sideSalads: [],
+                                desserts: [],
+                                soup: [],
+                            };
 
-                        <div className="overflow-visible p-6">
-                            {curationDay ? (
-                                <>
-                                    <div className="xl:grid xl:grid-cols-[minmax(0,1fr)_min(100%,300px)] xl:items-start xl:gap-10">
-                                        <div className="min-w-0 space-y-6">
-                                            <div className="rounded-[12px] border border-gray-200 bg-[#F8F9F6] p-4">
-                                                <div className="flex flex-wrap items-center justify-between gap-3">
-                                                    <p className="font-montserrat text-sm font-bold text-[#262A22]">
-                                                        {WEEKDAY_LABELS[curationDay - 1]} selections
-                                                    </p>
-                                                    <p className="font-montserrat text-sm font-bold tabular-nums text-[#1F2937]">
-                                                        Total: {Math.round(dayCaloriesTotal)} kcal
-                                                    </p>
-                                                </div>
-                                                <p className="mt-2 font-body text-xs text-[#555555]">
-                                                    Fill every required slot to continue.
-                                                </p>
-                                            </div>
+                            const toggle = (key, max) => (meal) => {
+                                setSelectedByDay((prev) => {
+                                    const current = prev[day] ?? {
+                                        breakfasts: [],
+                                        meals: [],
+                                        sideSalads: [],
+                                        desserts: [],
+                                        soup: [],
+                                    };
+                                    const existing = current[key] ?? [];
+                                    const isOn = existing.includes(meal.id);
+                                    let next = existing;
+                                    if (isOn) {
+                                        next = existing.filter((id) => id !== meal.id);
+                                    } else if (existing.length < max) {
+                                        next = [...existing, meal.id];
+                                    } else {
+                                        next = existing;
+                                    }
+                                    return { ...prev, [day]: { ...current, [key]: next } };
+                                });
+                            };
 
-                                            <AnimatePresence mode="wait" initial={false}>
-                                                <motion.div
-                                                    key={`curation-day-${curationDay}`}
-                                                    initial={{ x: 32, opacity: 0 }}
-                                                    animate={{ x: 0, opacity: 1 }}
-                                                    exit={{ x: -32, opacity: 0 }}
-                                                    transition={{ type: 'spring', stiffness: 240, damping: 30, mass: 0.8 }}
-                                                    className="space-y-8 overflow-visible"
-                                                >
-                                                    {(() => {
-                                            const day = curationDay;
-                                            const selections = selectedByDay[day] ?? {
+                            return (
+                            <div className="w-full max-md:-mx-4">
+                            <ChooseYourMeals
+                                dayName={WEEKDAY_LONG[curationDay - 1] ?? ''}
+                                totalKcal={dayCaloriesTotal}
+                                summaryLabel={`${WEEKDAY_LABELS[curationDay - 1]} selections`}
+                                craftTitle={craft ? craft.title : ''}
+                                targetCalories={1200}
+                                dayProgressLabel={`Day ${curationIndex + 1} of ${totalCurationDays}`}
+                                layout={craft?.key === 'full' ? 'categories' : 'custom'}
+                                meals={craft?.key === 'full' ? MOCK_MEALS : []}
+                                categorySelections={craft?.key === 'full' ? daySelections : undefined}
+                                onToggleCategory={
+                                    craft?.key === 'full'
+                                        ? (categoryKey, meal) =>
+                                              toggle(
+                                                  categoryKey,
+                                                  DEFAULT_FULL_CRAFT_MAX_SELECTIONS[categoryKey],
+                                              )(meal)
+                                        : undefined
+                                }
+                                deckScopePrefix={craft?.key === 'full' ? String(curationDay) : ''}
+                                onSoupOptInChange={(enabled) => {
+                                    if (!enabled) {
+                                        setSelectedByDay((prev) => {
+                                            const current = prev[day] ?? {
                                                 breakfasts: [],
                                                 meals: [],
                                                 sideSalads: [],
                                                 desserts: [],
                                                 soup: [],
                                             };
+                                            return { ...prev, [day]: { ...current, soup: [] } };
+                                        });
+                                    }
+                                }}
+                                onFooterBack={() => {
+                                    if (screen === curationStartScreen) {
+                                        setScreen(usesManualDaySelection ? 2 : 1);
+                                        return;
+                                    }
+                                    setScreen(screen - 1);
+                                }}
+                                onFooterNext={() => {
+                                    setScreen(screen + 1);
+                                }}
+                                footerNextDisabled={!isCurationDayComplete}
+                            >
+                                {craft?.key === 'full' ? null : (
+                                <AnimatePresence mode="wait" initial={false}>
+                                    <motion.div
+                                        key={`curation-day-${curationDay}`}
+                                        initial={{ x: 32, opacity: 0 }}
+                                        animate={{ x: 0, opacity: 1 }}
+                                        exit={{ x: -32, opacity: 0 }}
+                                        transition={{ type: 'spring', stiffness: 240, damping: 30, mass: 0.8 }}
+                                        className="space-y-8 overflow-visible"
+                                    >
+                                        {(() => {
+                                            const selections = daySelections;
 
                                             const pickCards = (slotKey) => {
-                                                // Surface enough options that the deck can show several distinct ridges behind the front.
-                                                if (slotKey === 'breakfast') return topOptionsForCategory('breakfast').slice(0, 8);
-                                                if (slotKey === 'meal') return topOptionsForCategory('meal').slice(0, 8);
-                                                if (slotKey === 'sidesalad') return topOptionsForCategory('sidesalad').slice(0, 8);
-                                                if (slotKey === 'dessert') return topOptionsForCategory('dessert').slice(0, 8);
-                                                return topOptionsForCategory('soup').slice(0, 8);
-                                            };
-
-                                            const toggle = (key, max) => (meal) => {
-                                                setSelectedByDay((prev) => {
-                                                    const current = prev[day] ?? {
-                                                        breakfasts: [],
-                                                        meals: [],
-                                                        sideSalads: [],
-                                                        desserts: [],
-                                                        soup: [],
-                                                    };
-                                                    const existing = current[key] ?? [];
-                                                    const isOn = existing.includes(meal.id);
-                                                    let next = existing;
-                                                    if (isOn) {
-                                                        next = existing.filter((id) => id !== meal.id);
-                                                    } else if (existing.length < max) {
-                                                        next = [...existing, meal.id];
-                                                    } else {
-                                                        next = existing;
-                                                    }
-                                                    return { ...prev, [day]: { ...current, [key]: next } };
-                                                });
+                                                if (slotKey === 'breakfast') return topOptionsForCategory('breakfast').slice(0, 2);
+                                                if (slotKey === 'meal') return topOptionsForCategory('meal').slice(0, 4);
+                                                if (slotKey === 'sidesalad') return topOptionsForCategory('sidesalad').slice(0, 2);
+                                                if (slotKey === 'dessert') return topOptionsForCategory('dessert').slice(0, 2);
+                                                return topOptionsForCategory('soup').slice(0, 2);
                                             };
 
                                             if (craft?.key === 'business') {
@@ -964,8 +889,8 @@ export default function CraftedForYouPage({ closeHref } = {}) {
 
                                                 return (
                                                     <>
-                                                        <SelectionCarousel
-                                                            title="Meal options"
+                                                        <MealSlotCarousel
+                                                            title="Choose Your Meals of the Day"
                                                             deckScopeKey={`${day}-meal`}
                                                             cards={pickCards('meal')}
                                                             selectedIds={selections.meals}
@@ -1002,7 +927,7 @@ export default function CraftedForYouPage({ closeHref } = {}) {
                                                         </div>
 
                                                         {side === 'soup' ? (
-                                                            <SelectionCarousel
+                                                            <MealSlotCarousel
                                                                 title="Soup"
                                                                 deckScopeKey={`${day}-soup`}
                                                                 cards={pickCards('soup')}
@@ -1011,7 +936,7 @@ export default function CraftedForYouPage({ closeHref } = {}) {
                                                                 onSelect={toggle('soup', 1)}
                                                             />
                                                         ) : side === 'dessert' ? (
-                                                            <SelectionCarousel
+                                                            <MealSlotCarousel
                                                                 title="Dessert"
                                                                 deckScopeKey={`${day}-dessert`}
                                                                 cards={pickCards('dessert')}
@@ -1020,7 +945,7 @@ export default function CraftedForYouPage({ closeHref } = {}) {
                                                                 onSelect={toggle('desserts', 1)}
                                                             />
                                                         ) : (
-                                                            <SelectionCarousel
+                                                            <MealSlotCarousel
                                                                 title="Side salad"
                                                                 deckScopeKey={`${day}-sidesalad`}
                                                                 cards={pickCards('sidesalad')}
@@ -1034,7 +959,7 @@ export default function CraftedForYouPage({ closeHref } = {}) {
                                             }
 
                                             return requiredSlotsByCraft.map((slot) => (
-                                                <SelectionCarousel
+                                                <MealSlotCarousel
                                                     key={slotId(day, slot.key, 1)}
                                                     title={slot.label}
                                                     deckScopeKey={`${day}-${slot.key}`}
@@ -1044,68 +969,19 @@ export default function CraftedForYouPage({ closeHref } = {}) {
                                                     onSelect={toggle(slot.selectionKey, slot.count)}
                                                 />
                                             ));
-                                                    })()}
-                                                </motion.div>
-                                            </AnimatePresence>
-                                        </div>
-
-                                        <aside
-                                            aria-label="Current selection review"
-                                            className="mt-8 shrink-0 rounded-[12px] border border-gray-200 bg-[#F8F9F6] p-4 xl:sticky xl:top-28 xl:mt-0"
-                                        >
-                                            <p className="font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#555555]">
-                                                Current selection
-                                            </p>
-                                            <p className="mt-1 font-body text-xs text-[#555555]">
-                                                Updates when you craft meals in the decks below. Matches your calorie
-                                                total above.
-                                            </p>
-                                            <ul className="mt-4 space-y-3 border-t border-gray-200/80 pt-4">
-                                                {currentSelectionSummary.map((row, idx) => (
-                                                    <li key={`${row.label}-${idx}`}>
-                                                        <p className="font-montserrat text-[11px] font-bold uppercase tracking-wide text-[#777777]">
-                                                            {row.label}
-                                                        </p>
-                                                        <p className="mt-1 font-montserrat text-sm font-bold leading-snug text-[#262A22]">
-                                                            {row.value}
-                                                        </p>
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        </aside>
-                                    </div>
-                                </>
-                            ) : (
-                                <p className="rounded-[12px] border border-dashed border-gray-200 bg-[#F8F9F6] p-8 text-center font-body text-sm text-[#555555]">
-                                    Choose your days first.
-                                </p>
-                            )}
-
-                            <div className="mt-8 flex items-center justify-between gap-3 fixed bottom-0 left-0 right-0 z-40 border-t border-gray-200/70 bg-[#F8F9F6]/95 p-3 backdrop-blur sm:static sm:border-t-0 sm:bg-transparent sm:p-0">
-                                <Button
-                                    label="BACK"
-                                    variant="outline"
-                                    onClick={() => {
-                                        if (screen === curationStartScreen) {
-                                            setScreen(usesManualDaySelection ? 2 : 1);
-                                            return;
-                                        }
-                                        setScreen(screen - 1);
-                                    }}
-                                    className="px-10"
-                                />
-                                <Button
-                                    label="NEXT"
-                                    variant="primary"
-                                    disabled={!isCurationDayComplete}
-                                    onClick={() => {
-                                        setScreen(screen + 1);
-                                    }}
-                                    className="px-10"
-                                />
+                                        })()}
+                                    </motion.div>
+                                </AnimatePresence>
+                                )}
+                            </ChooseYourMeals>
                             </div>
-                        </div>
-                    </section>
+                            );
+                        })() : (
+                            <p className="rounded-[12px] border border-dashed border-gray-200 bg-[#F8F9F6] p-8 text-center font-body text-sm text-[#555555]">
+                                Choose your days first.
+                            </p>
+                        )}
+                    </>
                 ) : null}
 
                 {/* Final Screen — Environmental Check & Submit */}

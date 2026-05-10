@@ -1,5 +1,5 @@
 import { cloneElement, isValidElement, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { animate, motion, useMotionValue, useTransform } from 'framer-motion';
+import { animate, motion, useMotionValue, useMotionValueEvent, useTransform } from 'framer-motion';
 
 /** @typedef {-1 | 1} DeckDirection */
 
@@ -10,19 +10,33 @@ const FRONT_SPEC = Object.freeze({
     blur: 0,
 });
 
-const BG1_SPEC = Object.freeze({
-    z: 90,
-    x: -25,
-    scale: 0.92,
-    blur: 2,
-});
+/** @param {number} depth 1 = nearest behind front; larger = farther back */
+function getBackSpec(depth) {
+    const d = Math.max(1, Math.floor(depth));
 
-const BG2_SPEC = Object.freeze({
-    z: 80,
-    x: -50,
-    scale: 0.85,
-    blur: 4,
-});
+    return {
+        z: 100 - d * 10,
+        x: -25 * d,
+        scale: Math.max(0.74, 1 - 0.075 * d),
+        blur: Math.min(2 * d, 12),
+    };
+}
+
+/** Max decorative layers behind the front card (performance cap for large menus). */
+const MAX_BACK_STACK_LAYERS = 8;
+
+/**
+ * Decorative cards behind the hero = one fewer than options (n−1). Single option ⇒ no stack behind.
+ *
+ * @param {number} itemCount
+ */
+function visibleBackLayerCount(itemCount) {
+    if (itemCount <= 1) {
+        return 0;
+    }
+
+    return Math.min(itemCount - 1, MAX_BACK_STACK_LAYERS);
+}
 
 /** Deepest stack slot z-index while exit clone rejoins the fan (below BG2 idle layer). */
 const BACK_REJOIN_Z = 10;
@@ -63,9 +77,9 @@ function getDesktopTrackScrollExtent(track) {
     return Math.ceil(Math.max(track.scrollWidth, track.offsetWidth, span));
 }
 
-/** Shared shell for each desktop slide cell (matches `gap-6` ribbon spacing) */
+/** Shared shell for each desktop slide cell — scaled up from the 270px mobile deck baseline */
 const DESKTOP_CARD_SHELL =
-    'flex min-h-[300px] w-[340px] shrink-0 flex-col items-stretch sm:min-h-[320px] sm:w-[360px] lg:min-h-[340px] lg:w-[380px] transform-gpu';
+    'flex min-h-[232px] w-[270px] shrink-0 flex-col items-stretch sm:min-h-[248px] sm:w-[286px] lg:min-h-[264px] lg:w-[302px] transform-gpu';
 
 const DESKTOP_MEDIA = '(min-width: 768px)';
 
@@ -86,6 +100,38 @@ function useIsDesktopLayout() {
 }
 
 /**
+ * Animated back-of-stack layer (mobile deck). One hook bundle per depth instance.
+ *
+ * @param {object} props
+ * @param {number} props.depth
+ * @param {import('motion').MotionValue<number>} props.xRaw
+ * @param {import('react').ReactNode} props.children
+ */
+function MobileDeckBackLayer({ depth, xRaw, children }) {
+    const spec = useMemo(() => getBackSpec(depth), [depth]);
+    const x = useTransform(xRaw, (lx) => spec.x + lx * (0.035 + depth * 0.012));
+    const rotate = useTransform(xRaw, (lx) => lx * -(0.008 + depth * 0.003));
+
+    return (
+        <motion.div
+            aria-hidden="true"
+            className="pointer-events-none absolute left-0 top-0 w-full transform-gpu"
+            style={{
+                zIndex: spec.z,
+                x,
+                rotate,
+                scale: spec.scale,
+                filter: `blur(${spec.blur}px)`,
+                translateZ: 0,
+            }}
+            transition={springSoft()}
+        >
+            {children}
+        </motion.div>
+    );
+}
+
+/**
  * High-end stacked deck carousel with circular index and return-to-back exit.
  *
  * Selection state is owned by the parent: pass `selected` / `onToggleSelected` from `renderCard`.
@@ -103,6 +149,8 @@ export default function StackedDeckCarousel({ title: _title, items: itemsProp, m
     const items = meals ?? itemsProp ?? [];
     const [activeIndex, setActiveIndex] = useState(0);
     const itemCount = items.length;
+
+    const backLayerCount = useMemo(() => visibleBackLayerCount(itemCount), [itemCount]);
 
     const deckScopePrevRef = useRef(/** @type {string|undefined} */ (undefined));
 
@@ -129,9 +177,6 @@ export default function StackedDeckCarousel({ title: _title, items: itemsProp, m
     const [exitSession, setExitSession] = useState(/** @type {null | { fromIndex: number, dir: DeckDirection }} */ (null));
     const [exitZIndex, setExitZIndex] = useState(105);
 
-    const dotsWrapRef = useRef(null);
-    const dotRefs = useRef(/** @type {(HTMLButtonElement|null)[]} */ ([]));
-    const [dotCenters, setDotCenters] = useState(/** @type {number[]} */ ([]));
     const isThrowingRef = useRef(false);
 
     /** Exit clone overlay */
@@ -139,6 +184,9 @@ export default function StackedDeckCarousel({ title: _title, items: itemsProp, m
     const exitScale = useMotionValue(FRONT_SPEC.scale);
     const exitBlur = useMotionValue(FRONT_SPEC.blur);
     /** z handled by style (number) animated via animate fallback */
+
+    /** Declared before deck reset effect — that effect calls `xRaw.set(0)`. */
+    const xRaw = useMotionValue(0);
 
     useEffect(() => {
         if (itemCount <= 1) {
@@ -186,21 +234,41 @@ export default function StackedDeckCarousel({ title: _title, items: itemsProp, m
         };
     }, [itemCount]);
 
-    const targetIndexFromDir = (dir) =>
-        dir === 1 ? modIndex(activeIndex + 1) : modIndex(activeIndex - 1);
+    // === Physics: front card drag (xRaw declared above) ===
+    const activeIndexRef = useRef(0);
+    const [mobileDotSwipeIdx, setMobileDotSwipeIdx] = useState(/** @type {number|null} */ (null));
 
-    const pillBaseWidth = 32;
+    useEffect(() => {
+        activeIndexRef.current = activeIndex;
+    }, [activeIndex]);
 
-    // === Physics: front card drag ===
-    const xRaw = useMotionValue(0);
+    /** Mobile: highlight the dot for the slide we're swiping toward while dragging. */
+    useMotionValueEvent(xRaw, 'change', (latest) => {
+        if (itemCount <= 1 || isDesktopLayout) {
+            return;
+        }
+        const ai = activeIndexRef.current;
+        const threshold = 28;
+        if (latest < -threshold) {
+            setMobileDotSwipeIdx(modIndex(ai - 1));
+        } else if (latest > threshold) {
+            setMobileDotSwipeIdx(modIndex(ai + 1));
+        } else {
+            setMobileDotSwipeIdx(null);
+        }
+    });
+
+    useEffect(() => {
+        setMobileDotSwipeIdx(null);
+    }, [activeIndex, deckScopeKey]);
+
+    useEffect(() => {
+        if (exitSession !== null) {
+            setMobileDotSwipeIdx(null);
+        }
+    }, [exitSession]);
     const rotate = useTransform(xRaw, [-220, 0, 220], [-8, 0, 8]);
     const dragScale = useTransform(xRaw, [-220, 0, 220], [0.995, 1, 0.995]);
-
-    // Fan BG layers slightly when dragging (tighter stack → gentler fan)
-    const bg1FanX = useTransform(xRaw, (latestX) => BG1_SPEC.x + latestX * 0.035);
-    const bg2FanX = useTransform(xRaw, (latestX) => BG2_SPEC.x + latestX * 0.065);
-    const bg1FanRotate = useTransform(xRaw, (latestX) => latestX * -0.008);
-    const bg2FanRotate = useTransform(xRaw, (latestX) => latestX * -0.014);
 
     const offscreenThreshold = typeof window !== 'undefined' ? -Math.min(900, window.innerWidth + 80) : -900;
     const offscreenRight = typeof window !== 'undefined' ? Math.min(900, window.innerWidth + 80) : 900;
@@ -239,13 +307,14 @@ export default function StackedDeckCarousel({ title: _title, items: itemsProp, m
         // 1) Fly off-screen (next → right; prev → left)
         await animate(exitX, exitToward, springStrong()).finished;
 
-        // 2) While off-screen: drop behind stack, match back-card look
+        // 2) While off-screen: drop behind stack, match deepest back-card look
         setExitZIndex(BACK_REJOIN_Z);
-        exitScale.set(BG2_SPEC.scale);
-        exitBlur.set(BG2_SPEC.blur);
+        const deepestSpec = backLayerCount >= 1 ? getBackSpec(backLayerCount) : getBackSpec(1);
+        exitScale.set(deepestSpec.scale);
+        exitBlur.set(deepestSpec.blur);
 
         // 3) Drift into back-left fan slot (soft spring — not a hard snap)
-        await animate(exitX, BG2_SPEC.x, springSoft()).finished;
+        await animate(exitX, deepestSpec.x, springSoft()).finished;
 
         // 4) Commit circular index — worm updates; promoted middle→hero visible during session
         setActiveIndex(nextIndex);
@@ -270,75 +339,6 @@ export default function StackedDeckCarousel({ title: _title, items: itemsProp, m
         await animate(xRaw, nudge, springSoft()).finished;
         await performReturnToBack(dir);
     };
-
-    const paginationDotCount = itemCount;
-
-    useEffect(() => {
-        const wrap = dotsWrapRef.current;
-        if (!wrap) {
-            return;
-        }
-
-        const measure = () => {
-            const n = paginationDotCount;
-            const centers = dotRefs.current.slice(0, n).map((el) => {
-                if (!el) {
-                    return 0;
-                }
-                return el.offsetLeft + el.offsetWidth / 2;
-            });
-            setDotCenters(centers);
-        };
-
-        const raf = requestAnimationFrame(measure);
-        window.addEventListener('resize', measure);
-        return () => {
-            cancelAnimationFrame(raf);
-            window.removeEventListener('resize', measure);
-        };
-    }, [paginationDotCount, itemCount]);
-
-    // === Worm indicator ===
-    const activeDotLeft = useMemo(() => {
-        const c = dotCenters[activeIndex] ?? 0;
-        return c - pillBaseWidth / 2;
-    }, [activeIndex, dotCenters]);
-
-    const activeDotLeftDesktop = useMemo(() => {
-        const c = dotCenters[desktopActiveIndex] ?? 0;
-        return c - pillBaseWidth / 2;
-    }, [desktopActiveIndex, dotCenters]);
-
-    const wormLeft = useTransform(xRaw, (latestX) => {
-        if (!dotCenters.length) {
-            return activeDotLeft;
-        }
-        const intent = latestX < 0 ? -1 : latestX > 0 ? 1 : 0;
-        if (intent === 0) {
-            return activeDotLeft;
-        }
-        const targetIdx = targetIndexFromDir(intent);
-        const targetCenter = dotCenters[targetIdx] ?? 0;
-        const targetLeft = targetCenter - pillBaseWidth / 2;
-        const progress = Math.min(1, Math.abs(latestX) / 140);
-        return activeDotLeft + (targetLeft - activeDotLeft) * progress;
-    });
-
-    const wormWidth = useTransform(xRaw, (latestX) => {
-        if (!dotCenters.length) {
-            return pillBaseWidth;
-        }
-        const intent = latestX < 0 ? -1 : latestX > 0 ? 1 : 0;
-        if (intent === 0) {
-            return pillBaseWidth;
-        }
-        const targetIdx = targetIndexFromDir(intent);
-        const currCenter = dotCenters[activeIndex] ?? 0;
-        const targetCenter = dotCenters[targetIdx] ?? 0;
-        const distance = Math.abs(targetCenter - currCenter);
-        const progress = Math.min(1, Math.abs(latestX) / 140);
-        return Math.min(pillBaseWidth + distance * progress, pillBaseWidth + 72);
-    });
 
     /** Promoted card index during transition */
     const promotedIndex =
@@ -379,7 +379,8 @@ export default function StackedDeckCarousel({ title: _title, items: itemsProp, m
     };
 
     /**
-     * Align the track so logical index `logicalIdx` uses the middle ribbon copy only (physical n…2n−1).
+     * Align the track so the active logical card (middle ribbon copy, physical n…2n−1) is
+     * horizontally centered in the gallery viewport. Uses screen-space card vs viewport centers.
      * When n===1: single slot at physical 0.
      *
      * @param {number} logicalIdx
@@ -401,23 +402,22 @@ export default function StackedDeckCarousel({ title: _title, items: itemsProp, m
             const cw = gr.width;
             const tw = getDesktopTrackScrollExtent(track);
 
-            /**
-             * When the row is shorter than the viewport, center it (positive translateX allowed).
-             */
-            if (tw <= cw) {
-                return (cw - tw) / 2;
-            }
-
-            /**
-             * Align using viewport geometry — `card.offsetLeft` is unreliable here because motion/flex
-             * can change offsetParent chains; wrong `ideal` leaves a fixed void on the right at the last slides.
-             */
-            const minX = cw - tw;
             const cur = desktopTrackX.get();
             const cr = card.getBoundingClientRect();
-            const deltaScreen = cr.left - gr.left;
+            const viewportCenterX = gr.left + cw / 2;
+            const cardCenterX = cr.left + cr.width / 2;
+            const deltaScreen = cardCenterX - viewportCenterX;
             let x = cur - deltaScreen;
 
+            /** Entire ribbon fits: allow non-negative x only (nudge track right to center the active cell). */
+            if (tw <= cw) {
+                const maxX = cw - tw;
+
+                return Math.max(0, Math.min(maxX, x));
+            }
+
+            /** Row overflows: negative x shifts track left; clamp so we do not expose empty past track bounds. */
+            const minX = cw - tw;
             x = Math.max(minX, Math.min(0, x));
 
             if (tw + x < cw - 1) {
@@ -595,33 +595,13 @@ export default function StackedDeckCarousel({ title: _title, items: itemsProp, m
     ]);
 
     return (
-        <div className="group relative">
-            {/* Mobile arrows: &lt; 768px — same 3D deck controls */}
-            <button
-                type="button"
-                aria-label="Previous"
-                onClick={() => void nudgeThenThrow(-1)}
-                disabled={itemCount <= 1}
-                className="absolute left-2 top-1/2 z-[100] flex h-10 w-10 -translate-y-1/2 items-center justify-center bg-transparent text-[#262A22] transition-opacity disabled:opacity-30 max-[390px]:left-1 md:hidden"
-            >
-                <span className="text-3xl leading-none">‹</span>
-            </button>
-            <button
-                type="button"
-                aria-label="Next"
-                onClick={() => void nudgeThenThrow(1)}
-                disabled={itemCount <= 1}
-                className="absolute right-2 top-1/2 z-[100] flex h-10 w-10 -translate-y-1/2 items-center justify-center bg-transparent text-[#262A22] transition-opacity disabled:opacity-30 max-[390px]:right-1 md:hidden"
-            >
-                <span className="text-3xl leading-none">›</span>
-            </button>
-
+        <div className="group relative w-full md:px-16 lg:px-20">
             {/* Desktop ≥768px — triplicate ribbon + align snap; no 3D stack in DOM */}
             {isDesktopLayout && itemCount > 0 ? (
                 <div className="relative w-full overflow-x-clip overflow-y-visible bg-[#F8F9F6] pb-2 pt-4 outline-none ring-0">
                     <div
                         ref={desktopGalleryRef}
-                        className="relative min-h-[10rem] w-full min-w-0 bg-[#F8F9F6] py-6 outline-none ring-0"
+                        className="relative min-h-[10rem] w-full min-w-0 bg-[#F8F9F6] px-8 py-6 outline-none ring-0 md:px-16 lg:px-20"
                     >
                         <div className="relative overflow-x-clip">
                         <motion.div
@@ -631,59 +611,79 @@ export default function StackedDeckCarousel({ title: _title, items: itemsProp, m
                         >
                                 {itemCount > 1 ? (
                                     Array.from({ length: DESKTOP_RIBBON_COPIES }, (_, copy) =>
-                                        items.map((item, idx) => (
-                                            <motion.div
-                                                key={`desktop-ribbon-${copy}-${getKey(item, idx)}`}
-                                                ref={(el) => {
-                                                    desktopCardRefs.current[copy * itemCount + idx] = el;
-                                                }}
-                                                data-desktop-card=""
-                                                className={DESKTOP_CARD_SHELL}
-                                                style={{ transformOrigin: 'center center' }}
-                                                whileHover={{
-                                                    scale: 1.05,
-                                                    transition: { duration: 0.2, ease: [0.22, 1, 0.36, 1] },
-                                                }}
-                                            >
-                                                <div className="flex min-h-0 flex-1 flex-col">
-                                                    {renderMealCard(item, idx, {
-                                                        isFront: true,
-                                                        stackPos: null,
-                                                        deckLayout: 'ribbon',
-                                                    })}
+                                        items.map((item, idx) => {
+                                            const physicalIdx = copy * itemCount + idx;
+                                            const isRibbonFocus = physicalIdx === itemCount + desktopActiveIndex;
+
+                                            return (
+                                                <div
+                                                    key={`desktop-ribbon-${copy}-${getKey(item, idx)}`}
+                                                    ref={(el) => {
+                                                        desktopCardRefs.current[physicalIdx] = el;
+                                                    }}
+                                                    data-desktop-card=""
+                                                    className={`${DESKTOP_CARD_SHELL} ${isRibbonFocus ? 'z-[5]' : 'z-0'}`}
+                                                >
+                                                    <motion.div
+                                                        className={`flex min-h-0 flex-1 flex-col rounded-[12px] ${isRibbonFocus ? 'shadow-lg shadow-[#262A22]/12' : ''}`}
+                                                        style={{ transformOrigin: 'center center' }}
+                                                        animate={{
+                                                            scale: isRibbonFocus ? 1.05 : 0.95,
+                                                            opacity: isRibbonFocus ? 1 : 0.8,
+                                                        }}
+                                                        transition={netflixSlideTransition()}
+                                                        whileHover={
+                                                            isRibbonFocus
+                                                                ? {
+                                                                      scale: 1.08,
+                                                                      transition: { duration: 0.2, ease: [0.22, 1, 0.36, 1] },
+                                                                  }
+                                                                : { scale: 0.96 }
+                                                        }
+                                                    >
+                                                        {renderMealCard(item, idx, {
+                                                            isFront: true,
+                                                            stackPos: null,
+                                                            deckLayout: 'ribbon',
+                                                        })}
+                                                    </motion.div>
                                                 </div>
-                                            </motion.div>
-                                        )),
+                                            );
+                                        }),
                                     ).flat()
                                 ) : (
-                                    <motion.div
+                                    <div
                                         key={`desktop-single-${getKey(items[0], 0)}`}
                                         ref={(el) => {
                                             desktopCardRefs.current[0] = el;
                                         }}
                                         data-desktop-card=""
-                                        className={DESKTOP_CARD_SHELL}
-                                        style={{ transformOrigin: 'center center' }}
-                                        whileHover={{
-                                            scale: 1.05,
-                                            transition: { duration: 0.2, ease: [0.22, 1, 0.36, 1] },
-                                        }}
+                                        className={`${DESKTOP_CARD_SHELL} z-[5]`}
                                     >
-                                        <div className="flex min-h-0 flex-1 flex-col">
+                                        <motion.div
+                                            className="flex min-h-0 flex-1 flex-col rounded-[12px] shadow-lg shadow-[#262A22]/12"
+                                            style={{ transformOrigin: 'center center' }}
+                                            animate={{ scale: 1.05, opacity: 1 }}
+                                            transition={netflixSlideTransition()}
+                                            whileHover={{
+                                                scale: 1.08,
+                                                transition: { duration: 0.2, ease: [0.22, 1, 0.36, 1] },
+                                            }}
+                                        >
                                             {renderMealCard(items[0], 0, {
                                                 isFront: true,
                                                 stackPos: null,
                                                 deckLayout: 'ribbon',
                                             })}
-                                        </div>
-                                    </motion.div>
+                                        </motion.div>
+                                    </div>
                                 )}
                         </motion.div>
                         </div>
                     </div>
 
                     {/* Rails pass clicks through except on the buttons (CRAFT / View Details stay reachable) */}
-                    <div className="pointer-events-none absolute inset-y-0 left-0 z-[100] w-14 border-none bg-transparent shadow-none outline-none ring-0">
+                    <div className="pointer-events-none absolute inset-y-0 left-0 z-[110] w-14 border-none bg-transparent shadow-none outline-none ring-0">
                         <button
                             type="button"
                             aria-label="Previous meal"
@@ -696,7 +696,7 @@ export default function StackedDeckCarousel({ title: _title, items: itemsProp, m
                             </svg>
                         </button>
                     </div>
-                    <div className="pointer-events-none absolute inset-y-0 right-0 z-[100] w-14 border-none bg-transparent shadow-none outline-none ring-0">
+                    <div className="pointer-events-none absolute inset-y-0 right-0 z-[110] w-14 border-none bg-transparent shadow-none outline-none ring-0">
                         <button
                             type="button"
                             aria-label="Next meal"
@@ -712,57 +712,46 @@ export default function StackedDeckCarousel({ title: _title, items: itemsProp, m
                 </div>
             ) : null}
 
-            {/* Mobile &lt;768px — 3D stacked deck. Width fills space between arrow rails; slight translate-x balances fanned stack. Desktop ribbon is separate branch above. */}
+            {/* Mobile &lt;768px — compact row: chevrons ~10–14px from card edges (not screen edges) */}
             {!isDesktopLayout ? (
-                <div className="relative flex w-full items-center justify-center pb-2">
+                <div className="flex w-full max-w-full items-center justify-center gap-2 px-1 pb-2 sm:gap-2.5 sm:px-2">
                     {itemCount === 0 ? null : (
+                        <>
+                            <button
+                                type="button"
+                                aria-label="Previous"
+                                onClick={() => void nudgeThenThrow(-1)}
+                                disabled={itemCount <= 1}
+                                className="z-[110] flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-transparent text-[#262A22] transition-opacity hover:bg-black/[0.04] disabled:opacity-30"
+                            >
+                                <span className="text-3xl leading-none">‹</span>
+                            </button>
+                        <div className="relative z-[60] w-[min(270px,calc(100%-6.5rem))] max-w-full min-w-0 shrink-0 translate-x-0 transform-gpu">
                         <div
-                            className="relative z-[60] mx-auto w-[min(calc(100vw-110px),320px)] min-w-0 translate-x-0 transform-gpu"
+                            className="relative mx-auto w-full min-w-0 translate-x-0 transform-gpu"
                         >
                         {exitSession === null ? (
                             <>
-                                {/* BG2 farthest */}
-                                <motion.div
-                                    key={`bg2-${getKey(items[modIndex(activeIndex + 2)], modIndex(activeIndex + 2))}`}
-                                    aria-hidden="true"
-                                    className="pointer-events-none absolute left-0 top-0 w-full transform-gpu"
-                                    style={{
-                                        zIndex: BG2_SPEC.z,
-                                        x: bg2FanX,
-                                        rotate: bg2FanRotate,
-                                        scale: BG2_SPEC.scale,
-                                        filter: `blur(${BG2_SPEC.blur}px)`,
-                                        translateZ: 0,
-                                    }}
-                                    transition={springSoft()}
-                                >
-                                    {renderMealCard(items[modIndex(activeIndex + 2)], modIndex(activeIndex + 2), {
-                                        isFront: false,
-                                        stackPos: 2,
-                                        deckLayout: 'stack',
-                                    })}
-                                </motion.div>
-                                {/* BG1 */}
-                                <motion.div
-                                    key={`bg1-${getKey(items[modIndex(activeIndex + 1)], modIndex(activeIndex + 1))}`}
-                                    aria-hidden="true"
-                                    className="pointer-events-none absolute left-0 top-0 w-full transform-gpu"
-                                    style={{
-                                        zIndex: BG1_SPEC.z,
-                                        x: bg1FanX,
-                                        rotate: bg1FanRotate,
-                                        scale: BG1_SPEC.scale,
-                                        filter: `blur(${BG1_SPEC.blur}px)`,
-                                        translateZ: 0,
-                                    }}
-                                    transition={springSoft()}
-                                >
-                                    {renderMealCard(items[modIndex(activeIndex + 1)], modIndex(activeIndex + 1), {
-                                        isFront: false,
-                                        stackPos: 1,
-                                        deckLayout: 'stack',
-                                    })}
-                                </motion.div>
+                                {backLayerCount >= 1
+                                    ? Array.from({ length: backLayerCount }, (_, i) => {
+                                          const depth = backLayerCount - i;
+                                          const mealIdx = modIndex(activeIndex + depth);
+
+                                          return (
+                                              <MobileDeckBackLayer
+                                                  key={`idle-bg-d${depth}-${getKey(items[mealIdx], mealIdx)}`}
+                                                  depth={depth}
+                                                  xRaw={xRaw}
+                                              >
+                                                  {renderMealCard(items[mealIdx], mealIdx, {
+                                                      isFront: false,
+                                                      stackPos: depth <= 3 ? /** @type {1|2|3} */ (depth) : 3,
+                                                      deckLayout: 'stack',
+                                                  })}
+                                              </MobileDeckBackLayer>
+                                          );
+                                      })
+                                    : null}
 
                                 {/* Active front */}
                                 <motion.div
@@ -808,65 +797,63 @@ export default function StackedDeckCarousel({ title: _title, items: itemsProp, m
                                 {/* During exit: static stack behind promoted (dir-specific indices) */}
                                 {exitSession.dir === 1 ? (
                                     <>
-                                        <motion.div
-                                            key={`t-bg2-${exitSession.fromIndex}-${getKey(items[modIndex(exitSession.fromIndex + 3)], modIndex(exitSession.fromIndex + 3))}`}
-                                            aria-hidden="true"
-                                            className="pointer-events-none absolute left-0 top-0 w-full transform-gpu"
-                                            style={{
-                                                zIndex: BG2_SPEC.z,
-                                                x: BG2_SPEC.x,
-                                                scale: BG2_SPEC.scale,
-                                                filter: `blur(${BG2_SPEC.blur}px)`,
-                                                translateZ: 0,
-                                            }}
-                                            transition={springSoft()}
-                                        >
-                                            {renderMealCard(items[modIndex(exitSession.fromIndex + 3)], modIndex(exitSession.fromIndex + 3), {
-                                                isFront: false,
-                                                stackPos: 2,
-                                                deckLayout: 'stack',
-                                            })}
-                                        </motion.div>
-                                        <motion.div
-                                            key={`t-bg1-${exitSession.fromIndex}-${getKey(items[modIndex(exitSession.fromIndex + 2)], modIndex(exitSession.fromIndex + 2))}`}
-                                            aria-hidden="true"
-                                            className="pointer-events-none absolute left-0 top-0 w-full transform-gpu"
-                                            style={{
-                                                zIndex: BG1_SPEC.z,
-                                                x: BG1_SPEC.x,
-                                                scale: BG1_SPEC.scale,
-                                                filter: `blur(${BG1_SPEC.blur}px)`,
-                                                translateZ: 0,
-                                            }}
-                                            transition={springSoft()}
-                                        >
-                                            {renderMealCard(items[modIndex(exitSession.fromIndex + 2)], modIndex(exitSession.fromIndex + 2), {
-                                                isFront: false,
-                                                stackPos: 1,
-                                                deckLayout: 'stack',
-                                            })}
-                                        </motion.div>
+                                        {backLayerCount >= 1
+                                            ? Array.from({ length: backLayerCount }, (_, i) => {
+                                                  const depth = backLayerCount - i;
+                                                  const mealIdx = modIndex(exitSession.fromIndex + depth + 1);
+                                                  const spec = getBackSpec(depth);
+
+                                                  return (
+                                                      <motion.div
+                                                          key={`t-bg-d${depth}-${exitSession.fromIndex}-${getKey(items[mealIdx], mealIdx)}`}
+                                                          aria-hidden="true"
+                                                          className="pointer-events-none absolute left-0 top-0 w-full transform-gpu"
+                                                          style={{
+                                                              zIndex: spec.z,
+                                                              x: spec.x,
+                                                              scale: spec.scale,
+                                                              filter: `blur(${spec.blur}px)`,
+                                                              translateZ: 0,
+                                                          }}
+                                                          transition={springSoft()}
+                                                      >
+                                                          {renderMealCard(items[mealIdx], mealIdx, {
+                                                              isFront: false,
+                                                              stackPos: depth <= 3 ? /** @type {1|2|3} */ (depth) : 3,
+                                                              deckLayout: 'stack',
+                                                          })}
+                                                      </motion.div>
+                                                  );
+                                              })
+                                            : null}
                                     </>
                                 ) : (
-                                    <motion.div
-                                        key={`t-bg2-rev-${exitSession.fromIndex}-${getKey(items[modIndex(exitSession.fromIndex + 1)], modIndex(exitSession.fromIndex + 1))}`}
-                                        aria-hidden="true"
-                                        className="pointer-events-none absolute left-0 top-0 w-full transform-gpu"
-                                        style={{
-                                            zIndex: BG2_SPEC.z,
-                                            x: BG2_SPEC.x,
-                                            scale: BG2_SPEC.scale,
-                                            filter: `blur(${BG2_SPEC.blur}px)`,
-                                            translateZ: 0,
-                                        }}
-                                        transition={springSoft()}
-                                    >
-                                        {renderMealCard(items[modIndex(exitSession.fromIndex + 1)], modIndex(exitSession.fromIndex + 1), {
-                                            isFront: false,
-                                            stackPos: 2,
-                                            deckLayout: 'stack',
-                                        })}
-                                    </motion.div>
+                                    (() => {
+                                        const spec = getBackSpec(1);
+                                        const mealIdx = modIndex(exitSession.fromIndex + 1);
+
+                                        return (
+                                            <motion.div
+                                                key={`t-bg-rev-${exitSession.fromIndex}-${getKey(items[mealIdx], mealIdx)}`}
+                                                aria-hidden="true"
+                                                className="pointer-events-none absolute left-0 top-0 w-full transform-gpu"
+                                                style={{
+                                                    zIndex: spec.z,
+                                                    x: spec.x,
+                                                    scale: spec.scale,
+                                                    filter: `blur(${spec.blur}px)`,
+                                                    translateZ: 0,
+                                                }}
+                                                transition={springSoft()}
+                                            >
+                                                {renderMealCard(items[mealIdx], mealIdx, {
+                                                    isFront: false,
+                                                    stackPos: 2,
+                                                    deckLayout: 'stack',
+                                                })}
+                                            </motion.div>
+                                        );
+                                    })()
                                 )}
 
                                 {/* Promoted: former middle (BG1) slides to x:0 / scale 1 / blur 0 as new hero */}
@@ -875,10 +862,10 @@ export default function StackedDeckCarousel({ title: _title, items: itemsProp, m
                                         key={`promoted-${getKey(items[promotedIndex], promotedIndex)}`}
                                         className="relative w-full transform-gpu"
                                         initial={{
-                                            x: BG1_SPEC.x,
-                                            scale: BG1_SPEC.scale,
+                                            x: getBackSpec(1).x,
+                                            scale: getBackSpec(1).scale,
                                             rotate: exitSession.dir === 1 ? -1.25 : 1.25,
-                                            filter: `blur(${BG1_SPEC.blur}px)`,
+                                            filter: `blur(${getBackSpec(1).blur}px)`,
                                             zIndex: 95,
                                         }}
                                         animate={{
@@ -923,18 +910,38 @@ export default function StackedDeckCarousel({ title: _title, items: itemsProp, m
                             </>
                             )}
                         </div>
+                        </div>
+                            <button
+                                type="button"
+                                aria-label="Next"
+                                onClick={() => void nudgeThenThrow(1)}
+                                disabled={itemCount <= 1}
+                                className="z-[110] flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-transparent text-[#262A22] transition-opacity hover:bg-black/[0.04] disabled:opacity-30"
+                            >
+                                <span className="text-3xl leading-none">›</span>
+                            </button>
+                        </>
                     )}
                 </div>
             ) : null}
 
-            {itemCount > 1 ? (
-                <div className="flex w-full justify-center px-4 pt-6 pb-8 sm:px-6 lg:px-8">
-                    <div className="relative">
-                        <div ref={dotsWrapRef} className="relative flex items-center gap-2">
-                            {items.map((item, idx) => (
+            {itemCount >= 1 ? (
+                <div
+                    className="flex w-full flex-col items-center justify-center px-2 pt-3 pb-1 sm:px-4"
+                    role="tablist"
+                    aria-label="Carousel pages"
+                >
+                    <div className="mx-auto flex w-full max-w-full flex-wrap items-center justify-center gap-2">
+                        {items.map((item, idx) => {
+                            const mobileHighlightIdx = mobileDotSwipeIdx ?? activeIndex;
+                            const isActive = isDesktopLayout ? desktopActiveIndex === idx : mobileHighlightIdx === idx;
+
+                            return (
                                 <button
                                     key={`dot-${getKey(item, idx)}`}
                                     type="button"
+                                    role="tab"
+                                    aria-selected={isActive}
                                     aria-label={slideAriaLabel(item, idx)}
                                     disabled={!isDesktopLayout && exitSession !== null}
                                     onClick={() => {
@@ -949,32 +956,16 @@ export default function StackedDeckCarousel({ title: _title, items: itemsProp, m
                                         xRaw.set(0);
                                         setActiveIndex(idx);
                                     }}
-                                    ref={(el) => {
-                                        dotRefs.current[idx] = el;
-                                    }}
-                                    className="relative h-2 w-2 rounded-full bg-[#E0E0E0] disabled:pointer-events-none disabled:opacity-40"
+                                    className={[
+                                        'h-2 w-2 shrink-0 rounded-full transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5A6B44]/40 focus-visible:ring-offset-2',
+                                        isActive ? 'bg-[#5A6B44]' : 'bg-[#E0E0E0]',
+                                        !isDesktopLayout && exitSession !== null ? 'pointer-events-none opacity-40' : '',
+                                    ]
+                                        .join(' ')
+                                        .trim()}
                                 />
-                            ))}
-
-                            {isDesktopLayout ? (
-                                <motion.div
-                                    layoutId={deckScopeKey ? `mc-deck-worm-desktop-${deckScopeKey}` : 'mc-deck-worm-desktop'}
-                                    aria-hidden="true"
-                                    className="pointer-events-none absolute top-0 h-2 rounded-full bg-[#5A6B44] transform-gpu"
-                                    animate={{ left: activeDotLeftDesktop }}
-                                    transition={netflixSlideTransition()}
-                                    style={{ width: pillBaseWidth, translateZ: 0 }}
-                                />
-                            ) : (
-                                <motion.div
-                                    layoutId={deckScopeKey ? `mc-deck-worm-mobile-${deckScopeKey}` : 'mc-deck-worm-mobile'}
-                                    aria-hidden="true"
-                                    className="pointer-events-none absolute top-0 h-2 rounded-full bg-[#5A6B44] transform-gpu"
-                                    style={{ left: wormLeft, width: wormWidth, translateZ: 0 }}
-                                    transition={springSoft()}
-                                />
-                            )}
-                        </div>
+                            );
+                        })}
                     </div>
                 </div>
             ) : null}

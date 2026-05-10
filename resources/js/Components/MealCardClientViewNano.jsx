@@ -58,6 +58,7 @@ function MacroGridSection({ macros, variant }) {
  * @param {'eager'|'lazy'} [props.imageLoading] Hero/front slides should use eager; stack backs use lazy.
  * @param {boolean} [props.ribbon] Desktop Netflix ribbon: fill slide cell width.
  * @param {string} [props.className] Extra classes on the outer article.
+ * @param {boolean} [props.vibrantCraftWhenAtLimit] Deck only: when selection slots are full, keep cards/buttons full-opacity (no greyed deck).
  */
 export default function MealCardClientViewNano({
     title,
@@ -73,6 +74,7 @@ export default function MealCardClientViewNano({
     ribbon = false,
     imageLoading = 'lazy',
     className = '',
+    vibrantCraftWhenAtLimit = false,
 }) {
     const [mediaFailed, setMediaFailed] = useState(false);
     const showImage = Boolean(imageUrl) && !mediaFailed;
@@ -106,7 +108,7 @@ export default function MealCardClientViewNano({
     const shell = deck
         ? ribbon
             ? 'h-full w-full min-h-0 min-w-0 max-w-full rounded-[12px] flex flex-col'
-            : 'w-full max-w-[min(100%,320px)] rounded-[12px] flex flex-col'
+            : 'mx-auto w-[270px] max-w-[min(270px,100%)] shrink-0 rounded-[12px] flex flex-col'
         : 'w-[240px] h-[320px] rounded-[12px]';
     /** Inner face: 12px card − 2px gradient ring ⇒ 10px inner radius when selected. */
     const innerR = deck ? (selected ? 'rounded-[10px]' : 'rounded-[12px]') : 'rounded-[10px]';
@@ -200,7 +202,9 @@ export default function MealCardClientViewNano({
                                 disabled={disabled}
                                 label={selected ? 'SELECTED' : 'CRAFT THIS MEAL'}
                                 aria-label={craftPrimaryAria}
-                                className={`w-full justify-center rounded-[12px] ${btnRow}`}
+                                className={`w-full justify-center rounded-[12px] ${btnRow} ${
+                                    disabled && vibrantCraftWhenAtLimit ? '!cursor-default !opacity-100' : ''
+                                }`.trim()}
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     onToggleSelected?.();
