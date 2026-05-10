@@ -63,9 +63,9 @@ function getDesktopTrackScrollExtent(track) {
     return Math.ceil(Math.max(track.scrollWidth, track.offsetWidth, span));
 }
 
-/** Shared shell for each desktop slide cell (matches gap-4 between cards) */
+/** Shared shell for each desktop slide cell (matches `gap-6` ribbon spacing) */
 const DESKTOP_CARD_SHELL =
-    'flex min-h-[340px] w-[240px] shrink-0 flex-col items-stretch sm:min-h-[360px] sm:w-[260px] lg:min-h-[380px] lg:w-[280px] transform-gpu';
+    'flex min-h-[300px] w-[340px] shrink-0 flex-col items-stretch sm:min-h-[320px] sm:w-[360px] lg:min-h-[340px] lg:w-[380px] transform-gpu';
 
 const DESKTOP_MEDIA = '(min-width: 768px)';
 
@@ -602,7 +602,7 @@ export default function StackedDeckCarousel({ title: _title, items: itemsProp, m
                 aria-label="Previous"
                 onClick={() => void nudgeThenThrow(-1)}
                 disabled={itemCount <= 1}
-                className="absolute left-2 top-1/2 z-[115] flex h-10 w-10 -translate-y-1/2 items-center justify-center bg-transparent text-[#262A22] transition-opacity disabled:opacity-30 md:hidden"
+                className="absolute left-2 top-1/2 z-[100] flex h-10 w-10 -translate-y-1/2 items-center justify-center bg-transparent text-[#262A22] transition-opacity disabled:opacity-30 max-[390px]:left-1 md:hidden"
             >
                 <span className="text-3xl leading-none">‹</span>
             </button>
@@ -611,7 +611,7 @@ export default function StackedDeckCarousel({ title: _title, items: itemsProp, m
                 aria-label="Next"
                 onClick={() => void nudgeThenThrow(1)}
                 disabled={itemCount <= 1}
-                className="absolute right-2 top-1/2 z-[115] flex h-10 w-10 -translate-y-1/2 items-center justify-center bg-transparent text-[#262A22] transition-opacity disabled:opacity-30 md:hidden"
+                className="absolute right-2 top-1/2 z-[100] flex h-10 w-10 -translate-y-1/2 items-center justify-center bg-transparent text-[#262A22] transition-opacity disabled:opacity-30 max-[390px]:right-1 md:hidden"
             >
                 <span className="text-3xl leading-none">›</span>
             </button>
@@ -627,7 +627,7 @@ export default function StackedDeckCarousel({ title: _title, items: itemsProp, m
                         <motion.div
                             ref={desktopTrackRef}
                             style={{ x: desktopTrackX }}
-                            className="relative z-0 flex w-max shrink-0 flex-nowrap items-stretch gap-4 will-change-transform transform-gpu"
+                            className="relative z-0 flex w-max shrink-0 flex-nowrap items-stretch gap-6 will-change-transform transform-gpu"
                         >
                                 {itemCount > 1 ? (
                                     Array.from({ length: DESKTOP_RIBBON_COPIES }, (_, copy) =>
@@ -712,18 +712,20 @@ export default function StackedDeckCarousel({ title: _title, items: itemsProp, m
                 </div>
             ) : null}
 
-            {/* Mobile &lt;768px — 3D stacked deck */}
+            {/* Mobile &lt;768px — 3D stacked deck. Width fills space between arrow rails; slight translate-x balances fanned stack. Desktop ribbon is separate branch above. */}
             {!isDesktopLayout ? (
-                <div className="relative flex items-center justify-center pb-2">
+                <div className="relative flex w-full items-center justify-center pb-2">
                     {itemCount === 0 ? null : (
-                        <div className="relative w-[min(90vw,440px)] max-w-full" style={{ zIndex: 60 }}>
+                        <div
+                            className="relative z-[60] mx-auto w-[min(calc(100vw-110px),320px)] min-w-0 translate-x-0 transform-gpu"
+                        >
                         {exitSession === null ? (
                             <>
                                 {/* BG2 farthest */}
                                 <motion.div
                                     key={`bg2-${getKey(items[modIndex(activeIndex + 2)], modIndex(activeIndex + 2))}`}
                                     aria-hidden="true"
-                                    className="pointer-events-none absolute left-0 top-0 transform-gpu"
+                                    className="pointer-events-none absolute left-0 top-0 w-full transform-gpu"
                                     style={{
                                         zIndex: BG2_SPEC.z,
                                         x: bg2FanX,
@@ -744,7 +746,7 @@ export default function StackedDeckCarousel({ title: _title, items: itemsProp, m
                                 <motion.div
                                     key={`bg1-${getKey(items[modIndex(activeIndex + 1)], modIndex(activeIndex + 1))}`}
                                     aria-hidden="true"
-                                    className="pointer-events-none absolute left-0 top-0 transform-gpu"
+                                    className="pointer-events-none absolute left-0 top-0 w-full transform-gpu"
                                     style={{
                                         zIndex: BG1_SPEC.z,
                                         x: bg1FanX,
@@ -764,7 +766,7 @@ export default function StackedDeckCarousel({ title: _title, items: itemsProp, m
 
                                 {/* Active front */}
                                 <motion.div
-                                    className="relative transform-gpu"
+                                    className="relative w-full transform-gpu"
                                     style={{
                                         x: xRaw,
                                         rotate,
@@ -809,7 +811,7 @@ export default function StackedDeckCarousel({ title: _title, items: itemsProp, m
                                         <motion.div
                                             key={`t-bg2-${exitSession.fromIndex}-${getKey(items[modIndex(exitSession.fromIndex + 3)], modIndex(exitSession.fromIndex + 3))}`}
                                             aria-hidden="true"
-                                            className="pointer-events-none absolute left-0 top-0 transform-gpu"
+                                            className="pointer-events-none absolute left-0 top-0 w-full transform-gpu"
                                             style={{
                                                 zIndex: BG2_SPEC.z,
                                                 x: BG2_SPEC.x,
@@ -828,7 +830,7 @@ export default function StackedDeckCarousel({ title: _title, items: itemsProp, m
                                         <motion.div
                                             key={`t-bg1-${exitSession.fromIndex}-${getKey(items[modIndex(exitSession.fromIndex + 2)], modIndex(exitSession.fromIndex + 2))}`}
                                             aria-hidden="true"
-                                            className="pointer-events-none absolute left-0 top-0 transform-gpu"
+                                            className="pointer-events-none absolute left-0 top-0 w-full transform-gpu"
                                             style={{
                                                 zIndex: BG1_SPEC.z,
                                                 x: BG1_SPEC.x,
@@ -849,7 +851,7 @@ export default function StackedDeckCarousel({ title: _title, items: itemsProp, m
                                     <motion.div
                                         key={`t-bg2-rev-${exitSession.fromIndex}-${getKey(items[modIndex(exitSession.fromIndex + 1)], modIndex(exitSession.fromIndex + 1))}`}
                                         aria-hidden="true"
-                                        className="pointer-events-none absolute left-0 top-0 transform-gpu"
+                                        className="pointer-events-none absolute left-0 top-0 w-full transform-gpu"
                                         style={{
                                             zIndex: BG2_SPEC.z,
                                             x: BG2_SPEC.x,
@@ -871,7 +873,7 @@ export default function StackedDeckCarousel({ title: _title, items: itemsProp, m
                                 {promotedIndex != null ? (
                                     <motion.div
                                         key={`promoted-${getKey(items[promotedIndex], promotedIndex)}`}
-                                        className="relative transform-gpu"
+                                        className="relative w-full transform-gpu"
                                         initial={{
                                             x: BG1_SPEC.x,
                                             scale: BG1_SPEC.scale,
@@ -901,7 +903,7 @@ export default function StackedDeckCarousel({ title: _title, items: itemsProp, m
                                 <motion.div
                                     key={`exit-${getKey(items[exitSession.fromIndex], exitSession.fromIndex)}`}
                                     aria-hidden="true"
-                                    className="pointer-events-none absolute left-0 top-0 transform-gpu"
+                                    className="pointer-events-none absolute left-0 top-0 w-full transform-gpu"
                                     style={{
                                         x: exitX,
                                         scale: exitScale,

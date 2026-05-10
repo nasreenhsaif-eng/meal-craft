@@ -1,6 +1,42 @@
 import { useState } from 'react';
+import MacroGrid from './MacroGrid.jsx';
 import Button from './Atoms/Button.jsx';
 import MealCraftLogo from './Atoms/Logo/MealCraftLogo.jsx';
+
+/**
+ * Single {@link MacroGrid} usage — deck vs fixed preview only change wrappers (no duplicate grid markup).
+ *
+ * @param {{ macros?: { calories: unknown; protein: unknown; carbs: unknown; fat: unknown }; variant: 'deck' | 'nano' }} props
+ */
+function MacroGridSection({ macros, variant }) {
+    if (!macros) {
+        return null;
+    }
+
+    /** Consultation deck (ribbon + 3D stack): full macro names + fluid typography — identical on all viewports. */
+    const grid = (
+        <MacroGrid
+            calories={macros.calories}
+            protein={macros.protein}
+            carbs={macros.carbs}
+            fat={macros.fat}
+            compact
+            {...(variant === 'deck'
+                ? { fluid: true, abbreviated: false, className: '!w-full !max-w-full min-w-0' }
+                : { narrow: true })}
+        />
+    );
+
+    if (variant === 'deck') {
+        return (
+            <div className="mt-0 w-full min-w-0 shrink px-0">
+                {grid}
+            </div>
+        );
+    }
+
+    return <div className="flex justify-center pt-0">{grid}</div>;
+}
 
 /**
  * **Consultation / `StackedDeckCarousel` deck card** — use `deck` (+ optional `ribbon`, `deckStackRole`).
@@ -12,7 +48,7 @@ import MealCraftLogo from './Atoms/Logo/MealCraftLogo.jsx';
  * @param {string} props.title
  * @param {string} [props.imageUrl]
  * @param {string} [props.imageAlt]
- * @param {{ calories: string|number, protein: string|number, carbs: string|number, fat: string|number }} [props.macros] Unused on-card (no macro grid); calories roll up in consultation sidebar.
+ * @param {{ calories: string|number, protein: string|number, carbs: string|number, fat: string|number }} [props.macros] Between title and VIEW DETAILS (compact grid; deck uses fluid width).
  * @param {boolean} [props.selected]
  * @param {boolean} [props.disabled]
  * @param {() => void} [props.onToggleSelected]
@@ -20,14 +56,14 @@ import MealCraftLogo from './Atoms/Logo/MealCraftLogo.jsx';
  * @param {boolean} [props.deck] Smaller sequential layout for stacked deck carousels.
  * @param {'front'|'back'|undefined} [props.deckStackRole] Depth cue for carousel: front gets a subtle left-facing stack shadow.
  * @param {'eager'|'lazy'} [props.imageLoading] Hero/front slides should use eager; stack backs use lazy.
- * @param {boolean} [props.ribbon] Desktop Netflix ribbon: fill slide cell width (avoid `w-[90vw]` overflow/clipping).
+ * @param {boolean} [props.ribbon] Desktop Netflix ribbon: fill slide cell width.
  * @param {string} [props.className] Extra classes on the outer article.
  */
 export default function MealCardClientViewNano({
     title,
     imageUrl,
     imageAlt = '',
-    macros: _macros,
+    macros,
     selected = false,
     disabled = false,
     onToggleSelected,
@@ -51,65 +87,40 @@ export default function MealCardClientViewNano({
     const deckSelectedInnerGlow = deck && selected ? { boxShadow: 'inset 0 0 8px rgba(184, 212, 159, 0.4)' } : undefined;
     const cardShadowClass =
         deck ? (selected ? 'shadow-none ring-0' : 'shadow-none') : selected ? 'shadow-none' : 'shadow-md';
-    /** Left-weighted rim matches fanned deck reference; backs stay shadowless (depth from blur/stack). */
+    /** Mobile 3D stack only — fan depth cue (not used on flat desktop ribbon). */
     const articleDeckStackShadow =
-        deck && !selected && deckStackRole === 'front'
+        deck && !ribbon && !selected && deckStackRole === 'front'
             ? 'shadow-[-14px_0_28px_-10px_rgba(38,42,34,0.16)]'
             : '';
-    /** Separates blurred stack layers — heavy CSS blur merges identical assets into one mush without this cue. */
+    /** Mobile stack back cards only. */
     const deckBackRimClass =
-        deck && !selected && deckStackRole === 'back'
+        deck && !ribbon && !selected && deckStackRole === 'back'
             ? 'ring-1 ring-white/90 shadow-[inset_-1px_0_0_0_rgba(38,42,34,0.06)]'
             : '';
-    /** Inner panel uses overflow-hidden for photo corners — deck shadow lives on `<article>` so it is not clipped. */
+    /** Front hero in mobile stack when role unset — ribbon excluded. */
     const articleShadowDeck =
-        deck && !selected && deckStackRole == null ? 'shadow-md' : '';
+        deck && !ribbon && !selected && deckStackRole == null ? 'shadow-md' : '';
     const selectedDeckRaise =
         deck && selected ? 'relative z-[1]' : '';
 
     const shell = deck
         ? ribbon
             ? 'h-full w-full min-h-0 min-w-0 max-w-full rounded-[12px] flex flex-col'
-            : 'w-[90vw] max-w-[440px] rounded-[12px] flex flex-col'
+            : 'w-full max-w-[min(100%,320px)] rounded-[12px] flex flex-col'
         : 'w-[240px] h-[320px] rounded-[12px]';
     /** Inner face: 12px card − 2px gradient ring ⇒ 10px inner radius when selected. */
     const innerR = deck ? (selected ? 'rounded-[10px]' : 'rounded-[12px]') : 'rounded-[10px]';
     const photoR = deck ? '' : 'rounded-t-[10px]';
-    const titleClass = deck
-        ? 'min-h-0 text-[12px] leading-snug'
-        : 'min-h-[32px] text-[14px]';
-    const bodyPad = deck ? '' : 'gap-1 px-2 pb-10 pt-2';
-    const btnRow = deck ? '!h-[34px] !min-h-[34px] !px-2 !text-[12px]' : '!h-[34px] !min-h-[34px] !px-3 !text-[12px]';
+    const titleClass = deck ? 'min-h-0 text-[17px] leading-snug' : 'min-h-[32px] text-[14px]';
+    const bodyPad = deck ? '' : 'gap-0.5 px-2 pb-10 pt-2';
+    const btnRow = deck
+        ? '!h-[36px] !min-h-[36px] !px-3 !text-[12px]'
+        : '!h-[34px] !min-h-[34px] !px-3 !text-[12px]';
 
     const craftPrimaryAria =
         selected === true
             ? `${title} is selected for your craft. Tap to remove from this slot.`
             : `Craft the ${title} meal`;
-
-    const photo172 = (
-        <>
-            {showImage ? (
-                <img
-                    src={imageUrl}
-                    alt={imageAlt || title}
-                    className="h-full w-full object-cover"
-                    loading={imageLoading}
-                    decoding="async"
-                    onError={() => setMediaFailed(true)}
-                />
-            ) : (
-                <div className="flex h-full w-full items-center justify-center bg-[#F8F9F6]">
-                    <MealCraftLogo
-                        variant="seal-sm"
-                        width={deck ? 56 : 68}
-                        className="opacity-70"
-                        alt="MealCraft"
-                        title="MealCraft"
-                    />
-                </div>
-            )}
-        </>
-    );
 
     return (
         <article
@@ -129,15 +140,34 @@ export default function MealCardClientViewNano({
                         </div>
                     ) : null}
 
-                    {/* Full-bleed 1:1 image: full inner width — corners clipped by parent radius. */}
-                    <div className="relative w-full shrink-0 bg-[#F8F9F6]">
-                        <div className="aspect-square w-full max-w-none shrink-0">{photo172}</div>
+                    {/* Landscape-forward hero — shorter than 2:3 portrait so the deck feels wider / less tall. */}
+                    <div className="relative aspect-[4/3] w-full shrink-0 overflow-hidden bg-[#F8F9F6]">
+                        {showImage ? (
+                            <img
+                                src={imageUrl}
+                                alt={imageAlt || title}
+                                className="absolute inset-0 h-full w-full object-cover"
+                                loading={imageLoading}
+                                decoding="async"
+                                onError={() => setMediaFailed(true)}
+                            />
+                        ) : (
+                            <div className="absolute inset-0 flex items-center justify-center bg-[#F8F9F6]">
+                                <MealCraftLogo
+                                    variant="seal-sm"
+                                    width={56}
+                                    className="opacity-70"
+                                    alt="MealCraft"
+                                    title="MealCraft"
+                                />
+                            </div>
+                        )}
                     </div>
 
-                    <div className="relative flex flex-col gap-0 px-3 pb-3 pt-1.5">
-                        <div className="min-h-[2.75rem] shrink-0">
+                    <div className="relative flex flex-col gap-0 px-3 pb-2 pt-0">
+                        <div className="min-h-[2.5rem] shrink-0">
                             <h3
-                                className={`w-full text-center ${titleClass} mt-0 font-bold tracking-tight text-[#262A22]`}
+                                className={`mt-2 w-full text-center font-bold tracking-tight text-[#262A22] ${titleClass}`}
                                 style={{
                                     display: '-webkit-box',
                                     WebkitBoxOrient: 'vertical',
@@ -149,10 +179,12 @@ export default function MealCardClientViewNano({
                             </h3>
                         </div>
 
+                        <MacroGridSection macros={macros} variant="deck" />
+
                         <button
                             type="button"
                             aria-label={`View details for ${title}`}
-                            className="mx-auto mt-2 mb-2 inline-flex items-center justify-center rounded-[12px] px-2 py-1 text-[9px] font-bold uppercase tracking-[0.16em] text-[#5A6B44] hover:bg-[#5A6B44]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5A6B44] focus-visible:ring-offset-2"
+                            className={`mx-auto mb-1.5 inline-flex w-full max-w-full items-center justify-center rounded-[12px] px-2 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-[#5A6B44] hover:bg-[#5A6B44]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5A6B44] focus-visible:ring-offset-2 ${macros ? 'mt-1' : 'mt-2'}`}
                             onClick={(e) => {
                                 e.stopPropagation();
                                 onViewDetails?.();
@@ -230,9 +262,11 @@ export default function MealCardClientViewNano({
                             {title}
                         </h3>
 
+                        <MacroGridSection macros={macros} variant="nano" />
+
                         <button
                             type="button"
-                            className="mx-auto mt-2 inline-flex items-center justify-center rounded-[12px] px-2 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-[#5A6B44] hover:bg-[#5A6B44]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5A6B44] focus-visible:ring-offset-2"
+                            className={`mx-auto inline-flex items-center justify-center rounded-[12px] px-2 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-[#5A6B44] hover:bg-[#5A6B44]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5A6B44] focus-visible:ring-offset-2 ${macros ? 'mt-1' : 'mt-2'}`}
                             onClick={(e) => {
                                 e.stopPropagation();
                                 onViewDetails?.();

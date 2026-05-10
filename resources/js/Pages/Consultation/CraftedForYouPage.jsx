@@ -393,6 +393,7 @@ export default function CraftedForYouPage({ closeHref } = {}) {
         const selectedSet = new Set(selectedIds);
         const atLimit = selectedIds.length >= maxSelected;
 
+        /** Single card component for every breakpoint: `StackedDeckCarousel` switches 3D stack (&lt;768px) vs triplicated ribbon (≥768px). */
         return (
             <div className="overflow-visible py-1">
                 <div className="min-w-0">
@@ -404,7 +405,7 @@ export default function CraftedForYouPage({ closeHref } = {}) {
                 </div>
 
                 <div
-                    className="relative mx-auto mt-5 flex min-h-[calc(min(90vw,440px)+11rem)] w-full max-w-full justify-center overflow-x-visible overflow-y-visible py-3 [-webkit-overflow-scrolling:touch]"
+                    className="relative mx-auto mt-5 flex min-h-[calc(min(90vw,320px)+9rem)] w-full max-w-full justify-center overflow-x-visible overflow-y-visible py-3 [-webkit-overflow-scrolling:touch]"
                     data-consultation-deck=""
                 >
                     {cards.length === 0 ? (
@@ -1158,7 +1159,7 @@ export default function CraftedForYouPage({ closeHref } = {}) {
             {submitting ? (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
                     <div className="absolute inset-0 bg-black/40" />
-                    <div className="relative w-full max-w-[520px] rounded-[12px] bg-white p-8 shadow-2xl">
+                    <div className="relative w-full max-w-[640px] rounded-[12px] bg-white p-8 shadow-2xl">
                         <div className="flex flex-col items-center text-center">
                             <div className="h-[140px] w-[140px] animate-pulse">
                                 <MealCraftLogoAnimatedIdentity variant="minimal-animated" />
@@ -1173,7 +1174,7 @@ export default function CraftedForYouPage({ closeHref } = {}) {
             ) : null}
 
             {toast.visible ? (
-                <div className="fixed bottom-6 left-1/2 z-[110] w-full max-w-[520px] -translate-x-1/2 px-4">
+                <div className="fixed bottom-6 left-1/2 z-[110] w-full max-w-[640px] -translate-x-1/2 px-4">
                     <div className="rounded-[12px] border border-gray-200 bg-white px-4 py-3 shadow-lg">
                         <p className="font-body text-sm text-[#555555]">{toast.message}</p>
                     </div>

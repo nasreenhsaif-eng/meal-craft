@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import StackedDeckCarousel from './StackedDeckCarousel.jsx';
-import MealCardClientView from './MealCardClientView.jsx';
+import MealCardClientViewNano from './MealCardClientViewNano.jsx';
 
 const MEALS = [
     {
@@ -59,10 +59,14 @@ export const Default = {
                     meals={MEALS}
                     deckScopeKey="storybook-default"
                     getKey={(m) => m.id}
-                    renderCard={(m, _idx, { isFront }) => (
-                        <MealCardClientView
+                    renderCard={(m, _idx, { isFront, deckLayout }) => (
+                        <MealCardClientViewNano
+                            deck
+                            ribbon={deckLayout === 'ribbon'}
+                            deckStackRole={isFront ? 'front' : 'back'}
                             title={m.title}
                             imageUrl={m.imageUrl}
+                            imageAlt={m.title}
                             macros={m.macros}
                             selected={selectedId === m.id}
                             imageLoading={isFront ? 'eager' : 'lazy'}

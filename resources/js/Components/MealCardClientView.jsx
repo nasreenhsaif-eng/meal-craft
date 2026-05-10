@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import MacroGrid from './MacroGrid.jsx';
 import Button from './Atoms/Button.jsx';
 import MealCraftLogo from './Atoms/Logo/MealCraftLogo.jsx';
 
@@ -11,7 +12,7 @@ import MealCraftLogo from './Atoms/Logo/MealCraftLogo.jsx';
  * @param {string} props.title
  * @param {string} [props.imageUrl]
  * @param {string} [props.imageAlt]
- * @param {{ calories: string|number, protein: string|number, carbs: string|number, fat: string|number }} [props.macros] Accepted for API compat; not shown on-card (no macro grid).
+ * @param {{ calories: string|number, protein: string|number, carbs: string|number, fat: string|number }} [props.macros] Macro grid between title and VIEW DETAILS when present.
  * @param {boolean} [props.selected]
  * @param {boolean} [props.disabled]
  * @param {() => void} [props.onToggleSelected]
@@ -24,7 +25,7 @@ export default function MealCardClientView({
     title,
     imageUrl,
     imageAlt = '',
-    macros: _macros,
+    macros,
     selected = false,
     disabled = false,
     onToggleSelected,
@@ -89,7 +90,7 @@ export default function MealCardClientView({
                 </div>
 
                 <div className="relative flex flex-1 flex-col px-3 pb-3 pt-2">
-                    <div className="flex min-h-[3rem] flex-1 items-start justify-center sm:min-h-[3.25rem]">
+                    <div className="flex min-h-[2.75rem] flex-1 items-start justify-center sm:min-h-[3rem]">
                         <h3
                             className="mt-0 w-full text-center text-[15px] font-bold leading-tight tracking-tight text-[#262A22] sm:text-[16px]"
                             style={{
@@ -102,6 +103,19 @@ export default function MealCardClientView({
                             {title}
                         </h3>
                     </div>
+
+                    {macros ? (
+                        <div className="mt-1 flex w-full min-w-0 justify-center overflow-hidden">
+                            <MacroGrid
+                                calories={macros.calories}
+                                protein={macros.protein}
+                                carbs={macros.carbs}
+                                fat={macros.fat}
+                                compact
+                                narrow
+                            />
+                        </div>
+                    ) : null}
 
                     <div className="mt-2 grid gap-2">
                         <Button
