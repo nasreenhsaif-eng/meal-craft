@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import AdminInertiaShell from '../../Layouts/AdminInertiaShell.jsx';
 import TextInput from '../../Components/Atoms/TextInput/TextInput.jsx';
 import DropdownTextInput from '../../Components/Atoms/TextInput/DropdownTextInput.jsx';
 import Button from '../../Components/Atoms/Button.jsx';
@@ -20,7 +21,35 @@ const MEAL_FORM_TYPE_OPTIONS = ['Breakfast', 'Meal', 'Side Salad', 'Soup', 'Dess
 const UNIT_OPTIONS = ['g', 'kg', 'ml', 'ltr'];
 const MEAL_PLAN_TAG_OPTIONS = ['Balanced', 'Ketogenic', 'Hormone Feast', 'Sickle Cell Anemia'];
 
+/** Mirrors `App\Enums\DietType::toDropdownOptions()` for Storybook / non-Inertia renders. */
+const DEFAULT_DIET_TYPES = [
+    { value: 'balanced', label: 'Balanced' },
+    { value: 'keto', label: 'Keto' },
+    { value: 'intermittent_fasting', label: 'Intermittent fasting' },
+];
+
+/** Mirrors `App\Enums\CyclePhase::toDropdownOptions()`. */
+const DEFAULT_CYCLE_PHASES = [
+    { value: 'menstrual', label: 'Menstrual' },
+    { value: 'follicular', label: 'Follicular' },
+    { value: 'ovulatory', label: 'Ovulatory' },
+    { value: 'luteal', label: 'Luteal' },
+];
+
 const INGREDIENT_LIBRARY = INGREDIENT_LIBRARY_ROWS;
+
+/** @param {{ value: string; label: string }[]} items */
+function dropdownStringsWithBlank(items) {
+    return ['', ...items.map((item) => item.label)];
+}
+
+/** @param {{ value: string; label: string }[]} items */
+function valueForLabel(items, label) {
+    if (!label) {
+        return '';
+    }
+    return items.find((item) => item.label === label)?.value ?? '';
+}
 
 const MOCK_MEALS = [
     {
@@ -120,7 +149,16 @@ function deleteSelectedButtonClass(anySelected) {
     ].join(' ');
 }
 
-export default function MealLibraryPage() {
+/**
+ * @param {{
+ *   dietTypes?: { value: string; label: string }[];
+ *   cyclePhases?: { value: string; label: string }[];
+ * }} props
+ */
+export function MealLibraryPageContent({
+    dietTypes = DEFAULT_DIET_TYPES,
+    cyclePhases = DEFAULT_CYCLE_PHASES,
+}) {
     const [query, setQuery] = useState('');
     const [categoryFilter, setCategoryFilter] = useState(MEAL_TYPE_OPTIONS[0]);
     const [meals, setMeals] = useState(() => MOCK_MEALS);
@@ -131,6 +169,8 @@ export default function MealLibraryPage() {
     const [formName, setFormName] = useState('');
     const [formType, setFormType] = useState('Meal');
     const [formMealPlanTag, setFormMealPlanTag] = useState('');
+    const [formDietTypeLabel, setFormDietTypeLabel] = useState('');
+    const [formCyclePhaseLabel, setFormCyclePhaseLabel] = useState('');
     const [formInstructions, setFormInstructions] = useState('');
     const [formHighlight, setFormHighlight] = useState('');
     const [formPhoto, setFormPhoto] = useState(/** @type {File|null} */ (null));
@@ -141,6 +181,9 @@ export default function MealLibraryPage() {
             { nameQuery: '', selectedName: '', amount: '100', unit: 'g' },
         ]),
     );
+    const dietTypeDropdownOptions = useMemo(() => dropdownStringsWithBlank(dietTypes), [dietTypes]);
+    const cyclePhaseDropdownOptions = useMemo(() => dropdownStringsWithBlank(cyclePhases), [cyclePhases]);
+
     const [activeSuggestRow, setActiveSuggestRow] = useState(/** @type {number|null} */ (null));
     const ingredientSuggestRootRef = useRef(null);
     const [ingredientSuggestRect, setIngredientSuggestRect] = useState(
@@ -268,11 +311,24 @@ export default function MealLibraryPage() {
             meal_name: formName || 'Untitled',
             category: formType,
             meal_plan_tag: formMealPlanTag,
+            diet_type: valueForLabel(dietTypes, formDietTypeLabel),
+            cycle_phase: valueForLabel(cyclePhases, formCyclePhaseLabel),
             ingredient_quantities: pairs.join('|'),
             instructions: formInstructions,
             highlight: formHighlight,
         };
-    }, [ingredientRows, formName, formType, formMealPlanTag, formInstructions, formHighlight]);
+    }, [
+        ingredientRows,
+        formName,
+        formType,
+        formMealPlanTag,
+        formDietTypeLabel,
+        formCyclePhaseLabel,
+        dietTypes,
+        cyclePhases,
+        formInstructions,
+        formHighlight,
+    ]);
 
     const nutritionResult = useMemo(
         () => calculateMealNutrition(mealCsvRowForCalculator, INGREDIENT_DATABASE),
@@ -349,13 +405,28 @@ export default function MealLibraryPage() {
             Meal_Name: formName.trim(),
             Category: formType,
             Meal_Plan_Tag: formMealPlanTag,
+            Diet_Type: valueForLabel(dietTypes, formDietTypeLabel),
+            Cycle_Phase: valueForLabel(cyclePhases, formCyclePhaseLabel),
             Ingredient_Quantities: pairs.join('|'),
             Instructions: formInstructions.trim(),
             Description_Highlight: formHighlight.trim(),
             Use_As_Base_Ingredient: useAsBaseIngredient,
             Photo: formPhoto ? formPhoto.name : null,
         };
-    }, [ingredientRows, formName, formType, formMealPlanTag, formInstructions, formHighlight, useAsBaseIngredient, formPhoto]);
+    }, [
+        ingredientRows,
+        formName,
+        formType,
+        formMealPlanTag,
+        formDietTypeLabel,
+        formCyclePhaseLabel,
+        dietTypes,
+        cyclePhases,
+        formInstructions,
+        formHighlight,
+        useAsBaseIngredient,
+        formPhoto,
+    ]);
 
     return (
         <div className={`min-h-screen ${PAGE_BG} px-4 py-8 font-sans md:px-8`}>
@@ -571,6 +642,22 @@ export default function MealLibraryPage() {
                                         value={formMealPlanTag}
                                         options={MEAL_PLAN_TAG_OPTIONS}
                                         onChange={setFormMealPlanTag}
+                                        className="!max-w-none"
+                                    />
+                                    <DropdownTextInput
+                                        label="Diet type"
+                                        value={formDietTypeLabel}
+                                        options={dietTypeDropdownOptions}
+                                        onChange={setFormDietTypeLabel}
+                                        listboxAriaLabel="Diet type"
+                                        className="!max-w-none"
+                                    />
+                                    <DropdownTextInput
+                                        label="Cycle phase"
+                                        value={formCyclePhaseLabel}
+                                        options={cyclePhaseDropdownOptions}
+                                        onChange={setFormCyclePhaseLabel}
+                                        listboxAriaLabel="Cycle phase"
                                         className="!max-w-none"
                                     />
 
@@ -886,3 +973,11 @@ export default function MealLibraryPage() {
         </div>
     );
 }
+
+function MealLibraryPage(props) {
+    return <MealLibraryPageContent {...props} />;
+}
+
+MealLibraryPage.layout = (page) => <AdminInertiaShell>{page}</AdminInertiaShell>;
+
+export default MealLibraryPage;

@@ -1,12 +1,12 @@
-import IngredientsLibraryPage from './IngredientsLibraryPage.jsx';
+import { IngredientsLibraryPageContent } from './IngredientsLibraryPage.jsx';
 
 export default {
     title: 'MealCraft/Pages/Admin/IngredientsLibrary',
-    component: IngredientsLibraryPage,
+    component: IngredientsLibraryPageContent,
     parameters: { layout: 'fullscreen' },
 };
 
 export const Default = {
-    render: () => <IngredientsLibraryPage />,
+    render: () => <IngredientsLibraryPageContent />,
 };
 

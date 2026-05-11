@@ -8,13 +8,13 @@
         <div id="mc-admin-shell" class="min-h-screen">
         <flux:sidebar sticky collapsible="mobile" class="meal-craft-admin-sidebar">
             <flux:sidebar.header>
-                <x-app-logo :sidebar="true" href="{{ route('dashboard') }}" wire:navigate />
+                <x-app-logo :sidebar="true" href="{{ route('admin.dashboard') }}" />
                 <flux:sidebar.collapse class="lg:hidden" />
             </flux:sidebar.header>
 
             <flux:sidebar.nav>
                 <flux:sidebar.group :heading="__('Platform')" class="grid">
-                    <flux:sidebar.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>
+                    <flux:sidebar.item icon="home" :href="route('admin.dashboard')" :current="request()->routeIs('admin.dashboard')">
                         {{ __('Dashboard') }}
                     </flux:sidebar.item>
                     <flux:sidebar.item icon="carrot" :href="route('ingredients.index')" :current="request()->routeIs('ingredients.index')" wire:navigate>

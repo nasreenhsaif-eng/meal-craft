@@ -63,6 +63,7 @@ function IconSearchPrefix() {
  * @param {string} [props.searchValue] — Controlled search; omit for internal state (Storybook default).
  * @param {(event: import('react').ChangeEvent<HTMLInputElement>) => void} [props.onSearchChange]
  * @param {boolean} [props.showSearch] — Render global search row (default: true).
+ * @param {string} [props.contentWrapperClassName] — Class for the inner wrapper around `children` (default: centered max-w-6xl).
  */
 export function AdminLayout({
     pageTitle,
@@ -76,6 +77,7 @@ export function AdminLayout({
     searchPlaceholder = 'Search meals, ingredients, profiles…',
     searchValue: searchValueProp,
     onSearchChange: onSearchChangeProp,
+    contentWrapperClassName = 'mx-auto w-full max-w-6xl',
 }) {
     const isDesktop = useMatchMedia(MQ);
     const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -214,7 +216,7 @@ export function AdminLayout({
                     className="flex-1 bg-[#F8F9F6] px-4 py-6 md:px-6"
                     style={{ fontFamily: 'Montserrat, ui-sans-serif, system-ui, sans-serif' }}
                 >
-                    <div className="mx-auto w-full max-w-6xl">{children}</div>
+                    <div className={contentWrapperClassName}>{children}</div>
                 </main>
             </div>
         </div>

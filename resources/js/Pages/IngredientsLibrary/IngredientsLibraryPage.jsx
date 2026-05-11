@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import AdminInertiaShell from '../../Layouts/AdminInertiaShell.jsx';
 import TextInput from '../../Components/Atoms/TextInput/TextInput.jsx';
 import DropdownTextInput from '../../Components/Atoms/TextInput/DropdownTextInput.jsx';
 import MicronutrientInput from '../../Components/Atoms/TextInput/MicronutrientInput.jsx';
@@ -15,6 +16,13 @@ const INGREDIENT_CATEGORY_OPTIONS = [
     'Grains',
     'Fats',
     'Other',
+];
+
+/** Mirrors `App\Enums\DietTag::toDropdownOptions()` for Storybook / non-Inertia renders. */
+const DEFAULT_DIET_TAGS = [
+    { value: 'balanced', label: 'Balanced' },
+    { value: 'ketogenic', label: 'Keto' },
+    { value: 'intermittent_fasting', label: 'Intermittent fasting' },
 ];
 
 const ROW_HOVER = 'hover:bg-[#F8F9F6]';
@@ -140,7 +148,17 @@ function formatNumber(value) {
     return n % 1 === 0 ? String(n) : n.toFixed(2).replace(/0+$/, '').replace(/\.$/, '');
 }
 
-export default function IngredientsLibraryPage() {
+/** @param {{ value: string; label: string }[]} items */
+function dietTagDropdownOptions(items) {
+    return ['', ...items.map((item) => item.label)];
+}
+
+/**
+ * @param {{
+ *   dietTags?: { value: string; label: string }[];
+ * }} props
+ */
+export function IngredientsLibraryPageContent({ dietTags = DEFAULT_DIET_TAGS }) {
     const [query, setQuery] = useState('');
     const [categoryFilter, setCategoryFilter] = useState('All categories');
     const [searchOpen, setSearchOpen] = useState(false);
@@ -159,6 +177,9 @@ export default function IngredientsLibraryPage() {
     const [createCarbs, setCreateCarbs] = useState('');
     const [createFat, setCreateFat] = useState('');
     const [createMicronutrients, setCreateMicronutrients] = useState('');
+    const [createDietTagLabel, setCreateDietTagLabel] = useState('');
+
+    const dietTagOptions = useMemo(() => dietTagDropdownOptions(dietTags), [dietTags]);
 
     useEffect(() => {
         if (!createOpen) {
@@ -171,6 +192,7 @@ export default function IngredientsLibraryPage() {
         setCreateCarbs('');
         setCreateFat('');
         setCreateMicronutrients('');
+        setCreateDietTagLabel('');
     }, [createOpen]);
 
     useEffect(() => {
@@ -579,6 +601,14 @@ export default function IngredientsLibraryPage() {
                                 listboxAriaLabel="Ingredient Category"
                                 className="!max-w-none"
                             />
+                            <DropdownTextInput
+                                label="Diet tag (optional)"
+                                value={createDietTagLabel}
+                                options={dietTagOptions}
+                                onChange={setCreateDietTagLabel}
+                                listboxAriaLabel="Diet tag"
+                                className="!max-w-none"
+                            />
                             <TextInput
                                 label="Name"
                                 placeholder="e.g. Chicken breast"
@@ -689,3 +719,10 @@ export default function IngredientsLibraryPage() {
     );
 }
 
+function IngredientsLibraryPage(props) {
+    return <IngredientsLibraryPageContent {...props} />;
+}
+
+IngredientsLibraryPage.layout = (page) => <AdminInertiaShell>{page}</AdminInertiaShell>;
+
+export default IngredientsLibraryPage;

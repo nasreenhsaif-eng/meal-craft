@@ -1,5 +1,6 @@
 import { createPortal } from 'react-dom';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import AdminInertiaShell from '../../Layouts/AdminInertiaShell.jsx';
 import Button from '../../Components/Atoms/Button.jsx';
 import PillButton from '../../Components/Atoms/Button/Button.jsx';
 import TextInput from '../../Components/Atoms/TextInput/TextInput.jsx';
@@ -13,6 +14,19 @@ const PAGE_BG = 'bg-[#F8F9F6]';
 const CATEGORY_OPTIONS = ['All categories', 'Clinical', 'Wellness', 'Performance'];
 const MEAL_PLAN_TAG_OPTIONS = ['Balanced', 'Ketogenic', 'Hormone Feast', 'Sickle Cell Anemia'];
 const WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+const DEFAULT_DIET_TYPES = [
+    { value: 'balanced', label: 'Balanced' },
+    { value: 'keto', label: 'Keto' },
+    { value: 'intermittent_fasting', label: 'Intermittent fasting' },
+];
+
+const DEFAULT_CYCLE_PHASES = [
+    { value: 'menstrual', label: 'Menstrual' },
+    { value: 'follicular', label: 'Follicular' },
+    { value: 'ovulatory', label: 'Ovulatory' },
+    { value: 'luteal', label: 'Luteal' },
+];
 
 const MOCK_MEALS = [
     {
@@ -106,7 +120,16 @@ function sumNutrition(rows) {
     return out;
 }
 
-export default function MealPlanLibraryPage() {
+/**
+ * @param {{
+ *   dietTypes?: { value: string; label: string }[];
+ *   cyclePhases?: { value: string; label: string }[];
+ * }} props
+ */
+export function MealPlanLibraryPageContent({
+    dietTypes = DEFAULT_DIET_TYPES,
+    cyclePhases = DEFAULT_CYCLE_PHASES,
+}) {
     const [query, setQuery] = useState('');
     const [categoryFilter, setCategoryFilter] = useState(CATEGORY_OPTIONS[0]);
     const [createOpen, setCreateOpen] = useState(false);
@@ -265,6 +288,10 @@ export default function MealPlanLibraryPage() {
                         </h1>
                         <p className="mt-1 font-body text-sm text-[#555555]">
                             Orchestrate protocols and daily averages across your meal system.
+                        </p>
+                        <p className="sr-only">
+                            Diet type options: {dietTypes.map((d) => `${d.label} (${d.value})`).join(', ')}. Cycle phase
+                            options: {cyclePhases.map((p) => `${p.label} (${p.value})`).join(', ')}.
                         </p>
                     </div>
                     <Button label="Create meal plan" variant="primary" type="button" onClick={() => setCreateOpen(true)} />
@@ -619,3 +646,10 @@ export default function MealPlanLibraryPage() {
     );
 }
 
+function MealPlanLibraryPage(props) {
+    return <MealPlanLibraryPageContent {...props} />;
+}
+
+MealPlanLibraryPage.layout = (page) => <AdminInertiaShell>{page}</AdminInertiaShell>;
+
+export default MealPlanLibraryPage;

@@ -45,6 +45,7 @@ class Ingredient extends Model
         'density',
         'is_verified',
         'micronutrients',
+        'diet_tags',
     ];
 
     protected function casts(): array
@@ -64,6 +65,7 @@ class Ingredient extends Model
             'density' => 'float',
             'is_verified' => 'boolean',
             'micronutrients' => 'array',
+            'diet_tags' => 'array',
         ];
     }
 

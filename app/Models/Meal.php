@@ -2,12 +2,15 @@
 
 namespace App\Models;
 
+use App\Enums\CyclePhase;
+use App\Enums\DietType;
 use App\Enums\MealType;
 use App\Enums\RecipeCategory;
 use App\Services\RecipeNutritionCalculator;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
-use Illuminate\Database\Eloquent\Model;
 
 class Meal extends Model
 {
@@ -43,6 +46,10 @@ class Meal extends Model
         'cycle_phase_tags',
         'cycle_phase_tags_manual',
         'cycle_phase_compatibility_tooltips',
+        'diet_tags',
+        'diet_type',
+        'cycle_phase',
+        'macro_focus',
     ];
 
     protected function casts(): array
@@ -75,7 +82,46 @@ class Meal extends Model
             'cycle_phase_tags' => 'array',
             'cycle_phase_tags_manual' => 'boolean',
             'cycle_phase_compatibility_tooltips' => 'array',
+            'diet_tags' => 'array',
+            'diet_type' => DietType::class,
+            'cycle_phase' => CyclePhase::class,
         ];
+    }
+
+    /**
+     * @param  Builder<Meal>  $query
+     * @return Builder<Meal>
+     */
+    public function scopeMenstrual(Builder $query): Builder
+    {
+        return $query->where('cycle_phase', CyclePhase::Menstrual);
+    }
+
+    /**
+     * @param  Builder<Meal>  $query
+     * @return Builder<Meal>
+     */
+    public function scopeFollicular(Builder $query): Builder
+    {
+        return $query->where('cycle_phase', CyclePhase::Follicular);
+    }
+
+    /**
+     * @param  Builder<Meal>  $query
+     * @return Builder<Meal>
+     */
+    public function scopeOvulatory(Builder $query): Builder
+    {
+        return $query->where('cycle_phase', CyclePhase::Ovulatory);
+    }
+
+    /**
+     * @param  Builder<Meal>  $query
+     * @return Builder<Meal>
+     */
+    public function scopeLuteal(Builder $query): Builder
+    {
+        return $query->where('cycle_phase', CyclePhase::Luteal);
     }
 
     public function imageUrl(): ?string

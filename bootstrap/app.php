@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\HandleInertiaRequests;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -12,10 +13,12 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        $middleware->web(append: [
+            HandleInertiaRequests::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        $exceptions->shouldRenderJsonWhen(function (Request $request, \Throwable $e): bool {
+        $exceptions->shouldRenderJsonWhen(function (Request $request, Throwable $e): bool {
             // Match by path so CSRF/auth failures still return JSON even if the route name is not resolved yet.
             if (in_array($request->path(), ['ingredient-analysis', 'ingredients/from-analysis'], true)) {
                 return true;

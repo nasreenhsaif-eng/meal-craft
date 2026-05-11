@@ -1,5 +1,10 @@
 <?php
 
+use App\Http\Controllers\Admin\AdminDashboardController;
+use App\Http\Controllers\Admin\AdminUserActionController;
+use App\Http\Controllers\Admin\IngredientLibraryController;
+use App\Http\Controllers\Admin\MealLibraryController;
+use App\Http\Controllers\Admin\MealPlanLibraryController;
 use App\Http\Controllers\MealLibraryCsvExportController;
 use App\Http\Controllers\MealLibraryCsvImportController;
 use App\Models\Meal;
@@ -10,7 +15,22 @@ Route::get('/', function () {
 })->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::view('dashboard', 'pages.dashboard')->name('dashboard');
+    Route::redirect('dashboard', '/admin/dashboard')->name('dashboard');
+
+    // Inertia admin UI (requires auth + verified via this parent group).
+    // Route names: admin.dashboard, admin.ingredient-library, admin.meal-library, admin.meal-plan-library, …
+    // (kebab-case suffixes match URLs for Ziggy / route() in JS if added later.)
+    Route::prefix('admin')
+        ->name('admin.')
+        ->group(function () {
+            Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
+            Route::get('/ingredient-library', [IngredientLibraryController::class, 'index'])->name('ingredient-library');
+            Route::get('/meal-library', [MealLibraryController::class, 'index'])->name('meal-library');
+            Route::get('/meal-plan-library', [MealPlanLibraryController::class, 'index'])->name('meal-plan-library');
+
+            Route::post('/users/{user}/toggle-active', [AdminUserActionController::class, 'toggleActive'])->name('users.toggle-active');
+            Route::post('/users/{user}/password-reset', [AdminUserActionController::class, 'sendPasswordReset'])->name('users.password-reset');
+        });
     Route::view('consultation/crafted-for-you', 'pages.consultation.crafted-for-you')->name('consultation.crafted-for-you');
     Route::livewire('ingredients', 'pages::ingredients')->name('ingredients.index');
     Route::livewire('meals', 'pages::meals')->name('meals.index');

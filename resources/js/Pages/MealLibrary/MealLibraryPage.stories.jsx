@@ -1,8 +1,8 @@
-import MealLibraryPage from './MealLibraryPage.jsx';
+import { MealLibraryPageContent } from './MealLibraryPage.jsx';
 
 export default {
     title: 'MealCraft/Pages/Admin/MealLibrary',
-    component: MealLibraryPage,
+    component: MealLibraryPageContent,
     parameters: {
         layout: 'fullscreen',
         a11y: { config: { rules: [{ id: 'color-contrast', enabled: true }] } },
@@ -10,5 +10,5 @@ export default {
 };
 
 export const Default = {
-    render: () => <MealLibraryPage />,
+    render: () => <MealLibraryPageContent />,
 };

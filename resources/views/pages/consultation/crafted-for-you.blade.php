@@ -1,6 +1,6 @@
 @php
     $consultationConfig = [
-        'closeHref' => route('dashboard'),
+        'closeHref' => route('admin.dashboard'),
     ];
 @endphp
 <!DOCTYPE html>

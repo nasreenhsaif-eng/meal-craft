@@ -14,17 +14,40 @@ export const ADMIN_NAV_PATHS = {
     discoveryInsights: 'discovery-insights',
 };
 
+/** Live Laravel admin URLs keyed by {@link ADMIN_NAV_PATHS} id (used by sidebar + Inertia shell). */
+export const ADMIN_NAV_HREFS = {
+    [ADMIN_NAV_PATHS.dashboard]: '/admin/dashboard',
+    [ADMIN_NAV_PATHS.ingredientDb]: '/admin/ingredient-library',
+    [ADMIN_NAV_PATHS.mealHub]: '/admin/meal-library',
+    [ADMIN_NAV_PATHS.mealPlans]: '/admin/meal-plan-library',
+};
+
 const GROUPS = [
     {
         label: 'User management',
-        items: [{ path: ADMIN_NAV_PATHS.dashboard, label: 'Dashboard', Icon: null }],
+        items: [{ path: ADMIN_NAV_PATHS.dashboard, label: 'Dashboard', Icon: null, href: ADMIN_NAV_HREFS[ADMIN_NAV_PATHS.dashboard] }],
     },
     {
         label: 'Kitchen engine',
         items: [
-            { path: ADMIN_NAV_PATHS.ingredientDb, label: 'Ingredient DB', Icon: IconDatabase },
-            { path: ADMIN_NAV_PATHS.mealHub, label: 'Meal Hub', Icon: IconMealHub },
-            { path: ADMIN_NAV_PATHS.mealPlans, label: 'Meal Plans', Icon: IconCalendar },
+            {
+                path: ADMIN_NAV_PATHS.ingredientDb,
+                label: 'Ingredient Library',
+                Icon: IconDatabase,
+                href: ADMIN_NAV_HREFS[ADMIN_NAV_PATHS.ingredientDb],
+            },
+            {
+                path: ADMIN_NAV_PATHS.mealHub,
+                label: 'Meal Library',
+                Icon: IconMealHub,
+                href: ADMIN_NAV_HREFS[ADMIN_NAV_PATHS.mealHub],
+            },
+            {
+                path: ADMIN_NAV_PATHS.mealPlans,
+                label: 'Meal Plan Library',
+                Icon: IconCalendar,
+                href: ADMIN_NAV_HREFS[ADMIN_NAV_PATHS.mealPlans],
+            },
         ],
     },
     {
@@ -123,7 +146,7 @@ export function AdminSidebar({ activePath = '', onNavigate }) {
                             {group.label}
                         </p>
                         <ul className="m-0 list-none space-y-0.5 p-0">
-                            {group.items.map(({ path, label, Icon }) => {
+                            {group.items.map(({ path, label, Icon, href }) => {
                                 const active = activePath === path;
                                 return (
                                     <li key={path}>
@@ -131,6 +154,7 @@ export function AdminSidebar({ activePath = '', onNavigate }) {
                                             icon={Icon ? <Icon className="text-current" /> : undefined}
                                             label={label}
                                             isActive={active}
+                                            href={href}
                                             onClick={() => {
                                                 onNavigate?.(path);
                                             }}

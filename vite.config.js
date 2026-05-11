@@ -15,6 +15,7 @@ export default defineConfig({
     input: [
       'resources/css/app.css',
       'resources/js/app.js',
+      'resources/js/admin-inertia.jsx',
       'resources/js/admin-intro.jsx',
       'resources/js/ingredient-analyzer.jsx',
       'resources/js/auth-login.jsx',

@@ -71,14 +71,21 @@ export default {
         isActive: { control: 'boolean' },
         label: {
             control: 'select',
-            options: ['Dashboard', 'Ingredient DB', 'Meal Hub', 'Meal Plans', 'Customer Profiles', 'Discovery Insights'],
+            options: [
+                'Dashboard',
+                'Ingredient Library',
+                'Meal Library',
+                'Meal Plan Library',
+                'Customer Profiles',
+                'Discovery Insights',
+            ],
         },
     },
 };
 
 export const Playground = {
     args: {
-        label: 'Ingredient DB',
+        label: 'Ingredient Library',
         isActive: false,
     },
     render: (args) => (
@@ -92,7 +99,14 @@ export const SidebarStack = {
     name: 'Sidebar stack',
     render: () => {
         const [activeId, setActiveId] = useState('Dashboard');
-        const items = ['Dashboard', 'Ingredient DB', 'Meal Hub', 'Meal Plans', 'Customer Profiles', 'Discovery Insights'];
+        const items = [
+            'Dashboard',
+            'Ingredient Library',
+            'Meal Library',
+            'Meal Plan Library',
+            'Customer Profiles',
+            'Discovery Insights',
+        ];
 
         return (
             <div className="w-full max-w-[320px] rounded-xl border border-gray-200 bg-white p-3 font-sans">

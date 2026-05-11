@@ -1,3 +1,5 @@
+import { router } from '@inertiajs/react';
+
 /**
  * Admin sidebar nav row — icon + label with active poka‑yoke affordances.
  *
@@ -79,13 +81,13 @@ export default function NavButton({ icon, label, isActive = false, href, onClick
         if (key === 'Dashboard') {
             return <IconDashboard />;
         }
-        if (key === 'Ingredient DB') {
+        if (key === 'Ingredient Library') {
             return <IconDatabase />;
         }
-        if (key === 'Meal Hub') {
+        if (key === 'Meal Library') {
             return <IconMealHub />;
         }
-        if (key === 'Meal Plans') {
+        if (key === 'Meal Plan Library') {
             return <IconCalendar />;
         }
         if (key === 'Customer Profiles') {
@@ -102,6 +104,8 @@ export default function NavButton({ icon, label, isActive = false, href, onClick
     const handleClick = (event) => {
         if (href) {
             event.preventDefault();
+            router.visit(href);
+            return;
         }
         onClick?.(event);
     };
