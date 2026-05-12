@@ -8,6 +8,11 @@ use App\Models\Ingredient;
 use Inertia\Inertia;
 use Inertia\Response;
 
+/**
+ * Admin ingredient library. Inertia renders `Admin/IngredientsLibrary`, which re-exports
+ * `resources/js/Pages/IngredientsLibrary/IngredientsLibraryPage.jsx` (same layout as Storybook).
+ * Returned props map to that page component.
+ */
 class IngredientLibraryController extends Controller
 {
     public function index(): Response

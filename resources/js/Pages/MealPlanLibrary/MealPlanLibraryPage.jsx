@@ -4,15 +4,13 @@ import AdminInertiaShell from '../../Layouts/AdminInertiaShell.jsx';
 import Button from '../../Components/Atoms/Button.jsx';
 import PillButton from '../../Components/Atoms/Button/Button.jsx';
 import TextInput from '../../Components/Atoms/TextInput/TextInput.jsx';
-import DropdownTextInput from '../../Components/Atoms/TextInput/DropdownTextInput.jsx';
 import CSVUploader from '../../Components/CSVUploader.jsx';
 import MealPlanCard from '../../Components/MealPlanCard.jsx';
 import DietaryTagsMultiSelect from '../../Components/MealSystem/DietaryTagsMultiSelect.jsx';
+import { MEAL_PLAN_TAG_OPTIONS } from '../../meal-library/mealTaxonomy.js';
 
 const PAGE_BG = 'bg-[#F8F9F6]';
 
-const CATEGORY_OPTIONS = ['All categories', 'Clinical', 'Wellness', 'Performance'];
-const MEAL_PLAN_TAG_OPTIONS = ['Balanced', 'Ketogenic', 'Hormone Feast', 'Sickle Cell Anemia'];
 const WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 const DEFAULT_DIET_TYPES = [
@@ -131,7 +129,6 @@ export function MealPlanLibraryPageContent({
     cyclePhases = DEFAULT_CYCLE_PHASES,
 }) {
     const [query, setQuery] = useState('');
-    const [categoryFilter, setCategoryFilter] = useState(CATEGORY_OPTIONS[0]);
     const [createOpen, setCreateOpen] = useState(false);
 
     // Search combobox (library header)
@@ -178,12 +175,16 @@ export function MealPlanLibraryPageContent({
             return undefined;
         }
         const onDocMouseDown = (event) => {
+            const t = event.target;
+            if (!(t instanceof Node)) {
+                return;
+            }
             const root = searchRootRef.current;
-            if (root && !root.contains(event.target)) {
+            if (root && !root.contains(t) && !t.closest('[data-meal-plan-library-search-suggest]')) {
                 setSearchOpen(false);
             }
             const mealRoot = mealSuggestRootRef.current;
-            if (mealRoot && !mealRoot.contains(event.target)) {
+            if (mealRoot && !mealRoot.contains(t) && !t.closest('[data-meal-plan-library-meal-suggest]')) {
                 setActiveSlotId(null);
             }
         };
@@ -243,20 +244,30 @@ export function MealPlanLibraryPageContent({
 
     const filteredPlans = useMemo(() => {
         const q = query.trim().toLowerCase();
-        let list = MOCK_PLANS;
-        if (q) {
-            list = list.filter((p) => p.name.toLowerCase().includes(q) || p.tags.some((t) => t.toLowerCase().includes(q)));
+        if (!q) {
+            return MOCK_PLANS;
         }
-        if (categoryFilter !== 'All categories') {
-            list = list.filter((p) => p.category === categoryFilter);
-        }
-        return list;
-    }, [query, categoryFilter]);
+        return MOCK_PLANS.filter((p) => {
+            const nameMatch = p.name.toLowerCase().includes(q);
+            const categoryMatch = String(p.category ?? '')
+                .toLowerCase()
+                .includes(q);
+            const tagMatch = Array.isArray(p.tags) && p.tags.some((t) => String(t).toLowerCase().includes(q));
+            return nameMatch || categoryMatch || tagMatch;
+        });
+    }, [query]);
 
     const searchMatches = useMemo(() => {
         const q = query.trim().toLowerCase();
         if (q.length < 1) return [];
-        return MOCK_PLANS.filter((p) => p.name.toLowerCase().includes(q) || p.tags.some((t) => t.toLowerCase().includes(q))).slice(0, 10);
+        return MOCK_PLANS.filter(
+            (p) =>
+                p.name.toLowerCase().includes(q) ||
+                String(p.category ?? '')
+                    .toLowerCase()
+                    .includes(q) ||
+                p.tags.some((t) => String(t).toLowerCase().includes(q)),
+        ).slice(0, 10);
     }, [query]);
 
     const SLOT_SECTIONS = useMemo(() => {
@@ -292,72 +303,8 @@ export function MealPlanLibraryPageContent({
                         className="flex w-full flex-col gap-6 rounded-t-[12px] border-b border-gray-200 px-5 pb-6 pt-6"
                         aria-describedby="meal-plan-library-desc"
                     >
-                        <div className="grid w-full gap-6 sm:grid-cols-[minmax(0,1fr)_280px] sm:items-end sm:gap-8">
-                            <div className="w-full min-w-0">
-                                <div ref={searchRootRef} className="relative">
-                                    <TextInput
-                                        id="meal-plan-library-search"
-                                        label="Search meal plans"
-                                        placeholder="Search meal plans..."
-                                        value={query}
-                                        onChange={(e) => {
-                                            setQuery(e.target.value);
-                                            setSearchOpen(true);
-                                        }}
-                                        onFocus={() => setSearchOpen(true)}
-                                        className="!max-w-none"
-                                    />
-
-                                    {searchOpen && searchMatches.length > 0 && searchMenuRect
-                                        ? createPortal(
-                                              <div
-                                                  className="fixed z-[90]"
-                                                  style={{
-                                                      left: `${searchMenuRect.left}px`,
-                                                      top: `${searchMenuRect.top + 8}px`,
-                                                      width: `${searchMenuRect.width}px`,
-                                                  }}
-                                              >
-                                                  <div className="w-full rounded-[12px] border border-[#E5E7EB] bg-white p-2 shadow-2xl">
-                                                      <div className="max-h-56 overflow-auto">
-                                                          {searchMatches.map((m) => (
-                                                              <button
-                                                                  key={m.id}
-                                                                  type="button"
-                                                                  className="flex w-full items-center justify-between gap-3 rounded-[12px] px-4 py-2 text-left font-montserrat text-sm font-bold text-[#262A22] transition-colors hover:bg-[#F8F9F6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5A6B44] focus-visible:ring-inset"
-                                                                  onClick={() => {
-                                                                      setQuery(m.name);
-                                                                      setSearchOpen(false);
-                                                                  }}
-                                                              >
-                                                                  <span className="min-w-0 truncate">{m.name}</span>
-                                                                  <span className="shrink-0 text-xs font-medium text-[#555555]">
-                                                                      {m.category}
-                                                                  </span>
-                                                              </button>
-                                                          ))}
-                                                      </div>
-                                                  </div>
-                                              </div>,
-                                              document.body,
-                                          )
-                                        : null}
-                                </div>
-                            </div>
-                            <div className="w-full min-w-0">
-                                <DropdownTextInput
-                                    label="Meal plan category"
-                                    value={categoryFilter}
-                                    options={CATEGORY_OPTIONS}
-                                    onChange={setCategoryFilter}
-                                    listboxAriaLabel="Filter meal plans by category"
-                                    className="!max-w-none"
-                                />
-                            </div>
-                        </div>
-
-                        <div className="flex flex-col gap-4 pt-1 sm:flex-row sm:items-end">
-                            <div className="shrink-0 sm:pr-6">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:gap-x-4 sm:gap-y-3">
+                            <div className="shrink-0">
                                 <Button
                                     label="Create meal plan"
                                     variant="primary"
@@ -366,9 +313,9 @@ export function MealPlanLibraryPageContent({
                                     onClick={() => setCreateOpen(true)}
                                 />
                             </div>
-                            <div className="min-w-0 flex-1 sm:flex sm:justify-end">
+                            <div className="min-w-0 flex-1">
                                 <CSVUploader
-                                    className="w-full pt-0 sm:justify-end"
+                                    className="w-full pt-0"
                                     templateUrl="#"
                                     exportUrl="#"
                                     onUpload={async (file) => {
@@ -377,12 +324,65 @@ export function MealPlanLibraryPageContent({
                                 />
                             </div>
                         </div>
+
+                        <div className="w-full min-w-0">
+                            <div ref={searchRootRef} className="relative">
+                                <TextInput
+                                    id="meal-plan-library-search"
+                                    label="Search meal plans"
+                                    placeholder="Search by name, category, or tag…"
+                                    value={query}
+                                    onChange={(e) => {
+                                        setQuery(e.target.value);
+                                        setSearchOpen(true);
+                                    }}
+                                    onFocus={() => setSearchOpen(true)}
+                                    className="!max-w-none"
+                                />
+
+                                {searchOpen && searchMatches.length > 0 && searchMenuRect
+                                    ? createPortal(
+                                          <div
+                                              data-meal-plan-library-search-suggest
+                                              className="fixed z-[9999]"
+                                              style={{
+                                                  left: `${searchMenuRect.left}px`,
+                                                  top: `${searchMenuRect.top + 8}px`,
+                                                  width: `${searchMenuRect.width}px`,
+                                              }}
+                                          >
+                                              <div className="w-full rounded-[12px] border border-[#E5E7EB] bg-white p-2 shadow-2xl">
+                                                  <div className="max-h-56 overflow-auto">
+                                                      {searchMatches.map((m) => (
+                                                          <button
+                                                              key={m.id}
+                                                              type="button"
+                                                              className="flex w-full items-center justify-between gap-3 rounded-[12px] px-4 py-2 text-left font-montserrat text-sm font-bold text-[#262A22] transition-colors hover:bg-[#F8F9F6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5A6B44] focus-visible:ring-inset"
+                                                              onClick={() => {
+                                                                  setQuery(m.name);
+                                                                  setSearchOpen(false);
+                                                              }}
+                                                          >
+                                                              <span className="min-w-0 truncate">{m.name}</span>
+                                                              <span className="shrink-0 text-xs font-medium text-[#555555]">
+                                                                  {m.category}
+                                                              </span>
+                                                          </button>
+                                                      ))}
+                                                  </div>
+                                              </div>
+                                          </div>,
+                                          document.body,
+                                      )
+                                    : null}
+                            </div>
+                        </div>
                     </div>
 
                     <div className="p-5">
                         {filteredPlans.length === 0 ? (
                             <p className="rounded-[12px] border border-dashed border-gray-200 bg-[#F8F9F6] p-8 text-center font-body text-sm text-[#555555]">
-                                No meal plans match your filters. Adjust search or category.
+                                No meal plans match your search. Try another name, category, or tag.
                             </p>
                         ) : (
                             <ul className="m-0 grid list-none grid-cols-1 justify-items-center gap-8 p-0 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
@@ -583,7 +583,8 @@ export function MealPlanLibraryPageContent({
                                                                     {activeSlotId === id && matches.length > 0 && mealMenuRect
                                                                         ? createPortal(
                                                                               <div
-                                                                                  className="fixed z-[90]"
+                                                                                  data-meal-plan-library-meal-suggest
+                                                                                  className="fixed z-[9999]"
                                                                                   style={{
                                                                                       left: `${mealMenuRect.left}px`,
                                                                                       top: `${mealMenuRect.top + 8}px`,

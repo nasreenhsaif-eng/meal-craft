@@ -6,7 +6,7 @@ import TextInput from '../../Components/Atoms/TextInput/TextInput.jsx';
 import DropdownTextInput from '../../Components/Atoms/TextInput/DropdownTextInput.jsx';
 import MicronutrientInput from '../../Components/Atoms/TextInput/MicronutrientInput.jsx';
 import Button from '../../Components/Atoms/Button.jsx';
-import SquareCheckbox from '../../Components/Atoms/SquareCheckbox.jsx';
+import SquareCheckbox from '../../Components/Atoms/Icons/SquareCheckbox.jsx';
 import NutrientBadge from '../../Components/Atoms/MealSystem/NutrientBadge.jsx';
 import CSVUploader from '../../Components/CSVUploader.jsx';
 
@@ -131,7 +131,6 @@ function dietTagDropdownOptions(items) {
  *   csvTemplateUrl?: string;
  *   csvExportUrl?: string;
  *   csvImportUrl?: string;
- *   initialSelectedCategory?: string;
  *   flashSuccess?: string | null;
  * }} props
  */
@@ -144,13 +143,9 @@ export function IngredientsLibraryPageView({
     csvTemplateUrl = '#',
     csvExportUrl = '#',
     csvImportUrl = '#',
-    initialSelectedCategory,
     flashSuccess = null,
 }) {
     const [query, setQuery] = useState('');
-    const [selectedCategory, setSelectedCategory] = useState(
-        () => initialSelectedCategory ?? 'All categories',
-    );
     const [searchOpen, setSearchOpen] = useState(false);
     const searchRootRef = useRef(null);
     const [searchMenuRect, setSearchMenuRect] = useState(/** @type {{ left: number; top: number; width: number } | null} */ (null));
@@ -179,32 +174,8 @@ export function IngredientsLibraryPageView({
     const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
     useEffect(() => {
-        if (initialSelectedCategory !== undefined) {
-            setSelectedCategory(initialSelectedCategory);
-        }
-    }, [initialSelectedCategory]);
-
-    useEffect(() => {
         setVisibleCount(PAGE_SIZE);
-    }, [query, selectedCategory, ingredients]);
-
-    const ingredientCategoryOptions = useMemo(() => {
-        const seen = new Set();
-        for (const r of libraryRows) {
-            const c = (r.category ?? '').trim();
-            if (c !== '') {
-                seen.add(c);
-            }
-        }
-        const sorted = Array.from(seen).sort((a, b) => a.localeCompare(b));
-        return ['All categories', ...sorted];
-    }, [libraryRows]);
-
-    useEffect(() => {
-        if (selectedCategory !== 'All categories' && !ingredientCategoryOptions.includes(selectedCategory)) {
-            setSelectedCategory('All categories');
-        }
-    }, [selectedCategory, ingredientCategoryOptions]);
+    }, [query, ingredients]);
 
     useEffect(() => {
         if (!createOpen) {
@@ -229,7 +200,11 @@ export function IngredientsLibraryPageView({
             if (!root) {
                 return;
             }
-            if (!root.contains(event.target)) {
+            const t = event.target;
+            if (!(t instanceof Node)) {
+                return;
+            }
+            if (!root.contains(t) && !t.closest('[data-ingredients-library-search-suggest]')) {
                 setSearchOpen(false);
             }
         };
@@ -266,27 +241,18 @@ export function IngredientsLibraryPageView({
 
     const filteredRows = useMemo(() => {
         const q = query.trim().toLowerCase();
-        let list = libraryRows;
-        if (q) {
-            list = list.filter((r) => {
-                const nameMatch = r.name.toLowerCase().includes(q);
-                const fdcMatch = String(r.fdc).toLowerCase().includes(q);
-                const categoryMatch = (r.category ?? '').toLowerCase().includes(q);
-                const highlightMatch =
-                    Array.isArray(r.highlights) &&
-                    r.highlights.some((h) => String(h).toLowerCase().includes(q));
-                return nameMatch || fdcMatch || categoryMatch || highlightMatch;
-            });
+        if (!q) {
+            return libraryRows;
         }
-        if (selectedCategory !== 'All categories') {
-            const want = selectedCategory.trim().toLowerCase();
-            list = list.filter((r) => {
-                const rowCat = String(r.category ?? '').trim().toLowerCase();
-                return rowCat === want;
-            });
-        }
-        return list;
-    }, [query, selectedCategory, libraryRows]);
+        return libraryRows.filter((r) => {
+            const nameMatch = r.name.toLowerCase().includes(q);
+            const categoryMatch = String(r.category ?? '').toLowerCase().includes(q);
+            const highlightMatch =
+                Array.isArray(r.highlights) &&
+                r.highlights.some((h) => String(h).toLowerCase().includes(q));
+            return nameMatch || categoryMatch || highlightMatch;
+        });
+    }, [query, libraryRows]);
 
     const displayedRows = useMemo(
         () => filteredRows.slice(0, Math.min(visibleCount, filteredRows.length)),
@@ -302,6 +268,9 @@ export function IngredientsLibraryPageView({
             .filter(
                 (r) =>
                     r.name.toLowerCase().includes(q) ||
+                    String(r.category ?? '')
+                        .toLowerCase()
+                        .includes(q) ||
                     (Array.isArray(r.highlights) &&
                         r.highlights.some((h) => String(h).toLowerCase().includes(q))),
             )
@@ -364,75 +333,8 @@ export function IngredientsLibraryPageView({
                         className="flex w-full flex-col gap-6 rounded-t-[12px] border-b border-gray-200 px-5 pb-6 pt-6"
                         aria-describedby="ingredients-library-desc"
                     >
-                        <div className="grid w-full gap-6 sm:grid-cols-[minmax(0,1fr)_280px] sm:items-end sm:gap-8">
-                            <div className="w-full min-w-0">
-                                <div ref={searchRootRef} className="relative">
-                                    <TextInput
-                                        id="ingredients-library-search"
-                                        label="Search ingredients"
-                                        placeholder="Search ingredients by name or keyword..."
-                                        value={query}
-                                        onChange={(e) => {
-                                            const v = e.target.value;
-                                            setQuery(v);
-                                            setSearchOpen(true);
-                                        }}
-                                        onFocus={() => setSearchOpen(true)}
-                                        className="!max-w-none"
-                                    />
-
-                                    {searchOpen && searchMatches.length > 0 && searchMenuRect
-                                        ? createPortal(
-                                              <div
-                                                  className="fixed z-[90]"
-                                                  style={{
-                                                      left: `${searchMenuRect.left}px`,
-                                                      top: `${searchMenuRect.top + 8}px`,
-                                                      width: `${searchMenuRect.width}px`,
-                                                  }}
-                                              >
-                                                  <div className="w-full rounded-[12px] border border-[#E5E7EB] bg-white p-2 shadow-2xl">
-                                                      <div className="max-h-56 overflow-auto">
-                                                          {searchMatches.map((m) => (
-                                                              <button
-                                                                  key={m.id}
-                                                                  type="button"
-                                                                  className="flex w-full items-center justify-between gap-3 rounded-[12px] px-4 py-2 text-left font-montserrat text-sm font-bold text-[#262A22] transition-colors hover:bg-[#F8F9F6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5A6B44] focus-visible:ring-inset"
-                                                                  onClick={() => {
-                                                                      setQuery(m.name);
-                                                                      setSearchOpen(false);
-                                                                  }}
-                                                              >
-                                                                  <span className="min-w-0 truncate">{m.name}</span>
-                                                                  <span className="shrink-0 text-xs font-medium text-[#555555]">
-                                                                      {m.category}
-                                                                  </span>
-                                                              </button>
-                                                          ))}
-                                                      </div>
-                                                  </div>
-                                              </div>,
-                                              document.body,
-                                          )
-                                        : null}
-                                </div>
-                            </div>
-                            <div className="w-full min-w-0">
-                                <DropdownTextInput
-                                    label="Ingredient category"
-                                    value={
-                                        ingredientCategoryOptions.includes(selectedCategory) ? selectedCategory : 'All categories'
-                                    }
-                                    options={ingredientCategoryOptions}
-                                    onChange={setSelectedCategory}
-                                    listboxAriaLabel="Filter by ingredient category"
-                                    className="!max-w-none"
-                                />
-                            </div>
-                        </div>
-
-                        <div className="flex flex-col gap-4 pt-1 sm:flex-row sm:items-end">
-                            <div className="shrink-0 sm:pr-6">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:gap-x-4 sm:gap-y-3">
+                            <div className="shrink-0">
                                 <Button
                                     label="Create ingredient"
                                     variant="primary"
@@ -440,9 +342,9 @@ export function IngredientsLibraryPageView({
                                     onClick={() => setCreateOpen(true)}
                                 />
                             </div>
-                            <div className="min-w-0 flex-1 sm:flex sm:justify-end">
+                            <div className="min-w-0 flex-1">
                                 <CSVUploader
-                                    className="w-full pt-0 sm:justify-end"
+                                    className="w-full pt-0"
                                     templateUrl={csvTemplateUrl}
                                     exportUrl={csvExportUrl}
                                     onUpload={(file) => {
@@ -453,6 +355,60 @@ export function IngredientsLibraryPageView({
                                         );
                                     }}
                                 />
+                            </div>
+                        </div>
+
+                        <div className="w-full min-w-0">
+                            <div ref={searchRootRef} className="relative">
+                                <TextInput
+                                    id="ingredients-library-search"
+                                    label="Search ingredients"
+                                    placeholder="Search by name, USDA category, or Smart Kitchen highlights…"
+                                    value={query}
+                                    onChange={(e) => {
+                                        const v = e.target.value;
+                                        setQuery(v);
+                                        setSearchOpen(true);
+                                    }}
+                                    onFocus={() => setSearchOpen(true)}
+                                    className="!max-w-none"
+                                />
+
+                                {searchOpen && searchMatches.length > 0 && searchMenuRect
+                                    ? createPortal(
+                                          <div
+                                              data-ingredients-library-search-suggest
+                                              className="fixed z-[9999]"
+                                              style={{
+                                                  left: `${searchMenuRect.left}px`,
+                                                  top: `${searchMenuRect.top + 8}px`,
+                                                  width: `${searchMenuRect.width}px`,
+                                              }}
+                                          >
+                                              <div className="w-full rounded-[12px] border border-[#E5E7EB] bg-white p-2 shadow-2xl">
+                                                  <div className="max-h-56 overflow-auto">
+                                                      {searchMatches.map((m) => (
+                                                          <button
+                                                              key={m.id}
+                                                              type="button"
+                                                              className="flex w-full items-center justify-between gap-3 rounded-[12px] px-4 py-2 text-left font-montserrat text-sm font-bold text-[#262A22] transition-colors hover:bg-[#F8F9F6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5A6B44] focus-visible:ring-inset"
+                                                              onClick={() => {
+                                                                  setQuery(m.name);
+                                                                  setSearchOpen(false);
+                                                              }}
+                                                          >
+                                                              <span className="min-w-0 truncate">{m.name}</span>
+                                                              <span className="shrink-0 text-xs font-medium text-[#555555]">
+                                                                  {m.category}
+                                                              </span>
+                                                          </button>
+                                                      ))}
+                                                  </div>
+                                              </div>
+                                          </div>,
+                                          document.body,
+                                      )
+                                    : null}
                             </div>
                         </div>
 

@@ -3,7 +3,7 @@ import MealCraftLogo from '../../Components/Atoms/Logo/MealCraftLogo.jsx';
 import TextInput from '../../Components/Atoms/TextInput/TextInput';
 import Button from '../../Components/Atoms/Button/Button';
 import TextLink from '../../Components/Atoms/TextLink.jsx';
-import SquareCheckbox from '../../Components/Atoms/SquareCheckbox.jsx';
+import SquareCheckbox from '../../Components/Atoms/Icons/SquareCheckbox.jsx';
 
 /** Shared width; pair with `text-center` (hero / footer) or `text-left` (field stack). */
 const contentWidthLayout = 'mx-auto w-full max-w-[90%] md:max-w-[440px]';

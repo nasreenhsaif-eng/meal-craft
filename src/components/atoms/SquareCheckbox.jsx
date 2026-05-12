@@ -1,1 +1,1 @@
-export { default } from '../../../resources/js/Components/Atoms/SquareCheckbox.jsx';
+export { default } from '../../../resources/js/Components/Atoms/Icons/SquareCheckbox.jsx';

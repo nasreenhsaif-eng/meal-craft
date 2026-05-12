@@ -1,3 +1,4 @@
+/** Same page structure as production: sticky title → Create + CSV → full-width search → plan cards. */
 import { useState } from 'react';
 import { AdminLayout } from '../../Components/Admin/AdminLayout.jsx';
 import { ADMIN_NAV_PATHS } from '../../Components/Admin/AdminSidebar.jsx';
@@ -27,6 +28,12 @@ export default {
     parameters: {
         layout: 'fullscreen',
         a11y: { config: { rules: [{ id: 'color-contrast', enabled: true }] } },
+        docs: {
+            description: {
+                component:
+                    'Vertical order: sticky page title → Create + CSV → full-width search (name, category, tags) → plan cards.',
+            },
+        },
     },
 };
 

@@ -1,16 +1,16 @@
 import { useMemo, useState } from 'react';
 import Button from './Atoms/Button.jsx';
 import MacroGrid from './MacroGrid.jsx';
-import RoundIconButton from './Atoms/RoundIconButton.jsx';
+import RoundIconButton from './Atoms/Icons/RoundIconButton.jsx';
 import CategoryBadge from './MealSystem/CategoryBadges.jsx';
 import TimeBadge from './MealSystem/TimeBadge.jsx';
 import SafetyAlerts from './MealSystem/SafetyAlerts.jsx';
 import { DietaryTag } from './MealSystem/DietaryTags.jsx';
 import PreferenceTags from './MealSystem/PreferenceTags.jsx';
 import ProtocolTags from './MealSystem/ProtocolTags.jsx';
-import SquareCheckbox from './Atoms/SquareCheckbox.jsx';
+import SquareCheckbox from './Atoms/Icons/SquareCheckbox.jsx';
 import NutrientBadge from './Atoms/MealSystem/NutrientBadge.jsx';
-import { IconDelete, IconEdit } from './Atoms/Icons.jsx';
+import { IconDelete, IconEdit } from './Atoms/SvgIcons.jsx';
 import MealCraftLogo from './Atoms/Logo/MealCraftLogo.jsx';
 
 /**
@@ -25,6 +25,8 @@ import MealCraftLogo from './Atoms/Logo/MealCraftLogo.jsx';
  * @param {import('react').ReactNode} [props.actionSlot]
  * @param {string[]} [props.nutrientHighlights] — Smart Kitchen nutrient keys: B12, Iron, Magnesium, Zinc, Folate
  * @param {string} [props.className]
+ * @param {boolean} [props.adminControls]
+ * @param {boolean} [props.showAdminSelectionCheckbox] — With admin controls, show bulk-selection checkbox (default true). Use false for grid-only admin layouts.
  */
 export default function MealCard({
     variant = 'client',
@@ -40,6 +42,7 @@ export default function MealCard({
     prepMinutes,
     macros,
     adminControls,
+    showAdminSelectionCheckbox = true,
     selected = false,
     onToggleSelected,
     onEdit,
@@ -65,6 +68,8 @@ export default function MealCard({
                 'gluten free',
                 'vegan',
                 'vegetarian',
+                'dairy-free',
+                'dairy free',
                 'nut-free',
                 'nut free',
                 'high protein',
@@ -72,6 +77,9 @@ export default function MealCard({
                 'low carb',
                 'keto',
                 'ketogenic',
+                'balanced',
+                'hormone feast',
+                'sickle cell anemia',
             ]),
         [],
     );
@@ -137,7 +145,11 @@ export default function MealCard({
 
     return (
         <article
-            className={`relative ${isCraftSelection ? 'w-[270px] h-[380px] sm:w-[310px] sm:h-[410px]' : 'w-[310px]'} ${radiantBorderClass} ${isCraftSelection ? 'rounded-[12px]' : 'rounded-[20px]'} font-montserrat ${className}`.trim()}
+            className={`relative ${
+                isCraftSelection
+                    ? 'h-[380px] w-[270px] sm:h-[410px] sm:w-[310px]'
+                    : 'flex h-full min-h-0 w-full flex-col'
+            } ${radiantBorderClass} ${isCraftSelection ? 'rounded-[12px]' : 'rounded-[20px]'} font-montserrat ${className}`.trim()}
             style={
                 isCraftSelection && selected
                     ? {
@@ -147,8 +159,8 @@ export default function MealCard({
             }
         >
             <div
-                className={`relative flex h-full flex-col overflow-hidden ${
-                    isCraftSelection ? 'rounded-[10px]' : 'rounded-[20px]'
+                className={`relative flex flex-col overflow-hidden ${
+                    isCraftSelection ? 'h-full rounded-[10px]' : 'min-h-0 flex-1 rounded-[20px]'
                 } bg-white ${cardBorderClass} ${cardShadowClass}`.trim()}
             >
                 {isCraftSelection && selected ? (
@@ -162,7 +174,7 @@ export default function MealCard({
                     </div>
                 ) : null}
 
-                <div className={`relative w-full overflow-hidden ${isCraftSelection ? 'rounded-t-[10px]' : 'rounded-t-[20px]'} bg-[#F8F9F6]`}>
+                <div className={`relative w-full shrink-0 overflow-hidden ${isCraftSelection ? 'rounded-t-[10px]' : 'rounded-t-[20px]'} bg-[#F8F9F6]`}>
                 <div className={`${isCraftSelection ? 'aspect-[3/4]' : 'aspect-[4/3]'} w-full`}>
                     {showImage ? (
                         <img
@@ -191,31 +203,33 @@ export default function MealCard({
 
                         <div className="absolute inset-x-0 top-0 z-30 flex items-start justify-between gap-3 p-4">
                             <div className="pointer-events-auto flex items-center gap-2">
-                                <button
-                                    type="button"
-                                    className="inline-flex items-center rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5A6B44] focus-visible:ring-offset-2"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        onToggleSelected?.(!selected);
-                                    }}
-                                    aria-pressed={selected}
-                                    aria-label={selected ? `Deselect ${title}` : `Select ${title}`}
-                                >
-                                    <SquareCheckbox checked={selected} presentational />
-                                </button>
+                                {showAdminSelectionCheckbox ? (
+                                    <button
+                                        type="button"
+                                        className="inline-flex items-center rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5A6B44] focus-visible:ring-offset-2"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onToggleSelected?.(!selected);
+                                        }}
+                                        aria-pressed={selected}
+                                        aria-label={selected ? `Deselect ${title}` : `Select ${title}`}
+                                    >
+                                        <SquareCheckbox checked={selected} presentational />
+                                    </button>
+                                ) : null}
                                 <RoundIconButton
                                     icon={<IconEdit />}
-                                    label="Edit"
+                                    ariaLabel="Edit meal"
                                     intent="default"
                                     onClick={onEdit}
-                                    className="!bg-white/80 backdrop-blur"
+                                    className="!border-white/45 !bg-white/80 backdrop-blur"
                                 />
                                 <RoundIconButton
                                     icon={<IconDelete />}
-                                    label="Delete"
+                                    ariaLabel="Delete meal"
                                     intent="danger"
                                     onClick={onDelete}
-                                    className="!bg-white/80 backdrop-blur"
+                                    className="!border-white/45 !bg-white/80 backdrop-blur"
                                 />
                             </div>
 
@@ -240,9 +254,9 @@ export default function MealCard({
                 </div>
 
                 <div
-                    className={`flex flex-1 flex-col ${
+                    className={`flex flex-1 flex-col min-h-0 ${
                         isCraftSelection ? 'relative px-3 pb-12 pt-2' : 'px-5 pb-6 pt-4'
-                    } ${actionSlot && isCraftSelection ? 'gap-1 sm:gap-1.5' : 'gap-3'}`}
+                    } ${actionSlot && isCraftSelection ? 'gap-1 sm:gap-1.5' : isCraftSelection ? 'gap-3' : ''}`}
                 >
                     <header className={isCraftSelection ? 'space-y-0' : 'space-y-3'}>
                     <h3
@@ -279,6 +293,14 @@ export default function MealCard({
                         </div>
                     ) : null}
 
+                    {!isCraftSelection && nutrientHighlights.length > 0 ? (
+                        <div className="flex flex-wrap gap-2" role="group" aria-label="Nutrient highlights">
+                            {nutrientHighlights.map((t) => (
+                                <NutrientBadge key={`nh-${t}`} type={t} />
+                            ))}
+                        </div>
+                    ) : null}
+
                     {!isCraftSelection && hasSafety ? (
                         <div className="space-y-2">
                             {safetySlot ? (
@@ -308,56 +330,85 @@ export default function MealCard({
                     ) : null}
                 </header>
 
-                {macros ? (
-                    <footer className={isCraftSelection ? 'pt-0.5' : 'mt-auto pt-2'}>
-                        <div className="flex justify-center">
-                            <div className={`w-[246px] border-t border-gray-100 ${isCraftSelection ? 'pb-1.5' : 'pb-3'}`} />
-                        </div>
-                        <div className="flex justify-center">
-                            <MacroGrid
-                                calories={macros.calories}
-                                protein={macros.protein}
-                                carbs={macros.carbs}
-                                fat={macros.fat}
-                                compact={isCraftSelection}
-                            />
-                        </div>
-                        {isCraftSelection ? (
-                            <div className="pt-0.5">
-                                <button
-                                    type="button"
-                                    className="mx-auto inline-flex items-center justify-center rounded-[12px] px-2 py-1.5 text-center text-[10px] font-bold uppercase tracking-[0.18em] text-[#5A6B44] transition-colors hover:bg-[#5A6B44]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5A6B44] focus-visible:ring-offset-2"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        onViewDetails?.();
-                                    }}
-                                >
-                                    VIEW DETAILS
-                                </button>
-                            </div>
-                        ) : null}
-                    </footer>
-                ) : (
-                    <div className="mt-auto" />
-                )}
-
-                    {actionSlot ? (
-                        isCraftSelection ? (
+                {isCraftSelection ? (
+                    <>
+                        {macros ? (
+                            <footer className="pt-0.5">
+                                <div className="flex justify-center">
+                                    <div className="w-[246px] border-t border-gray-100 pb-1.5" />
+                                </div>
+                                <div className="flex justify-center">
+                                    <MacroGrid
+                                        calories={macros.calories}
+                                        protein={macros.protein}
+                                        carbs={macros.carbs}
+                                        fat={macros.fat}
+                                        compact={isCraftSelection}
+                                    />
+                                </div>
+                                <div className="pt-0.5">
+                                    <button
+                                        type="button"
+                                        className="mx-auto inline-flex items-center justify-center rounded-[12px] px-2 py-1.5 text-center text-[10px] font-bold uppercase tracking-[0.18em] text-[#5A6B44] transition-colors hover:bg-[#5A6B44]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5A6B44] focus-visible:ring-offset-2"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onViewDetails?.();
+                                        }}
+                                    >
+                                        VIEW DETAILS
+                                    </button>
+                                </div>
+                            </footer>
+                        ) : (
+                            <div className="mt-auto" />
+                        )}
+                        {actionSlot ? (
                             <div className="absolute bottom-2 left-3 right-3">{actionSlot}</div>
                         ) : (
-                            <div className="pt-4">{actionSlot}</div>
-                        )
-                    ) : (
-                        <div className="pt-4">
-                            <Button
-                                type="button"
-                                variant="primary"
-                                label={computedPrimaryLabel}
-                                className="w-full justify-center"
-                                onClick={onPrimaryAction}
-                            />
-                        </div>
-                    )}
+                            <div className="pt-4">
+                                <Button
+                                    type="button"
+                                    variant="primary"
+                                    label={computedPrimaryLabel}
+                                    className="w-full justify-center"
+                                    onClick={onPrimaryAction}
+                                />
+                            </div>
+                        )}
+                    </>
+                ) : (
+                    <div className="mt-auto flex w-full flex-col gap-3 pt-2">
+                        {macros ? (
+                            <>
+                                <div className="flex justify-center">
+                                    <div className="w-[246px] border-t border-gray-100 pb-3" />
+                                </div>
+                                <div className="flex justify-center">
+                                    <MacroGrid
+                                        calories={macros.calories}
+                                        protein={macros.protein}
+                                        carbs={macros.carbs}
+                                        fat={macros.fat}
+                                        compact={false}
+                                    />
+                                </div>
+                            </>
+                        ) : null}
+                        {actionSlot ? (
+                            <div className="w-full">{actionSlot}</div>
+                        ) : (
+                            <div className="w-full">
+                                <Button
+                                    type="button"
+                                    variant="primary"
+                                    label={computedPrimaryLabel}
+                                    className="w-full justify-center"
+                                    onClick={onPrimaryAction}
+                                />
+                            </div>
+                        )}
+                    </div>
+                )}
                 </div>
             </div>
         </article>

@@ -1,5 +1,5 @@
 import { useId, useState } from 'react';
-import { IconEye, IconEyeOff } from '../Icons.jsx';
+import { IconEye, IconEyeOff } from '../SvgIcons.jsx';
 
 /**
  * Single-line text field — fixed `h-[49px]` box with optional `prefixIcon` / `suffixIcon`

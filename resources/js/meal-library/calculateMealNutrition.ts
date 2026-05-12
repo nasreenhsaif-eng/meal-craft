@@ -4,6 +4,10 @@
  */
 
 export type IngredientProfile = {
+    /** Present when loaded from the verified ingredient library (meal library create form). */
+    id?: number;
+    /** Canonical slugs aligned with `IngredientAllergenCatalog` (PHP). */
+    common_allergens?: readonly string[];
     name: string;
     calories: number;
     protein: number;

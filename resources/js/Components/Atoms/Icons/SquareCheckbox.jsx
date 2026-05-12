@@ -16,10 +16,9 @@ export default function SquareCheckbox({
     className = '',
     presentational = false,
 }) {
-    const uncheckedBorder =
-        presentational
-            ? 'bg-white border-gray-300 group-hover/item:border-[#556C37]'
-            : 'bg-white border-gray-300 hover:border-[#556C37]';
+    const uncheckedBorder = presentational
+        ? 'bg-white border-gray-300 group-hover/item:border-[#556C37]'
+        : 'bg-white border-gray-300 hover:border-[#556C37]';
 
     return (
         <div

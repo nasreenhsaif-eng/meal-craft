@@ -1,41 +1,35 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, Fragment } from 'react';
 import { createPortal } from 'react-dom';
 import axios from 'axios';
-import { router } from '@inertiajs/react';
+import { router, usePage } from '@inertiajs/react';
 import AdminInertiaShell from '../../Layouts/AdminInertiaShell.jsx';
 import TextInput from '../../Components/Atoms/TextInput/TextInput.jsx';
 import DropdownTextInput from '../../Components/Atoms/TextInput/DropdownTextInput.jsx';
 import Button from '../../Components/Atoms/Button.jsx';
 import PillButton from '../../Components/Atoms/Button/Button.jsx';
 import MealCard from '../../Components/MealCard.jsx';
+import MealListRow from '../../Components/MealListRow.jsx';
 import CSVUploader from '../../Components/CSVUploader.jsx';
-import SquareCheckbox from '../../Components/Atoms/SquareCheckbox.jsx';
+import RoundIconButton from '../../Components/Atoms/Icons/RoundIconButton.jsx';
+import { IconLayoutGrid, IconLayoutList } from '../../Components/Atoms/SvgIcons.jsx';
+import SquareCheckbox from '../../Components/Atoms/Icons/SquareCheckbox.jsx';
 import NutrientBadge from '../../Components/Atoms/MealSystem/NutrientBadge.jsx';
-import { calculateMealNutrition, MEAL_LIBRARY_CSV_CATEGORY_VALUES } from '../../meal-library/calculateMealNutrition.ts';
+import { aggregateNutritionFromIngredientRows } from '../../meal-library/aggregateIngredientNutrition.ts';
+import { calculateMealNutrition, resolveMealLibraryCategory } from '../../meal-library/calculateMealNutrition.ts';
+import { filterIngredientsForCombobox } from '../../meal-library/ingredientSearch.ts';
+import {
+    collectSafetyAlertLabelsFromIngredientSelection,
+    sickleCellProgramMealHighlight,
+} from '../../meal-library/mealSafetyAndSickle.ts';
+import { DIETARY_TAG_OPTIONS, MEAL_PLAN_TAG_OPTIONS } from '../../meal-library/mealTaxonomy.js';
+import SafetyAlerts from '../../Components/MealSystem/SafetyAlerts.jsx';
 
 const PAGE_BG = 'bg-[#F8F9F6]';
 const PAGE_SIZE = 12;
 
-function buildMealTypeFilterOptions(mealCategoryOptions) {
-    const list =
-        Array.isArray(mealCategoryOptions) && mealCategoryOptions.length > 0
-            ? mealCategoryOptions
-            : [...MEAL_LIBRARY_CSV_CATEGORY_VALUES];
-    return ['All meal types', ...list];
-}
-
 const MEAL_FORM_TYPE_OPTIONS = ['Breakfast', 'Meal', 'Side Salad', 'Soup', 'Dessert'];
 const UNIT_OPTIONS = ['g', 'kg', 'ml', 'ltr'];
-const MEAL_PLAN_TAG_OPTIONS = ['Balanced', 'Ketogenic', 'Hormone Feast', 'Sickle Cell Anemia'];
 
-/** Mirrors `App\Enums\DietType::toDropdownOptions()` for Storybook / non-Inertia renders. */
-const DEFAULT_DIET_TYPES = [
-    { value: 'balanced', label: 'Balanced' },
-    { value: 'keto', label: 'Keto' },
-    { value: 'intermittent_fasting', label: 'Intermittent fasting' },
-];
-
-/** Mirrors `App\Enums\CyclePhase::toDropdownOptions()`. */
 const DEFAULT_CYCLE_PHASES = [
     { value: 'menstrual', label: 'Menstrual' },
     { value: 'follicular', label: 'Follicular' },
@@ -56,6 +50,29 @@ function valueForLabel(items, label) {
     return items.find((item) => item.label === label)?.value ?? '';
 }
 
+function fmtMacroFromNutrition(v) {
+    const n = Number(v);
+    if (!Number.isFinite(n)) {
+        return '';
+    }
+    const s = (Math.round(n * 10) / 10).toFixed(1);
+    return s.replace(/\.0$/, '');
+}
+
+function unitToGrams(amount, unit) {
+    const n = Number(amount);
+    if (!Number.isFinite(n) || n <= 0) {
+        return 0;
+    }
+    if (unit === 'kg') {
+        return n * 1000;
+    }
+    if (unit === 'ltr') {
+        return n * 1000;
+    }
+    return n;
+}
+
 /** Delete selected — ghost/disabled styling (matches Ingredients Library). */
 function deleteSelectedButtonClass(anySelected) {
     return [
@@ -69,54 +86,64 @@ function deleteSelectedButtonClass(anySelected) {
 
 /**
  * @param {{
- *   dietTypes?: { value: string; label: string }[];
  *   cyclePhases?: { value: string; label: string }[];
  *   meals?: object[];
  *   ingredientProfiles?: object[];
- *   mealCategoryOptions?: string[];
  *   csvTemplateUrl?: string;
  *   csvExportUrl?: string;
  *   csvImportUrl?: string;
+ *   mealStoreUrl?: string;
+ *   initialViewMode?: 'grid' | 'list';
+ *   flashSuccess?: string | null;
+ *   flashError?: string | null;
+ *   mealLibrarySchemaNotice?: string | null;
+ *   onCreateMealSubmit?: (formData: FormData) => void | Promise<void>;
  * }} props
  */
 export function MealLibraryPageContent({
-    dietTypes = DEFAULT_DIET_TYPES,
     cyclePhases = DEFAULT_CYCLE_PHASES,
     meals = [],
     ingredientProfiles = [],
-    mealCategoryOptions = [],
     csvTemplateUrl = '#',
     csvExportUrl = '#',
     csvImportUrl = '#',
+    mealStoreUrl = '#',
+    initialViewMode,
+    flashSuccess = null,
+    flashError = null,
+    mealLibrarySchemaNotice = null,
+    onCreateMealSubmit,
 }) {
-    const mealTypeFilterOptions = useMemo(() => buildMealTypeFilterOptions(mealCategoryOptions), [mealCategoryOptions]);
-
     const [query, setQuery] = useState('');
-    const [categoryFilter, setCategoryFilter] = useState('All meal types');
     const [mealRows, setMealRows] = useState(meals);
     const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
     const [selectedRows, setSelectedRows] = useState(/** @type {string[]} */ ([]));
     const [confirmOpen, setConfirmOpen] = useState(false);
     const [createOpen, setCreateOpen] = useState(false);
+    const [viewMode, setViewMode] = useState(() => initialViewMode ?? 'grid');
 
     useEffect(() => {
         setMealRows(meals);
     }, [meals]);
 
     useEffect(() => {
-        if (categoryFilter !== 'All meal types' && !mealTypeFilterOptions.includes(categoryFilter)) {
-            setCategoryFilter('All meal types');
+        if (initialViewMode !== undefined) {
+            setViewMode(initialViewMode);
         }
-    }, [categoryFilter, mealTypeFilterOptions]);
+    }, [initialViewMode]);
 
     useEffect(() => {
         setVisibleCount(PAGE_SIZE);
-    }, [query, categoryFilter, mealRows]);
+    }, [query, mealRows]);
 
     const [formName, setFormName] = useState('');
     const [formType, setFormType] = useState('Meal');
     const [formMealPlanTag, setFormMealPlanTag] = useState('');
-    const [formDietTypeLabel, setFormDietTypeLabel] = useState('');
+    const [formCalories, setFormCalories] = useState('');
+    const [formProtein, setFormProtein] = useState('');
+    const [formCarbs, setFormCarbs] = useState('');
+    const [formFat, setFormFat] = useState('');
+    const [selectedDietTags, setSelectedDietTags] = useState(/** @type {string[]} */ ([]));
     const [formCyclePhaseLabel, setFormCyclePhaseLabel] = useState('');
     const [formInstructions, setFormInstructions] = useState('');
     const [formHighlight, setFormHighlight] = useState('');
@@ -124,17 +151,53 @@ export function MealLibraryPageContent({
     const [finishedWeightGrams, setFinishedWeightGrams] = useState('');
     const [useAsBaseIngredient, setUseAsBaseIngredient] = useState(false);
     const [ingredientRows, setIngredientRows] = useState(
-        /** @type {{ nameQuery: string; selectedName: string; amount: string; unit: string }[]} */ ([
-            { nameQuery: '', selectedName: '', amount: '100', unit: 'g' },
+        /** @type {{ nameQuery: string; selectedName: string; ingredientId: number | null; amount: string; unit: string }[]} */ ([
+            { nameQuery: '', selectedName: '', ingredientId: null, amount: '100', unit: 'g' },
         ]),
     );
-    const dietTypeDropdownOptions = useMemo(() => dropdownStringsWithBlank(dietTypes), [dietTypes]);
     const cyclePhaseDropdownOptions = useMemo(() => dropdownStringsWithBlank(cyclePhases), [cyclePhases]);
+
+    const resetCreateForm = useCallback(() => {
+        setFormName('');
+        setFormType('Meal');
+        setFormMealPlanTag('');
+        setFormCalories('');
+        setFormProtein('');
+        setFormCarbs('');
+        setFormFat('');
+        setSelectedDietTags([]);
+        setFormCyclePhaseLabel('');
+        setFormInstructions('');
+        setFormHighlight('');
+        setFormPhoto(null);
+        setFinishedWeightGrams('');
+        setUseAsBaseIngredient(false);
+        setIngredientRows([{ nameQuery: '', selectedName: '', ingredientId: null, amount: '100', unit: 'g' }]);
+    }, []);
+
+    useEffect(() => {
+        if (!createOpen) {
+            resetCreateForm();
+        }
+    }, [createOpen, resetCreateForm]);
+
+    function toggleDietTag(tag) {
+        setSelectedDietTags((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]));
+    }
+
+    const canSave = useMemo(() => {
+        const nameOk = formName.trim().length > 0;
+        const cal = Number(formCalories);
+        const calOk = formCalories.trim() !== '' && Number.isFinite(cal) && cal >= 0;
+        return nameOk && calOk;
+    }, [formName, formCalories]);
 
     const ingredientDatabase = useMemo(
         () =>
             (ingredientProfiles ?? []).map((p) => ({
+                id: typeof p.id === 'number' ? p.id : p.id != null ? Number(p.id) : undefined,
                 name: p.name,
+                common_allergens: Array.isArray(p.common_allergens) ? [...p.common_allergens] : [],
                 calories: p.calories,
                 protein: p.protein,
                 carbs: p.carbs,
@@ -172,9 +235,18 @@ export function MealLibraryPageContent({
             if (!root) {
                 return;
             }
-            if (!root.contains(event.target)) {
-                setActiveSuggestRow(null);
+            const t = event.target;
+            if (!(t instanceof Node)) {
+                return;
             }
+            if (root.contains(t)) {
+                return;
+            }
+            // Suggestions render in a portal on document.body; clicks must not count as "outside".
+            if (t.closest('[data-meal-library-ingredient-suggest]')) {
+                return;
+            }
+            setActiveSuggestRow(null);
         };
         document.addEventListener('mousedown', onDocMouseDown);
         return () => document.removeEventListener('mousedown', onDocMouseDown);
@@ -210,25 +282,25 @@ export function MealLibraryPageContent({
 
     const filteredMeals = useMemo(() => {
         const q = query.trim().toLowerCase();
-        let list = mealRows;
-        if (q) {
-            list = list.filter(
-                (m) =>
-                    String(m.title ?? '')
-                        .toLowerCase()
-                        .includes(q) ||
-                    String(m.mealType ?? '')
-                        .toLowerCase()
-                        .includes(q) ||
-                    (Array.isArray(m.tags) &&
-                        m.tags.some((t) => String(t.label ?? '').toLowerCase().includes(q))),
-            );
+        if (!q) {
+            return mealRows;
         }
-        if (categoryFilter !== 'All meal types') {
-            list = list.filter((m) => m.mealType === categoryFilter);
-        }
-        return list;
-    }, [mealRows, query, categoryFilter]);
+        return mealRows.filter((m) => {
+            const titleMatch = String(m.title ?? '')
+                .toLowerCase()
+                .includes(q);
+            const mealTypeMatch = String(m.mealType ?? '')
+                .toLowerCase()
+                .includes(q);
+            const categoryMatch = String(m.category ?? '')
+                .toLowerCase()
+                .includes(q);
+            const tagMatch =
+                Array.isArray(m.tags) &&
+                m.tags.some((t) => String(t.label ?? t ?? '').toLowerCase().includes(q));
+            return titleMatch || mealTypeMatch || categoryMatch || tagMatch;
+        });
+    }, [mealRows, query]);
 
     const displayedMeals = useMemo(
         () => filteredMeals.slice(0, Math.min(visibleCount, filteredMeals.length)),
@@ -237,6 +309,20 @@ export function MealLibraryPageContent({
 
     const selectedSet = useMemo(() => new Set(selectedRows), [selectedRows]);
     const anySelected = selectedRows.length > 0;
+    const allVisibleSelected =
+        displayedMeals.length > 0 && displayedMeals.every((m) => selectedSet.has(m.id));
+
+    function toggleAllVisible() {
+        setSelectedRows((prev) => {
+            const next = new Set(prev);
+            if (allVisibleSelected) {
+                displayedMeals.forEach((m) => next.delete(m.id));
+            } else {
+                displayedMeals.forEach((m) => next.add(m.id));
+            }
+            return Array.from(next);
+        });
+    }
 
     function toggleRow(id) {
         setSelectedRows((prev) => {
@@ -256,18 +342,75 @@ export function MealLibraryPageContent({
         setConfirmOpen(false);
     }
 
-    function unitToGrams(amount, unit) {
-        const n = Number(amount);
-        if (!Number.isFinite(n) || n <= 0) {
-            return 0;
+    function buildIngredientsForStore() {
+        return ingredientRows
+            .map((r) => {
+                const name = (r.selectedName || r.nameQuery || '').trim();
+                const grams = unitToGrams(r.amount, r.unit);
+                if (!name || grams <= 0) {
+                    return null;
+                }
+                const row = {
+                    name,
+                    amount_grams: Math.round(grams * 100) / 100,
+                };
+                if (r.ingredientId != null && Number.isFinite(r.ingredientId)) {
+                    row.ingredient_id = r.ingredientId;
+                }
+                return row;
+            })
+            .filter(Boolean);
+    }
+
+    function handleSaveCreateMeal() {
+        if (!canSave) {
+            return;
         }
-        if (unit === 'kg') {
-            return n * 1000;
+        const fd = new FormData();
+        fd.append('name', formName.trim());
+        fd.append('total_calories', String(Number(formCalories)));
+        fd.append('total_protein', String(formProtein.trim() === '' ? 0 : Number(formProtein)));
+        fd.append('total_carbs', String(formCarbs.trim() === '' ? 0 : Number(formCarbs)));
+        fd.append('total_fat', String(formFat.trim() === '' ? 0 : Number(formFat)));
+        fd.append('category', formType);
+        if (formMealPlanTag) {
+            fd.append('meal_plan_tag', formMealPlanTag);
         }
-        if (unit === 'ltr') {
-            return n * 1000;
+        selectedDietTags.forEach((t) => fd.append('diet_tags[]', t));
+        const cp = valueForLabel(cyclePhases, formCyclePhaseLabel);
+        if (cp) {
+            fd.append('cycle_phase', cp);
         }
-        return n;
+        fd.append('description', formInstructions);
+        fd.append('highlight', formHighlight);
+        if (formPhoto) {
+            fd.append('photo', formPhoto);
+        }
+        const ings = buildIngredientsForStore();
+        ings.forEach((ing, i) => {
+            fd.append(`ingredients[${i}][name]`, ing.name);
+            fd.append(`ingredients[${i}][amount_grams]`, String(ing.amount_grams));
+            if (ing.ingredient_id != null) {
+                fd.append(`ingredients[${i}][ingredient_id]`, String(ing.ingredient_id));
+            }
+        });
+        if (useAsBaseIngredient) {
+            fd.append('use_as_base_ingredient', '1');
+        }
+        if (finishedWeightGrams.trim() !== '') {
+            fd.append('finished_weight_grams', finishedWeightGrams.trim());
+        }
+
+        if (onCreateMealSubmit) {
+            void Promise.resolve(onCreateMealSubmit(fd)).then(() => setCreateOpen(false));
+            return;
+        }
+
+        router.post(mealStoreUrl, fd, {
+            forceFormData: true,
+            preserveScroll: true,
+            onSuccess: () => setCreateOpen(false),
+        });
     }
 
     const mealCsvRowForCalculator = useMemo(() => {
@@ -282,24 +425,24 @@ export function MealLibraryPageContent({
             })
             .filter(Boolean);
 
-        return {
+        const base = {
             meal_name: formName || 'Untitled',
-            category: formType,
             meal_plan_tag: formMealPlanTag,
-            diet_type: valueForLabel(dietTypes, formDietTypeLabel),
             cycle_phase: valueForLabel(cyclePhases, formCyclePhaseLabel),
             ingredient_quantities: pairs.join('|'),
             instructions: formInstructions,
             highlight: formHighlight,
         };
+        if (resolveMealLibraryCategory(formType) !== null) {
+            base.category = formType;
+        }
+        return base;
     }, [
         ingredientRows,
         formName,
         formType,
         formMealPlanTag,
-        formDietTypeLabel,
         formCyclePhaseLabel,
-        dietTypes,
         cyclePhases,
         formInstructions,
         formHighlight,
@@ -310,102 +453,168 @@ export function MealLibraryPageContent({
         [mealCsvRowForCalculator, ingredientDatabase],
     );
 
+    const aggregatedIngredientNutrition = useMemo(
+        () =>
+            aggregateNutritionFromIngredientRows(
+                ingredientRows.map((r) => ({
+                    ingredientId: r.ingredientId,
+                    selectedName: r.selectedName,
+                    nameQuery: r.nameQuery,
+                    amount: r.amount,
+                    unit: r.unit,
+                })),
+                ingredientDatabase,
+            ),
+        [ingredientRows, ingredientDatabase],
+    );
+
+    const nutritionForSidebar = useMemo(() => {
+        if (aggregatedIngredientNutrition.resolvedLineCount > 0) {
+            return aggregatedIngredientNutrition.nutrition;
+        }
+        if (nutritionResult?.ok) {
+            return nutritionResult.nutrition;
+        }
+        return null;
+    }, [aggregatedIngredientNutrition, nutritionResult]);
+
+    useEffect(() => {
+        if (!nutritionForSidebar) {
+            return;
+        }
+        const hasIngredientLines = ingredientRows.some((r) => {
+            const grams = unitToGrams(r.amount, r.unit);
+            const label = (r.selectedName || r.nameQuery || '').trim();
+            return grams > 0 && label.length > 0;
+        });
+        if (!hasIngredientLines) {
+            return;
+        }
+        const n = nutritionForSidebar;
+        setFormCalories(String(Math.round(n.calories ?? 0)));
+        setFormProtein(fmtMacroFromNutrition(n.protein));
+        setFormCarbs(fmtMacroFromNutrition(n.carbs));
+        setFormFat(fmtMacroFromNutrition(n.fat));
+    }, [nutritionForSidebar, ingredientRows]);
+
+    const safetyFormAlerts = useMemo(
+        () =>
+            collectSafetyAlertLabelsFromIngredientSelection(
+                ingredientRows.map((r) => ({
+                    ingredientId: r.ingredientId,
+                    selectedName: r.selectedName,
+                    nameQuery: r.nameQuery,
+                })),
+                ingredientDatabase,
+            ),
+        [ingredientRows, ingredientDatabase],
+    );
+
     const scBadges = useMemo(() => {
-        const n = nutritionResult?.nutrition ?? {};
+        const n = nutritionForSidebar ?? {};
         const badges = [];
         if ((n.b9_folate ?? 0) >= 150) badges.push('Folate');
         if ((n.b12 ?? 0) >= 1.5) badges.push('B12');
         if ((n.iron ?? 0) >= 6) badges.push('Iron');
         if ((n.magnesium ?? 0) >= 120) badges.push('Magnesium');
         if ((n.zinc ?? 0) >= 3) badges.push('Zinc');
+        if (nutritionForSidebar && sickleCellProgramMealHighlight(n)) {
+            badges.push('Sickle Cell');
+        }
         return badges;
-    }, [nutritionResult]);
+    }, [nutritionForSidebar]);
 
-    const nutritionFullRows = useMemo(() => {
-        const n = nutritionResult?.nutrition ?? {};
+    const nutritionSummarySections = useMemo(() => {
+        if (!nutritionForSidebar) {
+            return [];
+        }
+        const n = nutritionForSidebar;
         const num = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : 0);
         const fmt = (v, digits = 1) => num(v).toFixed(digits).replace(/\.0$/, '');
 
         return [
             {
-                section: 'MACROS',
+                title: 'Macros',
                 rows: [
-                    { label: 'Calories', value: fmt(n.calories, 0) },
+                    { label: 'Total calories', value: fmt(n.calories, 0) },
                     { label: 'Protein (g)', value: fmt(n.protein, 1), valueClass: 'text-[#916A00]' },
-                    { label: 'Fat (g)', value: fmt(n.fat, 1), valueClass: 'text-[#2F4C9B]' },
                     { label: 'Carbs (g)', value: fmt(n.carbs, 1), valueClass: 'text-[#8F55A8]' },
+                    { label: 'Fat (g)', value: fmt(n.fat, 1), valueClass: 'text-[#2F4C9B]' },
                     { label: 'Fiber (g)', value: fmt(n.fiber, 1) },
                     { label: 'Sugar (g)', value: fmt(n.sugar, 1) },
                 ],
             },
             {
-                section: 'SICKLE CELL HIGHLIGHTS',
+                title: 'Iron & B vitamins (Sickle cell focus)',
                 rows: [
-                    { label: 'Vitamin B6 (mg)', value: fmt(n.b6, 2) },
+                    { label: 'Iron (mg)', value: fmt(n.iron, 2) },
+                    { label: 'Vitamin C (mg)', value: fmt(n.vitamin_c, 1) },
                     { label: 'Folate B9 (mcg)', value: fmt(n.b9_folate, 1) },
                     { label: 'Vitamin B12 (mcg)', value: fmt(n.b12, 2) },
-                    { label: 'Iron (mg)', value: fmt(n.iron, 2) },
+                    { label: 'Vitamin B6 (mg)', value: fmt(n.b6, 2) },
                     { label: 'Magnesium (mg)', value: fmt(n.magnesium, 1) },
+                    { label: 'Zinc (mg)', value: fmt(n.zinc, 2) },
                 ],
             },
             {
-                section: 'OTHER ESSENTIAL MICROS',
+                title: 'Other minerals',
                 rows: [
-                    { label: 'Zinc (mg)', value: fmt(n.zinc, 2) },
-                    { label: 'Vitamin C (mg)', value: fmt(n.vitamin_c, 1) },
+                    { label: 'Calcium (mg)', value: fmt(n.calcium, 1) },
+                    { label: 'Potassium (mg)', value: fmt(n.potassium, 1) },
+                    { label: 'Sodium (mg)', value: fmt(n.sodium, 1) },
+                ],
+            },
+            {
+                title: 'Fat-soluble vitamins',
+                rows: [
                     { label: 'Vitamin A', value: fmt(n.vitamin_a, 1) },
                     { label: 'Vitamin D', value: fmt(n.vitamin_d, 1) },
                     { label: 'Vitamin E', value: fmt(n.vitamin_e, 1) },
                     { label: 'Vitamin K', value: fmt(n.vitamin_k, 1) },
-                    { label: 'Potassium (mg)', value: fmt(n.potassium, 1) },
-                    { label: 'Sodium (mg)', value: fmt(n.sodium, 1) },
-                    { label: 'Calcium (mg)', value: fmt(n.calcium, 1) },
                 ],
             },
         ];
-    }, [nutritionResult]);
+    }, [nutritionForSidebar]);
 
-    const savePayload = useMemo(() => {
-        const pairs = ingredientRows
-            .map((r) => {
-                const name = (r.selectedName || r.nameQuery || '').trim();
-                const grams = unitToGrams(r.amount, r.unit);
-                if (!name || grams <= 0) {
-                    return null;
-                }
-                return `${name}:${Math.round(grams)}`;
-            })
-            .filter(Boolean);
-        return {
-            Meal_Name: formName.trim(),
-            Category: formType,
-            Meal_Plan_Tag: formMealPlanTag,
-            Diet_Type: valueForLabel(dietTypes, formDietTypeLabel),
-            Cycle_Phase: valueForLabel(cyclePhases, formCyclePhaseLabel),
-            Ingredient_Quantities: pairs.join('|'),
-            Instructions: formInstructions.trim(),
-            Description_Highlight: formHighlight.trim(),
-            Use_As_Base_Ingredient: useAsBaseIngredient,
-            Photo: formPhoto ? formPhoto.name : null,
-        };
-    }, [
-        ingredientRows,
-        formName,
-        formType,
-        formMealPlanTag,
-        formDietTypeLabel,
-        formCyclePhaseLabel,
-        dietTypes,
-        cyclePhases,
-        formInstructions,
-        formHighlight,
-        useAsBaseIngredient,
-        formPhoto,
-    ]);
+    const loadMoreFooter =
+        filteredMeals.length > visibleCount ? (
+            <div className="flex justify-center border-t border-gray-100 pt-6">
+                <Button
+                    label={`Load more (${Math.min(PAGE_SIZE, filteredMeals.length - visibleCount)} meals)`}
+                    variant="secondary"
+                    type="button"
+                    onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
+                />
+            </div>
+        ) : null;
 
     return (
         <div className={`min-h-screen ${PAGE_BG} px-4 pb-8 pt-4 font-sans md:px-8`}>
             <div className="mx-auto max-w-[1400px] space-y-6">
+                {flashSuccess ? (
+                    <div
+                        role="status"
+                        className="rounded-[12px] border border-[#5A6B44]/30 bg-[#F8F9F6] px-4 py-3 font-body text-sm text-[#262A22]"
+                    >
+                        {flashSuccess}
+                    </div>
+                ) : null}
+                {flashError ? (
+                    <div
+                        role="alert"
+                        className="rounded-[12px] border border-[#C44F5D]/40 bg-[#FDF2F2] px-4 py-3 font-body text-sm text-[#7F1D1D]"
+                    >
+                        {flashError}
+                    </div>
+                ) : null}
+                {mealLibrarySchemaNotice ? (
+                    <div
+                        role="alert"
+                        className="rounded-[12px] border border-amber-300 bg-amber-50 px-4 py-3 font-body text-sm text-amber-950"
+                    >
+                        {mealLibrarySchemaNotice}
+                    </div>
+                ) : null}
                 <section className="relative z-0 rounded-[12px] border border-gray-200 bg-white shadow-sm" aria-labelledby="meal-library-heading">
                     <h2 id="meal-library-heading" className="sr-only">
                         Meal library
@@ -418,30 +627,8 @@ export function MealLibraryPageContent({
                         className="flex w-full flex-col gap-6 rounded-t-[12px] border-b border-gray-200 px-5 pb-6 pt-6"
                         aria-describedby="meal-library-desc"
                     >
-                        <div className="grid w-full gap-6 sm:grid-cols-[minmax(0,1fr)_280px] sm:items-end sm:gap-8">
-                            <div className="w-full min-w-0">
-                                <TextInput
-                                    label="Search meals"
-                                    placeholder="Search by meal name, tag, or type…"
-                                    value={query}
-                                    onChange={(e) => setQuery(e.target.value)}
-                                    className="!max-w-none"
-                                />
-                            </div>
-                            <div className="w-full min-w-0">
-                                <DropdownTextInput
-                                    label="Meal category"
-                                    value={categoryFilter}
-                                    options={mealTypeFilterOptions}
-                                    onChange={setCategoryFilter}
-                                    listboxAriaLabel="Filter by meal category"
-                                    className="!max-w-none"
-                                />
-                            </div>
-                        </div>
-
-                        <div className="flex flex-col gap-4 pt-1 sm:flex-row sm:items-end">
-                            <div className="shrink-0 sm:pr-6">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:gap-x-4 sm:gap-y-3">
+                            <div className="shrink-0">
                                 <Button
                                     label="Create meal"
                                     variant="primary"
@@ -450,9 +637,9 @@ export function MealLibraryPageContent({
                                     onClick={() => setCreateOpen(true)}
                                 />
                             </div>
-                            <div className="min-w-0 flex-1 sm:flex sm:justify-end">
+                            <div className="min-w-0 flex-1">
                                 <CSVUploader
-                                    className="w-full pt-0 sm:justify-end"
+                                    className="w-full pt-0"
                                     templateUrl={csvTemplateUrl}
                                     exportUrl={csvExportUrl}
                                     onUpload={async (file) => {
@@ -467,6 +654,48 @@ export function MealLibraryPageContent({
                                         });
                                         router.reload();
                                     }}
+                                />
+                            </div>
+                        </div>
+
+                        <div className="flex w-full min-w-0 flex-col gap-3 sm:flex-row sm:items-end">
+                            <div className="min-w-0 flex-1">
+                                <TextInput
+                                    label="Search meals"
+                                    placeholder="Search by name, meal type, category, or tag…"
+                                    value={query}
+                                    onChange={(e) => setQuery(e.target.value)}
+                                    className="!max-w-none"
+                                />
+                            </div>
+                            <div
+                                className="flex shrink-0 items-center gap-1 self-stretch rounded-[12px] border border-[#E5E7EB] bg-[#F8F9F6] p-1 sm:self-auto"
+                                role="group"
+                                aria-label="Library view"
+                            >
+                                <RoundIconButton
+                                    type="button"
+                                    icon={<IconLayoutGrid className={viewMode === 'grid' ? 'text-[#5A6B44]' : ''} />}
+                                    ariaLabel="Grid view"
+                                    aria-pressed={viewMode === 'grid'}
+                                    onClick={() => setViewMode('grid')}
+                                    className={
+                                        viewMode === 'grid'
+                                            ? '!border-transparent bg-white text-[#262A22] shadow-sm'
+                                            : '!border-transparent bg-transparent text-[#6B7280] shadow-none hover:bg-white/70'
+                                    }
+                                />
+                                <RoundIconButton
+                                    type="button"
+                                    icon={<IconLayoutList className={viewMode === 'list' ? 'text-[#5A6B44]' : ''} />}
+                                    ariaLabel="List view"
+                                    aria-pressed={viewMode === 'list'}
+                                    onClick={() => setViewMode('list')}
+                                    className={
+                                        viewMode === 'list'
+                                            ? '!border-transparent bg-white text-[#262A22] shadow-sm'
+                                            : '!border-transparent bg-transparent text-[#6B7280] shadow-none hover:bg-white/70'
+                                    }
                                 />
                             </div>
                         </div>
@@ -503,21 +732,18 @@ export function MealLibraryPageContent({
                     <div className="p-5">
                         {filteredMeals.length === 0 ? (
                             <p className="rounded-[12px] border border-dashed border-gray-200 bg-[#F8F9F6] p-8 text-center font-body text-sm text-[#555555]">
-                                No meals match your filters. Adjust search or meal category.
+                                No meals match your search. Try another name, type, category, or tag.
                             </p>
-                        ) : (
+                        ) : viewMode === 'grid' ? (
                             <>
-                                <ul className="m-0 grid list-none grid-cols-1 justify-items-center gap-8 p-0 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+                                <ul className="m-0 grid list-none grid-cols-1 gap-6 p-0 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                                     {displayedMeals.map((meal) => (
-                                        <li key={meal.id} className="w-full max-w-[310px]">
+                                        <li key={meal.id} className="flex h-full min-w-0 w-full">
                                             <MealCard
                                                 variant="admin"
                                                 adminControls
+                                                showAdminSelectionCheckbox={false}
                                                 showActions
-                                                selected={selectedSet.has(meal.id)}
-                                                onToggleSelected={() => toggleRow(meal.id)}
-                                                onEdit={() => {}}
-                                                onDelete={() => {}}
                                                 title={meal.title}
                                                 imageUrl={meal.imageUrl}
                                                 imageAlt=""
@@ -525,24 +751,70 @@ export function MealLibraryPageContent({
                                                 prepMinutes={meal.prepMinutes}
                                                 macros={meal.macros}
                                                 tags={meal.tags}
+                                                allergyTags={meal.safetyAlertTags ?? []}
                                                 nutrientHighlights={meal.nutrientHighlights}
                                                 primaryActionLabel="View details"
                                                 onPrimaryAction={() => {}}
-                                                className="transition-all duration-200 ease-out hover:-translate-y-0.5 hover:scale-[1.02] hover:shadow-xl active:translate-y-0 active:scale-[0.98] active:shadow-md"
+                                                onEdit={() => {}}
+                                                onDelete={() => {}}
+                                                className="flex-1 min-h-0 transition-all duration-200 ease-out hover:-translate-y-0.5 hover:scale-[1.02] hover:shadow-xl active:translate-y-0 active:scale-[0.98] active:shadow-md"
                                             />
                                         </li>
                                     ))}
                                 </ul>
-                                {filteredMeals.length > visibleCount ? (
-                                    <div className="flex justify-center border-t border-gray-100 pt-6">
-                                        <Button
-                                            label={`Load more (${Math.min(PAGE_SIZE, filteredMeals.length - visibleCount)} meals)`}
-                                            variant="secondary"
-                                            type="button"
-                                            onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
-                                        />
-                                    </div>
-                                ) : null}
+                                {loadMoreFooter}
+                            </>
+                        ) : (
+                            <>
+                                <div className="overflow-x-auto">
+                                    <table className="min-w-[640px] w-full border-collapse text-[#1F2937]">
+                                        <thead className="bg-white">
+                                            <tr className="border-b border-gray-200">
+                                                <th className="w-[52px] px-3 py-3 text-left">
+                                                    <button
+                                                        type="button"
+                                                        onClick={toggleAllVisible}
+                                                        aria-label={allVisibleSelected ? 'Deselect all visible' : 'Select all visible'}
+                                                        className="inline-flex items-center rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5A6B44] focus-visible:ring-offset-2"
+                                                    >
+                                                        <SquareCheckbox checked={allVisibleSelected} />
+                                                    </button>
+                                                </th>
+                                                <th className="min-w-0 px-4 py-3 text-left">
+                                                    <span className="font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#374151]">
+                                                        Name
+                                                    </span>
+                                                </th>
+                                                <th className="w-[120px] px-3 py-3 text-left">
+                                                    <span className="font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#374151]">
+                                                        Type
+                                                    </span>
+                                                </th>
+                                                <th className="w-[100px] px-3 py-3 text-right">
+                                                    <span className="font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#374151]">
+                                                        Calories
+                                                    </span>
+                                                </th>
+                                                <th className="min-w-[180px] px-3 py-3 text-left">
+                                                    <span className="font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#374151]">
+                                                        Macros
+                                                    </span>
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {displayedMeals.map((meal) => (
+                                                <MealListRow
+                                                    key={meal.id}
+                                                    meal={meal}
+                                                    selected={selectedSet.has(meal.id)}
+                                                    onToggleSelected={() => toggleRow(meal.id)}
+                                                />
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                {loadMoreFooter}
                             </>
                         )}
                     </div>
@@ -629,12 +901,51 @@ export function MealLibraryPageContent({
 
                                     <div className="mt-6 space-y-6">
                                     <TextInput
+                                        id="create-meal-name"
                                         label="Meal name"
                                         placeholder="e.g. Post-training recovery shake"
                                         value={formName}
                                         onChange={(e) => setFormName(e.target.value)}
                                         className="!max-w-none"
+                                        required
                                     />
+
+                                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                                        <TextInput
+                                            id="create-meal-calories"
+                                            label="Calories"
+                                            placeholder="e.g. 420"
+                                            value={formCalories}
+                                            onChange={(e) => setFormCalories(e.target.value)}
+                                            className="!max-w-none"
+                                            inputMode="decimal"
+                                            required
+                                        />
+                                        <TextInput
+                                            label="Protein (g)"
+                                            placeholder="0"
+                                            value={formProtein}
+                                            onChange={(e) => setFormProtein(e.target.value)}
+                                            className="!max-w-none"
+                                            inputMode="decimal"
+                                        />
+                                        <TextInput
+                                            label="Carbs (g)"
+                                            placeholder="0"
+                                            value={formCarbs}
+                                            onChange={(e) => setFormCarbs(e.target.value)}
+                                            className="!max-w-none"
+                                            inputMode="decimal"
+                                        />
+                                        <TextInput
+                                            label="Fat (g)"
+                                            placeholder="0"
+                                            value={formFat}
+                                            onChange={(e) => setFormFat(e.target.value)}
+                                            className="!max-w-none"
+                                            inputMode="decimal"
+                                        />
+                                    </div>
 
                                     <DropdownTextInput
                                         label="Meal type"
@@ -646,18 +957,32 @@ export function MealLibraryPageContent({
                                     <DropdownTextInput
                                         label="Meal Plan Tag"
                                         value={formMealPlanTag}
-                                        options={MEAL_PLAN_TAG_OPTIONS}
+                                        options={['', ...MEAL_PLAN_TAG_OPTIONS]}
                                         onChange={setFormMealPlanTag}
                                         className="!max-w-none"
                                     />
-                                    <DropdownTextInput
-                                        label="Diet type"
-                                        value={formDietTypeLabel}
-                                        options={dietTypeDropdownOptions}
-                                        onChange={setFormDietTypeLabel}
-                                        listboxAriaLabel="Diet type"
-                                        className="!max-w-none"
-                                    />
+                                    <div className="space-y-2">
+                                        <p className="font-montserrat text-sm font-bold leading-snug tracking-tight text-grey-94">
+                                            Dietary tags
+                                        </p>
+                                        <div className="flex flex-wrap gap-3" role="group" aria-label="Dietary tags">
+                                            {DIETARY_TAG_OPTIONS.map((tag) => {
+                                                const checked = selectedDietTags.includes(tag);
+                                                return (
+                                                    <button
+                                                        key={tag}
+                                                        type="button"
+                                                        className="inline-flex items-center gap-2 rounded-[10px] border border-[#E5E7EB] bg-[#F8F9F6] px-3 py-2 font-body text-sm text-[#262A22] transition-colors hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5A6B44] focus-visible:ring-offset-2"
+                                                        aria-pressed={checked}
+                                                        onClick={() => toggleDietTag(tag)}
+                                                    >
+                                                        <SquareCheckbox checked={checked} presentational />
+                                                        {tag}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
                                     <DropdownTextInput
                                         label="Cycle phase"
                                         value={formCyclePhaseLabel}
@@ -763,18 +1088,20 @@ export function MealLibraryPageContent({
                                                 variant="secondary"
                                                 size="sm"
                                                 onClick={() =>
-                                                    setIngredientRows((prev) => [...prev, { nameQuery: '', selectedName: '', amount: '100', unit: 'g' }])
+                                                    setIngredientRows((prev) => [
+                                                        ...prev,
+                                                        { nameQuery: '', selectedName: '', ingredientId: null, amount: '100', unit: 'g' },
+                                                    ])
                                                 }
                                             />
                                         </div>
 
                                         <div ref={ingredientSuggestRootRef} className="mt-4 space-y-4">
                                             {ingredientRows.map((row, idx) => {
-                                                const q = row.nameQuery.trim().toLowerCase();
                                                 const matches =
-                                                    q.length < 1
+                                                    row.nameQuery.trim().length < 1
                                                         ? []
-                                                        : ingredientDatabase.filter((i) => i.name.toLowerCase().includes(q)).slice(0, 10);
+                                                        : filterIngredientsForCombobox(ingredientDatabase, row.nameQuery, 15);
                                                 return (
                                                     <div key={idx} className="rounded-[12px] border border-gray-100 bg-[#F8F9F6] p-3">
                                                         <div className="grid gap-4 md:grid-cols-[1fr_100px_90px_auto] md:items-end">
@@ -788,10 +1115,19 @@ export function MealLibraryPageContent({
                                                                         const v = e.target.value;
                                                                         setIngredientRows((prev) =>
                                                                             prev.map((r, i) =>
-                                                                                i === idx ? { ...r, nameQuery: v, selectedName: '' } : r,
+                                                                                i === idx
+                                                                                    ? { ...r, nameQuery: v, selectedName: '', ingredientId: null }
+                                                                                    : r,
                                                                             ),
                                                                         );
                                                                     }}
+                                                                    autoComplete="off"
+                                                                    role="combobox"
+                                                                    aria-expanded={activeSuggestRow === idx && matches.length > 0}
+                                                                    aria-controls={
+                                                                        matches.length > 0 ? `ingredient-listbox-${idx}` : undefined
+                                                                    }
+                                                                    aria-autocomplete="list"
                                                                     onFocus={() => {
                                                                         setActiveSuggestRow(idx);
                                                                     }}
@@ -800,25 +1136,40 @@ export function MealLibraryPageContent({
                                                                 {activeSuggestRow === idx && matches.length > 0 && ingredientSuggestRect
                                                                     ? createPortal(
                                                                           <div
-                                                                              className="fixed z-[90]"
+                                                                              data-meal-library-ingredient-suggest
+                                                                              className="fixed z-[9999]"
                                                                               style={{
                                                                                   left: `${ingredientSuggestRect.left}px`,
                                                                                   top: `${ingredientSuggestRect.top + 8}px`,
                                                                                   width: `${ingredientSuggestRect.width}px`,
                                                                               }}
                                                                           >
-                                                                              <div className="w-full rounded-[12px] border border-[#E5E7EB] bg-white p-2 shadow-2xl">
+                                                                              <div
+                                                                                  id={`ingredient-listbox-${idx}`}
+                                                                                  role="listbox"
+                                                                                  className="w-full rounded-[12px] border border-[#E5E7EB] bg-white p-2 shadow-2xl"
+                                                                              >
                                                                                   <div className="max-h-56 overflow-auto">
                                                                                       {matches.map((m) => (
                                                                                           <button
-                                                                                              key={m.name}
+                                                                                              key={m.id != null ? `ing-${m.id}` : m.name}
                                                                                               type="button"
+                                                                                              role="option"
                                                                                               className="flex w-full items-center justify-between gap-3 rounded-[12px] px-4 py-2 text-left font-montserrat text-sm font-bold text-[#262A22] transition-colors hover:bg-[#F8F9F6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5A6B44] focus-visible:ring-inset"
                                                                                               onClick={() => {
                                                                                                   setIngredientRows((prev) =>
                                                                                                       prev.map((r, i) =>
                                                                                                           i === idx
-                                                                                                              ? { ...r, selectedName: m.name, nameQuery: m.name }
+                                                                                                              ? {
+                                                                                                                    ...r,
+                                                                                                                    selectedName: m.name,
+                                                                                                                    nameQuery: m.name,
+                                                                                                                    ingredientId:
+                                                                                                                        typeof m.id === 'number' &&
+                                                                                                                        Number.isFinite(m.id)
+                                                                                                                            ? m.id
+                                                                                                                            : null,
+                                                                                                                }
                                                                                                               : r,
                                                                                                       ),
                                                                                                   );
@@ -888,11 +1239,9 @@ export function MealLibraryPageContent({
                                     <Button
                                         label="Save meal"
                                         variant="primary"
-                                        onClick={() => {
-                                            // Demo: emit payload for backend wiring.
-                                            console.log('Save payload', savePayload);
-                                            setCreateOpen(false);
-                                        }}
+                                        type="button"
+                                        disabled={!canSave}
+                                        onClick={handleSaveCreateMeal}
                                         className="w-full justify-center"
                                     />
                                 </div>
@@ -911,42 +1260,78 @@ export function MealLibraryPageContent({
                                     </div>
 
                                     <div className="mt-4 rounded-[12px] border border-gray-200 bg-white p-4 shadow-sm">
-                                        <div className="overflow-hidden rounded-[12px] border border-gray-200 bg-white">
-                                            <div className="border-b border-gray-200 px-4 py-3">
-                                                <p className="font-montserrat text-sm font-bold text-[#262A22]">Nutrient</p>
-                                            </div>
-                                            <div>
-                                                {nutritionFullRows.map((section) => (
-                                                    <div key={section.section}>
-                                                        <div className="border-b border-gray-100 bg-[#F8F9F6] px-4 py-2">
-                                                            <p className="font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#374151]">
-                                                                {section.section}
-                                                            </p>
-                                                        </div>
-                                                        {section.rows.map((r) => (
-                                                            <div
-                                                                key={`${section.section}-${r.label}`}
-                                                                className="flex items-center justify-between gap-4 border-b border-gray-100 px-4 py-2"
-                                                            >
-                                                                <p className="font-body text-sm text-[#374151]">{r.label}</p>
-                                                                <p
-                                                                    className={[
-                                                                        'font-montserrat text-sm font-bold tabular-nums text-[#1F2937]',
-                                                                        r.valueClass ?? '',
-                                                                    ].join(' ')}
-                                                                >
-                                                                    {r.value}
-                                                                </p>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                ))}
+                                        <div className="mb-4">
+                                            <p className="font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#374151]">
+                                                Safety alerts
+                                            </p>
+                                            <div className="mt-2">
+                                                {safetyFormAlerts.length > 0 ? (
+                                                    <SafetyAlerts
+                                                        alerts={safetyFormAlerts.map((label) => ({
+                                                            label,
+                                                            variant: 'allergy',
+                                                        }))}
+                                                    />
+                                                ) : (
+                                                    <p className="font-body text-sm text-[#555555]">
+                                                        No common-allergen ingredients detected in the current lines.
+                                                    </p>
+                                                )}
                                             </div>
                                         </div>
 
+                                        {nutritionSummarySections.length > 0 ? (
+                                            <div className="overflow-hidden rounded-[12px] border border-gray-200 bg-white">
+                                                <table className="w-full border-collapse text-left text-sm">
+                                                    <thead>
+                                                        <tr className="border-b border-gray-200 bg-[#F8F9F6]">
+                                                            <th className="px-3 py-2 font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#374151]">
+                                                                Nutrient
+                                                            </th>
+                                                            <th className="px-3 py-2 text-right font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#374151]">
+                                                                Total (meal)
+                                                            </th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {nutritionSummarySections.map((sec) => (
+                                                            <Fragment key={sec.title}>
+                                                                <tr className="bg-[#F8F9F6]">
+                                                                    <td
+                                                                        colSpan={2}
+                                                                        className="px-3 py-2 font-montserrat text-xs font-bold uppercase tracking-[0.12em] text-[#5A6B44]"
+                                                                    >
+                                                                        {sec.title}
+                                                                    </td>
+                                                                </tr>
+                                                                {sec.rows.map((r) => (
+                                                                    <tr key={`${sec.title}-${r.label}`} className="border-b border-gray-100">
+                                                                        <td className="px-3 py-2 font-body text-[#374151]">{r.label}</td>
+                                                                        <td
+                                                                            className={[
+                                                                                'px-3 py-2 text-right font-montserrat text-sm font-bold tabular-nums text-[#1F2937]',
+                                                                                r.valueClass ?? '',
+                                                                            ].join(' ')}
+                                                                        >
+                                                                            {r.value}
+                                                                        </td>
+                                                                    </tr>
+                                                                ))}
+                                                            </Fragment>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        ) : (
+                                            <p className="rounded-[12px] border border-dashed border-gray-200 bg-[#F8F9F6] px-3 py-4 font-body text-sm text-[#555555]">
+                                                Select verified ingredients to see weighted nutrition totals, automated safety
+                                                alerts, and program highlights.
+                                            </p>
+                                        )}
+
                                         <div className="mt-4 border-t border-gray-100 pt-4">
                                             <p className="font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#374151]">
-                                                SC highlights
+                                                Smart Kitchen &amp; program highlights
                                             </p>
                                             <div className="mt-2 flex flex-wrap gap-2">
                                                 {scBadges.length > 0 ? (
@@ -957,13 +1342,13 @@ export function MealLibraryPageContent({
                                             </div>
                                         </div>
 
-                                        {nutritionResult.categoryWarnings?.length ? (
+                                        {nutritionResult?.categoryWarnings?.length ? (
                                             <div className="mt-4 rounded-[12px] border border-amber-200 bg-amber-50 p-3">
                                                 <p className="font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-amber-900">
                                                     Warnings
                                                 </p>
                                                 <ul className="mt-2 list-inside list-disc space-y-1 font-body text-sm text-amber-950">
-                                                    {nutritionResult.categoryWarnings.map((w) => (
+                                                    {nutritionResult?.categoryWarnings?.map((w) => (
                                                         <li key={w}>{w}</li>
                                                     ))}
                                                 </ul>
@@ -981,7 +1366,19 @@ export function MealLibraryPageContent({
 }
 
 function MealLibraryPage(props) {
-    return <MealLibraryPageContent {...props} />;
+    const page = usePage();
+    const flashSuccess = typeof page.props.flash?.success === 'string' ? page.props.flash.success : null;
+    const flashError = typeof page.props.flash?.error === 'string' ? page.props.flash.error : null;
+    const mealLibrarySchemaNotice =
+        typeof page.props.mealLibrarySchemaNotice === 'string' ? page.props.mealLibrarySchemaNotice : null;
+    return (
+        <MealLibraryPageContent
+            {...props}
+            flashSuccess={flashSuccess}
+            flashError={flashError}
+            mealLibrarySchemaNotice={mealLibrarySchemaNotice}
+        />
+    );
 }
 
 MealLibraryPage.layout = (page) => <AdminInertiaShell>{page}</AdminInertiaShell>;

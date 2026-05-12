@@ -46,6 +46,7 @@ class Ingredient extends Model
         'is_verified',
         'micronutrients',
         'diet_tags',
+        'common_allergens',
     ];
 
     protected function casts(): array
@@ -66,6 +67,7 @@ class Ingredient extends Model
             'is_verified' => 'boolean',
             'micronutrients' => 'array',
             'diet_tags' => 'array',
+            'common_allergens' => 'array',
         ];
     }
 

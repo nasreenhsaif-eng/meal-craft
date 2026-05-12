@@ -1,3 +1,4 @@
+/** Same page structure as production: sticky title → Create + CSV → full-width search → meal grid. */
 import { useState } from 'react';
 import { AdminLayout } from '../../Components/Admin/AdminLayout.jsx';
 import { ADMIN_NAV_PATHS } from '../../Components/Admin/AdminSidebar.jsx';
@@ -33,9 +34,31 @@ const sampleMeals = [
         tags: [{ label: 'Meal', type: 'category' }],
         nutrientHighlights: [],
     },
+    {
+        id: '2',
+        title: 'Greek Yogurt Parfait',
+        imageUrl: '',
+        mealType: 'Breakfast',
+        category: 'Breakfast',
+        prepMinutes: 5,
+        macros: { calories: 320, protein: 18, carbs: 38, fat: 10 },
+        tags: [{ label: 'High Protein', type: 'dietary' }],
+        nutrientHighlights: ['B12'],
+    },
+    {
+        id: '3',
+        title: 'Lentil Soup',
+        imageUrl: '',
+        mealType: 'Soup',
+        category: 'Soup',
+        prepMinutes: 40,
+        macros: { calories: 210, protein: 12, carbs: 34, fat: 3 },
+        tags: [{ label: 'Vegan', type: 'dietary' }],
+        nutrientHighlights: ['Iron', 'Folate'],
+    },
 ];
 
-function MealLibraryStoryShell({ children }) {
+export function MealLibraryStoryShell({ children }) {
     const [activePath, setActivePath] = useState(ADMIN_NAV_PATHS.mealHub);
     return (
         <AdminLayout
@@ -57,17 +80,31 @@ export default {
     parameters: {
         layout: 'fullscreen',
         a11y: { config: { rules: [{ id: 'color-contrast', enabled: true }] } },
+        docs: {
+            description: {
+                component:
+                    'Vertical order: sticky page title → Create + CSV → search + grid/list toggle → meal cards or list table (selection checkboxes only in list view).',
+            },
+        },
+    },
+    argTypes: {
+        initialViewMode: {
+            control: 'radio',
+            options: ['grid', 'list'],
+            description: 'Starting view: grid cards (no row checkboxes) or list table with bulk selection.',
+        },
+    },
+    args: {
+        initialViewMode: 'grid',
     },
 };
 
 export const Default = {
-    render: () => (
-        <MealLibraryStoryShell>
-            <MealLibraryPageContent
-                meals={sampleMeals}
-                ingredientProfiles={sampleIngredientProfiles}
-                mealCategoryOptions={['Breakfast', 'Meal', 'Side Salad', 'Soup', 'Dessert']}
-            />
-        </MealLibraryStoryShell>
+    render: (args) => (
+        <div className="min-h-screen w-full bg-gray-50 p-8">
+            <MealLibraryStoryShell>
+                <MealLibraryPageContent {...args} meals={sampleMeals} ingredientProfiles={sampleIngredientProfiles} />
+            </MealLibraryStoryShell>
+        </div>
     ),
 };

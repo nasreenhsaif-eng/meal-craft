@@ -142,6 +142,35 @@ final class RecipeNutritionCalculator
     }
 
     /**
+     * Whole-meal Sickle Cell Anemia program badge: nutrient-density gates plus iron + vitamin C pairing
+     * (absorption) and zinc + vitamin E (supporting anti-inflammatory micronutrient density).
+     *
+     * @param  array<string, float>  $nutrition
+     */
+    public static function sickleCellProgramMealHighlight(array $nutrition): bool
+    {
+        foreach (self::sickleCellHighlights($nutrition) as $hit) {
+            if ($hit) {
+                return true;
+            }
+        }
+
+        $iron = (float) ($nutrition['iron'] ?? 0);
+        $vitaminC = (float) ($nutrition['vitamin_c'] ?? 0);
+        if ($iron >= 4.5 && $vitaminC >= 25.0) {
+            return true;
+        }
+
+        $zinc = (float) ($nutrition['zinc'] ?? 0);
+        $vitaminE = (float) ($nutrition['vitamin_e'] ?? 0);
+        if ($zinc >= 2.5 && $vitaminE >= 1.5) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
      * @param  array<string, mixed>  $row
      */
     private static function resolvedGramsForRow(array $row, Ingredient $ingredient): float

@@ -1,3 +1,7 @@
+/**
+ * Library layout in Storybook matches the app: AdminLayout sticky title → Create + CSV row → full-width search
+ * (filters by name, USDA category, and SC highlights) → ingredients table.
+ */
 import { useState } from 'react';
 import { AdminLayout } from '../../Components/Admin/AdminLayout.jsx';
 import { ADMIN_NAV_PATHS } from '../../Components/Admin/AdminSidebar.jsx';
@@ -24,7 +28,6 @@ const Z = () => ({
     fiber: 0,
 });
 
-/** Compact rows: mix of Vegetables and Spices so the category filter is obvious in Storybook. */
 function ingredientRow(/** @type {Record<string, unknown>} */ partial) {
     return {
         highlights: [],
@@ -59,10 +62,25 @@ const sampleIngredientsMix = [
     ),
 ];
 
-const VEG_COUNT = VEGETABLE_NAMES.length;
-const SPICE_COUNT = SPICE_NAMES.length;
+/** 260 rows, 65 per USDA-style category, so search-by-category is easy to verify. */
+const SEARCH_DEMO_CATEGORIES = ['Vegetables', 'Spices', 'Proteins', 'Grains'];
+const LARGE_LIST_SIZE = 260;
+const ROWS_PER_CATEGORY = LARGE_LIST_SIZE / SEARCH_DEMO_CATEGORIES.length;
+/** Matches `PAGE_SIZE` in IngredientsLibraryPage.jsx (max visible table rows). */
+const INGREDIENTS_PAGE_SIZE = 50;
 
-/** Extra rows for scroll + sticky header overlap in the fullscreen canvas. */
+const sampleIngredientsLarge = Array.from({ length: LARGE_LIST_SIZE }, (_, i) => {
+    const cat = SEARCH_DEMO_CATEGORIES[i % SEARCH_DEMO_CATEGORIES.length];
+    const highlights = i % 17 === 0 ? ['Folate', 'Iron'] : [];
+    return ingredientRow({
+        id: `bulk-ing-${i + 1}`,
+        name: `${cat} sample ${i + 1}`,
+        category: cat,
+        fdc: String(210000 + i),
+        highlights,
+    });
+});
+
 const sampleIngredientsScroll = [
     ...sampleIngredientsMix,
     ...Array.from({ length: 24 }, (_, i) =>
@@ -93,18 +111,29 @@ function IngredientsStoryShell({ children }) {
     );
 }
 
+/** Sets a controlled React input value (works with the library TextInput). */
+function setInputValue(input, value) {
+    const proto = window.HTMLInputElement.prototype;
+    const desc = Object.getOwnPropertyDescriptor(proto, 'value');
+    if (desc?.set) {
+        desc.set.call(input, value);
+    } else {
+        input.value = value;
+    }
+    input.dispatchEvent(new InputEvent('input', { bubbles: true }));
+}
+
 export default {
     title: 'MealCraft/Pages/Admin/IngredientsLibrary',
     component: IngredientsLibraryPageView,
     parameters: {
         layout: 'fullscreen',
         a11y: { config: { rules: [{ id: 'color-contrast', enabled: true }] } },
-    },
-    argTypes: {
-        initialSelectedCategory: {
-            control: 'select',
-            options: ['All categories', 'Vegetables', 'Spices'],
-            description: 'Initial library category filter (Storybook demo prop).',
+        docs: {
+            description: {
+                component:
+                    'Vertical order: sticky page title → Create + CSV → full-width search (name, USDA category, SC highlights) → table. No category dropdown; type e.g. “Vegetables” or “Folate” to filter.',
+            },
         },
     },
 };
@@ -117,86 +146,44 @@ export const Default = {
     ),
 };
 
-/** Use Controls → `initialSelectedCategory` to snap the table to Vegetables or Spices. */
-export const CategoryFilterControls = {
-    args: {
-        initialSelectedCategory: 'All categories',
-    },
-    render: (/** @type {{ initialSelectedCategory?: string }} */ args) => (
-        <IngredientsStoryShell>
-            <IngredientsLibraryPageView
-                ingredients={sampleIngredientsMix}
-                initialSelectedCategory={args.initialSelectedCategory ?? 'All categories'}
-                {...csvUrls}
-            />
-        </IngredientsStoryShell>
-    ),
-};
-
-/**
- * Opens the real category dropdown, chooses Spices, and checks the table row count.
- * (Listbox is portaled to `document.body`, so we query globally after open.)
- */
-export const CategoryFilterPlay = {
+/** 260 ingredients: typing a category name in search filters the table (same logic as production). */
+export const SearchFiltersLargeList = {
     render: () => (
         <IngredientsStoryShell>
-            <IngredientsLibraryPageView ingredients={sampleIngredientsMix} {...csvUrls} />
+            <IngredientsLibraryPageView ingredients={sampleIngredientsLarge} {...csvUrls} />
         </IngredientsStoryShell>
     ),
     play: async ({ canvasElement }) => {
-        const doc = canvasElement.ownerDocument;
-        const labels = Array.from(canvasElement.querySelectorAll('label'));
-        const catLabel = labels.find((l) => (l.textContent ?? '').includes('Ingredient category'));
-        const tid = catLabel?.getAttribute('for');
-        const trigger = tid ? doc.getElementById(tid) : null;
-        if (!trigger) {
-            throw new Error('Category filter trigger not found');
+        const input = canvasElement.querySelector('#ingredients-library-search');
+        if (!(input instanceof HTMLInputElement)) {
+            throw new Error('Search input #ingredients-library-search not found');
         }
-        trigger.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-
+        setInputValue(input, 'Vegetables');
         await new Promise((r) => {
-            setTimeout(r, 80);
+            setTimeout(r, 120);
         });
-
-        const listbox = doc.querySelector('ul[role="listbox"][aria-label="Filter by ingredient category"]');
-        const options = Array.from(listbox?.querySelectorAll('button[role="option"]') ?? []);
-        const spicesBtn = options.find((b) => (b.textContent ?? '').trim().startsWith('Spices'));
-        if (!spicesBtn) {
-            throw new Error('Spices option not found in category listbox');
-        }
-        spicesBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-
-        await new Promise((r) => {
-            setTimeout(r, 80);
-        });
-
         const rows = canvasElement.querySelectorAll('tbody tr');
-        if (rows.length !== SPICE_COUNT) {
-            throw new Error(`Expected ${SPICE_COUNT} rows after Spices filter, got ${rows.length}`);
+        const expectedVegetableVisible = Math.min(ROWS_PER_CATEGORY, INGREDIENTS_PAGE_SIZE);
+        if (rows.length !== expectedVegetableVisible) {
+            throw new Error(
+                `Expected ${expectedVegetableVisible} visible rows when searching "Vegetables", got ${rows.length}`,
+            );
+        }
+        setInputValue(input, 'Folate');
+        await new Promise((r) => {
+            setTimeout(r, 120);
+        });
+        const folateRows = canvasElement.querySelectorAll('tbody tr');
+        const folateFiltered = sampleIngredientsLarge.filter((r) =>
+            Array.isArray(r.highlights) ? r.highlights.some((h) => String(h).toLowerCase().includes('folate')) : false,
+        ).length;
+        const expectedFolateVisible = Math.min(folateFiltered, INGREDIENTS_PAGE_SIZE);
+        if (folateRows.length !== expectedFolateVisible) {
+            throw new Error(`Expected ${expectedFolateVisible} visible rows when searching "Folate", got ${folateRows.length}`);
         }
     },
 };
 
-/** Starts on Vegetables only — quick visual proof without opening Controls. */
-export const StartsOnVegetables = {
-    render: () => (
-        <IngredientsStoryShell>
-            <IngredientsLibraryPageView
-                ingredients={sampleIngredientsMix}
-                initialSelectedCategory="Vegetables"
-                {...csvUrls}
-            />
-        </IngredientsStoryShell>
-    ),
-    play: async ({ canvasElement }) => {
-        const rows = canvasElement.querySelectorAll('tbody tr');
-        if (rows.length !== VEG_COUNT) {
-            throw new Error(`Expected ${VEG_COUNT} rows for Vegetables preset, got ${rows.length}`);
-        }
-    },
-};
-
-/** Tall table so content scrolls under the sticky admin header (matches app chrome + main padding). */
 export const ScrollUnderStickyBar = {
     render: () => (
         <IngredientsStoryShell>

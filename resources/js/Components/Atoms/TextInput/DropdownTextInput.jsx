@@ -1,6 +1,6 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { IconChevronDown } from '../Icons.jsx';
+import { IconChevronDown } from '../SvgIcons.jsx';
 
 /**
  * Minimalist dropdown styled like TextInput (but without native select blue highlights).
@@ -38,9 +38,17 @@ export default function DropdownTextInput({
             if (!rootRef.current) {
                 return;
             }
-            if (!rootRef.current.contains(event.target)) {
-                setOpen(false);
+            const t = event.target;
+            if (!(t instanceof Node)) {
+                return;
             }
+            if (rootRef.current.contains(t)) {
+                return;
+            }
+            if (t.closest('[data-dropdown-text-input-portal]')) {
+                return;
+            }
+            setOpen(false);
         };
         document.addEventListener('mousedown', onDocMouseDown);
         return () => document.removeEventListener('mousedown', onDocMouseDown);
@@ -116,7 +124,8 @@ export default function DropdownTextInput({
             {open && menuRect
                 ? createPortal(
                       <div
-                          className="fixed z-[95]"
+                          data-dropdown-text-input-portal
+                          className="fixed z-[9999]"
                           style={{
                               left: `${menuRect.left}px`,
                               top: `${menuRect.top + 8}px`,

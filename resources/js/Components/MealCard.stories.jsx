@@ -13,6 +13,7 @@ export default {
     argTypes: {
         title: { control: 'text' },
         imageUrl: { control: 'text' },
+        showAdminSelectionCheckbox: { control: 'boolean' },
     },
 };
 
@@ -36,6 +37,27 @@ export const AdminViewWithActions = {
         ],
         allergyTags: ['Shellfish'],
         dislikeTags: ['No cilantro'],
+    },
+    render: (args) => (
+        <div className="max-w-sm">
+            <MealCard {...args} />
+        </div>
+    ),
+};
+
+export const AdminGridNoSelectionCheckbox = {
+    name: 'Admin grid (no selection checkbox)',
+    args: {
+        variant: 'admin',
+        title: 'Herb-roasted vegetables',
+        imageUrl: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=1400&q=80',
+        category: 'Side Salad',
+        prepMinutes: 25,
+        macros: { calories: 180, protein: '4g', carbs: '22g', fat: '9g' },
+        adminControls: true,
+        showAdminSelectionCheckbox: false,
+        showActions: true,
+        tags: [{ label: 'Vegan', type: 'dietary' }],
     },
     render: (args) => (
         <div className="max-w-sm">

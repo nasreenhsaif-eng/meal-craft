@@ -4,6 +4,7 @@ const NUTRIENT_STYLES = {
     Magnesium: { label: 'MAGNESIUM', color: '#2F4C9B' },
     Zinc: { label: 'ZINC', color: '#916F19' },
     Folate: { label: 'FOLATE', color: '#8F55A8' },
+    'Sickle Cell': { label: 'Sickle cell', color: '#6B4C9A' },
 };
 
 export const NUTRIENT_BADGE_TYPES = Object.keys(NUTRIENT_STYLES);

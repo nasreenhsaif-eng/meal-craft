@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import Button from '../../Components/Atoms/Button.jsx';
 import PillButton from '../../Components/Atoms/Button/Button.jsx';
 import ChooseYourMeals, { DEFAULT_FULL_CRAFT_MAX_SELECTIONS, MealSlotCarousel } from '../../Components/Consultation/ChooseYourMeals.jsx';
-import SquareCheckbox from '../../Components/Atoms/SquareCheckbox.jsx';
+import SquareCheckbox from '../../Components/Atoms/Icons/SquareCheckbox.jsx';
 import { MealCraftLogoAnimatedIdentity } from '../../Components/Atoms/Logo/MealCraftLogoAnimated.jsx';
 import { AnimatePresence, motion } from 'framer-motion';
 

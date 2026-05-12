@@ -72,7 +72,7 @@ test('admin ingredient library passes verified ingredients as flattened rows', f
             ->where('ingredients.0.fiber', 1.25));
 });
 
-test('admin meal library renders inertia page with diet type and cycle phase options', function () {
+test('admin meal library renders inertia page with cycle phase options and meal store url', function () {
     $user = User::factory()->create();
 
     $this->actingAs($user)
@@ -80,15 +80,14 @@ test('admin meal library renders inertia page with diet type and cycle phase opt
         ->assertOk()
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->component('Admin/MealLibrary')
-            ->has('dietTypes')
             ->has('cyclePhases')
             ->has('meals')
             ->has('ingredientProfiles')
             ->has('mealCategoryOptions')
+            ->has('mealStoreUrl')
             ->has('csvTemplateUrl')
             ->has('csvExportUrl')
             ->has('csvImportUrl')
-            ->where('dietTypes.0.value', 'balanced')
             ->where('cyclePhases.0.value', 'menstrual'));
 });
 

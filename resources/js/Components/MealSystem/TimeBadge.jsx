@@ -1,4 +1,4 @@
-import { IconClock } from '../Icons.jsx';
+import { IconClock } from '../Atoms/SvgIcons.jsx';
 
 export default function TimeBadge({ minutes, className = '' }) {
     if (typeof minutes !== 'number') {

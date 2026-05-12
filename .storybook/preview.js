@@ -121,7 +121,8 @@ const preview = {
                     const actionOrder = [
                         `${actionAtomsBase}Buttons`,
                         `${actionAtomsBase}NavButton`,
-                        `${actionAtomsBase}RoundIconButton`,
+                        `${actionAtomsBase}Icons/RoundIconButton`,
+                        `${actionAtomsBase}Icons/SquareCheckbox`,
                         `${actionAtomsBase}TextLink`,
                     ];
                     const ia = actionOrder.indexOf(ta);

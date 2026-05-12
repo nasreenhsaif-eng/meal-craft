@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\AdminUserActionController;
 use App\Http\Controllers\Admin\IngredientLibraryController;
 use App\Http\Controllers\Admin\IngredientLibraryCsvExportController;
 use App\Http\Controllers\Admin\IngredientLibraryCsvImportController;
+use App\Http\Controllers\Admin\MealController;
 use App\Http\Controllers\Admin\MealLibraryController;
 use App\Http\Controllers\Admin\MealPlanLibraryController;
 use App\Http\Controllers\MealLibraryCsvExportController;
@@ -30,6 +31,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::get('/ingredient-library/export-csv', IngredientLibraryCsvExportController::class)->name('ingredient-library.export-csv');
             Route::post('/ingredient-library/import-csv', IngredientLibraryCsvImportController::class)->name('ingredient-library.import-csv');
             Route::get('/meal-library', [MealLibraryController::class, 'index'])->name('meal-library');
+            Route::post('/meal-library', [MealController::class, 'store'])->name('meal-library.store');
             Route::get('/meal-plan-library', [MealPlanLibraryController::class, 'index'])->name('meal-plan-library');
 
             Route::post('/users/{user}/toggle-active', [AdminUserActionController::class, 'toggleActive'])->name('users.toggle-active');

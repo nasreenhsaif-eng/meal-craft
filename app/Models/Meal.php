@@ -48,8 +48,12 @@ class Meal extends Model
         'cycle_phase_compatibility_tooltips',
         'diet_tags',
         'diet_type',
+        'meal_plan_tag',
         'cycle_phase',
         'macro_focus',
+        'safety_alert_tags',
+        'sickle_cell_program_highlight',
+        'nutrition_aggregates_synced',
     ];
 
     protected function casts(): array
@@ -85,6 +89,9 @@ class Meal extends Model
             'diet_tags' => 'array',
             'diet_type' => DietType::class,
             'cycle_phase' => CyclePhase::class,
+            'safety_alert_tags' => 'array',
+            'sickle_cell_program_highlight' => 'boolean',
+            'nutrition_aggregates_synced' => 'boolean',
         ];
     }
 
