@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import axios from 'axios';
+import { router } from '@inertiajs/react';
 import AdminInertiaShell from '../../Layouts/AdminInertiaShell.jsx';
 import TextInput from '../../Components/Atoms/TextInput/TextInput.jsx';
 import DropdownTextInput from '../../Components/Atoms/TextInput/DropdownTextInput.jsx';
@@ -9,13 +11,18 @@ import MealCard from '../../Components/MealCard.jsx';
 import CSVUploader from '../../Components/CSVUploader.jsx';
 import SquareCheckbox from '../../Components/Atoms/SquareCheckbox.jsx';
 import NutrientBadge from '../../Components/Atoms/MealSystem/NutrientBadge.jsx';
-import { calculateMealNutrition } from '../../meal-library/calculateMealNutrition.ts';
-import { INGREDIENT_DATABASE, INGREDIENT_LIBRARY_ROWS } from '../../ingredient-library/mockIngredientDatabase.js';
+import { calculateMealNutrition, MEAL_LIBRARY_CSV_CATEGORY_VALUES } from '../../meal-library/calculateMealNutrition.ts';
 
 const PAGE_BG = 'bg-[#F8F9F6]';
+const PAGE_SIZE = 12;
 
-/** Category filter (`DropdownTextInput` story parity). */
-const MEAL_TYPE_OPTIONS = ['All meal types', 'Breakfast', 'Meal', 'Soup', 'Side salad', 'Dessert'];
+function buildMealTypeFilterOptions(mealCategoryOptions) {
+    const list =
+        Array.isArray(mealCategoryOptions) && mealCategoryOptions.length > 0
+            ? mealCategoryOptions
+            : [...MEAL_LIBRARY_CSV_CATEGORY_VALUES];
+    return ['All meal types', ...list];
+}
 
 const MEAL_FORM_TYPE_OPTIONS = ['Breakfast', 'Meal', 'Side Salad', 'Soup', 'Dessert'];
 const UNIT_OPTIONS = ['g', 'kg', 'ml', 'ltr'];
@@ -36,8 +43,6 @@ const DEFAULT_CYCLE_PHASES = [
     { value: 'luteal', label: 'Luteal' },
 ];
 
-const INGREDIENT_LIBRARY = INGREDIENT_LIBRARY_ROWS;
-
 /** @param {{ value: string; label: string }[]} items */
 function dropdownStringsWithBlank(items) {
     return ['', ...items.map((item) => item.label)];
@@ -50,93 +55,6 @@ function valueForLabel(items, label) {
     }
     return items.find((item) => item.label === label)?.value ?? '';
 }
-
-const MOCK_MEALS = [
-    {
-        id: 'meal-1',
-        title: 'Egg white veggie scramble',
-        imageUrl:
-            'https://images.unsplash.com/photo-1525351484163-7529414344d8?auto=format&fit=crop&w=900&q=80',
-        mealType: 'Breakfast',
-        category: 'Breakfast',
-        prepMinutes: 18,
-        macros: { calories: 312, protein: '28g', carbs: '12g', fat: '16g' },
-        tags: [
-            { label: 'Breakfast', type: 'category' },
-            { label: 'Keto', type: 'dietary' },
-            { label: 'High Protein', type: 'dietary' },
-        ],
-        nutrientHighlights: ['B12', 'Iron'],
-    },
-    {
-        id: 'meal-2',
-        title: 'Mediterranean salmon bowl',
-        imageUrl:
-            'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=900&q=80',
-        mealType: 'Lunch',
-        category: 'Meal',
-        prepMinutes: 32,
-        macros: { calories: 540, protein: '42g', carbs: '38g', fat: '22g' },
-        tags: [
-            { label: 'Meal', type: 'category' },
-            { label: 'High Protein', type: 'dietary' },
-            { label: 'Low carb', type: 'dietary' },
-        ],
-        nutrientHighlights: ['B12', 'Magnesium'],
-    },
-    {
-        id: 'meal-3',
-        title: 'Post-training recovery shake',
-        imageUrl:
-            'https://images.unsplash.com/photo-1622483767028-966f0768eae5?auto=format&fit=crop&w=900&q=80',
-        mealType: 'Post-Workout',
-        category: 'Post-Workout',
-        prepMinutes: 8,
-        macros: { calories: 385, protein: '36g', carbs: '45g', fat: '8g' },
-        tags: [{ label: 'Meal', type: 'category' }, { label: 'High Protein', type: 'dietary' }],
-        nutrientHighlights: ['Zinc', 'Magnesium'],
-    },
-    {
-        id: 'meal-4',
-        title: 'Hearty lentil stew',
-        imageUrl:
-            'https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&w=900&q=80',
-        mealType: 'Dinner',
-        category: 'Soup',
-        prepMinutes: 45,
-        macros: { calories: 420, protein: '22g', carbs: '62g', fat: '10g' },
-        tags: [
-            { label: 'Soup', type: 'category' },
-            { label: 'Vegan', type: 'dietary' },
-            { label: 'High Protein', type: 'dietary' },
-        ],
-        nutrientHighlights: ['Iron', 'Folate'],
-    },
-    {
-        id: 'meal-5',
-        title: 'Greek yogurt parfait',
-        imageUrl:
-            'https://images.unsplash.com/photo-1488477181946-6428a0291777?auto=format&fit=crop&w=900&q=80',
-        mealType: 'Snack',
-        category: 'Meal',
-        prepMinutes: 10,
-        macros: { calories: 260, protein: '18g', carbs: '32g', fat: '8g' },
-        tags: [{ label: 'Meal', type: 'category' }, { label: 'Keto', type: 'dietary' }],
-        nutrientHighlights: ['B12', 'Zinc'],
-    },
-    {
-        id: 'meal-6',
-        title: 'Grilled chicken power plate',
-        imageUrl:
-            'https://images.unsplash.com/photo-1543339308-43e59d6b73a6?auto=format&fit=crop&w=900&q=80',
-        mealType: 'Lunch',
-        category: 'Meal',
-        prepMinutes: 28,
-        macros: { calories: 515, protein: '48g', carbs: '28g', fat: '20g' },
-        tags: [{ label: 'Meal', type: 'category' }, { label: 'High Protein', type: 'dietary' }],
-        nutrientHighlights: ['Iron', 'B12'],
-    },
-];
 
 /** Delete selected — ghost/disabled styling (matches Ingredients Library). */
 function deleteSelectedButtonClass(anySelected) {
@@ -153,18 +71,47 @@ function deleteSelectedButtonClass(anySelected) {
  * @param {{
  *   dietTypes?: { value: string; label: string }[];
  *   cyclePhases?: { value: string; label: string }[];
+ *   meals?: object[];
+ *   ingredientProfiles?: object[];
+ *   mealCategoryOptions?: string[];
+ *   csvTemplateUrl?: string;
+ *   csvExportUrl?: string;
+ *   csvImportUrl?: string;
  * }} props
  */
 export function MealLibraryPageContent({
     dietTypes = DEFAULT_DIET_TYPES,
     cyclePhases = DEFAULT_CYCLE_PHASES,
+    meals = [],
+    ingredientProfiles = [],
+    mealCategoryOptions = [],
+    csvTemplateUrl = '#',
+    csvExportUrl = '#',
+    csvImportUrl = '#',
 }) {
+    const mealTypeFilterOptions = useMemo(() => buildMealTypeFilterOptions(mealCategoryOptions), [mealCategoryOptions]);
+
     const [query, setQuery] = useState('');
-    const [categoryFilter, setCategoryFilter] = useState(MEAL_TYPE_OPTIONS[0]);
-    const [meals, setMeals] = useState(() => MOCK_MEALS);
+    const [categoryFilter, setCategoryFilter] = useState('All meal types');
+    const [mealRows, setMealRows] = useState(meals);
+    const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
     const [selectedRows, setSelectedRows] = useState(/** @type {string[]} */ ([]));
     const [confirmOpen, setConfirmOpen] = useState(false);
     const [createOpen, setCreateOpen] = useState(false);
+
+    useEffect(() => {
+        setMealRows(meals);
+    }, [meals]);
+
+    useEffect(() => {
+        if (categoryFilter !== 'All meal types' && !mealTypeFilterOptions.includes(categoryFilter)) {
+            setCategoryFilter('All meal types');
+        }
+    }, [categoryFilter, mealTypeFilterOptions]);
+
+    useEffect(() => {
+        setVisibleCount(PAGE_SIZE);
+    }, [query, categoryFilter, mealRows]);
 
     const [formName, setFormName] = useState('');
     const [formType, setFormType] = useState('Meal');
@@ -183,6 +130,24 @@ export function MealLibraryPageContent({
     );
     const dietTypeDropdownOptions = useMemo(() => dropdownStringsWithBlank(dietTypes), [dietTypes]);
     const cyclePhaseDropdownOptions = useMemo(() => dropdownStringsWithBlank(cyclePhases), [cyclePhases]);
+
+    const ingredientDatabase = useMemo(
+        () =>
+            (ingredientProfiles ?? []).map((p) => ({
+                name: p.name,
+                calories: p.calories,
+                protein: p.protein,
+                carbs: p.carbs,
+                fat: p.fat,
+                b6: p.b6,
+                b9_folate: p.b9_folate,
+                b12: p.b12,
+                iron: p.iron,
+                magnesium: p.magnesium,
+                micronutrients: p.micronutrients ?? {},
+            })),
+        [ingredientProfiles],
+    );
 
     const [activeSuggestRow, setActiveSuggestRow] = useState(/** @type {number|null} */ (null));
     const ingredientSuggestRootRef = useRef(null);
@@ -245,20 +210,30 @@ export function MealLibraryPageContent({
 
     const filteredMeals = useMemo(() => {
         const q = query.trim().toLowerCase();
-        let list = meals;
+        let list = mealRows;
         if (q) {
             list = list.filter(
                 (m) =>
-                    m.title.toLowerCase().includes(q) ||
-                    m.tags.some((t) => String(t.label).toLowerCase().includes(q)) ||
-                    m.mealType.toLowerCase().includes(q),
+                    String(m.title ?? '')
+                        .toLowerCase()
+                        .includes(q) ||
+                    String(m.mealType ?? '')
+                        .toLowerCase()
+                        .includes(q) ||
+                    (Array.isArray(m.tags) &&
+                        m.tags.some((t) => String(t.label ?? '').toLowerCase().includes(q))),
             );
         }
         if (categoryFilter !== 'All meal types') {
             list = list.filter((m) => m.mealType === categoryFilter);
         }
         return list;
-    }, [meals, query, categoryFilter]);
+    }, [mealRows, query, categoryFilter]);
+
+    const displayedMeals = useMemo(
+        () => filteredMeals.slice(0, Math.min(visibleCount, filteredMeals.length)),
+        [filteredMeals, visibleCount],
+    );
 
     const selectedSet = useMemo(() => new Set(selectedRows), [selectedRows]);
     const anySelected = selectedRows.length > 0;
@@ -276,7 +251,7 @@ export function MealLibraryPageContent({
     }
 
     function handleConfirmDelete() {
-        setMeals((prev) => prev.filter((m) => !selectedSet.has(m.id)));
+        setMealRows((prev) => prev.filter((m) => !selectedSet.has(m.id)));
         setSelectedRows([]);
         setConfirmOpen(false);
     }
@@ -331,8 +306,8 @@ export function MealLibraryPageContent({
     ]);
 
     const nutritionResult = useMemo(
-        () => calculateMealNutrition(mealCsvRowForCalculator, INGREDIENT_DATABASE),
-        [mealCsvRowForCalculator],
+        () => calculateMealNutrition(mealCsvRowForCalculator, ingredientDatabase),
+        [mealCsvRowForCalculator, ingredientDatabase],
     );
 
     const scBadges = useMemo(() => {
@@ -429,27 +404,20 @@ export function MealLibraryPageContent({
     ]);
 
     return (
-        <div className={`min-h-screen ${PAGE_BG} px-4 py-8 font-sans md:px-8`}>
+        <div className={`min-h-screen ${PAGE_BG} px-4 pb-8 pt-4 font-sans md:px-8`}>
             <div className="mx-auto max-w-[1400px] space-y-6">
-                <div className="flex flex-wrap items-end justify-between gap-4">
-                    <div className="min-w-[260px]">
-                        <p className="mb-1 font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#555555]">
-                            Admin / Meal Library
-                        </p>
-                        <h1 className="font-montserrat text-[20px] font-bold tracking-tight text-[#262A22]">Meal Library</h1>
-                        <p className="mt-1 font-body text-sm text-[#555555]">
-                            Browse, filter, and curate meals for Smart Kitchen workflows.
-                        </p>
-                    </div>
-                    <Button label="Create meal" variant="primary" type="button" onClick={() => setCreateOpen(true)} />
-                </div>
-
-                <section className="rounded-[12px] border border-gray-200 bg-white shadow-sm" aria-labelledby="meal-library-heading">
+                <section className="relative z-0 rounded-[12px] border border-gray-200 bg-white shadow-sm" aria-labelledby="meal-library-heading">
                     <h2 id="meal-library-heading" className="sr-only">
                         Meal library
                     </h2>
+                    <p id="meal-library-desc" className="sr-only">
+                        Browse, filter, and curate meals for Smart Kitchen workflows.
+                    </p>
 
-                    <div className="relative z-20 flex flex-col gap-6 border-b border-gray-200 p-5 pt-6">
+                    <div
+                        className="flex w-full flex-col gap-6 rounded-t-[12px] border-b border-gray-200 px-5 pb-6 pt-6"
+                        aria-describedby="meal-library-desc"
+                    >
                         <div className="grid w-full gap-6 sm:grid-cols-[minmax(0,1fr)_280px] sm:items-end sm:gap-8">
                             <div className="w-full min-w-0">
                                 <TextInput
@@ -464,46 +432,72 @@ export function MealLibraryPageContent({
                                 <DropdownTextInput
                                     label="Meal category"
                                     value={categoryFilter}
-                                    options={MEAL_TYPE_OPTIONS}
+                                    options={mealTypeFilterOptions}
                                     onChange={setCategoryFilter}
                                     listboxAriaLabel="Filter by meal category"
                                     className="!max-w-none"
                                 />
                             </div>
                         </div>
-                        <CSVUploader
-                            className="pt-2"
-                            templateUrl="#"
-                            exportUrl="#"
-                            onUpload={async (file) => {
-                                // Demo-only: hook up to real processing per page later.
-                                void file;
-                            }}
-                        />
-                    </div>
 
-                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 px-5 py-4">
-                        <div className="min-w-0">
-                            <p className="font-montserrat text-sm font-bold tracking-tight text-[#262A22]">
-                                Meal library
-                            </p>
-                            <p className="mt-0.5 font-body text-xs text-[#555555]">
-                                {filteredMeals.length} shown • {selectedRows.length} selected
-                            </p>
+                        <div className="flex flex-col gap-4 pt-1 sm:flex-row sm:items-end">
+                            <div className="shrink-0 sm:pr-6">
+                                <Button
+                                    label="Create meal"
+                                    variant="primary"
+                                    type="button"
+                                    className="shrink-0 uppercase tracking-wide"
+                                    onClick={() => setCreateOpen(true)}
+                                />
+                            </div>
+                            <div className="min-w-0 flex-1 sm:flex sm:justify-end">
+                                <CSVUploader
+                                    className="w-full pt-0 sm:justify-end"
+                                    templateUrl={csvTemplateUrl}
+                                    exportUrl={csvExportUrl}
+                                    onUpload={async (file) => {
+                                        const formData = new FormData();
+                                        formData.append('file', file);
+                                        const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+                                        await axios.post(csvImportUrl, formData, {
+                                            headers: {
+                                                'Content-Type': 'multipart/form-data',
+                                                ...(token ? { 'X-CSRF-TOKEN': token } : {}),
+                                            },
+                                        });
+                                        router.reload();
+                                    }}
+                                />
+                            </div>
                         </div>
-                        <Button
-                            label="Delete selected"
-                            variant="ghost"
-                            type="button"
-                            disabled={selectedRows.length === 0}
-                            onClick={() => {
-                                if (!anySelected) {
-                                    return;
-                                }
-                                setConfirmOpen(true);
-                            }}
-                            className={deleteSelectedButtonClass(anySelected)}
-                        />
+
+                        <div className="-mx-5 flex flex-wrap items-center justify-between gap-3 border-t border-gray-200 px-5 pb-0 pt-4">
+                            <div className="min-w-0">
+                                <p className="font-montserrat text-sm font-bold tracking-tight text-[#262A22]">Meal library</p>
+                                <p className="mt-0.5 font-body text-xs text-[#555555]">
+                                    <span className="font-semibold text-[#374151]">{mealRows.length}</span> in library ·{' '}
+                                    {displayedMeals.length} of {filteredMeals.length} in view
+                                    {filteredMeals.length < mealRows.length ? ' (filtered)' : ''} · {selectedRows.length}{' '}
+                                    selected
+                                    {filteredMeals.length > PAGE_SIZE && displayedMeals.length < filteredMeals.length
+                                        ? ' · use "Load more" below'
+                                        : ''}
+                                </p>
+                            </div>
+                            <Button
+                                label="Delete selected"
+                                variant="ghost"
+                                type="button"
+                                disabled={selectedRows.length === 0}
+                                onClick={() => {
+                                    if (!anySelected) {
+                                        return;
+                                    }
+                                    setConfirmOpen(true);
+                                }}
+                                className={deleteSelectedButtonClass(anySelected)}
+                            />
+                        </div>
                     </div>
 
                     <div className="p-5">
@@ -512,39 +506,51 @@ export function MealLibraryPageContent({
                                 No meals match your filters. Adjust search or meal category.
                             </p>
                         ) : (
-                            <ul className="m-0 grid list-none grid-cols-1 justify-items-center gap-8 p-0 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-                                {filteredMeals.map((meal) => (
-                                    <li key={meal.id} className="w-full max-w-[310px]">
-                                        <MealCard
-                                            variant="admin"
-                                            adminControls
-                                            showActions
-                                            selected={selectedSet.has(meal.id)}
-                                            onToggleSelected={() => toggleRow(meal.id)}
-                                            onEdit={() => {}}
-                                            onDelete={() => {}}
-                                            title={meal.title}
-                                            imageUrl={meal.imageUrl}
-                                            imageAlt=""
-                                            category={meal.category}
-                                            prepMinutes={meal.prepMinutes}
-                                            macros={meal.macros}
-                                            tags={meal.tags}
-                                            nutrientHighlights={meal.nutrientHighlights}
-                                            primaryActionLabel="View details"
-                                            onPrimaryAction={() => {}}
-                                            className="transition-all duration-200 ease-out hover:-translate-y-0.5 hover:scale-[1.02] hover:shadow-xl active:translate-y-0 active:scale-[0.98] active:shadow-md"
+                            <>
+                                <ul className="m-0 grid list-none grid-cols-1 justify-items-center gap-8 p-0 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+                                    {displayedMeals.map((meal) => (
+                                        <li key={meal.id} className="w-full max-w-[310px]">
+                                            <MealCard
+                                                variant="admin"
+                                                adminControls
+                                                showActions
+                                                selected={selectedSet.has(meal.id)}
+                                                onToggleSelected={() => toggleRow(meal.id)}
+                                                onEdit={() => {}}
+                                                onDelete={() => {}}
+                                                title={meal.title}
+                                                imageUrl={meal.imageUrl}
+                                                imageAlt=""
+                                                category={meal.category}
+                                                prepMinutes={meal.prepMinutes}
+                                                macros={meal.macros}
+                                                tags={meal.tags}
+                                                nutrientHighlights={meal.nutrientHighlights}
+                                                primaryActionLabel="View details"
+                                                onPrimaryAction={() => {}}
+                                                className="transition-all duration-200 ease-out hover:-translate-y-0.5 hover:scale-[1.02] hover:shadow-xl active:translate-y-0 active:scale-[0.98] active:shadow-md"
+                                            />
+                                        </li>
+                                    ))}
+                                </ul>
+                                {filteredMeals.length > visibleCount ? (
+                                    <div className="flex justify-center border-t border-gray-100 pt-6">
+                                        <Button
+                                            label={`Load more (${Math.min(PAGE_SIZE, filteredMeals.length - visibleCount)} meals)`}
+                                            variant="secondary"
+                                            type="button"
+                                            onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
                                         />
-                                    </li>
-                                ))}
-                            </ul>
+                                    </div>
+                                ) : null}
+                            </>
                         )}
                     </div>
                 </section>
             </div>
 
             {confirmOpen ? (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
                     <button
                         type="button"
                         className="absolute inset-0 bg-black/40"
@@ -590,7 +596,7 @@ export function MealLibraryPageContent({
             ) : null}
 
             {createOpen ? (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
                     <button
                         type="button"
                         className="absolute inset-0 bg-black/40"
@@ -768,7 +774,7 @@ export function MealLibraryPageContent({
                                                 const matches =
                                                     q.length < 1
                                                         ? []
-                                                        : INGREDIENT_LIBRARY.filter((i) => i.name.toLowerCase().includes(q)).slice(0, 10);
+                                                        : ingredientDatabase.filter((i) => i.name.toLowerCase().includes(q)).slice(0, 10);
                                                 return (
                                                     <div key={idx} className="rounded-[12px] border border-gray-100 bg-[#F8F9F6] p-3">
                                                         <div className="grid gap-4 md:grid-cols-[1fr_100px_90px_auto] md:items-end">

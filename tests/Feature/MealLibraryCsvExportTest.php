@@ -69,12 +69,13 @@ test('meal library export csv uses bulk import headers and one row per meal', fu
 
     $csv = $response->streamedContent();
     expect($csv)->not->toBe('')
-        ->and($csv)->toContain('Meal_Name,Category,Ingredient_Quantities,Instructions,Description_Highlight')
+        ->and($csv)->toContain('Meal_Name,Category,Ingredient_Quantities,Instructions,Description_Highlight,Total_Calories')
         ->and($csv)->toContain('Rice Bowl')
         ->and($csv)->toContain(',Meal,')
         ->and($csv)->toContain('Rice:200')
         ->and($csv)->toContain('Steam and serve.')
-        ->and($csv)->toContain('Comfort carbs.');
+        ->and($csv)->toContain('Comfort carbs.')
+        ->and($csv)->toContain(',260');
 });
 
 test('meal library export service headers constant matches import template', function () {
@@ -85,6 +86,7 @@ test('meal library export service headers constant matches import template', fun
             'Ingredient_Quantities',
             'Instructions',
             'Description_Highlight',
+            'Total_Calories',
         ]);
 });
 
@@ -181,7 +183,7 @@ test('meal library exported csv round-trips through bulk import', function () {
 
     $export = $this->actingAs($user)->get(route('meals.library.export-csv'));
     $export->assertOk();
-    $csv = $export->streamedContent();
+    $csv = str_replace("\r\n", "\n", $export->streamedContent());
 
     Meal::query()->delete();
 
@@ -189,13 +191,16 @@ test('meal library exported csv round-trips through bulk import', function () {
 
     $file = UploadedFile::fake()->createWithContent('library-export.csv', $csv);
 
-    $this->actingAs($user)
+    $response = $this->actingAs($user)
         ->postJson(route('meals.library.import-csv'), ['file' => $file])
-        ->assertOk()
-        ->assertJsonPath('summary.imported', 1)
-        ->assertJsonPath('summary.updated', 0)
-        ->assertJsonPath('summary.duplicates_created', 0)
-        ->assertJsonPath('summary.errors', 0);
+        ->assertOk();
+
+    $summary = $response->json('summary');
+    expect($summary['imported'])->toBe(1)
+        ->and($summary['updated'])->toBe(0)
+        ->and($summary['errors'])->toBe(0)
+        ->and($summary['pending_ingredient_input'])->toBe(0)
+        ->and($summary['duplicates_created'])->toBe(0);
 
     $meal = Meal::query()->where('name', 'Rice Bowl')->firstOrFail();
     expect($meal->category)->toBe(RecipeCategory::Breakfast)

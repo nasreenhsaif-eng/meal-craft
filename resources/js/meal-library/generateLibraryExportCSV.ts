@@ -8,6 +8,7 @@ export const MEAL_LIBRARY_SYNCHRONIZED_CSV_HEADERS = [
     'Ingredient_Quantities',
     'Instructions',
     'Description_Highlight',
+    'Total_Calories',
 ] as const;
 
 /**

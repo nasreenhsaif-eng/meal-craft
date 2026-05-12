@@ -116,7 +116,7 @@ export default function DropdownTextInput({
             {open && menuRect
                 ? createPortal(
                       <div
-                          className="fixed z-50"
+                          className="fixed z-[95]"
                           style={{
                               left: `${menuRect.left}px`,
                               top: `${menuRect.top + 8}px`,

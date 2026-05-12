@@ -219,7 +219,7 @@ final class MealCsvLibraryImportService
                 $normKey = self::normalizeMealNameKey($mealName);
                 $existingMeal = $mealsByNormalizedName[$normKey] ?? null;
 
-                $result = DB::transaction(function () use ($existingMeal, $mealName, $mealCategoryValue, $instructions, $highlight, $calc): array {
+                $result = DB::transaction(function () use ($existingMeal, $mealName, $mealCategory, $mealCategoryValue, $instructions, $highlight, $calc): array {
                     $nutritionPayload = Meal::nutritionSummaryToPersistedAttributes($calc['nutrition']);
 
                     $sync = [];

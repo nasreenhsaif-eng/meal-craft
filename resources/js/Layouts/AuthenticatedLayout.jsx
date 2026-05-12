@@ -10,6 +10,7 @@ import { ADMIN_NAV_HREFS } from '../Components/Admin/AdminSidebar.jsx';
  *   pageTitle: string;
  *   activePath?: string;
  *   showSearch?: boolean;
+ *   hidePageTitle?: boolean;
  *   user?: { name?: string; email?: string; initials?: string } | null;
  *   contentWrapperClassName?: string;
  * }} props
@@ -19,6 +20,7 @@ export default function AuthenticatedLayout({
     pageTitle,
     activePath = '',
     showSearch = false,
+    hidePageTitle = false,
     user: userProp,
     contentWrapperClassName,
 }) {
@@ -52,6 +54,7 @@ export default function AuthenticatedLayout({
             userAvatar={userAvatar}
             onAccountSettingsClick={() => router.visit('/settings/profile')}
             showSearch={showSearch}
+            hidePageTitle={hidePageTitle}
             contentWrapperClassName={contentWrapperClassName}
         >
             {flashSuccess ? (

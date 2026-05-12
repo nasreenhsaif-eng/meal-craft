@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\RecipeCategory;
 use App\Models\Meal;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\Pivot;
 
 /**
  * Full meal-library CSV export aligned with {@see MealCsvLibraryImportService} bulk import columns.
@@ -17,6 +18,7 @@ final class MealLibrarySynchronizedCsvExport
         'Ingredient_Quantities',
         'Instructions',
         'Description_Highlight',
+        'Total_Calories',
     ];
 
     /**
@@ -48,12 +50,21 @@ final class MealLibrarySynchronizedCsvExport
             }])
             ->orderBy('name')
             ->each(function (Meal $meal) use ($handle): void {
+                $nutrition = $meal->ingredients->isEmpty()
+                    ? null
+                    : RecipeNutritionCalculator::fromMeal($meal);
+
+                $totalCalories = $nutrition !== null
+                    ? (float) ($nutrition['calories'] ?? 0)
+                    : (float) ($meal->total_calories ?? 0);
+
                 fputcsv($handle, [
                     $meal->name,
                     self::categoryForBulkImport($meal->category),
                     $this->ingredientQuantitiesCell($meal),
                     $meal->description ?? '',
                     $meal->highlight ?? '',
+                    round($totalCalories, 1),
                 ], ',', '"', '\\');
             });
     }
@@ -78,7 +89,7 @@ final class MealLibrarySynchronizedCsvExport
     }
 
     /**
-     * @param  \Illuminate\Database\Eloquent\Relations\Pivot|null  $pivot
+     * @param  Pivot|null  $pivot
      */
     private function pivotGrams(?object $pivot): float
     {

@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Ingredient;
 use App\Models\User;
 use Inertia\Testing\AssertableInertia;
 
@@ -33,7 +34,42 @@ test('admin ingredient library renders inertia page with diet tag options', func
             ->component('Admin/IngredientsLibrary')
             ->has('dietTags')
             ->has('dietTags.0.value')
-            ->has('dietTags.0.label'));
+            ->has('dietTags.0.label')
+            ->has('ingredients')
+            ->has('csvTemplateUrl')
+            ->has('csvExportUrl')
+            ->has('csvImportUrl'));
+});
+
+test('admin ingredient library passes verified ingredients as flattened rows', function () {
+    $user = User::factory()->create();
+    Ingredient::factory()->create([
+        'is_verified' => true,
+        'name' => 'Library Audit Ingredient',
+        'usda_food_category' => 'Spices',
+        'fdc_id' => 12345,
+        'micronutrients' => [
+            'vitamin_a' => 10.5,
+            'vitamin_c' => 2,
+            'fiber' => 1.25,
+        ],
+    ]);
+    Ingredient::factory()->create([
+        'is_verified' => false,
+        'name' => 'Unverified Should Not Appear',
+    ]);
+
+    $this->actingAs($user)
+        ->get('/admin/ingredient-library')
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Admin/IngredientsLibrary')
+            ->has('ingredients', 1)
+            ->where('ingredients.0.name', 'Library Audit Ingredient')
+            ->where('ingredients.0.category', 'Spices')
+            ->where('ingredients.0.fdc', '12345')
+            ->where('ingredients.0.vitA', 10.5)
+            ->where('ingredients.0.fiber', 1.25));
 });
 
 test('admin meal library renders inertia page with diet type and cycle phase options', function () {
@@ -46,6 +82,12 @@ test('admin meal library renders inertia page with diet type and cycle phase opt
             ->component('Admin/MealLibrary')
             ->has('dietTypes')
             ->has('cyclePhases')
+            ->has('meals')
+            ->has('ingredientProfiles')
+            ->has('mealCategoryOptions')
+            ->has('csvTemplateUrl')
+            ->has('csvExportUrl')
+            ->has('csvImportUrl')
             ->where('dietTypes.0.value', 'balanced')
             ->where('cyclePhases.0.value', 'menstrual'));
 });

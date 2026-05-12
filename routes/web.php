@@ -3,6 +3,8 @@
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AdminUserActionController;
 use App\Http\Controllers\Admin\IngredientLibraryController;
+use App\Http\Controllers\Admin\IngredientLibraryCsvExportController;
+use App\Http\Controllers\Admin\IngredientLibraryCsvImportController;
 use App\Http\Controllers\Admin\MealLibraryController;
 use App\Http\Controllers\Admin\MealPlanLibraryController;
 use App\Http\Controllers\MealLibraryCsvExportController;
@@ -25,6 +27,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->group(function () {
             Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
             Route::get('/ingredient-library', [IngredientLibraryController::class, 'index'])->name('ingredient-library');
+            Route::get('/ingredient-library/export-csv', IngredientLibraryCsvExportController::class)->name('ingredient-library.export-csv');
+            Route::post('/ingredient-library/import-csv', IngredientLibraryCsvImportController::class)->name('ingredient-library.import-csv');
             Route::get('/meal-library', [MealLibraryController::class, 'index'])->name('meal-library');
             Route::get('/meal-plan-library', [MealPlanLibraryController::class, 'index'])->name('meal-plan-library');
 

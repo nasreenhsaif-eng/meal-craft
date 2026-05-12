@@ -276,33 +276,22 @@ export function MealPlanLibraryPageContent({
     const mealById = useMemo(() => new Map(MOCK_MEALS.map((m) => [m.id, m])), []);
 
     return (
-        <div className={`min-h-screen ${PAGE_BG} px-4 py-8 font-sans md:px-8`}>
+        <div className={`min-h-screen ${PAGE_BG} px-4 pb-8 pt-4 font-sans md:px-8`}>
             <div className="mx-auto max-w-[1400px] space-y-6">
-                <div className="flex flex-wrap items-end justify-between gap-4">
-                    <div className="min-w-[260px]">
-                        <p className="mb-1 font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#555555]">
-                            Admin / Meal Plan Library
-                        </p>
-                        <h1 className="font-montserrat text-[20px] font-bold tracking-tight text-[#262A22]">
-                            Meal Plan Library
-                        </h1>
-                        <p className="mt-1 font-body text-sm text-[#555555]">
-                            Orchestrate protocols and daily averages across your meal system.
-                        </p>
-                        <p className="sr-only">
-                            Diet type options: {dietTypes.map((d) => `${d.label} (${d.value})`).join(', ')}. Cycle phase
-                            options: {cyclePhases.map((p) => `${p.label} (${p.value})`).join(', ')}.
-                        </p>
-                    </div>
-                    <Button label="Create meal plan" variant="primary" type="button" onClick={() => setCreateOpen(true)} />
-                </div>
-
-                <section className="rounded-[12px] border border-gray-200 bg-white shadow-sm" aria-labelledby="meal-plan-library-heading">
+                <section className="relative z-0 rounded-[12px] border border-gray-200 bg-white shadow-sm" aria-labelledby="meal-plan-library-heading">
                     <h2 id="meal-plan-library-heading" className="sr-only">
                         Meal Plan library
                     </h2>
+                    <p id="meal-plan-library-desc" className="sr-only">
+                        Orchestrate protocols and daily averages across your meal system. Diet type options:{' '}
+                        {dietTypes.map((d) => `${d.label} (${d.value})`).join(', ')}. Cycle phase options:{' '}
+                        {cyclePhases.map((p) => `${p.label} (${p.value})`).join(', ')}.
+                    </p>
 
-                    <div className="relative z-20 flex flex-col gap-6 border-b border-gray-200 p-5 pt-6">
+                    <div
+                        className="flex w-full flex-col gap-6 rounded-t-[12px] border-b border-gray-200 px-5 pb-6 pt-6"
+                        aria-describedby="meal-plan-library-desc"
+                    >
                         <div className="grid w-full gap-6 sm:grid-cols-[minmax(0,1fr)_280px] sm:items-end sm:gap-8">
                             <div className="w-full min-w-0">
                                 <div ref={searchRootRef} className="relative">
@@ -367,14 +356,27 @@ export function MealPlanLibraryPageContent({
                             </div>
                         </div>
 
-                        <CSVUploader
-                            className="pt-2"
-                            templateUrl="#"
-                            exportUrl="#"
-                            onUpload={async (file) => {
-                                void file;
-                            }}
-                        />
+                        <div className="flex flex-col gap-4 pt-1 sm:flex-row sm:items-end">
+                            <div className="shrink-0 sm:pr-6">
+                                <Button
+                                    label="Create meal plan"
+                                    variant="primary"
+                                    type="button"
+                                    className="shrink-0 uppercase tracking-wide"
+                                    onClick={() => setCreateOpen(true)}
+                                />
+                            </div>
+                            <div className="min-w-0 flex-1 sm:flex sm:justify-end">
+                                <CSVUploader
+                                    className="w-full pt-0 sm:justify-end"
+                                    templateUrl="#"
+                                    exportUrl="#"
+                                    onUpload={async (file) => {
+                                        void file;
+                                    }}
+                                />
+                            </div>
+                        </div>
                     </div>
 
                     <div className="p-5">
@@ -404,7 +406,7 @@ export function MealPlanLibraryPageContent({
             </div>
 
             {createOpen ? (
-                <div className="fixed inset-0 z-40 flex items-center justify-center p-4">
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
                     <button
                         type="button"
                         className="absolute inset-0 bg-black/40"

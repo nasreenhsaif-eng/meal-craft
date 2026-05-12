@@ -63,6 +63,7 @@ function IconSearchPrefix() {
  * @param {string} [props.searchValue] — Controlled search; omit for internal state (Storybook default).
  * @param {(event: import('react').ChangeEvent<HTMLInputElement>) => void} [props.onSearchChange]
  * @param {boolean} [props.showSearch] — Render global search row (default: true).
+ * @param {boolean} [props.hidePageTitle] — Hide the visible page title in the top bar (e.g. when the page renders its own title row).
  * @param {string} [props.contentWrapperClassName] — Class for the inner wrapper around `children` (default: centered max-w-6xl).
  */
 export function AdminLayout({
@@ -73,6 +74,7 @@ export function AdminLayout({
     userAvatar,
     onAccountSettingsClick,
     showSearch = true,
+    hidePageTitle = false,
     searchLabel = 'Search',
     searchPlaceholder = 'Search meals, ingredients, profiles…',
     searchValue: searchValueProp,
@@ -159,7 +161,7 @@ export function AdminLayout({
                 initial={false}
                 animate={{ x: sidebarX }}
                 transition={{ type: 'spring', stiffness: 380, damping: 34 }}
-                className="fixed bottom-0 left-0 top-0 z-40 w-[280px] border-r border-gray-200 bg-white"
+                className="fixed bottom-0 left-0 top-0 z-[55] w-[280px] border-r border-gray-200 bg-white"
                 aria-hidden={!isDesktop && !mobileNavOpen}
                 inert={!isDesktop && !mobileNavOpen}
             >
@@ -185,9 +187,13 @@ export function AdminLayout({
                                     )}
                                     <span className="sr-only">{mobileNavOpen ? 'Close menu' : 'Open menu'}</span>
                                 </button>
-                                <h1 className="m-0 min-w-0 flex-1 truncate font-sans text-lg font-bold tracking-tight text-[#262A22]">
-                                    {pageTitle}
-                                </h1>
+                                {hidePageTitle ? (
+                                    <span className="sr-only">{pageTitle}</span>
+                                ) : (
+                                    <h1 className="m-0 min-w-0 flex-1 truncate font-sans text-lg font-bold tracking-tight text-[#262A22]">
+                                        {pageTitle}
+                                    </h1>
+                                )}
                             </div>
                             <button
                                 type="button"
@@ -213,7 +219,10 @@ export function AdminLayout({
 
                 <main
                     id="admin-main"
-                    className="flex-1 bg-[#F8F9F6] px-4 py-6 md:px-6"
+                    className={
+                        'flex-1 bg-[#F8F9F6] px-4 md:px-6 ' +
+                        (showSearch ? 'py-6' : 'pt-8 pb-6')
+                    }
                     style={{ fontFamily: 'Montserrat, ui-sans-serif, system-ui, sans-serif' }}
                 >
                     <div className={contentWrapperClassName}>{children}</div>

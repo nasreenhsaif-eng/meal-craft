@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { router, usePage } from '@inertiajs/react';
 import AdminInertiaShell from '../../Layouts/AdminInertiaShell.jsx';
 import TextInput from '../../Components/Atoms/TextInput/TextInput.jsx';
 import DropdownTextInput from '../../Components/Atoms/TextInput/DropdownTextInput.jsx';
@@ -25,6 +26,58 @@ const DEFAULT_DIET_TAGS = [
     { value: 'intermittent_fasting', label: 'Intermittent fasting' },
 ];
 
+const PAGE_SIZE = 50;
+
+function isPlainObject(value) {
+    return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function coerceNumber(value) {
+    if (value === null || value === undefined || value === '') {
+        return 0;
+    }
+    const n = Number(value);
+    return Number.isNaN(n) ? 0 : n;
+}
+
+/**
+ * Prefer flattened API fields; fall back to micronutrients JSON keys (e.g. vitamin_c, zinc).
+ *
+ * @param {Record<string, unknown>} raw
+ * @returns {LibraryIngredientRow}
+ */
+function normalizeLibraryRow(raw) {
+    const m = isPlainObject(raw.micronutrients) ? raw.micronutrients : {};
+    const pick = (flatKey, jsonKey) => coerceNumber(raw[flatKey] ?? m[jsonKey]);
+
+    return {
+        id: String(raw.id ?? ''),
+        name: String(raw.name ?? ''),
+        category: String(raw.category ?? raw.usda_food_category ?? '').trim(),
+        fdc: String(raw.fdc ?? '—'),
+        highlights: Array.isArray(raw.highlights) ? raw.highlights : [],
+        calories: coerceNumber(raw.calories),
+        protein: coerceNumber(raw.protein),
+        carbs: coerceNumber(raw.carbs),
+        fat: coerceNumber(raw.fat),
+        vitA: pick('vitA', 'vitamin_a'),
+        vitB6: pick('vitB6', 'vitamin_b6'),
+        vitB9: pick('vitB9', 'vitamin_b9'),
+        vitB12: pick('vitB12', 'vitamin_b12'),
+        vitC: pick('vitC', 'vitamin_c'),
+        vitD: pick('vitD', 'vitamin_d'),
+        vitE: pick('vitE', 'vitamin_e'),
+        vitK: pick('vitK', 'vitamin_k'),
+        calcium: pick('calcium', 'calcium'),
+        iron: pick('iron', 'iron'),
+        magnesium: pick('magnesium', 'magnesium'),
+        potassium: pick('potassium', 'potassium'),
+        zinc: pick('zinc', 'zinc'),
+        sodium: pick('sodium', 'sodium'),
+        sugar: pick('sugar', 'sugar'),
+        fiber: pick('fiber', 'fiber'),
+    };
+}
 const ROW_HOVER = 'hover:bg-[#F8F9F6]';
 const PAGE_BG = 'bg-[#F8F9F6]';
 
@@ -50,90 +103,6 @@ const MINERAL_MACRO_COLS = [
     { key: 'fiber', label: 'Fiber' },
 ];
 
-const MOCK_INGREDIENTS = [
-    {
-        id: 'ing-1',
-        name: 'Chicken breast, roasted',
-        category: 'Proteins',
-        fdc: '173686',
-        highlights: ['B12', 'Zinc'],
-        calories: 165,
-        protein: 31,
-        carbs: 0,
-        fat: 3.6,
-        vitA: 0,
-        vitB6: 0.6,
-        vitB9: 0.01,
-        vitB12: 0.3,
-        vitC: 0,
-        vitD: 0,
-        vitE: 0.2,
-        vitK: 0,
-        calcium: 0.01,
-        iron: 0.01,
-        magnesium: 0.03,
-        potassium: 0.26,
-        zinc: 0.01,
-        sodium: 0.07,
-        sugar: 0,
-        fiber: 0,
-    },
-    {
-        id: 'ing-2',
-        name: 'Spinach, raw',
-        category: 'Vegetables',
-        fdc: '168462',
-        highlights: ['Folate', 'Iron', 'Magnesium'],
-        calories: 23,
-        protein: 2.9,
-        carbs: 3.6,
-        fat: 0.4,
-        vitA: 0.47,
-        vitB6: 0.19,
-        vitB9: 0.19,
-        vitB12: 0,
-        vitC: 0.03,
-        vitD: 0,
-        vitE: 0.02,
-        vitK: 0.48,
-        calcium: 0.1,
-        iron: 0.03,
-        magnesium: 0.08,
-        potassium: 0.56,
-        zinc: 0.01,
-        sodium: 0.08,
-        sugar: 0.4,
-        fiber: 2.2,
-    },
-    {
-        id: 'ing-3',
-        name: 'Greek yogurt, plain',
-        category: 'Other',
-        fdc: '170885',
-        highlights: ['B12', 'Calcium'],
-        calories: 97,
-        protein: 9,
-        carbs: 3.6,
-        fat: 5,
-        vitA: 0.06,
-        vitB6: 0.05,
-        vitB9: 0.01,
-        vitB12: 0.7,
-        vitC: 0,
-        vitD: 0.01,
-        vitE: 0.1,
-        vitK: 0,
-        calcium: 0.11,
-        iron: 0,
-        magnesium: 0.01,
-        potassium: 0.14,
-        zinc: 0.01,
-        sodium: 0.04,
-        sugar: 3.6,
-        fiber: 0,
-    },
-];
-
 function formatNumber(value) {
     if (value === null || value === undefined) {
         return '—';
@@ -154,13 +123,34 @@ function dietTagDropdownOptions(items) {
 }
 
 /**
+ * Presentational ingredients library (no Inertia). Use in Storybook; in the app, prefer {@link IngredientsLibraryPageContent}.
+ *
  * @param {{
  *   dietTags?: { value: string; label: string }[];
+ *   ingredients?: LibraryIngredientRow[];
+ *   csvTemplateUrl?: string;
+ *   csvExportUrl?: string;
+ *   csvImportUrl?: string;
+ *   initialSelectedCategory?: string;
+ *   flashSuccess?: string | null;
  * }} props
  */
-export function IngredientsLibraryPageContent({ dietTags = DEFAULT_DIET_TAGS }) {
+
+/** @typedef {{ id: string; name: string; category: string; fdc: string; highlights: string[]; calories: number; protein: number; carbs: number; fat: number; vitA: number; vitB6: number; vitB9: number; vitB12: number; vitC: number; vitD: number; vitE: number; vitK: number; calcium: number; iron: number; magnesium: number; potassium: number; zinc: number; sodium: number; sugar: number; fiber: number }} LibraryIngredientRow — `category` is the USDA food category string from the API. */
+
+export function IngredientsLibraryPageView({
+    dietTags = DEFAULT_DIET_TAGS,
+    ingredients = [],
+    csvTemplateUrl = '#',
+    csvExportUrl = '#',
+    csvImportUrl = '#',
+    initialSelectedCategory,
+    flashSuccess = null,
+}) {
     const [query, setQuery] = useState('');
-    const [categoryFilter, setCategoryFilter] = useState('All categories');
+    const [selectedCategory, setSelectedCategory] = useState(
+        () => initialSelectedCategory ?? 'All categories',
+    );
     const [searchOpen, setSearchOpen] = useState(false);
     const searchRootRef = useRef(null);
     const [searchMenuRect, setSearchMenuRect] = useState(/** @type {{ left: number; top: number; width: number } | null} */ (null));
@@ -180,6 +170,41 @@ export function IngredientsLibraryPageContent({ dietTags = DEFAULT_DIET_TAGS }) 
     const [createDietTagLabel, setCreateDietTagLabel] = useState('');
 
     const dietTagOptions = useMemo(() => dietTagDropdownOptions(dietTags), [dietTags]);
+
+    const libraryRows = useMemo(() => {
+        const list = Array.isArray(ingredients) ? ingredients : [];
+        return list.map((raw) => normalizeLibraryRow(raw));
+    }, [ingredients]);
+
+    const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+
+    useEffect(() => {
+        if (initialSelectedCategory !== undefined) {
+            setSelectedCategory(initialSelectedCategory);
+        }
+    }, [initialSelectedCategory]);
+
+    useEffect(() => {
+        setVisibleCount(PAGE_SIZE);
+    }, [query, selectedCategory, ingredients]);
+
+    const ingredientCategoryOptions = useMemo(() => {
+        const seen = new Set();
+        for (const r of libraryRows) {
+            const c = (r.category ?? '').trim();
+            if (c !== '') {
+                seen.add(c);
+            }
+        }
+        const sorted = Array.from(seen).sort((a, b) => a.localeCompare(b));
+        return ['All categories', ...sorted];
+    }, [libraryRows]);
+
+    useEffect(() => {
+        if (selectedCategory !== 'All categories' && !ingredientCategoryOptions.includes(selectedCategory)) {
+            setSelectedCategory('All categories');
+        }
+    }, [selectedCategory, ingredientCategoryOptions]);
 
     useEffect(() => {
         if (!createOpen) {
@@ -239,39 +264,62 @@ export function IngredientsLibraryPageContent({ dietTags = DEFAULT_DIET_TAGS }) 
         };
     }, [searchOpen]);
 
-    const rows = useMemo(() => {
+    const filteredRows = useMemo(() => {
         const q = query.trim().toLowerCase();
-        let list = MOCK_INGREDIENTS;
+        let list = libraryRows;
         if (q) {
-            list = list.filter((r) => r.name.toLowerCase().includes(q) || String(r.fdc).includes(q));
+            list = list.filter((r) => {
+                const nameMatch = r.name.toLowerCase().includes(q);
+                const fdcMatch = String(r.fdc).toLowerCase().includes(q);
+                const categoryMatch = (r.category ?? '').toLowerCase().includes(q);
+                const highlightMatch =
+                    Array.isArray(r.highlights) &&
+                    r.highlights.some((h) => String(h).toLowerCase().includes(q));
+                return nameMatch || fdcMatch || categoryMatch || highlightMatch;
+            });
         }
-        if (categoryFilter !== 'All categories') {
-            list = list.filter((r) => r.category === categoryFilter);
+        if (selectedCategory !== 'All categories') {
+            const want = selectedCategory.trim().toLowerCase();
+            list = list.filter((r) => {
+                const rowCat = String(r.category ?? '').trim().toLowerCase();
+                return rowCat === want;
+            });
         }
         return list;
-    }, [query, categoryFilter]);
+    }, [query, selectedCategory, libraryRows]);
+
+    const displayedRows = useMemo(
+        () => filteredRows.slice(0, Math.min(visibleCount, filteredRows.length)),
+        [filteredRows, visibleCount],
+    );
 
     const searchMatches = useMemo(() => {
         const q = query.trim().toLowerCase();
         if (q.length < 1) {
             return [];
         }
-        return MOCK_INGREDIENTS.filter(
-            (r) => r.name.toLowerCase().includes(q) || r.highlights.some((h) => String(h).toLowerCase().includes(q)),
-        ).slice(0, 10);
-    }, [query]);
+        return libraryRows
+            .filter(
+                (r) =>
+                    r.name.toLowerCase().includes(q) ||
+                    (Array.isArray(r.highlights) &&
+                        r.highlights.some((h) => String(h).toLowerCase().includes(q))),
+            )
+            .slice(0, 10);
+    }, [query, libraryRows]);
 
     const selectedRowSet = useMemo(() => new Set(selectedRows), [selectedRows]);
-    const allVisibleSelected = rows.length > 0 && rows.every((r) => selectedRowSet.has(r.id));
+    const allVisibleSelected =
+        displayedRows.length > 0 && displayedRows.every((r) => selectedRowSet.has(r.id));
     const anySelected = selectedRows.length > 0;
 
     function toggleAllVisible() {
         setSelectedRows((prev) => {
             const next = new Set(prev);
             if (allVisibleSelected) {
-                rows.forEach((r) => next.delete(r.id));
+                displayedRows.forEach((r) => next.delete(r.id));
             } else {
-                rows.forEach((r) => next.add(r.id));
+                displayedRows.forEach((r) => next.add(r.id));
             }
             return Array.from(next);
         });
@@ -290,29 +338,32 @@ export function IngredientsLibraryPageContent({ dietTags = DEFAULT_DIET_TAGS }) 
     }
 
     return (
-        <div className={`min-h-screen ${PAGE_BG} px-4 py-8 font-sans md:px-8`}>
+        <div className={`min-h-screen ${PAGE_BG} px-4 pb-8 pt-4 font-sans md:px-8`}>
             <div className="mx-auto max-w-[1400px] space-y-6">
-                <div className="flex flex-wrap items-end justify-between gap-4">
-                    <div className="min-w-[260px]">
-                        <p className="mb-1 font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#555555]">
-                            Admin / Ingredients Library
-                        </p>
-                        <h1 className="font-montserrat text-[20px] font-bold tracking-tight text-[#262A22]">
-                            Ingredients Library
-                        </h1>
-                        <p className="mt-1 font-body text-sm text-[#555555]">
-                            Search, audit, and export ingredients for Smart Kitchen workflows.
-                        </p>
+                {flashSuccess ? (
+                    <div
+                        role="status"
+                        className="rounded-[12px] border border-[#5A6B44]/30 bg-[#F8F9F6] px-4 py-3 font-body text-sm text-[#262A22]"
+                    >
+                        {flashSuccess}
                     </div>
-                    <Button label="Create ingredient" variant="primary" onClick={() => setCreateOpen(true)} />
-                </div>
+                ) : null}
 
-                <section className="rounded-[12px] border border-gray-200 bg-white shadow-sm" aria-labelledby="ingredients-library-heading">
+                <section
+                    className="relative z-0 rounded-[12px] border border-gray-200 bg-white shadow-sm"
+                    aria-labelledby="ingredients-library-heading"
+                >
                     <h2 id="ingredients-library-heading" className="sr-only">
                         Ingredients library
                     </h2>
+                    <p id="ingredients-library-desc" className="sr-only">
+                        Search, audit, and export ingredients for Smart Kitchen workflows.
+                    </p>
 
-                    <div className="relative z-20 flex flex-col gap-6 border-b border-gray-200 p-5 pt-6">
+                    <div
+                        className="flex w-full flex-col gap-6 rounded-t-[12px] border-b border-gray-200 px-5 pb-6 pt-6"
+                        aria-describedby="ingredients-library-desc"
+                    >
                         <div className="grid w-full gap-6 sm:grid-cols-[minmax(0,1fr)_280px] sm:items-end sm:gap-8">
                             <div className="w-full min-w-0">
                                 <div ref={searchRootRef} className="relative">
@@ -369,59 +420,86 @@ export function IngredientsLibraryPageContent({ dietTags = DEFAULT_DIET_TAGS }) 
                             <div className="w-full min-w-0">
                                 <DropdownTextInput
                                     label="Ingredient category"
-                                    value={categoryFilter}
-                                    options={['All categories', ...INGREDIENT_CATEGORY_OPTIONS]}
-                                    onChange={setCategoryFilter}
+                                    value={
+                                        ingredientCategoryOptions.includes(selectedCategory) ? selectedCategory : 'All categories'
+                                    }
+                                    options={ingredientCategoryOptions}
+                                    onChange={setSelectedCategory}
                                     listboxAriaLabel="Filter by ingredient category"
                                     className="!max-w-none"
                                 />
                             </div>
                         </div>
 
-                        <CSVUploader
-                            className="pt-2"
-                            templateUrl="#"
-                            exportUrl="#"
-                            onUpload={async (file) => {
-                                void file;
-                            }}
-                        />
-                    </div>
-
-                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 px-5 py-4">
-                        <div className="min-w-0">
-                            <p className="font-montserrat text-sm font-bold tracking-tight text-[#262A22]">Ingredients</p>
-                            <p className="mt-0.5 font-body text-xs text-[#555555]">
-                                {rows.length} shown • {selectedRows.length} selected
-                            </p>
+                        <div className="flex flex-col gap-4 pt-1 sm:flex-row sm:items-end">
+                            <div className="shrink-0 sm:pr-6">
+                                <Button
+                                    label="Create ingredient"
+                                    variant="primary"
+                                    className="shrink-0 uppercase tracking-wide"
+                                    onClick={() => setCreateOpen(true)}
+                                />
+                            </div>
+                            <div className="min-w-0 flex-1 sm:flex sm:justify-end">
+                                <CSVUploader
+                                    className="w-full pt-0 sm:justify-end"
+                                    templateUrl={csvTemplateUrl}
+                                    exportUrl={csvExportUrl}
+                                    onUpload={(file) => {
+                                        router.post(
+                                            csvImportUrl,
+                                            { file },
+                                            { forceFormData: true, preserveScroll: true },
+                                        );
+                                    }}
+                                />
+                            </div>
                         </div>
 
-                    <Button
-                        label="Delete selected"
-                        variant="ghost"
-                        disabled={selectedRows.length === 0}
-                        onClick={() => {
-                            if (!anySelected) {
-                                return;
-                            }
-                            setConfirmOpen(true);
-                        }}
-                        className={[
-                            // Ghost variant utilities (bg-transparent, text color) can win in build order —
-                            // use ! overrides so solid red appears as soon as a row is selected (not only on hover).
-                            // Disabled atom adds opacity-50; destructive ghost/disabled wants full-opacity tint instead.
-                            'h-[44px] min-h-[44px] rounded-[12px] px-5 text-[13px] transition-colors duration-200',
-                            'disabled:!cursor-not-allowed disabled:!opacity-100',
-                            anySelected
-                                ? '!bg-[#C44F5D] !text-white hover:!bg-[#B14552] hover:!text-white disabled:!opacity-100'
-                                : '!bg-[#C44F5D]/20 !text-[#8A8A8A] hover:!bg-[#C44F5D]/20 hover:!text-[#8A8A8A]',
-                        ].join(' ')}
-                    />
+                        <div className="-mx-5 flex flex-wrap items-center justify-between gap-3 border-t border-gray-200 px-5 pt-4">
+                            <div className="min-w-0">
+                                <p className="font-montserrat text-sm font-bold tracking-tight text-[#262A22]">Ingredients</p>
+                                <p className="mt-0.5 font-body text-xs text-[#555555]">
+                                    <span className="font-semibold text-[#374151]">{libraryRows.length}</span> in library
+                                    {' · '}
+                                    {displayedRows.length} of {filteredRows.length} in table
+                                    {filteredRows.length < libraryRows.length ? ' (filtered)' : ''}
+                                    {' · '}
+                                    {selectedRows.length} selected
+                                    {filteredRows.length > PAGE_SIZE && displayedRows.length < filteredRows.length
+                                        ? ' · use "Load more" below for additional rows'
+                                        : ''}
+                                </p>
+                            </div>
+
+                            <Button
+                                label="Delete selected"
+                                variant="ghost"
+                                disabled={selectedRows.length === 0}
+                                onClick={() => {
+                                    if (!anySelected) {
+                                        return;
+                                    }
+                                    setConfirmOpen(true);
+                                }}
+                                className={[
+                                    // Ghost variant utilities (bg-transparent, text color) can win in build order —
+                                    // use ! overrides so solid red appears as soon as a row is selected (not only on hover).
+                                    // Disabled atom adds opacity-50; destructive ghost/disabled wants full-opacity tint instead.
+                                    'h-[44px] min-h-[44px] rounded-[12px] px-5 text-[13px] transition-colors duration-200',
+                                    'disabled:!cursor-not-allowed disabled:!opacity-100',
+                                    anySelected
+                                        ? '!bg-[#C44F5D] !text-white hover:!bg-[#B14552] hover:!text-white disabled:!opacity-100'
+                                        : '!bg-[#C44F5D]/20 !text-[#8A8A8A] hover:!bg-[#C44F5D]/20 hover:!text-[#8A8A8A]',
+                                ].join(' ')}
+                            />
+                        </div>
                     </div>
 
-                    <div className="relative overflow-x-auto">
+                    <div>
+                        <div className="overflow-x-auto">
                     <table className="min-w-[1400px] w-full border-collapse text-[#1F2937]">
-                        <thead className="sticky top-0 z-10 bg-white">
+                        <thead className="bg-white">
                             <tr className="border-b border-gray-200">
                                 <th className="sticky left-0 z-20 w-[54px] bg-white px-4 py-3 text-left">
                                     <button
@@ -498,7 +576,7 @@ export function IngredientsLibraryPageContent({ dietTags = DEFAULT_DIET_TAGS }) 
                             </tr>
                         </thead>
                         <tbody>
-                            {rows.map((r) => {
+                            {displayedRows.map((r) => {
                                 const checked = selectedRowSet.has(r.id);
                                 return (
                                     <tr key={r.id} className={`border-b border-gray-100 ${ROW_HOVER}`}>
@@ -526,7 +604,7 @@ export function IngredientsLibraryPageContent({ dietTags = DEFAULT_DIET_TAGS }) 
                                         <td className="px-4 py-3 font-body text-sm text-[#1F2937]">{r.fdc}</td>
                                         <td className="px-4 py-3">
                                             <div className="flex flex-wrap gap-2">
-                                                {r.highlights.map((h) => (
+                                                {(r.highlights ?? []).map((h) => (
                                                     <NutrientBadge key={h} type={h} />
                                                 ))}
                                             </div>
@@ -569,11 +647,22 @@ export function IngredientsLibraryPageContent({ dietTags = DEFAULT_DIET_TAGS }) 
                             })}
                         </tbody>
                     </table>
-                </div>
+                        </div>
+                {filteredRows.length > visibleCount ? (
+                    <div className="flex justify-center border-t border-gray-200 px-5 py-4">
+                        <Button
+                            label={`Load more (${Math.min(PAGE_SIZE, filteredRows.length - visibleCount)} rows)`}
+                            variant="secondary"
+                            type="button"
+                            onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
+                        />
+                    </div>
+                ) : null}
+                    </div>
                 </section>
 
             {createOpen ? (
-                <div className="fixed inset-0 z-40">
+                <div className="fixed inset-0 z-[100]">
                     <button
                         type="button"
                         className="absolute inset-0 bg-black/40"
@@ -667,7 +756,7 @@ export function IngredientsLibraryPageContent({ dietTags = DEFAULT_DIET_TAGS }) 
             ) : null}
 
             {confirmOpen ? (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
                     <button
                         type="button"
                         className="absolute inset-0 bg-black/40"
@@ -717,6 +806,13 @@ export function IngredientsLibraryPageContent({ dietTags = DEFAULT_DIET_TAGS }) 
             </div>
         </div>
     );
+}
+
+/** Inertia-connected page body; wraps {@link IngredientsLibraryPageView} with `usePage` flash. */
+export function IngredientsLibraryPageContent(props) {
+    const { flash } = usePage().props;
+    const flashSuccess = typeof flash?.success === 'string' ? flash.success : null;
+    return <IngredientsLibraryPageView {...props} flashSuccess={flashSuccess} />;
 }
 
 function IngredientsLibraryPage(props) {

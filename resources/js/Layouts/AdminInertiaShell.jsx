@@ -4,32 +4,52 @@ import { ADMIN_NAV_PATHS } from '../Components/Admin/AdminSidebar.jsx';
 
 const WIDE = 'mx-auto w-full max-w-[1400px]';
 
-/** @type {Record<string, { pageTitle: string; activePath: string; showSearch: boolean; contentWrapperClassName?: string }>} */
+/** @type {Record<string, { pageTitle: string; activePath: string; showSearch: boolean; hidePageTitle?: boolean; contentWrapperClassName?: string }>} */
 const SHELL_BY_COMPONENT = {
     'Admin/Dashboard': {
         pageTitle: 'Dashboard',
         activePath: ADMIN_NAV_PATHS.dashboard,
         showSearch: false,
+        hidePageTitle: false,
     },
     'Admin/IngredientsLibrary': {
-        pageTitle: 'Ingredient Library',
+        pageTitle: 'Ingredients Library',
         activePath: ADMIN_NAV_PATHS.ingredientDb,
-        showSearch: true,
+        showSearch: false,
+        hidePageTitle: false,
         contentWrapperClassName: WIDE,
     },
     'Admin/MealLibrary': {
         pageTitle: 'Meal Library',
         activePath: ADMIN_NAV_PATHS.mealHub,
-        showSearch: true,
+        showSearch: false,
+        hidePageTitle: false,
         contentWrapperClassName: WIDE,
     },
     'Admin/MealPlanLibrary': {
         pageTitle: 'Meal Plan Library',
         activePath: ADMIN_NAV_PATHS.mealPlans,
-        showSearch: true,
+        showSearch: false,
+        hidePageTitle: false,
+        contentWrapperClassName: WIDE,
+    },
+    'Admin/CustomerProfiles': {
+        pageTitle: 'Customer Profiles',
+        activePath: ADMIN_NAV_PATHS.customerProfiles,
+        showSearch: false,
+        hidePageTitle: true,
         contentWrapperClassName: WIDE,
     },
 };
+
+/** Inertia `page.url` is the current path (may omit leading slash in some adapters). */
+function isAdminAppPath(url) {
+    if (typeof url !== 'string' || url.length === 0) {
+        return false;
+    }
+    const path = url.startsWith('/') ? url : `/${url}`;
+    return path === '/admin' || path.startsWith('/admin/');
+}
 
 /**
  * Single persistent Inertia layout for all admin pages so AdminSidebar stays mounted when navigating between admin routes.
@@ -37,18 +57,22 @@ const SHELL_BY_COMPONENT = {
  * @param {{ children: import('react').ReactNode }} props
  */
 export default function AdminInertiaShell({ children }) {
-    const { component, auth } = usePage();
+    const { component, auth, url } = usePage();
     const c = SHELL_BY_COMPONENT[component] ?? {
         pageTitle: 'Meal Craft Admin',
         activePath: '',
-        showSearch: true,
+        showSearch: false,
+        hidePageTitle: false,
     };
+    const showSearch = isAdminAppPath(url) ? false : Boolean(c.showSearch);
+    const hidePageTitle = Boolean(c.hidePageTitle);
 
     return (
         <AuthenticatedLayout
             pageTitle={c.pageTitle}
             activePath={c.activePath}
-            showSearch={c.showSearch}
+            showSearch={showSearch}
+            hidePageTitle={hidePageTitle}
             contentWrapperClassName={c.contentWrapperClassName}
             user={auth?.user}
         >
