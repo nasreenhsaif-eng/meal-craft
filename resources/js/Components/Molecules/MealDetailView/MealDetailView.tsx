@@ -29,7 +29,7 @@ export type MealSafetyAlert = {
 
 export type MealDetailModel = {
     description: string;
-    cyclePhase: CyclePhase;
+    cyclePhases: CyclePhase[];
     dietaryTags: string[];
     safetyAlerts: MealSafetyAlert[];
     nutritionalData: MealNutritionalData;
@@ -100,7 +100,7 @@ function MealNutritionSummaryTable({ data }: { data: MealNutritionalData }): Rea
 }
 
 export default function MealDetailView({ meal, className = '' }: MealDetailViewProps): ReactElement {
-    const { description, cyclePhase, dietaryTags, safetyAlerts, nutritionalData, ingredients, instructions } = meal;
+    const { description, cyclePhases, dietaryTags, safetyAlerts, nutritionalData, ingredients, instructions } = meal;
 
     return (
         <div
@@ -128,9 +128,15 @@ export default function MealDetailView({ meal, className = '' }: MealDetailViewP
                         </div>
                     ) : null}
 
-                    <div>
-                        <CyclePhaseTag phase={cyclePhase} />
-                    </div>
+                    {cyclePhases?.length ? (
+                        <div className="flex flex-wrap gap-2" role="list" aria-label="Cycle phases">
+                            {cyclePhases.map((phase) => (
+                                <span key={phase} role="listitem" className="inline-flex">
+                                    <CyclePhaseTag phase={phase} />
+                                </span>
+                            ))}
+                        </div>
+                    ) : null}
 
                     {safetyAlerts?.length ? (
                         <div className="space-y-2">

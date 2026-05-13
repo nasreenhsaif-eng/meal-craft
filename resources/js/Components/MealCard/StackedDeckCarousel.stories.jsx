@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import StackedDeckCarousel from './StackedDeckCarousel.jsx';
-import MealCardClientViewNano from './MealCardClientViewNano.jsx';
+import MealCardClientViewNano from '../MealCardClientViewNano.jsx';
 
 const MEALS = [
     {
@@ -42,7 +42,7 @@ const MEALS = [
 ];
 
 export default {
-    title: 'MealCraft/Components/StackedDeckCarousel',
+    title: 'MealCraft/Components/MealCard/StackedDeckCarousel',
     component: StackedDeckCarousel,
     parameters: {
         layout: 'padded',

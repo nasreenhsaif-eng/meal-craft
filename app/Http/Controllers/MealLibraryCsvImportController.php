@@ -21,7 +21,7 @@ class MealLibraryCsvImportController extends Controller
             'file' => ['required', File::types(['csv', 'txt'])->max(10240)],
         ]);
 
-        $result = $mealCsvLibraryImportService->processUploadedFile($validated['file']);
+        $result = $mealCsvLibraryImportService->processUploadedFile($validated['file'], $request->user());
 
         return response()->json($result);
     }

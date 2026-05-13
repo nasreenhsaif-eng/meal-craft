@@ -4,6 +4,8 @@ import { AdminLayout } from '../../Components/Admin/AdminLayout.jsx';
 import { ADMIN_NAV_PATHS } from '../../Components/Admin/AdminSidebar.jsx';
 import { MealLibraryPageContent } from './MealLibraryPage.jsx';
 
+import { mealDetailViewFixture } from '../../Components/Molecules/MealDetailView/mealDetailViewFixture';
+
 const WIDE = 'mx-auto w-full max-w-[1400px]';
 
 const sampleIngredientProfiles = [
@@ -33,6 +35,7 @@ const sampleMeals = [
         macros: { calories: 260, protein: 5.4, carbs: 56, fat: 0.6 },
         tags: [{ label: 'Meal', type: 'category' }],
         nutrientHighlights: [],
+        detailView: mealDetailViewFixture,
     },
     {
         id: '2',
@@ -44,6 +47,7 @@ const sampleMeals = [
         macros: { calories: 320, protein: 18, carbs: 38, fat: 10 },
         tags: [{ label: 'High Protein', type: 'dietary' }],
         nutrientHighlights: ['B12'],
+        detailView: mealDetailViewFixture,
     },
     {
         id: '3',
@@ -55,6 +59,7 @@ const sampleMeals = [
         macros: { calories: 210, protein: 12, carbs: 34, fat: 3 },
         tags: [{ label: 'Vegan', type: 'dietary' }],
         nutrientHighlights: ['Iron', 'Folate'],
+        detailView: mealDetailViewFixture,
     },
 ];
 

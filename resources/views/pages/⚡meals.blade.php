@@ -728,7 +728,7 @@ new #[Title('Meals')] class extends Component {
             return;
         }
 
-        $result = $mealCsvLibraryImportService->processUploadedFile($file);
+        $result = $mealCsvLibraryImportService->processUploadedFile($file, auth()->user());
 
         $this->mealLibraryImportCsv = null;
         $this->resetPage();
@@ -776,6 +776,7 @@ new #[Title('Meals')] class extends Component {
                 'Salmon:120 | Quinoa:100 | Spinach:50 | Olive Oil:10',
                 'Grill salmon; mix with quinoa and greens.',
                 'High in Omega-3 for hormone balance.',
+                '520',
             ], ',', '"', '\\');
             fputcsv($handle, [
                 'Beef Stir Fry',
@@ -783,6 +784,7 @@ new #[Title('Meals')] class extends Component {
                 'Sirloin:150 | Broccoli:100 | Garlic:5 | Ginger:5',
                 'Sauté beef and veg in a hot pan.',
                 'Zinc-rich for immune support.',
+                '480',
             ], ',', '"', '\\');
 
             fclose($handle);
@@ -1174,7 +1176,7 @@ new #[Title('Meals')] class extends Component {
                 <div class="mt-4 w-full border-t border-stone-200/90 pt-4 dark:border-stone-700">
                     <flux:heading size="sm" class="text-stone-800 dark:text-stone-100">{{ __('Bulk import (auto-calculate from ingredient library)') }}</flux:heading>
                     <flux:text class="mt-1 text-xs text-stone-500 dark:text-stone-400">
-                        {{ __('Required columns: Meal_Name, Category (:allowed), Ingredient_Quantities, Instructions, Description_Highlight. Use Name:Grams pairs separated by |. Unknown ingredients are skipped until they exist in your library.', ['allowed' => implode(', ', array_map(fn ($c) => $c->value, \App\Services\MealCsvLibraryImportService::mealLibraryCsvAllowedCategories()))]) }}
+                        {{ __('Required columns: Meal_Name, Category (:allowed), Ingredient_Quantities, Instructions, Description_Highlight. Use pipe-separated segments like Name:amount with optional unit (g, kg, ml, …), or Name amount unit when a space is used. Unknown ingredients block that row until they exist in your library.', ['allowed' => implode(', ', array_map(fn ($c) => $c->value, \App\Services\MealCsvLibraryImportService::mealLibraryCsvAllowedCategories()))]) }}
                     </flux:text>
                     <div class="mt-3 flex max-w-xl flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
                         <div class="min-w-0 flex-1">

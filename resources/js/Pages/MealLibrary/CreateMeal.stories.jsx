@@ -6,6 +6,39 @@ import { MealLibraryStoryShell } from './MealLibraryPage.stories.jsx';
 
 const micro = { zinc: 0, fiber: 0, sugar: 0, calcium: 0, potassium: 0, sodium: 0, vitamin_c: 0, vitamin_a: 0, vitamin_e: 0, vitamin_d: 0, vitamin_k: 0 };
 
+/** Minimal row shape for `MealLibraryPageContent` edit mode (matches server `editForm` + grid id/title). */
+const editableMealFixture = {
+    id: '77',
+    title: 'Editable bowl',
+    editForm: {
+        id: '77',
+        name: 'Editable bowl',
+        category: 'Meal',
+        mealPlanTags: ['Balanced'],
+        dietTags: ['Vegan'],
+        cyclePhaseValues: ['follicular'],
+        description: 'Step A\nStep B',
+        highlight: 'Good fuel.',
+        totalCalories: '100',
+        totalProtein: '3.8',
+        totalCarbs: '12.5',
+        totalFat: '3',
+        isBulk: true,
+        servingsCount: 4,
+        finishedWeightGrams: '',
+        imageUrl: '',
+        ingredientRows: [
+            {
+                ingredientId: 502,
+                selectedName: 'Wild Rice Blend',
+                nameQuery: 'Wild Rice Blend',
+                amount: '100',
+                unit: 'g',
+            },
+        ],
+    },
+};
+
 const sampleIngredientProfiles = [
     {
         id: 501,
@@ -59,7 +92,7 @@ export default {
 export const CreateMealForm = {
     name: 'Form + combobox + submit (mock)',
     render: () => {
-        const spy = { called: false, /** @type {FormData|null} */ fd: null };
+        const spy = { called: false, /** @type {Record<string, unknown>|null} */ payload: null };
         if (typeof window !== 'undefined') {
             window.__mealCreateStorySpy = spy;
         }
@@ -70,9 +103,9 @@ export const CreateMealForm = {
                         meals={[]}
                         ingredientProfiles={sampleIngredientProfiles}
                         mealStoreUrl="#"
-                        onCreateMealSubmit={(fd) => {
+                        onCreateMealSubmit={(payload) => {
                             spy.called = true;
-                            spy.fd = fd;
+                            spy.payload = payload;
                         }}
                     />
                 </MealLibraryStoryShell>
@@ -135,23 +168,31 @@ export const CreateMealForm = {
         });
 
         const spy = typeof window !== 'undefined' ? window.__mealCreateStorySpy : null;
-        if (!spy?.called || !spy.fd) {
-            throw new Error('onCreateMealSubmit should have been called with FormData');
+        if (!spy?.called || !spy.payload) {
+            throw new Error('onCreateMealSubmit should have been called with a payload object');
         }
-        if (!(spy.fd instanceof FormData)) {
-            throw new Error('Expected FormData');
+        if (typeof spy.payload !== 'object' || spy.payload === null || Array.isArray(spy.payload)) {
+            throw new Error('Expected plain object payload');
         }
-        if (spy.fd.get('name') !== 'Storybook combo meal') {
-            throw new Error(`Expected name in FormData, got ${spy.fd.get('name')}`);
+        if (spy.payload.name !== 'Storybook combo meal') {
+            throw new Error(`Expected name in payload, got ${String(spy.payload.name)}`);
         }
-        if (spy.fd.get('total_calories') !== '101') {
-            throw new Error(`Expected total_calories 101, got ${spy.fd.get('total_calories')}`);
+        if (spy.payload.total_calories !== 101) {
+            throw new Error(`Expected total_calories 101, got ${String(spy.payload.total_calories)}`);
         }
-        if (spy.fd.get('ingredients[0][ingredient_id]') !== '502') {
-            throw new Error(`Expected ingredients[0][ingredient_id] 502, got ${spy.fd.get('ingredients[0][ingredient_id]')}`);
+        const ingredients = spy.payload.ingredients;
+        if (!Array.isArray(ingredients) || ingredients.length < 1) {
+            throw new Error('Expected ingredients array on payload');
         }
-        if (!String(spy.fd.get('ingredients[0][name]') ?? '').includes('Wild Rice')) {
-            throw new Error('Expected ingredients[0][name] to include Wild Rice');
+        const first = ingredients[0];
+        if (typeof first !== 'object' || first === null) {
+            throw new Error('Expected first ingredient object');
+        }
+        if (first.ingredient_id !== 502) {
+            throw new Error(`Expected ingredients[0].ingredient_id 502, got ${String(first.ingredient_id)}`);
+        }
+        if (!String(first.name ?? '').includes('Wild Rice')) {
+            throw new Error('Expected ingredients[0].name to include Wild Rice');
         }
     },
 };
@@ -173,6 +214,41 @@ const allergenStoryProfiles = [
         micronutrients: { ...micro, vitamin_c: 30 },
     },
 ];
+
+export const EditMealDualActions = {
+    name: 'Edit meal (Update + Save as new copy)',
+    render: () => (
+        <div className="min-h-screen w-full bg-gray-50 p-8">
+            <MealLibraryStoryShell>
+                <MealLibraryPageContent
+                    meals={[]}
+                    ingredientProfiles={sampleIngredientProfiles}
+                    mealStoreUrl="#"
+                    storyInitialCreateModalOpen
+                    storyInitialMealToEdit={editableMealFixture}
+                    onCreateMealSubmit={() => Promise.resolve()}
+                />
+            </MealLibraryStoryShell>
+        </div>
+    ),
+    play: async ({ canvasElement }) => {
+        const title = canvasElement.querySelector('#meal-library-create-title');
+        if (!title || !/edit meal/i.test(title.textContent ?? '')) {
+            throw new Error('Expected modal title “Edit meal”');
+        }
+        const updateBtn = [...canvasElement.querySelectorAll('button')].find((b) => /^update meal$/i.test((b.textContent ?? '').trim()));
+        const copyBtn = [...canvasElement.querySelectorAll('button')].find((b) => /^save as new copy$/i.test((b.textContent ?? '').trim()));
+        if (!updateBtn) {
+            throw new Error('Update meal button not found');
+        }
+        if (!copyBtn) {
+            throw new Error('Save as new copy button not found');
+        }
+        if (updateBtn.disabled || copyBtn.disabled) {
+            throw new Error('Dual-action buttons should be enabled when fixture has name and calories');
+        }
+    },
+};
 
 export const CreateMealSafetyAutoAllergen = {
     name: 'Safety alerts (auto from allergen ingredient)',

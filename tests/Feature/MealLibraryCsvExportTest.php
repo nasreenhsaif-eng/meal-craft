@@ -1,9 +1,11 @@
 <?php
 
+use App\Enums\CyclePhase;
 use App\Enums\RecipeCategory;
 use App\Models\Ingredient;
 use App\Models\Meal;
 use App\Models\User;
+use App\Services\MealCraftMasterCsvExport;
 use App\Services\MealCsvLibraryImportService;
 use App\Services\MealLibrarySynchronizedCsvExport;
 use Illuminate\Http\UploadedFile;
@@ -12,7 +14,7 @@ test('guest cannot download meal library export csv', function () {
     $this->get(route('meals.library.export-csv'))->assertRedirect();
 });
 
-test('meal library export csv uses bulk import headers and one row per meal', function () {
+test('meal library export csv uses meal craft master headers and maps meals', function () {
     $user = User::factory()->create();
 
     $rice = Ingredient::query()->create([
@@ -35,6 +37,10 @@ test('meal library export csv uses bulk import headers and one row per meal', fu
         'category' => RecipeCategory::Meal,
         'description' => 'Steam and serve.',
         'highlight' => 'Comfort carbs.',
+        'cycle_phase' => CyclePhase::Follicular,
+        'diet_tags' => ['High protein', 'Low GI'],
+        'meal_plan_tag' => 'Performance',
+        'safety_alert_tags' => ['Soy'],
         'total_calories' => 260,
         'total_protein' => 5,
         'total_carbs' => 56,
@@ -69,28 +75,44 @@ test('meal library export csv uses bulk import headers and one row per meal', fu
 
     $csv = $response->streamedContent();
     expect($csv)->not->toBe('')
-        ->and($csv)->toContain('Meal_Name,Category,Ingredient_Quantities,Instructions,Description_Highlight,Total_Calories')
+        ->and($csv)->toContain('Meal Name')
+        ->and($csv)->toContain('Meal Plan Tags')
+        ->and($csv)->toContain('Cycle Phase (comma or pipe separated')
+        ->and($csv)->toContain('Target Calories (kcal)')
+        ->and($csv)->toContain('Variance Notes')
         ->and($csv)->toContain('Rice Bowl')
-        ->and($csv)->toContain(',Meal,')
-        ->and($csv)->toContain('Rice:200')
-        ->and($csv)->toContain('Steam and serve.')
+        ->and($csv)->toContain('Follicular')
         ->and($csv)->toContain('Comfort carbs.')
-        ->and($csv)->toContain(',260');
+        ->and($csv)->toContain('Steam and serve.')
+        ->and($csv)->toContain('Performance')
+        ->and($csv)->toContain('High protein, Low GI')
+        ->and($csv)->toContain('Soy')
+        ->and($csv)->toContain('Rice (200g)')
+        ->and($csv)->toContain(MealCraftMasterCsvExport::MISSING_PHOTO_PLACEHOLDER);
 });
 
-test('meal library export service headers constant matches import template', function () {
-    expect(MealLibrarySynchronizedCsvExport::HEADERS)->toBe(MealCsvLibraryImportService::LIBRARY_CSV_HEADERS)
-        ->and(MealLibrarySynchronizedCsvExport::HEADERS)->toBe([
-            'Meal_Name',
-            'Category',
-            'Ingredient_Quantities',
-            'Instructions',
-            'Description_Highlight',
-            'Total_Calories',
-        ]);
+test('bulk import csv headers stay aligned with synchronized export service', function () {
+    expect(MealCsvLibraryImportService::LIBRARY_CSV_HEADERS)->toBe([
+        'Meal_Name',
+        'Category',
+        'Ingredient_Quantities',
+        'Instructions',
+        'Description_Highlight',
+        'Meal_Plan_Tags',
+        'Cycle_Phase',
+        'Total_Calories',
+    ]);
+
+    $handle = fopen('php://memory', 'w+');
+    app(MealLibrarySynchronizedCsvExport::class)->writeFullLibraryToStream($handle);
+    rewind($handle);
+    $first = fgetcsv($handle, 0, ',', '"', '\\');
+    fclose($handle);
+
+    expect($first)->toBe(MealCsvLibraryImportService::LIBRARY_CSV_HEADERS);
 });
 
-test('meal library export maps main salad category to meal for bulk import', function () {
+test('meal library synchronized export maps main salad category to meal for bulk import', function () {
     $user = User::factory()->create();
 
     $meal = Meal::query()->create([
@@ -120,10 +142,12 @@ test('meal library export maps main salad category to meal for bulk import', fun
         'total_vitamin_k' => 0,
     ]);
 
-    $response = $this->actingAs($user)->get(route('meals.library.export-csv'));
+    $handle = fopen('php://memory', 'w+');
+    app(MealLibrarySynchronizedCsvExport::class)->writeFullLibraryToStream($handle);
+    rewind($handle);
+    $csv = str_replace("\r\n", "\n", (string) stream_get_contents($handle));
+    fclose($handle);
 
-    $response->assertOk();
-    $csv = $response->streamedContent();
     expect($csv)->toBeString()
         ->and($csv)->toContain('Big Salad')
         ->and($csv)->toContain(',Meal,')
@@ -131,7 +155,7 @@ test('meal library export maps main salad category to meal for bulk import', fun
         ->and($csv)->toContain('Fiber.');
 });
 
-test('meal library exported csv round-trips through bulk import', function () {
+test('bulk import library csv round-trips from synchronized export stream', function () {
     $user = User::factory()->create();
 
     $rice = Ingredient::query()->create([
@@ -181,9 +205,11 @@ test('meal library exported csv round-trips through bulk import', function () {
         'unit' => 'g',
     ]);
 
-    $export = $this->actingAs($user)->get(route('meals.library.export-csv'));
-    $export->assertOk();
-    $csv = str_replace("\r\n", "\n", $export->streamedContent());
+    $handle = fopen('php://memory', 'w+');
+    app(MealLibrarySynchronizedCsvExport::class)->writeFullLibraryToStream($handle);
+    rewind($handle);
+    $csv = str_replace("\r\n", "\n", (string) stream_get_contents($handle));
+    fclose($handle);
 
     Meal::query()->delete();
 
@@ -208,4 +234,38 @@ test('meal library exported csv round-trips through bulk import', function () {
         ->and($meal->highlight)->toBe('Comfort carbs.')
         ->and($meal->ingredients)->toHaveCount(1)
         ->and((float) $meal->ingredients->first()->pivot->amount_grams)->toBe(200.0);
+});
+
+test('bulk import maps delimited meal plan tags and cycle phases from optional csv columns', function () {
+    $user = User::factory()->create();
+
+    Ingredient::query()->create([
+        'name' => 'Rice',
+        'usda_food_category' => 'Other',
+        'calories' => 130,
+        'protein' => 2.7,
+        'carbs' => 28,
+        'fat' => 0.3,
+        'b9_folate' => 0,
+        'b12' => 0,
+        'iron' => 0,
+        'magnesium' => 0,
+        'micronutrients' => [],
+        'is_verified' => true,
+    ]);
+
+    $csv = "Meal_Name,Category,Ingredient_Quantities,Instructions,Description_Highlight,Meal_Plan_Tags,Cycle_Phase,Total_Calories\n"
+        ."Taggy Bowl,Meal,Rice:100g,Hi,Note,\"Balanced | Ketogenic\",\"follicular, ovulatory\",130\n";
+
+    $file = UploadedFile::fake()->createWithContent('library-tags.csv', $csv);
+
+    $this->actingAs($user)
+        ->postJson(route('meals.library.import-csv'), ['file' => $file])
+        ->assertOk();
+
+    $meal = Meal::query()->where('name', 'Taggy Bowl')->firstOrFail();
+    expect($meal->meal_plan_tags)->toBe(['Balanced', 'Ketogenic'])
+        ->and($meal->cycle_phases)->toBe(['follicular', 'ovulatory'])
+        ->and($meal->meal_plan_tag)->toBe('Balanced')
+        ->and($meal->cycle_phase)->toBe(CyclePhase::Follicular);
 });

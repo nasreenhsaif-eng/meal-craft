@@ -1,31 +1,39 @@
 /**
  * Rich mock meals for Storybook / demos. Maps cleanly onto {@link MealCard} via the optional `meal` prop.
  *
- * @type {{
- *   title: string;
- *   imageUrl: string;
- *   category: string;
- *   prepMinutes: number;
- *   dietaryTags: string[];
- *   cyclePhase: 'Menstrual' | 'Follicular' | 'Ovulatory' | 'Luteal';
- *   safetyAlerts: { label: string; variant?: 'allergy' | 'g6pd' }[];
- *   nutritionalSummary: { calories: number; protein: string; carbs: string; fat: string };
- *   tags: { label: string; type?: string }[];
- *   dislikeTags: string[];
- * }}
+ * `mushroomOmeletteAdminMealFixture` matches the **Mushroom Omelette** row in
+ * `Meal_Craft_Master_Template.csv` / `public/templates/meal-craft-master-template.csv`
+ * (cycle phase, dietary tags, safety alerts, calculated macros).
+ *
+ * @typedef {object} MealCardStoryMeal
+ * @property {string} title
+ * @property {string} imageUrl
+ * @property {string} category
+ * @property {number} prepMinutes
+ * @property {string[]} dietaryTags
+ * @property {'Menstrual' | 'Follicular' | 'Ovulatory' | 'Luteal'} cyclePhase
+ * @property {{ label: string; variant?: 'allergy' | 'g6pd' }[]} safetyAlerts
+ * @property {{ calories: number; protein: number; carbs: number; fat: number }} macros
  */
-export const adminMealCardWithActionsFixture = {
-    title: 'Lemon Chicken Quinoa',
-    imageUrl: 'https://images.unsplash.com/photo-1543339308-43e59d6b73a6?auto=format&fit=crop&w=1400&q=80',
-    category: 'Meal',
-    prepMinutes: 35,
-    dietaryTags: ['High Protein', 'Low Carbs', 'Gluten-Free'],
-    cyclePhase: 'Follicular',
-    safetyAlerts: [{ label: 'Shellfish', variant: 'allergy' }],
-    nutritionalSummary: { calories: 610, protein: '48g', carbs: '44g', fat: '20g' },
-    tags: [
-        { label: 'Contains Nuts', type: 'dietary' },
-        { label: 'Contains Gluten', type: 'dietary' },
+
+/** @type {MealCardStoryMeal} */
+export const mushroomOmeletteAdminMealFixture = {
+    title: 'Mushroom Omelette',
+    imageUrl:
+        'https://images.unsplash.com/photo-1525351484163-7529414344d8?auto=format&fit=crop&w=1400&q=80',
+    category: 'Breakfast',
+    prepMinutes: 18,
+    dietaryTags: ['High protein', 'Vegetarian'],
+    cyclePhase: 'Luteal',
+    safetyAlerts: [
+        { label: 'Eggs', variant: 'allergy' },
+        { label: 'Dairy', variant: 'allergy' },
     ],
-    dislikeTags: ['No cilantro'],
+    /** Calculated Calories / Protein / Fat / Net Carbs from the master template row. */
+    macros: {
+        calories: 365,
+        protein: 26.5,
+        carbs: 5.2,
+        fat: 23,
+    },
 };

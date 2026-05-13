@@ -1,8 +1,11 @@
 <?php
 
+use App\Enums\CyclePhase;
 use App\Models\Ingredient;
 use App\Models\Meal;
 use App\Models\User;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 
 test('authenticated user can store a meal from the meal library form', function () {
     $user = User::factory()->create();
@@ -27,9 +30,38 @@ test('authenticated user can store a meal from the meal library form', function 
     $meal = Meal::query()->where('name', 'Pest library meal')->firstOrFail();
     expect($meal->total_calories)->toBe(250.0)
         ->and($meal->meal_plan_tag)->toBe('Balanced')
+        ->and($meal->meal_plan_tags)->toBe(['Balanced'])
+        ->and($meal->cycle_phases)->toBe(['luteal'])
+        ->and($meal->cycle_phase)->toBe(CyclePhase::Luteal)
         ->and($meal->diet_tags)->toBe(['Vegan', 'Gluten-free'])
         ->and($meal->diet_type)->toBeNull()
         ->and($meal->nutrition_aggregates_synced)->toBeFalse();
+});
+
+test('meal library store accepts multiple meal plan tags and cycle phases', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)
+        ->post(route('admin.meal-library.store'), [
+            'name' => 'Multi-tag meal',
+            'total_calories' => 300,
+            'total_protein' => 10,
+            'total_carbs' => 20,
+            'total_fat' => 12,
+            'category' => 'Meal',
+            'meal_plan_tags' => ['Balanced', 'Ketogenic'],
+            'cycle_phases' => ['follicular', 'luteal'],
+            'description' => 'Steps',
+            'highlight' => 'Note',
+        ])
+        ->assertRedirect(route('admin.meal-library'))
+        ->assertSessionHas('success');
+
+    $meal = Meal::query()->where('name', 'Multi-tag meal')->firstOrFail();
+    expect($meal->meal_plan_tags)->toBe(['Balanced', 'Ketogenic'])
+        ->and($meal->cycle_phases)->toBe(['follicular', 'luteal'])
+        ->and($meal->meal_plan_tag)->toBe('Balanced')
+        ->and($meal->cycle_phase)->toBe(CyclePhase::Follicular);
 });
 
 test('guests cannot post to meal library store', function () {
@@ -38,6 +70,70 @@ test('guests cannot post to meal library store', function () {
         'total_calories' => 1,
         'category' => 'Meal',
     ])->assertRedirect();
+});
+
+test('meal library store persists is_bulk and servings_count with single-serving macros', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)
+        ->post(route('admin.meal-library.store'), [
+            'name' => 'Bulk-stored meal',
+            'total_calories' => 80,
+            'total_protein' => 6,
+            'total_carbs' => 10,
+            'total_fat' => 4,
+            'category' => 'Meal',
+            'is_bulk' => true,
+            'servings_count' => 4,
+        ])
+        ->assertRedirect(route('admin.meal-library'))
+        ->assertSessionHas('success');
+
+    $meal = Meal::query()->where('name', 'Bulk-stored meal')->firstOrFail();
+    expect($meal->is_bulk)->toBeTrue()
+        ->and((float) $meal->servings_count)->toBe(4.0)
+        ->and((float) $meal->total_calories)->toBe(80.0)
+        ->and((float) $meal->total_protein)->toBe(6.0);
+});
+
+test('meal library store requires servings_count when is_bulk is true', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)
+        ->post(route('admin.meal-library.store'), [
+            'name' => 'Invalid bulk meal',
+            'total_calories' => 100,
+            'category' => 'Meal',
+            'is_bulk' => true,
+        ])
+        ->assertSessionHasErrors('servings_count');
+});
+
+test('meal library store persists uploaded photo to the public disk', function () {
+    Storage::fake('public');
+
+    $user = User::factory()->create();
+    $photo = UploadedFile::fake()->image('meal-cover.jpg', 100, 100);
+
+    $this->actingAs($user)
+        ->post(route('admin.meal-library.store'), [
+            'name' => 'Pest meal with photo',
+            'total_calories' => 100,
+            'total_protein' => 0,
+            'total_carbs' => 0,
+            'total_fat' => 0,
+            'category' => 'Meal',
+            'photo' => $photo,
+        ])
+        ->assertRedirect(route('admin.meal-library'))
+        ->assertSessionHas('success');
+
+    $meal = Meal::query()->where('name', 'Pest meal with photo')->firstOrFail();
+
+    expect($meal->image_path)->not->toBeNull()
+        ->and($meal->image_path)->toStartWith('meals/');
+
+    Storage::disk('public')->assertExists($meal->image_path);
 });
 
 test('meal library store attaches a verified ingredient by ingredient_id and grams', function () {

@@ -1,6 +1,6 @@
 /**
- * Synchronized meal-library CSV columns (must match {@see App\Services\MealLibrarySynchronizedCsvExport::HEADERS}
- * and {@see App\Services\MealCsvLibraryImportService::LIBRARY_CSV_HEADERS}).
+ * Bulk meal-library import columns (must match {@see App\Services\MealCsvLibraryImportService::LIBRARY_CSV_HEADERS}
+ * and {@see App\Services\MealLibrarySynchronizedCsvExport}).
  */
 export const MEAL_LIBRARY_SYNCHRONIZED_CSV_HEADERS = [
     'Meal_Name',
@@ -8,11 +8,15 @@ export const MEAL_LIBRARY_SYNCHRONIZED_CSV_HEADERS = [
     'Ingredient_Quantities',
     'Instructions',
     'Description_Highlight',
+    'Meal_Plan_Tags',
+    'Cycle_Phase',
     'Total_Calories',
 ] as const;
 
+import { buildMealCraftExportFilename } from './exportMealDataToCSV';
+
 /**
- * Downloads the full meal library CSV (same columns as bulk import) via the authenticated export route.
+ * Downloads the full meal library as the Meal Craft **master** CSV (nutrition comparison schema) via the authenticated export route.
  *
  * @param exportUrl - Absolute URL to `GET` (e.g. `route('meals.library.export-csv')` from Blade).
  */
@@ -36,15 +40,7 @@ export async function generateLibraryExportCSV(exportUrl: string): Promise<void>
     }
 
     const blob = await response.blob();
-    const disposition = response.headers.get('Content-Disposition');
-    let filename = `meal-library-${new Date().toISOString().slice(0, 10)}.csv`;
-    const match = disposition?.match(/filename\*=UTF-8''([^;]+)|filename="([^"]+)"|filename=([^;\s]+)/i);
-    if (match) {
-        const raw = match[1] ?? match[2] ?? match[3];
-        if (raw) {
-            filename = decodeURIComponent(raw.trim());
-        }
-    }
+    const filename = buildMealCraftExportFilename();
 
     const objectUrl = URL.createObjectURL(blob);
     const anchor = document.createElement('a');

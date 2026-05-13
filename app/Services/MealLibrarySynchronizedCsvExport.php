@@ -12,15 +12,6 @@ use Illuminate\Database\Eloquent\Relations\Pivot;
  */
 final class MealLibrarySynchronizedCsvExport
 {
-    public const HEADERS = [
-        'Meal_Name',
-        'Category',
-        'Ingredient_Quantities',
-        'Instructions',
-        'Description_Highlight',
-        'Total_Calories',
-    ];
-
     /**
      * Category string for CSV rows allowed by bulk import ({@see MealCsvLibraryImportService::mealLibraryCsvAllowedCategories()}).
      */
@@ -42,7 +33,7 @@ final class MealLibrarySynchronizedCsvExport
      */
     public function writeFullLibraryToStream($handle): void
     {
-        fputcsv($handle, self::HEADERS, ',', '"', '\\');
+        fputcsv($handle, MealCsvLibraryImportService::LIBRARY_CSV_HEADERS, ',', '"', '\\');
 
         Meal::query()
             ->with(['ingredients' => function (BelongsToMany $query): void {
@@ -64,6 +55,8 @@ final class MealLibrarySynchronizedCsvExport
                     $this->ingredientQuantitiesCell($meal),
                     $meal->description ?? '',
                     $meal->highlight ?? '',
+                    $this->mealPlanTagsForLibraryCell($meal),
+                    $this->cyclePhasesForLibraryCell($meal),
                     round($totalCalories, 1),
                 ], ',', '"', '\\');
             });
@@ -86,6 +79,33 @@ final class MealLibrarySynchronizedCsvExport
         }
 
         return implode(' | ', $parts);
+    }
+
+    private function mealPlanTagsForLibraryCell(Meal $meal): string
+    {
+        $labels = [];
+        if (is_array($meal->meal_plan_tags)) {
+            foreach ($meal->meal_plan_tags as $t) {
+                if (is_string($t) && trim($t) !== '') {
+                    $labels[] = trim($t);
+                }
+            }
+        }
+        if ($labels === []) {
+            $single = is_string($meal->meal_plan_tag ?? null) ? trim((string) $meal->meal_plan_tag) : '';
+            if ($single !== '') {
+                $labels[] = $single;
+            }
+        }
+        $labels = array_values(array_unique($labels));
+        sort($labels);
+
+        return implode(', ', $labels);
+    }
+
+    private function cyclePhasesForLibraryCell(Meal $meal): string
+    {
+        return MealCraftMasterCsvExport::canonicalCyclePhaseLabels($meal);
     }
 
     /**

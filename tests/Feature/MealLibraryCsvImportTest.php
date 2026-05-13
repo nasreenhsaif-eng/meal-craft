@@ -3,14 +3,12 @@
 use App\Enums\RecipeCategory;
 use App\Models\Ingredient;
 use App\Models\Meal;
+use App\Models\MealCsvImportPendingRow;
 use App\Models\User;
 use App\Services\MealCsvLibraryImportService;
 use Illuminate\Http\UploadedFile;
 use Livewire\Livewire;
 
-/**
- * @return Ingredient
- */
 function mealImportIngredient(string $name, array $overrides = []): Ingredient
 {
     return Ingredient::query()->create(array_merge([
@@ -61,13 +59,29 @@ test('meal library csv route imports meals when all ingredients exist', function
         ->and($meal->ingredients)->toHaveCount(2);
 });
 
+test('meal library csv import parses ingredient quantities with explicit unit suffix', function () {
+    mealImportIngredient('Salmon', ['calories' => 200, 'protein' => 25, 'carbs' => 0, 'fat' => 12]);
+    mealImportIngredient('Quinoa', ['calories' => 120, 'protein' => 4, 'carbs' => 22, 'fat' => 2, 'density' => 1.0]);
+
+    $csv = "Meal_Name,Category,Ingredient_Quantities,Instructions,Description_Highlight\nSuffix Bowl,Meal,Salmon:150g | Quinoa 50g,Cook it.,A nice bowl.\n";
+    $file = UploadedFile::fake()->createWithContent('meals.csv', $csv);
+
+    $this->actingAs(User::factory()->create())
+        ->postJson(route('meals.library.import-csv'), ['file' => $file])
+        ->assertOk()
+        ->assertJsonPath('summary.imported', 1);
+
+    expect(Meal::query()->where('name', 'Suffix Bowl')->firstOrFail()->ingredients)->toHaveCount(2);
+});
+
 test('meal library csv does not save meal when an ingredient is missing', function () {
     mealImportIngredient('Salmon');
 
     $csv = "Meal_Name,Category,Ingredient_Quantities,Instructions,Description_Highlight\nBad Bowl,Meal,Tuna:100 | Salmon:50,.,.\n";
     $file = UploadedFile::fake()->createWithContent('meals.csv', $csv);
 
-    $response = $this->actingAs(User::factory()->create())
+    $user = User::factory()->create();
+    $response = $this->actingAs($user)
         ->postJson(route('meals.library.import-csv'), ['file' => $file]);
 
     $response->assertOk()
@@ -83,6 +97,10 @@ test('meal library csv does not save meal when an ingredient is missing', functi
     expect($row['status'])->toBe('pending_ingredient_input')
         ->and($row['pending_ingredients'])->toContain('Tuna')
         ->and($row['category'] ?? null)->toBe('Meal');
+
+    $pending = MealCsvImportPendingRow::query()->where('user_id', $user->id)->firstOrFail();
+    expect($pending->meal_name)->toBe('Bad Bowl')
+        ->and($pending->ingredient_quantities)->toBe('Tuna:100 | Salmon:50');
 });
 
 test('meal library csv aggregates unique pending ingredient names across rows', function () {
@@ -91,11 +109,14 @@ test('meal library csv aggregates unique pending ingredient names across rows', 
     $csv = "Meal_Name,Category,Ingredient_Quantities,Instructions,Description_Highlight\nFirst,Meal,Tuna:50 | Salmon:10,.,.\nSecond,Meal,Tuna:100,.,.\n";
     $file = UploadedFile::fake()->createWithContent('meals.csv', $csv);
 
-    $this->actingAs(User::factory()->create())
+    $user = User::factory()->create();
+    $this->actingAs($user)
         ->postJson(route('meals.library.import-csv'), ['file' => $file])
         ->assertOk()
         ->assertJsonPath('summary.pending_ingredient_input', 2)
         ->assertJsonPath('unique_pending_ingredients', ['Tuna']);
+
+    expect(MealCsvImportPendingRow::query()->where('user_id', $user->id)->count())->toBe(2);
 });
 
 test('MealCsvLibraryImportService aggregates duplicate ingredient lines', function () {
@@ -248,6 +269,33 @@ test('meal library csv upserts existing meal when normalized name matches', func
         ->and($meal->category)->toBe(RecipeCategory::Breakfast)
         ->and(Meal::query()->count())->toBe(1)
         ->and((float) $meal->ingredients->firstWhere('id', $salmon->id)->pivot->amount_grams)->toBe(100.0);
+});
+
+test('ingredient library csv import finishes pending meal rows queued from meal csv', function () {
+    mealImportIngredient('Salmon');
+    $user = User::factory()->create();
+
+    $csvMeal = "Meal_Name,Category,Ingredient_Quantities,Instructions,Description_Highlight\nBad Bowl,Meal,Tuna:100 | Salmon:50,.,.\n";
+    $this->actingAs($user)
+        ->postJson(route('meals.library.import-csv'), ['file' => UploadedFile::fake()->createWithContent('meals.csv', $csvMeal)])
+        ->assertOk()
+        ->assertJsonPath('summary.pending_ingredient_input', 1);
+
+    expect(MealCsvImportPendingRow::query()->where('user_id', $user->id)->exists())->toBeTrue()
+        ->and(Meal::query()->where('name', 'Bad Bowl')->exists())->toBeFalse();
+
+    $csvIng = "name,category,fdc_id,calories,protein,carbs,fat,b6,b9_folate,b12,iron,magnesium,fiber,sugar,calcium,potassium,sodium,zinc,vitamin_c,vitamin_a,vitamin_e,vitamin_d,vitamin_k,density\n";
+    $csvIng .= "Tuna,Fish,,200,20,0,10,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1\n";
+
+    $this->actingAs($user)
+        ->post(route('admin.ingredient-library.import-csv'), [
+            'file' => UploadedFile::fake()->createWithContent('ingredients.csv', $csvIng),
+        ])
+        ->assertRedirect(route('admin.ingredient-library'))
+        ->assertSessionHas('success');
+
+    expect(Meal::query()->where('name', 'Bad Bowl')->exists())->toBeTrue()
+        ->and(MealCsvImportPendingRow::query()->where('user_id', $user->id)->exists())->toBeFalse();
 });
 
 test('calculateMealNutritionForCsvRow attaches calorie warnings when category is valid', function () {

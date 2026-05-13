@@ -2,6 +2,7 @@
 
 use App\IngredientsImport;
 use App\Models\Ingredient;
+use App\Services\MealCsvLibraryImportService;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -624,10 +625,27 @@ new #[Title('Ingredients')] class extends Component {
 
         $count = app(IngredientsImport::class)->import($this->importCsvFile);
 
+        $mealFollowUp = ['imported' => 0, 'updated' => 0, 'still_pending' => 0];
+        if (auth()->check()) {
+            $mealFollowUp = app(MealCsvLibraryImportService::class)->processPendingMealImportsForUser(auth()->user());
+        }
+
         $this->importCsvFile = null;
         $this->importSummary = null;
         $this->importSkippedRows = [];
         $this->status = __('Import Complete: :n ingredients updated with full nutritional profiles.', ['n' => $count]);
+        if (($mealFollowUp['imported'] ?? 0) > 0 || ($mealFollowUp['updated'] ?? 0) > 0) {
+            $this->status .= ' '.__(
+                'Meal library: :imported new meal(s) created and :updated updated from your pending meal CSV import.',
+                [
+                    'imported' => $mealFollowUp['imported'],
+                    'updated' => $mealFollowUp['updated'],
+                ],
+            );
+        }
+        if (($mealFollowUp['still_pending'] ?? 0) > 0) {
+            $this->status .= ' '.__('Some meal CSV rows are still waiting on missing ingredients.');
+        }
         $this->error = null;
 
         $this->js('Livewire.dispatch("ingredientsImported")');

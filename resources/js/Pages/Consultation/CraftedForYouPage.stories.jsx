@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import CraftedForYouPage, { consultationMeals } from './CraftedForYouPage.jsx';
-import StackedDeckCarousel from '../../Components/StackedDeckCarousel.jsx';
+import StackedDeckCarousel from '../../Components/MealCard/StackedDeckCarousel.jsx';
 import MealCardClientViewNano from '../../Components/MealCardClientViewNano.jsx';
 
 const mealOptionsDemo = consultationMeals.filter((m) => m.mealType === 'Meal').slice(0, 8);

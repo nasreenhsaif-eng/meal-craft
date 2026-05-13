@@ -2,10 +2,17 @@
 
 namespace App\Services;
 
+use App\Enums\CyclePhase;
 use App\Enums\MealType;
+use App\Enums\RecipeAmountUnit;
 use App\Enums\RecipeCategory;
 use App\Models\Ingredient;
 use App\Models\Meal;
+use App\Models\MealCsvImportPendingRow;
+use App\Models\User;
+use App\Support\IngredientQuantityStringParser;
+use App\Support\MealLibraryDelimitedCellParser;
+use App\Support\MealLibraryTaxonomy;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -16,13 +23,28 @@ use Illuminate\Support\Facades\DB;
  * CSV columns (headers matched case-insensitively):
  * - Meal_Name
  * - Category (Breakfast, Meal, Side Salad, Soup, Dessert — required)
- * - Ingredient_Quantities (cells like "Salmon:120 | Quinoa:100")
+ * - Ingredient_Quantities (cells like "Salmon:120 | Quinoa:100g" — pipe-separated; optional unit after amount)
  * - Instructions (stored on meal.description)
- * - Description_Highlight (stored on meal.highlight)
+ * - Meal_Plan_Tags (optional; comma or pipe separated canonical tags)
+ * - Cycle_Phase (optional; comma or pipe separated phase values or English labels)
  */
 final class MealCsvLibraryImportService
 {
-    public const LIBRARY_CSV_HEADERS = MealLibrarySynchronizedCsvExport::HEADERS;
+    /**
+     * Bulk library import / synchronized export columns (must match {@see MealLibrarySynchronizedCsvExport}).
+     *
+     * @var list<string>
+     */
+    public const LIBRARY_CSV_HEADERS = [
+        'Meal_Name',
+        'Category',
+        'Ingredient_Quantities',
+        'Instructions',
+        'Description_Highlight',
+        'Meal_Plan_Tags',
+        'Cycle_Phase',
+        'Total_Calories',
+    ];
 
     private const STATUS_IMPORTED = 'imported';
 
@@ -69,7 +91,7 @@ final class MealCsvLibraryImportService
      *     }>
      * }
      */
-    public function processUploadedFile(UploadedFile $file): array
+    public function processUploadedFile(UploadedFile $file, ?User $user = null): array
     {
         $path = $file->getRealPath();
         if ($path === false || ! is_readable($path)) {
@@ -136,6 +158,7 @@ final class MealCsvLibraryImportService
 
         /** @var array<string, Meal> $mealsByNormalizedName */
         $mealsByNormalizedName = $this->indexMealsByNormalizedName();
+        $authenticatedUserId = $user?->id;
 
         while (($data = fgetcsv($handle)) !== false) {
             $lineNumber++;
@@ -144,153 +167,22 @@ final class MealCsvLibraryImportService
             }
 
             $assoc = $this->associateRow($headerMap, $data);
-            $mealName = trim((string) ($assoc['meal_name'] ?? ''));
-            if ($mealName === '') {
-                $rowsOut[] = [
-                    'line' => $lineNumber,
-                    'status' => self::STATUS_ERROR,
-                    'message' => __('Meal_Name is required.'),
-                ];
-                $errors++;
+            $result = $this->importMealCsvAssocRow(
+                $lineNumber,
+                $assoc,
+                $mealsByNormalizedName,
+                $authenticatedUserId,
+                $authenticatedUserId !== null,
+            );
 
-                continue;
-            }
+            $rowsOut[] = $result['row'];
 
-            $qtyCell = trim((string) ($assoc['ingredient_quantities'] ?? ''));
-            if ($qtyCell === '') {
-                $rowsOut[] = [
-                    'line' => $lineNumber,
-                    'meal_name' => $mealName,
-                    'status' => self::STATUS_ERROR,
-                    'message' => __('Ingredient_Quantities is required.'),
-                ];
-                $errors++;
-
-                continue;
-            }
-
-            $mealCategory = $this->resolveMealLibraryCategory((string) ($assoc['category'] ?? ''));
-            if ($mealCategory === null) {
-                $rowsOut[] = [
-                    'line' => $lineNumber,
-                    'meal_name' => $mealName,
-                    'status' => self::STATUS_ERROR,
-                    'message' => __('Invalid or Missing Category.'),
-                ];
-                $errors++;
-
-                continue;
-            }
-
-            $segments = $this->parseIngredientQuantitySegments($qtyCell);
-            if ($segments === []) {
-                $rowsOut[] = [
-                    'line' => $lineNumber,
-                    'meal_name' => $mealName,
-                    'status' => self::STATUS_ERROR,
-                    'message' => __('Could not parse ingredient quantities. Use Name:Grams separated by |.'),
-                ];
-                $errors++;
-
-                continue;
-            }
-
-            $instructions = isset($assoc['instructions']) ? trim((string) $assoc['instructions']) : '';
-            $highlight = isset($assoc['highlight']) ? trim((string) $assoc['highlight']) : '';
-
-            $calc = $this->calculateMealNutritionFromSegments($segments, $mealCategory);
-
-            if ($calc['pending_ingredients'] !== []) {
-                $rowsOut[] = [
-                    'line' => $lineNumber,
-                    'meal_name' => $mealName,
-                    'category' => $mealCategory->value,
-                    'status' => self::STATUS_PENDING_INGREDIENTS,
-                    'pending_ingredients' => $calc['pending_ingredients'],
-                    'message' => __('Pending Ingredient Input — add these ingredients to the library before importing this meal.'),
-                ];
-                $pending++;
-
-                continue;
-            }
-
-            try {
-                $mealCategoryValue = $mealCategory->value;
-                $normKey = self::normalizeMealNameKey($mealName);
-                $existingMeal = $mealsByNormalizedName[$normKey] ?? null;
-
-                $result = DB::transaction(function () use ($existingMeal, $mealName, $mealCategory, $mealCategoryValue, $instructions, $highlight, $calc): array {
-                    $nutritionPayload = Meal::nutritionSummaryToPersistedAttributes($calc['nutrition']);
-
-                    $sync = [];
-                    foreach ($calc['resolved'] as $item) {
-                        /** @var Ingredient $ing */
-                        $ing = $item['ingredient'];
-                        $grams = (float) $item['grams'];
-                        $sync[$ing->id] = [
-                            'amount_grams' => round($grams, 4),
-                            'amount' => round($grams, 4),
-                            'unit' => 'g',
-                        ];
-                    }
-
-                    $basePayload = array_merge([
-                        'name' => $mealName,
-                        'category' => $mealCategoryValue,
-                        'meal_type' => MealType::fromRecipeCategory($mealCategory)->value,
-                        'description' => $instructions !== '' ? $instructions : null,
-                        'highlight' => $highlight !== '' ? $highlight : null,
-                        'health_score' => $calc['health_score'],
-                    ], $nutritionPayload);
-
-                    if ($existingMeal !== null) {
-                        $existingMeal->refresh();
-                        $existingMeal->update($basePayload);
-                        $existingMeal->ingredients()->sync($sync);
-
-                        return ['id' => (int) $existingMeal->id, 'was_update' => true];
-                    }
-
-                    $meal = Meal::query()->create(array_merge($basePayload, [
-                        'image_path' => null,
-                    ]));
-                    $meal->ingredients()->sync($sync);
-
-                    return ['id' => (int) $meal->id, 'was_update' => false];
-                });
-
-                $mealId = $result['id'];
-                $wasUpdate = $result['was_update'];
-
-                $freshMeal = Meal::query()->find($mealId);
-                if ($freshMeal !== null) {
-                    $mealsByNormalizedName[self::normalizeMealNameKey($freshMeal->name)] = $freshMeal;
-                }
-
-                $rowsOut[] = [
-                    'line' => $lineNumber,
-                    'meal_name' => $mealName,
-                    'category' => $mealCategory->value,
-                    'status' => $wasUpdate ? self::STATUS_UPDATED : self::STATUS_IMPORTED,
-                    'meal_id' => $mealId,
-                    'health_score' => $calc['health_score'],
-                    'warnings' => $calc['calorie_warnings'],
-                ];
-
-                if ($wasUpdate) {
-                    $updated++;
-                } else {
-                    $imported++;
-                }
-            } catch (\Throwable $e) {
-                $rowsOut[] = [
-                    'line' => $lineNumber,
-                    'meal_name' => $mealName,
-                    'status' => self::STATUS_ERROR,
-                    'message' => __('Could not save meal: :msg', ['msg' => $e->getMessage()]),
-                ];
-                $errors++;
-            }
+            match ($result['outcome']) {
+                'imported' => $imported++,
+                'updated' => $updated++,
+                'pending' => $pending++,
+                'error' => $errors++,
+            };
         }
 
         fclose($handle);
@@ -351,7 +243,7 @@ final class MealCsvLibraryImportService
     /**
      * Pure calculation for one logical CSV row (used by tests and mirrors client-side TS).
      *
-     * @param  list<array{name: string, grams: float}>  $segments
+     * @param  list<array{name: string, grams?: float, amount?: float, unit?: string}>  $segments
      * @return array{
      *     nutrition: array<string, float>,
      *     health_score: float,
@@ -364,7 +256,7 @@ final class MealCsvLibraryImportService
     {
         $normalizedNames = [];
         foreach ($segments as $seg) {
-            $normalizedNames[] = $this->normalizeIngredientName($seg['name']);
+            $normalizedNames[] = $this->normalizeIngredientName((string) ($seg['name'] ?? ''));
         }
 
         $unique = array_values(array_unique($normalizedNames));
@@ -378,19 +270,28 @@ final class MealCsvLibraryImportService
         $gramsByIngredientId = [];
 
         foreach ($segments as $seg) {
-            $key = $this->normalizeIngredientName($seg['name']);
+            $label = (string) ($seg['name'] ?? '');
+            $key = $this->normalizeIngredientName($label);
             $ing = $ingredients->get($key);
             if ($ing === null) {
                 if (! isset($pendingNormSeen[$key])) {
                     $pendingNormSeen[$key] = true;
-                    $pending[] = $seg['name'];
+                    $pending[] = $label;
                 }
 
                 continue;
             }
 
             $id = (int) $ing->id;
-            $gramsByIngredientId[$id] = ($gramsByIngredientId[$id] ?? 0.0) + max(0.0, (float) $seg['grams']);
+            if (isset($seg['grams']) && ! isset($seg['amount'])) {
+                $grams = max(0.0, (float) $seg['grams']);
+            } else {
+                $amount = (float) ($seg['amount'] ?? 0);
+                $unit = (string) ($seg['unit'] ?? 'g');
+                $grams = $this->gramsForIngredientAmountUnit($ing, $amount, $unit);
+            }
+
+            $gramsByIngredientId[$id] = ($gramsByIngredientId[$id] ?? 0.0) + $grams;
         }
 
         $resolved = [];
@@ -582,6 +483,12 @@ final class MealCsvLibraryImportService
         if (str_contains($t, 'ingredient') && (str_contains($t, 'quantit') || str_contains($t, 'qty'))) {
             return 'ingredient_quantities';
         }
+        if (str_contains($t, 'meal') && str_contains($t, 'plan') && str_contains($t, 'tag')) {
+            return 'meal_plan_tags';
+        }
+        if (str_contains($t, 'cycle') && str_contains($t, 'phase')) {
+            return 'cycle_phases';
+        }
         if (str_contains($t, 'instruction')) {
             return 'instructions';
         }
@@ -608,6 +515,38 @@ final class MealCsvLibraryImportService
     }
 
     /**
+     * @return list<string>
+     */
+    private function mealPlanTagsAcceptedFromCsvCell(string $cell): array
+    {
+        $out = [];
+        foreach (MealLibraryDelimitedCellParser::split($cell) as $token) {
+            $canonical = MealLibraryTaxonomy::resolveMealPlanTagCanonical($token);
+            if ($canonical !== null) {
+                $out[] = $canonical;
+            }
+        }
+
+        return array_values(array_unique($out));
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function cyclePhaseEnumValuesFromCsvCell(string $cell): array
+    {
+        $out = [];
+        foreach (MealLibraryDelimitedCellParser::split($cell) as $token) {
+            $phase = CyclePhase::tryFromCsvToken($token);
+            if ($phase !== null) {
+                $out[] = $phase->value;
+            }
+        }
+
+        return array_values(array_unique($out));
+    }
+
+    /**
      * @param  list<string|null>  $data
      */
     private function rowIsBlank(array $data): bool
@@ -622,32 +561,309 @@ final class MealCsvLibraryImportService
     }
 
     /**
-     * @return list<array{name: string, grams: float}>
+     * @return list<array{name: string, amount: float, unit: string}>
      */
     private function parseIngredientQuantitySegments(string $cell): array
     {
-        $parts = preg_split('/\|/', $cell) ?: [];
-        $out = [];
-        foreach ($parts as $part) {
-            $part = trim($part);
-            if ($part === '') {
-                continue;
-            }
-            if (! preg_match('/^(.+?):(\d+(?:\.\d+)?)\s*$/u', $part, $m)) {
-                continue;
-            }
-            $out[] = [
-                'name' => trim($m[1]),
-                'grams' => (float) $m[2],
-            ];
+        return IngredientQuantityStringParser::parse($cell);
+    }
+
+    private function gramsForIngredientAmountUnit(Ingredient $ingredient, float $amount, string $unit): float
+    {
+        $density = (float) ($ingredient->density ?? 0) > 0 ? (float) $ingredient->density : 1.0;
+        $normalizedUnit = IngredientQuantityStringParser::normalizeUnit($unit);
+        $enum = RecipeAmountUnit::tryFrom($normalizedUnit);
+
+        if ($enum === null) {
+            return max(0.0, $amount);
         }
 
-        return $out;
+        return RecipeIngredientUnitConverter::toGrams($amount, $enum, $density);
     }
 
     private function normalizeIngredientName(string $name): string
     {
         return self::normalizeMealNameKey($name);
+    }
+
+    /**
+     * Retry queued meal-library CSV rows after missing ingredients were added to the library.
+     *
+     * @return array{
+     *     imported: int,
+     *     updated: int,
+     *     still_pending: int,
+     *     errors: int,
+     *     rows: list<array<string, mixed>>
+     * }
+     */
+    public function processPendingMealImportsForUser(User $user): array
+    {
+        $mealsByNormalizedName = $this->indexMealsByNormalizedName();
+        $imported = 0;
+        $updated = 0;
+        $stillPending = 0;
+        $errors = 0;
+        $rowsOut = [];
+        $userId = (int) $user->id;
+
+        foreach (MealCsvImportPendingRow::query()->where('user_id', $userId)->orderBy('id')->get() as $pending) {
+            $assoc = [
+                'meal_name' => $pending->meal_name,
+                'category' => $pending->category,
+                'ingredient_quantities' => $pending->ingredient_quantities,
+                'instructions' => (string) ($pending->instructions ?? ''),
+                'highlight' => (string) ($pending->description_highlight ?? ''),
+            ];
+
+            $result = $this->importMealCsvAssocRow(
+                0,
+                $assoc,
+                $mealsByNormalizedName,
+                $userId,
+                false,
+            );
+
+            $rowsOut[] = $result['row'];
+
+            match ($result['outcome']) {
+                'imported' => $imported++,
+                'updated' => $updated++,
+                'pending' => $stillPending++,
+                'error' => $errors++,
+            };
+        }
+
+        return [
+            'imported' => $imported,
+            'updated' => $updated,
+            'still_pending' => $stillPending,
+            'errors' => $errors,
+            'rows' => $rowsOut,
+        ];
+    }
+
+    /**
+     * Import one CSV data row (assoc keys: meal_name, category, ingredient_quantities, instructions?, highlight?).
+     *
+     * @param  array<string, string>  $assoc
+     * @param  array<string, Meal>  $mealsByNormalizedName
+     * @return array{row: array<string, mixed>, outcome: 'imported'|'updated'|'pending'|'error'}
+     */
+    private function importMealCsvAssocRow(
+        int $lineNumber,
+        array $assoc,
+        array &$mealsByNormalizedName,
+        ?int $authenticatedUserId,
+        bool $queuePendingWhenMissing,
+    ): array {
+        $mealName = trim((string) ($assoc['meal_name'] ?? ''));
+        if ($mealName === '') {
+            return [
+                'row' => [
+                    'line' => $lineNumber,
+                    'status' => self::STATUS_ERROR,
+                    'message' => __('Meal_Name is required.'),
+                ],
+                'outcome' => 'error',
+            ];
+        }
+
+        $qtyCell = trim((string) ($assoc['ingredient_quantities'] ?? ''));
+        if ($qtyCell === '') {
+            return [
+                'row' => [
+                    'line' => $lineNumber,
+                    'meal_name' => $mealName,
+                    'status' => self::STATUS_ERROR,
+                    'message' => __('Ingredient_Quantities is required.'),
+                ],
+                'outcome' => 'error',
+            ];
+        }
+
+        $mealCategory = $this->resolveMealLibraryCategory((string) ($assoc['category'] ?? ''));
+        if ($mealCategory === null) {
+            return [
+                'row' => [
+                    'line' => $lineNumber,
+                    'meal_name' => $mealName,
+                    'status' => self::STATUS_ERROR,
+                    'message' => __('Invalid or Missing Category.'),
+                ],
+                'outcome' => 'error',
+            ];
+        }
+
+        $segments = $this->parseIngredientQuantitySegments($qtyCell);
+        if ($segments === []) {
+            return [
+                'row' => [
+                    'line' => $lineNumber,
+                    'meal_name' => $mealName,
+                    'status' => self::STATUS_ERROR,
+                    'message' => __(
+                        'Could not parse ingredient quantities. Use Name:amount with optional unit (g, kg, ml, …), or Name amount unit, separated by |.',
+                    ),
+                ],
+                'outcome' => 'error',
+            ];
+        }
+
+        $instructions = isset($assoc['instructions']) ? trim((string) $assoc['instructions']) : '';
+        $highlight = isset($assoc['highlight']) ? trim((string) $assoc['highlight']) : '';
+
+        $mealPlanTags = $this->mealPlanTagsAcceptedFromCsvCell((string) ($assoc['meal_plan_tags'] ?? ''));
+        $cyclePhaseStrings = $this->cyclePhaseEnumValuesFromCsvCell((string) ($assoc['cycle_phases'] ?? ''));
+
+        $calc = $this->calculateMealNutritionFromSegments($segments, $mealCategory);
+
+        if ($calc['pending_ingredients'] !== []) {
+            if ($queuePendingWhenMissing && $authenticatedUserId !== null) {
+                $this->upsertPendingMealRow(
+                    $authenticatedUserId,
+                    $mealName,
+                    $mealCategory->value,
+                    $qtyCell,
+                    $instructions,
+                    $highlight,
+                );
+            }
+
+            return [
+                'row' => [
+                    'line' => $lineNumber,
+                    'meal_name' => $mealName,
+                    'category' => $mealCategory->value,
+                    'status' => self::STATUS_PENDING_INGREDIENTS,
+                    'pending_ingredients' => $calc['pending_ingredients'],
+                    'message' => __('Pending Ingredient Input — add these ingredients to the library before importing this meal.'),
+                ],
+                'outcome' => 'pending',
+            ];
+        }
+
+        try {
+            $mealCategoryValue = $mealCategory->value;
+            $normKey = self::normalizeMealNameKey($mealName);
+            $existingMeal = $mealsByNormalizedName[$normKey] ?? null;
+
+            $result = DB::transaction(function () use ($existingMeal, $mealName, $mealCategory, $mealCategoryValue, $instructions, $highlight, $calc, $mealPlanTags, $cyclePhaseStrings): array {
+                $nutritionPayload = Meal::nutritionSummaryToPersistedAttributes($calc['nutrition']);
+
+                $sync = [];
+                foreach ($calc['resolved'] as $item) {
+                    /** @var Ingredient $ing */
+                    $ing = $item['ingredient'];
+                    $grams = (float) $item['grams'];
+                    $sync[$ing->id] = [
+                        'amount_grams' => round($grams, 4),
+                        'amount' => round($grams, 4),
+                        'unit' => 'g',
+                    ];
+                }
+
+                $firstPlan = $mealPlanTags[0] ?? null;
+                $firstPhaseValue = $cyclePhaseStrings[0] ?? null;
+
+                $planPhasePayload = [
+                    'meal_plan_tags' => $mealPlanTags === [] ? null : $mealPlanTags,
+                    'cycle_phases' => $cyclePhaseStrings === [] ? null : $cyclePhaseStrings,
+                    'meal_plan_tag' => $firstPlan,
+                    'cycle_phase' => $firstPhaseValue !== null ? CyclePhase::from($firstPhaseValue) : null,
+                ];
+
+                $basePayload = array_merge([
+                    'name' => $mealName,
+                    'category' => $mealCategoryValue,
+                    'meal_type' => MealType::fromRecipeCategory($mealCategory)->value,
+                    'description' => $instructions !== '' ? $instructions : null,
+                    'highlight' => $highlight !== '' ? $highlight : null,
+                    'health_score' => $calc['health_score'],
+                ], $nutritionPayload, $planPhasePayload);
+
+                if ($existingMeal !== null) {
+                    $existingMeal->refresh();
+                    $existingMeal->update($basePayload);
+                    $existingMeal->ingredients()->sync($sync);
+
+                    return ['id' => (int) $existingMeal->id, 'was_update' => true];
+                }
+
+                $meal = Meal::query()->create(array_merge($basePayload, [
+                    'image_path' => null,
+                ]));
+                $meal->ingredients()->sync($sync);
+
+                return ['id' => (int) $meal->id, 'was_update' => false];
+            });
+
+            $mealId = $result['id'];
+            $wasUpdate = $result['was_update'];
+
+            $freshMeal = Meal::query()->find($mealId);
+            if ($freshMeal !== null) {
+                $mealsByNormalizedName[self::normalizeMealNameKey($freshMeal->name)] = $freshMeal;
+            }
+
+            if ($authenticatedUserId !== null) {
+                $this->clearPendingMealRowForUserAndMeal($authenticatedUserId, $mealName);
+            }
+
+            return [
+                'row' => [
+                    'line' => $lineNumber,
+                    'meal_name' => $mealName,
+                    'category' => $mealCategory->value,
+                    'status' => $wasUpdate ? self::STATUS_UPDATED : self::STATUS_IMPORTED,
+                    'meal_id' => $mealId,
+                    'health_score' => $calc['health_score'],
+                    'warnings' => $calc['calorie_warnings'],
+                ],
+                'outcome' => $wasUpdate ? 'updated' : 'imported',
+            ];
+        } catch (\Throwable $e) {
+            return [
+                'row' => [
+                    'line' => $lineNumber,
+                    'meal_name' => $mealName,
+                    'status' => self::STATUS_ERROR,
+                    'message' => __('Could not save meal: :msg', ['msg' => $e->getMessage()]),
+                ],
+                'outcome' => 'error',
+            ];
+        }
+    }
+
+    private function upsertPendingMealRow(
+        int $userId,
+        string $mealName,
+        string $categoryValue,
+        string $ingredientQuantities,
+        string $instructions,
+        string $highlight,
+    ): void {
+        MealCsvImportPendingRow::query()->updateOrCreate(
+            [
+                'user_id' => $userId,
+                'meal_name_key' => self::normalizeMealNameKey($mealName),
+            ],
+            [
+                'meal_name' => $mealName,
+                'category' => $categoryValue,
+                'ingredient_quantities' => $ingredientQuantities,
+                'instructions' => $instructions !== '' ? $instructions : null,
+                'description_highlight' => $highlight !== '' ? $highlight : null,
+            ],
+        );
+    }
+
+    private function clearPendingMealRowForUserAndMeal(int $userId, string $mealName): void
+    {
+        MealCsvImportPendingRow::query()
+            ->where('user_id', $userId)
+            ->where('meal_name_key', self::normalizeMealNameKey($mealName))
+            ->delete();
     }
 
     /**

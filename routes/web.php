@@ -21,7 +21,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::redirect('dashboard', '/admin/dashboard')->name('dashboard');
 
     // Inertia admin UI (requires auth + verified via this parent group).
-    // Route names: admin.dashboard, admin.ingredient-library, admin.meal-library, admin.meal-plan-library, …
+    // Route names: admin.dashboard, admin.ingredient-library, admin.meal-library, admin.meal-library.update, admin.meal-plan-library, …
     // (kebab-case suffixes match URLs for Ziggy / route() in JS if added later.)
     Route::prefix('admin')
         ->name('admin.')
@@ -32,6 +32,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('/ingredient-library/import-csv', IngredientLibraryCsvImportController::class)->name('ingredient-library.import-csv');
             Route::get('/meal-library', [MealLibraryController::class, 'index'])->name('meal-library');
             Route::post('/meal-library', [MealController::class, 'store'])->name('meal-library.store');
+            Route::post('/meal-library/{meal}', [MealController::class, 'update'])->name('meal-library.update');
             Route::get('/meal-plan-library', [MealPlanLibraryController::class, 'index'])->name('meal-plan-library');
 
             Route::post('/users/{user}/toggle-active', [AdminUserActionController::class, 'toggleActive'])->name('users.toggle-active');

@@ -63,7 +63,10 @@ export function aggregateNutritionFromIngredientRows(
     }
     const byName = new Map<string, IngredientProfile>();
     for (const p of profiles) {
-        byName.set(normalizeIngredientKey(p.name), p);
+        const k = normalizeIngredientKey(p.name);
+        if (!byName.has(k)) {
+            byName.set(k, p);
+        }
     }
 
     const nutrition: Record<string, number> = {

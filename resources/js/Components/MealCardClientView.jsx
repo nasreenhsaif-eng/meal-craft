@@ -6,7 +6,7 @@ import MealCraftLogo from './Atoms/Logo/MealCraftLogo.jsx';
 /**
  * MealCardClientView — compact fixed-size card for Storybook / standalone previews.
  *
- * **Consultation stacked decks** use `MealCardClientViewNano.jsx` (`deck` + `ribbon`) — that file holds the carousel layout you iterated on with `StackedDeckCarousel`.
+ * **Consultation stacked decks** use `MealCardClientViewNano.jsx` (`deck` + `ribbon`) — that file holds the carousel card layout used with `MealCard/StackedDeckCarousel.jsx`.
  *
  * @param {object} props
  * @param {string} props.title

@@ -1,21 +1,18 @@
-import Button from './Atoms/Button.jsx';
 import MealCard from './MealCard.jsx';
-import SafetyAlerts from './MealSystem/SafetyAlerts.jsx';
-import DietaryTags from './MealSystem/DietaryTags.jsx';
-import PreferenceTags from './MealSystem/PreferenceTags.jsx';
 import MealDetailView from './Molecules/MealDetailView/MealDetailView';
 import { mealDetailViewFixture } from './Molecules/MealDetailView/mealDetailViewFixture';
-import { adminMealCardWithActionsFixture } from './mealCardStoryFixtures.js';
+import { mushroomOmeletteAdminMealFixture } from './mealCardStoryFixtures.js';
 
 /**
- * Storybook canvas: give the card a definite block size so `h-full` / flex chains cannot
- * resolve to zero height (global preview uses a fixed full-viewport shell).
+ * Mirrors the meal library grid shell: white panel on `#F8F9F6`, `p-5`, column width matches {@link MealCard} deck shell (`270px`).
  */
 function MealCardStoryCanvas({ children }) {
     return (
-        <div className="flex min-h-[80vh] w-full justify-center px-4 py-8 md:px-8 md:py-12">
-            <div className="flex h-[min(680px,85vh)] w-full max-w-sm shrink-0 flex-col overflow-y-auto rounded-[12px] bg-[#F1F3EF] p-6 shadow-inner ring-1 ring-[#5A6B44]/15 md:p-8">
-                <div className="flex min-h-0 flex-1 flex-col">{children}</div>
+        <div className="min-h-[80vh] w-full bg-[#F8F9F6] px-4 py-8 md:px-8">
+            <div className="mx-auto max-w-5xl rounded-[12px] border border-gray-200 bg-white p-5 shadow-sm">
+                <ul className="m-0 flex list-none justify-center p-0">
+                    <li className="flex w-full max-w-[270px] justify-center">{children}</li>
+                </ul>
             </div>
         </div>
     );
@@ -28,36 +25,25 @@ export default {
         layout: 'fullscreen',
     },
     argTypes: {
-        title: { control: 'text' },
-        imageUrl: { control: 'text' },
+        isAdmin: { control: 'boolean' },
+        selected: { control: 'boolean' },
         showAdminSelectionCheckbox: { control: 'boolean' },
-        isLoading: { control: 'boolean' },
-        meal: { control: false },
+        meal: { control: 'object' },
     },
 };
 
 export const AdminViewWithActions = {
     name: 'Admin view (with actions)',
-    render: () => (
-        <MealCardStoryCanvas>
-            <MealCard
-                variant="admin"
-                meal={adminMealCardWithActionsFixture}
-                adminControls
-                showActions
-                selected
-            />
-        </MealCardStoryCanvas>
-    ),
-};
-
-export const EmptyState = {
-    name: 'Empty state (no title / meal)',
     args: {
-        variant: 'admin',
-        title: '',
+        isAdmin: true,
         adminControls: true,
         showActions: true,
+        showAdminSelectionCheckbox: true,
+        selected: true,
+        meal: mushroomOmeletteAdminMealFixture,
+        onViewDetails: () => {},
+        onEdit: () => {},
+        onToggleSelected: () => {},
     },
     render: (args) => (
         <MealCardStoryCanvas>
@@ -66,10 +52,17 @@ export const EmptyState = {
     ),
 };
 
-export const LoadingState = {
-    name: 'Loading state',
+export const ClientViewWithActions = {
+    name: 'Client view (Craft this Meal + view details)',
     args: {
-        isLoading: true,
+        isAdmin: false,
+        meal: {
+            title: 'Turmeric Lentil Soup',
+            imageUrl: 'https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&w=1400&q=80',
+            macros: { calories: 380, protein: '22g', carbs: '52g', fat: '10g' },
+        },
+        onViewDetails: () => {},
+        onCraftThisMeal: () => {},
     },
     render: (args) => (
         <MealCardStoryCanvas>
@@ -81,16 +74,17 @@ export const LoadingState = {
 export const AdminGridNoSelectionCheckbox = {
     name: 'Admin grid (no selection checkbox)',
     args: {
-        variant: 'admin',
-        title: 'Herb-roasted vegetables',
-        imageUrl: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=1400&q=80',
-        category: 'Side Salad',
-        prepMinutes: 25,
-        macros: { calories: 180, protein: '4g', carbs: '22g', fat: '9g' },
+        isAdmin: true,
         adminControls: true,
-        showAdminSelectionCheckbox: false,
         showActions: true,
-        tags: [{ label: 'Vegan', type: 'dietary' }],
+        showAdminSelectionCheckbox: false,
+        meal: {
+            title: 'Herb-roasted vegetables',
+            imageUrl: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=1400&q=80',
+            macros: { calories: 180, protein: '4g', carbs: '22g', fat: '9g' },
+        },
+        onViewDetails: () => {},
+        onEdit: () => {},
     },
     render: (args) => (
         <MealCardStoryCanvas>
@@ -100,19 +94,19 @@ export const AdminGridNoSelectionCheckbox = {
 };
 
 export const ImageFallback = {
-    name: 'Image fallback (broken image)',
+    name: 'Image fallback (invalid URL → seal)',
     args: {
-        variant: 'admin',
-        title: 'Post-training recovery shake',
-        imageUrl: 'https://example.invalid/does-not-exist.jpg',
-        category: 'Meal',
-        prepMinutes: 8,
-        macros: { calories: 385, protein: '36g', carbs: '45g', fat: '8g' },
+        isAdmin: true,
         adminControls: true,
         showActions: true,
         selected: false,
-        tags: [{ label: 'High Protein', type: 'dietary' }],
-        nutrientHighlights: ['Zinc', 'Magnesium'],
+        meal: {
+            title: 'Post-training recovery shake',
+            imageUrl: 'https://example.invalid/does-not-exist.jpg',
+            macros: { calories: 385, protein: '36g', carbs: '45g', fat: '8g' },
+        },
+        onViewDetails: () => {},
+        onEdit: () => {},
     },
     render: (args) => (
         <MealCardStoryCanvas>
@@ -124,48 +118,50 @@ export const ImageFallback = {
 export const SideBySide = {
     name: 'Side-by-side',
     render: () => (
-        <div className="flex min-h-[80vh] w-full justify-center px-4 py-8 md:px-8">
-            <div className="box-border w-full max-w-5xl rounded-[12px] bg-[#F9FAFB] p-6 ring-1 ring-gray-200/60 md:p-8">
-                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                    <MealCard
-                        variant="client"
-                        title="Turmeric Lentil Soup"
-                        imageUrl="https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&w=1400&q=80"
-                        category="Soup"
-                        prepMinutes={20}
-                        macros={{ calories: 380, protein: '22g', carbs: '52g', fat: '10g' }}
-                        tags={[{ label: 'Anti-Inflammatory', type: 'dietary' }, { label: 'Vegan', type: 'dietary' }]}
-                        actionSlot={<Button label="View details" variant="primary" type="button" className="w-full justify-center" />}
-                    />
-                    <MealCard
-                        variant="admin"
-                        title="Crispy Cod + Greens"
-                        imageUrl="https://images.unsplash.com/photo-1529692236671-f1f6cf9683ba?auto=format&fit=crop&w=1400&q=80"
-                        category="Meal"
-                        prepMinutes={30}
-                        macros={{ calories: 540, protein: '46g', carbs: '26g', fat: '22g' }}
-                        tags={[
-                            { label: 'Low Carb', type: 'dietary' },
-                            { label: 'High Protein', type: 'dietary' },
-                            { label: 'Contains Dairy', type: 'dietary' },
-                        ]}
-                        safetySlot={
-                            <div className="space-y-2">
-                                <SafetyAlerts alerts={[{ label: 'Dairy', variant: 'allergy' }, { label: 'G6PD', variant: 'g6pd' }]} />
-                                <DietaryTags tags={['High Protein', 'Low Carbs']} />
-                                <PreferenceTags tags={['Without onions']} />
-                            </div>
-                        }
-                    />
-                    <MealCard
-                        variant="client"
-                        title="Garden Salad"
-                        category="Side Salad"
-                        prepMinutes={10}
-                        macros={{ calories: 240, protein: '8g', carbs: '28g', fat: '11g' }}
-                        tags={[{ label: 'Vegan', type: 'dietary' }, { label: 'Gluten Free', type: 'dietary' }]}
-                    />
-                </div>
+        <div className="min-h-[80vh] w-full bg-[#F8F9F6] px-4 py-8 md:px-8">
+            <div className="mx-auto box-border w-full max-w-5xl rounded-[12px] border border-gray-200 bg-white p-5 shadow-sm md:p-6">
+                <ul className="m-0 grid list-none grid-cols-1 justify-items-center gap-6 p-0 sm:grid-cols-2 lg:grid-cols-3">
+                    <li className="flex justify-center">
+                        <MealCard
+                            isAdmin={false}
+                            meal={{
+                                title: 'Turmeric Lentil Soup',
+                                imageUrl:
+                                    'https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&w=1400&q=80',
+                                macros: { calories: 380, protein: '22g', carbs: '52g', fat: '10g' },
+                            }}
+                            onViewDetails={() => {}}
+                            onCraftThisMeal={() => {}}
+                        />
+                    </li>
+                    <li className="flex justify-center">
+                        <MealCard
+                            isAdmin
+                            adminControls
+                            showActions
+                            showAdminSelectionCheckbox={false}
+                            meal={{
+                                title: 'Crispy Cod + Greens',
+                                imageUrl:
+                                    'https://images.unsplash.com/photo-1529692236671-f1f6cf9683ba?auto=format&fit=crop&w=1400&q=80',
+                                macros: { calories: 540, protein: '46g', carbs: '26g', fat: '22g' },
+                            }}
+                            onViewDetails={() => {}}
+                            onEdit={() => {}}
+                        />
+                    </li>
+                    <li className="flex justify-center">
+                        <MealCard
+                            isAdmin={false}
+                            meal={{
+                                title: 'Garden Salad',
+                                macros: { calories: 240, protein: '8g', carbs: '28g', fat: '11g' },
+                            }}
+                            onViewDetails={() => {}}
+                            onCraftThisMeal={() => {}}
+                        />
+                    </li>
+                </ul>
             </div>
         </div>
     ),

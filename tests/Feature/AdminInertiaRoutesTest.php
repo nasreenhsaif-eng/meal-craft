@@ -86,6 +86,7 @@ test('admin meal library renders inertia page with cycle phase options and meal 
             ->has('mealCategoryOptions')
             ->has('mealStoreUrl')
             ->has('csvTemplateUrl')
+            ->has('csvMasterTemplateUrl')
             ->has('csvExportUrl')
             ->has('csvImportUrl')
             ->where('cyclePhases.0.value', 'menstrual'));

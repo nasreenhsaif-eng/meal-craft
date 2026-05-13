@@ -25,6 +25,7 @@ export const MISSING_INGREDIENT_CSV_HEADERS = [
     'vitamin_e',
     'vitamin_d',
     'vitamin_k',
+    'density',
 ] as const;
 
 function escapeCsvField(value: string): string {
@@ -42,6 +43,10 @@ function cellForHeader(header: (typeof MISSING_INGREDIENT_CSV_HEADERS)[number], 
 
     if (header === 'category' || header === 'fdc_id') {
         return '';
+    }
+
+    if (header === 'density') {
+        return '1';
     }
 
     return '0';

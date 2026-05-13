@@ -5,23 +5,29 @@ import { router, usePage } from '@inertiajs/react';
 import AdminInertiaShell from '../../Layouts/AdminInertiaShell.jsx';
 import TextInput from '../../Components/Atoms/TextInput/TextInput.jsx';
 import DropdownTextInput from '../../Components/Atoms/TextInput/DropdownTextInput.jsx';
+import MultiPillDropdown from '../../Components/Atoms/TextInput/MultiPillDropdown.jsx';
 import Button from '../../Components/Atoms/Button.jsx';
 import PillButton from '../../Components/Atoms/Button/Button.jsx';
 import MealCard from '../../Components/MealCard.jsx';
+import MealDetailView from '../../Components/Molecules/MealDetailView/MealDetailView';
 import MealListRow from '../../Components/MealListRow.jsx';
 import CSVUploader from '../../Components/CSVUploader.jsx';
 import RoundIconButton from '../../Components/Atoms/Icons/RoundIconButton.jsx';
 import { IconLayoutGrid, IconLayoutList } from '../../Components/Atoms/SvgIcons.jsx';
 import SquareCheckbox from '../../Components/Atoms/Icons/SquareCheckbox.jsx';
 import NutrientBadge from '../../Components/Atoms/MealSystem/NutrientBadge.jsx';
-import { aggregateNutritionFromIngredientRows } from '../../meal-library/aggregateIngredientNutrition.ts';
+import { aggregateNutritionFromIngredientRows, normalizeIngredientKey } from '../../meal-library/aggregateIngredientNutrition.ts';
 import { calculateMealNutrition, resolveMealLibraryCategory } from '../../meal-library/calculateMealNutrition.ts';
+import { gramsFromIngredientAmountAndUnit, parseIngredientQuantityString } from '../../meal-library/ingredientQuantityString.ts';
+import { buildIngredientPasteHighlightParts } from '../../meal-library/ingredientPasteHighlight.ts';
 import { filterIngredientsForCombobox } from '../../meal-library/ingredientSearch.ts';
 import {
     collectSafetyAlertLabelsFromIngredientSelection,
     sickleCellProgramMealHighlight,
 } from '../../meal-library/mealSafetyAndSickle.ts';
 import { DIETARY_TAG_OPTIONS, MEAL_PLAN_TAG_OPTIONS } from '../../meal-library/mealTaxonomy.js';
+import { formatMealCraftVarianceNotes } from '../../meal-library/exportMealDataToCSV.ts';
+import { downloadMissingIngredientsCSV } from '../../meal-library/downloadMissingIngredientsCSV.ts';
 import SafetyAlerts from '../../Components/MealSystem/SafetyAlerts.jsx';
 
 const PAGE_BG = 'bg-[#F8F9F6]';
@@ -38,8 +44,8 @@ const DEFAULT_CYCLE_PHASES = [
 ];
 
 /** @param {{ value: string; label: string }[]} items */
-function dropdownStringsWithBlank(items) {
-    return ['', ...items.map((item) => item.label)];
+function mealPlanTagOptionsForMulti(items) {
+    return items.map((tag) => ({ value: tag, label: tag }));
 }
 
 /** @param {{ value: string; label: string }[]} items */
@@ -59,6 +65,89 @@ function fmtMacroFromNutrition(v) {
     return s.replace(/\.0$/, '');
 }
 
+/** @returns {number|null} */
+function parseBulkServingsCount(raw) {
+    const n = Number(String(raw ?? '').trim());
+    if (!Number.isFinite(n) || n <= 0) {
+        return null;
+    }
+    return n;
+}
+
+/** @returns {number|null} */
+function divideBatchByServings(batchStr, servings) {
+    const batch = Number(String(batchStr ?? '').trim());
+    if (!Number.isFinite(batch) || servings <= 0) {
+        return null;
+    }
+    return batch / servings;
+}
+
+/**
+ * @param {Record<string, unknown>} n
+ * @param {number} factor
+ * @returns {Record<string, number>}
+ */
+function scaleNutritionObject(n, factor) {
+    if (!n || !Number.isFinite(factor) || factor <= 0) {
+        return /** @type {Record<string, number>} */ ({});
+    }
+    /** @type {Record<string, number>} */
+    const out = {};
+    for (const [k, v] of Object.entries(n)) {
+        if (typeof v === 'number' && Number.isFinite(v)) {
+            out[k] = Math.round(v * factor * 10000) / 10000;
+        }
+    }
+    return out;
+}
+
+function emptyNutritionSidebarShape() {
+    return {
+        calories: 0,
+        protein: 0,
+        carbs: 0,
+        fat: 0,
+        b6: 0,
+        b9_folate: 0,
+        b12: 0,
+        iron: 0,
+        magnesium: 0,
+        fiber: 0,
+        sugar: 0,
+        calcium: 0,
+        potassium: 0,
+        sodium: 0,
+        zinc: 0,
+        vitamin_c: 0,
+        vitamin_a: 0,
+        vitamin_e: 0,
+        vitamin_d: 0,
+        vitamin_k: 0,
+    };
+}
+
+/** @returns {number|null} Manual planning target; never auto-filled from ingredients. */
+function optionalTargetNumberString(raw) {
+    const t = String(raw ?? '').trim();
+    if (t === '') {
+        return null;
+    }
+    const n = Number(t);
+    if (!Number.isFinite(n) || n < 0) {
+        return null;
+    }
+    return n;
+}
+
+function batchMacroDisplayFromPerServing(perServingStr, servings) {
+    const per = Number.parseFloat(String(perServingStr ?? '0'));
+    if (!Number.isFinite(per) || !Number.isFinite(servings) || servings <= 0) {
+        return '';
+    }
+    return fmtMacroFromNutrition(per * servings);
+}
+
 function unitToGrams(amount, unit) {
     const n = Number(amount);
     if (!Number.isFinite(n) || n <= 0) {
@@ -71,6 +160,40 @@ function unitToGrams(amount, unit) {
         return n * 1000;
     }
     return n;
+}
+
+/**
+ * Macros persisted as meal ``total_*`` when ingredient-backed nutrition exists (library save source of truth).
+ *
+ * @param {{ nutrition: Record<string, number>; resolvedLineCount: number }} aggregated
+ * @param {{ ok: boolean; nutrition?: Record<string, number> } | null | undefined} csvNutrition
+ * @returns {{ calories: number; protein: number; carbs: number; fat: number } | null}
+ */
+function persistedMacroTotalsFromIngredientSources(aggregated, csvNutrition, isBulkRecipe, bulkServingsCountRaw) {
+    const raw =
+        aggregated.resolvedLineCount > 0
+            ? aggregated.nutrition
+            : csvNutrition?.ok
+              ? csvNutrition.nutrition
+              : null;
+    if (!raw || typeof raw.calories !== 'number' || !Number.isFinite(raw.calories)) {
+        return null;
+    }
+    const svc = parseBulkServingsCount(bulkServingsCountRaw);
+    const useBulk = Boolean(isBulkRecipe && svc != null);
+    const n = useBulk && svc != null ? scaleNutritionObject(raw, 1 / svc) : raw;
+    const num = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : 0);
+    return {
+        calories: Math.round(num(n.calories)),
+        protein: Math.round(num(n.protein) * 100) / 100,
+        carbs: Math.round(num(n.carbs) * 100) / 100,
+        fat: Math.round(num(n.fat) * 100) / 100,
+    };
+}
+
+/** @param {string} mealStoreUrl @param {string|number} mealId */
+function mealLibraryItemUpdateUrl(mealStoreUrl, mealId) {
+    return `${String(mealStoreUrl).replace(/\/?$/, '')}/${mealId}`;
 }
 
 /** Delete selected — ghost/disabled styling (matches Ingredients Library). */
@@ -90,6 +213,7 @@ function deleteSelectedButtonClass(anySelected) {
  *   meals?: object[];
  *   ingredientProfiles?: object[];
  *   csvTemplateUrl?: string;
+ *   csvMasterTemplateUrl?: string;
  *   csvExportUrl?: string;
  *   csvImportUrl?: string;
  *   mealStoreUrl?: string;
@@ -97,7 +221,12 @@ function deleteSelectedButtonClass(anySelected) {
  *   flashSuccess?: string | null;
  *   flashError?: string | null;
  *   mealLibrarySchemaNotice?: string | null;
- *   onCreateMealSubmit?: (formData: FormData) => void | Promise<void>;
+ *   onCreateMealSubmit?: (
+ *     payload: Record<string, unknown>,
+ *     meta?: { action: 'create' | 'update' | 'duplicate'; mealId?: string },
+ * ) => void | Promise<void>;
+ *   storyInitialCreateModalOpen?: boolean;
+ *   storyInitialMealToEdit?: object | null;
  * }} props
  */
 export function MealLibraryPageContent({
@@ -105,6 +234,7 @@ export function MealLibraryPageContent({
     meals = [],
     ingredientProfiles = [],
     csvTemplateUrl = '#',
+    csvMasterTemplateUrl = '#',
     csvExportUrl = '#',
     csvImportUrl = '#',
     mealStoreUrl = '#',
@@ -113,13 +243,20 @@ export function MealLibraryPageContent({
     flashError = null,
     mealLibrarySchemaNotice = null,
     onCreateMealSubmit,
+    storyInitialCreateModalOpen = false,
+    storyInitialMealToEdit = null,
 }) {
     const [query, setQuery] = useState('');
     const [mealRows, setMealRows] = useState(meals);
     const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
     const [selectedRows, setSelectedRows] = useState(/** @type {string[]} */ ([]));
     const [confirmOpen, setConfirmOpen] = useState(false);
+    const [mealCsvImportResultModal, setMealCsvImportResultModal] = useState(null);
     const [createOpen, setCreateOpen] = useState(false);
+    const [mealToEdit, setMealToEdit] = useState(/** @type {object | null} */ (storyInitialMealToEdit ?? null));
+    const [mealDetailModal, setMealDetailModal] = useState(
+        /** @type {null | { title: string; detailView: object }} */ (null),
+    );
     const [viewMode, setViewMode] = useState(() => initialViewMode ?? 'grid');
 
     useEffect(() => {
@@ -136,18 +273,31 @@ export function MealLibraryPageContent({
         setVisibleCount(PAGE_SIZE);
     }, [query, mealRows]);
 
+    useEffect(() => {
+        if (storyInitialCreateModalOpen) {
+            setCreateOpen(true);
+        }
+    }, [storyInitialCreateModalOpen]);
+
     const [formName, setFormName] = useState('');
     const [formType, setFormType] = useState('Meal');
-    const [formMealPlanTag, setFormMealPlanTag] = useState('');
+    const [selectedMealPlanTags, setSelectedMealPlanTags] = useState(/** @type {string[]} */ ([]));
     const [formCalories, setFormCalories] = useState('');
     const [formProtein, setFormProtein] = useState('');
     const [formCarbs, setFormCarbs] = useState('');
     const [formFat, setFormFat] = useState('');
+    const [targetCaloriesManual, setTargetCaloriesManual] = useState('');
+    const [targetProteinManual, setTargetProteinManual] = useState('');
+    const [targetCarbsManual, setTargetCarbsManual] = useState('');
+    const [targetFatManual, setTargetFatManual] = useState('');
+    const [isBulkRecipe, setIsBulkRecipe] = useState(false);
+    const [bulkServingsCount, setBulkServingsCount] = useState('');
     const [selectedDietTags, setSelectedDietTags] = useState(/** @type {string[]} */ ([]));
-    const [formCyclePhaseLabel, setFormCyclePhaseLabel] = useState('');
+    const [selectedCyclePhaseValues, setSelectedCyclePhaseValues] = useState(/** @type {string[]} */ ([]));
     const [formInstructions, setFormInstructions] = useState('');
     const [formHighlight, setFormHighlight] = useState('');
     const [formPhoto, setFormPhoto] = useState(/** @type {File|null} */ (null));
+    const [mealPhotoPreviewUrl, setMealPhotoPreviewUrl] = useState(/** @type {string|null} */ (null));
     const [finishedWeightGrams, setFinishedWeightGrams] = useState('');
     const [useAsBaseIngredient, setUseAsBaseIngredient] = useState(false);
     const [ingredientRows, setIngredientRows] = useState(
@@ -155,25 +305,107 @@ export function MealLibraryPageContent({
             { nameQuery: '', selectedName: '', ingredientId: null, amount: '100', unit: 'g' },
         ]),
     );
-    const cyclePhaseDropdownOptions = useMemo(() => dropdownStringsWithBlank(cyclePhases), [cyclePhases]);
+    const [ingredientPasteField, setIngredientPasteField] = useState('');
+    const [ingredientPasteMissingLabels, setIngredientPasteMissingLabels] = useState(/** @type {string[]} */ ([]));
+    const [ingredientPasteApplyError, setIngredientPasteApplyError] = useState('');
+    const mealPlanMultiOptions = useMemo(() => mealPlanTagOptionsForMulti(MEAL_PLAN_TAG_OPTIONS), []);
 
     const resetCreateForm = useCallback(() => {
         setFormName('');
         setFormType('Meal');
-        setFormMealPlanTag('');
+        setSelectedMealPlanTags([]);
         setFormCalories('');
         setFormProtein('');
         setFormCarbs('');
         setFormFat('');
+        setTargetCaloriesManual('');
+        setTargetProteinManual('');
+        setTargetCarbsManual('');
+        setTargetFatManual('');
+        setIsBulkRecipe(false);
+        setBulkServingsCount('');
         setSelectedDietTags([]);
-        setFormCyclePhaseLabel('');
+        setSelectedCyclePhaseValues([]);
         setFormInstructions('');
         setFormHighlight('');
         setFormPhoto(null);
+        setMealPhotoPreviewUrl(null);
         setFinishedWeightGrams('');
         setUseAsBaseIngredient(false);
         setIngredientRows([{ nameQuery: '', selectedName: '', ingredientId: null, amount: '100', unit: 'g' }]);
+        setIngredientPasteField('');
+        setIngredientPasteMissingLabels([]);
+        setIngredientPasteApplyError('');
     }, []);
+
+    const closeCreateModal = useCallback(() => {
+        setCreateOpen(false);
+        setMealToEdit(null);
+    }, []);
+
+    useEffect(() => {
+        if (!createOpen || !mealToEdit?.editForm) {
+            return;
+        }
+        const ef = mealToEdit.editForm;
+        setFormName(String(ef.name ?? ''));
+        setFormType(String(ef.category ?? 'Meal'));
+        const mpt = Array.isArray(ef.mealPlanTags) ? ef.mealPlanTags.filter((t) => typeof t === 'string' && t.trim() !== '') : [];
+        setSelectedMealPlanTags(mpt.length ? [...mpt] : ef.mealPlanTag ? [String(ef.mealPlanTag)] : []);
+        setSelectedDietTags(Array.isArray(ef.dietTags) ? [...ef.dietTags] : []);
+        const cpv = Array.isArray(ef.cyclePhaseValues)
+            ? ef.cyclePhaseValues.filter((v) => typeof v === 'string' && v.trim() !== '')
+            : [];
+        if (cpv.length > 0) {
+            setSelectedCyclePhaseValues([...cpv]);
+        } else if (ef.cyclePhaseLabel) {
+            const v = valueForLabel(cyclePhases, String(ef.cyclePhaseLabel));
+            setSelectedCyclePhaseValues(v ? [v] : []);
+        } else {
+            setSelectedCyclePhaseValues([]);
+        }
+        setFormInstructions(String(ef.description ?? ''));
+        setFormHighlight(String(ef.highlight ?? ''));
+        const servingsRaw = ef.servingsCount != null && String(ef.servingsCount).trim() !== '' ? Number(ef.servingsCount) : NaN;
+        const isBulk = Boolean(ef.isBulk) && Number.isFinite(servingsRaw) && servingsRaw > 0;
+        setIsBulkRecipe(isBulk);
+        setBulkServingsCount(isBulk ? String(servingsRaw) : '');
+        if (isBulk) {
+            const svc = servingsRaw;
+            setFormCalories(String(Math.round(Number(ef.totalCalories ?? 0) * svc)));
+            setFormProtein(batchMacroDisplayFromPerServing(ef.totalProtein, svc));
+            setFormCarbs(batchMacroDisplayFromPerServing(ef.totalCarbs, svc));
+            setFormFat(batchMacroDisplayFromPerServing(ef.totalFat, svc));
+        } else {
+            setFormCalories(String(ef.totalCalories ?? ''));
+            setFormProtein(String(ef.totalProtein ?? ''));
+            setFormCarbs(String(ef.totalCarbs ?? ''));
+            setFormFat(String(ef.totalFat ?? ''));
+        }
+        setTargetCaloriesManual(String(ef.targetCalories ?? ''));
+        setTargetProteinManual(String(ef.targetProtein ?? ''));
+        setTargetCarbsManual(String(ef.targetCarbs ?? ''));
+        setTargetFatManual(String(ef.targetFat ?? ''));
+        setFinishedWeightGrams(String(ef.finishedWeightGrams ?? ''));
+        setFormPhoto(null);
+        setMealPhotoPreviewUrl(null);
+        setUseAsBaseIngredient(false);
+        const rows =
+            Array.isArray(ef.ingredientRows) && ef.ingredientRows.length > 0
+                ? ef.ingredientRows.map((r) => ({
+                      nameQuery: String(r.nameQuery ?? ''),
+                      selectedName: String(r.selectedName ?? ''),
+                      ingredientId:
+                          r.ingredientId != null && Number.isFinite(Number(r.ingredientId)) ? Number(r.ingredientId) : null,
+                      amount: String(r.amount ?? '100'),
+                      unit: String(r.unit ?? 'g'),
+                  }))
+                : [{ nameQuery: '', selectedName: '', ingredientId: null, amount: '100', unit: 'g' }];
+        setIngredientRows(rows);
+        setIngredientPasteField('');
+        setIngredientPasteMissingLabels([]);
+        setIngredientPasteApplyError('');
+    }, [createOpen, mealToEdit, cyclePhases]);
 
     useEffect(() => {
         if (!createOpen) {
@@ -181,16 +413,40 @@ export function MealLibraryPageContent({
         }
     }, [createOpen, resetCreateForm]);
 
+    useEffect(() => {
+        return () => {
+            if (mealPhotoPreviewUrl) {
+                URL.revokeObjectURL(mealPhotoPreviewUrl);
+            }
+        };
+    }, [mealPhotoPreviewUrl]);
+
     function toggleDietTag(tag) {
         setSelectedDietTags((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]));
     }
 
     const canSave = useMemo(() => {
         const nameOk = formName.trim().length > 0;
+        const svc = parseBulkServingsCount(bulkServingsCount);
+        const hasResolvedIngredientLines = ingredientRows.some((r) => {
+            const grams = unitToGrams(r.amount, r.unit);
+            const label = (r.selectedName || r.nameQuery || '').trim();
+            return grams > 0 && label.length > 0;
+        });
+        const ingredientBackedOk = hasResolvedIngredientLines && (!isBulkRecipe || svc != null);
         const cal = Number(formCalories);
-        const calOk = formCalories.trim() !== '' && Number.isFinite(cal) && cal >= 0;
-        return nameOk && calOk;
-    }, [formName, formCalories]);
+        const batchCalOk = formCalories.trim() !== '' && Number.isFinite(cal) && cal >= 0;
+        if (!nameOk) {
+            return false;
+        }
+        if (!batchCalOk && !ingredientBackedOk) {
+            return false;
+        }
+        if (!isBulkRecipe) {
+            return true;
+        }
+        return svc != null;
+    }, [formName, formCalories, isBulkRecipe, bulkServingsCount, ingredientRows]);
 
     const ingredientDatabase = useMemo(
         () =>
@@ -208,12 +464,15 @@ export function MealLibraryPageContent({
                 iron: p.iron,
                 magnesium: p.magnesium,
                 micronutrients: p.micronutrients ?? {},
+                density: typeof p.density === 'number' && Number.isFinite(p.density) ? p.density : 1,
             })),
         [ingredientProfiles],
     );
 
     const [activeSuggestRow, setActiveSuggestRow] = useState(/** @type {number|null} */ (null));
     const ingredientSuggestRootRef = useRef(null);
+    const ingredientPasteTextareaRef = useRef(/** @type {HTMLTextAreaElement | null} */ (null));
+    const ingredientPasteMirrorRef = useRef(/** @type {HTMLPreElement | null} */ (null));
     const [ingredientSuggestRect, setIngredientSuggestRect] = useState(
         /** @type {{ left: number; top: number; width: number } | null} */ (null),
     );
@@ -362,56 +621,212 @@ export function MealLibraryPageContent({
             .filter(Boolean);
     }
 
+    /**
+     * Plain object for Inertia `router.post(..., payload, { forceFormData: true })` so the client
+     * builds multipart with a correct boundary (do not set Content-Type manually).
+     *
+     * @param {'duplicate' | null} submissionContext
+     * @returns {Record<string, unknown>}
+     */
+    function buildMealLibraryRequestPayload(submissionContext) {
+        const ingredients = buildIngredientsForStore().map((ing) => {
+            const row = { name: ing.name, amount_grams: ing.amount_grams };
+            if (ing.ingredient_id != null) {
+                row.ingredient_id = ing.ingredient_id;
+            }
+            return row;
+        });
+
+        const servingsDivisor = isBulkRecipe ? parseBulkServingsCount(bulkServingsCount) : null;
+        const useBulk = Boolean(isBulkRecipe && servingsDivisor != null);
+
+        const storeTotals = persistedMacroTotalsForStore;
+
+        let totalCalories = Number(formCalories);
+        let totalProtein = formProtein.trim() === '' ? 0 : Number(formProtein);
+        let totalCarbs = formCarbs.trim() === '' ? 0 : Number(formCarbs);
+        let totalFat = formFat.trim() === '' ? 0 : Number(formFat);
+
+        if (storeTotals != null) {
+            totalCalories = storeTotals.calories;
+            totalProtein = storeTotals.protein;
+            totalCarbs = storeTotals.carbs;
+            totalFat = storeTotals.fat;
+        } else if (useBulk && servingsDivisor != null) {
+            const c = divideBatchByServings(formCalories, servingsDivisor);
+            const p = divideBatchByServings(formProtein || '0', servingsDivisor);
+            const cb = divideBatchByServings(formCarbs || '0', servingsDivisor);
+            const f = divideBatchByServings(formFat || '0', servingsDivisor);
+            totalCalories = c != null && Number.isFinite(c) ? Math.round(c) : 0;
+            totalProtein = p != null && Number.isFinite(p) ? Math.round(p * 100) / 100 : 0;
+            totalCarbs = cb != null && Number.isFinite(cb) ? Math.round(cb * 100) / 100 : 0;
+            totalFat = f != null && Number.isFinite(f) ? Math.round(f * 100) / 100 : 0;
+        }
+
+        const payload = /** @type {Record<string, unknown>} */ ({
+            name: formName.trim(),
+            total_calories: totalCalories,
+            total_protein: totalProtein,
+            total_carbs: totalCarbs,
+            total_fat: totalFat,
+            category: formType,
+            description: formInstructions,
+            highlight: formHighlight,
+            diet_tags: selectedDietTags,
+            is_bulk: useBulk,
+            servings_count: useBulk ? servingsDivisor : null,
+        });
+
+        if (selectedMealPlanTags.length > 0) {
+            payload.meal_plan_tags = selectedMealPlanTags;
+        }
+        if (selectedCyclePhaseValues.length > 0) {
+            payload.cycle_phases = selectedCyclePhaseValues;
+        }
+        if (ingredients.length > 0) {
+            payload.ingredients = ingredients;
+        }
+        if (useAsBaseIngredient) {
+            payload.use_as_base_ingredient = true;
+        }
+        if (finishedWeightGrams.trim() !== '') {
+            payload.finished_weight_grams = Number(finishedWeightGrams.trim());
+        }
+        if (formPhoto) {
+            payload.photo = formPhoto;
+        }
+        payload.target_calories = optionalTargetNumberString(targetCaloriesManual);
+        payload.target_protein = optionalTargetNumberString(targetProteinManual);
+        payload.target_carbs = optionalTargetNumberString(targetCarbsManual);
+        payload.target_fat = optionalTargetNumberString(targetFatManual);
+        if (submissionContext === 'duplicate') {
+            payload.submission_context = 'duplicate';
+        }
+
+        return payload;
+    }
+
+    function handleMealPhotoChange(event) {
+        const input = event.target;
+        const file = input.files && input.files[0] ? input.files[0] : null;
+        setFormPhoto(file);
+        setMealPhotoPreviewUrl(file ? URL.createObjectURL(file) : null);
+        input.value = '';
+    }
+
+    function clearMealPhotoSelection() {
+        setFormPhoto(null);
+        setMealPhotoPreviewUrl(null);
+    }
+
     function handleSaveCreateMeal() {
         if (!canSave) {
             return;
         }
-        const fd = new FormData();
-        fd.append('name', formName.trim());
-        fd.append('total_calories', String(Number(formCalories)));
-        fd.append('total_protein', String(formProtein.trim() === '' ? 0 : Number(formProtein)));
-        fd.append('total_carbs', String(formCarbs.trim() === '' ? 0 : Number(formCarbs)));
-        fd.append('total_fat', String(formFat.trim() === '' ? 0 : Number(formFat)));
-        fd.append('category', formType);
-        if (formMealPlanTag) {
-            fd.append('meal_plan_tag', formMealPlanTag);
-        }
-        selectedDietTags.forEach((t) => fd.append('diet_tags[]', t));
-        const cp = valueForLabel(cyclePhases, formCyclePhaseLabel);
-        if (cp) {
-            fd.append('cycle_phase', cp);
-        }
-        fd.append('description', formInstructions);
-        fd.append('highlight', formHighlight);
-        if (formPhoto) {
-            fd.append('photo', formPhoto);
-        }
-        const ings = buildIngredientsForStore();
-        ings.forEach((ing, i) => {
-            fd.append(`ingredients[${i}][name]`, ing.name);
-            fd.append(`ingredients[${i}][amount_grams]`, String(ing.amount_grams));
-            if (ing.ingredient_id != null) {
-                fd.append(`ingredients[${i}][ingredient_id]`, String(ing.ingredient_id));
-            }
-        });
-        if (useAsBaseIngredient) {
-            fd.append('use_as_base_ingredient', '1');
-        }
-        if (finishedWeightGrams.trim() !== '') {
-            fd.append('finished_weight_grams', finishedWeightGrams.trim());
-        }
+        const payload = buildMealLibraryRequestPayload(null);
 
         if (onCreateMealSubmit) {
-            void Promise.resolve(onCreateMealSubmit(fd)).then(() => setCreateOpen(false));
+            void Promise.resolve(onCreateMealSubmit(payload, { action: 'create' })).then(() => closeCreateModal());
             return;
         }
 
-        router.post(mealStoreUrl, fd, {
+        router.post(mealStoreUrl, payload, {
             forceFormData: true,
             preserveScroll: true,
-            onSuccess: () => setCreateOpen(false),
+            onSuccess: () => closeCreateModal(),
         });
     }
+
+    function handleSaveMealAsNewCopy() {
+        if (!canSave) {
+            return;
+        }
+        const payload = buildMealLibraryRequestPayload('duplicate');
+
+        if (onCreateMealSubmit) {
+            void Promise.resolve(onCreateMealSubmit(payload, { action: 'duplicate' })).then(() => closeCreateModal());
+            return;
+        }
+
+        router.post(mealStoreUrl, payload, {
+            forceFormData: true,
+            preserveScroll: true,
+            onSuccess: () => closeCreateModal(),
+        });
+    }
+
+    function handleUpdateExistingMeal() {
+        if (!canSave || !mealToEdit?.editForm?.id) {
+            return;
+        }
+        const payload = buildMealLibraryRequestPayload(null);
+        const mealId = String(mealToEdit.editForm.id);
+
+        if (onCreateMealSubmit) {
+            void Promise.resolve(onCreateMealSubmit(payload, { action: 'update', mealId })).then(() => closeCreateModal());
+            return;
+        }
+
+        const updateUrl = mealLibraryItemUpdateUrl(mealStoreUrl, mealId);
+        router.post(updateUrl, payload, {
+            forceFormData: true,
+            preserveScroll: true,
+            onSuccess: () => closeCreateModal(),
+        });
+    }
+
+    const handleApplyIngredientQuantityString = useCallback(() => {
+        const raw = ingredientPasteField.trim();
+        setIngredientPasteApplyError('');
+        if (raw === '') {
+            return;
+        }
+        const segments = parseIngredientQuantityString(raw);
+        if (segments.length === 0) {
+            setIngredientPasteApplyError(
+                'Could not parse any segments. Use Name:100g, Name 100ml, or Name (100ml), separated by |.',
+            );
+            return;
+        }
+
+        const byNorm = new Map();
+        for (const p of ingredientDatabase) {
+            byNorm.set(normalizeIngredientKey(p.name), p);
+        }
+
+        const missing = [];
+        const rows = [];
+        for (const seg of segments) {
+            const key = normalizeIngredientKey(seg.name);
+            const ing = byNorm.get(key);
+            if (!ing) {
+                const label = seg.name.trim();
+                if (label !== '' && !missing.includes(label)) {
+                    missing.push(label);
+                }
+                continue;
+            }
+            const id = typeof ing.id === 'number' && Number.isFinite(ing.id) ? ing.id : null;
+            const density = typeof ing.density === 'number' && ing.density > 0 ? ing.density : 1;
+            const g = gramsFromIngredientAmountAndUnit(seg.amount, seg.unit, density);
+            const gramsRounded = Math.round(g * 100) / 100;
+            rows.push({
+                nameQuery: '',
+                selectedName: ing.name,
+                ingredientId: id,
+                amount: String(gramsRounded),
+                unit: 'g',
+            });
+        }
+
+        setIngredientPasteMissingLabels(missing);
+
+        if (rows.length === 0) {
+            return;
+        }
+
+        setIngredientRows(rows);
+    }, [ingredientPasteField, ingredientDatabase]);
 
     const mealCsvRowForCalculator = useMemo(() => {
         const pairs = ingredientRows
@@ -427,8 +842,6 @@ export function MealLibraryPageContent({
 
         const base = {
             meal_name: formName || 'Untitled',
-            meal_plan_tag: formMealPlanTag,
-            cycle_phase: valueForLabel(cyclePhases, formCyclePhaseLabel),
             ingredient_quantities: pairs.join('|'),
             instructions: formInstructions,
             highlight: formHighlight,
@@ -441,9 +854,6 @@ export function MealLibraryPageContent({
         ingredientRows,
         formName,
         formType,
-        formMealPlanTag,
-        formCyclePhaseLabel,
-        cyclePhases,
         formInstructions,
         formHighlight,
     ]);
@@ -478,24 +888,40 @@ export function MealLibraryPageContent({
         return null;
     }, [aggregatedIngredientNutrition, nutritionResult]);
 
-    useEffect(() => {
+    const singleServingNutritionForSidebar = useMemo(() => {
+        if (!isBulkRecipe) {
+            return nutritionForSidebar;
+        }
+        const svc = parseBulkServingsCount(bulkServingsCount);
+        if (svc == null || !Number.isFinite(svc) || svc <= 0) {
+            return nutritionForSidebar;
+        }
         if (!nutritionForSidebar) {
-            return;
+            return null;
         }
-        const hasIngredientLines = ingredientRows.some((r) => {
-            const grams = unitToGrams(r.amount, r.unit);
-            const label = (r.selectedName || r.nameQuery || '').trim();
-            return grams > 0 && label.length > 0;
-        });
-        if (!hasIngredientLines) {
-            return;
+        return scaleNutritionObject(nutritionForSidebar, 1 / svc);
+    }, [isBulkRecipe, bulkServingsCount, nutritionForSidebar]);
+
+    /** Batch totals when bulk servings are unset; per-serving when valid. */
+    const nutritionForSummaryDisplay = useMemo(() => {
+        if (!isBulkRecipe) {
+            return singleServingNutritionForSidebar;
         }
-        const n = nutritionForSidebar;
-        setFormCalories(String(Math.round(n.calories ?? 0)));
-        setFormProtein(fmtMacroFromNutrition(n.protein));
-        setFormCarbs(fmtMacroFromNutrition(n.carbs));
-        setFormFat(fmtMacroFromNutrition(n.fat));
-    }, [nutritionForSidebar, ingredientRows]);
+        const svc = parseBulkServingsCount(bulkServingsCount);
+        if (svc == null || !Number.isFinite(svc) || svc <= 0) {
+            return nutritionForSidebar;
+        }
+        return singleServingNutritionForSidebar;
+    }, [isBulkRecipe, bulkServingsCount, nutritionForSidebar, singleServingNutritionForSidebar]);
+
+    const ingredientPasteHighlightParts = useMemo(
+        () => buildIngredientPasteHighlightParts(ingredientPasteField, ingredientDatabase),
+        [ingredientPasteField, ingredientDatabase],
+    );
+
+    useEffect(() => {
+        // Intentionally empty: batch macro inputs are manual-only and must not sync from ingredient nutrition.
+    }, [nutritionForSidebar, ingredientRows, isBulkRecipe]);
 
     const safetyFormAlerts = useMemo(
         () =>
@@ -511,24 +937,24 @@ export function MealLibraryPageContent({
     );
 
     const scBadges = useMemo(() => {
-        const n = nutritionForSidebar ?? {};
+        const n = nutritionForSummaryDisplay ?? {};
         const badges = [];
         if ((n.b9_folate ?? 0) >= 150) badges.push('Folate');
         if ((n.b12 ?? 0) >= 1.5) badges.push('B12');
         if ((n.iron ?? 0) >= 6) badges.push('Iron');
         if ((n.magnesium ?? 0) >= 120) badges.push('Magnesium');
         if ((n.zinc ?? 0) >= 3) badges.push('Zinc');
-        if (nutritionForSidebar && sickleCellProgramMealHighlight(n)) {
+        if (nutritionForSummaryDisplay && sickleCellProgramMealHighlight(n)) {
             badges.push('Sickle Cell');
         }
         return badges;
-    }, [nutritionForSidebar]);
+    }, [nutritionForSummaryDisplay]);
 
     const nutritionSummarySections = useMemo(() => {
-        if (!nutritionForSidebar) {
+        if (!nutritionForSummaryDisplay) {
             return [];
         }
-        const n = nutritionForSidebar;
+        const n = nutritionForSummaryDisplay;
         const num = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : 0);
         const fmt = (v, digits = 1) => num(v).toFixed(digits).replace(/\.0$/, '');
 
@@ -574,7 +1000,99 @@ export function MealLibraryPageContent({
                 ],
             },
         ];
-    }, [nutritionForSidebar]);
+    }, [nutritionForSummaryDisplay]);
+
+    const calculatedNutritionForTargets = useMemo(() => {
+        const n = nutritionForSummaryDisplay;
+        if (!n) {
+            return null;
+        }
+        const num = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : 0);
+        const carbs = num(n.carbs);
+        const fiber = num(n.fiber);
+        return {
+            calories: num(n.calories),
+            protein: num(n.protein),
+            fat: num(n.fat),
+            netCarbs: Math.max(0, carbs - fiber),
+        };
+    }, [nutritionForSummaryDisplay]);
+
+    const targetVarianceRows = useMemo(() => {
+        const calc = calculatedNutritionForTargets;
+        if (!calc) {
+            return [];
+        }
+        const tc = optionalTargetNumberString(targetCaloriesManual);
+        const tp = optionalTargetNumberString(targetProteinManual);
+        const tcar = optionalTargetNumberString(targetCarbsManual);
+        const tf = optionalTargetNumberString(targetFatManual);
+        /** @type {{ label: string; target: number; calculated: number; delta: string }[]} */
+        const rows = [];
+        const fmtDelta = (d) => (Math.round(d * 100) / 100).toFixed(2).replace(/\.?0+$/, '');
+        if (tc !== null) {
+            const d = tc - calc.calories;
+            rows.push({ label: 'Calories (kcal)', target: tc, calculated: calc.calories, delta: fmtDelta(d) });
+        }
+        if (tp !== null) {
+            const d = tp - calc.protein;
+            rows.push({ label: 'Protein (g)', target: tp, calculated: calc.protein, delta: fmtDelta(d) });
+        }
+        if (tcar !== null) {
+            const d = tcar - calc.netCarbs;
+            rows.push({
+                label: 'Net carbs (g)',
+                target: tcar,
+                calculated: calc.netCarbs,
+                delta: fmtDelta(d),
+            });
+        }
+        if (tf !== null) {
+            const d = tf - calc.fat;
+            rows.push({ label: 'Fat (g)', target: tf, calculated: calc.fat, delta: fmtDelta(d) });
+        }
+        return rows;
+    }, [
+        calculatedNutritionForTargets,
+        targetCaloriesManual,
+        targetProteinManual,
+        targetCarbsManual,
+        targetFatManual,
+    ]);
+
+    const targetVarianceSummaryLine = useMemo(() => {
+        const calc = calculatedNutritionForTargets;
+        if (!calc) {
+            return '';
+        }
+        const line = formatMealCraftVarianceNotes(
+            {
+                calories: optionalTargetNumberString(targetCaloriesManual),
+                protein: optionalTargetNumberString(targetProteinManual),
+                fat: optionalTargetNumberString(targetFatManual),
+                netCarbs: optionalTargetNumberString(targetCarbsManual),
+            },
+            calc,
+        );
+        return line;
+    }, [
+        calculatedNutritionForTargets,
+        targetCaloriesManual,
+        targetProteinManual,
+        targetCarbsManual,
+        targetFatManual,
+    ]);
+
+    const persistedMacroTotalsForStore = useMemo(
+        () =>
+            persistedMacroTotalsFromIngredientSources(
+                aggregatedIngredientNutrition,
+                nutritionResult,
+                isBulkRecipe,
+                bulkServingsCount,
+            ),
+        [aggregatedIngredientNutrition, nutritionResult, isBulkRecipe, bulkServingsCount],
+    );
 
     const loadMoreFooter =
         filteredMeals.length > visibleCount ? (
@@ -634,25 +1152,53 @@ export function MealLibraryPageContent({
                                     variant="primary"
                                     type="button"
                                     className="shrink-0 uppercase tracking-wide"
-                                    onClick={() => setCreateOpen(true)}
+                                    onClick={() => {
+                                        resetCreateForm();
+                                        setMealToEdit(null);
+                                        setCreateOpen(true);
+                                    }}
                                 />
                             </div>
                             <div className="min-w-0 flex-1">
                                 <CSVUploader
                                     className="w-full pt-0"
                                     templateUrl={csvTemplateUrl}
+                                    masterTemplateUrl={csvMasterTemplateUrl}
                                     exportUrl={csvExportUrl}
+                                    uploadBusyLabel="Parsing & importing…"
                                     onUpload={async (file) => {
                                         const formData = new FormData();
                                         formData.append('file', file);
                                         const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-                                        await axios.post(csvImportUrl, formData, {
-                                            headers: {
-                                                'Content-Type': 'multipart/form-data',
-                                                ...(token ? { 'X-CSRF-TOKEN': token } : {}),
-                                            },
-                                        });
-                                        router.reload();
+                                        try {
+                                            const { data } = await axios.post(csvImportUrl, formData, {
+                                                headers: {
+                                                    ...(token ? { 'X-CSRF-TOKEN': token } : {}),
+                                                },
+                                            });
+                                            setMealCsvImportResultModal({
+                                                summary: data?.summary ?? {},
+                                                uniquePending: Array.isArray(data?.unique_pending_ingredients)
+                                                    ? data.unique_pending_ingredients
+                                                    : [],
+                                            });
+                                            await router.reload({
+                                                only: ['meals'],
+                                                preserveState: true,
+                                                preserveScroll: true,
+                                            });
+                                        } catch (e) {
+                                            const body = e?.response?.data;
+                                            const msg =
+                                                (typeof body?.message === 'string' && body.message) ||
+                                                (Array.isArray(body?.errors?.file) ? String(body.errors.file[0]) : null) ||
+                                                'CSV import failed. Check the file and try again.';
+                                            setMealCsvImportResultModal({
+                                                error: typeof msg === 'string' ? msg : 'CSV import failed.',
+                                                summary: {},
+                                                uniquePending: [],
+                                            });
+                                        }
                                     }}
                                 />
                             </div>
@@ -738,26 +1284,28 @@ export function MealLibraryPageContent({
                             <>
                                 <ul className="m-0 grid list-none grid-cols-1 gap-6 p-0 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                                     {displayedMeals.map((meal) => (
-                                        <li key={meal.id} className="flex h-full min-w-0 w-full">
+                                        <li key={meal.id} className="flex justify-center">
                                             <MealCard
-                                                variant="admin"
+                                                isAdmin
                                                 adminControls
-                                                showAdminSelectionCheckbox={false}
                                                 showActions
-                                                title={meal.title}
-                                                imageUrl={meal.imageUrl}
-                                                imageAlt=""
-                                                category={meal.category}
-                                                prepMinutes={meal.prepMinutes}
-                                                macros={meal.macros}
-                                                tags={meal.tags}
-                                                allergyTags={meal.safetyAlertTags ?? []}
-                                                nutrientHighlights={meal.nutrientHighlights}
-                                                primaryActionLabel="View details"
+                                                showAdminSelectionCheckbox={false}
+                                                meal={meal}
+                                                onViewDetails={(m) => {
+                                                    if (m?.detailView) {
+                                                        setMealDetailModal({
+                                                            title: String(m.title ?? '').trim() || 'Meal',
+                                                            detailView: m.detailView,
+                                                        });
+                                                    }
+                                                }}
                                                 onPrimaryAction={() => {}}
-                                                onEdit={() => {}}
-                                                onDelete={() => {}}
-                                                className="flex-1 min-h-0 transition-all duration-200 ease-out hover:-translate-y-0.5 hover:scale-[1.02] hover:shadow-xl active:translate-y-0 active:scale-[0.98] active:shadow-md"
+                                                onEdit={() => {
+                                                    resetCreateForm();
+                                                    setMealToEdit(meal);
+                                                    setCreateOpen(true);
+                                                }}
+                                                className="transition-all duration-200 ease-out hover:-translate-y-0.5 hover:scale-[1.02] hover:shadow-xl active:translate-y-0 active:scale-[0.98] active:shadow-md"
                                             />
                                         </li>
                                     ))}
@@ -821,6 +1369,91 @@ export function MealLibraryPageContent({
                 </section>
             </div>
 
+            {mealCsvImportResultModal ? (
+                <div className="fixed inset-0 z-[101] flex items-center justify-center p-4">
+                    <button
+                        type="button"
+                        className="absolute inset-0 bg-black/40"
+                        onClick={() => setMealCsvImportResultModal(null)}
+                        aria-label="Close import summary"
+                    />
+                    <div
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="meal-csv-import-summary-title"
+                        className="relative w-full max-w-[520px] rounded-[12px] bg-white p-8 shadow-2xl"
+                    >
+                        <h2
+                            id="meal-csv-import-summary-title"
+                            className="text-center font-montserrat text-[22px] font-bold tracking-tight text-[#262A22]"
+                        >
+                            Meal CSV import
+                        </h2>
+                        {mealCsvImportResultModal.error ? (
+                            <p className="mt-4 text-center font-body text-sm text-[#7F1D1D]" role="alert">
+                                {mealCsvImportResultModal.error}
+                            </p>
+                        ) : (
+                            <div className="mt-6 space-y-4 font-body text-sm text-[#262A22]">
+                                <div className="flex gap-3 rounded-[12px] border border-[#E5E7EB] bg-[#F8F9F6] px-4 py-3">
+                                    <span className="text-lg leading-none text-[#5A6B44]" aria-hidden>
+                                        ✓
+                                    </span>
+                                    <p>
+                                        <span className="font-semibold">
+                                            {(Number(mealCsvImportResultModal.summary?.imported) || 0) +
+                                                (Number(mealCsvImportResultModal.summary?.updated) || 0)}
+                                        </span>{' '}
+                                        meal row(s) saved successfully (new or updated).
+                                    </p>
+                                </div>
+                                {(Number(mealCsvImportResultModal.summary?.pending_ingredient_input) || 0) > 0 ? (
+                                    <div className="flex gap-3 rounded-[12px] border border-amber-200 bg-amber-50 px-4 py-3 text-amber-950">
+                                        <span className="text-lg leading-none" aria-hidden>
+                                            ⚠
+                                        </span>
+                                        <p>
+                                            <span className="font-semibold">
+                                                {Number(mealCsvImportResultModal.summary?.pending_ingredient_input) || 0}
+                                            </span>{' '}
+                                            meal row(s) are pending because one or more ingredients were not found in your
+                                            library. Add them via Ingredient Library import, and those meals will be created
+                                            automatically.
+                                        </p>
+                                    </div>
+                                ) : null}
+                                {(Number(mealCsvImportResultModal.summary?.errors) || 0) > 0 ? (
+                                    <p className="text-center text-sm text-[#7F1D1D]">
+                                        {Number(mealCsvImportResultModal.summary?.errors) || 0} row(s) had errors (see CSV
+                                        template rules).
+                                    </p>
+                                ) : null}
+                                {(mealCsvImportResultModal.uniquePending ?? []).length > 0 ? (
+                                    <Button
+                                        label="Download missing ingredients"
+                                        variant="secondary"
+                                        type="button"
+                                        className="w-full"
+                                        onClick={() =>
+                                            downloadMissingIngredientsCSV(mealCsvImportResultModal.uniquePending ?? [])
+                                        }
+                                    />
+                                ) : null}
+                            </div>
+                        )}
+                        <div className="mt-6">
+                            <Button
+                                label="Done"
+                                variant="primary"
+                                type="button"
+                                className="w-full uppercase tracking-wide"
+                                onClick={() => setMealCsvImportResultModal(null)}
+                            />
+                        </div>
+                    </div>
+                </div>
+            ) : null}
+
             {confirmOpen ? (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
                     <button
@@ -867,22 +1500,50 @@ export function MealLibraryPageContent({
                 </div>
             ) : null}
 
+            {mealDetailModal ? (
+                <div className="fixed inset-0 z-[102] flex items-center justify-center p-4">
+                    <button
+                        type="button"
+                        className="absolute inset-0 bg-black/40"
+                        onClick={() => setMealDetailModal(null)}
+                        aria-label="Close meal details"
+                    />
+                    <div
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="meal-library-detail-title"
+                        className="relative w-full max-w-[960px] rounded-[12px] bg-[#F8F9F6] p-4 shadow-2xl md:p-6"
+                    >
+                        <div className="mb-4 flex items-start justify-between gap-3">
+                            <h2
+                                id="meal-library-detail-title"
+                                className="min-w-0 flex-1 font-montserrat text-xl font-bold tracking-tight text-[#262A22] md:text-2xl"
+                            >
+                                {mealDetailModal.title}
+                            </h2>
+                            <Button label="Close" variant="ghost" type="button" onClick={() => setMealDetailModal(null)} />
+                        </div>
+                        <MealDetailView meal={mealDetailModal.detailView} className="max-h-[min(78vh,calc(100dvh-11rem))]" />
+                    </div>
+                </div>
+            ) : null}
+
             {createOpen ? (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
                     <button
                         type="button"
                         className="absolute inset-0 bg-black/40"
-                        onClick={() => setCreateOpen(false)}
+                        onClick={() => closeCreateModal()}
                         aria-label="Close create meal modal"
                     />
                     <div
                         role="dialog"
                         aria-modal="true"
-                        aria-label="Create new meal"
+                        aria-labelledby="meal-library-create-title"
                         className="relative w-full max-w-[1200px] overflow-hidden rounded-[12px] bg-white shadow-2xl"
                     >
                         <div className="absolute right-3 top-3 z-20">
-                            <Button label="Close" variant="ghost" onClick={() => setCreateOpen(false)} />
+                            <Button label="Close" variant="ghost" onClick={() => closeCreateModal()} />
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-[13fr_7fr]">
                             {/* Left: Form */}
@@ -890,11 +1551,16 @@ export function MealLibraryPageContent({
                                 <div className="flex-1 overflow-y-auto px-10 pb-6 pt-10">
                                     <div className="flex items-start justify-between gap-4">
                                         <div>
-                                            <h2 className="font-montserrat text-[22px] font-bold tracking-tight text-[#262A22]">
-                                                Create New Meal
+                                            <h2
+                                                id="meal-library-create-title"
+                                                className="font-montserrat text-[22px] font-bold tracking-tight text-[#262A22]"
+                                            >
+                                                {mealToEdit?.editForm?.id ? 'Edit meal' : 'Create meal'}
                                             </h2>
                                             <p className="mt-1 font-body text-sm text-[#555555]">
-                                                Build a meal and calculate nutrition live from your ingredient library.
+                                                {isBulkRecipe
+                                                    ? 'Bulk mode: enter batch totals for calories and macros, then set how many servings that batch makes. We save single-serving values to your library.'
+                                                    : 'Build a meal and calculate nutrition live from your ingredient library.'}
                                             </p>
                                         </div>
                                     </div>
@@ -910,41 +1576,187 @@ export function MealLibraryPageContent({
                                         required
                                     />
 
+                                    <div className="rounded-[12px] border border-gray-200 bg-white p-4">
+                                        <button
+                                            type="button"
+                                            className="inline-flex items-center gap-3"
+                                            onClick={() => setIsBulkRecipe((v) => !v)}
+                                            aria-pressed={isBulkRecipe}
+                                        >
+                                            <SquareCheckbox checked={isBulkRecipe} />
+                                            <span className="font-montserrat text-sm font-bold text-[#262A22]">
+                                                Bulk recipe
+                                            </span>
+                                        </button>
+                                        <p className="mt-2 font-body text-sm text-[#555555]">
+                                            Totals you enter are for the full batch; single-serving values are computed and
+                                            stored for meal cards and plans.
+                                        </p>
+                                        <div
+                                            className={[
+                                                'overflow-hidden transition-all duration-300',
+                                                isBulkRecipe ? 'mt-4 max-h-96 opacity-100' : 'max-h-0 opacity-0',
+                                            ].join(' ')}
+                                        >
+                                            <div className={['space-y-4', isBulkRecipe ? '' : 'pointer-events-none'].join(' ')}>
+                                                <TextInput
+                                                    label="Number of servings"
+                                                    placeholder="e.g. 8"
+                                                    value={bulkServingsCount}
+                                                    onChange={(e) => setBulkServingsCount(e.target.value)}
+                                                    className="!max-w-none"
+                                                    inputMode="decimal"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+
                                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                                         <TextInput
                                             id="create-meal-calories"
-                                            label="Calories"
+                                            label={isBulkRecipe ? 'Batch total calories' : 'Calories'}
                                             placeholder="e.g. 420"
                                             value={formCalories}
                                             onChange={(e) => setFormCalories(e.target.value)}
                                             className="!max-w-none"
                                             inputMode="decimal"
+                                            autoComplete="off"
+                                            name="meal_library_batch_calories"
                                             required
                                         />
                                         <TextInput
-                                            label="Protein (g)"
+                                            label={isBulkRecipe ? 'Batch protein (g)' : 'Protein (g)'}
                                             placeholder="0"
                                             value={formProtein}
                                             onChange={(e) => setFormProtein(e.target.value)}
                                             className="!max-w-none"
                                             inputMode="decimal"
+                                            autoComplete="off"
+                                            name="meal_library_batch_protein"
                                         />
                                         <TextInput
-                                            label="Carbs (g)"
+                                            label={isBulkRecipe ? 'Batch carbs (g)' : 'Carbs (g)'}
                                             placeholder="0"
                                             value={formCarbs}
                                             onChange={(e) => setFormCarbs(e.target.value)}
                                             className="!max-w-none"
                                             inputMode="decimal"
+                                            autoComplete="off"
+                                            name="meal_library_batch_carbs"
                                         />
                                         <TextInput
-                                            label="Fat (g)"
+                                            label={isBulkRecipe ? 'Batch fat (g)' : 'Fat (g)'}
                                             placeholder="0"
                                             value={formFat}
                                             onChange={(e) => setFormFat(e.target.value)}
                                             className="!max-w-none"
                                             inputMode="decimal"
+                                            autoComplete="off"
+                                            name="meal_library_batch_fat"
                                         />
+                                    </div>
+
+                                    <div className="rounded-[12px] border border-gray-200 bg-white p-4">
+                                        <p className="font-montserrat text-sm font-bold text-[#262A22]">
+                                            Ingredient string (library match)
+                                        </p>
+                                        <p className="mt-1 font-body text-xs text-[#6B7280]">
+                                            Paste a pipe-separated list. Each segment: <span className="font-mono">Name:825g</span>,{' '}
+                                            <span className="font-mono">Name (710ml)</span>, <span className="font-mono">Name:0.5kg</span>, or{' '}
+                                            <span className="font-mono">Name 200ml</span> (unit required for the space form). Names must match
+                                            your verified ingredient library exactly (case-insensitive). Apply fills ingredient rows only;
+                                            batch macro fields stay under your control. Saved meal totals use system nutrition from
+                                            ingredients when present. Planning targets are never changed by this action.
+                                        </p>
+                                        <textarea
+                                            value={ingredientPasteField}
+                                            onChange={(e) => {
+                                                setIngredientPasteField(e.target.value);
+                                                setIngredientPasteApplyError('');
+                                            }}
+                                            rows={3}
+                                            className="mt-3 block w-full resize-y rounded-[12px] border border-[#E5E7EB] bg-[#F8F9F6] px-3 py-2 font-mono text-sm text-[#1F2937] outline-none focus-visible:border-[#5A6B44] focus-visible:ring-2 focus-visible:ring-[#5A6B44] focus-visible:ring-offset-2"
+                                            placeholder={
+                                                'e.g. Chicken Thighs:825g | Rice (200g) | Olive Oil 15ml | Lemon Juice (15ml)'
+                                            }
+                                            aria-label="Ingredient quantities string"
+                                        />
+                                        <div className="mt-3 flex flex-wrap items-center gap-3">
+                                            <Button
+                                                label="Apply to ingredients"
+                                                variant="secondary"
+                                                type="button"
+                                                onClick={handleApplyIngredientQuantityString}
+                                            />
+                                        </div>
+                                        {ingredientPasteApplyError ? (
+                                            <p className="mt-3 font-body text-sm text-[#7F1D1D]" role="alert">
+                                                {ingredientPasteApplyError}
+                                            </p>
+                                        ) : null}
+                                        {ingredientPasteMissingLabels.length > 0 ? (
+                                            <div className="mt-4 rounded-[12px] border border-amber-200 bg-amber-50 p-3">
+                                                <p className="font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-amber-900">
+                                                    Not in library (add these ingredients first)
+                                                </p>
+                                                <ul className="mt-2 list-inside list-disc space-y-1 font-body text-sm text-amber-950">
+                                                    {ingredientPasteMissingLabels.map((name) => (
+                                                        <li key={name}>{name}</li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        ) : null}
+                                    </div>
+
+                                    <div className="rounded-[12px] border border-[#C4B5A0]/35 bg-[#FAF8F5] p-4">
+                                        <p className="font-montserrat text-sm font-bold text-[#262A22]">Planning targets</p>
+                                        <p className="mt-1 font-body text-xs text-[#6B7280]">
+                                            Manual per-serving goals for variance only. These fields never sync with batch
+                                            totals, ingredient strings, or calculated nutrition — only your typing (or
+                                            loading a meal for edit) changes them.
+                                        </p>
+                                        <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                                            <TextInput
+                                                label="Target calories (kcal)"
+                                                placeholder="e.g. 500"
+                                                value={targetCaloriesManual}
+                                                onChange={(e) => setTargetCaloriesManual(e.target.value)}
+                                                className="!max-w-none"
+                                                inputMode="decimal"
+                                                autoComplete="off"
+                                                name="meal_library_target_calories"
+                                            />
+                                            <TextInput
+                                                label="Target protein (g)"
+                                                placeholder="0"
+                                                value={targetProteinManual}
+                                                onChange={(e) => setTargetProteinManual(e.target.value)}
+                                                className="!max-w-none"
+                                                inputMode="decimal"
+                                                autoComplete="off"
+                                                name="meal_library_target_protein"
+                                            />
+                                            <TextInput
+                                                label="Target carbs — compared as net carbs (g)"
+                                                placeholder="0"
+                                                value={targetCarbsManual}
+                                                onChange={(e) => setTargetCarbsManual(e.target.value)}
+                                                className="!max-w-none"
+                                                inputMode="decimal"
+                                                autoComplete="off"
+                                                name="meal_library_target_carbs"
+                                            />
+                                            <TextInput
+                                                label="Target fat (g)"
+                                                placeholder="0"
+                                                value={targetFatManual}
+                                                onChange={(e) => setTargetFatManual(e.target.value)}
+                                                className="!max-w-none"
+                                                inputMode="decimal"
+                                                autoComplete="off"
+                                                name="meal_library_target_fat"
+                                            />
+                                        </div>
                                     </div>
 
                                     <DropdownTextInput
@@ -954,12 +1766,14 @@ export function MealLibraryPageContent({
                                         onChange={setFormType}
                                         className="!max-w-none"
                                     />
-                                    <DropdownTextInput
+                                    <MultiPillDropdown
                                         label="Meal Plan Tag"
-                                        value={formMealPlanTag}
-                                        options={['', ...MEAL_PLAN_TAG_OPTIONS]}
-                                        onChange={setFormMealPlanTag}
+                                        options={mealPlanMultiOptions}
+                                        selectedValues={selectedMealPlanTags}
+                                        onChange={setSelectedMealPlanTags}
                                         className="!max-w-none"
+                                        listboxAriaLabel="Meal plan tags"
+                                        placeholder="Select one or more plan tags…"
                                     />
                                     <div className="space-y-2">
                                         <p className="font-montserrat text-sm font-bold leading-snug tracking-tight text-grey-94">
@@ -983,13 +1797,14 @@ export function MealLibraryPageContent({
                                             })}
                                         </div>
                                     </div>
-                                    <DropdownTextInput
+                                    <MultiPillDropdown
                                         label="Cycle phase"
-                                        value={formCyclePhaseLabel}
-                                        options={cyclePhaseDropdownOptions}
-                                        onChange={setFormCyclePhaseLabel}
-                                        listboxAriaLabel="Cycle phase"
+                                        options={cyclePhases}
+                                        selectedValues={selectedCyclePhaseValues}
+                                        onChange={setSelectedCyclePhaseValues}
+                                        listboxAriaLabel="Cycle phases"
                                         className="!max-w-none"
+                                        placeholder="Select one or more phases…"
                                     />
 
                                     <div className="block w-full max-w-[492px] text-left !max-w-none">
@@ -1017,6 +1832,39 @@ export function MealLibraryPageContent({
                                         <p className="mb-2 font-montserrat text-sm font-bold leading-snug tracking-tight text-grey-94">
                                             Meal photo
                                         </p>
+                                        {mealToEdit?.editForm?.imageUrl && !formPhoto ? (
+                                            <div className="mb-3 rounded-[12px] border border-gray-200 bg-[#F8F9F6] p-3">
+                                                <p className="mb-2 font-body text-xs font-medium text-[#555555]">
+                                                    Current photo (upload a new file below to replace)
+                                                </p>
+                                                <img
+                                                    src={mealToEdit.editForm.imageUrl}
+                                                    alt=""
+                                                    className="max-h-40 w-auto max-w-full rounded-lg object-contain"
+                                                />
+                                            </div>
+                                        ) : null}
+                                        {mealPhotoPreviewUrl ? (
+                                            <div className="mb-3 flex items-start gap-3 rounded-[12px] border border-gray-200 bg-white p-3">
+                                                <img
+                                                    src={mealPhotoPreviewUrl}
+                                                    alt=""
+                                                    className="h-24 w-24 shrink-0 rounded-lg object-cover"
+                                                />
+                                                <div className="min-w-0 flex-1">
+                                                    <p className="truncate font-body text-sm text-[#374151]">
+                                                        {formPhoto?.name ?? 'Selected photo'}
+                                                    </p>
+                                                    <button
+                                                        type="button"
+                                                        className="mt-2 font-body text-sm font-semibold text-[#5A6B44] underline decoration-[#5A6B44]/40 underline-offset-2 hover:decoration-[#5A6B44]"
+                                                        onClick={clearMealPhotoSelection}
+                                                    >
+                                                        Remove selected photo
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ) : null}
                                         <label className="relative block cursor-pointer overflow-hidden rounded-[12px] border-2 border-dashed border-gray-200 bg-[#F8F9F6] p-10">
                                             <div className="aspect-[4/3] w-full">
                                                 <div className="flex h-full flex-col items-center justify-center px-6 text-center">
@@ -1029,13 +1877,11 @@ export function MealLibraryPageContent({
                                                 </div>
                                             </div>
                                             <input
+                                                name="photo"
                                                 type="file"
                                                 accept="image/*"
-                                                className="absolute inset-0 h-full w-full opacity-0"
-                                                onChange={(e) => {
-                                                    const f = e.target.files && e.target.files[0] ? e.target.files[0] : null;
-                                                    setFormPhoto(f);
-                                                }}
+                                                className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                                                onChange={handleMealPhotoChange}
                                             />
                                         </label>
                                     </div>
@@ -1236,14 +2082,35 @@ export function MealLibraryPageContent({
                                 </div>
                                 </div>
                                 <div className="border-t border-gray-200 bg-white px-10 pb-10 pt-6">
-                                    <Button
-                                        label="Save meal"
-                                        variant="primary"
-                                        type="button"
-                                        disabled={!canSave}
-                                        onClick={handleSaveCreateMeal}
-                                        className="w-full justify-center"
-                                    />
+                                    {mealToEdit?.editForm?.id ? (
+                                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                            <Button
+                                                label="Update meal"
+                                                variant="primary"
+                                                type="button"
+                                                disabled={!canSave}
+                                                onClick={handleUpdateExistingMeal}
+                                                className="w-full justify-center"
+                                            />
+                                            <Button
+                                                label="Save as new copy"
+                                                variant="primary"
+                                                type="button"
+                                                disabled={!canSave}
+                                                onClick={handleSaveMealAsNewCopy}
+                                                className="w-full justify-center"
+                                            />
+                                        </div>
+                                    ) : (
+                                        <Button
+                                            label="Save meal"
+                                            variant="primary"
+                                            type="button"
+                                            disabled={!canSave}
+                                            onClick={handleSaveCreateMeal}
+                                            className="w-full justify-center"
+                                        />
+                                    )}
                                 </div>
                             </div>
 
@@ -1255,7 +2122,9 @@ export function MealLibraryPageContent({
                                         Nutrition Summary
                                     </h3>
                                     <p className="mt-1 font-body text-sm text-[#555555]">
-                                        Live totals from selected ingredients (per 100 g library values).
+                                        {isBulkRecipe
+                                            ? 'System totals per serving from rolled-up ingredients (or imported nutrition), divided by the number of servings. This is independent of the batch macro fields on the left, which stay as full-batch totals you save to the library.'
+                                            : 'Live totals from selected ingredients (per 100 g library values).'}
                                     </p>
                                     </div>
 
@@ -1289,7 +2158,7 @@ export function MealLibraryPageContent({
                                                                 Nutrient
                                                             </th>
                                                             <th className="px-3 py-2 text-right font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#374151]">
-                                                                Total (meal)
+                                                                {isBulkRecipe ? 'Per serving (system)' : 'Total (meal)'}
                                                             </th>
                                                         </tr>
                                                     </thead>
@@ -1324,10 +2193,64 @@ export function MealLibraryPageContent({
                                             </div>
                                         ) : (
                                             <p className="rounded-[12px] border border-dashed border-gray-200 bg-[#F8F9F6] px-3 py-4 font-body text-sm text-[#555555]">
-                                                Select verified ingredients to see weighted nutrition totals, automated safety
-                                                alerts, and program highlights.
+                                                {isBulkRecipe
+                                                    ? parseBulkServingsCount(bulkServingsCount) == null
+                                                        ? 'Enter a valid number of servings so ingredient totals can be divided into per-serving system nutrition.'
+                                                        : 'Add verified ingredient lines (or nutrition that resolves from your recipe) to show system per-serving totals here. Batch macro fields on the left remain full-batch values and are not used for this summary.'
+                                                    : 'Select verified ingredients to see weighted nutrition totals, automated safety alerts, and program highlights.'}
                                             </p>
                                         )}
+
+                                        {targetVarianceRows.length > 0 ? (
+                                            <div className="mt-4 rounded-[12px] border border-[#C4B5A0]/40 bg-[#FAF8F5] p-4">
+                                                <p className="font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#374151]">
+                                                    Planning targets vs. calculated
+                                                </p>
+                                                <p className="mt-1 font-body text-xs text-[#6B7280]">
+                                                    Δ = target minus calculated (same sign convention as the Meal Craft
+                                                    CSV variance column).
+                                                </p>
+                                                <table className="mt-3 w-full border-collapse text-left text-sm">
+                                                    <thead>
+                                                        <tr className="border-b border-[#E5E7EB]">
+                                                            <th className="py-1.5 pr-2 font-montserrat text-xs font-bold text-[#374151]">
+                                                                Nutrient
+                                                            </th>
+                                                            <th className="py-1.5 px-2 text-right font-montserrat text-xs font-bold text-[#374151]">
+                                                                Target
+                                                            </th>
+                                                            <th className="py-1.5 px-2 text-right font-montserrat text-xs font-bold text-[#374151]">
+                                                                Calc.
+                                                            </th>
+                                                            <th className="py-1.5 pl-2 text-right font-montserrat text-xs font-bold text-[#374151]">
+                                                                Δ
+                                                            </th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {targetVarianceRows.map((row) => (
+                                                            <tr key={row.label} className="border-b border-[#F3F4F6] last:border-0">
+                                                                <td className="py-1.5 pr-2 font-body text-[#262A22]">{row.label}</td>
+                                                                <td className="py-1.5 px-2 text-right font-body tabular-nums text-[#262A22]">
+                                                                    {row.target}
+                                                                </td>
+                                                                <td className="py-1.5 px-2 text-right font-body tabular-nums text-[#555555]">
+                                                                    {row.calculated.toFixed(2).replace(/\.?0+$/, '')}
+                                                                </td>
+                                                                <td className="py-1.5 pl-2 text-right font-body tabular-nums text-[#5A6B44]">
+                                                                    {row.delta.startsWith('-') ? row.delta : `+${row.delta}`}
+                                                                </td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                                {targetVarianceSummaryLine ? (
+                                                    <p className="mt-2 font-mono text-[11px] leading-snug text-[#6B7280]">
+                                                        {targetVarianceSummaryLine}
+                                                    </p>
+                                                ) : null}
+                                            </div>
+                                        ) : null}
 
                                         <div className="mt-4 border-t border-gray-100 pt-4">
                                             <p className="font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#374151]">

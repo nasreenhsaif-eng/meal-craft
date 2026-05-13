@@ -39,7 +39,7 @@ function MacroGridSection({ macros, variant }) {
 }
 
 /**
- * **Consultation / `StackedDeckCarousel` deck card** — use `deck` (+ optional `ribbon`, `deckStackRole`).
+ * **Consultation / `MealCard/StackedDeckCarousel.jsx` deck card** — use `deck` (+ optional `ribbon`, `deckStackRole`).
  * Standalone “nano” preview uses `deck={false}` (fixed 240×320).
  *
  * Nano mobile-first client card (square photo).

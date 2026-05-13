@@ -8,17 +8,21 @@ import TextInput from './Atoms/TextInput/TextInput.jsx';
  * @param {{
  *  onUpload: (file: File) => void | Promise<void>;
  *  templateUrl: string;
+ *  masterTemplateUrl?: string;
  *  exportUrl?: string;
  *  accept?: string;
  *  className?: string;
+ *  uploadBusyLabel?: string;
  * }} props
  */
 export default function CSVUploader({
     onUpload,
     templateUrl,
+    masterTemplateUrl,
     exportUrl,
     accept = '.csv,text/csv',
     className = '',
+    uploadBusyLabel = 'Uploading…',
 }) {
     const id = useId();
     const inputRef = useRef(null);
@@ -70,7 +74,7 @@ export default function CSVUploader({
             </div>
 
             <Button
-                label={busy ? 'Uploading…' : 'Upload CSV'}
+                label={busy ? uploadBusyLabel : 'Upload CSV'}
                 variant="secondary"
                 type="button"
                 disabled={!file || busy}
@@ -83,8 +87,16 @@ export default function CSVUploader({
                     href={templateUrl}
                     className="font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#5A6B44] underline underline-offset-2"
                 >
-                    Download CSV template
+                    Download import CSV template
                 </a>
+                {masterTemplateUrl ? (
+                    <a
+                        href={masterTemplateUrl}
+                        className="font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#5A6B44] underline underline-offset-2"
+                    >
+                        Download meal craft master template
+                    </a>
+                ) : null}
                 {exportUrl ? (
                     <a
                         href={exportUrl}

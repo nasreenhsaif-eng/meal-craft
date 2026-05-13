@@ -3,6 +3,8 @@
  * Server-side import uses App\Services\MealCsvLibraryImportService — keep formulas aligned.
  */
 
+import { gramsFromIngredientAmountAndUnit, parseIngredientQuantityString } from './ingredientQuantityString';
+
 export type IngredientProfile = {
     /** Present when loaded from the verified ingredient library (meal library create form). */
     id?: number;
@@ -19,6 +21,8 @@ export type IngredientProfile = {
     iron?: number;
     magnesium?: number;
     micronutrients?: Record<string, number>;
+    /** g/ml for volume → mass (meal library ingredient payload). */
+    density?: number;
 };
 
 /** Allowed Category values for meal-library CSV (matches PHP MealCsvLibraryImportService). */
@@ -114,18 +118,6 @@ export function calorieWarningsForCategory(category: MealLibraryCsvCategory, tot
     return warnings;
 }
 
-function parseIngredientPairs(cell: string): { name: string; grams: number }[] {
-    const out: { name: string; grams: number }[] = [];
-    for (const part of cell.split('|')) {
-        const p = part.trim();
-        if (!p) continue;
-        const m = /^(.+?):(\d+(?:\.\d+)?)\s*$/u.exec(p);
-        if (!m) continue;
-        out.push({ name: m[1].trim(), grams: Math.max(0, parseFloat(m[2])) });
-    }
-    return out;
-}
-
 function microFromJson(m: Record<string, number> | undefined, key: string): number {
     const v = m?.[key];
     return typeof v === 'number' && !Number.isNaN(v) ? v : 0;
@@ -169,7 +161,7 @@ export function calculateMealNutrition(
         });
     }
 
-    const segments = parseIngredientPairs(csvRow.ingredient_quantities ?? '');
+    const segments = parseIngredientQuantityString(csvRow.ingredient_quantities ?? '');
     if (segments.length === 0) {
         return emptyFailure({
             ok: false,
@@ -197,7 +189,9 @@ export function calculateMealNutrition(
             }
             continue;
         }
-        gramsByNorm.set(key, (gramsByNorm.get(key) ?? 0) + seg.grams);
+        const density = typeof row.density === 'number' && row.density > 0 ? row.density : 1;
+        const grams = gramsFromIngredientAmountAndUnit(seg.amount, seg.unit, density);
+        gramsByNorm.set(key, (gramsByNorm.get(key) ?? 0) + grams);
     }
 
     if (pending.length > 0) {
