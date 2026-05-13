@@ -75,6 +75,7 @@ const preview = {
                     'MealCraft/Identity',
                     'MealCraft/Atoms',
                     'MealCraft/Meal System',
+                    'MealCraft/Molecules',
                     'MealCraft/Components',
                     'MealCraft/Pages',
                 ];

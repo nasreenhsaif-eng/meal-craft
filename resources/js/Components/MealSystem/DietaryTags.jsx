@@ -348,3 +348,5 @@ export default function DietaryTags({ tags, className = '' }) {
     );
 }
 
+export { DietaryTag as MealPlanTag };
+

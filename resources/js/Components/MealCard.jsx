@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import Button from './Atoms/Button.jsx';
 import MacroGrid from './MacroGrid.jsx';
 import RoundIconButton from './Atoms/Icons/RoundIconButton.jsx';
@@ -12,9 +12,111 @@ import SquareCheckbox from './Atoms/Icons/SquareCheckbox.jsx';
 import NutrientBadge from './Atoms/MealSystem/NutrientBadge.jsx';
 import { IconDelete, IconEdit } from './Atoms/SvgIcons.jsx';
 import MealCraftLogo from './Atoms/Logo/MealCraftLogo.jsx';
+import { CyclePhaseTag } from './Molecules/MealDetailView/CyclePhaseTag.tsx';
+
+const VALID_CYCLE_PHASES = new Set(['Menstrual', 'Follicular', 'Ovulatory', 'Luteal']);
+
+const STRUCTURAL_LABELS = new Set(['meal', 'dessert', 'breakfast', 'soup', 'side salad', 'sideSalad']);
+const RED_WARNING_LABELS = new Set(['contains nuts', 'contains dairy', 'shellfish', 'contains gluten']);
+const GREEN_DIETARY_LABELS = new Set([
+    'gluten-free',
+    'gluten free',
+    'vegan',
+    'vegetarian',
+    'dairy-free',
+    'dairy free',
+    'nut-free',
+    'nut free',
+    'high protein',
+    'low carbs',
+    'low carb',
+    'keto',
+    'ketogenic',
+    'balanced',
+    'hormone feast',
+    'sickle cell anemia',
+]);
+
+/**
+ * @param {unknown} tagsProp
+ * @param {object | null} mealRecord
+ * @returns {{ label: string; type?: string }[]}
+ */
+function resolveTags(tagsProp, mealRecord) {
+    const explicit = Array.isArray(tagsProp) ? tagsProp : [];
+    if (explicit.length > 0) {
+        return explicit;
+    }
+    const fromDiet = Array.isArray(mealRecord?.dietaryTags)
+        ? mealRecord.dietaryTags
+              .filter((t) => t != null && String(t).trim() !== '')
+              .map((t) => (typeof t === 'string' ? { label: t, type: 'dietary' } : t))
+        : [];
+    const fromExtra = Array.isArray(mealRecord?.tags) ? mealRecord.tags : [];
+    return [...fromDiet, ...fromExtra];
+}
+
+/**
+ * @param {unknown} allergyTagsProp
+ * @param {object | null} mealRecord
+ * @returns {string[]}
+ */
+function resolveAllergyTags(allergyTagsProp, mealRecord) {
+    const explicit = Array.isArray(allergyTagsProp) ? allergyTagsProp : [];
+    if (explicit.length > 0) {
+        return explicit;
+    }
+    const alerts = mealRecord?.safetyAlerts;
+    if (!Array.isArray(alerts)) {
+        return [];
+    }
+    return alerts
+        .map((a) => (typeof a === 'string' ? a : a?.label))
+        .filter((x) => x != null && String(x).trim() !== '');
+}
+
+function MealCardEmptyState({ className = '' }) {
+    return (
+        <article
+            role="status"
+            aria-live="polite"
+            className={`relative flex w-full min-h-[280px] max-w-sm flex-col justify-center rounded-[20px] border border-dashed border-gray-200 bg-white px-6 py-10 text-center font-montserrat shadow-sm ${className}`.trim()}
+        >
+            <p className="text-sm font-semibold text-[#262A22]">No meal to display</p>
+            <p className="mt-2 text-xs font-medium leading-relaxed text-[#555555]">
+                Pass a <span className="font-semibold text-[#374151]">title</span> or a{' '}
+                <span className="font-semibold text-[#374151]">meal</span> object to render this card.
+            </p>
+        </article>
+    );
+}
+
+function MealCardLoadingState({ className = '' }) {
+    return (
+        <article
+            className={`relative flex w-full min-h-[320px] max-w-sm flex-col overflow-hidden rounded-[20px] border border-gray-100 bg-white font-montserrat shadow-sm ${className}`.trim()}
+            aria-busy="true"
+            aria-label="Loading meal"
+        >
+            <div className="aspect-[4/3] w-full animate-pulse bg-[#F0F1ED]" />
+            <div className="flex flex-1 flex-col gap-3 px-5 pb-6 pt-4">
+                <div className="h-5 w-full max-w-[220px] animate-pulse rounded-md bg-[#F0F1ED]" />
+                <div className="h-4 w-24 animate-pulse rounded-md bg-[#F0F1ED]" />
+                <div className="mt-2 flex flex-wrap gap-2">
+                    <div className="h-[26px] w-20 animate-pulse rounded-full bg-[#F0F1ED]" />
+                    <div className="h-[26px] w-24 animate-pulse rounded-full bg-[#F0F1ED]" />
+                </div>
+                <p className="mt-4 text-xs font-semibold uppercase tracking-[0.14em] text-[#9CA3AF]">Loading meal…</p>
+            </div>
+        </article>
+    );
+}
 
 /**
  * @param {object} props
+ * @param {object} [props.meal] — When set, fills title, tags, macros, safety, etc. unless overridden by top-level props.
+ * @param {boolean} [props.isLoading] — Shows a minimal loading shell (Montserrat).
+ * @param {string} [props.cyclePhase] — One of Menstrual | Follicular | Ovulatory | Luteal; shown when not craft-selection.
  * @param {string} props.title
  * @param {string} [props.imageUrl]
  * @param {string} [props.imageAlt]
@@ -29,15 +131,18 @@ import MealCraftLogo from './Atoms/Logo/MealCraftLogo.jsx';
  * @param {boolean} [props.showAdminSelectionCheckbox] — With admin controls, show bulk-selection checkbox (default true). Use false for grid-only admin layouts.
  */
 export default function MealCard({
+    meal,
+    isLoading = false,
+    cyclePhase: cyclePhaseProp,
     variant = 'client',
     isAdmin: isAdminProp,
     showActions,
     title,
     imageUrl,
     imageAlt = '',
-    tags = [],
-    allergyTags = [],
-    dislikeTags = [],
+    tags,
+    allergyTags,
+    dislikeTags,
     category,
     prepMinutes,
     macros,
@@ -50,47 +155,52 @@ export default function MealCard({
     primaryActionLabel,
     onPrimaryAction,
     onViewDetails,
-    protocolTags = [],
+    protocolTags,
     safetySlot,
     actionSlot,
-    nutrientHighlights = [],
+    nutrientHighlights,
     className = '',
 }) {
-    const structuralLabels = useMemo(
-        () => new Set(['meal', 'dessert', 'breakfast', 'soup', 'side salad', 'sideSalad']),
-        [],
-    );
-    const redWarningLabels = useMemo(() => new Set(['contains nuts', 'contains dairy', 'shellfish', 'contains gluten']), []);
-    const greenDietaryLabels = useMemo(
-        () =>
-            new Set([
-                'gluten-free',
-                'gluten free',
-                'vegan',
-                'vegetarian',
-                'dairy-free',
-                'dairy free',
-                'nut-free',
-                'nut free',
-                'high protein',
-                'low carbs',
-                'low carb',
-                'keto',
-                'ketogenic',
-                'balanced',
-                'hormone feast',
-                'sickle cell anemia',
-            ]),
-        [],
-    );
+    const [mediaFailed, setMediaFailed] = useState(false);
+
+    if (isLoading) {
+        return <MealCardLoadingState className={className} />;
+    }
+
+    const mealRecord = meal && typeof meal === 'object' ? meal : null;
+
+    const resolvedTitle = String(title ?? mealRecord?.title ?? '').trim();
+    if (!resolvedTitle) {
+        return <MealCardEmptyState className={className} />;
+    }
+
+    const resolvedImageUrl = imageUrl ?? mealRecord?.imageUrl ?? '';
+    const resolvedImageAlt = imageAlt ?? mealRecord?.imageAlt ?? '';
+    const resolvedCategory = category ?? mealRecord?.category;
+    const resolvedPrep = prepMinutes ?? mealRecord?.prepMinutes;
+    const resolvedMacros = macros ?? mealRecord?.nutritionalSummary ?? mealRecord?.macros ?? null;
+    const resolvedTags = resolveTags(tags, mealRecord);
+    const resolvedAllergyTags = resolveAllergyTags(allergyTags, mealRecord);
+    const resolvedDislikeTags = (() => {
+        const a = Array.isArray(dislikeTags) ? dislikeTags : [];
+        if (a.length > 0) {
+            return a;
+        }
+        return Array.isArray(mealRecord?.dislikeTags) ? mealRecord.dislikeTags : [];
+    })();
+    const resolvedProtocolTags = Array.isArray(protocolTags) ? protocolTags : [];
+    const resolvedNutrientHighlights = Array.isArray(nutrientHighlights) ? nutrientHighlights : [];
+
+    const rawCycle = cyclePhaseProp ?? mealRecord?.cyclePhase;
+    const resolvedCyclePhase = typeof rawCycle === 'string' && VALID_CYCLE_PHASES.has(rawCycle) ? rawCycle : null;
 
     const normalized = (s) => String(s ?? '').trim();
     const normLower = (s) => normalized(s).toLowerCase();
 
     const inferredCategory =
-        category ??
+        resolvedCategory ??
         (() => {
-            const hit = tags.find((t) => structuralLabels.has(normLower(t.label)));
+            const hit = resolvedTags.find((t) => STRUCTURAL_LABELS.has(normLower(t.label)));
             return hit ? hit.label : undefined;
         })();
 
@@ -111,23 +221,23 @@ export default function MealCard({
         return 'meal';
     };
 
-    const derivedSafetyAllergyTags = tags
+    const derivedSafetyAllergyTags = resolvedTags
         .map((t) => normalized(t.label))
-        .filter((l) => redWarningLabels.has(l.toLowerCase()));
+        .filter((l) => RED_WARNING_LABELS.has(l.toLowerCase()));
 
-    const dietaryLabels = tags
+    const dietaryLabels = resolvedTags
         .map((t) => normalized(t.label))
         .filter((l) => l.length > 0)
-        .filter((l) => !structuralLabels.has(l.toLowerCase()))
-        .filter((l) => greenDietaryLabels.has(l.toLowerCase()));
+        .filter((l) => !STRUCTURAL_LABELS.has(l.toLowerCase()))
+        .filter((l) => GREEN_DIETARY_LABELS.has(l.toLowerCase()));
 
-    const protocolLabels = protocolTags.map((t) => normalized(t)).filter((t) => t.length > 0);
-    const preferenceLabels = dislikeTags.map((t) => normalized(t)).filter((t) => t.length > 0);
+    const protocolLabels = resolvedProtocolTags.map((t) => normalized(t)).filter((t) => t.length > 0);
+    const preferenceLabels = resolvedDislikeTags.map((t) => normalized(t)).filter((t) => t.length > 0);
 
     const hasSafety =
         Boolean(safetySlot) ||
-        allergyTags.length > 0 ||
-        dislikeTags.length > 0 ||
+        resolvedAllergyTags.length > 0 ||
+        resolvedDislikeTags.length > 0 ||
         derivedSafetyAllergyTags.length > 0;
 
     const isAdmin = Boolean(isAdminProp) || variant === 'admin';
@@ -135,8 +245,7 @@ export default function MealCard({
     const isCraftSelection = variant === 'craft-selection';
 
     const computedPrimaryLabel = primaryActionLabel ?? 'View details';
-    const [mediaFailed, setMediaFailed] = useState(false);
-    const showImage = Boolean(imageUrl) && !mediaFailed;
+    const showImage = Boolean(resolvedImageUrl) && !mediaFailed;
 
     const cardBorderClass = isCraftSelection ? 'border-0' : 'border border-gray-100';
     const cardShadowClass = isCraftSelection ? (selected ? 'shadow-none' : 'shadow-md') : 'shadow-sm';
@@ -178,8 +287,8 @@ export default function MealCard({
                 <div className={`${isCraftSelection ? 'aspect-[3/4]' : 'aspect-[4/3]'} w-full`}>
                     {showImage ? (
                         <img
-                            src={imageUrl}
-                            alt={imageAlt || title}
+                            src={resolvedImageUrl}
+                            alt={resolvedImageAlt || resolvedTitle}
                             className="absolute inset-0 h-full w-full object-cover"
                             loading="lazy"
                             onError={() => setMediaFailed(true)}
@@ -212,7 +321,7 @@ export default function MealCard({
                                             onToggleSelected?.(!selected);
                                         }}
                                         aria-pressed={selected}
-                                        aria-label={selected ? `Deselect ${title}` : `Select ${title}`}
+                                        aria-label={selected ? `Deselect ${resolvedTitle}` : `Select ${resolvedTitle}`}
                                     >
                                         <SquareCheckbox checked={selected} presentational />
                                     </button>
@@ -274,12 +383,12 @@ export default function MealCard({
                                 : undefined
                         }
                     >
-                        {title}
+                        {resolvedTitle}
                     </h3>
 
                     {!isCraftSelection ? (
                         <div className="mt-2 flex flex-wrap items-center gap-2">
-                            {typeof prepMinutes === 'number' ? <TimeBadge minutes={prepMinutes} className="shrink-0" /> : null}
+                            {typeof resolvedPrep === 'number' ? <TimeBadge minutes={resolvedPrep} className="shrink-0" /> : null}
                         </div>
                     ) : (
                         <div className="h-0.5" />
@@ -293,9 +402,15 @@ export default function MealCard({
                         </div>
                     ) : null}
 
-                    {!isCraftSelection && nutrientHighlights.length > 0 ? (
+                    {!isCraftSelection && resolvedCyclePhase ? (
+                        <div className="flex flex-wrap gap-2" role="group" aria-label="Cycle phase">
+                            <CyclePhaseTag phase={resolvedCyclePhase} />
+                        </div>
+                    ) : null}
+
+                    {!isCraftSelection && resolvedNutrientHighlights.length > 0 ? (
                         <div className="flex flex-wrap gap-2" role="group" aria-label="Nutrient highlights">
-                            {nutrientHighlights.map((t) => (
+                            {resolvedNutrientHighlights.map((t) => (
                                 <NutrientBadge key={`nh-${t}`} type={t} />
                             ))}
                         </div>
@@ -312,7 +427,7 @@ export default function MealCard({
                                             label: label.toUpperCase().includes('G6PD') ? 'G6PD' : label,
                                             variant: label.toLowerCase().includes('g6pd') ? 'g6pd' : 'allergy',
                                         })),
-                                        ...allergyTags.map((label) => ({
+                                        ...resolvedAllergyTags.map((label) => ({
                                             label,
                                             variant: label.toLowerCase().includes('g6pd') ? 'g6pd' : 'allergy',
                                         })),
@@ -332,17 +447,17 @@ export default function MealCard({
 
                 {isCraftSelection ? (
                     <>
-                        {macros ? (
+                        {resolvedMacros ? (
                             <footer className="pt-0.5">
                                 <div className="flex justify-center">
                                     <div className="w-[246px] border-t border-gray-100 pb-1.5" />
                                 </div>
                                 <div className="flex justify-center">
                                     <MacroGrid
-                                        calories={macros.calories}
-                                        protein={macros.protein}
-                                        carbs={macros.carbs}
-                                        fat={macros.fat}
+                                        calories={resolvedMacros.calories}
+                                        protein={resolvedMacros.protein}
+                                        carbs={resolvedMacros.carbs}
+                                        fat={resolvedMacros.fat}
                                         compact={isCraftSelection}
                                     />
                                 </div>
@@ -378,17 +493,17 @@ export default function MealCard({
                     </>
                 ) : (
                     <div className="mt-auto flex w-full flex-col gap-3 pt-2">
-                        {macros ? (
+                        {resolvedMacros ? (
                             <>
                                 <div className="flex justify-center">
                                     <div className="w-[246px] border-t border-gray-100 pb-3" />
                                 </div>
                                 <div className="flex justify-center">
                                     <MacroGrid
-                                        calories={macros.calories}
-                                        protein={macros.protein}
-                                        carbs={macros.carbs}
-                                        fat={macros.fat}
+                                        calories={resolvedMacros.calories}
+                                        protein={resolvedMacros.protein}
+                                        carbs={resolvedMacros.carbs}
+                                        fat={resolvedMacros.fat}
                                         compact={false}
                                     />
                                 </div>

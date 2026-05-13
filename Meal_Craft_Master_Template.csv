@@ -1,0 +1,2 @@
+Meal_Name,Photo_URL,Target_Calories,Target_Protein_g,Target_Fat_g,Target_Net_Carbs_g,Calculated_Calories,Calculated_Protein_g,Calculated_Fat_g,Calculated_Net_Carbs_g,Notes
+Example Meal,https://example.com/photo.jpg,600,45,20,35,612,42.5,22.0,28.4,Compare target vs calculated per serving or per batch as documented in your workflow.
