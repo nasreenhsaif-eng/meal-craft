@@ -32,6 +32,21 @@ test('parses parenthesis form with amount and unit inside parens', function () {
         ->and($parsed[1]['unit'])->toBe('g');
 });
 
+test('parses parenthesis form without space before opening parenthesis', function () {
+    $parsed = IngredientQuantityStringParser::parse('Chicken Broth(710ml)');
+    expect($parsed)->toHaveCount(1)
+        ->and($parsed[0]['name'])->toBe('Chicken Broth')
+        ->and($parsed[0]['amount'])->toBe(710.0)
+        ->and($parsed[0]['unit'])->toBe('ml');
+});
+
+test('splits segments on newlines as well as pipes', function () {
+    $parsed = IngredientQuantityStringParser::parse("Rice (200g)\nOlive oil 15ml");
+    expect($parsed)->toHaveCount(2)
+        ->and($parsed[0]['name'])->toBe('Rice')
+        ->and($parsed[1]['name'])->toBe('Olive oil');
+});
+
 test('parses decimal amounts in parenthesis form', function () {
     $parsed = IngredientQuantityStringParser::parse('Cinnamon (2.5g)');
     expect($parsed)->toHaveCount(1)

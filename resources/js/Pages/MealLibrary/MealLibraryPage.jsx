@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, Fragment } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, Fragment } from 'react';
 import { createPortal } from 'react-dom';
 import axios from 'axios';
 import { router, usePage } from '@inertiajs/react';
@@ -776,7 +776,7 @@ export function MealLibraryPageContent({
     }
 
     const handleApplyIngredientQuantityString = useCallback(() => {
-        const raw = ingredientPasteField.trim();
+        const raw = ingredientPasteField.replace(/\r\n/g, '\n').trim();
         setIngredientPasteApplyError('');
         if (raw === '') {
             return;
@@ -784,14 +784,17 @@ export function MealLibraryPageContent({
         const segments = parseIngredientQuantityString(raw);
         if (segments.length === 0) {
             setIngredientPasteApplyError(
-                'Could not parse any segments. Use Name:100g, Name 100ml, or Name (100ml), separated by |.',
+                'Could not parse any segments. Use Name:100g, Name 100ml, or Name (100ml), separated by | or a new line.',
             );
             return;
         }
 
         const byNorm = new Map();
         for (const p of ingredientDatabase) {
-            byNorm.set(normalizeIngredientKey(p.name), p);
+            const k = normalizeIngredientKey(p.name);
+            if (!byNorm.has(k)) {
+                byNorm.set(k, p);
+            }
         }
 
         const missing = [];
@@ -820,12 +823,13 @@ export function MealLibraryPageContent({
         }
 
         setIngredientPasteMissingLabels(missing);
+        setIngredientRows(rows);
 
         if (rows.length === 0) {
-            return;
+            setIngredientPasteApplyError(
+                'No library matches for the parsed segments. Add missing ingredients to the library or fix spelling (matching is case-insensitive).',
+            );
         }
-
-        setIngredientRows(rows);
     }, [ingredientPasteField, ingredientDatabase]);
 
     const mealCsvRowForCalculator = useMemo(() => {
@@ -918,6 +922,16 @@ export function MealLibraryPageContent({
         () => buildIngredientPasteHighlightParts(ingredientPasteField, ingredientDatabase),
         [ingredientPasteField, ingredientDatabase],
     );
+
+    useLayoutEffect(() => {
+        const ta = ingredientPasteTextareaRef.current;
+        const pre = ingredientPasteMirrorRef.current;
+        if (!ta || !pre) {
+            return;
+        }
+        pre.style.height = `${ta.scrollHeight}px`;
+        pre.scrollTop = ta.scrollTop;
+    }, [ingredientPasteField, ingredientPasteHighlightParts]);
 
     useEffect(() => {
         // Intentionally empty: batch macro inputs are manual-only and must not sync from ingredient nutrition.
@@ -1661,29 +1675,60 @@ export function MealLibraryPageContent({
                                             Ingredient string (library match)
                                         </p>
                                         <p className="mt-1 font-body text-xs text-[#6B7280]">
-                                            Paste a pipe-separated list. Each segment: <span className="font-mono">Name:825g</span>,{' '}
-                                            <span className="font-mono">Name (710ml)</span>, <span className="font-mono">Name:0.5kg</span>, or{' '}
-                                            <span className="font-mono">Name 200ml</span> (unit required for the space form). Names must match
-                                            your verified ingredient library exactly (case-insensitive). Apply fills ingredient rows only;
-                                            batch macro fields stay under your control. Saved meal totals use system nutrition from
-                                            ingredients when present. Planning targets are never changed by this action.
+                                            Paste segments separated by <span className="font-semibold">|</span> or a new line.
+                                            Each segment: <span className="font-mono">Name:825g</span>,{' '}
+                                            <span className="font-mono">Name (710ml)</span> or{' '}
+                                            <span className="font-mono">Name(710ml)</span>, <span className="font-mono">Name:0.5kg</span>, or{' '}
+                                            <span className="font-mono">Name 200ml</span> (unit required for the space form). Library
+                                            matching is case-insensitive. Green = matched name; red = not in library or unparsed. Apply
+                                            replaces ingredient rows and refreshes the nutrition summary.
                                         </p>
-                                        <textarea
-                                            value={ingredientPasteField}
-                                            onChange={(e) => {
-                                                setIngredientPasteField(e.target.value);
-                                                setIngredientPasteApplyError('');
-                                            }}
-                                            rows={3}
-                                            className="mt-3 block w-full resize-y rounded-[12px] border border-[#E5E7EB] bg-[#F8F9F6] px-3 py-2 font-mono text-sm text-[#1F2937] outline-none focus-visible:border-[#5A6B44] focus-visible:ring-2 focus-visible:ring-[#5A6B44] focus-visible:ring-offset-2"
-                                            placeholder={
-                                                'e.g. Chicken Thighs:825g | Rice (200g) | Olive Oil 15ml | Lemon Juice (15ml)'
-                                            }
-                                            aria-label="Ingredient quantities string"
-                                        />
+                                        <div className="relative mt-3 rounded-[12px] border border-[#E5E7EB] bg-[#F8F9F6]">
+                                            <textarea
+                                                ref={ingredientPasteTextareaRef}
+                                                value={ingredientPasteField}
+                                                onChange={(e) => {
+                                                    setIngredientPasteField(e.target.value.replace(/\r\n/g, '\n'));
+                                                    setIngredientPasteApplyError('');
+                                                }}
+                                                onScroll={(e) => {
+                                                    const pre = ingredientPasteMirrorRef.current;
+                                                    if (pre) {
+                                                        pre.scrollTop = e.currentTarget.scrollTop;
+                                                    }
+                                                }}
+                                                rows={4}
+                                                spellCheck={false}
+                                                className="relative z-10 m-0 box-border block min-h-[5.5rem] w-full resize-y rounded-[12px] border-0 bg-transparent px-3 py-2 font-mono text-sm leading-relaxed text-transparent caret-[#1F2937] outline-none [-webkit-text-fill-color:transparent] selection:bg-[#C5D4B0]/45 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#5A6B44]"
+                                                placeholder={
+                                                    'e.g. Chicken Thighs:825g | Rice (200g) | Olive Oil(15ml) | Lemon Juice (15ml)'
+                                                }
+                                                aria-label="Ingredient quantities string"
+                                            />
+                                            <pre
+                                                ref={ingredientPasteMirrorRef}
+                                                className="pointer-events-none absolute inset-x-0 top-0 z-0 m-0 box-border min-h-[5.5rem] w-full overflow-hidden rounded-[12px] border-0 bg-transparent px-3 py-2 font-mono text-sm leading-relaxed whitespace-pre-wrap break-words"
+                                                aria-hidden="true"
+                                            >
+                                                {ingredientPasteHighlightParts.map((part, idx) => (
+                                                    <span
+                                                        key={idx}
+                                                        className={
+                                                            part.tone === 'ok'
+                                                                ? 'font-semibold text-green-700'
+                                                                : part.tone === 'bad'
+                                                                  ? 'font-semibold text-red-700'
+                                                                  : 'text-[#1F2937]'
+                                                        }
+                                                    >
+                                                        {part.text}
+                                                    </span>
+                                                ))}
+                                            </pre>
+                                        </div>
                                         <div className="mt-3 flex flex-wrap items-center gap-3">
                                             <Button
-                                                label="Apply to ingredients"
+                                                label="Apply to ingredients & macros"
                                                 variant="secondary"
                                                 type="button"
                                                 onClick={handleApplyIngredientQuantityString}
