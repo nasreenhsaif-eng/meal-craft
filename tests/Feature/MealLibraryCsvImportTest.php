@@ -44,7 +44,8 @@ test('meal library csv route imports meals when all ingredients exist', function
         ->assertJsonPath('summary.duplicates_created', 0)
         ->assertJsonPath('summary.pending_ingredient_input', 0)
         ->assertJsonPath('summary.errors', 0)
-        ->assertJsonPath('unique_pending_ingredients', []);
+        ->assertJsonPath('unique_pending_ingredients', [])
+        ->assertJsonPath('csv_unrecognized_headers', []);
 
     $importedRow = collect($response->json('rows'))->firstWhere('status', 'imported');
     expect($importedRow)->not->toBeNull()
@@ -202,7 +203,7 @@ test('meal library csv rejects invalid or missing category', function () {
         ->assertJsonPath('summary.duplicates_created', 0);
 
     $row = collect($response->json('rows'))->first();
-    expect($row['message'])->toBe(__('Invalid or Missing Category.'));
+    expect($row['message'])->toBe(__('Invalid or Missing Category or Meal Type.'));
 });
 
 test('meal library csv flags calorie warning for breakfast over 250 kcal but still imports', function () {
@@ -308,4 +309,120 @@ test('calculateMealNutritionForCsvRow attaches calorie warnings when category is
     ]);
 
     expect($calc['calorie_warnings'])->not->toBeEmpty();
+});
+
+test('meal library csv import maps Image URL column to image_path with normalized public path', function () {
+    mealImportIngredient('Salmon', ['calories' => 200, 'protein' => 25, 'carbs' => 0, 'fat' => 12]);
+
+    $csv = "Meal_Name,Category,Ingredient_Quantities,Instructions,Description_Highlight,Image_URL\n"
+        .'Photo Meal,Meal,Salmon:100g,.,.,public/images/meals/spicy-stew.jpg'."\n";
+    $file = UploadedFile::fake()->createWithContent('meals.csv', $csv);
+
+    $this->actingAs(User::factory()->create())
+        ->postJson(route('meals.library.import-csv'), ['file' => $file])
+        ->assertOk()
+        ->assertJsonPath('summary.imported', 1);
+
+    $meal = Meal::query()->where('name', 'Photo Meal')->firstOrFail();
+    expect($meal->image_path)->toBe('images/meals/spicy-stew.jpg');
+});
+
+test('meal library csv import maps Image URL header with spaces to image_path', function () {
+    mealImportIngredient('Salmon', ['calories' => 200, 'protein' => 25, 'carbs' => 0, 'fat' => 12]);
+
+    $csv = "Meal_Name,Category,Ingredient_Quantities,Image URL\n"
+        ."SpaceImg,Meal,Salmon:100g,/images/meals/x.jpg\n";
+    $file = UploadedFile::fake()->createWithContent('meals.csv', $csv);
+
+    $this->actingAs(User::factory()->create())
+        ->postJson(route('meals.library.import-csv'), ['file' => $file])
+        ->assertOk()
+        ->assertJsonPath('summary.imported', 1);
+
+    expect(Meal::query()->where('name', 'SpaceImg')->firstOrFail()->image_path)->toBe('images/meals/x.jpg');
+});
+
+test('meal library csv import returns csv_unrecognized_headers for unknown columns', function () {
+    mealImportIngredient('Salmon', ['calories' => 200, 'protein' => 25, 'carbs' => 0, 'fat' => 12]);
+
+    $csv = "Meal_Name,Category,Ingredient_Quantities,Mystery_Column\nTagged,Meal,Salmon:100g,oops\n";
+    $file = UploadedFile::fake()->createWithContent('meals.csv', $csv);
+
+    $this->actingAs(User::factory()->create())
+        ->postJson(route('meals.library.import-csv'), ['file' => $file])
+        ->assertOk()
+        ->assertJsonPath('csv_unrecognized_headers', ['Mystery_Column']);
+});
+
+test('meal library csv import accepts master template headers with spaces', function () {
+    mealImportIngredient('Salmon', ['calories' => 200, 'protein' => 25, 'carbs' => 0, 'fat' => 12]);
+
+    $csv = '"Meal Name","Meal Type","Ingredients String","Target Calories","Target Carbs","Is Bulk","Servings Count","Safety Alerts"'."\n"
+        .'Master Bowl,Breakfast,Salmon:100g,400,45,true,2,"Peanuts|Dairy"'."\n";
+    $file = UploadedFile::fake()->createWithContent('meals.csv', $csv);
+
+    $this->actingAs(User::factory()->create())
+        ->postJson(route('meals.library.import-csv'), ['file' => $file])
+        ->assertOk()
+        ->assertJsonPath('summary.imported', 1);
+
+    $meal = Meal::query()->where('name', 'Master Bowl')->firstOrFail();
+    expect($meal->category)->toBe(RecipeCategory::Breakfast)
+        ->and($meal->target_calories)->toBe(400.0)
+        ->and($meal->target_carbs)->toBe(45.0)
+        ->and($meal->is_bulk)->toBeTrue()
+        ->and($meal->servings_count)->toBe(2.0)
+        ->and($meal->safety_alert_tags)->toEqualCanonicalizing(['Peanuts', 'Dairy']);
+});
+
+test('meal library csv import parses is_bulk false from string false', function () {
+    mealImportIngredient('Salmon', ['calories' => 200, 'protein' => 25, 'carbs' => 0, 'fat' => 12]);
+
+    $csv = '"Meal Name","Meal Type","Ingredients String","Is Bulk"'."\n"
+        .'Solo Meal,Meal,Salmon:50g,false'."\n";
+    $file = UploadedFile::fake()->createWithContent('meals.csv', $csv);
+
+    $this->actingAs(User::factory()->create())
+        ->postJson(route('meals.library.import-csv'), ['file' => $file])
+        ->assertOk()
+        ->assertJsonPath('summary.imported', 1);
+
+    expect(Meal::query()->where('name', 'Solo Meal')->firstOrFail()->is_bulk)->toBeFalse();
+});
+
+test('meal library csv import errors when is_bulk is true without servings count', function () {
+    mealImportIngredient('Salmon', ['calories' => 200, 'protein' => 25, 'carbs' => 0, 'fat' => 12]);
+
+    $csv = '"Meal Name","Meal Type","Ingredients String","Is Bulk","Servings Count"'."\n"
+        .'Bulk Fail,Meal,Salmon:50g,true,'."\n";
+    $file = UploadedFile::fake()->createWithContent('meals.csv', $csv);
+
+    $response = $this->actingAs(User::factory()->create())
+        ->postJson(route('meals.library.import-csv'), ['file' => $file])
+        ->assertOk()
+        ->assertJsonPath('summary.errors', 1);
+
+    $row = collect($response->json('rows'))->firstWhere('status', 'error');
+    expect($row)->not->toBeNull()
+        ->and($row['message'])->toBe(__('Servings Count is required when Is Bulk is true.'));
+});
+
+test('meal library csv import missing required column message lists missing fields', function () {
+    $csv = "Meal_Name,Ingredient_Quantities\nX,Salmon:100\n";
+    $file = UploadedFile::fake()->createWithContent('meals.csv', $csv);
+
+    $response = $this->actingAs(User::factory()->create())
+        ->postJson(route('meals.library.import-csv'), ['file' => $file])
+        ->assertOk()
+        ->assertJsonPath('summary.errors', 1);
+
+    $message = (string) collect($response->json('rows'))->firstWhere('status', 'error')['message'];
+    expect($message)->toContain('Category');
+});
+
+test('meal library csv import returns 422 when file is missing', function () {
+    $this->actingAs(User::factory()->create())
+        ->postJson(route('meals.library.import-csv'), [])
+        ->assertStatus(422)
+        ->assertJsonStructure(['message', 'errors', 'csv_unrecognized_headers', 'rows']);
 });

@@ -11,22 +11,30 @@ use App\Models\Meal;
 use App\Models\MealCsvImportPendingRow;
 use App\Models\User;
 use App\Support\IngredientQuantityStringParser;
+use App\Support\MealImagePath;
 use App\Support\MealLibraryDelimitedCellParser;
 use App\Support\MealLibraryTaxonomy;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Imports meal rows from CSV using the ingredient library (per-100 g nutrition).
  *
  * CSV columns (headers matched case-insensitively):
- * - Meal_Name
- * - Category (Breakfast, Meal, Side Salad, Soup, Dessert — required)
- * - Ingredient_Quantities (cells like "Salmon:120 | Quinoa:100g" — pipe-separated; optional unit after amount)
- * - Instructions (stored on meal.description)
- * - Meal_Plan_Tags (optional; comma or pipe separated canonical tags)
- * - Cycle_Phase (optional; comma or pipe separated phase values or English labels)
+ * - Meal_Name / Meal Name
+ * - Category **or** Meal Type (Breakfast, Meal, Side Salad, Soup, Dessert)
+ * - Ingredient_Quantities **or** Ingredients String (pipe-separated quantities)
+ * - Instructions (optional)
+ * - Description_Highlight (optional) or standalone **Description** (optional; maps to instructions/body)
+ * - Meal_Plan_Tags / Meal Plan Tag (optional)
+ * - Cycle_Phase / Cycle phase (optional)
+ * - Total_Calories (optional)
+ * - Target Calories / Target Protein / Target Carbs / Target Fat (optional)
+ * - Is Bulk / Servings Count (optional; servings required when bulk is true)
+ * - Safety Alerts (optional; comma or pipe separated labels)
+ * - Image_URL (optional)
  */
 final class MealCsvLibraryImportService
 {
@@ -44,6 +52,7 @@ final class MealCsvLibraryImportService
         'Meal_Plan_Tags',
         'Cycle_Phase',
         'Total_Calories',
+        'Image_URL',
     ];
 
     private const STATUS_IMPORTED = 'imported';
@@ -78,6 +87,7 @@ final class MealCsvLibraryImportService
      *         errors: int
      *     },
      *     unique_pending_ingredients: list<string>,
+     *     csv_unrecognized_headers: list<string>,
      *     rows: list<array{
      *         line: int,
      *         status: string,
@@ -95,9 +105,14 @@ final class MealCsvLibraryImportService
     {
         $path = $file->getRealPath();
         if ($path === false || ! is_readable($path)) {
+            Log::error('Meal library CSV import failed: uploaded file could not be read.', [
+                'original_name' => $file->getClientOriginalName(),
+            ]);
+
             return [
                 'summary' => $this->emptySummaryWithErrors(1),
                 'unique_pending_ingredients' => [],
+                'csv_unrecognized_headers' => [],
                 'rows' => [[
                     'line' => 0,
                     'status' => self::STATUS_ERROR,
@@ -108,9 +123,14 @@ final class MealCsvLibraryImportService
 
         $handle = fopen($path, 'r');
         if ($handle === false) {
+            Log::error('Meal library CSV import failed: fopen.', [
+                'original_name' => $file->getClientOriginalName(),
+            ]);
+
             return [
                 'summary' => $this->emptySummaryWithErrors(1),
                 'unique_pending_ingredients' => [],
+                'csv_unrecognized_headers' => [],
                 'rows' => [[
                     'line' => 0,
                     'status' => self::STATUS_ERROR,
@@ -123,9 +143,12 @@ final class MealCsvLibraryImportService
         if ($headerLine === false) {
             fclose($handle);
 
+            Log::error('Meal library CSV import failed: empty file or unreadable header row.');
+
             return [
                 'summary' => $this->emptySummaryWithErrors(1),
                 'unique_pending_ingredients' => [],
+                'csv_unrecognized_headers' => [],
                 'rows' => [[
                     'line' => 0,
                     'status' => self::STATUS_ERROR,
@@ -135,16 +158,40 @@ final class MealCsvLibraryImportService
         }
 
         $headerMap = $this->buildHeaderMap($headerLine);
+        $csvUnrecognizedHeaders = $this->unrecognizedCsvHeaderLabels($headerLine);
         if (! isset($headerMap['meal_name'], $headerMap['ingredient_quantities'], $headerMap['category'])) {
             fclose($handle);
+
+            $missing = [];
+            if (! isset($headerMap['meal_name'])) {
+                $missing[] = 'Meal_Name / Meal Name';
+            }
+            if (! isset($headerMap['category'])) {
+                $missing[] = 'Category or Meal Type';
+            }
+            if (! isset($headerMap['ingredient_quantities'])) {
+                $missing[] = 'Ingredient_Quantities or Ingredients String';
+            }
+
+            $message = __('CSV must include these required columns: :cols.', [
+                'cols' => implode(', ', $missing),
+            ]);
+
+            Log::error('Meal library CSV import failed: missing required header columns.', [
+                'header_row' => $headerLine,
+                'mapped_keys' => array_keys($headerMap),
+                'missing' => $missing,
+                'csv_unrecognized_headers' => $csvUnrecognizedHeaders,
+            ]);
 
             return [
                 'summary' => $this->emptySummaryWithErrors(1),
                 'unique_pending_ingredients' => [],
+                'csv_unrecognized_headers' => $csvUnrecognizedHeaders,
                 'rows' => [[
                     'line' => 1,
                     'status' => self::STATUS_ERROR,
-                    'message' => __('CSV must include Meal_Name, Category, and Ingredient_Quantities columns.'),
+                    'message' => $message,
                 ]],
             ];
         }
@@ -170,6 +217,7 @@ final class MealCsvLibraryImportService
             $result = $this->importMealCsvAssocRow(
                 $lineNumber,
                 $assoc,
+                $data,
                 $mealsByNormalizedName,
                 $authenticatedUserId,
                 $authenticatedUserId !== null,
@@ -196,6 +244,7 @@ final class MealCsvLibraryImportService
                 'errors' => $errors,
             ],
             'unique_pending_ingredients' => $this->uniquePendingIngredientNamesFromRows($rowsOut),
+            'csv_unrecognized_headers' => $csvUnrecognizedHeaders,
             'rows' => $rowsOut,
         ];
     }
@@ -458,6 +507,26 @@ final class MealCsvLibraryImportService
         return $map;
     }
 
+    /**
+     * @param  list<string|null>  $headerLine
+     * @return list<string>
+     */
+    private function unrecognizedCsvHeaderLabels(array $headerLine): array
+    {
+        $out = [];
+        foreach ($headerLine as $label) {
+            $trim = trim($this->stripUtf8Bom((string) $label));
+            if ($trim === '') {
+                continue;
+            }
+            if ($this->canonicalHeaderKey($trim) === null) {
+                $out[] = $trim;
+            }
+        }
+
+        return array_values(array_unique($out));
+    }
+
     private function stripUtf8Bom(string $value): string
     {
         if (str_starts_with($value, "\xEF\xBB\xBF")) {
@@ -470,30 +539,90 @@ final class MealCsvLibraryImportService
     private function canonicalHeaderKey(string $label): ?string
     {
         $t = strtolower(trim($label));
+        if ($t === '') {
+            return null;
+        }
+
+        $t = str_replace(['_', '-'], ' ', $t);
         $t = str_replace(['/', '\\'], ' ', $t);
         $t = preg_replace('/\s+/', ' ', $t) ?? $t;
 
         if ($t === 'category') {
             return 'category';
         }
+        if ($t === 'meal type' || (str_contains($t, 'meal') && str_contains($t, 'type'))) {
+            return 'category';
+        }
 
         if (str_contains($t, 'meal') && str_contains($t, 'name')) {
             return 'meal_name';
         }
+
+        if ($t === 'ingredients string' || (str_contains($t, 'ingredients') && str_contains($t, 'string'))) {
+            return 'ingredient_quantities';
+        }
         if (str_contains($t, 'ingredient') && (str_contains($t, 'quantit') || str_contains($t, 'qty'))) {
             return 'ingredient_quantities';
         }
+
         if (str_contains($t, 'meal') && str_contains($t, 'plan') && str_contains($t, 'tag')) {
             return 'meal_plan_tags';
         }
+
         if (str_contains($t, 'cycle') && str_contains($t, 'phase')) {
             return 'cycle_phases';
         }
+
         if (str_contains($t, 'instruction')) {
             return 'instructions';
         }
-        if (str_contains($t, 'description') || str_contains($t, 'highlight')) {
+
+        if (str_contains($t, 'description') && str_contains($t, 'highlight')) {
             return 'highlight';
+        }
+        if ($t === 'description') {
+            return 'instructions';
+        }
+        if (str_contains($t, 'highlight')) {
+            return 'highlight';
+        }
+
+        if (str_contains($t, 'target') && (str_contains($t, 'calor') || str_contains($t, 'kcal'))) {
+            return 'target_calories';
+        }
+        if (str_contains($t, 'target') && str_contains($t, 'protein')) {
+            return 'target_protein';
+        }
+        if (str_contains($t, 'target') && str_contains($t, 'carb')) {
+            return 'target_carbs';
+        }
+        if (str_contains($t, 'target') && str_contains($t, 'fat')) {
+            return 'target_fat';
+        }
+
+        if (str_contains($t, 'total') && (str_contains($t, 'calor') || str_contains($t, 'kcal'))) {
+            return 'total_calories';
+        }
+
+        if ($t === 'is bulk') {
+            return 'is_bulk';
+        }
+
+        if ($t === 'servings count' || (str_contains($t, 'serving') && str_contains($t, 'count'))) {
+            return 'servings_count';
+        }
+
+        if (str_contains($t, 'safety') && str_contains($t, 'alert')) {
+            return 'safety_alerts';
+        }
+
+        if (
+            $t === 'image url'
+            || $t === 'photo url'
+            || (str_contains($t, 'image') && str_contains($t, 'url'))
+            || (str_contains($t, 'photo') && str_contains($t, 'url'))
+        ) {
+            return 'meal_image_path';
         }
 
         return null;
@@ -512,6 +641,122 @@ final class MealCsvLibraryImportService
         }
 
         return $out;
+    }
+
+    /**
+     * @param  array<string, string>  $assoc
+     * @return array{valid: bool, message: string, attributes: array<string, mixed>}
+     */
+    private function parseOptionalMealFieldsFromAssoc(array $assoc): array
+    {
+        $attributes = [];
+
+        foreach (['target_calories', 'target_protein', 'target_carbs', 'target_fat'] as $key) {
+            if (! array_key_exists($key, $assoc)) {
+                continue;
+            }
+            $cell = trim((string) $assoc[$key]);
+            if ($cell === '') {
+                continue;
+            }
+            if (! is_numeric($cell)) {
+                return [
+                    'valid' => false,
+                    'message' => __('The :field column must be a number.', ['field' => str_replace('_', ' ', $key)]),
+                    'attributes' => [],
+                ];
+            }
+            $attributes[$key] = (float) $cell;
+        }
+
+        $isBulkEffective = false;
+        if (array_key_exists('is_bulk', $assoc)) {
+            $cell = trim((string) $assoc['is_bulk']);
+            if ($cell === '') {
+                $attributes['is_bulk'] = false;
+            } else {
+                $parsed = $this->parseCsvStrictBoolean($cell);
+                if ($parsed === null) {
+                    return [
+                        'valid' => false,
+                        'message' => __('Is Bulk must be true or false.'),
+                        'attributes' => [],
+                    ];
+                }
+                $attributes['is_bulk'] = $parsed;
+            }
+            $isBulkEffective = (bool) ($attributes['is_bulk'] ?? false);
+        }
+
+        if (array_key_exists('servings_count', $assoc)) {
+            $cell = trim((string) $assoc['servings_count']);
+            if ($cell !== '') {
+                if (! is_numeric($cell) || (float) $cell <= 0) {
+                    return [
+                        'valid' => false,
+                        'message' => __('Servings Count must be a positive number.'),
+                        'attributes' => [],
+                    ];
+                }
+                $attributes['servings_count'] = (float) $cell;
+            }
+        }
+
+        if ($isBulkEffective) {
+            $servings = $attributes['servings_count'] ?? null;
+            if ($servings === null || $servings <= 0) {
+                return [
+                    'valid' => false,
+                    'message' => __('Servings Count is required when Is Bulk is true.'),
+                    'attributes' => [],
+                ];
+            }
+        }
+
+        if (array_key_exists('safety_alerts', $assoc)) {
+            $cell = trim((string) $assoc['safety_alerts']);
+            if ($cell !== '') {
+                $attributes['safety_alert_tags'] = $this->safetyAlertLabelsFromCsvCell($cell);
+            }
+        }
+
+        return [
+            'valid' => true,
+            'message' => '',
+            'attributes' => $attributes,
+        ];
+    }
+
+    private function parseCsvStrictBoolean(string $cell): ?bool
+    {
+        $s = strtolower(trim($cell));
+        if ($s === '') {
+            return null;
+        }
+        if (in_array($s, ['true', '1', 'yes', 'y'], true)) {
+            return true;
+        }
+        if (in_array($s, ['false', '0', 'no', 'n'], true)) {
+            return false;
+        }
+
+        return null;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function safetyAlertLabelsFromCsvCell(string $cell): array
+    {
+        $out = [];
+        foreach (MealLibraryDelimitedCellParser::split($cell) as $token) {
+            $label = trim($token);
+            if ($label !== '') {
+                $out[] = $label;
+            }
+        }
+
+        return array_values(array_unique($out));
     }
 
     /**
@@ -616,9 +861,17 @@ final class MealCsvLibraryImportService
                 'highlight' => (string) ($pending->description_highlight ?? ''),
             ];
 
+            $rawRow = [
+                (string) $pending->id,
+                $pending->meal_name,
+                $pending->category,
+                $pending->ingredient_quantities,
+            ];
+
             $result = $this->importMealCsvAssocRow(
                 0,
                 $assoc,
+                $rawRow,
                 $mealsByNormalizedName,
                 $userId,
                 false,
@@ -647,18 +900,22 @@ final class MealCsvLibraryImportService
      * Import one CSV data row (assoc keys: meal_name, category, ingredient_quantities, instructions?, highlight?).
      *
      * @param  array<string, string>  $assoc
+     * @param  list<string|null>  $rawRow
      * @param  array<string, Meal>  $mealsByNormalizedName
      * @return array{row: array<string, mixed>, outcome: 'imported'|'updated'|'pending'|'error'}
      */
     private function importMealCsvAssocRow(
         int $lineNumber,
         array $assoc,
+        array $rawRow,
         array &$mealsByNormalizedName,
         ?int $authenticatedUserId,
         bool $queuePendingWhenMissing,
     ): array {
         $mealName = trim((string) ($assoc['meal_name'] ?? ''));
         if ($mealName === '') {
+            $this->logMealLibraryImportRowFailure($lineNumber, $rawRow, $assoc, 'Meal_Name is required.');
+
             return [
                 'row' => [
                     'line' => $lineNumber,
@@ -671,12 +928,14 @@ final class MealCsvLibraryImportService
 
         $qtyCell = trim((string) ($assoc['ingredient_quantities'] ?? ''));
         if ($qtyCell === '') {
+            $this->logMealLibraryImportRowFailure($lineNumber, $rawRow, $assoc, 'Ingredient_Quantities or Ingredients String is required.');
+
             return [
                 'row' => [
                     'line' => $lineNumber,
                     'meal_name' => $mealName,
                     'status' => self::STATUS_ERROR,
-                    'message' => __('Ingredient_Quantities is required.'),
+                    'message' => __('Ingredient_Quantities or Ingredients String is required.'),
                 ],
                 'outcome' => 'error',
             ];
@@ -684,19 +943,39 @@ final class MealCsvLibraryImportService
 
         $mealCategory = $this->resolveMealLibraryCategory((string) ($assoc['category'] ?? ''));
         if ($mealCategory === null) {
+            $this->logMealLibraryImportRowFailure($lineNumber, $rawRow, $assoc, 'Invalid or Missing Category or Meal Type.');
+
             return [
                 'row' => [
                     'line' => $lineNumber,
                     'meal_name' => $mealName,
                     'status' => self::STATUS_ERROR,
-                    'message' => __('Invalid or Missing Category.'),
+                    'message' => __('Invalid or Missing Category or Meal Type.'),
                 ],
                 'outcome' => 'error',
             ];
         }
 
+        $optionalFields = $this->parseOptionalMealFieldsFromAssoc($assoc);
+        if (! $optionalFields['valid']) {
+            $this->logMealLibraryImportRowFailure($lineNumber, $rawRow, $assoc, (string) $optionalFields['message']);
+
+            return [
+                'row' => [
+                    'line' => $lineNumber,
+                    'meal_name' => $mealName,
+                    'status' => self::STATUS_ERROR,
+                    'message' => $optionalFields['message'],
+                ],
+                'outcome' => 'error',
+            ];
+        }
+        $optionalMealAttrs = $optionalFields['attributes'];
+
         $segments = $this->parseIngredientQuantitySegments($qtyCell);
         if ($segments === []) {
+            $this->logMealLibraryImportRowFailure($lineNumber, $rawRow, $assoc, 'Could not parse ingredient quantities.');
+
             return [
                 'row' => [
                     'line' => $lineNumber,
@@ -715,6 +994,13 @@ final class MealCsvLibraryImportService
 
         $mealPlanTags = $this->mealPlanTagsAcceptedFromCsvCell((string) ($assoc['meal_plan_tags'] ?? ''));
         $cyclePhaseStrings = $this->cyclePhaseEnumValuesFromCsvCell((string) ($assoc['cycle_phases'] ?? ''));
+
+        $hasMealImageColumn = array_key_exists('meal_image_path', $assoc);
+        $csvImageNormalized = null;
+        if ($hasMealImageColumn) {
+            $imageCell = trim((string) $assoc['meal_image_path']);
+            $csvImageNormalized = $imageCell === '' ? null : MealImagePath::normalizeForDatabase($imageCell);
+        }
 
         $calc = $this->calculateMealNutritionFromSegments($segments, $mealCategory);
 
@@ -748,7 +1034,20 @@ final class MealCsvLibraryImportService
             $normKey = self::normalizeMealNameKey($mealName);
             $existingMeal = $mealsByNormalizedName[$normKey] ?? null;
 
-            $result = DB::transaction(function () use ($existingMeal, $mealName, $mealCategory, $mealCategoryValue, $instructions, $highlight, $calc, $mealPlanTags, $cyclePhaseStrings): array {
+            $result = DB::transaction(function () use (
+                $existingMeal,
+                $mealName,
+                $mealCategory,
+                $mealCategoryValue,
+                $instructions,
+                $highlight,
+                $calc,
+                $mealPlanTags,
+                $cyclePhaseStrings,
+                $hasMealImageColumn,
+                $csvImageNormalized,
+                $optionalMealAttrs,
+            ): array {
                 $nutritionPayload = Meal::nutritionSummaryToPersistedAttributes($calc['nutrition']);
 
                 $sync = [];
@@ -780,7 +1079,11 @@ final class MealCsvLibraryImportService
                     'description' => $instructions !== '' ? $instructions : null,
                     'highlight' => $highlight !== '' ? $highlight : null,
                     'health_score' => $calc['health_score'],
-                ], $nutritionPayload, $planPhasePayload);
+                ], $nutritionPayload, $planPhasePayload, $optionalMealAttrs);
+
+                if ($hasMealImageColumn) {
+                    $basePayload['image_path'] = $csvImageNormalized;
+                }
 
                 if ($existingMeal !== null) {
                     $existingMeal->refresh();
@@ -791,7 +1094,7 @@ final class MealCsvLibraryImportService
                 }
 
                 $meal = Meal::query()->create(array_merge($basePayload, [
-                    'image_path' => null,
+                    'image_path' => $hasMealImageColumn ? $csvImageNormalized : null,
                 ]));
                 $meal->ingredients()->sync($sync);
 
@@ -823,6 +1126,14 @@ final class MealCsvLibraryImportService
                 'outcome' => $wasUpdate ? 'updated' : 'imported',
             ];
         } catch (\Throwable $e) {
+            $this->logMealLibraryImportRowFailure(
+                $lineNumber,
+                $rawRow,
+                $assoc,
+                'Exception while saving meal: '.$e->getMessage(),
+                $e,
+            );
+
             return [
                 'row' => [
                     'line' => $lineNumber,
@@ -833,6 +1144,26 @@ final class MealCsvLibraryImportService
                 'outcome' => 'error',
             ];
         }
+    }
+
+    /**
+     * @param  list<string|null>  $rawRow
+     * @param  array<string, string>  $assoc
+     */
+    private function logMealLibraryImportRowFailure(int $lineNumber, array $rawRow, array $assoc, string $message, ?\Throwable $exception = null): void
+    {
+        $payload = [
+            'line' => $lineNumber,
+            'message' => $message,
+            'raw_row' => $rawRow,
+            'assoc_snapshot' => $assoc,
+        ];
+        if ($exception !== null) {
+            $payload['exception_class'] = $exception::class;
+            $payload['exception_message'] = $exception->getMessage();
+        }
+
+        Log::error('Meal library CSV import row failed.', $payload);
     }
 
     private function upsertPendingMealRow(

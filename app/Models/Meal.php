@@ -7,6 +7,7 @@ use App\Enums\DietType;
 use App\Enums\MealType;
 use App\Enums\RecipeCategory;
 use App\Services\RecipeNutritionCalculator;
+use App\Support\MealImagePath;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -149,11 +150,9 @@ class Meal extends Model
 
     public function imageUrl(): ?string
     {
-        if ($this->image_path === null || $this->image_path === '') {
-            return null;
-        }
+        $url = MealImagePath::resolveUrl($this->image_path);
 
-        return asset('storage/'.$this->image_path);
+        return $url === '' ? null : $url;
     }
 
     public function ingredients(): BelongsToMany

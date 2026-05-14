@@ -1,2 +1,2 @@
-Meal_Name,Category,Ingredient_Quantities,Instructions,Description_Highlight,Total_Calories
-Sample Rice Bowl,Meal,Rice:200g,Steam rice until tender.,Comfort carbs for training days.,260
+Meal_Name,Category,Ingredient_Quantities,Instructions,Description_Highlight,Meal_Plan_Tags,Cycle_Phase,Total_Calories,Image_URL
+Sample Rice Bowl,Meal,Rice:200g,Steam rice until tender.,Comfort carbs for training days.,Balanced,Follicular,260,/images/meals/sample-rice-bowl.jpg

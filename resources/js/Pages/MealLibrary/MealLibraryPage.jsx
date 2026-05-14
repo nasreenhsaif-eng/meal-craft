@@ -29,6 +29,7 @@ import { DIETARY_TAG_OPTIONS, MEAL_PLAN_TAG_OPTIONS } from '../../meal-library/m
 import { planningVarianceDeltaClass, resolvePerServingActualForTargets, scaleNutritionRecord } from '../../meal-library/bulkPlanningVariance.ts';
 import { formatMealCraftVarianceNotes } from '../../meal-library/exportMealDataToCSV.ts';
 import { downloadMissingIngredientsCSV } from '../../meal-library/downloadMissingIngredientsCSV.ts';
+import { downloadMealCraftCsvTemplate } from '../../meal-library/generateLibraryExportCSV.ts';
 import SafetyAlerts from '../../Components/MealSystem/SafetyAlerts.jsx';
 
 const PAGE_BG = 'bg-[#F8F9F6]';
@@ -194,8 +195,7 @@ function deleteSelectedButtonClass(anySelected) {
  *   cyclePhases?: { value: string; label: string }[];
  *   meals?: object[];
  *   ingredientProfiles?: object[];
- *   csvTemplateUrl?: string;
- *   csvMasterTemplateUrl?: string;
+ *   csvMealCraftTemplateUrl?: string;
  *   csvExportUrl?: string;
  *   csvImportUrl?: string;
  *   mealStoreUrl?: string;
@@ -215,8 +215,7 @@ export function MealLibraryPageContent({
     cyclePhases = DEFAULT_CYCLE_PHASES,
     meals = [],
     ingredientProfiles = [],
-    csvTemplateUrl = '#',
-    csvMasterTemplateUrl = '#',
+    csvMealCraftTemplateUrl = '',
     csvExportUrl = '#',
     csvImportUrl = '#',
     mealStoreUrl = '#',
@@ -1223,8 +1222,11 @@ export function MealLibraryPageContent({
                             <div className="min-w-0 flex-1">
                                 <CSVUploader
                                     className="w-full pt-0"
-                                    templateUrl={csvTemplateUrl}
-                                    masterTemplateUrl={csvMasterTemplateUrl}
+                                    onDownloadMealCraftCsvTemplate={
+                                        csvMealCraftTemplateUrl
+                                            ? () => downloadMealCraftCsvTemplate(csvMealCraftTemplateUrl)
+                                            : undefined
+                                    }
                                     exportUrl={csvExportUrl}
                                     uploadBusyLabel="Parsing & importing…"
                                     onUpload={async (file) => {
@@ -1242,6 +1244,10 @@ export function MealLibraryPageContent({
                                                 uniquePending: Array.isArray(data?.unique_pending_ingredients)
                                                     ? data.unique_pending_ingredients
                                                     : [],
+                                                rows: Array.isArray(data?.rows) ? data.rows : [],
+                                                csvUnrecognizedHeaders: Array.isArray(data?.csv_unrecognized_headers)
+                                                    ? data.csv_unrecognized_headers
+                                                    : [],
                                             });
                                             await router.reload({
                                                 only: ['meals'],
@@ -1254,10 +1260,17 @@ export function MealLibraryPageContent({
                                                 (typeof body?.message === 'string' && body.message) ||
                                                 (Array.isArray(body?.errors?.file) ? String(body.errors.file[0]) : null) ||
                                                 'CSV import failed. Check the file and try again.';
+                                            const validationErrors =
+                                                body?.errors && typeof body.errors === 'object' && !Array.isArray(body.errors)
+                                                    ? body.errors
+                                                    : null;
                                             setMealCsvImportResultModal({
                                                 error: typeof msg === 'string' ? msg : 'CSV import failed.',
                                                 summary: {},
                                                 uniquePending: [],
+                                                rows: [],
+                                                csvUnrecognizedHeaders: [],
+                                                validationErrors,
                                             });
                                         }
                                     }}
@@ -1451,9 +1464,26 @@ export function MealLibraryPageContent({
                             Meal CSV import
                         </h2>
                         {mealCsvImportResultModal.error ? (
-                            <p className="mt-4 text-center font-body text-sm text-[#7F1D1D]" role="alert">
-                                {mealCsvImportResultModal.error}
-                            </p>
+                            <div className="mt-4 space-y-3 text-left font-body text-sm text-[#7F1D1D]" role="alert">
+                                <p className="text-center">{mealCsvImportResultModal.error}</p>
+                                {mealCsvImportResultModal.validationErrors ? (
+                                    <ul className="list-disc space-y-1 pl-5 text-[#262A22]">
+                                        {Object.entries(mealCsvImportResultModal.validationErrors).map(([key, msgs]) =>
+                                            Array.isArray(msgs) ? (
+                                                msgs.map((m) => (
+                                                    <li key={`${key}-${String(m)}`}>
+                                                        <span className="font-semibold">{key}:</span> {String(m)}
+                                                    </li>
+                                                ))
+                                            ) : (
+                                                <li key={key}>
+                                                    <span className="font-semibold">{key}:</span> {String(msgs)}
+                                                </li>
+                                            ),
+                                        )}
+                                    </ul>
+                                ) : null}
+                            </div>
                         ) : (
                             <div className="mt-6 space-y-4 font-body text-sm text-[#262A22]">
                                 <div className="flex gap-3 rounded-[12px] border border-[#E5E7EB] bg-[#F8F9F6] px-4 py-3">
@@ -1483,11 +1513,40 @@ export function MealLibraryPageContent({
                                         </p>
                                     </div>
                                 ) : null}
+                                {(mealCsvImportResultModal.csvUnrecognizedHeaders ?? []).length > 0 ? (
+                                    <div className="rounded-[12px] border border-amber-200 bg-amber-50 px-4 py-3 text-amber-950">
+                                        <p className="font-semibold">Unrecognized column header(s)</p>
+                                        <p className="mt-1 text-sm">
+                                            These labels were not mapped to known fields (check spelling, spaces vs.
+                                            underscores):{' '}
+                                            <span className="font-mono text-xs">
+                                                {(mealCsvImportResultModal.csvUnrecognizedHeaders ?? []).join(', ')}
+                                            </span>
+                                        </p>
+                                    </div>
+                                ) : null}
                                 {(Number(mealCsvImportResultModal.summary?.errors) || 0) > 0 ? (
-                                    <p className="text-center text-sm text-[#7F1D1D]">
-                                        {Number(mealCsvImportResultModal.summary?.errors) || 0} row(s) had errors (see CSV
-                                        template rules).
-                                    </p>
+                                    <div className="space-y-2 rounded-[12px] border border-[#C44F5D]/30 bg-[#FDF2F2] px-4 py-3 text-left text-sm text-[#7F1D1D]">
+                                        <p className="font-semibold">
+                                            {Number(mealCsvImportResultModal.summary?.errors) || 0} row(s) had errors
+                                        </p>
+                                        <ul className="list-disc space-y-1.5 pl-5 text-[#262A22]">
+                                            {(mealCsvImportResultModal.rows ?? [])
+                                                .filter((r) => r && r.status === 'error')
+                                                .map((r) => (
+                                                    <li key={`csv-err-${r.line}-${r.meal_name ?? ''}`}>
+                                                        <span className="font-semibold">Line {r.line}</span>
+                                                        {r.meal_name ? (
+                                                            <>
+                                                                {' '}
+                                                                (<span className="italic">{String(r.meal_name)}</span>)
+                                                            </>
+                                                        ) : null}
+                                                        : {typeof r.message === 'string' ? r.message : 'Unknown error.'}
+                                                    </li>
+                                                ))}
+                                        </ul>
+                                    </div>
                                 ) : null}
                                 {(mealCsvImportResultModal.uniquePending ?? []).length > 0 ? (
                                     <Button

@@ -16,14 +16,20 @@ export {
     mealCraftExportDatePart,
     normalizeCyclePhaseForMealCraftCsv,
 } from './meal-library/exportMealDataToCSV';
-export { generateLibraryExportCSV, MEAL_LIBRARY_SYNCHRONIZED_CSV_HEADERS } from './meal-library/generateLibraryExportCSV';
+export {
+    downloadMealCraftCsvTemplate,
+    generateLibraryExportCSV,
+    MEAL_CRAFT_CSV_TEMPLATE_HEADERS,
+    MEAL_LIBRARY_SYNCHRONIZED_CSV_HEADERS,
+} from './meal-library/generateLibraryExportCSV';
 
 import { downloadMissingIngredientsCSV } from './meal-library/downloadMissingIngredientsCSV';
 import { downloadMealCraftExportCsv } from './meal-library/exportMealDataToCSV';
-import { generateLibraryExportCSV } from './meal-library/generateLibraryExportCSV';
+import { downloadMealCraftCsvTemplate, generateLibraryExportCSV } from './meal-library/generateLibraryExportCSV';
 
 if (typeof window !== 'undefined') {
     window.downloadMissingIngredientsCSV = downloadMissingIngredientsCSV;
     window.downloadMealCraftExportCsv = downloadMealCraftExportCsv;
+    window.downloadMealCraftCsvTemplate = downloadMealCraftCsvTemplate;
     window.generateLibraryExportCSV = generateLibraryExportCSV;
 }

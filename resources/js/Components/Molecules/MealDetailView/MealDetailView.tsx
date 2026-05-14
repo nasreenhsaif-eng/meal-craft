@@ -1,6 +1,7 @@
-import { Fragment, type ReactElement } from 'react';
+import { Fragment, type ReactElement, useState } from 'react';
 import { MealPlanTag } from '../../MealSystem/DietaryTags.jsx';
 import SafetyAlerts from '../../MealSystem/SafetyAlerts.jsx';
+import MealCraftLogo from '../../Atoms/Logo/MealCraftLogo.jsx';
 import { CyclePhaseTag, type CyclePhase } from './CyclePhaseTag';
 
 export type { CyclePhase };
@@ -35,6 +36,9 @@ export type MealDetailModel = {
     nutritionalData: MealNutritionalData;
     ingredients: string[];
     instructions: string[];
+    /** Resolved URL from the server, or empty when none. */
+    imageUrl?: string | null;
+    imageAlt?: string | null;
 };
 
 export type MealDetailViewProps = {
@@ -100,7 +104,22 @@ function MealNutritionSummaryTable({ data }: { data: MealNutritionalData }): Rea
 }
 
 export default function MealDetailView({ meal, className = '' }: MealDetailViewProps): ReactElement {
-    const { description, cyclePhases, dietaryTags, safetyAlerts, nutritionalData, ingredients, instructions } = meal;
+    const [mediaFailed, setMediaFailed] = useState(false);
+    const {
+        description,
+        cyclePhases,
+        dietaryTags,
+        safetyAlerts,
+        nutritionalData,
+        ingredients,
+        instructions,
+        imageUrl,
+        imageAlt,
+    } = meal;
+
+    const resolvedImageUrl = String(imageUrl ?? '').trim();
+    const resolvedImageAlt = String(imageAlt ?? '').trim();
+    const showImage = resolvedImageUrl !== '' && !mediaFailed;
 
     return (
         <div
@@ -116,6 +135,28 @@ export default function MealDetailView({ meal, className = '' }: MealDetailViewP
                 .join(' ')}
         >
             <article className="space-y-10 rounded-[12px] border border-gray-200 bg-white p-8 shadow-sm md:p-10">
+                <div className="-mx-8 -mt-8 mb-6 aspect-[4/3] w-[calc(100%+4rem)] max-w-none shrink-0 overflow-hidden rounded-t-[12px] bg-[#F8F9F6] md:-mx-10 md:-mt-10 md:w-[calc(100%+5rem)]">
+                    {showImage ? (
+                        <img
+                            src={resolvedImageUrl}
+                            alt={resolvedImageAlt || 'Meal photo'}
+                            className="h-full w-full object-cover"
+                            loading="lazy"
+                            decoding="async"
+                            onError={() => setMediaFailed(true)}
+                        />
+                    ) : (
+                        <div className="flex h-full min-h-[12rem] w-full items-center justify-center bg-[#F8F9F6]">
+                            <MealCraftLogo
+                                variant="seal-sm"
+                                width={72}
+                                className="opacity-70"
+                                alt="No meal image"
+                                title="MealCraft"
+                            />
+                        </div>
+                    )}
+                </div>
             <header className="space-y-6">
                 <div className="flex flex-col gap-5">
                     {dietaryTags?.length ? (

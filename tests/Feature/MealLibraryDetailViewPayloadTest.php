@@ -29,6 +29,7 @@ test('meal library index includes detailView on each meal for the detail modal',
         'cycle_phases' => ['follicular', 'ovulatory'],
         'cycle_phase' => CyclePhase::Follicular,
         'total_calories' => 200,
+        'image_path' => 'images/meals/spicy-stew.jpg',
         'total_protein' => 6,
         'total_carbs' => 36,
         'total_fat' => 4,
@@ -46,6 +47,8 @@ test('meal library index includes detailView on each meal for the detail modal',
             ->where('meals.0.title', 'Detail Payload Meal')
             ->has('meals.0.detailView')
             ->where('meals.0.detailView.description', 'Great for mornings.')
+            ->where('meals.0.detailView.imageAlt', 'Detail Payload Meal')
+            ->where('meals.0.detailView.imageUrl', asset('images/meals/spicy-stew.jpg'))
             ->where('meals.0.detailView.cyclePhases', ['Follicular', 'Ovulatory'])
             ->where('meals.0.detailView.dietaryTags', ['Balanced', 'Ketogenic', 'Vegan'])
             ->has('meals.0.detailView.ingredients', 1)

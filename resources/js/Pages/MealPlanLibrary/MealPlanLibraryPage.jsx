@@ -316,7 +316,7 @@ export function MealPlanLibraryPageContent({
                             <div className="min-w-0 flex-1">
                                 <CSVUploader
                                     className="w-full pt-0"
-                                    templateUrl="#"
+                                    importCsvTemplateUrl="#"
                                     exportUrl="#"
                                     onUpload={async (file) => {
                                         void file;

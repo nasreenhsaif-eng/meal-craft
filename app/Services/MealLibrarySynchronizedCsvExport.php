@@ -58,6 +58,7 @@ final class MealLibrarySynchronizedCsvExport
                     $this->mealPlanTagsForLibraryCell($meal),
                     $this->cyclePhasesForLibraryCell($meal),
                     round($totalCalories, 1),
+                    (string) ($meal->image_path ?? ''),
                 ], ',', '"', '\\');
             });
     }

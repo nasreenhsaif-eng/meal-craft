@@ -7,8 +7,8 @@ import TextInput from './Atoms/TextInput/TextInput.jsx';
  *
  * @param {{
  *  onUpload: (file: File) => void | Promise<void>;
- *  templateUrl: string;
- *  masterTemplateUrl?: string;
+ *  importCsvTemplateUrl?: string;
+ *  onDownloadMealCraftCsvTemplate?: () => void | Promise<void>;
  *  exportUrl?: string;
  *  accept?: string;
  *  className?: string;
@@ -17,8 +17,8 @@ import TextInput from './Atoms/TextInput/TextInput.jsx';
  */
 export default function CSVUploader({
     onUpload,
-    templateUrl,
-    masterTemplateUrl,
+    importCsvTemplateUrl,
+    onDownloadMealCraftCsvTemplate,
     exportUrl,
     accept = '.csv,text/csv',
     className = '',
@@ -28,6 +28,7 @@ export default function CSVUploader({
     const inputRef = useRef(null);
     const [file, setFile] = useState(/** @type {File|null} */ (null));
     const [busy, setBusy] = useState(false);
+    const [templateBusy, setTemplateBusy] = useState(false);
 
     async function handleUpload() {
         if (!file || busy) {
@@ -46,6 +47,9 @@ export default function CSVUploader({
     }
 
     const fileName = file ? file.name : '';
+
+    const linkClass =
+        'font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#5A6B44] underline underline-offset-2';
 
     return (
         <div className={`flex flex-wrap items-end gap-4 ${className}`.trim()}>
@@ -83,25 +87,33 @@ export default function CSVUploader({
             />
 
             <div className="flex flex-wrap items-center gap-4 pb-1">
-                <a
-                    href={templateUrl}
-                    className="font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#5A6B44] underline underline-offset-2"
-                >
-                    Download import CSV template
-                </a>
-                {masterTemplateUrl ? (
-                    <a
-                        href={masterTemplateUrl}
-                        className="font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#5A6B44] underline underline-offset-2"
+                {typeof onDownloadMealCraftCsvTemplate === 'function' ? (
+                    <button
+                        type="button"
+                        disabled={templateBusy}
+                        className={`${linkClass} disabled:cursor-not-allowed disabled:opacity-50`}
+                        onClick={async () => {
+                            if (templateBusy) {
+                                return;
+                            }
+                            try {
+                                setTemplateBusy(true);
+                                await onDownloadMealCraftCsvTemplate();
+                            } finally {
+                                setTemplateBusy(false);
+                            }
+                        }}
                     >
-                        Download meal craft master template
+                        {templateBusy ? 'Preparing…' : 'Download CSV template'}
+                    </button>
+                ) : null}
+                {importCsvTemplateUrl ? (
+                    <a href={importCsvTemplateUrl} className={linkClass}>
+                        Download import CSV template
                     </a>
                 ) : null}
                 {exportUrl ? (
-                    <a
-                        href={exportUrl}
-                        className="font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#5A6B44] underline underline-offset-2"
-                    >
+                    <a href={exportUrl} className={linkClass}>
                         Export CSV
                     </a>
                 ) : null}
@@ -109,4 +121,3 @@ export default function CSVUploader({
         </div>
     );
 }
-

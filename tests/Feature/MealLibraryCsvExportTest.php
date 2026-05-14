@@ -101,6 +101,7 @@ test('bulk import csv headers stay aligned with synchronized export service', fu
         'Meal_Plan_Tags',
         'Cycle_Phase',
         'Total_Calories',
+        'Image_URL',
     ]);
 
     $handle = fopen('php://memory', 'w+');

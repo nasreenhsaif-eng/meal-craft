@@ -9,9 +9,11 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreMealFromLibraryRequest;
 use App\Models\Ingredient;
 use App\Models\Meal;
+use App\Services\MealCraftMasterCsvExport;
 use App\Services\MealCsvLibraryImportService;
 use App\Services\RecipeNutritionCalculator;
 use App\Support\IngredientAllergenCatalog;
+use App\Support\MealImagePath;
 use App\Support\MealLibraryTaxonomy;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
@@ -20,9 +22,20 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
 class MealLibraryController extends Controller
 {
+    public function downloadMealCraftCsvTemplate(): SymfonyResponse
+    {
+        $csv = MealCraftMasterCsvExport::mealCraftCsvTemplateCsv();
+
+        return response($csv, 200, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="meal-craft-csv-template.csv"',
+        ]);
+    }
+
     public function index(): Response
     {
         if (! $this->mealLibrarySchemaReady()) {
@@ -180,7 +193,7 @@ class MealLibraryController extends Controller
 
         if ($request->hasFile('photo')) {
             $oldPath = $meal->image_path;
-            if (is_string($oldPath) && $oldPath !== '' && ! str_starts_with($oldPath, 'http://') && ! str_starts_with($oldPath, 'https://')) {
+            if (is_string($oldPath) && $oldPath !== '' && MealImagePath::shouldDeleteFromPublicDisk($oldPath)) {
                 Storage::disk('public')->delete($oldPath);
             }
             // Relative path on the `public` disk (e.g. `meals/…`); served via `storage` symlink.
@@ -526,8 +539,7 @@ class MealLibraryController extends Controller
             ),
             'cyclePhases' => CyclePhase::toDropdownOptions(),
             'mealStoreUrl' => route('admin.meal-library.store'),
-            'csvTemplateUrl' => asset('templates/meal-library-template.csv'),
-            'csvMasterTemplateUrl' => asset('templates/meal-craft-master-template.csv'),
+            'csvMealCraftTemplateUrl' => route('admin.meal-library.csv-template'),
             'csvExportUrl' => route('meals.library.export-csv'),
             'csvImportUrl' => route('meals.library.import-csv'),
         ];
@@ -667,6 +679,8 @@ class MealLibraryController extends Controller
             'nutritionalData' => $this->nutritionalDataForDetailView($nutrition),
             'ingredients' => $ingredientLines,
             'instructions' => $instructions,
+            'imageUrl' => $this->mealImageUrl($meal),
+            'imageAlt' => $meal->name,
         ];
     }
 
@@ -875,15 +889,7 @@ class MealLibraryController extends Controller
 
     private function mealImageUrl(Meal $meal): string
     {
-        $path = $meal->image_path;
-        if ($path === null || $path === '') {
-            return '';
-        }
-        if (str_starts_with((string) $path, 'http://') || str_starts_with((string) $path, 'https://')) {
-            return (string) $path;
-        }
-
-        return Storage::disk('public')->url($path);
+        return MealImagePath::resolveUrl($meal->image_path);
     }
 
     /**

@@ -345,7 +345,7 @@ export function IngredientsLibraryPageView({
                             <div className="min-w-0 flex-1">
                                 <CSVUploader
                                     className="w-full pt-0"
-                                    templateUrl={csvTemplateUrl}
+                                    importCsvTemplateUrl={csvTemplateUrl}
                                     exportUrl={csvExportUrl}
                                     onUpload={(file) => {
                                         router.post(

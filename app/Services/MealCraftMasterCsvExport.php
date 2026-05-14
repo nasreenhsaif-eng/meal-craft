@@ -4,9 +4,9 @@ namespace App\Services;
 
 use App\Enums\CyclePhase;
 use App\Models\Meal;
+use App\Support\MealImagePath;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\Pivot;
-use Illuminate\Support\Facades\Storage;
 
 /**
  * Meal Craft master CSV: editorial fields, targets vs engine totals, and variance notes.
@@ -273,11 +273,10 @@ final class MealCraftMasterCsvExport
         if ($path === null || $path === '') {
             return self::MISSING_PHOTO_PLACEHOLDER;
         }
-        if (str_starts_with((string) $path, 'http://') || str_starts_with((string) $path, 'https://')) {
-            return (string) $path;
-        }
 
-        return Storage::disk('public')->url($path);
+        $url = MealImagePath::resolveUrl($path);
+
+        return $url === '' ? self::MISSING_PHOTO_PLACEHOLDER : $url;
     }
 
     private function optionalTargetNumeric(Meal $meal, string $attribute): ?float
@@ -325,5 +324,61 @@ final class MealCraftMasterCsvExport
         $formatted = rtrim(rtrim(number_format($value, 2, '.', ''), '0'), '.');
 
         return $formatted === '' ? '0' : $formatted;
+    }
+
+    /**
+     * Meal Library “Download CSV template” column names (admin UI).
+     *
+     * @var list<string>
+     */
+    public const MEAL_CRAFT_CSV_TEMPLATE_HEADERS = [
+        'Meal Name',
+        'Meal Type',
+        'Ingredients String',
+        'Target Calories',
+        'Target Protein',
+        'Target Carbs',
+        'Target Fat',
+        'Is Bulk',
+        'Servings Count',
+        'Meal Plan Tag',
+        'Cycle phase',
+        'Safety Alerts',
+        'Image_URL',
+        'Description',
+    ];
+
+    /**
+     * CSV document for the admin meal-library template download (header + one sample row).
+     */
+    public static function mealCraftCsvTemplateCsv(): string
+    {
+        $handle = fopen('php://memory', 'w+');
+        if ($handle === false) {
+            return '';
+        }
+
+        fputcsv($handle, self::MEAL_CRAFT_CSV_TEMPLATE_HEADERS, ',', '"', '\\');
+        fputcsv($handle, [
+            'Coconut Chicken Curry',
+            'Meal',
+            'Chicken thigh (500g) | Coconut milk (400ml) | Red curry paste (45g) | Fish sauce (15ml) | Palm sugar (8g) | Jasmine rice (200g) | Thai basil (10g)',
+            '620',
+            '48',
+            '42',
+            '22',
+            'false',
+            '4',
+            'Balanced',
+            'Follicular',
+            '',
+            '/images/meals/coconut-chicken-curry.jpg',
+            'Rich red curry with coconut milk and tender chicken; serve over jasmine rice with fresh Thai basil.',
+        ], ',', '"', '\\');
+        rewind($handle);
+        $csv = stream_get_contents($handle) ?: '';
+        fclose($handle);
+
+        return $csv;
     }
 }

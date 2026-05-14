@@ -10,6 +10,7 @@ use App\Services\MealCyclePhaseTaggingService;
 use App\Services\MealRecipeAsIngredientSyncService;
 use App\Services\RecipeIngredientUnitConverter;
 use App\Services\RecipeNutritionCalculator;
+use App\Support\MealImagePath;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -660,7 +661,7 @@ new #[Title('Meals')] class extends Component {
 
             if ($imagePath === null) {
                 $imagePath = $meal->image_path;
-            } elseif (filled($meal->image_path)) {
+            } elseif (filled($meal->image_path) && MealImagePath::shouldDeleteFromPublicDisk($meal->image_path)) {
                 Storage::disk('public')->delete($meal->image_path);
             }
 
@@ -858,7 +859,7 @@ new #[Title('Meals')] class extends Component {
             $this->resetFormToCreateMode();
         }
 
-        if (filled($meal->image_path)) {
+        if (filled($meal->image_path) && MealImagePath::shouldDeleteFromPublicDisk($meal->image_path)) {
             Storage::disk('public')->delete($meal->image_path);
         }
 
