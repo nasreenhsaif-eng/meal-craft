@@ -22,6 +22,7 @@ final class MealLibraryTaxonomy
         'Dairy-free',
         'Gluten-free',
         'Nut-free',
+        'Spicy',
     ];
 
     /**

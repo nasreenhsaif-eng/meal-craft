@@ -10,7 +10,9 @@ export const CoreSet = {
     name: 'Core set',
     render: () => (
         <div className="max-w-2xl bg-white p-8">
-            <DietaryTags tags={['Gluten-free', 'Vegan', 'Vegetarian', 'Nut-free', 'High Protein', 'Low Carbs']} />
+            <DietaryTags
+                tags={['Gluten-free', 'Vegan', 'Vegetarian', 'Nut-free', 'Spicy', 'High Protein', 'Low Carbs']}
+            />
         </div>
     ),
 };

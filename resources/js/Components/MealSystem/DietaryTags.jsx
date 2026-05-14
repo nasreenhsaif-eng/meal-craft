@@ -98,6 +98,34 @@ function IconCarton({ className = '' }) {
     );
 }
 
+function IconPepper({ className = '' }) {
+    return (
+        <svg
+            className={`${ICON_BASE} ${className}`.trim()}
+            width={16}
+            height={16}
+            viewBox="0 0 24 24"
+            fill="none"
+            aria-hidden="true"
+        >
+            <path d="M12 3v2.5" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
+            <path d="M9.5 3h5" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
+            <path
+                d="M12 7.5c2.9 0 5.2 2.3 5.2 5.6 0 2.6-1 4.6-2.6 6-.8.7-1.6 1.3-2 2.9h-1.2c-.4-1.6-1.2-2.2-2-2.9-1.6-1.4-2.6-3.4-2.6-6 0-3.3 2.3-5.6 5.2-5.6Z"
+                stroke="currentColor"
+                strokeWidth="1.75"
+                strokeLinejoin="round"
+            />
+            <path
+                d="M12 11.5c1.2 0 2.1.9 2.1 2.1 0 1-.6 1.8-1.4 2.2"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+            />
+        </svg>
+    );
+}
+
 function IconNutOff({ className = '' }) {
     return (
         <svg
@@ -285,6 +313,10 @@ function iconForLabel(label) {
         return IconPaleo;
     }
 
+    if (key.includes('spicy')) {
+        return IconPepper;
+    }
+
     if (key.includes('vegetarian')) {
         return IconSprout;
     }
@@ -312,6 +344,7 @@ export const DIETARY_TAG_OPTIONS = [
     'Vegetarian',
     'Nut-Free',
     'Dairy-Free',
+    'Spicy',
     'Low Carbs',
     'High Protein',
 ];
