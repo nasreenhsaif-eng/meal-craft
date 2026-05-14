@@ -17,7 +17,7 @@ import { IconLayoutGrid, IconLayoutList } from '../../Components/Atoms/SvgIcons.
 import SquareCheckbox from '../../Components/Atoms/Icons/SquareCheckbox.jsx';
 import NutrientBadge from '../../Components/Atoms/MealSystem/NutrientBadge.jsx';
 import { aggregateNutritionFromIngredientRows, normalizeIngredientKey } from '../../meal-library/aggregateIngredientNutrition.ts';
-import { calculateMealNutrition, resolveMealLibraryCategory } from '../../meal-library/calculateMealNutrition.ts';
+import { calculateMealNutrition, calorieWarningsForCategory, resolveMealLibraryCategory } from '../../meal-library/calculateMealNutrition.ts';
 import { gramsFromIngredientAmountAndUnit, parseIngredientQuantityString } from '../../meal-library/ingredientQuantityString.ts';
 import { buildIngredientPasteHighlightParts } from '../../meal-library/ingredientPasteHighlight.ts';
 import { filterIngredientsForCombobox } from '../../meal-library/ingredientSearch.ts';
@@ -26,6 +26,7 @@ import {
     sickleCellProgramMealHighlight,
 } from '../../meal-library/mealSafetyAndSickle.ts';
 import { DIETARY_TAG_OPTIONS, MEAL_PLAN_TAG_OPTIONS } from '../../meal-library/mealTaxonomy.js';
+import { planningVarianceDeltaClass, resolvePerServingActualForTargets, scaleNutritionRecord } from '../../meal-library/bulkPlanningVariance.ts';
 import { formatMealCraftVarianceNotes } from '../../meal-library/exportMealDataToCSV.ts';
 import { downloadMissingIngredientsCSV } from '../../meal-library/downloadMissingIngredientsCSV.ts';
 import SafetyAlerts from '../../Components/MealSystem/SafetyAlerts.jsx';
@@ -81,25 +82,6 @@ function divideBatchByServings(batchStr, servings) {
         return null;
     }
     return batch / servings;
-}
-
-/**
- * @param {Record<string, unknown>} n
- * @param {number} factor
- * @returns {Record<string, number>}
- */
-function scaleNutritionObject(n, factor) {
-    if (!n || !Number.isFinite(factor) || factor <= 0) {
-        return /** @type {Record<string, number>} */ ({});
-    }
-    /** @type {Record<string, number>} */
-    const out = {};
-    for (const [k, v] of Object.entries(n)) {
-        if (typeof v === 'number' && Number.isFinite(v)) {
-            out[k] = Math.round(v * factor * 10000) / 10000;
-        }
-    }
-    return out;
 }
 
 function emptyNutritionSidebarShape() {
@@ -181,7 +163,7 @@ function persistedMacroTotalsFromIngredientSources(aggregated, csvNutrition, isB
     }
     const svc = parseBulkServingsCount(bulkServingsCountRaw);
     const useBulk = Boolean(isBulkRecipe && svc != null);
-    const n = useBulk && svc != null ? scaleNutritionObject(raw, 1 / svc) : raw;
+    const n = useBulk && svc != null ? scaleNutritionRecord(raw, 1 / svc) : raw;
     const num = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : 0);
     return {
         calories: Math.round(num(n.calories)),
@@ -286,6 +268,7 @@ export function MealLibraryPageContent({
     const [formProtein, setFormProtein] = useState('');
     const [formCarbs, setFormCarbs] = useState('');
     const [formFat, setFormFat] = useState('');
+    /** Manual planning targets — always interpreted as per-serving (never scaled by batch or servings). */
     const [targetCaloriesManual, setTargetCaloriesManual] = useState('');
     const [targetProteinManual, setTargetProteinManual] = useState('');
     const [targetCarbsManual, setTargetCarbsManual] = useState('');
@@ -892,6 +875,21 @@ export function MealLibraryPageContent({
         return null;
     }, [aggregatedIngredientNutrition, nutritionResult]);
 
+    /**
+     * System actual **per serving** for planning-target variance (and micronutrient highlights when bulk).
+     * Planning targets are always per-serving; bulk ingredient rollups are batch totals → divide by servings.
+     */
+    const perServingNutritionForPlanningTargets = useMemo(
+        () =>
+            resolvePerServingActualForTargets({
+                isBulkRecipe,
+                bulkServingsCountRaw: bulkServingsCount,
+                batchNutrition: nutritionForSidebar,
+                parseServings: parseBulkServingsCount,
+            }),
+        [isBulkRecipe, bulkServingsCount, nutritionForSidebar],
+    );
+
     const singleServingNutritionForSidebar = useMemo(() => {
         if (!isBulkRecipe) {
             return nutritionForSidebar;
@@ -903,7 +901,7 @@ export function MealLibraryPageContent({
         if (!nutritionForSidebar) {
             return null;
         }
-        return scaleNutritionObject(nutritionForSidebar, 1 / svc);
+        return scaleNutritionRecord(nutritionForSidebar, 1 / svc);
     }, [isBulkRecipe, bulkServingsCount, nutritionForSidebar]);
 
     /** Batch totals when bulk servings are unset; per-serving when valid. */
@@ -951,18 +949,18 @@ export function MealLibraryPageContent({
     );
 
     const scBadges = useMemo(() => {
-        const n = nutritionForSummaryDisplay ?? {};
+        const n = perServingNutritionForPlanningTargets ?? {};
         const badges = [];
         if ((n.b9_folate ?? 0) >= 150) badges.push('Folate');
         if ((n.b12 ?? 0) >= 1.5) badges.push('B12');
         if ((n.iron ?? 0) >= 6) badges.push('Iron');
         if ((n.magnesium ?? 0) >= 120) badges.push('Magnesium');
         if ((n.zinc ?? 0) >= 3) badges.push('Zinc');
-        if (nutritionForSummaryDisplay && sickleCellProgramMealHighlight(n)) {
+        if (perServingNutritionForPlanningTargets && sickleCellProgramMealHighlight(n)) {
             badges.push('Sickle Cell');
         }
         return badges;
-    }, [nutritionForSummaryDisplay]);
+    }, [perServingNutritionForPlanningTargets]);
 
     const nutritionSummarySections = useMemo(() => {
         if (!nutritionForSummaryDisplay) {
@@ -1017,7 +1015,7 @@ export function MealLibraryPageContent({
     }, [nutritionForSummaryDisplay]);
 
     const calculatedNutritionForTargets = useMemo(() => {
-        const n = nutritionForSummaryDisplay;
+        const n = perServingNutritionForPlanningTargets;
         if (!n) {
             return null;
         }
@@ -1030,7 +1028,37 @@ export function MealLibraryPageContent({
             fat: num(n.fat),
             netCarbs: Math.max(0, carbs - fiber),
         };
-    }, [nutritionForSummaryDisplay]);
+    }, [perServingNutritionForPlanningTargets]);
+
+    const categoryWarningsForModal = useMemo(() => {
+        if (!nutritionResult?.ok || !nutritionResult.category) {
+            return nutritionResult?.categoryWarnings ?? [];
+        }
+        const cat = nutritionResult.category;
+        if (!isBulkRecipe) {
+            return nutritionResult.categoryWarnings ?? [];
+        }
+        const svc = parseBulkServingsCount(bulkServingsCount);
+        if (svc == null || !Number.isFinite(svc) || svc <= 0) {
+            return nutritionResult.categoryWarnings ?? [];
+        }
+        const cal = Number(nutritionResult.nutrition?.calories);
+        if (!Number.isFinite(cal)) {
+            return nutritionResult.categoryWarnings ?? [];
+        }
+        return calorieWarningsForCategory(cat, cal / svc);
+    }, [nutritionResult, isBulkRecipe, bulkServingsCount]);
+
+    const nutritionSummaryTableValueLabel = useMemo(() => {
+        if (!isBulkRecipe) {
+            return 'Total (meal)';
+        }
+        const svc = parseBulkServingsCount(bulkServingsCount);
+        if (svc == null || !Number.isFinite(svc) || svc <= 0) {
+            return 'Batch total (system)';
+        }
+        return 'Per serving (system)';
+    }, [isBulkRecipe, bulkServingsCount]);
 
     const targetVarianceRows = useMemo(() => {
         const calc = calculatedNutritionForTargets;
@@ -1041,16 +1069,28 @@ export function MealLibraryPageContent({
         const tp = optionalTargetNumberString(targetProteinManual);
         const tcar = optionalTargetNumberString(targetCarbsManual);
         const tf = optionalTargetNumberString(targetFatManual);
-        /** @type {{ label: string; target: number; calculated: number; delta: string }[]} */
+        /** @type {{ label: string; target: number; calculated: number; delta: string; deltaClass: string }[]} */
         const rows = [];
         const fmtDelta = (d) => (Math.round(d * 100) / 100).toFixed(2).replace(/\.?0+$/, '');
         if (tc !== null) {
             const d = tc - calc.calories;
-            rows.push({ label: 'Calories (kcal)', target: tc, calculated: calc.calories, delta: fmtDelta(d) });
+            rows.push({
+                label: 'Calories (kcal)',
+                target: tc,
+                calculated: calc.calories,
+                delta: fmtDelta(d),
+                deltaClass: planningVarianceDeltaClass(tc, calc.calories),
+            });
         }
         if (tp !== null) {
             const d = tp - calc.protein;
-            rows.push({ label: 'Protein (g)', target: tp, calculated: calc.protein, delta: fmtDelta(d) });
+            rows.push({
+                label: 'Protein (g)',
+                target: tp,
+                calculated: calc.protein,
+                delta: fmtDelta(d),
+                deltaClass: planningVarianceDeltaClass(tp, calc.protein),
+            });
         }
         if (tcar !== null) {
             const d = tcar - calc.netCarbs;
@@ -1059,11 +1099,18 @@ export function MealLibraryPageContent({
                 target: tcar,
                 calculated: calc.netCarbs,
                 delta: fmtDelta(d),
+                deltaClass: planningVarianceDeltaClass(tcar, calc.netCarbs),
             });
         }
         if (tf !== null) {
             const d = tf - calc.fat;
-            rows.push({ label: 'Fat (g)', target: tf, calculated: calc.fat, delta: fmtDelta(d) });
+            rows.push({
+                label: 'Fat (g)',
+                target: tf,
+                calculated: calc.fat,
+                delta: fmtDelta(d),
+                deltaClass: planningVarianceDeltaClass(tf, calc.fat),
+            });
         }
         return rows;
     }, [
@@ -1756,8 +1803,8 @@ export function MealLibraryPageContent({
                                     <div className="rounded-[12px] border border-[#C4B5A0]/35 bg-[#FAF8F5] p-4">
                                         <p className="font-montserrat text-sm font-bold text-[#262A22]">Planning targets</p>
                                         <p className="mt-1 font-body text-xs text-[#6B7280]">
-                                            Manual per-serving goals for variance only. These fields never sync with batch
-                                            totals, ingredient strings, or calculated nutrition — only your typing (or
+                                            Per-serving goals for variance only (never batch totals). These fields never sync
+                                            with batch totals, ingredient strings, or calculated nutrition — only your typing (or
                                             loading a meal for edit) changes them.
                                         </p>
                                         <div className="mt-4 grid gap-4 sm:grid-cols-2">
@@ -2203,7 +2250,7 @@ export function MealLibraryPageContent({
                                                                 Nutrient
                                                             </th>
                                                             <th className="px-3 py-2 text-right font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#374151]">
-                                                                {isBulkRecipe ? 'Per serving (system)' : 'Total (meal)'}
+                                                                {nutritionSummaryTableValueLabel}
                                                             </th>
                                                         </tr>
                                                     </thead>
@@ -2252,8 +2299,11 @@ export function MealLibraryPageContent({
                                                     Planning targets vs. calculated
                                                 </p>
                                                 <p className="mt-1 font-body text-xs text-[#6B7280]">
-                                                    Δ = target minus calculated (same sign convention as the Meal Craft
-                                                    CSV variance column).
+                                                    Δ = target minus calculated (same sign convention as the Meal Craft CSV
+                                                    variance column).{' '}
+                                                    {isBulkRecipe
+                                                        ? 'Targets and calculated values are both per serving; for bulk recipes, calculated uses batch ingredient totals ÷ number of servings.'
+                                                        : 'Planning targets are per serving; calculated is total for this meal.'}
                                                 </p>
                                                 <table className="mt-3 w-full border-collapse text-left text-sm">
                                                     <thead>
@@ -2282,7 +2332,12 @@ export function MealLibraryPageContent({
                                                                 <td className="py-1.5 px-2 text-right font-body tabular-nums text-[#555555]">
                                                                     {row.calculated.toFixed(2).replace(/\.?0+$/, '')}
                                                                 </td>
-                                                                <td className="py-1.5 pl-2 text-right font-body tabular-nums text-[#5A6B44]">
+                                                                <td
+                                                                    className={[
+                                                                        'py-1.5 pl-2 text-right font-body tabular-nums',
+                                                                        row.deltaClass,
+                                                                    ].join(' ')}
+                                                                >
                                                                     {row.delta.startsWith('-') ? row.delta : `+${row.delta}`}
                                                                 </td>
                                                             </tr>
@@ -2310,13 +2365,13 @@ export function MealLibraryPageContent({
                                             </div>
                                         </div>
 
-                                        {nutritionResult?.categoryWarnings?.length ? (
+                                        {categoryWarningsForModal.length > 0 ? (
                                             <div className="mt-4 rounded-[12px] border border-amber-200 bg-amber-50 p-3">
                                                 <p className="font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-amber-900">
                                                     Warnings
                                                 </p>
                                                 <ul className="mt-2 list-inside list-disc space-y-1 font-body text-sm text-amber-950">
-                                                    {nutritionResult?.categoryWarnings?.map((w) => (
+                                                    {categoryWarningsForModal.map((w) => (
                                                         <li key={w}>{w}</li>
                                                     ))}
                                                 </ul>
