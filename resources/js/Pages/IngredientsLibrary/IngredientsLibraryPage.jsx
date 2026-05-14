@@ -16,6 +16,7 @@ const INGREDIENT_CATEGORY_OPTIONS = [
     'Vegetables',
     'Grains',
     'Fats',
+    'Base Recipe',
     'Other',
 ];
 

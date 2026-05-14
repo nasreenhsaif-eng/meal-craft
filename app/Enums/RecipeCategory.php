@@ -10,6 +10,7 @@ enum RecipeCategory: string
     case MainSalad = 'Main Salad';
     case Meal = 'Meal';
     case Dessert = 'Dessert';
+    case BaseRecipe = 'Base Recipe';
 
     public function badgeColor(): string
     {
@@ -20,6 +21,7 @@ enum RecipeCategory: string
             self::MainSalad => 'emerald',
             self::Meal => 'green',
             self::Dessert => 'pink',
+            self::BaseRecipe => 'stone',
         };
     }
 

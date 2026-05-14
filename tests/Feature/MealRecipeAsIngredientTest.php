@@ -179,11 +179,8 @@ test('meal edit ingredient picker excludes this meals derived ingredient', funct
     $meal = Meal::query()->where('name', 'Picker Meal')->firstOrFail();
     $derived = Ingredient::query()->where('source_meal_id', $meal->id)->firstOrFail();
 
-    $optionIds = Livewire::test('pages::meals', ['meal' => $meal->fresh()])
-        ->get('ingredientOptions')
-        ->pluck('id')
-        ->map(fn ($id): int => (int) $id)
-        ->all();
+    $component = Livewire::test('pages::meals', ['meal' => $meal->fresh()]);
+    $optionIds = $component->instance()->ingredientSearchResults(0)->pluck('id')->map(fn ($id): int => (int) $id)->all();
 
     expect($optionIds)->toContain((int) $base->id)
         ->not->toContain((int) $derived->id);

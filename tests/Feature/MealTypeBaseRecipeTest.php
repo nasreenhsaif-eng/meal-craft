@@ -8,8 +8,8 @@ use App\Models\Meal;
 use App\Models\User;
 use Livewire\Livewire;
 
-test('base recipe meal type maps to Meal recipe category', function () {
-    expect(MealType::BaseRecipe->toRecipeCategory())->toBe(RecipeCategory::Meal);
+test('base recipe meal type maps to Base Recipe recipe category', function () {
+    expect(MealType::BaseRecipe->toRecipeCategory())->toBe(RecipeCategory::BaseRecipe);
 });
 
 test('selecting base recipe in meal creator checks use as base ingredient', function () {

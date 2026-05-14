@@ -35,7 +35,157 @@ import SafetyAlerts from '../../Components/MealSystem/SafetyAlerts.jsx';
 const PAGE_BG = 'bg-[#F8F9F6]';
 const PAGE_SIZE = 12;
 
-const MEAL_FORM_TYPE_OPTIONS = ['Breakfast', 'Meal', 'Side Salad', 'Soup', 'Dessert'];
+/**
+ * @param {unknown} data
+ * @returns {object[]}
+ */
+function normalizeMealCsvImportRowList(list) {
+    if (!Array.isArray(list)) {
+        return [];
+    }
+    return list
+        .map((r) => {
+            if (r && typeof r === 'object') {
+                return /** @type {object} */ (r);
+            }
+            if (typeof r === 'string') {
+                try {
+                    const parsed = JSON.parse(r);
+                    return typeof parsed === 'object' && parsed !== null ? parsed : null;
+                } catch {
+                    return null;
+                }
+            }
+            return null;
+        })
+        .filter((r) => r !== null);
+}
+
+/**
+ * @param {unknown} data
+ * @returns {object[]}
+ */
+function mealCsvImportResponseRows(data) {
+    if (!data || typeof data !== 'object') {
+        return [];
+    }
+    const d = /** @type {Record<string, unknown>} */ (data);
+
+    const tryList = (raw) => {
+        if (!Array.isArray(raw)) {
+            return [];
+        }
+        return normalizeMealCsvImportRowList(raw);
+    };
+
+    const buckets = [tryList(d.rows), tryList(d.Rows), tryList(d.import_rows), tryList(d.results)];
+
+    if (d.data && typeof d.data === 'object') {
+        const inner = /** @type {Record<string, unknown>} */ (d.data);
+        buckets.push(tryList(inner.rows), tryList(inner.Rows), tryList(inner.import_rows), tryList(inner.results));
+    }
+
+    for (const b of buckets) {
+        if (b.length > 0) {
+            return b;
+        }
+    }
+
+    for (const v of Object.values(d)) {
+        if (!Array.isArray(v) || v.length === 0) {
+            continue;
+        }
+        const first = v[0];
+        if (
+            first &&
+            typeof first === 'object' &&
+            ('status' in first || 'line' in first || 'message' in first || 'meal_name' in first || 'Meal_Name' in first)
+        ) {
+            const out = normalizeMealCsvImportRowList(v);
+            if (out.length > 0) {
+                return out;
+            }
+        }
+    }
+
+    return [];
+}
+
+/**
+ * @param {unknown} row
+ */
+function mealCsvImportRowNormalizedStatus(row) {
+    if (!row || typeof row !== 'object') {
+        return '';
+    }
+    const r = /** @type {Record<string, unknown>} */ (row);
+    const raw = r.status ?? r.Status;
+    if (raw != null && typeof raw === 'object' && 'value' in /** @type {object} */ (raw)) {
+        return String(/** @type {{ value?: unknown }} */ (raw).value ?? '').trim().toLowerCase();
+    }
+
+    return String(raw ?? '').trim().toLowerCase();
+}
+
+/**
+ * @param {unknown} row
+ */
+function mealCsvImportRowIsError(row) {
+    return mealCsvImportRowNormalizedStatus(row) === 'error';
+}
+
+/**
+ * @param {unknown} row
+ */
+function mealCsvImportRowMessage(row) {
+    if (!row || typeof row !== 'object') {
+        return '';
+    }
+    const r = /** @type {Record<string, unknown>} */ (row);
+    const m = r.message ?? r.Message;
+    if (typeof m === 'string') {
+        return m;
+    }
+    if (m != null) {
+        return String(m);
+    }
+    return '';
+}
+
+/**
+ * @param {{ import_error_lines?: unknown; rows?: unknown[] }} modal
+ * @returns {string[]}
+ */
+function mealCsvImportModalErrorDisplayLines(modal) {
+    const fromApi = modal?.import_error_lines;
+    if (Array.isArray(fromApi) && fromApi.length > 0) {
+        return fromApi.map((x) => String(x));
+    }
+    const rows = Array.isArray(modal?.rows) ? modal.rows : [];
+    const out = [];
+    for (const row of rows) {
+        if (!mealCsvImportRowIsError(row)) {
+            continue;
+        }
+        const m = mealCsvImportRowMessage(row);
+        if (!m) {
+            continue;
+        }
+        const lineRaw = /** @type {{ line?: unknown; meal_name?: unknown }} */ (row).line;
+        const lineNum =
+            typeof lineRaw === 'number' && Number.isFinite(lineRaw)
+                ? lineRaw
+                : Number.parseInt(String(lineRaw ?? ''), 10);
+        const lineLabel = Number.isFinite(lineNum) ? lineNum : 0;
+        const nameRaw = /** @type {{ meal_name?: unknown }} */ (row).meal_name;
+        const name = typeof nameRaw === 'string' && nameRaw.trim() !== '' ? nameRaw.trim() : '';
+        out.push(name !== '' ? `Line ${lineLabel} (${name}): ${m}` : `Line ${lineLabel}: ${m}`);
+    }
+
+    return out;
+}
+
+const MEAL_FORM_TYPE_OPTIONS = ['Breakfast', 'Meal', 'Base Recipe', 'Side Salad', 'Soup', 'Dessert'];
 const UNIT_OPTIONS = ['g', 'kg', 'ml', 'ltr'];
 
 const DEFAULT_CYCLE_PHASES = [
@@ -233,6 +383,15 @@ export function MealLibraryPageContent({
     const [selectedRows, setSelectedRows] = useState(/** @type {string[]} */ ([]));
     const [confirmOpen, setConfirmOpen] = useState(false);
     const [mealCsvImportResultModal, setMealCsvImportResultModal] = useState(null);
+
+    const dismissMealCsvImportModal = useCallback(() => {
+        setMealCsvImportResultModal(null);
+        void router.reload({
+            only: ['meals'],
+            preserveState: true,
+            preserveScroll: true,
+        });
+    }, []);
     const [createOpen, setCreateOpen] = useState(false);
     const [mealToEdit, setMealToEdit] = useState(/** @type {object | null} */ (storyInitialMealToEdit ?? null));
     const [mealDetailModal, setMealDetailModal] = useState(
@@ -291,6 +450,12 @@ export function MealLibraryPageContent({
     const [ingredientPasteMissingLabels, setIngredientPasteMissingLabels] = useState(/** @type {string[]} */ ([]));
     const [ingredientPasteApplyError, setIngredientPasteApplyError] = useState('');
     const mealPlanMultiOptions = useMemo(() => mealPlanTagOptionsForMulti(MEAL_PLAN_TAG_OPTIONS), []);
+
+    useEffect(() => {
+        if (formType === 'Base Recipe') {
+            setUseAsBaseIngredient(true);
+        }
+    }, [formType]);
 
     const resetCreateForm = useCallback(() => {
         setFormName('');
@@ -668,7 +833,7 @@ export function MealLibraryPageContent({
         if (ingredients.length > 0) {
             payload.ingredients = ingredients;
         }
-        if (useAsBaseIngredient) {
+        if (formType === 'Base Recipe' || useAsBaseIngredient) {
             payload.use_as_base_ingredient = true;
         }
         if (finishedWeightGrams.trim() !== '') {
@@ -1236,6 +1401,8 @@ export function MealLibraryPageContent({
                                         try {
                                             const { data } = await axios.post(csvImportUrl, formData, {
                                                 headers: {
+                                                    Accept: 'application/json',
+                                                    'X-Requested-With': 'XMLHttpRequest',
                                                     ...(token ? { 'X-CSRF-TOKEN': token } : {}),
                                                 },
                                             });
@@ -1244,15 +1411,15 @@ export function MealLibraryPageContent({
                                                 uniquePending: Array.isArray(data?.unique_pending_ingredients)
                                                     ? data.unique_pending_ingredients
                                                     : [],
-                                                rows: Array.isArray(data?.rows) ? data.rows : [],
+                                                rows: mealCsvImportResponseRows(data),
+                                                import_error_lines: Array.isArray(data?.import_error_lines)
+                                                    ? data.import_error_lines
+                                                    : Array.isArray(data?.importErrorLines)
+                                                      ? data.importErrorLines
+                                                      : [],
                                                 csvUnrecognizedHeaders: Array.isArray(data?.csv_unrecognized_headers)
                                                     ? data.csv_unrecognized_headers
                                                     : [],
-                                            });
-                                            await router.reload({
-                                                only: ['meals'],
-                                                preserveState: true,
-                                                preserveScroll: true,
                                             });
                                         } catch (e) {
                                             const body = e?.response?.data;
@@ -1269,6 +1436,9 @@ export function MealLibraryPageContent({
                                                 summary: {},
                                                 uniquePending: [],
                                                 rows: [],
+                                                import_error_lines: Array.isArray(body?.import_error_lines)
+                                                    ? body.import_error_lines
+                                                    : [],
                                                 csvUnrecognizedHeaders: [],
                                                 validationErrors,
                                             });
@@ -1443,136 +1613,158 @@ export function MealLibraryPageContent({
                 </section>
             </div>
 
-            {mealCsvImportResultModal ? (
-                <div className="fixed inset-0 z-[101] flex items-center justify-center p-4">
-                    <button
-                        type="button"
-                        className="absolute inset-0 bg-black/40"
-                        onClick={() => setMealCsvImportResultModal(null)}
-                        aria-label="Close import summary"
-                    />
-                    <div
-                        role="dialog"
-                        aria-modal="true"
-                        aria-labelledby="meal-csv-import-summary-title"
-                        className="relative w-full max-w-[520px] rounded-[12px] bg-white p-8 shadow-2xl"
-                    >
-                        <h2
-                            id="meal-csv-import-summary-title"
-                            className="text-center font-montserrat text-[22px] font-bold tracking-tight text-[#262A22]"
-                        >
-                            Meal CSV import
-                        </h2>
-                        {mealCsvImportResultModal.error ? (
-                            <div className="mt-4 space-y-3 text-left font-body text-sm text-[#7F1D1D]" role="alert">
-                                <p className="text-center">{mealCsvImportResultModal.error}</p>
-                                {mealCsvImportResultModal.validationErrors ? (
-                                    <ul className="list-disc space-y-1 pl-5 text-[#262A22]">
-                                        {Object.entries(mealCsvImportResultModal.validationErrors).map(([key, msgs]) =>
-                                            Array.isArray(msgs) ? (
-                                                msgs.map((m) => (
-                                                    <li key={`${key}-${String(m)}`}>
-                                                        <span className="font-semibold">{key}:</span> {String(m)}
-                                                    </li>
-                                                ))
-                                            ) : (
-                                                <li key={key}>
-                                                    <span className="font-semibold">{key}:</span> {String(msgs)}
-                                                </li>
-                                            ),
-                                        )}
-                                    </ul>
-                                ) : null}
-                            </div>
-                        ) : (
-                            <div className="mt-6 space-y-4 font-body text-sm text-[#262A22]">
-                                <div className="flex gap-3 rounded-[12px] border border-[#E5E7EB] bg-[#F8F9F6] px-4 py-3">
-                                    <span className="text-lg leading-none text-[#5A6B44]" aria-hidden>
-                                        ✓
-                                    </span>
-                                    <p>
-                                        <span className="font-semibold">
-                                            {(Number(mealCsvImportResultModal.summary?.imported) || 0) +
-                                                (Number(mealCsvImportResultModal.summary?.updated) || 0)}
-                                        </span>{' '}
-                                        meal row(s) saved successfully (new or updated).
-                                    </p>
-                                </div>
-                                {(Number(mealCsvImportResultModal.summary?.pending_ingredient_input) || 0) > 0 ? (
-                                    <div className="flex gap-3 rounded-[12px] border border-amber-200 bg-amber-50 px-4 py-3 text-amber-950">
-                                        <span className="text-lg leading-none" aria-hidden>
-                                            ⚠
-                                        </span>
-                                        <p>
-                                            <span className="font-semibold">
-                                                {Number(mealCsvImportResultModal.summary?.pending_ingredient_input) || 0}
-                                            </span>{' '}
-                                            meal row(s) are pending because one or more ingredients were not found in your
-                                            library. Add them via Ingredient Library import, and those meals will be created
-                                            automatically.
-                                        </p>
-                                    </div>
-                                ) : null}
-                                {(mealCsvImportResultModal.csvUnrecognizedHeaders ?? []).length > 0 ? (
-                                    <div className="rounded-[12px] border border-amber-200 bg-amber-50 px-4 py-3 text-amber-950">
-                                        <p className="font-semibold">Unrecognized column header(s)</p>
-                                        <p className="mt-1 text-sm">
-                                            These labels were not mapped to known fields (check spelling, spaces vs.
-                                            underscores):{' '}
-                                            <span className="font-mono text-xs">
-                                                {(mealCsvImportResultModal.csvUnrecognizedHeaders ?? []).join(', ')}
-                                            </span>
-                                        </p>
-                                    </div>
-                                ) : null}
-                                {(Number(mealCsvImportResultModal.summary?.errors) || 0) > 0 ? (
-                                    <div className="space-y-2 rounded-[12px] border border-[#C44F5D]/30 bg-[#FDF2F2] px-4 py-3 text-left text-sm text-[#7F1D1D]">
-                                        <p className="font-semibold">
-                                            {Number(mealCsvImportResultModal.summary?.errors) || 0} row(s) had errors
-                                        </p>
-                                        <ul className="list-disc space-y-1.5 pl-5 text-[#262A22]">
-                                            {(mealCsvImportResultModal.rows ?? [])
-                                                .filter((r) => r && r.status === 'error')
-                                                .map((r) => (
-                                                    <li key={`csv-err-${r.line}-${r.meal_name ?? ''}`}>
-                                                        <span className="font-semibold">Line {r.line}</span>
-                                                        {r.meal_name ? (
-                                                            <>
-                                                                {' '}
-                                                                (<span className="italic">{String(r.meal_name)}</span>)
-                                                            </>
-                                                        ) : null}
-                                                        : {typeof r.message === 'string' ? r.message : 'Unknown error.'}
-                                                    </li>
-                                                ))}
-                                        </ul>
-                                    </div>
-                                ) : null}
-                                {(mealCsvImportResultModal.uniquePending ?? []).length > 0 ? (
-                                    <Button
-                                        label="Download missing ingredients"
-                                        variant="secondary"
-                                        type="button"
-                                        className="w-full"
-                                        onClick={() =>
-                                            downloadMissingIngredientsCSV(mealCsvImportResultModal.uniquePending ?? [])
-                                        }
-                                    />
-                                ) : null}
-                            </div>
-                        )}
-                        <div className="mt-6">
-                            <Button
-                                label="Done"
-                                variant="primary"
-                                type="button"
-                                className="w-full uppercase tracking-wide"
-                                onClick={() => setMealCsvImportResultModal(null)}
-                            />
-                        </div>
-                    </div>
-                </div>
-            ) : null}
+            {mealCsvImportResultModal && typeof document !== 'undefined'
+                ? createPortal(
+                      <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+                          <button
+                              type="button"
+                              className="absolute inset-0 bg-black/40"
+                              onClick={dismissMealCsvImportModal}
+                              aria-label="Close import summary"
+                          />
+                          <div
+                              role="dialog"
+                              aria-modal="true"
+                              aria-labelledby="meal-csv-import-summary-title"
+                              className="relative w-full max-w-[520px] rounded-[12px] bg-white p-8 shadow-2xl"
+                          >
+                              <h2
+                                  id="meal-csv-import-summary-title"
+                                  className="text-center font-montserrat text-[22px] font-bold tracking-tight text-[#262A22]"
+                              >
+                                  Meal CSV import
+                              </h2>
+                              {mealCsvImportResultModal.error ? (
+                                  <div className="mt-4 space-y-3 text-left font-body text-sm text-[#7F1D1D]" role="alert">
+                                      <p className="text-center">{mealCsvImportResultModal.error}</p>
+                                      {mealCsvImportResultModal.validationErrors ? (
+                                          <ul className="list-disc space-y-1 pl-5 text-[#262A22]">
+                                              {Object.entries(mealCsvImportResultModal.validationErrors).map(([key, msgs]) =>
+                                                  Array.isArray(msgs) ? (
+                                                      msgs.map((m) => (
+                                                          <li key={`${key}-${String(m)}`}>
+                                                              <span className="font-semibold">{key}:</span> {String(m)}
+                                                          </li>
+                                                      ))
+                                                  ) : (
+                                                      <li key={key}>
+                                                          <span className="font-semibold">{key}:</span> {String(msgs)}
+                                                      </li>
+                                                  ),
+                                              )}
+                                          </ul>
+                                      ) : null}
+                                  </div>
+                              ) : (
+                                  <div className="mt-6 space-y-4 font-body text-sm text-[#262A22]">
+                                      <div className="flex gap-3 rounded-[12px] border border-[#E5E7EB] bg-[#F8F9F6] px-4 py-3">
+                                          <span className="text-lg leading-none text-[#5A6B44]" aria-hidden>
+                                              ✓
+                                          </span>
+                                          <p>
+                                              <span className="font-semibold">
+                                                  {(Number(mealCsvImportResultModal.summary?.imported) || 0) +
+                                                      (Number(mealCsvImportResultModal.summary?.updated) || 0)}
+                                              </span>{' '}
+                                              meal row(s) saved successfully (new or updated).
+                                          </p>
+                                      </div>
+                                      {(Number(mealCsvImportResultModal.summary?.pending_ingredient_input) || 0) > 0 ? (
+                                          <div className="flex gap-3 rounded-[12px] border border-amber-200 bg-amber-50 px-4 py-3 text-amber-950">
+                                              <span className="text-lg leading-none" aria-hidden>
+                                                  ⚠
+                                              </span>
+                                              <p>
+                                                  <span className="font-semibold">
+                                                      {Number(mealCsvImportResultModal.summary?.pending_ingredient_input) ||
+                                                          0}
+                                                  </span>{' '}
+                                                  meal row(s) are pending because one or more ingredients were not found in
+                                                  your library. Add them via Ingredient Library import, and those meals will
+                                                  be created automatically.
+                                              </p>
+                                          </div>
+                                      ) : null}
+                                      {(mealCsvImportResultModal.csvUnrecognizedHeaders ?? []).length > 0 ? (
+                                          <div className="rounded-[12px] border border-amber-200 bg-amber-50 px-4 py-3 text-amber-950">
+                                              <p className="font-semibold">Unrecognized column header(s)</p>
+                                              <p className="mt-1 text-sm">
+                                                  These labels were not mapped to known fields (check spelling, spaces vs.
+                                                  underscores):{' '}
+                                                  <span className="font-mono text-xs">
+                                                      {(mealCsvImportResultModal.csvUnrecognizedHeaders ?? []).join(', ')}
+                                                  </span>
+                                              </p>
+                                          </div>
+                                      ) : null}
+                                      {(Number(mealCsvImportResultModal.summary?.errors) || 0) > 0 ? (
+                                          <p className="font-semibold text-[#7F1D1D]">
+                                              {Number(mealCsvImportResultModal.summary?.errors) || 0} row(s) had errors (see
+                                              CSV template rules).
+                                          </p>
+                                      ) : null}
+                                      {(() => {
+                                          const lines = mealCsvImportModalErrorDisplayLines(mealCsvImportResultModal);
+                                          const n = Number(mealCsvImportResultModal.summary?.errors) || 0;
+                                          if (lines.length > 0) {
+                                              return (
+                                                  <div className="space-y-2">
+                                                      {lines.map((text, idx) => (
+                                                          <div
+                                                              key={`meal-csv-import-err-line-${idx}`}
+                                                              className="rounded-[12px] border border-red-300 bg-red-50 px-4 py-3 text-left text-sm font-medium text-red-900"
+                                                              role="alert"
+                                                          >
+                                                              {text}
+                                                          </div>
+                                                      ))}
+                                                  </div>
+                                              );
+                                          }
+                                          if (n <= 0) {
+                                              return null;
+                                          }
+                                          return (
+                                              <div
+                                                  className="rounded-[12px] border border-red-300 bg-red-50 px-4 py-3 text-left text-sm text-red-900"
+                                                  role="alert"
+                                              >
+                                                  The server reported {n} error row(s), but no error text was returned.
+                                                  Confirm you are on the latest deploy and check the Network tab for the
+                                                  POST response body — it should include{' '}
+                                                  <span className="font-mono text-xs">import_error_lines</span> or{' '}
+                                                  <span className="font-mono text-xs">rows</span> with{' '}
+                                                  <span className="font-mono text-xs">status: &quot;error&quot;</span>.
+                                              </div>
+                                          );
+                                      })()}
+                                      {(mealCsvImportResultModal.uniquePending ?? []).length > 0 ? (
+                                          <Button
+                                              label="Download missing ingredients"
+                                              variant="secondary"
+                                              type="button"
+                                              className="w-full"
+                                              onClick={() =>
+                                                  downloadMissingIngredientsCSV(mealCsvImportResultModal.uniquePending ?? [])
+                                              }
+                                          />
+                                      ) : null}
+                                  </div>
+                              )}
+                              <div className="mt-6">
+                                  <Button
+                                      label="Done"
+                                      variant="primary"
+                                      type="button"
+                                      className="w-full uppercase tracking-wide"
+                                      onClick={dismissMealCsvImportModal}
+                                  />
+                              </div>
+                          </div>
+                      </div>,
+                      document.body,
+                  )
+                : null}
 
             {confirmOpen ? (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">

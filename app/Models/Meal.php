@@ -261,4 +261,12 @@ class Meal extends Model
     {
         return RecipeNutritionCalculator::fromMeal($this);
     }
+
+    /**
+     * Whether this meal is classified as a base recipe in the library (triggers derived ingredient sync).
+     */
+    public function isBaseRecipeCategory(): bool
+    {
+        return $this->category === RecipeCategory::BaseRecipe;
+    }
 }

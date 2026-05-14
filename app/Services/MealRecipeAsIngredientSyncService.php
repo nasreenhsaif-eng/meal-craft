@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\RecipeCategory;
 use App\Models\Ingredient;
 use App\Models\Meal;
 use Illuminate\Support\Facades\Log;
@@ -54,9 +55,13 @@ final class MealRecipeAsIngredientSyncService
             $micros[$key] = round((float) ($nutrition[$key] ?? 0) * $factor, 4);
         }
 
+        $libraryCategory = $meal->isBaseRecipeCategory()
+            ? RecipeCategory::BaseRecipe->value
+            : __('Recipe');
+
         return [
             'name' => $meal->name,
-            'usda_food_category' => __('Recipe'),
+            'usda_food_category' => $libraryCategory,
             'fdc_id' => null,
             'calories' => round((float) ($nutrition['calories'] ?? 0) * $factor, 2),
             'protein' => round((float) ($nutrition['protein'] ?? 0) * $factor, 2),
@@ -83,6 +88,10 @@ final class MealRecipeAsIngredientSyncService
      */
     public static function sync(Meal $meal, array $nutrition, array $sync, bool $exposeAsIngredient, ?float $finishedWeightGrams = null): void
     {
+        $meal->refresh();
+
+        $effectiveExpose = $exposeAsIngredient || $meal->isBaseRecipeCategory();
+
         $rawGrams = self::totalGramsFromSync($sync);
         $divisorGrams = ($finishedWeightGrams !== null && $finishedWeightGrams > 0)
             ? $finishedWeightGrams
@@ -92,13 +101,14 @@ final class MealRecipeAsIngredientSyncService
             'meal_id' => $meal->id,
             'meal_name' => $meal->name,
             'expose_as_ingredient' => $exposeAsIngredient,
+            'effective_expose' => $effectiveExpose,
             'sync_pivot_count' => count($sync),
             'raw_ingredient_grams' => $rawGrams,
             'finished_weight_grams' => $finishedWeightGrams,
             'divisor_grams' => $divisorGrams,
         ]);
 
-        if (! $exposeAsIngredient) {
+        if (! $effectiveExpose) {
             Log::info('meal_recipe_as_ingredient.cleared_not_exposed', ['meal_id' => $meal->id]);
             self::clearLinkForMeal($meal);
 
@@ -155,5 +165,40 @@ final class MealRecipeAsIngredientSyncService
     public static function clearLinkForMeal(Meal $meal): void
     {
         Ingredient::query()->where('source_meal_id', $meal->id)->update(['source_meal_id' => null]);
+    }
+
+    /**
+     * Sync the derived library ingredient from the meal as currently persisted (pivot rows + totals).
+     *
+     * @param  bool  $requestedExpose  True when the operator opted in via “use as base ingredient”.
+     */
+    public static function syncFromPersistedMeal(Meal $meal, bool $requestedExpose): void
+    {
+        $meal->loadMissing('ingredients');
+
+        $syncPayload = [];
+        foreach ($meal->ingredients as $ingredient) {
+            $grams = (float) ($ingredient->pivot->amount_grams ?? 0);
+            if ($grams <= 0) {
+                continue;
+            }
+
+            $syncPayload[(int) $ingredient->getKey()] = [
+                'amount' => (float) ($ingredient->pivot->amount ?? $grams),
+                'unit' => (string) ($ingredient->pivot->unit ?? 'g'),
+                'amount_grams' => round($grams, 4),
+            ];
+        }
+
+        $isBulk = (bool) $meal->is_bulk;
+        $nutrition = $meal->ingredients->isNotEmpty() && ! $isBulk
+            ? RecipeNutritionCalculator::fromMeal($meal)
+            : $meal->persistedNutritionAsCalculatorShape();
+
+        $finished = $meal->finished_weight_grams !== null && (float) $meal->finished_weight_grams > 0
+            ? (float) $meal->finished_weight_grams
+            : null;
+
+        self::sync($meal, $nutrition, $syncPayload, $requestedExpose, $finished);
     }
 }

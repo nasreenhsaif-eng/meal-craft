@@ -11,6 +11,10 @@ use Illuminate\Validation\ValidationException;
 /**
  * Authenticated JSON endpoint for bulk meal-library CSV import.
  *
+ * Success JSON uses snake_case: {@code rows} (list of per-line outcomes), {@code summary.errors} (count of rows with
+ * {@code status} {@code "error"}), and {@code import_error_lines} (pre-formatted strings for the UI). Each failed row
+ * includes {@code line}, {@code status}, {@code message}, and optionally {@code meal_name}.
+ *
  * Cycle-phase tag columns may exist on meals for legacy data; CSV import does not refresh them (see
  * {@see MealCsvLibraryImportService::processUploadedFile()}).
  */
@@ -36,11 +40,41 @@ class MealLibraryCsvImportController extends Controller
                 'unique_pending_ingredients' => [],
                 'csv_unrecognized_headers' => [],
                 'rows' => [],
+                'import_error_lines' => [],
             ], 422);
         }
 
         $result = $mealCsvLibraryImportService->processUploadedFile($validated['file'], $request->user());
+        $result['import_error_lines'] = $this->importErrorLinesForJsonResponse($result['rows'] ?? []);
 
         return response()->json($result);
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $rows
+     * @return list<string>
+     */
+    private function importErrorLinesForJsonResponse(array $rows): array
+    {
+        $lines = [];
+        foreach ($rows as $row) {
+            if (! is_array($row)) {
+                continue;
+            }
+            if (($row['status'] ?? '') !== 'error') {
+                continue;
+            }
+            $message = $row['message'] ?? null;
+            $text = is_string($message) && $message !== '' ? $message : 'Unknown error.';
+            $line = (int) ($row['line'] ?? 0);
+            $mealName = isset($row['meal_name']) && is_string($row['meal_name']) ? trim($row['meal_name']) : '';
+            if ($mealName !== '') {
+                $lines[] = sprintf('Line %d (%s): %s', $line, $mealName, $text);
+            } else {
+                $lines[] = sprintf('Line %d: %s', $line, $text);
+            }
+        }
+
+        return $lines;
     }
 }

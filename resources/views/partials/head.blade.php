@@ -21,6 +21,7 @@
 @php
     $viteEntries = $viteEntries ?? ['resources/css/app.css', 'resources/js/app.js'];
 @endphp
+@viteReactRefresh
 @vite($viteEntries)
 @fluxAppearance
 <style>

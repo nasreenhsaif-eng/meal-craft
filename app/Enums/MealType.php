@@ -53,7 +53,8 @@ enum MealType: string
     {
         return match ($this) {
             self::Breakfast => RecipeCategory::Breakfast,
-            self::Main, self::Snack, self::BaseRecipe => RecipeCategory::Meal,
+            self::Main, self::Snack => RecipeCategory::Meal,
+            self::BaseRecipe => RecipeCategory::BaseRecipe,
             self::Soup => RecipeCategory::Soup,
             self::Salad => RecipeCategory::SideSalad,
             self::Dessert => RecipeCategory::Dessert,
@@ -65,6 +66,7 @@ enum MealType: string
         return match ($category) {
             RecipeCategory::Breakfast => self::Breakfast,
             RecipeCategory::Meal => self::Main,
+            RecipeCategory::BaseRecipe => self::BaseRecipe,
             RecipeCategory::Soup => self::Soup,
             RecipeCategory::SideSalad, RecipeCategory::MainSalad => self::Salad,
             RecipeCategory::Dessert => self::Dessert,

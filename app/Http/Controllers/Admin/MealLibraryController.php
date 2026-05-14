@@ -11,6 +11,7 @@ use App\Models\Ingredient;
 use App\Models\Meal;
 use App\Services\MealCraftMasterCsvExport;
 use App\Services\MealCsvLibraryImportService;
+use App\Services\MealRecipeAsIngredientSyncService;
 use App\Services\RecipeNutritionCalculator;
 use App\Support\IngredientAllergenCatalog;
 use App\Support\MealImagePath;
@@ -226,6 +227,13 @@ class MealLibraryController extends Controller
         }
 
         $meal->save();
+
+        $meal->refresh();
+        $meal->load('ingredients');
+        MealRecipeAsIngredientSyncService::syncFromPersistedMeal(
+            $meal,
+            (bool) ($data['use_as_base_ingredient'] ?? false),
+        );
     }
 
     /**

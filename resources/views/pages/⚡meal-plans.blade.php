@@ -6,6 +6,7 @@ use App\Enums\MealPlanSchemaType;
 use App\Enums\MealPlanSlotType;
 use App\Enums\MealType;
 use App\Enums\RecipeAmountUnit;
+use App\Enums\RecipeCategory;
 use App\Models\Ingredient;
 use App\Models\Meal;
 use App\Models\MealPlan;
@@ -658,6 +659,7 @@ new #[Title('Meal Plans')] class extends Component {
         $query = Meal::query()
             ->where('meal_type', $type->mealType()->value)
             ->where('meal_type', '!=', MealType::BaseRecipe->value)
+            ->where('category', '!=', RecipeCategory::BaseRecipe)
             ->orderBy('name');
 
         $term = trim($this->editMealSearch);

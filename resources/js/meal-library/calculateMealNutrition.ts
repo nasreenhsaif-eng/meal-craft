@@ -29,6 +29,7 @@ export type IngredientProfile = {
 export const MEAL_LIBRARY_CSV_CATEGORY_VALUES = [
     'Breakfast',
     'Meal',
+    'Base Recipe',
     'Side Salad',
     'Soup',
     'Dessert',
@@ -109,6 +110,12 @@ export function calorieWarningsForCategory(category: MealLibraryCsvCategory, tot
 
     if (category === 'Meal' && (totalCalories < 300 || totalCalories > 400)) {
         warnings.push(`“Meal” category targets are typically 300–400 kcal (this meal is ${cal} kcal).`);
+    }
+
+    if (category === 'Base Recipe' && (totalCalories < 300 || totalCalories > 400)) {
+        warnings.push(
+            `“Base Recipe” batches are often planned in the same 300–400 kcal band as mains (this meal is ${cal} kcal).`,
+        );
     }
 
     if ((category === 'Side Salad' || category === 'Soup' || category === 'Dessert') && totalCalories > 175) {

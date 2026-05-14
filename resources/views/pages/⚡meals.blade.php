@@ -694,12 +694,14 @@ new #[Title('Meals')] class extends Component {
             $statusMessage = __('Meal saved.');
         }
 
+        $wantsLibraryDivisor = $exposeRecipeAsIngredient || $recipeCategory === RecipeCategory::BaseRecipe;
+
         MealRecipeAsIngredientSyncService::sync(
             $meal,
             $nutrition,
             $sync,
             $exposeRecipeAsIngredient,
-            $exposeRecipeAsIngredient ? $finishedParsed : null,
+            $wantsLibraryDivisor && $finishedParsed > 0 ? $finishedParsed : null,
         );
 
         $this->resetFormToCreateMode();

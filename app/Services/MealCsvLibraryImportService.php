@@ -24,7 +24,7 @@ use Illuminate\Support\Facades\Log;
  *
  * CSV columns (headers matched case-insensitively):
  * - Meal_Name / Meal Name
- * - Category **or** Meal Type (Breakfast, Meal, Side Salad, Soup, Dessert)
+ * - Category **or** Meal Type (Breakfast, Meal, Base Recipe, Side Salad, Soup, Dessert)
  * - Ingredient_Quantities **or** Ingredients String (pipe-separated quantities)
  * - Instructions (optional)
  * - Description_Highlight (optional) or standalone **Description** (optional; maps to instructions/body)
@@ -71,6 +71,7 @@ final class MealCsvLibraryImportService
         return [
             RecipeCategory::Breakfast,
             RecipeCategory::Meal,
+            RecipeCategory::BaseRecipe,
             RecipeCategory::SideSalad,
             RecipeCategory::Soup,
             RecipeCategory::Dessert,
@@ -116,7 +117,7 @@ final class MealCsvLibraryImportService
                 'rows' => [[
                     'line' => 0,
                     'status' => self::STATUS_ERROR,
-                    'message' => __('The uploaded file could not be read.'),
+                    'message' => (string) __('The uploaded file could not be read.'),
                 ]],
             ];
         }
@@ -134,7 +135,7 @@ final class MealCsvLibraryImportService
                 'rows' => [[
                     'line' => 0,
                     'status' => self::STATUS_ERROR,
-                    'message' => __('The uploaded file could not be opened.'),
+                    'message' => (string) __('The uploaded file could not be opened.'),
                 ]],
             ];
         }
@@ -152,7 +153,7 @@ final class MealCsvLibraryImportService
                 'rows' => [[
                     'line' => 0,
                     'status' => self::STATUS_ERROR,
-                    'message' => __('The CSV is empty.'),
+                    'message' => (string) __('The CSV is empty.'),
                 ]],
             ];
         }
@@ -191,7 +192,7 @@ final class MealCsvLibraryImportService
                 'rows' => [[
                     'line' => 1,
                     'status' => self::STATUS_ERROR,
-                    'message' => $message,
+                    'message' => (string) $message,
                 ]],
             ];
         }
@@ -422,6 +423,10 @@ final class MealCsvLibraryImportService
 
         if ($category === RecipeCategory::Meal && ($totalCalories < 300.0 || $totalCalories > 400.0)) {
             $warnings[] = __('“Meal” category targets are typically 300–400 kcal (this meal is :cal kcal).', ['cal' => $cal]);
+        }
+
+        if ($category === RecipeCategory::BaseRecipe && ($totalCalories < 300.0 || $totalCalories > 400.0)) {
+            $warnings[] = __('“Base Recipe” batches are often planned in the same 300–400 kcal band as mains (this meal is :cal kcal).', ['cal' => $cal]);
         }
 
         if (
@@ -897,6 +902,23 @@ final class MealCsvLibraryImportService
     }
 
     /**
+     * @return array{row: array<string, mixed>, outcome: 'error'}
+     */
+    private function mealCsvImportAssocErrorResult(int $lineNumber, string $message, ?string $mealName = null): array
+    {
+        $row = [
+            'line' => $lineNumber,
+            'status' => self::STATUS_ERROR,
+            'message' => $message,
+        ];
+        if ($mealName !== null && $mealName !== '') {
+            $row['meal_name'] = $mealName;
+        }
+
+        return ['row' => $row, 'outcome' => 'error'];
+    }
+
+    /**
      * Import one CSV data row (assoc keys: meal_name, category, ingredient_quantities, instructions?, highlight?).
      *
      * @param  array<string, string>  $assoc
@@ -916,59 +938,43 @@ final class MealCsvLibraryImportService
         if ($mealName === '') {
             $this->logMealLibraryImportRowFailure($lineNumber, $rawRow, $assoc, 'Meal_Name is required.');
 
-            return [
-                'row' => [
-                    'line' => $lineNumber,
-                    'status' => self::STATUS_ERROR,
-                    'message' => __('Meal_Name is required.'),
-                ],
-                'outcome' => 'error',
-            ];
+            return $this->mealCsvImportAssocErrorResult(
+                $lineNumber,
+                (string) __('Meal_Name is required.'),
+            );
         }
 
         $qtyCell = trim((string) ($assoc['ingredient_quantities'] ?? ''));
         if ($qtyCell === '') {
             $this->logMealLibraryImportRowFailure($lineNumber, $rawRow, $assoc, 'Ingredient_Quantities or Ingredients String is required.');
 
-            return [
-                'row' => [
-                    'line' => $lineNumber,
-                    'meal_name' => $mealName,
-                    'status' => self::STATUS_ERROR,
-                    'message' => __('Ingredient_Quantities or Ingredients String is required.'),
-                ],
-                'outcome' => 'error',
-            ];
+            return $this->mealCsvImportAssocErrorResult(
+                $lineNumber,
+                (string) __('Ingredient_Quantities or Ingredients String is required.'),
+                $mealName,
+            );
         }
 
         $mealCategory = $this->resolveMealLibraryCategory((string) ($assoc['category'] ?? ''));
         if ($mealCategory === null) {
             $this->logMealLibraryImportRowFailure($lineNumber, $rawRow, $assoc, 'Invalid or Missing Category or Meal Type.');
 
-            return [
-                'row' => [
-                    'line' => $lineNumber,
-                    'meal_name' => $mealName,
-                    'status' => self::STATUS_ERROR,
-                    'message' => __('Invalid or Missing Category or Meal Type.'),
-                ],
-                'outcome' => 'error',
-            ];
+            return $this->mealCsvImportAssocErrorResult(
+                $lineNumber,
+                (string) __('Invalid or Missing Category or Meal Type.'),
+                $mealName,
+            );
         }
 
         $optionalFields = $this->parseOptionalMealFieldsFromAssoc($assoc);
         if (! $optionalFields['valid']) {
             $this->logMealLibraryImportRowFailure($lineNumber, $rawRow, $assoc, (string) $optionalFields['message']);
 
-            return [
-                'row' => [
-                    'line' => $lineNumber,
-                    'meal_name' => $mealName,
-                    'status' => self::STATUS_ERROR,
-                    'message' => $optionalFields['message'],
-                ],
-                'outcome' => 'error',
-            ];
+            return $this->mealCsvImportAssocErrorResult(
+                $lineNumber,
+                (string) $optionalFields['message'],
+                $mealName,
+            );
         }
         $optionalMealAttrs = $optionalFields['attributes'];
 
@@ -976,17 +982,13 @@ final class MealCsvLibraryImportService
         if ($segments === []) {
             $this->logMealLibraryImportRowFailure($lineNumber, $rawRow, $assoc, 'Could not parse ingredient quantities.');
 
-            return [
-                'row' => [
-                    'line' => $lineNumber,
-                    'meal_name' => $mealName,
-                    'status' => self::STATUS_ERROR,
-                    'message' => __(
-                        'Could not parse ingredient quantities. Use Name:amount with optional unit (g, kg, ml, …), or Name amount unit, separated by |.',
-                    ),
-                ],
-                'outcome' => 'error',
-            ];
+            return $this->mealCsvImportAssocErrorResult(
+                $lineNumber,
+                (string) __(
+                    'Could not parse ingredient quantities. Use Name:amount with optional unit (g, kg, ml, …), or Name amount unit, separated by |.',
+                ),
+                $mealName,
+            );
         }
 
         $instructions = isset($assoc['instructions']) ? trim((string) $assoc['instructions']) : '';
@@ -1107,6 +1109,7 @@ final class MealCsvLibraryImportService
             $freshMeal = Meal::query()->find($mealId);
             if ($freshMeal !== null) {
                 $mealsByNormalizedName[self::normalizeMealNameKey($freshMeal->name)] = $freshMeal;
+                MealRecipeAsIngredientSyncService::syncFromPersistedMeal($freshMeal, false);
             }
 
             if ($authenticatedUserId !== null) {
@@ -1134,15 +1137,11 @@ final class MealCsvLibraryImportService
                 $e,
             );
 
-            return [
-                'row' => [
-                    'line' => $lineNumber,
-                    'meal_name' => $mealName,
-                    'status' => self::STATUS_ERROR,
-                    'message' => __('Could not save meal: :msg', ['msg' => $e->getMessage()]),
-                ],
-                'outcome' => 'error',
-            ];
+            return $this->mealCsvImportAssocErrorResult(
+                $lineNumber,
+                (string) __('Could not save meal: :msg', ['msg' => $e->getMessage()]),
+                $mealName,
+            );
         }
     }
 

@@ -402,9 +402,39 @@ test('meal library csv import errors when is_bulk is true without servings count
         ->assertOk()
         ->assertJsonPath('summary.errors', 1);
 
+    $errorLines = $response->json('import_error_lines');
+    expect($errorLines)->toBeArray()->toHaveCount(1)
+        ->and($errorLines[0])->toBeString()->toContain('Servings Count');
+
     $row = collect($response->json('rows'))->firstWhere('status', 'error');
     expect($row)->not->toBeNull()
         ->and($row['message'])->toBe(__('Servings Count is required when Is Bulk is true.'));
+});
+
+test('meal library csv import returns a non-empty message string for each failed row in a multi-row file', function () {
+    mealImportIngredient('Salmon', ['calories' => 200, 'protein' => 25, 'carbs' => 0, 'fat' => 12]);
+
+    $csv = "Meal_Name,Category,Ingredient_Quantities,Instructions,Description_Highlight\n"
+        ."Ok Row,Meal,Salmon:50,.,.\n"
+        ."Bad Row,NotARealCategory,Salmon:50,.,.\n";
+    $file = UploadedFile::fake()->createWithContent('meals.csv', $csv);
+
+    $response = $this->actingAs(User::factory()->create())
+        ->postJson(route('meals.library.import-csv'), ['file' => $file])
+        ->assertOk()
+        ->assertJsonPath('summary.imported', 1)
+        ->assertJsonPath('summary.errors', 1);
+
+    $rows = $response->json('rows');
+    expect($rows)->toHaveCount(2);
+
+    expect($response->json('import_error_lines'))->toBeArray()->toHaveCount(1)
+        ->and($response->json('import_error_lines.0'))->toBeString()->toContain('Bad Row');
+
+    $err = collect($rows)->firstWhere('status', 'error');
+    expect($err)->not->toBeNull()
+        ->and($err)->toHaveKey('message')
+        ->and($err['message'])->toBeString()->not->toBeEmpty();
 });
 
 test('meal library csv import missing required column message lists missing fields', function () {

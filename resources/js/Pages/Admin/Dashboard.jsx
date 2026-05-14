@@ -119,8 +119,6 @@ export function AdminDashboardInner({
     const [adminPasswordValue, setAdminPasswordValue] = useState('');
     const [adminAccess, setAdminAccess] = useState('View');
 
-    const gold = '#D8A933';
-
     const [demoUsers, setDemoUsers] = useState(() => latestRegisteredUsers);
 
     useEffect(() => {
@@ -162,7 +160,7 @@ export function AdminDashboardInner({
 
             <section className="flex w-full flex-col gap-4">
                 <div className="flex w-full flex-col gap-3 sm:flex-row">
-                    <MetricMini label="Submissions" value={formatCount(userSubmissionsCount)} valueClassName={`text-[${gold}]`} />
+                    <MetricMini label="Submissions" value={formatCount(userSubmissionsCount)} valueClassName="text-[#D8A933]" />
                     <MetricMini label="Customers" value={formatCount(customersCount)} />
                     <MetricMini label="Ingredients" value={formatCount(ingredientCount)} />
                     <MetricMini label="Meals" value={formatCount(mealCount)} />
