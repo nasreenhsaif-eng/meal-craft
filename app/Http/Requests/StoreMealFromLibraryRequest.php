@@ -28,6 +28,27 @@ class StoreMealFromLibraryRequest extends FormRequest
                 'cycle_phases' => [trim((string) $this->input('cycle_phase'))],
             ]);
         }
+
+        $instructions = $this->input('instructions');
+        if (($instructions === null || trim((string) $instructions) === '') && $this->filled('description')) {
+            $instructions = $this->input('description');
+        }
+
+        $shortDescription = $this->input('short_description');
+        if (($shortDescription === null || trim((string) $shortDescription) === '') && $this->filled('highlight')) {
+            $shortDescription = $this->input('highlight');
+        }
+
+        $merge = [];
+        if ($instructions !== null) {
+            $merge['instructions'] = $instructions;
+        }
+        if ($shortDescription !== null) {
+            $merge['short_description'] = $shortDescription;
+        }
+        if ($merge !== []) {
+            $this->merge($merge);
+        }
     }
 
     /**
@@ -60,6 +81,8 @@ class StoreMealFromLibraryRequest extends FormRequest
             'cycle_phases' => ['nullable', 'array'],
             'cycle_phases.*' => ['string', Rule::in($cycleValues)],
             'cycle_phase' => ['nullable', 'string', Rule::in($cycleValues)],
+            'instructions' => ['nullable', 'string', 'max:65535'],
+            'short_description' => ['nullable', 'string', 'max:500'],
             'description' => ['nullable', 'string', 'max:65535'],
             'highlight' => ['nullable', 'string', 'max:2000'],
             'ingredients' => ['nullable', 'array'],

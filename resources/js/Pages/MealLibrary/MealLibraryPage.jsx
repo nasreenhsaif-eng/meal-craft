@@ -24,7 +24,10 @@ import { buildIngredientPasteHighlightParts } from '../../meal-library/ingredien
 import { filterIngredientsForCombobox } from '../../meal-library/ingredientSearch.ts';
 import {
     collectSafetyAlertLabelsFromIngredientSelection,
-    sickleCellProgramMealHighlight,
+    G6PD_HIGHLIGHT_BADGE,
+    G6PD_TRIGGER_SAFETY_LABEL,
+    mealHasG6pdTriggerInEditor,
+    sickleCellHighlightBadgeLabels,
 } from '../../meal-library/mealSafetyAndSickle.ts';
 import { DIETARY_TAG_OPTIONS, MEAL_PLAN_TAG_OPTIONS } from '../../meal-library/mealTaxonomy.js';
 import { resolvePerServingActualForTargets, scaleNutritionRecord } from '../../meal-library/bulkPlanningVariance.ts';
@@ -349,6 +352,7 @@ function deleteSelectedButtonClass(anySelected) {
  *   csvExportUrl?: string;
  *   csvImportUrl?: string;
  *   mealStoreUrl?: string;
+ *   mealBulkDestroyUrl?: string;
  *   initialViewMode?: 'grid' | 'list';
  *   flashSuccess?: string | null;
  *   flashError?: string | null;
@@ -369,6 +373,7 @@ export function MealLibraryPageContent({
     csvExportUrl = '#',
     csvImportUrl = '#',
     mealStoreUrl = '#',
+    mealBulkDestroyUrl = '',
     initialViewMode,
     flashSuccess = null,
     flashError = null,
@@ -377,11 +382,14 @@ export function MealLibraryPageContent({
     storyInitialCreateModalOpen = false,
     storyInitialMealToEdit = null,
 }) {
+    const page = usePage();
     const [query, setQuery] = useState('');
     const [mealRows, setMealRows] = useState(meals);
     const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
     const [selectedRows, setSelectedRows] = useState(/** @type {string[]} */ ([]));
     const [confirmOpen, setConfirmOpen] = useState(false);
+    const [deleteBusy, setDeleteBusy] = useState(false);
+    const [deleteError, setDeleteError] = useState(/** @type {string | null} */ (null));
     const [mealCsvImportResultModal, setMealCsvImportResultModal] = useState(null);
 
     const dismissMealCsvImportModal = useCallback(() => {
@@ -501,8 +509,8 @@ export function MealLibraryPageContent({
         } else {
             setSelectedCyclePhaseValues([]);
         }
-        setFormInstructions(String(ef.description ?? ''));
-        setFormHighlight(String(ef.highlight ?? ''));
+        setFormInstructions(String(ef.instructions ?? ef.description ?? ''));
+        setFormHighlight(String(ef.shortDescription ?? ef.highlight ?? ''));
         const servingsRaw = ef.servingsCount != null && String(ef.servingsCount).trim() !== '' ? Number(ef.servingsCount) : NaN;
         const isBulk = Boolean(ef.isBulk) && Number.isFinite(servingsRaw) && servingsRaw > 0;
         setIsBulkRecipe(isBulk);
@@ -589,6 +597,7 @@ export function MealLibraryPageContent({
                 id: typeof p.id === 'number' ? p.id : p.id != null ? Number(p.id) : undefined,
                 name: p.name,
                 common_allergens: Array.isArray(p.common_allergens) ? [...p.common_allergens] : [],
+                is_g6pd_trigger: Boolean(p.is_g6pd_trigger),
                 calories: p.calories,
                 protein: p.protein,
                 carbs: p.carbs,
@@ -730,10 +739,81 @@ export function MealLibraryPageContent({
         });
     }
 
-    function handleConfirmDelete() {
-        setMealRows((prev) => prev.filter((m) => !selectedSet.has(m.id)));
-        setSelectedRows([]);
-        setConfirmOpen(false);
+    async function handleConfirmDelete() {
+        setDeleteError(null);
+
+        if (selectedRows.length === 0) {
+            setConfirmOpen(false);
+            return;
+        }
+
+        const destroyUrl =
+            mealBulkDestroyUrl ||
+            (typeof page.props.mealBulkDestroyUrl === 'string' ? page.props.mealBulkDestroyUrl : '');
+
+        if (!destroyUrl) {
+            setDeleteError('Delete is unavailable. Hard-refresh this page (Cmd+Shift+R), then try again.');
+            return;
+        }
+
+        const ids = selectedRows
+            .map((id) => {
+                const n = Number(id);
+                return Number.isInteger(n) && n > 0 ? n : null;
+            })
+            .filter((id) => id !== null);
+
+        if (ids.length === 0) {
+            setDeleteError('No valid meals were selected.');
+            return;
+        }
+
+        const deletedIdSet = new Set(ids.map(String));
+        setDeleteBusy(true);
+
+        const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
+        try {
+            await axios.post(
+                destroyUrl,
+                { ids },
+                {
+                    headers: {
+                        Accept: 'application/json',
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        ...(token ? { 'X-CSRF-TOKEN': token } : {}),
+                    },
+                },
+            );
+
+            setConfirmOpen(false);
+            setSelectedRows([]);
+            setMealRows((prev) => prev.filter((m) => !deletedIdSet.has(String(m.id))));
+            router.reload({ only: ['meals'], preserveScroll: true });
+        } catch (error) {
+            const responseMessage =
+                error &&
+                typeof error === 'object' &&
+                'response' in error &&
+                error.response &&
+                typeof error.response === 'object' &&
+                'data' in error.response &&
+                error.response.data &&
+                typeof error.response.data === 'object' &&
+                'message' in error.response.data &&
+                typeof error.response.data.message === 'string'
+                    ? error.response.data.message
+                    : null;
+
+            if (error && typeof error === 'object' && 'response' in error && error.response?.status === 419) {
+                setDeleteError('Your session expired. Refresh the page and sign in again.');
+            } else {
+                setDeleteError(responseMessage ?? 'Could not delete meals. Please try again.');
+            }
+        } finally {
+            setDeleteBusy(false);
+        }
     }
 
     function buildIngredientsForStore() {
@@ -805,6 +885,8 @@ export function MealLibraryPageContent({
             total_carbs: totalCarbs,
             total_fat: totalFat,
             category: formType,
+            instructions: formInstructions,
+            short_description: formHighlight,
             description: formInstructions,
             highlight: formHighlight,
             diet_tags: selectedDietTags,
@@ -1070,32 +1152,63 @@ export function MealLibraryPageContent({
         // Intentionally empty: batch macro inputs are manual-only and must not sync from ingredient nutrition.
     }, [nutritionForSidebar, ingredientRows, isBulkRecipe]);
 
-    const safetyFormAlerts = useMemo(
+    const ingredientRowsForSafety = useMemo(
         () =>
-            collectSafetyAlertLabelsFromIngredientSelection(
-                ingredientRows.map((r) => ({
-                    ingredientId: r.ingredientId,
-                    selectedName: r.selectedName,
-                    nameQuery: r.nameQuery,
-                })),
-                ingredientDatabase,
-            ),
-        [ingredientRows, ingredientDatabase],
+            ingredientRows.map((r) => ({
+                ingredientId: r.ingredientId,
+                selectedName: r.selectedName,
+                nameQuery: r.nameQuery,
+            })),
+        [ingredientRows],
     );
 
+    const hasG6pdTrigger = useMemo(
+        () => mealHasG6pdTriggerInEditor(ingredientRowsForSafety, ingredientPasteField, ingredientDatabase),
+        [ingredientRowsForSafety, ingredientPasteField, ingredientDatabase],
+    );
+
+    const safetyFormAlerts = useMemo(
+        () => collectSafetyAlertLabelsFromIngredientSelection(ingredientRowsForSafety, ingredientDatabase),
+        [ingredientRowsForSafety, ingredientDatabase],
+    );
+
+    const [g6pdToastVisible, setG6pdToastVisible] = useState(false);
+    const g6pdToastShownRef = useRef(false);
+
+    useEffect(() => {
+        if (!createOpen) {
+            g6pdToastShownRef.current = false;
+            setG6pdToastVisible(false);
+
+            return;
+        }
+        if (!hasG6pdTrigger) {
+            g6pdToastShownRef.current = false;
+            setG6pdToastVisible(false);
+
+            return;
+        }
+        if (g6pdToastShownRef.current) {
+            return;
+        }
+        g6pdToastShownRef.current = true;
+        setG6pdToastVisible(true);
+        const timer = window.setTimeout(() => setG6pdToastVisible(false), 6000);
+
+        return () => window.clearTimeout(timer);
+    }, [createOpen, hasG6pdTrigger]);
+
     const scBadges = useMemo(() => {
-        const n = perServingNutritionForPlanningTargets ?? {};
+        const n = perServingNutritionForPlanningTargets;
         const badges = [];
-        if ((n.b9_folate ?? 0) >= 150) badges.push('Folate');
-        if ((n.b12 ?? 0) >= 1.5) badges.push('B12');
-        if ((n.iron ?? 0) >= 6) badges.push('Iron');
-        if ((n.magnesium ?? 0) >= 120) badges.push('Magnesium');
-        if ((n.zinc ?? 0) >= 3) badges.push('Zinc');
-        if (perServingNutritionForPlanningTargets && sickleCellProgramMealHighlight(n)) {
-            badges.push('Sickle Cell');
+        if (hasG6pdTrigger) {
+            badges.push(G6PD_HIGHLIGHT_BADGE);
+        }
+        if (n) {
+            badges.push(...sickleCellHighlightBadgeLabels(n));
         }
         return badges;
-    }, [perServingNutritionForPlanningTargets]);
+    }, [hasG6pdTrigger, perServingNutritionForPlanningTargets]);
 
     const nutritionSummarySections = useMemo(() => {
         if (!nutritionForSummaryDisplay) {
@@ -1383,6 +1496,7 @@ export function MealLibraryPageContent({
                                     if (!anySelected) {
                                         return;
                                     }
+                                    setDeleteError(null);
                                     setConfirmOpen(true);
                                 }}
                                 className={deleteSelectedButtonClass(anySelected)}
@@ -1404,7 +1518,9 @@ export function MealLibraryPageContent({
                                                 isAdmin
                                                 adminControls
                                                 showActions
-                                                showAdminSelectionCheckbox={false}
+                                                showAdminSelectionCheckbox
+                                                selected={selectedSet.has(meal.id)}
+                                                onToggleSelected={() => toggleRow(meal.id)}
                                                 meal={meal}
                                                 onViewDetails={(m) => {
                                                     if (m?.detailView) {
@@ -1655,28 +1771,38 @@ export function MealLibraryPageContent({
                             Warning
                         </p>
                         <p className="mt-3 text-center font-montserrat text-[22px] font-bold tracking-tight text-[#262A22]">
-                            Delete selected meals permanently?
+                            Remove selected meals from the library?
                         </p>
                         <p className="mt-3 text-center font-body text-sm text-[#555555]">
-                            This action can’t be undone in this demo. Selection will be cleared after delete.
+                            Removed meals will no longer appear in the Meal Library or in CSV export.
                         </p>
+                        {deleteError ? (
+                            <p className="mt-3 text-center font-body text-sm font-semibold text-[#B91C1C]" role="alert">
+                                {deleteError}
+                            </p>
+                        ) : null}
                         <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
                             <Button
                                 label="Cancel"
                                 variant="secondary"
                                 type="button"
-                                onClick={() => setConfirmOpen(false)}
+                                disabled={deleteBusy}
+                                onClick={() => {
+                                    setDeleteError(null);
+                                    setConfirmOpen(false);
+                                }}
                                 className="w-full"
                             />
                             <Button
-                                label="Delete permanently"
+                                label={deleteBusy ? 'Deleting…' : 'Delete permanently'}
                                 variant="ghost"
                                 type="button"
+                                disabled={deleteBusy}
                                 className={
                                     'w-full rounded-[12px] transition-colors duration-200 ' +
                                     '!bg-[#C44F5D] !text-white hover:!bg-[#B14552] hover:!text-white'
                                 }
-                                onClick={handleConfirmDelete}
+                                onClick={() => void handleConfirmDelete()}
                             />
                         </div>
                     </div>
@@ -1698,12 +1824,21 @@ export function MealLibraryPageContent({
                         className="relative w-full max-w-[960px] rounded-[12px] bg-[#F8F9F6] p-4 shadow-2xl md:p-6"
                     >
                         <div className="mb-4 flex items-start justify-between gap-3">
-                            <h2
-                                id="meal-library-detail-title"
-                                className="min-w-0 flex-1 font-montserrat text-xl font-bold tracking-tight text-[#262A22] md:text-2xl"
-                            >
-                                {mealDetailModal.title}
-                            </h2>
+                            <div className="min-w-0 flex-1">
+                                <h2
+                                    id="meal-library-detail-title"
+                                    className="font-montserrat text-xl font-bold tracking-tight text-[#262A22] md:text-2xl"
+                                >
+                                    {mealDetailModal.title}
+                                </h2>
+                                {mealDetailModal.detailView?.shortDescription ||
+                                mealDetailModal.detailView?.description ? (
+                                    <p className="mt-1 line-clamp-2 font-montserrat text-sm font-medium text-[#555555] md:text-base">
+                                        {mealDetailModal.detailView.shortDescription ||
+                                            mealDetailModal.detailView.description}
+                                    </p>
+                                ) : null}
+                            </div>
                             <Button label="Close" variant="ghost" type="button" onClick={() => setMealDetailModal(null)} />
                         </div>
                         <MealDetailView meal={mealDetailModal.detailView} className="max-h-[min(78vh,calc(100dvh-11rem))]" />
@@ -2035,7 +2170,7 @@ export function MealLibraryPageContent({
                                     </div>
 
                                     <TextInput
-                                        label="Description highlight"
+                                        label="Short description"
                                         placeholder="Short Smart Kitchen note (optional)…"
                                         value={formHighlight}
                                         onChange={(e) => setFormHighlight(e.target.value)}
@@ -2289,7 +2424,7 @@ export function MealLibraryPageContent({
                             </div>
 
                             {/* Right: Nutrition Summary */}
-                            <div className="max-h-[85vh] overflow-y-auto bg-[#F8F9F6] p-10">
+                            <div className="max-h-[85vh] overflow-y-auto bg-[#F8F9F6] px-10 pb-10 pt-14">
                                 <div className="sticky top-0">
                                     <div className="min-w-0 pr-12">
                                     <h3 className="font-montserrat text-[18px] font-bold tracking-tight text-[#262A22]">
@@ -2312,7 +2447,8 @@ export function MealLibraryPageContent({
                                                     <SafetyAlerts
                                                         alerts={safetyFormAlerts.map((label) => ({
                                                             label,
-                                                            variant: 'allergy',
+                                                            variant:
+                                                                label === G6PD_TRIGGER_SAFETY_LABEL ? 'g6pd' : 'allergy',
                                                         }))}
                                                     />
                                                 ) : (
@@ -2407,6 +2543,18 @@ export function MealLibraryPageContent({
                     </div>
                 </div>
             ) : null}
+
+            {g6pdToastVisible ? (
+                <div
+                    role="alert"
+                    className="fixed bottom-6 left-1/2 z-[200] w-[min(92vw,520px)] -translate-x-1/2 rounded-[12px] border-2 border-[#B91C1C] bg-[#FEF2F2] px-4 py-3 shadow-lg"
+                >
+                    <p className="font-montserrat text-sm font-bold text-[#991B1B]">G6PD warning</p>
+                    <p className="mt-1 font-body text-sm text-[#7F1D1D]">
+                        Warning: This meal contains ingredients unsafe for G6PD deficiency.
+                    </p>
+                </div>
+            ) : null}
         </div>
     );
 }
@@ -2417,9 +2565,13 @@ function MealLibraryPage(props) {
     const flashError = typeof page.props.flash?.error === 'string' ? page.props.flash.error : null;
     const mealLibrarySchemaNotice =
         typeof page.props.mealLibrarySchemaNotice === 'string' ? page.props.mealLibrarySchemaNotice : null;
+    const mealBulkDestroyUrl =
+        props.mealBulkDestroyUrl ??
+        (typeof page.props.mealBulkDestroyUrl === 'string' ? page.props.mealBulkDestroyUrl : '');
     return (
         <MealLibraryPageContent
             {...props}
+            mealBulkDestroyUrl={mealBulkDestroyUrl}
             flashSuccess={flashSuccess}
             flashError={flashError}
             mealLibrarySchemaNotice={mealLibrarySchemaNotice}

@@ -1319,7 +1319,7 @@ new #[Title('Meal Plans')] class extends Component {
                             $iron = (float) ($dn['iron'] ?? 0);
                             $mag = (float) ($dn['magnesium'] ?? 0);
                             $zinc = (float) ($dn['zinc'] ?? 0);
-                            $sickleH = \App\Services\RecipeNutritionCalculator::sickleCellHighlights($dn);
+                            $sickleBadges = \App\Support\SickleCellNutrientRdi::highlightBadgeLabels($dn);
                         @endphp
                         <div class="mb-4 space-y-2 rounded-lg border border-neutral-200 bg-neutral-50/90 p-3 text-sm dark:border-neutral-700 dark:bg-neutral-900/50">
                             <div class="flex flex-wrap items-baseline justify-between gap-2">
@@ -1418,20 +1418,11 @@ new #[Title('Meal Plans')] class extends Component {
                             @elseif ($detailPlan->plan_category === \App\Enums\MealPlanLibraryCategory::SickleCellWarrior)
                                 <flux:text class="font-medium">{{ __('Sickle cell planning cues (daily totals)') }}</flux:text>
                                 <ul class="mt-2 list-inside list-disc space-y-1 text-neutral-700 dark:text-neutral-300">
-                                    @if ($sickleH['folate'])
-                                        <li>{{ __('Strong folate signal for erythropoiesis support.') }}</li>
-                                    @endif
-                                    @if ($sickleH['iron'])
-                                        <li>{{ __('Iron contribution notable — pair with vitamin C where possible.') }}</li>
-                                    @endif
-                                    @if ($sickleH['magnesium'])
-                                        <li>{{ __('Magnesium supports muscle comfort and hydration balance.') }}</li>
-                                    @endif
-                                    @if ($sickleH['b12'])
-                                        <li>{{ __('B12 contribution notable for red blood cell support.') }}</li>
-                                    @endif
-                                    @if (! ($sickleH['folate'] || $sickleH['iron'] || $sickleH['magnesium'] || $sickleH['b12']))
-                                        <li>{{ __('Add more folate- and iron-forward meals from your library to strengthen this plan.') }}</li>
+                                    @foreach ($sickleBadges as $badge)
+                                        <li>{{ \App\Support\SickleCellNutrientRdi::tooltipForBadge($badge) }}</li>
+                                    @endforeach
+                                    @if ($sickleBadges === [])
+                                        <li>{{ __('Add more High Source micronutrient meals from your library to strengthen this plan.') }}</li>
                                     @endif
                                 </ul>
                             @else

@@ -1,7 +1,22 @@
 /**
  * Client-side mirrors of `App\Support\IngredientAllergenCatalog` and
- * `App\Services\RecipeNutritionCalculator::sickleCellProgramMealHighlight` — keep thresholds aligned.
+ * `App\Support\SickleCellNutrientRdi` — keep highlight rules aligned.
  */
+
+import {
+    sickleCellHasAnyHighlight,
+    sickleCellHighlightBadgeLabels,
+    SICKLE_CELL_BADGE_TOOLTIPS,
+} from './sickleCellNutrientRdi.ts';
+
+export {
+    sickleCellHasAnyHighlight,
+    sickleCellHighlightBadgeLabels,
+    SICKLE_CELL_BADGE_TOOLTIPS,
+};
+
+import { normalizeIngredientKey } from './aggregateIngredientNutrition.ts';
+import { parseIngredientQuantityString } from './ingredientQuantityString.ts';
 
 export const ALLERGEN_SLUG_TO_LABEL: Record<string, string> = {
     peanuts: 'Contains: Peanuts',
@@ -34,10 +49,15 @@ export function labelsFromAllergenSlugs(slugs: readonly string[] | null | undefi
     return Object.keys(uniq).sort();
 }
 
+export const G6PD_TRIGGER_SAFETY_LABEL = 'G6PD Trigger';
+
+export const G6PD_HIGHLIGHT_BADGE = 'G6PD Alert';
+
 export type IngredientAllergenSource = {
     id?: number;
     name: string;
     common_allergens?: readonly string[];
+    is_g6pd_trigger?: boolean;
 };
 
 export type IngredientRowForSafety = {
@@ -46,31 +66,98 @@ export type IngredientRowForSafety = {
     nameQuery: string;
 };
 
-export function collectSafetyAlertLabelsFromIngredientSelection(
-    rows: readonly IngredientRowForSafety[],
-    profiles: readonly IngredientAllergenSource[],
-): string[] {
+function resolveProfileForRow(
+    row: IngredientRowForSafety,
+    byId: Map<number, IngredientAllergenSource>,
+    byName: Map<string, IngredientAllergenSource>,
+): IngredientAllergenSource | undefined {
+    if (row.ingredientId != null && Number.isFinite(row.ingredientId)) {
+        const byIdHit = byId.get(row.ingredientId);
+        if (byIdHit) {
+            return byIdHit;
+        }
+    }
+    const name = (row.selectedName || row.nameQuery || '').trim();
+
+    return byName.get(normalizeIngredientName(name));
+}
+
+function buildIngredientLookupMaps(profiles: readonly IngredientAllergenSource[]): {
+    byId: Map<number, IngredientAllergenSource>;
+    byName: Map<string, IngredientAllergenSource>;
+} {
     const byId = new Map<number, IngredientAllergenSource>();
+    const byName = new Map<string, IngredientAllergenSource>();
     for (const p of profiles) {
         if (typeof p.id === 'number' && Number.isFinite(p.id)) {
             byId.set(p.id, p);
         }
-    }
-    const byName = new Map<string, IngredientAllergenSource>();
-    for (const p of profiles) {
         byName.set(normalizeIngredientName(p.name), p);
     }
 
+    return { byId, byName };
+}
+
+export function mealContainsG6pdTriggerFromSelection(
+    rows: readonly IngredientRowForSafety[],
+    profiles: readonly IngredientAllergenSource[],
+): boolean {
+    const { byId, byName } = buildIngredientLookupMaps(profiles);
+    for (const r of rows) {
+        const p = resolveProfileForRow(r, byId, byName);
+        if (p?.is_g6pd_trigger) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/** Scan a pipe/newline ingredient quantity string (before or after Apply). */
+export function mealContainsG6pdTriggerFromIngredientString(
+    ingredientsString: string,
+    profiles: readonly IngredientAllergenSource[],
+): boolean {
+    const raw = ingredientsString.replace(/\r\n/g, '\n').trim();
+    if (raw === '') {
+        return false;
+    }
+
+    const byName = new Map<string, IngredientAllergenSource>();
+    for (const p of profiles) {
+        byName.set(normalizeIngredientKey(p.name), p);
+    }
+
+    for (const seg of parseIngredientQuantityString(raw)) {
+        const p = byName.get(normalizeIngredientKey(seg.name));
+        if (p?.is_g6pd_trigger) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+export function mealHasG6pdTriggerInEditor(
+    rows: readonly IngredientRowForSafety[],
+    ingredientsString: string,
+    profiles: readonly IngredientAllergenSource[],
+): boolean {
+    return (
+        mealContainsG6pdTriggerFromSelection(rows, profiles) ||
+        mealContainsG6pdTriggerFromIngredientString(ingredientsString, profiles)
+    );
+}
+
+export function collectSafetyAlertLabelsFromIngredientSelection(
+    rows: readonly IngredientRowForSafety[],
+    profiles: readonly IngredientAllergenSource[],
+): string[] {
+    const { byId, byName } = buildIngredientLookupMaps(profiles);
+
     const labels: Record<string, true> = {};
     for (const r of rows) {
-        let p: IngredientAllergenSource | undefined;
-        if (r.ingredientId != null && Number.isFinite(r.ingredientId)) {
-            p = byId.get(r.ingredientId);
-        }
-        if (!p) {
-            const name = (r.selectedName || r.nameQuery || '').trim();
-            p = byName.get(normalizeIngredientName(name));
-        }
+        const p = resolveProfileForRow(r, byId, byName);
         if (!p?.common_allergens?.length) {
             continue;
         }
@@ -78,33 +165,15 @@ export function collectSafetyAlertLabelsFromIngredientSelection(
             labels[lab] = true;
         }
     }
+
+    if (mealContainsG6pdTriggerFromSelection(rows, profiles)) {
+        labels[G6PD_TRIGGER_SAFETY_LABEL] = true;
+    }
+
     return Object.keys(labels).sort();
 }
 
-export function sickleCellHighlightsTotals(n: Record<string, number>): Record<string, boolean> {
-    return {
-        folate: (n.b9_folate ?? 0) > 100,
-        b12: (n.b12 ?? 0) > 2,
-        magnesium: (n.magnesium ?? 0) > 100,
-        iron: (n.iron ?? 0) > 5,
-    };
-}
-
-/** @see \App\Services\RecipeNutritionCalculator::sickleCellProgramMealHighlight */
+/** @deprecated Use {@link sickleCellHasAnyHighlight} */
 export function sickleCellProgramMealHighlight(n: Record<string, number>): boolean {
-    const base = sickleCellHighlightsTotals(n);
-    if (Object.values(base).some(Boolean)) {
-        return true;
-    }
-    const iron = n.iron ?? 0;
-    const vitaminC = n.vitamin_c ?? 0;
-    if (iron >= 4.5 && vitaminC >= 25) {
-        return true;
-    }
-    const zinc = n.zinc ?? 0;
-    const vitaminE = n.vitamin_e ?? 0;
-    if (zinc >= 2.5 && vitaminE >= 1.5) {
-        return true;
-    }
-    return false;
+    return sickleCellHasAnyHighlight(n);
 }

@@ -4,6 +4,7 @@ namespace App;
 
 use App\Models\Ingredient;
 use App\Services\BaseIngredientService;
+use App\Support\IngredientG6pdSafety;
 use App\Support\IngredientLibraryCategory;
 use App\Support\RecipeComponentsCsvParser;
 use Illuminate\Http\UploadedFile;
@@ -41,6 +42,9 @@ final class IngredientsImport
      *
      * Physical (optional):
      * - density — g/ml for converting volume units to mass in recipes (default 1.0 when omitted)
+     *
+     * G6PD safety (optional):
+     * - g6pd_trigger — 0 or 1 (also accepts G6PD_Trigger header)
      *
      * Base recipe (optional):
      * - is_base_recipe — 0 or 1
@@ -196,7 +200,7 @@ final class IngredientsImport
             'vitamin_k' => $this->floatOrZero($record['vitamin_k'] ?? $record['vitamin_k_mcg'] ?? $legacyJsonMicros['vitamin_k'] ?? null),
         ];
 
-        return [
+        $attrs = [
             'name' => $name,
             'usda_food_category' => $this->toStringOrNull($record['category'] ?? null),
             'fdc_id' => $this->toInt($record['fdc_id'] ?? null),
@@ -212,7 +216,38 @@ final class IngredientsImport
             'density' => $density,
             'micronutrients' => $micros,
             'is_verified' => true,
+            'is_g6pd_trigger' => $this->recordIsTruthy($record['g6pd_trigger'] ?? null),
         ];
+
+        foreach (['description', 'instructions'] as $field) {
+            if (array_key_exists($field, $record)) {
+                $attrs[$field] = $this->nullableCsvTextFromRecord($record, $field);
+            }
+        }
+
+        return $attrs;
+    }
+
+    /**
+     * @param  array<string, mixed>  $record
+     */
+    private function nullableCsvTextFromRecord(array $record, string $field): ?string
+    {
+        if (! array_key_exists($field, $record)) {
+            return null;
+        }
+
+        $raw = $record[$field];
+        $s = trim(is_string($raw) ? $raw : (string) $raw);
+
+        return $s !== '' ? $s : null;
+    }
+
+    private function recordIsTruthy(mixed $value): bool
+    {
+        $flag = strtolower(trim((string) $value));
+
+        return in_array($flag, ['1', 'true', 'yes', 'y'], true);
     }
 
     private function toStringOrNull(mixed $value): ?string
@@ -298,11 +333,40 @@ final class IngredientsImport
             ->whereIn('usda_food_category', IngredientLibraryCategory::preparedLabels())
             ->first();
 
-        $this->baseIngredientService->upsert(
+        $libraryText = null;
+        foreach (['description', 'instructions'] as $field) {
+            if (array_key_exists($field, $record)) {
+                $libraryText ??= [];
+                $libraryText[$field] = $record[$field];
+            }
+        }
+
+        $ingredient = $this->baseIngredientService->upsert(
             $existing,
             $name,
             $componentRows,
             $finished !== null && $finished > 0 ? $finished : null,
+            $libraryText,
         );
+
+        $explicitG6pd = $this->recordIsTruthy($record['g6pd_trigger'] ?? null);
+        $childIds = array_values(array_filter(array_map(
+            static fn (array $row): int => (int) ($row['ingredient_id'] ?? 0),
+            $componentRows,
+        ), static fn (int $id): bool => $id > 0));
+
+        $derivedFromChildren = $childIds !== []
+            && Ingredient::query()
+                ->whereIn('id', $childIds)
+                ->where(function ($q): void {
+                    IngredientG6pdSafety::applyEffectiveG6pdConstraintToQuery($q);
+                })
+                ->exists();
+
+        if ($explicitG6pd || $derivedFromChildren) {
+            $ingredient->update(['is_g6pd_trigger' => true]);
+        } elseif (array_key_exists('g6pd_trigger', $record)) {
+            $ingredient->update(['is_g6pd_trigger' => false]);
+        }
     }
 }

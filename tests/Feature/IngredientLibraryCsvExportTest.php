@@ -27,6 +27,7 @@ test('authenticated users can export verified ingredients as csv', function (): 
     $csv = $response->streamedContent();
     expect($csv)->not->toBe('')
         ->and($csv)->toContain('name,category,fdc_id')
+        ->and($csv)->toContain(',description,instructions,finished_weight_grams,g6pd_trigger')
         ->and($csv)->toContain('Unique Export Row')
         ->and($csv)->toContain('TestCat');
 });

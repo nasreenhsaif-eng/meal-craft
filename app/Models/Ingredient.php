@@ -32,6 +32,8 @@ class Ingredient extends Model
     protected $fillable = [
         'source_meal_id',
         'name',
+        'description',
+        'instructions',
         'usda_food_category',
         'fdc_id',
         'calories',
@@ -48,6 +50,7 @@ class Ingredient extends Model
         'micronutrients',
         'diet_tags',
         'common_allergens',
+        'is_g6pd_trigger',
     ];
 
     protected function casts(): array
@@ -69,6 +72,7 @@ class Ingredient extends Model
             'micronutrients' => 'array',
             'diet_tags' => 'array',
             'common_allergens' => 'array',
+            'is_g6pd_trigger' => 'boolean',
         ];
     }
 

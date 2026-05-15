@@ -87,6 +87,7 @@ test('admin meal library renders inertia page with cycle phase options and meal 
             ->has('ingredientProfiles')
             ->has('mealCategoryOptions')
             ->has('mealStoreUrl')
+            ->has('mealBulkDestroyUrl')
             ->has('csvMealCraftTemplateUrl')
             ->has('csvExportUrl')
             ->has('csvImportUrl')

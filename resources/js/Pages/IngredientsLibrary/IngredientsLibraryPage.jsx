@@ -6,6 +6,7 @@ import TextInput from '../../Components/Atoms/TextInput/TextInput.jsx';
 import DropdownTextInput from '../../Components/Atoms/TextInput/DropdownTextInput.jsx';
 import MicronutrientInput from '../../Components/Atoms/TextInput/MicronutrientInput.jsx';
 import Button from '../../Components/Atoms/Button.jsx';
+import MealDetailView from '../../Components/Molecules/MealDetailView/MealDetailView.tsx';
 import SquareCheckbox from '../../Components/Atoms/Icons/SquareCheckbox.jsx';
 import IngredientsLibraryCompositionSection from './IngredientsLibraryCompositionSection.jsx';
 import NutrientBadge from '../../Components/Atoms/MealSystem/NutrientBadge.jsx';
@@ -86,6 +87,7 @@ function normalizeLibraryRow(raw) {
         sodium: pick('sodium', 'sodium'),
         sugar: pick('sugar', 'sugar'),
         fiber: pick('fiber', 'fiber'),
+        detailView: isPlainObject(raw.detailView) ? raw.detailView : null,
     };
 }
 const ROW_HOVER = 'hover:bg-[#F8F9F6]';
@@ -167,6 +169,9 @@ export function IngredientsLibraryPageView({
     const [selectedRows, setSelectedRows] = useState(/** @type {string[]} */ ([]));
     const [createOpen, setCreateOpen] = useState(false);
     const [confirmOpen, setConfirmOpen] = useState(false);
+    const [detailModal, setDetailModal] = useState(
+        /** @type {null | { title: string; detailView: object }} */ (null),
+    );
 
     /** Create-ingredient drawer (controlled; reset each time drawer opens). */
     const [createIsBaseRecipe, setCreateIsBaseRecipe] = useState(false);
@@ -181,6 +186,8 @@ export function IngredientsLibraryPageView({
     const [createFinishedWeightGrams, setCreateFinishedWeightGrams] = useState('');
     const [createCompositionRows, setCreateCompositionRows] = useState([{ ...EMPTY_COMPOSITION_ROW }]);
     const [createSaveError, setCreateSaveError] = useState('');
+    const [createBaseDescription, setCreateBaseDescription] = useState('');
+    const [createBaseInstructions, setCreateBaseInstructions] = useState('');
     const [createCompositionActiveRow, setCreateCompositionActiveRow] = useState(/** @type {number|null} */ (null));
     const compositionSuggestRootRef = useRef(null);
     const [compositionSuggestRect, setCompositionSuggestRect] = useState(
@@ -262,6 +269,8 @@ export function IngredientsLibraryPageView({
         setCreateFinishedWeightGrams('');
         setCreateCompositionRows([{ ...EMPTY_COMPOSITION_ROW }]);
         setCreateSaveError('');
+        setCreateBaseDescription('');
+        setCreateBaseInstructions('');
         setCreateCompositionActiveRow(null);
     }, [createOpen]);
 
@@ -350,6 +359,8 @@ export function IngredientsLibraryPageView({
                 finished_weight_grams:
                     createFinishedWeightGrams.trim() === '' ? null : Number(createFinishedWeightGrams.trim()),
                 components,
+                description: createBaseDescription.trim(),
+                instructions: createBaseInstructions.trim(),
             });
 
             return;
@@ -725,9 +736,24 @@ export function IngredientsLibraryPageView({
                                         <td className="sticky left-[54px] z-10 bg-white px-4 py-3">
                                             <div className="min-w-0">
                                                 <div className="flex min-w-0 flex-wrap items-center gap-2">
-                                                    <p className="truncate font-body text-sm font-semibold text-[#1F2937]">
-                                                        {r.name}
-                                                    </p>
+                                                    {r.isBaseRecipe && r.detailView ? (
+                                                        <button
+                                                            type="button"
+                                                            className="truncate text-left font-body text-sm font-semibold text-[#1F2937] underline decoration-[#5A6B44]/40 underline-offset-2 outline-none hover:text-[#5A6B44] focus-visible:ring-2 focus-visible:ring-[#5A6B44]/35"
+                                                            onClick={() =>
+                                                                setDetailModal({
+                                                                    title: r.name,
+                                                                    detailView: r.detailView,
+                                                                })
+                                                            }
+                                                        >
+                                                            {r.name}
+                                                        </button>
+                                                    ) : (
+                                                        <p className="truncate font-body text-sm font-semibold text-[#1F2937]">
+                                                            {r.name}
+                                                        </p>
+                                                    )}
                                                     {r.isBaseRecipe ? (
                                                         <span className="shrink-0 rounded-[4px] border border-[#5A6B44]/40 bg-[#E8EDE3] px-2 py-0.5 font-montserrat text-[10px] font-bold uppercase tracking-wide text-[#5A6B44]">
                                                             Base Recipe
@@ -800,6 +826,43 @@ export function IngredientsLibraryPageView({
                     </div>
                 </section>
 
+            {detailModal ? (
+                <div className="fixed inset-0 z-[102] flex items-center justify-center p-4">
+                    <button
+                        type="button"
+                        className="absolute inset-0 bg-black/40"
+                        onClick={() => setDetailModal(null)}
+                        aria-label="Close recipe details"
+                    />
+                    <div
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="ingredient-library-detail-title"
+                        className="relative w-full max-w-[960px] rounded-[12px] bg-[#F8F9F6] p-4 shadow-2xl md:p-6"
+                    >
+                        <div className="mb-4 flex items-start justify-between gap-3">
+                            <div className="min-w-0 flex-1">
+                                <h2
+                                    id="ingredient-library-detail-title"
+                                    className="font-montserrat text-xl font-bold tracking-tight text-[#262A22] md:text-2xl"
+                                >
+                                    {detailModal.title}
+                                </h2>
+                                {detailModal.detailView?.shortDescription ||
+                                detailModal.detailView?.description ? (
+                                    <p className="mt-1 line-clamp-2 font-montserrat text-sm font-medium text-[#555555] md:text-base">
+                                        {detailModal.detailView.shortDescription ||
+                                            detailModal.detailView.description}
+                                    </p>
+                                ) : null}
+                            </div>
+                            <Button label="Close" variant="ghost" type="button" onClick={() => setDetailModal(null)} />
+                        </div>
+                        <MealDetailView meal={detailModal.detailView} className="max-h-[min(78vh,calc(100dvh-11rem))]" />
+                    </div>
+                </div>
+            ) : null}
+
             {createOpen ? (
                 <div className="fixed inset-0 z-[100]">
                     <button
@@ -848,18 +911,42 @@ export function IngredientsLibraryPageView({
                                 </div>
 
                                 {createIsBaseRecipe ? (
-                                    <IngredientsLibraryCompositionSection
-                                        rows={createCompositionRows}
-                                        onRowsChange={setCreateCompositionRows}
-                                        componentPickerDatabase={componentPickerDatabase}
-                                        activeRow={createCompositionActiveRow}
-                                        onActiveRowChange={setCreateCompositionActiveRow}
-                                        suggestRect={compositionSuggestRect}
-                                        suggestRootRef={compositionSuggestRootRef}
-                                        finishedWeightGrams={createFinishedWeightGrams}
-                                        onFinishedWeightChange={setCreateFinishedWeightGrams}
-                                        per100Preview={createPer100Preview}
-                                    />
+                                    <>
+                                        <IngredientsLibraryCompositionSection
+                                            rows={createCompositionRows}
+                                            onRowsChange={setCreateCompositionRows}
+                                            componentPickerDatabase={componentPickerDatabase}
+                                            activeRow={createCompositionActiveRow}
+                                            onActiveRowChange={setCreateCompositionActiveRow}
+                                            suggestRect={compositionSuggestRect}
+                                            suggestRootRef={compositionSuggestRootRef}
+                                            finishedWeightGrams={createFinishedWeightGrams}
+                                            onFinishedWeightChange={setCreateFinishedWeightGrams}
+                                            per100Preview={createPer100Preview}
+                                        />
+                                        <div className="grid gap-2">
+                                        <label className="font-montserrat text-[13px] font-bold tracking-wide text-[#374151]">
+                                            Short description
+                                            <textarea
+                                                value={createBaseDescription}
+                                                onChange={(e) => setCreateBaseDescription(e.target.value)}
+                                                placeholder="One-line summary shown under the recipe title"
+                                                rows={2}
+                                                className="mt-1 w-full resize-y rounded-[12px] border border-[#E5E7EB] bg-white px-4 py-3 font-body text-sm text-[#1F2937] outline-none ring-[#5A6B44]/35 placeholder:text-[#9CA3AF] focus:border-[#5A6B44]/35 focus:ring-2"
+                                            />
+                                        </label>
+                                        <label className="font-montserrat text-[13px] font-bold tracking-wide text-[#374151]">
+                                            Instructions
+                                            <textarea
+                                                value={createBaseInstructions}
+                                                onChange={(e) => setCreateBaseInstructions(e.target.value)}
+                                                placeholder="One step per line"
+                                                rows={4}
+                                                className="mt-1 w-full resize-y rounded-[12px] border border-[#E5E7EB] bg-white px-4 py-3 font-body text-sm text-[#1F2937] outline-none ring-[#5A6B44]/35 placeholder:text-[#9CA3AF] focus:border-[#5A6B44]/35 focus:ring-2"
+                                            />
+                                        </label>
+                                    </div>
+                                    </>
                                 ) : (
                                     <>
                                         <DropdownTextInput

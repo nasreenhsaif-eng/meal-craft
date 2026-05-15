@@ -47,6 +47,8 @@ class StoreIngredientLibraryRequest extends FormRequest
                     Rule::exists('ingredients', 'id')->where('is_verified', true),
                 ],
                 'components.*.amount_grams' => ['required', 'numeric', 'gt:0'],
+                'description' => ['nullable', 'string'],
+                'instructions' => ['nullable', 'string'],
             ];
         }
 

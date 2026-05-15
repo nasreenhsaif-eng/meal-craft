@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Ingredient;
 use App\Models\Meal;
+use App\Support\SickleCellNutrientRdi;
 
 final class RecipeNutritionCalculator
 {
@@ -126,48 +127,22 @@ final class RecipeNutritionCalculator
     }
 
     /**
-     * Thresholds aligned with per-100g ingredient highlights, applied to whole-recipe totals.
+     * Per-serving High Source flags (≥20% RDI). See {@see SickleCellNutrientRdi}.
      *
      * @param  array<string, float>  $nutrition
-     * @return array{folate: bool, b12: bool, magnesium: bool, iron: bool}
+     * @return array<string, bool>
      */
     public static function sickleCellHighlights(array $nutrition): array
     {
-        return [
-            'folate' => (float) ($nutrition['b9_folate'] ?? 0) > 100.0,
-            'b12' => (float) ($nutrition['b12'] ?? 0) > 2.0,
-            'magnesium' => (float) ($nutrition['magnesium'] ?? 0) > 100.0,
-            'iron' => (float) ($nutrition['iron'] ?? 0) > 5.0,
-        ];
+        return SickleCellNutrientRdi::highlightFlags($nutrition);
     }
 
     /**
-     * Whole-meal Sickle Cell Anemia program badge: nutrient-density gates plus iron + vitamin C pairing
-     * (absorption) and zinc + vitamin E (supporting anti-inflammatory micronutrient density).
-     *
-     * @param  array<string, float>  $nutrition
+     * @param  array<string, float>  $nutrition  Per-serving totals.
      */
     public static function sickleCellProgramMealHighlight(array $nutrition): bool
     {
-        foreach (self::sickleCellHighlights($nutrition) as $hit) {
-            if ($hit) {
-                return true;
-            }
-        }
-
-        $iron = (float) ($nutrition['iron'] ?? 0);
-        $vitaminC = (float) ($nutrition['vitamin_c'] ?? 0);
-        if ($iron >= 4.5 && $vitaminC >= 25.0) {
-            return true;
-        }
-
-        $zinc = (float) ($nutrition['zinc'] ?? 0);
-        $vitaminE = (float) ($nutrition['vitamin_e'] ?? 0);
-        if ($zinc >= 2.5 && $vitaminE >= 1.5) {
-            return true;
-        }
-
-        return false;
+        return SickleCellNutrientRdi::hasAnyHighlight($nutrition);
     }
 
     /**

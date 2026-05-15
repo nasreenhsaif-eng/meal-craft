@@ -37,6 +37,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::get('/meal-library', [MealLibraryController::class, 'index'])->name('meal-library');
             Route::get('/meal-library/csv-template', [MealLibraryController::class, 'downloadMealCraftCsvTemplate'])->name('meal-library.csv-template');
             Route::post('/meal-library', [MealController::class, 'store'])->name('meal-library.store');
+            Route::post('/meal-library/bulk-destroy', [MealLibraryController::class, 'bulkDestroy'])->name('meal-library.bulk-destroy');
             Route::post('/meal-library/{meal}', [MealController::class, 'update'])->name('meal-library.update');
             Route::get('/meal-plan-library', [MealPlanLibraryController::class, 'index'])->name('meal-plan-library');
 

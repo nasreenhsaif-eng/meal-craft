@@ -1189,23 +1189,17 @@ new #[Title('Meals')] class extends Component {
 
                 <flux:heading size="sm" class="text-mc-gold-deep dark:text-amber-100/90">{{ __('SC highlights') }}</flux:heading>
                 <div class="flex flex-wrap gap-2">
-                    @php
-                        $h = $this->highlights;
-                    @endphp
-                    @if (($h['folate'] ?? false) === true)
-                        <flux:badge color="green" size="sm">{{ __('Folate') }}</flux:badge>
-                    @endif
-                    @if (($h['b12'] ?? false) === true)
-                        <flux:badge color="blue" size="sm">{{ __('B12') }}</flux:badge>
-                    @endif
-                    @if (($h['magnesium'] ?? false) === true)
-                        <flux:badge color="purple" size="sm">{{ __('Magnesium') }}</flux:badge>
-                    @endif
-                    @if (($h['iron'] ?? false) === true)
-                        <flux:badge color="red" size="sm">{{ __('Iron') }}</flux:badge>
-                    @endif
+                    @foreach (\App\Support\SickleCellNutrientRdi::highlightBadgeLabels($n) as $badge)
+                        <flux:badge
+                            color="amber"
+                            size="sm"
+                            title="{{ \App\Support\SickleCellNutrientRdi::tooltipForBadge($badge) }}"
+                        >
+                            {{ $badge }}
+                        </flux:badge>
+                    @endforeach
 
-                    @if (! (($h['folate'] ?? false) || ($h['b12'] ?? false) || ($h['magnesium'] ?? false) || ($h['iron'] ?? false)))
+                    @if (\App\Support\SickleCellNutrientRdi::highlightBadgeLabels($n) === [])
                         <flux:text class="text-sm text-stone-500 dark:text-stone-400">{{ __('—') }}</flux:text>
                     @endif
                 </div>

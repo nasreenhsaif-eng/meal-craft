@@ -16,7 +16,7 @@ final class MealCraftMasterCsvExport
     /** @var list<string> */
     public const HEADERS = [
         'Meal Name',
-        'Description',
+        'Short Description',
         'Meal Plan Tags (comma or pipe separated; e.g. Balanced | Ketogenic)',
         'Cycle Phase (comma or pipe separated; Menstrual, Follicular, Ovulatory, or Luteal — values or labels)',
         'Dietary Tags',
@@ -83,7 +83,7 @@ final class MealCraftMasterCsvExport
     {
         fputcsv($handle, self::HEADERS, ',', '"', '\\');
 
-        Meal::query()
+        Meal::queryForMealLibrary()
             ->with(['ingredients' => function (BelongsToMany $query): void {
                 $query->orderBy('ingredients.name');
             }])
@@ -140,15 +140,18 @@ final class MealCraftMasterCsvExport
             ],
         );
 
+        $shortDescriptionCell = $this->shortDescriptionCellForCsv($meal);
+        $instructionsCell = $this->instructionsCellForCsv($meal);
+
         return [
             $meal->name,
-            (string) ($meal->highlight ?? ''),
+            $shortDescriptionCell,
             $this->mealPlanTagsCell($meal),
             self::canonicalCyclePhaseLabels($meal),
             $this->dietaryTagsCell($meal),
             $this->safetyAlertsCell($meal),
             $this->ingredientsReadableCell($meal),
-            (string) ($meal->description ?? ''),
+            $instructionsCell,
             $this->photoUrlForMeal($meal),
             $targetCal !== null ? self::formatFloat($targetCal) : '',
             $targetProtein !== null ? self::formatFloat($targetProtein) : '',
@@ -279,6 +282,20 @@ final class MealCraftMasterCsvExport
         return $url === '' ? self::MISSING_PHOTO_PLACEHOLDER : $url;
     }
 
+    private function shortDescriptionCellForCsv(Meal $meal): string
+    {
+        $preferred = trim((string) ($meal->short_description ?? ''));
+
+        return $preferred !== '' ? $preferred : trim((string) ($meal->highlight ?? ''));
+    }
+
+    private function instructionsCellForCsv(Meal $meal): string
+    {
+        $preferred = trim((string) ($meal->instructions ?? ''));
+
+        return $preferred !== '' ? $preferred : trim((string) ($meal->description ?? ''));
+    }
+
     private function optionalTargetNumeric(Meal $meal, string $attribute): ?float
     {
         if (! array_key_exists($attribute, $meal->getAttributes())) {
@@ -349,7 +366,8 @@ final class MealCraftMasterCsvExport
         'Cycle phase',
         'Safety Alerts',
         'Image_URL',
-        'Description',
+        'Short Description',
+        'Instructions',
     ];
 
     /**
@@ -382,6 +400,7 @@ final class MealCraftMasterCsvExport
             '',
             '/images/meals/coconut-chicken-curry.jpg',
             'Rich red curry with coconut milk and tender chicken; serve over jasmine rice with fresh Thai basil.',
+            'Brown chicken | Simmer curry with coconut milk | Finish with basil; serve hot over jasmine rice.',
         ], ',', '"', '\\');
         rewind($handle);
         $csv = stream_get_contents($handle) ?: '';

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\IngredientsImport;
 use App\Models\Ingredient;
+use App\Support\IngredientG6pdSafety;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class IngredientLibraryCsvExportController extends Controller
@@ -43,7 +44,10 @@ class IngredientLibraryCsvExportController extends Controller
             'density',
             'is_base_recipe',
             'recipe_components',
+            'description',
+            'instructions',
             'finished_weight_grams',
+            'g6pd_trigger',
         ];
 
         return response()->streamDownload(function () use ($headers): void {
@@ -71,6 +75,8 @@ class IngredientLibraryCsvExportController extends Controller
                             ))
                             ->implode(',');
                     }
+                    $description = (string) ($ingredient->description ?? '');
+                    $instructions = (string) ($ingredient->instructions ?? '');
                     fputcsv($handle, [
                         $ingredient->name,
                         $ingredient->usda_food_category ?? '',
@@ -98,7 +104,10 @@ class IngredientLibraryCsvExportController extends Controller
                         $ingredient->density ?? 1,
                         $isBaseRecipe ? 1 : 0,
                         $recipeComponents,
+                        $description,
+                        $instructions,
                         '',
+                        $ingredient->is_g6pd_trigger || IngredientG6pdSafety::canonicalNameIndicatesG6pdTrigger($ingredient->name) ? 1 : 0,
                     ], ',', '"', '\\');
                 });
 

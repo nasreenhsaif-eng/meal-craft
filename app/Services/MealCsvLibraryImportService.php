@@ -29,7 +29,8 @@ use Illuminate\Support\Facades\Log;
  * - Category **or** Meal Type (Breakfast, Meal, Base Recipe, Side Salad, Soup, Dessert)
  * - Ingredient_Quantities **or** Ingredients String (pipe-separated quantities)
  * - Instructions (optional)
- * - Description_Highlight (optional) or standalone **Description** (optional; maps to instructions/body)
+ * - Short_Description / Description_Highlight / Description (optional; one-line meal summary)
+ * - Instructions (optional; cooking steps)
  * - Meal_Plan_Tags / Meal Plan Tag (optional)
  * - Cycle_Phase / Cycle phase (optional)
  * - Total_Calories (optional)
@@ -588,14 +589,18 @@ final class MealCsvLibraryImportService
             return 'instructions';
         }
 
+        if (str_contains($t, 'short') && str_contains($t, 'description')) {
+            return 'short_description';
+        }
+
         if (str_contains($t, 'description') && str_contains($t, 'highlight')) {
-            return 'highlight';
+            return 'short_description';
         }
         if ($t === 'description') {
-            return 'instructions';
+            return 'short_description';
         }
         if (str_contains($t, 'highlight')) {
-            return 'highlight';
+            return 'short_description';
         }
 
         if (str_contains($t, 'target') && (str_contains($t, 'calor') || str_contains($t, 'kcal'))) {
@@ -1029,7 +1034,7 @@ final class MealCsvLibraryImportService
         }
 
         $instructions = isset($assoc['instructions']) ? trim((string) $assoc['instructions']) : '';
-        $highlight = isset($assoc['highlight']) ? trim((string) $assoc['highlight']) : '';
+        $shortDescription = isset($assoc['short_description']) ? trim((string) $assoc['short_description']) : '';
 
         $mealPlanTags = $this->mealPlanTagsAcceptedFromCsvCell((string) ($assoc['meal_plan_tags'] ?? ''));
         $cyclePhaseStrings = $this->cyclePhaseEnumValuesFromCsvCell((string) ($assoc['cycle_phases'] ?? ''));
@@ -1051,7 +1056,7 @@ final class MealCsvLibraryImportService
                     $mealCategory->value,
                     $qtyCell,
                     $instructions,
-                    $highlight,
+                    $shortDescription,
                 );
             }
 
@@ -1097,7 +1102,7 @@ final class MealCsvLibraryImportService
                 $mealCategory,
                 $mealCategoryValue,
                 $instructions,
-                $highlight,
+                $shortDescription,
                 $calc,
                 $mealPlanTags,
                 $cyclePhaseStrings,
@@ -1132,8 +1137,10 @@ final class MealCsvLibraryImportService
                     'name' => $mealName,
                     'category' => $mealCategoryValue,
                     'meal_type' => MealType::fromRecipeCategory($mealCategory)->value,
+                    'instructions' => $instructions !== '' ? $instructions : null,
+                    'short_description' => $shortDescription !== '' ? $shortDescription : null,
                     'description' => $instructions !== '' ? $instructions : null,
-                    'highlight' => $highlight !== '' ? $highlight : null,
+                    'highlight' => $shortDescription !== '' ? $shortDescription : null,
                     'health_score' => $calc['health_score'],
                     'nutrition_aggregates_synced' => $nutritionResolution['nutrition_aggregates_synced'],
                     'sickle_cell_program_highlight' => $nutritionResolution['sickle_cell_program_highlight'],
@@ -1300,7 +1307,7 @@ final class MealCsvLibraryImportService
         string $categoryValue,
         string $ingredientQuantities,
         string $instructions,
-        string $highlight,
+        string $shortDescription,
     ): void {
         MealCsvImportPendingRow::query()->updateOrCreate(
             [
@@ -1312,7 +1319,7 @@ final class MealCsvLibraryImportService
                 'category' => $categoryValue,
                 'ingredient_quantities' => $ingredientQuantities,
                 'instructions' => $instructions !== '' ? $instructions : null,
-                'description_highlight' => $highlight !== '' ? $highlight : null,
+                'description_highlight' => $shortDescription !== '' ? $shortDescription : null,
             ],
         );
     }

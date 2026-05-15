@@ -35,7 +35,7 @@ final class MealLibrarySynchronizedCsvExport
     {
         fputcsv($handle, MealCsvLibraryImportService::LIBRARY_CSV_HEADERS, ',', '"', '\\');
 
-        Meal::query()
+        Meal::queryForMealLibrary()
             ->with(['ingredients' => function (BelongsToMany $query): void {
                 $query->orderBy('ingredients.name');
             }])
@@ -53,8 +53,8 @@ final class MealLibrarySynchronizedCsvExport
                     $meal->name,
                     self::categoryForBulkImport($meal->category),
                     $this->ingredientQuantitiesCell($meal),
-                    $meal->description ?? '',
-                    $meal->highlight ?? '',
+                    $this->syncInstructionsCell($meal),
+                    $this->syncShortDescriptionCell($meal),
                     $this->mealPlanTagsForLibraryCell($meal),
                     $this->cyclePhasesForLibraryCell($meal),
                     round($totalCalories, 1),
@@ -107,6 +107,20 @@ final class MealLibrarySynchronizedCsvExport
     private function cyclePhasesForLibraryCell(Meal $meal): string
     {
         return MealCraftMasterCsvExport::canonicalCyclePhaseLabels($meal);
+    }
+
+    private function syncInstructionsCell(Meal $meal): string
+    {
+        $preferred = trim((string) ($meal->instructions ?? ''));
+
+        return $preferred !== '' ? $preferred : trim((string) ($meal->description ?? ''));
+    }
+
+    private function syncShortDescriptionCell(Meal $meal): string
+    {
+        $preferred = trim((string) ($meal->short_description ?? ''));
+
+        return $preferred !== '' ? $preferred : trim((string) ($meal->highlight ?? ''));
     }
 
     /**

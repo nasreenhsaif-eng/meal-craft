@@ -6,6 +6,7 @@ use App\Enums\CyclePhase;
 use App\Enums\MealType;
 use App\Enums\RecipeCategory;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\BulkDestroyMealsFromLibraryRequest;
 use App\Http\Requests\StoreMealFromLibraryRequest;
 use App\Models\Ingredient;
 use App\Models\Meal;
@@ -14,13 +15,15 @@ use App\Services\MealCraftMasterCsvExport;
 use App\Services\MealCsvLibraryImportService;
 use App\Services\RecipeNutritionCalculator;
 use App\Support\IngredientAllergenCatalog;
+use App\Support\IngredientG6pdSafety;
 use App\Support\MealImagePath;
 use App\Support\MealLibraryTaxonomy;
+use App\Support\SickleCellNutrientRdi;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
@@ -43,8 +46,7 @@ class MealLibraryController extends Controller
             return Inertia::render('Admin/MealLibrary', $this->mealLibraryIndexPayload([], []));
         }
 
-        $meals = Meal::query()
-            ->visibleInMealLibrary()
+        $meals = Meal::queryForMealLibrary()
             ->with(['ingredients' => function ($query): void {
                 $query->orderBy('ingredients.name');
             }])
@@ -63,6 +65,61 @@ class MealLibraryController extends Controller
             ->all();
 
         return Inertia::render('Admin/MealLibrary', $this->mealLibraryIndexPayload($meals, $ingredientProfiles));
+    }
+
+    public function bulkDestroy(BulkDestroyMealsFromLibraryRequest $request): RedirectResponse|JsonResponse
+    {
+        if (! $this->mealLibrarySchemaReady()) {
+            $message = __('Run `php artisan migrate` to update the database, then try again.');
+
+            if ($request->expectsJson()) {
+                return response()->json(['message' => $message], 503);
+            }
+
+            return redirect()
+                ->route('admin.meal-library')
+                ->with('error', $message);
+        }
+
+        $ids = $request->validated('ids');
+
+        $deletedCount = 0;
+
+        Meal::queryForMealLibrary()
+            ->whereIn('id', $ids)
+            ->orderBy('id')
+            ->each(function (Meal $meal) use (&$deletedCount): void {
+                $meal->delete();
+                $deletedCount++;
+            });
+
+        if ($deletedCount === 0) {
+            $message = __('No meals were removed. Selected items may already be deleted or are not part of the Meal Library.');
+
+            if ($request->expectsJson()) {
+                return response()->json(['message' => $message, 'deleted' => 0], 422);
+            }
+
+            return redirect()
+                ->route('admin.meal-library')
+                ->with('error', $message);
+        }
+
+        $message = $deletedCount === 1
+            ? __('1 meal removed from the library.')
+            : __(':count meals removed from the library.', ['count' => $deletedCount]);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => $message,
+                'deleted' => $deletedCount,
+                'deleted_ids' => $ids,
+            ]);
+        }
+
+        return redirect()
+            ->route('admin.meal-library')
+            ->with('success', $message);
     }
 
     public function store(StoreMealFromLibraryRequest $request): RedirectResponse
@@ -92,8 +149,10 @@ class MealLibraryController extends Controller
                 'name' => $data['name'],
                 'category' => $category,
                 'meal_type' => $mealType,
-                'description' => $data['description'] ?? null,
-                'highlight' => $data['highlight'] ?? null,
+                'instructions' => $this->instructionsFromValidated($data),
+                'short_description' => $this->shortDescriptionFromValidated($data),
+                'description' => $this->instructionsFromValidated($data),
+                'highlight' => $this->shortDescriptionFromValidated($data),
                 'meal_plan_tag' => $planPhaseBundle['meal_plan_tag'],
                 'meal_plan_tags' => $planPhaseBundle['meal_plan_tags'],
                 'total_calories' => (float) $data['total_calories'],
@@ -155,8 +214,10 @@ class MealLibraryController extends Controller
                 'name' => $data['name'],
                 'category' => $category,
                 'meal_type' => $mealType,
-                'description' => $data['description'] ?? null,
-                'highlight' => $data['highlight'] ?? null,
+                'instructions' => $this->instructionsFromValidated($data),
+                'short_description' => $this->shortDescriptionFromValidated($data),
+                'description' => $this->instructionsFromValidated($data),
+                'highlight' => $this->shortDescriptionFromValidated($data),
                 'meal_plan_tag' => $planPhaseBundle['meal_plan_tag'],
                 'meal_plan_tags' => $planPhaseBundle['meal_plan_tags'],
                 'total_calories' => (float) $data['total_calories'],
@@ -435,8 +496,10 @@ class MealLibraryController extends Controller
             'mealPlanTags' => $mealPlanTagsArr,
             'dietTags' => is_array($meal->diet_tags) ? array_values(array_filter($meal->diet_tags, static fn ($t): bool => is_string($t) && trim($t) !== '')) : [],
             'cyclePhaseValues' => $cyclePhaseValues,
-            'description' => (string) ($meal->description ?? ''),
-            'highlight' => (string) ($meal->highlight ?? ''),
+            'description' => $this->mealInstructionsText($meal),
+            'highlight' => $this->mealShortDescriptionText($meal),
+            'instructions' => $this->mealInstructionsText($meal),
+            'shortDescription' => $this->mealShortDescriptionText($meal),
             'totalCalories' => (string) (int) round((float) ($meal->total_calories ?? 0)),
             'totalProtein' => $this->macroDecimalStringForForm((float) ($meal->total_protein ?? 0)),
             'totalCarbs' => $this->macroDecimalStringForForm((float) ($meal->total_carbs ?? 0)),
@@ -530,11 +593,13 @@ class MealLibraryController extends Controller
     private function mealLibrarySchemaReady(): bool
     {
         try {
-            return Schema::hasColumn('meals', 'safety_alert_tags')
+            return Schema::hasColumn('meals', 'deleted_at')
+                && Schema::hasColumn('meals', 'safety_alert_tags')
                 && Schema::hasColumn('meals', 'nutrition_aggregates_synced')
                 && Schema::hasColumn('meals', 'meal_plan_tags')
                 && Schema::hasColumn('meals', 'cycle_phases')
-                && Schema::hasColumn('ingredients', 'common_allergens');
+                && Schema::hasColumn('ingredients', 'common_allergens')
+                && Schema::hasColumn('ingredients', 'is_g6pd_trigger');
         } catch (\Throwable) {
             return false;
         }
@@ -556,6 +621,7 @@ class MealLibraryController extends Controller
             ),
             'cyclePhases' => CyclePhase::toDropdownOptions(),
             'mealStoreUrl' => route('admin.meal-library.store'),
+            'mealBulkDestroyUrl' => route('admin.meal-library.bulk-destroy'),
             'csvMealCraftTemplateUrl' => route('admin.meal-library.csv-template'),
             'csvExportUrl' => route('meals.library.export-csv'),
             'csvImportUrl' => route('meals.library.import-csv'),
@@ -586,15 +652,16 @@ class MealLibraryController extends Controller
         }
 
         $nutrientHighlights = $this->nutrientHighlightsForUi($nutrition);
-        if (RecipeNutritionCalculator::sickleCellProgramMealHighlight($nutrition)) {
-            $nutrientHighlights[] = 'Sickle Cell';
+        $ingredientIds = $meal->ingredients->pluck('id')->map(fn ($id): int => (int) $id)->all();
+        if (IngredientG6pdSafety::mealContainsG6pdTrigger($ingredientIds)) {
+            $nutrientHighlights[] = IngredientG6pdSafety::SAFETY_ALERT_BADGE_LABEL;
         }
         $nutrientHighlights = array_values(array_unique($nutrientHighlights));
 
         $storedSafety = is_array($meal->safety_alert_tags) ? $meal->safety_alert_tags : [];
-        $safetyAlertTags = $storedSafety !== [] ? $storedSafety : $this->safetyAlertTagsForIngredientIds(
-            $meal->ingredients->pluck('id')->map(fn ($id): int => (int) $id)->all(),
-        );
+        $safetyAlertTags = $ingredientIds !== []
+            ? $this->safetyAlertTagsForIngredientIds($ingredientIds)
+            : array_values($storedSafety);
 
         return [
             'id' => (string) $meal->id,
@@ -649,30 +716,22 @@ class MealLibraryController extends Controller
         }
         $dietaryTags = array_values(array_unique($dietaryTags));
 
-        $instructionsRaw = trim((string) ($meal->description ?? ''));
-        if ($instructionsRaw === '') {
-            $instructions = [__('No written instructions on file.')];
-        } else {
-            $parts = preg_split('/\r\n|\r|\n/', $instructionsRaw) ?: [];
-            $trimmedLines = [];
-            foreach ($parts as $part) {
-                $line = trim((string) $part);
-                if ($line !== '') {
-                    $trimmedLines[] = $line;
-                }
-            }
-            $instructions = array_values($trimmedLines);
-            if ($instructions === []) {
-                $instructions = [$instructionsRaw];
-            }
-        }
+        $instructionsRaw = $this->mealInstructionsText($meal);
+        $instructions = $this->instructionsLinesFromText($instructionsRaw);
 
-        $highlight = trim((string) ($meal->highlight ?? ''));
-        $description = $highlight !== ''
-            ? $highlight
-            : ($instructionsRaw !== ''
-                ? (string) Str::limit($instructionsRaw, 520, '…')
-                : __('This meal is saved in your library with the ingredients and nutrition below.'));
+        $shortDescription = $this->mealShortDescriptionText($meal);
+
+        $ingredientIds = $meal->ingredients->pluck('id')->map(fn ($id): int => (int) $id)->all();
+        $hasG6pdTrigger = IngredientG6pdSafety::mealContainsG6pdTrigger($ingredientIds);
+        $sickleCellHighlights = SickleCellNutrientRdi::highlightBadgeLabels($nutrition);
+
+        $safetyAlerts = $this->safetyAlertsForDetailView($safetyAlertTags);
+        if ($hasG6pdTrigger) {
+            $safetyAlerts = array_values(array_filter(
+                $safetyAlerts,
+                static fn (array $a): bool => ! str_contains(strtoupper($a['label']), 'G6PD'),
+            ));
+        }
 
         $ingredientLines = [];
         foreach ($meal->ingredients as $ingredient) {
@@ -689,16 +748,85 @@ class MealLibraryController extends Controller
         }
 
         return [
-            'description' => $description,
+            'shortDescription' => $shortDescription,
             'cyclePhases' => $cyclePhases,
             'dietaryTags' => $dietaryTags,
-            'safetyAlerts' => $this->safetyAlertsForDetailView($safetyAlertTags),
+            'hasG6pdTrigger' => $hasG6pdTrigger,
+            'safetyAlerts' => $safetyAlerts,
+            'sickleCellHighlights' => $sickleCellHighlights,
             'nutritionalData' => $this->nutritionalDataForDetailView($nutrition),
             'ingredients' => $ingredientLines,
             'instructions' => $instructions,
             'imageUrl' => $this->mealImageUrl($meal),
             'imageAlt' => $meal->name,
         ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function instructionsFromValidated(array $data): ?string
+    {
+        $text = trim((string) ($data['instructions'] ?? $data['description'] ?? ''));
+
+        return $text !== '' ? $text : null;
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function shortDescriptionFromValidated(array $data): ?string
+    {
+        $text = trim((string) ($data['short_description'] ?? $data['highlight'] ?? ''));
+
+        return $text !== '' ? $text : null;
+    }
+
+    private function mealInstructionsText(Meal $meal): string
+    {
+        $text = trim((string) ($meal->instructions ?? ''));
+        if ($text !== '') {
+            return $text;
+        }
+
+        return trim((string) ($meal->description ?? ''));
+    }
+
+    private function mealShortDescriptionText(Meal $meal): string
+    {
+        $text = trim((string) ($meal->short_description ?? ''));
+        if ($text !== '') {
+            return $text;
+        }
+
+        return trim((string) ($meal->highlight ?? ''));
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function instructionsLinesFromText(string $instructionsRaw): array
+    {
+        if ($instructionsRaw === '') {
+            return [__('No written instructions on file.')];
+        }
+
+        $parts = preg_split('/\r\n|\r|\n/', $instructionsRaw) ?: [];
+        $steps = [];
+        foreach ($parts as $part) {
+            $line = trim((string) $part);
+            if ($line === '') {
+                continue;
+            }
+            $line = preg_replace('/^\d+[\.\)]\s*/', '', $line) ?? $line;
+            $steps[] = trim($line);
+        }
+
+        if ($steps === []) {
+            return [$instructionsRaw];
+        }
+
+        return array_values($steps);
     }
 
     /**
@@ -764,7 +892,7 @@ class MealLibraryController extends Controller
         ];
 
         return [
-            'valueColumnLabel' => __('Total (meal)'),
+            'valueColumnLabel' => __('Per serving'),
             'sections' => [
                 ['title' => __('Macros'), 'rows' => $macroRows],
                 ['title' => __('Vitamins'), 'rows' => $vitaminRows],
@@ -797,7 +925,7 @@ class MealLibraryController extends Controller
         $labels = [];
         $rows = Ingredient::query()
             ->whereIn('id', $ingredientIds)
-            ->get(['id', 'common_allergens']);
+            ->get(['id', 'common_allergens', 'is_g6pd_trigger']);
 
         foreach ($rows as $ingredient) {
             foreach (IngredientAllergenCatalog::labelsFromSlugs(
@@ -807,10 +935,10 @@ class MealLibraryController extends Controller
             }
         }
 
-        $out = array_keys($labels);
-        sort($out);
-
-        return $out;
+        return IngredientG6pdSafety::mergeTriggerIntoSafetyLabels(
+            array_keys($labels),
+            IngredientG6pdSafety::mealContainsG6pdTrigger($ingredientIds),
+        );
     }
 
     /**
@@ -850,24 +978,7 @@ class MealLibraryController extends Controller
      */
     private function nutrientHighlightsForUi(array $nutrition): array
     {
-        $badges = [];
-        if (($nutrition['b9_folate'] ?? 0) >= 150) {
-            $badges[] = 'Folate';
-        }
-        if (($nutrition['b12'] ?? 0) >= 1.5) {
-            $badges[] = 'B12';
-        }
-        if (($nutrition['iron'] ?? 0) >= 6) {
-            $badges[] = 'Iron';
-        }
-        if (($nutrition['magnesium'] ?? 0) >= 120) {
-            $badges[] = 'Magnesium';
-        }
-        if (($nutrition['zinc'] ?? 0) >= 3) {
-            $badges[] = 'Zinc';
-        }
-
-        return $badges;
+        return SickleCellNutrientRdi::highlightBadgeLabels($nutrition);
     }
 
     /**
@@ -934,6 +1045,7 @@ class MealLibraryController extends Controller
                 is_array($ingredient->common_allergens) ? $ingredient->common_allergens : [],
                 static fn ($v): bool => is_string($v) && $v !== '',
             )),
+            'is_g6pd_trigger' => IngredientG6pdSafety::ingredientHasEffectiveG6pdTrigger($ingredient),
         ];
     }
 }

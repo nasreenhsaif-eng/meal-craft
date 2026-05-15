@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\CyclePhase;
+use App\Enums\MealType;
 use App\Enums\RecipeCategory;
 use App\Models\Ingredient;
 use App\Models\Meal;
@@ -76,6 +77,7 @@ test('meal library export csv uses meal craft master headers and maps meals', fu
     $csv = $response->streamedContent();
     expect($csv)->not->toBe('')
         ->and($csv)->toContain('Meal Name')
+        ->and($csv)->toContain('Short Description')
         ->and($csv)->toContain('Meal Plan Tags')
         ->and($csv)->toContain('Cycle Phase (comma or pipe separated')
         ->and($csv)->toContain('Target Calories (kcal)')
@@ -154,6 +156,94 @@ test('meal library synchronized export maps main salad category to meal for bulk
         ->and($csv)->toContain(',Meal,')
         ->and($csv)->toContain('Mix greens.')
         ->and($csv)->toContain('Fiber.');
+});
+
+test('meal library export excludes soft deleted meals and base recipes', function () {
+    $user = User::factory()->create();
+
+    $active = Meal::query()->create([
+        'name' => 'Active Export Meal',
+        'category' => RecipeCategory::Meal,
+        'total_calories' => 100,
+        'total_protein' => 1,
+        'total_carbs' => 1,
+        'total_fat' => 1,
+        'total_b6' => 0,
+        'total_folate' => 0,
+        'total_b12' => 0,
+        'total_iron' => 0,
+        'total_magnesium' => 0,
+        'total_fiber' => 0,
+        'total_sugar' => 0,
+        'total_calcium' => 0,
+        'total_potassium' => 0,
+        'total_sodium' => 0,
+        'total_zinc' => 0,
+        'total_vitamin_c' => 0,
+        'total_vitamin_a' => 0,
+        'total_vitamin_e' => 0,
+        'total_vitamin_d' => 0,
+        'total_vitamin_k' => 0,
+    ]);
+
+    $trashed = Meal::query()->create([
+        'name' => 'Trashed Export Meal',
+        'category' => RecipeCategory::Meal,
+        'total_calories' => 50,
+        'total_protein' => 1,
+        'total_carbs' => 1,
+        'total_fat' => 1,
+        'total_b6' => 0,
+        'total_folate' => 0,
+        'total_b12' => 0,
+        'total_iron' => 0,
+        'total_magnesium' => 0,
+        'total_fiber' => 0,
+        'total_sugar' => 0,
+        'total_calcium' => 0,
+        'total_potassium' => 0,
+        'total_sodium' => 0,
+        'total_zinc' => 0,
+        'total_vitamin_c' => 0,
+        'total_vitamin_a' => 0,
+        'total_vitamin_e' => 0,
+        'total_vitamin_d' => 0,
+        'total_vitamin_k' => 0,
+    ]);
+    $trashed->delete();
+
+    Meal::query()->create([
+        'name' => 'Hidden Base Recipe',
+        'category' => RecipeCategory::BaseRecipe,
+        'meal_type' => MealType::BaseRecipe,
+        'total_calories' => 10,
+        'total_protein' => 1,
+        'total_carbs' => 1,
+        'total_fat' => 1,
+        'total_b6' => 0,
+        'total_folate' => 0,
+        'total_b12' => 0,
+        'total_iron' => 0,
+        'total_magnesium' => 0,
+        'total_fiber' => 0,
+        'total_sugar' => 0,
+        'total_calcium' => 0,
+        'total_potassium' => 0,
+        'total_sodium' => 0,
+        'total_zinc' => 0,
+        'total_vitamin_c' => 0,
+        'total_vitamin_a' => 0,
+        'total_vitamin_e' => 0,
+        'total_vitamin_d' => 0,
+        'total_vitamin_k' => 0,
+    ]);
+
+    $response = $this->actingAs($user)->get(route('meals.library.export-csv'));
+    $csv = $response->streamedContent();
+
+    expect($csv)->toContain('Active Export Meal')
+        ->and($csv)->not->toContain('Trashed Export Meal')
+        ->and($csv)->not->toContain('Hidden Base Recipe');
 });
 
 test('bulk import library csv round-trips from synchronized export stream', function () {

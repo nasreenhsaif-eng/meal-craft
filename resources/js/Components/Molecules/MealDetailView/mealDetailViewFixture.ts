@@ -1,8 +1,10 @@
 import type { MealDetailModel } from './MealDetailView';
 
 export const mealDetailViewFixture: MealDetailModel = {
-    description:
-        'Seared salmon over lemon herb quinoa with roasted asparagus. Bright citrus, tender fish, and nutty grains come together for a balanced plate that supports recovery and steady energy.',
+    shortDescription:
+        'Seared salmon over lemon herb quinoa with roasted asparagus — bright citrus, tender fish, and nutty grains.',
+    hasG6pdTrigger: false,
+    sickleCellHighlights: ['Folate', 'B12', 'Zinc'],
     cyclePhases: ['Ovulatory'],
     dietaryTags: ['Hormone Feast', 'High Protein', 'Gluten-Free', 'Dairy-Free'],
     safetyAlerts: [

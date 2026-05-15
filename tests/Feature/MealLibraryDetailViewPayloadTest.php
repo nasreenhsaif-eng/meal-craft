@@ -21,6 +21,8 @@ test('meal library index includes detailView on each meal for the detail modal',
 
     $meal = Meal::query()->create([
         'name' => 'Detail Payload Meal',
+        'instructions' => "Step one\nStep two",
+        'short_description' => 'Great for mornings.',
         'description' => "Step one\nStep two",
         'highlight' => 'Great for mornings.',
         'meal_plan_tags' => ['Balanced', 'Ketogenic'],
@@ -46,7 +48,9 @@ test('meal library index includes detailView on each meal for the detail modal',
             ->has('meals', 1)
             ->where('meals.0.title', 'Detail Payload Meal')
             ->has('meals.0.detailView')
-            ->where('meals.0.detailView.description', 'Great for mornings.')
+            ->where('meals.0.detailView.shortDescription', 'Great for mornings.')
+            ->has('meals.0.detailView.sickleCellHighlights')
+            ->where('meals.0.detailView.hasG6pdTrigger', false)
             ->where('meals.0.detailView.imageAlt', 'Detail Payload Meal')
             ->where('meals.0.detailView.imageUrl', asset('images/meals/placeholder.svg'))
             ->where('meals.0.detailView.cyclePhases', ['Follicular', 'Ovulatory'])

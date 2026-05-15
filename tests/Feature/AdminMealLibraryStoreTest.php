@@ -174,6 +174,41 @@ test('meal library store attaches a verified ingredient by ingredient_id and gra
         ->and((float) $meal->total_calories)->toBe(100.0);
 });
 
+test('meal library store persists g6pd trigger in safety tags from ingredients', function () {
+    $user = User::factory()->create();
+    $ingredient = Ingredient::factory()->create([
+        'name' => 'Pest G6PD Fava',
+        'is_verified' => true,
+        'is_g6pd_trigger' => true,
+        'calories' => 50,
+        'protein' => 2,
+        'carbs' => 8,
+        'fat' => 0.5,
+    ]);
+
+    $this->actingAs($user)
+        ->post(route('admin.meal-library.store'), [
+            'name' => 'Pest G6PD meal',
+            'total_calories' => 1,
+            'total_protein' => 1,
+            'total_carbs' => 1,
+            'total_fat' => 1,
+            'category' => 'Meal',
+            'ingredients' => [
+                [
+                    'ingredient_id' => $ingredient->id,
+                    'name' => 'Pest G6PD Fava',
+                    'amount_grams' => 80,
+                ],
+            ],
+        ])
+        ->assertRedirect(route('admin.meal-library'));
+
+    $meal = Meal::query()->where('name', 'Pest G6PD meal')->firstOrFail();
+
+    expect($meal->safety_alert_tags)->toContain('G6PD Trigger');
+});
+
 test('meal library store persists safety tags and aggregated nutrition from ingredients', function () {
     $user = User::factory()->create();
     $ingredient = Ingredient::factory()->create([
@@ -185,7 +220,7 @@ test('meal library store persists safety tags and aggregated nutrition from ingr
         'fat' => 2,
         'iron' => 5.0,
         'b6' => 0,
-        'b9_folate' => 0,
+        'b9_folate' => 200.0,
         'b12' => 0,
         'magnesium' => 0,
         'common_allergens' => ['peanuts'],

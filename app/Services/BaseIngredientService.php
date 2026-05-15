@@ -19,12 +19,14 @@ final class BaseIngredientService
 
     /**
      * @param  array<int, array{ingredient_id: int, amount_grams: float}>  $componentRows
+     * @param  array<string, string|null>|null  $libraryText  When set, may include {@code description} and/or {@code instructions} keys to upsert (empty string → null).
      */
     public function upsert(
         ?Ingredient $existing,
         string $name,
         array $componentRows,
         ?float $finishedWeightGrams = null,
+        ?array $libraryText = null,
     ): Ingredient {
         $name = trim($name);
         if ($name === '') {
@@ -69,6 +71,15 @@ final class BaseIngredientService
         }
 
         $attrs = $this->ingredientAttributesFromBatch($name, $batchNutrition, $divisorGrams);
+        if ($libraryText !== null) {
+            foreach (['description', 'instructions'] as $key) {
+                if (array_key_exists($key, $libraryText)) {
+                    $raw = $libraryText[$key];
+                    $trimmed = $raw === null ? '' : trim((string) $raw);
+                    $attrs[$key] = $trimmed !== '' ? $trimmed : null;
+                }
+            }
+        }
 
         return DB::transaction(function () use ($existing, $attrs, $sync): Ingredient {
             if ($existing !== null) {

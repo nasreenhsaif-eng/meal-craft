@@ -12,9 +12,12 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Meal extends Model
 {
+    use SoftDeletes;
+
     protected $fillable = [
         'name',
         'category',
@@ -27,6 +30,8 @@ class Meal extends Model
         'target_carbs',
         'target_fat',
         'description',
+        'instructions',
+        'short_description',
         'highlight',
         'image_path',
         'health_score',
@@ -126,6 +131,17 @@ class Meal extends Model
                 $inner->whereNull('category')
                     ->orWhere('category', '!=', RecipeCategory::BaseRecipe);
             });
+    }
+
+    /**
+     * Meals shown in the admin Meal Library and included in library CSV export.
+     * Uses Eloquent (respects {@see SoftDeletes} global scope) — do not bypass with raw DB queries.
+     *
+     * @return Builder<Meal>
+     */
+    public static function queryForMealLibrary(): Builder
+    {
+        return static::query()->visibleInMealLibrary();
     }
 
     /**

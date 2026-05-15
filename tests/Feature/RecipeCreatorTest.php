@@ -435,18 +435,18 @@ test('meals hub edit meal redirects to meal editor route', function () {
         ->assertRedirect(route('meals.edit', $meal));
 });
 
-test('recipe nutrition calculator sickle cell highlights use whole recipe totals', function () {
+test('recipe nutrition calculator sickle cell highlights use twenty percent rdi per serving', function () {
     $nutrition = [
-        'b9_folate' => 150.0,
-        'b12' => 3.0,
-        'magnesium' => 120.0,
-        'iron' => 6.0,
+        'b9_folate' => 200.0,
+        'b12' => 0.48,
+        'b6' => 0.34,
+        'zinc' => 2.2,
     ];
 
     $h = RecipeNutritionCalculator::sickleCellHighlights($nutrition);
 
     expect($h['folate'])->toBeTrue()
         ->and($h['b12'])->toBeTrue()
-        ->and($h['magnesium'])->toBeTrue()
-        ->and($h['iron'])->toBeTrue();
+        ->and($h['b6'])->toBeTrue()
+        ->and($h['zinc'])->toBeTrue();
 });
