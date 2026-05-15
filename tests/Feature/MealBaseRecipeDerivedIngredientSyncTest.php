@@ -44,7 +44,7 @@ test('base recipe category syncs derived ingredient with Base Recipe library cat
 
     $derived = Ingredient::query()->where('source_meal_id', $meal->id)->firstOrFail();
 
-    expect($derived->usda_food_category)->toBe('Base Recipe')
+    expect($derived->usda_food_category)->toBe('Base Ingredient')
         ->and((float) $derived->calories)->toBe(40.0)
         ->and((float) $derived->protein)->toBe(2.0);
 });

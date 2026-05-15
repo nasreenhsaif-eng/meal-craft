@@ -113,6 +113,22 @@ class Meal extends Model
     }
 
     /**
+     * Prepared base ingredients belong in the Ingredient Library only, not the Meal Library.
+     *
+     * @param  Builder<Meal>  $query
+     * @return Builder<Meal>
+     */
+    public function scopeVisibleInMealLibrary(Builder $query): Builder
+    {
+        return $query
+            ->where('meal_type', '!=', MealType::BaseRecipe->value)
+            ->where(function (Builder $inner): void {
+                $inner->whereNull('category')
+                    ->orWhere('category', '!=', RecipeCategory::BaseRecipe);
+            });
+    }
+
+    /**
      * @param  Builder<Meal>  $query
      * @return Builder<Meal>
      */

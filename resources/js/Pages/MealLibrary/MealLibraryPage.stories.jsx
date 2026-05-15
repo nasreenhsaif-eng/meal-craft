@@ -88,7 +88,7 @@ export default {
         docs: {
             description: {
                 component:
-                    'Vertical order: sticky page title → Create + CSV → search + grid/list toggle → meal cards or list table (selection checkboxes only in list view).',
+                    'Vertical order: sticky page title → Create meal + CSV → search + grid/list toggle → meal cards or list table. Meals save to the meal library only; use Ingredient Library → Create Base Ingredient for prepared components.',
             },
         },
     },

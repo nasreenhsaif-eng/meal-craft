@@ -38,7 +38,9 @@ test('admin ingredient library renders inertia page with diet tag options', func
             ->has('ingredients')
             ->has('csvTemplateUrl')
             ->has('csvExportUrl')
-            ->has('csvImportUrl'));
+            ->has('csvImportUrl')
+            ->has('componentPickerProfiles')
+            ->has('ingredientStoreUrl'));
 });
 
 test('admin ingredient library passes verified ingredients as flattened rows', function () {

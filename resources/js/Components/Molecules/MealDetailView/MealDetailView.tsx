@@ -3,6 +3,7 @@ import { MealPlanTag } from '../../MealSystem/DietaryTags.jsx';
 import SafetyAlerts from '../../MealSystem/SafetyAlerts.jsx';
 import MealCraftLogo from '../../Atoms/Logo/MealCraftLogo.jsx';
 import { CyclePhaseTag, type CyclePhase } from './CyclePhaseTag';
+import { resolveMealImageUrl } from '../../../meal-library/resolveMealImageUrl.ts';
 
 export type { CyclePhase };
 export { CyclePhaseTag };
@@ -117,7 +118,7 @@ export default function MealDetailView({ meal, className = '' }: MealDetailViewP
         imageAlt,
     } = meal;
 
-    const resolvedImageUrl = String(imageUrl ?? '').trim();
+    const resolvedImageUrl = resolveMealImageUrl(imageUrl);
     const resolvedImageAlt = String(imageAlt ?? '').trim();
     const showImage = resolvedImageUrl !== '' && !mediaFailed;
 

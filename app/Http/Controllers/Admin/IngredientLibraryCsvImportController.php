@@ -7,6 +7,7 @@ use App\IngredientsImport;
 use App\Services\MealCsvLibraryImportService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use InvalidArgumentException;
 
 class IngredientLibraryCsvImportController extends Controller
 {
@@ -19,7 +20,13 @@ class IngredientLibraryCsvImportController extends Controller
             'file' => ['required', 'file', 'mimes:csv,txt'],
         ]);
 
-        $count = $ingredientsImport->import($validated['file']);
+        try {
+            $count = $ingredientsImport->import($validated['file']);
+        } catch (InvalidArgumentException $e) {
+            return redirect()
+                ->route('admin.ingredient-library')
+                ->with('error', $e->getMessage());
+        }
 
         $user = $request->user();
         $mealFollowUp = $mealCsvLibraryImportService->processPendingMealImportsForUser($user);

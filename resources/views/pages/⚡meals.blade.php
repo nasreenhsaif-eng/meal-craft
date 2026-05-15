@@ -70,8 +70,6 @@ new #[Title('Meals')] class extends Component {
     /** @var array<int, string> */
     public array $recipeIngredientSearch = [];
 
-    public bool $useRecipeAsIngredient = false;
-
     /** User-editable finished batch weight (g); auto-tracks raw sum until manually edited. */
     public string $finishedWeightGrams = '';
 
@@ -123,8 +121,6 @@ new #[Title('Meals')] class extends Component {
             : MealType::fromRecipeCategory($meal->category ?? RecipeCategory::Meal)->value;
         $this->instructions = $meal->description ?? '';
         $derivedIngredientId = Ingredient::query()->where('source_meal_id', $meal->id)->value('id');
-        $isBaseRecipeType = $meal->meal_type instanceof MealType && $meal->meal_type === MealType::BaseRecipe;
-        $this->useRecipeAsIngredient = $derivedIngredientId !== null || $isBaseRecipeType;
 
         $this->recipeIngredients = $meal->ingredients
             ->filter(function (Ingredient $ingredient) use ($derivedIngredientId): bool {
@@ -193,7 +189,6 @@ new #[Title('Meals')] class extends Component {
         $this->name = '';
         $this->mealType = MealType::Main->value;
         $this->instructions = '';
-        $this->useRecipeAsIngredient = false;
         $this->finishedWeightManual = false;
         $this->recipeIngredients = [$this->emptyRecipeIngredientRow(forNewRecipe: true)];
         $this->recipeIngredientSearch = [''];
@@ -206,8 +201,7 @@ new #[Title('Meals')] class extends Component {
 
     public function requiresFinishedWeightContext(): bool
     {
-        return $this->useRecipeAsIngredient
-            || MealType::tryFrom($this->mealType) === MealType::BaseRecipe;
+        return false;
     }
 
     private function formatGramsInput(float $grams): string
@@ -240,13 +234,6 @@ new #[Title('Meals')] class extends Component {
     public function updated($name): void
     {
         if (str_starts_with((string) $name, 'recipeIngredients') && ! $this->finishedWeightManual) {
-            $this->syncFinishedWeightFromRawTotal();
-        }
-    }
-
-    public function updatedUseRecipeAsIngredient(): void
-    {
-        if ($this->useRecipeAsIngredient && ! $this->finishedWeightManual) {
             $this->syncFinishedWeightFromRawTotal();
         }
     }
@@ -347,10 +334,6 @@ new #[Title('Meals')] class extends Component {
 
     public function updatedMealType(string $value): void
     {
-        if (MealType::tryFrom($value) === MealType::BaseRecipe) {
-            $this->useRecipeAsIngredient = true;
-        }
-
         if (! $this->finishedWeightManual && $this->requiresFinishedWeightContext()) {
             $this->syncFinishedWeightFromRawTotal();
         }
@@ -412,6 +395,7 @@ new #[Title('Meals')] class extends Component {
     public function getFilteredMealsProperty(): LengthAwarePaginator
     {
         $query = Meal::query()
+            ->visibleInMealLibrary()
             ->orderBy('meal_type')
             ->orderByDesc('id');
 
@@ -556,13 +540,10 @@ new #[Title('Meals')] class extends Component {
 
     public function saveMealFromBuilder(): void
     {
-        $requiresFinished = $this->requiresFinishedWeightContext();
-
         $rules = [
             'name' => ['required', 'string', 'max:255'],
             'mealType' => ['required', 'string', Rule::enum(MealType::class)],
             'instructions' => ['nullable', 'string'],
-            'useRecipeAsIngredient' => ['boolean'],
             'mealImage' => [
                 'nullable',
                 File::types(['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'heic', 'heif', 'avif'])->max(5120),
@@ -572,10 +553,6 @@ new #[Title('Meals')] class extends Component {
             'recipeIngredients.*.amount' => ['required', 'numeric', 'min:0'],
             'recipeIngredients.*.unit' => ['required', 'string', Rule::enum(RecipeAmountUnit::class)],
         ];
-
-        if ($requiresFinished) {
-            $rules['finishedWeightGrams'] = ['required', 'numeric', 'gt:0'];
-        }
 
         $validated = $this->validate($rules);
 
@@ -598,32 +575,13 @@ new #[Title('Meals')] class extends Component {
         if ($selfDerivedIngredientId !== null && array_key_exists((int) $selfDerivedIngredientId, $sync)) {
             $this->addError(
                 'recipeIngredients',
-                __('This meal cannot include its own recipe-as-ingredient row. Remove that ingredient line or turn off “use as base ingredient”.')
+                __('This meal cannot include its own linked library ingredient row. Remove that ingredient line.')
             );
 
             return;
         }
 
-        $totalGrams = MealRecipeAsIngredientSyncService::totalGramsFromSync($sync);
-
-        $exposeRecipeAsIngredient = $this->useRecipeAsIngredient;
-
-        if ($exposeRecipeAsIngredient && $totalGrams <= 0) {
-            $this->addError(
-                'useRecipeAsIngredient',
-                __('Total recipe weight must be greater than zero to save per-100 g values.')
-            );
-
-            return;
-        }
-
-        $finishedParsed = $requiresFinished
-            ? (float) ($validated['finishedWeightGrams'] ?? 0)
-            : 0.0;
-
-        $finishedForStorage = $requiresFinished && $finishedParsed > 0
-            ? round($finishedParsed, 4)
-            : null;
+        $finishedForStorage = null;
 
         $imagePath = null;
         if ($this->mealImage instanceof TemporaryUploadedFile) {
@@ -647,6 +605,15 @@ new #[Title('Meals')] class extends Component {
         $statusMessage = '';
         $mealTypeEnum = MealType::from($validated['mealType']);
         $recipeCategory = $mealTypeEnum->toRecipeCategory();
+
+        if ($mealTypeEnum === MealType::BaseRecipe) {
+            $this->addError(
+                'mealType',
+                __('Prepared base ingredients belong in the Ingredient Library. Use “Create Base Ingredient” there.'),
+            );
+
+            return;
+        }
 
         if ($this->editingMealId !== null) {
             $meal = Meal::query()->find($this->editingMealId);
@@ -693,16 +660,6 @@ new #[Title('Meals')] class extends Component {
             $this->error = null;
             $statusMessage = __('Meal saved.');
         }
-
-        $wantsLibraryDivisor = $exposeRecipeAsIngredient || $recipeCategory === RecipeCategory::BaseRecipe;
-
-        MealRecipeAsIngredientSyncService::sync(
-            $meal,
-            $nutrition,
-            $sync,
-            $exposeRecipeAsIngredient,
-            $wantsLibraryDivisor && $finishedParsed > 0 ? $finishedParsed : null,
-        );
 
         $this->resetFormToCreateMode();
         $this->resetPage();
@@ -923,19 +880,6 @@ new #[Title('Meals')] class extends Component {
                         :label="__('Instructions')"
                         rows="5"
                     />
-                </div>
-
-                <div class="max-w-xl">
-                    <flux:checkbox
-                        wire:model.live.boolean="useRecipeAsIngredient"
-                        :label="__('Use this recipe as a base ingredient')"
-                    />
-                    <flux:text class="mt-1 text-xs text-stone-500 dark:text-stone-400">
-                        {{ __('When saved, an ingredient with the same name is created or updated using this batch’s total nutrition divided by finished weight (per 100 g). Use “Finished weight” below after cooking or reduction. Editing this meal updates that ingredient automatically.') }}
-                    </flux:text>
-                    @error('useRecipeAsIngredient')
-                        <flux:text class="mt-2 font-medium !text-red-700 !dark:text-red-400">{{ $message }}</flux:text>
-                    @enderror
                 </div>
 
                 <div class="max-w-md">

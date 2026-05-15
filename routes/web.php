@@ -30,6 +30,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::get('/ingredient-library', [IngredientLibraryController::class, 'index'])->name('ingredient-library');
             Route::get('/ingredient-library/export-csv', IngredientLibraryCsvExportController::class)->name('ingredient-library.export-csv');
             Route::post('/ingredient-library/import-csv', IngredientLibraryCsvImportController::class)->name('ingredient-library.import-csv');
+            Route::post('/ingredient-library/base-ingredient', [IngredientLibraryController::class, 'store'])->name('ingredient-library.base-ingredient.store');
+            Route::post('/ingredient-library/base-ingredient/{ingredient}', [IngredientLibraryController::class, 'update'])->name('ingredient-library.base-ingredient.update');
+            Route::post('/ingredient-library', [IngredientLibraryController::class, 'store'])->name('ingredient-library.store');
+            Route::post('/ingredient-library/{ingredient}', [IngredientLibraryController::class, 'update'])->name('ingredient-library.update');
             Route::get('/meal-library', [MealLibraryController::class, 'index'])->name('meal-library');
             Route::get('/meal-library/csv-template', [MealLibraryController::class, 'downloadMealCraftCsvTemplate'])->name('meal-library.csv-template');
             Route::post('/meal-library', [MealController::class, 'store'])->name('meal-library.store');

@@ -12,15 +12,6 @@ test('base recipe meal type maps to Base Recipe recipe category', function () {
     expect(MealType::BaseRecipe->toRecipeCategory())->toBe(RecipeCategory::BaseRecipe);
 });
 
-test('selecting base recipe in meal creator checks use as base ingredient', function () {
-    $this->actingAs(User::factory()->create());
-
-    Livewire::test('pages::meals')
-        ->set('useRecipeAsIngredient', false)
-        ->set('mealType', MealType::BaseRecipe->value)
-        ->assertSet('useRecipeAsIngredient', true);
-});
-
 test('meal plan slot picker excludes base recipe meals even if mis-tagged', function () {
     $this->actingAs(User::factory()->create());
 
@@ -57,7 +48,7 @@ test('meal plan slot picker excludes base recipe meals even if mis-tagged', func
         ->not->toContain('Misassigned Base');
 });
 
-test('editing a base recipe meal pre-checks use as base ingredient without derived row yet', function () {
+test('livewire meal builder rejects base recipe meal type with ingredient library guidance', function () {
     $this->actingAs(User::factory()->create());
 
     $egg = Ingredient::query()->create([
@@ -75,22 +66,14 @@ test('editing a base recipe meal pre-checks use as base ingredient without deriv
         'is_verified' => true,
     ]);
 
-    $meal = Meal::query()->create([
-        'name' => 'Hollandaise Base',
-        'category' => RecipeCategory::Meal,
-        'meal_type' => MealType::BaseRecipe,
-        'description' => null,
-        'total_calories' => 50,
-        'total_protein' => 5,
-        'total_carbs' => 5,
-        'total_fat' => 2,
-    ]);
+    Livewire::test('pages::meals')
+        ->set('name', 'Hollandaise Base')
+        ->set('mealType', MealType::BaseRecipe->value)
+        ->set('recipeIngredients', [
+            ['ingredient_id' => $egg->id, 'amount' => 50, 'unit' => 'g'],
+        ])
+        ->call('saveMealFromBuilder')
+        ->assertHasErrors(['mealType']);
 
-    $meal->ingredients()->sync([
-        $egg->id => ['amount' => 50, 'unit' => 'g', 'amount_grams' => 50],
-    ]);
-
-    Livewire::test('pages::meals', ['meal' => $meal->fresh()])
-        ->assertSet('useRecipeAsIngredient', true)
-        ->assertSet('mealType', MealType::BaseRecipe->value);
+    expect(Meal::query()->where('name', 'Hollandaise Base')->exists())->toBeFalse();
 });

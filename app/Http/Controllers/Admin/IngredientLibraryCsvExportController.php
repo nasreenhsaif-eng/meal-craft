@@ -41,6 +41,9 @@ class IngredientLibraryCsvExportController extends Controller
             'vitamin_d',
             'vitamin_k',
             'density',
+            'is_base_recipe',
+            'recipe_components',
+            'finished_weight_grams',
         ];
 
         return response()->streamDownload(function () use ($headers): void {
@@ -54,8 +57,20 @@ class IngredientLibraryCsvExportController extends Controller
             Ingredient::query()
                 ->where('is_verified', true)
                 ->latest()
+                ->with('components')
                 ->each(function (Ingredient $ingredient) use ($handle): void {
                     $m = is_array($ingredient->micronutrients) ? $ingredient->micronutrients : [];
+                    $isBaseRecipe = $ingredient->isPreparedBaseIngredient();
+                    $recipeComponents = '';
+                    if ($isBaseRecipe) {
+                        $recipeComponents = $ingredient->components
+                            ->map(fn (Ingredient $child): string => sprintf(
+                                '%d:%s',
+                                (int) $child->id,
+                                rtrim(rtrim(number_format((float) ($child->pivot->amount_grams ?? 0), 4, '.', ''), '0'), '.')
+                            ))
+                            ->implode(',');
+                    }
                     fputcsv($handle, [
                         $ingredient->name,
                         $ingredient->usda_food_category ?? '',
@@ -81,6 +96,9 @@ class IngredientLibraryCsvExportController extends Controller
                         $m['vitamin_d'] ?? 0,
                         $m['vitamin_k'] ?? 0,
                         $ingredient->density ?? 1,
+                        $isBaseRecipe ? 1 : 0,
+                        $recipeComponents,
+                        '',
                     ], ',', '"', '\\');
                 });
 

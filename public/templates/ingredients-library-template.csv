@@ -1,3 +1,3 @@
-name,category,fdc_id,calories,protein,carbs,fat,b6,b9_folate,b12,iron,magnesium,fiber,sugar,calcium,potassium,sodium,zinc,vitamin_c,vitamin_a,vitamin_e,vitamin_d,vitamin_k,density
-Banana,Fruits and Fruit Juices,,89,1.1,22.8,0.3,0.37,20,0,0.26,27,2.6,12.2,5,358,1,0.15,8.7,0.003,0.1,0,0,1
-Spinach,Vegetables and Vegetable Products,,23,2.9,3.6,0.4,0.19,194,0,2.7,79,2.2,0.4,99,558,79,0.53,28.1,469,2,0,483,1
+name,category,fdc_id,calories,protein,carbs,fat,b6,b9_folate,b12,iron,magnesium,fiber,sugar,calcium,potassium,sodium,zinc,vitamin_c,vitamin_a,vitamin_e,vitamin_d,vitamin_k,density,is_base_recipe,recipe_components,finished_weight_grams
+Banana,Fruits and Fruit Juices,,89,1.1,22.8,0.3,0.37,20,0,0.26,27,2.6,12.2,5,358,1,0.15,8.7,0.003,0.1,0,0,1,0,,
+Marinara Base,,,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,"Mango (2000g),Honey:100",

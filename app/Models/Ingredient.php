@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\IngredientLibraryCategory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -112,5 +113,20 @@ class Ingredient extends Model
     public function isDerivedFromRecipe(): bool
     {
         return $this->source_meal_id !== null;
+    }
+
+    /**
+     * Child ingredients that make up this prepared base ingredient (per-100 g totals stored on parent).
+     */
+    public function components(): BelongsToMany
+    {
+        return $this->belongsToMany(self::class, 'ingredient_component', 'parent_ingredient_id', 'child_ingredient_id')
+            ->withPivot(['amount_grams'])
+            ->withTimestamps();
+    }
+
+    public function isPreparedBaseIngredient(): bool
+    {
+        return IngredientLibraryCategory::isPrepared($this->usda_food_category);
     }
 }

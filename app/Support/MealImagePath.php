@@ -5,15 +5,20 @@ namespace App\Support;
 use Illuminate\Support\Facades\Storage;
 
 /**
- * Normalizes persisted meal `image_path` values and resolves them to browser URLs.
+ * Normalizes persisted meal {@code image_path} values and resolves them to browser URLs.
  *
  * Supported stored shapes:
- * - Absolute URLs (`http://`, `https://`)
- * - Public web assets under `/images/...` (files in `public/images/...`)
- * - Files on the `public` storage disk (e.g. `meals/…` from uploads)
+ * - Absolute URLs ({@code http://}, {@code https://})
+ * - Public web assets under {@code /images/...} (files in {@code public/images/...})
+ * - Files on the {@code public} storage disk (e.g. {@code meals/…} from uploads)
  */
 final class MealImagePath
 {
+    public const PLACEHOLDER_RELATIVE = 'images/meals/placeholder.svg';
+
+    /** @var list<string> */
+    private const FALLBACK_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+
     public static function normalizeForDatabase(?string $raw): ?string
     {
         if ($raw === null) {
@@ -38,6 +43,17 @@ final class MealImagePath
 
         if ($s === '') {
             return null;
+        }
+
+        if (preg_match('#^//([^/]+)(/.*)$#', $s, $matches) === 1) {
+            $s = ltrim((string) $matches[2], '/');
+        } elseif (preg_match('#^[a-z0-9.-]+\.[a-z]{2,}(/.*)$#i', $s, $matches) === 1) {
+            $s = ltrim((string) $matches[1], '/');
+        } elseif (str_contains($s, '/images/')) {
+            $pos = strpos($s, '/images/');
+            if ($pos !== false) {
+                $s = ltrim(substr($s, $pos + 1), '/');
+            }
         }
 
         $s = preg_replace('#^(public/)+#i', '', $s) ?? $s;
@@ -65,7 +81,11 @@ final class MealImagePath
             return $path;
         }
 
-        $relative = ltrim($path, '/');
+        $relative = self::findExistingRelativePath(ltrim($path, '/'));
+
+        if ($relative === null) {
+            return self::placeholderUrl();
+        }
 
         if (str_starts_with($relative, 'images/')) {
             return asset($relative);
@@ -76,6 +96,11 @@ final class MealImagePath
         }
 
         return Storage::disk('public')->url($relative);
+    }
+
+    public static function placeholderUrl(): string
+    {
+        return asset(self::PLACEHOLDER_RELATIVE);
     }
 
     /**
@@ -103,5 +128,55 @@ final class MealImagePath
         }
 
         return true;
+    }
+
+    private static function findExistingRelativePath(string $relative): ?string
+    {
+        if ($relative === '' || $relative === self::PLACEHOLDER_RELATIVE) {
+            return null;
+        }
+
+        if (self::fileExistsForRelativePath($relative)) {
+            return $relative;
+        }
+
+        $directory = pathinfo($relative, PATHINFO_DIRNAME);
+        $filename = pathinfo($relative, PATHINFO_FILENAME);
+        if ($filename === '') {
+            return null;
+        }
+
+        $directory = $directory === '.' ? '' : $directory.'/';
+
+        foreach (self::FALLBACK_EXTENSIONS as $extension) {
+            $candidate = $directory.$filename.'.'.$extension;
+            if ($candidate !== $relative && self::fileExistsForRelativePath($candidate)) {
+                return $candidate;
+            }
+        }
+
+        return null;
+    }
+
+    private static function fileExistsForRelativePath(string $relative): bool
+    {
+        $absolute = self::absolutePathForRelative($relative);
+
+        return $absolute !== null && is_file($absolute);
+    }
+
+    private static function absolutePathForRelative(string $relative): ?string
+    {
+        $relative = ltrim($relative, '/');
+
+        if (str_starts_with($relative, 'images/')) {
+            return public_path($relative);
+        }
+
+        if (str_starts_with($relative, 'storage/')) {
+            return public_path($relative);
+        }
+
+        return storage_path('app/public/'.$relative);
     }
 }

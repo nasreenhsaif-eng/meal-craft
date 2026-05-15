@@ -10,8 +10,10 @@ use App\Models\Ingredient;
 use App\Models\Meal;
 use App\Models\MealCsvImportPendingRow;
 use App\Models\User;
+use App\Support\IngredientLibraryCategory;
 use App\Support\IngredientQuantityStringParser;
 use App\Support\MealImagePath;
+use App\Support\MealLibraryBulkNutrition;
 use App\Support\MealLibraryDelimitedCellParser;
 use App\Support\MealLibraryTaxonomy;
 use Illuminate\Http\UploadedFile;
@@ -32,6 +34,7 @@ use Illuminate\Support\Facades\Log;
  * - Cycle_Phase / Cycle phase (optional)
  * - Total_Calories (optional)
  * - Target Calories / Target Protein / Target Carbs / Target Fat (optional)
+ * - Batch Calories / Batch Protein / Batch Carbs / Batch Fat (optional; used when Is Bulk is true)
  * - Is Bulk / Servings Count (optional; servings required when bulk is true)
  * - Safety Alerts (optional; comma or pipe separated labels)
  * - Image_URL (optional)
@@ -71,7 +74,6 @@ final class MealCsvLibraryImportService
         return [
             RecipeCategory::Breakfast,
             RecipeCategory::Meal,
-            RecipeCategory::BaseRecipe,
             RecipeCategory::SideSalad,
             RecipeCategory::Soup,
             RecipeCategory::Dessert,
@@ -448,6 +450,10 @@ final class MealCsvLibraryImportService
             return null;
         }
 
+        if (BaseIngredientService::isBaseIngredientCategoryInput($raw)) {
+            return RecipeCategory::BaseRecipe;
+        }
+
         $norm = $this->normalizeCategoryLabel($raw);
 
         foreach (self::mealLibraryCsvAllowedCategories() as $case) {
@@ -605,6 +611,19 @@ final class MealCsvLibraryImportService
             return 'target_fat';
         }
 
+        if (str_contains($t, 'batch') && (str_contains($t, 'calor') || str_contains($t, 'kcal'))) {
+            return 'batch_calories';
+        }
+        if (str_contains($t, 'batch') && str_contains($t, 'protein')) {
+            return 'batch_protein';
+        }
+        if (str_contains($t, 'batch') && str_contains($t, 'carb')) {
+            return 'batch_carbs';
+        }
+        if (str_contains($t, 'batch') && str_contains($t, 'fat')) {
+            return 'batch_fat';
+        }
+
         if (str_contains($t, 'total') && (str_contains($t, 'calor') || str_contains($t, 'kcal'))) {
             return 'total_calories';
         }
@@ -668,6 +687,24 @@ final class MealCsvLibraryImportService
                 return [
                     'valid' => false,
                     'message' => __('The :field column must be a number.', ['field' => str_replace('_', ' ', $key)]),
+                    'attributes' => [],
+                ];
+            }
+            $attributes[$key] = (float) $cell;
+        }
+
+        foreach (['batch_calories', 'batch_protein', 'batch_carbs', 'batch_fat'] as $key) {
+            if (! array_key_exists($key, $assoc)) {
+                continue;
+            }
+            $cell = trim((string) $assoc[$key]);
+            if ($cell === '') {
+                continue;
+            }
+            if (! is_numeric($cell) || (float) $cell < 0) {
+                return [
+                    'valid' => false,
+                    'message' => __('The :field column must be a non-negative number.', ['field' => str_replace('_', ' ', $key)]),
                     'attributes' => [],
                 ];
             }
@@ -1031,10 +1068,28 @@ final class MealCsvLibraryImportService
             ];
         }
 
+        if ($mealCategory === RecipeCategory::BaseRecipe) {
+            return $this->importBaseIngredientCsvRow($lineNumber, $mealName, $calc, $optionalMealAttrs);
+        }
+
         try {
             $mealCategoryValue = $mealCategory->value;
             $normKey = self::normalizeMealNameKey($mealName);
             $existingMeal = $mealsByNormalizedName[$normKey] ?? null;
+
+            $isBulk = (bool) ($optionalMealAttrs['is_bulk'] ?? false);
+            $servingsCount = isset($optionalMealAttrs['servings_count'])
+                ? (float) $optionalMealAttrs['servings_count']
+                : null;
+            $csvBatchMacros = MealLibraryBulkNutrition::batchMacrosFromOptionalAttributes($optionalMealAttrs);
+            $mealOptionalAttrs = MealLibraryBulkNutrition::withoutBatchMacroKeys($optionalMealAttrs);
+            $nutritionResolution = MealLibraryBulkNutrition::resolvePersistedNutrition(
+                $calc['nutrition'],
+                $isBulk,
+                $servingsCount,
+                $csvBatchMacros,
+                $calc['resolved'] !== [],
+            );
 
             $result = DB::transaction(function () use (
                 $existingMeal,
@@ -1048,10 +1103,9 @@ final class MealCsvLibraryImportService
                 $cyclePhaseStrings,
                 $hasMealImageColumn,
                 $csvImageNormalized,
-                $optionalMealAttrs,
+                $mealOptionalAttrs,
+                $nutritionResolution,
             ): array {
-                $nutritionPayload = Meal::nutritionSummaryToPersistedAttributes($calc['nutrition']);
-
                 $sync = [];
                 foreach ($calc['resolved'] as $item) {
                     /** @var Ingredient $ing */
@@ -1081,7 +1135,9 @@ final class MealCsvLibraryImportService
                     'description' => $instructions !== '' ? $instructions : null,
                     'highlight' => $highlight !== '' ? $highlight : null,
                     'health_score' => $calc['health_score'],
-                ], $nutritionPayload, $planPhasePayload, $optionalMealAttrs);
+                    'nutrition_aggregates_synced' => $nutritionResolution['nutrition_aggregates_synced'],
+                    'sickle_cell_program_highlight' => $nutritionResolution['sickle_cell_program_highlight'],
+                ], $nutritionResolution['attributes'], $planPhasePayload, $mealOptionalAttrs);
 
                 if ($hasMealImageColumn) {
                     $basePayload['image_path'] = $csvImageNormalized;
@@ -1142,6 +1198,79 @@ final class MealCsvLibraryImportService
                 (string) __('Could not save meal: :msg', ['msg' => $e->getMessage()]),
                 $mealName,
             );
+        }
+    }
+
+    /**
+     * @param  array{
+     *     nutrition: array<string, float>,
+     *     resolved: list<array{ingredient: Ingredient, grams: float}>,
+     *     health_score: float,
+     *     calorie_warnings: list<string>,
+     *     pending_ingredients: list<string>
+     * }  $calc
+     * @param  array<string, mixed>  $optionalMealAttrs
+     * @return array{row: array<string, mixed>, outcome: 'imported'|'updated'|'error'}
+     */
+    private function importBaseIngredientCsvRow(
+        int $lineNumber,
+        string $name,
+        array $calc,
+        array $optionalMealAttrs,
+    ): array {
+        $finished = isset($optionalMealAttrs['finished_weight_grams'])
+            ? (float) $optionalMealAttrs['finished_weight_grams']
+            : null;
+
+        $existing = Ingredient::query()
+            ->where('name', $name)
+            ->whereIn('usda_food_category', IngredientLibraryCategory::preparedLabels())
+            ->first();
+
+        $componentRows = [];
+        foreach ($calc['resolved'] as $item) {
+            $componentRows[] = [
+                'ingredient_id' => (int) $item['ingredient']->getKey(),
+                'amount_grams' => (float) $item['grams'],
+            ];
+        }
+
+        try {
+            $ingredient = app(BaseIngredientService::class)->upsert(
+                $existing,
+                $name,
+                $componentRows,
+                $finished,
+            );
+
+            Meal::query()
+                ->where('name', $name)
+                ->where(function ($query): void {
+                    $query->where('meal_type', MealType::BaseRecipe->value)
+                        ->orWhere('category', RecipeCategory::BaseRecipe->value);
+                })
+                ->each(function (Meal $legacyMeal): void {
+                    Ingredient::query()
+                        ->where('source_meal_id', $legacyMeal->id)
+                        ->update(['source_meal_id' => null]);
+                    $legacyMeal->delete();
+                });
+
+            $wasUpdate = $existing !== null;
+
+            return [
+                'row' => [
+                    'line' => $lineNumber,
+                    'meal_name' => $name,
+                    'category' => IngredientLibraryCategory::BaseIngredient,
+                    'status' => $wasUpdate ? self::STATUS_UPDATED : self::STATUS_IMPORTED,
+                    'ingredient_id' => (int) $ingredient->getKey(),
+                    'message' => __('Saved as base ingredient in the Ingredient Library (not the Meal Library).'),
+                ],
+                'outcome' => $wasUpdate ? 'updated' : 'imported',
+            ];
+        } catch (\InvalidArgumentException $e) {
+            return $this->mealCsvImportAssocErrorResult($lineNumber, $e->getMessage(), $name);
         }
     }
 

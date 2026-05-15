@@ -9,9 +9,9 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreMealFromLibraryRequest;
 use App\Models\Ingredient;
 use App\Models\Meal;
+use App\Services\BaseIngredientService;
 use App\Services\MealCraftMasterCsvExport;
 use App\Services\MealCsvLibraryImportService;
-use App\Services\MealRecipeAsIngredientSyncService;
 use App\Services\RecipeNutritionCalculator;
 use App\Support\IngredientAllergenCatalog;
 use App\Support\MealImagePath;
@@ -44,6 +44,7 @@ class MealLibraryController extends Controller
         }
 
         $meals = Meal::query()
+            ->visibleInMealLibrary()
             ->with(['ingredients' => function ($query): void {
                 $query->orderBy('ingredients.name');
             }])
@@ -73,6 +74,12 @@ class MealLibraryController extends Controller
         }
 
         $data = $request->validated();
+
+        if (BaseIngredientService::isBaseIngredientCategoryInput((string) $data['category'])) {
+            return redirect()
+                ->route('admin.ingredient-library')
+                ->with('error', __('Prepared base ingredients belong in the Ingredient Library. Use “Create Base Ingredient” there.'));
+        }
 
         $category = RecipeCategory::from($data['category']);
         $mealType = MealType::fromRecipeCategory($category);
@@ -130,6 +137,12 @@ class MealLibraryController extends Controller
         }
 
         $data = $request->validated();
+
+        if (BaseIngredientService::isBaseIngredientCategoryInput((string) $data['category'])) {
+            return redirect()
+                ->route('admin.ingredient-library')
+                ->with('error', __('Prepared base ingredients belong in the Ingredient Library. Use “Create Base Ingredient” there.'));
+        }
 
         $category = RecipeCategory::from($data['category']);
         $mealType = MealType::fromRecipeCategory($category);
@@ -230,10 +243,6 @@ class MealLibraryController extends Controller
 
         $meal->refresh();
         $meal->load('ingredients');
-        MealRecipeAsIngredientSyncService::syncFromPersistedMeal(
-            $meal,
-            (bool) ($data['use_as_base_ingredient'] ?? false),
-        );
     }
 
     /**

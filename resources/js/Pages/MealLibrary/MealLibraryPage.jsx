@@ -18,6 +18,7 @@ import SquareCheckbox from '../../Components/Atoms/Icons/SquareCheckbox.jsx';
 import NutrientBadge from '../../Components/Atoms/MealSystem/NutrientBadge.jsx';
 import { aggregateNutritionFromIngredientRows, normalizeIngredientKey } from '../../meal-library/aggregateIngredientNutrition.ts';
 import { calculateMealNutrition, calorieWarningsForCategory, resolveMealLibraryCategory } from '../../meal-library/calculateMealNutrition.ts';
+import { resolveMealImageUrl } from '../../meal-library/resolveMealImageUrl.ts';
 import { gramsFromIngredientAmountAndUnit, parseIngredientQuantityString } from '../../meal-library/ingredientQuantityString.ts';
 import { buildIngredientPasteHighlightParts } from '../../meal-library/ingredientPasteHighlight.ts';
 import { filterIngredientsForCombobox } from '../../meal-library/ingredientSearch.ts';
@@ -26,8 +27,7 @@ import {
     sickleCellProgramMealHighlight,
 } from '../../meal-library/mealSafetyAndSickle.ts';
 import { DIETARY_TAG_OPTIONS, MEAL_PLAN_TAG_OPTIONS } from '../../meal-library/mealTaxonomy.js';
-import { planningVarianceDeltaClass, resolvePerServingActualForTargets, scaleNutritionRecord } from '../../meal-library/bulkPlanningVariance.ts';
-import { formatMealCraftVarianceNotes } from '../../meal-library/exportMealDataToCSV.ts';
+import { resolvePerServingActualForTargets, scaleNutritionRecord } from '../../meal-library/bulkPlanningVariance.ts';
 import { downloadMissingIngredientsCSV } from '../../meal-library/downloadMissingIngredientsCSV.ts';
 import { downloadMealCraftCsvTemplate } from '../../meal-library/generateLibraryExportCSV.ts';
 import SafetyAlerts from '../../Components/MealSystem/SafetyAlerts.jsx';
@@ -185,7 +185,7 @@ function mealCsvImportModalErrorDisplayLines(modal) {
     return out;
 }
 
-const MEAL_FORM_TYPE_OPTIONS = ['Breakfast', 'Meal', 'Base Recipe', 'Side Salad', 'Soup', 'Dessert'];
+const MEAL_FORM_TYPE_OPTIONS = ['Breakfast', 'Meal', 'Side Salad', 'Soup', 'Dessert'];
 const UNIT_OPTIONS = ['g', 'kg', 'ml', 'ltr'];
 
 const DEFAULT_CYCLE_PHASES = [
@@ -439,8 +439,6 @@ export function MealLibraryPageContent({
     const [formHighlight, setFormHighlight] = useState('');
     const [formPhoto, setFormPhoto] = useState(/** @type {File|null} */ (null));
     const [mealPhotoPreviewUrl, setMealPhotoPreviewUrl] = useState(/** @type {string|null} */ (null));
-    const [finishedWeightGrams, setFinishedWeightGrams] = useState('');
-    const [useAsBaseIngredient, setUseAsBaseIngredient] = useState(false);
     const [ingredientRows, setIngredientRows] = useState(
         /** @type {{ nameQuery: string; selectedName: string; ingredientId: number | null; amount: string; unit: string }[]} */ ([
             { nameQuery: '', selectedName: '', ingredientId: null, amount: '100', unit: 'g' },
@@ -450,12 +448,6 @@ export function MealLibraryPageContent({
     const [ingredientPasteMissingLabels, setIngredientPasteMissingLabels] = useState(/** @type {string[]} */ ([]));
     const [ingredientPasteApplyError, setIngredientPasteApplyError] = useState('');
     const mealPlanMultiOptions = useMemo(() => mealPlanTagOptionsForMulti(MEAL_PLAN_TAG_OPTIONS), []);
-
-    useEffect(() => {
-        if (formType === 'Base Recipe') {
-            setUseAsBaseIngredient(true);
-        }
-    }, [formType]);
 
     const resetCreateForm = useCallback(() => {
         setFormName('');
@@ -477,8 +469,6 @@ export function MealLibraryPageContent({
         setFormHighlight('');
         setFormPhoto(null);
         setMealPhotoPreviewUrl(null);
-        setFinishedWeightGrams('');
-        setUseAsBaseIngredient(false);
         setIngredientRows([{ nameQuery: '', selectedName: '', ingredientId: null, amount: '100', unit: 'g' }]);
         setIngredientPasteField('');
         setIngredientPasteMissingLabels([]);
@@ -533,10 +523,8 @@ export function MealLibraryPageContent({
         setTargetProteinManual(String(ef.targetProtein ?? ''));
         setTargetCarbsManual(String(ef.targetCarbs ?? ''));
         setTargetFatManual(String(ef.targetFat ?? ''));
-        setFinishedWeightGrams(String(ef.finishedWeightGrams ?? ''));
         setFormPhoto(null);
         setMealPhotoPreviewUrl(null);
-        setUseAsBaseIngredient(false);
         const rows =
             Array.isArray(ef.ingredientRows) && ef.ingredientRows.length > 0
                 ? ef.ingredientRows.map((r) => ({
@@ -833,12 +821,6 @@ export function MealLibraryPageContent({
         if (ingredients.length > 0) {
             payload.ingredients = ingredients;
         }
-        if (formType === 'Base Recipe' || useAsBaseIngredient) {
-            payload.use_as_base_ingredient = true;
-        }
-        if (finishedWeightGrams.trim() !== '') {
-            payload.finished_weight_grams = Number(finishedWeightGrams.trim());
-        }
         if (formPhoto) {
             payload.photo = formPhoto;
         }
@@ -1054,31 +1036,20 @@ export function MealLibraryPageContent({
         [isBulkRecipe, bulkServingsCount, nutritionForSidebar],
     );
 
-    const singleServingNutritionForSidebar = useMemo(() => {
+    /** Sidebar summary: bulk mode only shows per-serving system totals (never batch rollup). */
+    const nutritionForSummaryDisplay = useMemo(() => {
+        if (!nutritionForSidebar) {
+            return null;
+        }
         if (!isBulkRecipe) {
             return nutritionForSidebar;
         }
         const svc = parseBulkServingsCount(bulkServingsCount);
         if (svc == null || !Number.isFinite(svc) || svc <= 0) {
-            return nutritionForSidebar;
-        }
-        if (!nutritionForSidebar) {
             return null;
         }
         return scaleNutritionRecord(nutritionForSidebar, 1 / svc);
     }, [isBulkRecipe, bulkServingsCount, nutritionForSidebar]);
-
-    /** Batch totals when bulk servings are unset; per-serving when valid. */
-    const nutritionForSummaryDisplay = useMemo(() => {
-        if (!isBulkRecipe) {
-            return singleServingNutritionForSidebar;
-        }
-        const svc = parseBulkServingsCount(bulkServingsCount);
-        if (svc == null || !Number.isFinite(svc) || svc <= 0) {
-            return nutritionForSidebar;
-        }
-        return singleServingNutritionForSidebar;
-    }, [isBulkRecipe, bulkServingsCount, nutritionForSidebar, singleServingNutritionForSidebar]);
 
     const ingredientPasteHighlightParts = useMemo(
         () => buildIngredientPasteHighlightParts(ingredientPasteField, ingredientDatabase),
@@ -1178,22 +1149,6 @@ export function MealLibraryPageContent({
         ];
     }, [nutritionForSummaryDisplay]);
 
-    const calculatedNutritionForTargets = useMemo(() => {
-        const n = perServingNutritionForPlanningTargets;
-        if (!n) {
-            return null;
-        }
-        const num = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : 0);
-        const carbs = num(n.carbs);
-        const fiber = num(n.fiber);
-        return {
-            calories: num(n.calories),
-            protein: num(n.protein),
-            fat: num(n.fat),
-            netCarbs: Math.max(0, carbs - fiber),
-        };
-    }, [perServingNutritionForPlanningTargets]);
-
     const categoryWarningsForModal = useMemo(() => {
         if (!nutritionResult?.ok || !nutritionResult.category) {
             return nutritionResult?.categoryWarnings ?? [];
@@ -1223,90 +1178,6 @@ export function MealLibraryPageContent({
         }
         return 'Per serving (system)';
     }, [isBulkRecipe, bulkServingsCount]);
-
-    const targetVarianceRows = useMemo(() => {
-        const calc = calculatedNutritionForTargets;
-        if (!calc) {
-            return [];
-        }
-        const tc = optionalTargetNumberString(targetCaloriesManual);
-        const tp = optionalTargetNumberString(targetProteinManual);
-        const tcar = optionalTargetNumberString(targetCarbsManual);
-        const tf = optionalTargetNumberString(targetFatManual);
-        /** @type {{ label: string; target: number; calculated: number; delta: string; deltaClass: string }[]} */
-        const rows = [];
-        const fmtDelta = (d) => (Math.round(d * 100) / 100).toFixed(2).replace(/\.?0+$/, '');
-        if (tc !== null) {
-            const d = tc - calc.calories;
-            rows.push({
-                label: 'Calories (kcal)',
-                target: tc,
-                calculated: calc.calories,
-                delta: fmtDelta(d),
-                deltaClass: planningVarianceDeltaClass(tc, calc.calories),
-            });
-        }
-        if (tp !== null) {
-            const d = tp - calc.protein;
-            rows.push({
-                label: 'Protein (g)',
-                target: tp,
-                calculated: calc.protein,
-                delta: fmtDelta(d),
-                deltaClass: planningVarianceDeltaClass(tp, calc.protein),
-            });
-        }
-        if (tcar !== null) {
-            const d = tcar - calc.netCarbs;
-            rows.push({
-                label: 'Net carbs (g)',
-                target: tcar,
-                calculated: calc.netCarbs,
-                delta: fmtDelta(d),
-                deltaClass: planningVarianceDeltaClass(tcar, calc.netCarbs),
-            });
-        }
-        if (tf !== null) {
-            const d = tf - calc.fat;
-            rows.push({
-                label: 'Fat (g)',
-                target: tf,
-                calculated: calc.fat,
-                delta: fmtDelta(d),
-                deltaClass: planningVarianceDeltaClass(tf, calc.fat),
-            });
-        }
-        return rows;
-    }, [
-        calculatedNutritionForTargets,
-        targetCaloriesManual,
-        targetProteinManual,
-        targetCarbsManual,
-        targetFatManual,
-    ]);
-
-    const targetVarianceSummaryLine = useMemo(() => {
-        const calc = calculatedNutritionForTargets;
-        if (!calc) {
-            return '';
-        }
-        const line = formatMealCraftVarianceNotes(
-            {
-                calories: optionalTargetNumberString(targetCaloriesManual),
-                protein: optionalTargetNumberString(targetProteinManual),
-                fat: optionalTargetNumberString(targetFatManual),
-                netCarbs: optionalTargetNumberString(targetCarbsManual),
-            },
-            calc,
-        );
-        return line;
-    }, [
-        calculatedNutritionForTargets,
-        targetCaloriesManual,
-        targetProteinManual,
-        targetCarbsManual,
-        targetFatManual,
-    ]);
 
     const persistedMacroTotalsForStore = useMemo(
         () =>
@@ -2054,9 +1925,9 @@ export function MealLibraryPageContent({
                                     <div className="rounded-[12px] border border-[#C4B5A0]/35 bg-[#FAF8F5] p-4">
                                         <p className="font-montserrat text-sm font-bold text-[#262A22]">Planning targets</p>
                                         <p className="mt-1 font-body text-xs text-[#6B7280]">
-                                            Per-serving goals for variance only (never batch totals). These fields never sync
-                                            with batch totals, ingredient strings, or calculated nutrition — only your typing (or
-                                            loading a meal for edit) changes them.
+                                            Per-serving editorial goals (never batch totals). These fields never sync with batch
+                                            totals, ingredient lines, or system nutrition — only your typing (or loading a meal for
+                                            edit) changes them.
                                         </p>
                                         <div className="mt-4 grid gap-4 sm:grid-cols-2">
                                             <TextInput
@@ -2181,7 +2052,7 @@ export function MealLibraryPageContent({
                                                     Current photo (upload a new file below to replace)
                                                 </p>
                                                 <img
-                                                    src={mealToEdit.editForm.imageUrl}
+                                                    src={resolveMealImageUrl(mealToEdit.editForm.imageUrl)}
                                                     alt=""
                                                     className="max-h-40 w-auto max-w-full rounded-lg object-contain"
                                                 />
@@ -2227,46 +2098,6 @@ export function MealLibraryPageContent({
                                                 onChange={handleMealPhotoChange}
                                             />
                                         </label>
-                                    </div>
-
-                                    <div className="rounded-[12px] border border-gray-200 bg-white p-4">
-                                        <button
-                                            type="button"
-                                            className="inline-flex items-center gap-3"
-                                            onClick={() => setUseAsBaseIngredient((v) => !v)}
-                                            aria-pressed={useAsBaseIngredient}
-                                        >
-                                            <SquareCheckbox checked={useAsBaseIngredient} />
-                                            <span className="font-montserrat text-sm font-bold text-[#262A22]">
-                                                Use this recipe as a base ingredient
-                                            </span>
-                                        </button>
-                                        <p className="mt-2 font-body text-sm text-[#555555]">
-                                            When saved, an ingredient with the same name is created/updated using this batch’s
-                                            total nutrition divided by finished weight (per 100 g). Editing the meal updates that
-                                            ingredient automatically.
-                                        </p>
-                                    </div>
-
-                                    <div
-                                        className={[
-                                            'overflow-hidden transition-all duration-300',
-                                            useAsBaseIngredient ? 'max-h-40 opacity-100' : 'max-h-0 opacity-0',
-                                        ].join(' ')}
-                                    >
-                                        <div className={['w-full', useAsBaseIngredient ? '' : 'pointer-events-none'].join(' ')}>
-                                            <TextInput
-                                                label="Finished weight (g)"
-                                                placeholder="e.g. 800"
-                                                value={finishedWeightGrams}
-                                                onChange={(e) => setFinishedWeightGrams(e.target.value)}
-                                                className="!max-w-none"
-                                                inputMode="decimal"
-                                            />
-                                            <p className="mt-1 block font-body text-xs text-[#555555]">
-                                                Enter the final weight after cooking (accounts for evaporation/reduction).
-                                            </p>
-                                        </div>
                                     </div>
 
                                     <div className="rounded-[12px] border border-gray-200 bg-white p-4">
@@ -2462,11 +2293,11 @@ export function MealLibraryPageContent({
                                 <div className="sticky top-0">
                                     <div className="min-w-0 pr-12">
                                     <h3 className="font-montserrat text-[18px] font-bold tracking-tight text-[#262A22]">
-                                        Nutrition Summary
+                                        {isBulkRecipe ? 'Nutrition Summary (Per Serving)' : 'Nutrition Summary'}
                                     </h3>
                                     <p className="mt-1 font-body text-sm text-[#555555]">
                                         {isBulkRecipe
-                                            ? 'System totals per serving from rolled-up ingredients (or imported nutrition), divided by the number of servings. This is independent of the batch macro fields on the left, which stay as full-batch totals you save to the library.'
+                                            ? 'What one serving looks like from your ingredient rollup ÷ number of servings. Batch macro fields on the left are not shown here.'
                                             : 'Live totals from selected ingredients (per 100 g library values).'}
                                     </p>
                                     </div>
@@ -2501,7 +2332,7 @@ export function MealLibraryPageContent({
                                                                 Nutrient
                                                             </th>
                                                             <th className="px-3 py-2 text-right font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#374151]">
-                                                                {nutritionSummaryTableValueLabel}
+                                                                {isBulkRecipe ? 'Per serving (system)' : nutritionSummaryTableValueLabel}
                                                             </th>
                                                         </tr>
                                                     </thead>
@@ -2544,68 +2375,9 @@ export function MealLibraryPageContent({
                                             </p>
                                         )}
 
-                                        {targetVarianceRows.length > 0 ? (
-                                            <div className="mt-4 rounded-[12px] border border-[#C4B5A0]/40 bg-[#FAF8F5] p-4">
-                                                <p className="font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#374151]">
-                                                    Planning targets vs. calculated
-                                                </p>
-                                                <p className="mt-1 font-body text-xs text-[#6B7280]">
-                                                    Δ = target minus calculated (same sign convention as the Meal Craft CSV
-                                                    variance column).{' '}
-                                                    {isBulkRecipe
-                                                        ? 'Targets and calculated values are both per serving; for bulk recipes, calculated uses batch ingredient totals ÷ number of servings.'
-                                                        : 'Planning targets are per serving; calculated is total for this meal.'}
-                                                </p>
-                                                <table className="mt-3 w-full border-collapse text-left text-sm">
-                                                    <thead>
-                                                        <tr className="border-b border-[#E5E7EB]">
-                                                            <th className="py-1.5 pr-2 font-montserrat text-xs font-bold text-[#374151]">
-                                                                Nutrient
-                                                            </th>
-                                                            <th className="py-1.5 px-2 text-right font-montserrat text-xs font-bold text-[#374151]">
-                                                                Target
-                                                            </th>
-                                                            <th className="py-1.5 px-2 text-right font-montserrat text-xs font-bold text-[#374151]">
-                                                                Calc.
-                                                            </th>
-                                                            <th className="py-1.5 pl-2 text-right font-montserrat text-xs font-bold text-[#374151]">
-                                                                Δ
-                                                            </th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        {targetVarianceRows.map((row) => (
-                                                            <tr key={row.label} className="border-b border-[#F3F4F6] last:border-0">
-                                                                <td className="py-1.5 pr-2 font-body text-[#262A22]">{row.label}</td>
-                                                                <td className="py-1.5 px-2 text-right font-body tabular-nums text-[#262A22]">
-                                                                    {row.target}
-                                                                </td>
-                                                                <td className="py-1.5 px-2 text-right font-body tabular-nums text-[#555555]">
-                                                                    {row.calculated.toFixed(2).replace(/\.?0+$/, '')}
-                                                                </td>
-                                                                <td
-                                                                    className={[
-                                                                        'py-1.5 pl-2 text-right font-body tabular-nums',
-                                                                        row.deltaClass,
-                                                                    ].join(' ')}
-                                                                >
-                                                                    {row.delta.startsWith('-') ? row.delta : `+${row.delta}`}
-                                                                </td>
-                                                            </tr>
-                                                        ))}
-                                                    </tbody>
-                                                </table>
-                                                {targetVarianceSummaryLine ? (
-                                                    <p className="mt-2 font-mono text-[11px] leading-snug text-[#6B7280]">
-                                                        {targetVarianceSummaryLine}
-                                                    </p>
-                                                ) : null}
-                                            </div>
-                                        ) : null}
-
                                         <div className="mt-4 border-t border-gray-100 pt-4">
                                             <p className="font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#374151]">
-                                                Smart Kitchen &amp; program highlights
+                                                Sickle Cell Highlights
                                             </p>
                                             <div className="mt-2 flex flex-wrap gap-2">
                                                 {scBadges.length > 0 ? (
@@ -2619,7 +2391,7 @@ export function MealLibraryPageContent({
                                         {categoryWarningsForModal.length > 0 ? (
                                             <div className="mt-4 rounded-[12px] border border-amber-200 bg-amber-50 p-3">
                                                 <p className="font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-amber-900">
-                                                    Warnings
+                                                    Category warnings
                                                 </p>
                                                 <ul className="mt-2 list-inside list-disc space-y-1 font-body text-sm text-amber-950">
                                                     {categoryWarningsForModal.map((w) => (

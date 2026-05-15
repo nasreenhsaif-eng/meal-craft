@@ -390,6 +390,47 @@ test('meal library csv import parses is_bulk false from string false', function 
     expect(Meal::query()->where('name', 'Solo Meal')->firstOrFail()->is_bulk)->toBeFalse();
 });
 
+test('meal library csv import persists per serving totals for bulk meals from ingredient rollup', function () {
+    mealImportIngredient('Salmon', ['calories' => 200, 'protein' => 25, 'carbs' => 0, 'fat' => 12]);
+
+    $csv = '"Meal Name","Meal Type","Ingredients String","Is Bulk","Servings Count"'."\n"
+        .'Bulk Rollup Bowl,Meal,Salmon:100g,true,2'."\n";
+    $file = UploadedFile::fake()->createWithContent('meals.csv', $csv);
+
+    $this->actingAs(User::factory()->create())
+        ->postJson(route('meals.library.import-csv'), ['file' => $file])
+        ->assertOk()
+        ->assertJsonPath('summary.imported', 1);
+
+    $meal = Meal::query()->where('name', 'Bulk Rollup Bowl')->firstOrFail();
+
+    expect($meal->is_bulk)->toBeTrue()
+        ->and($meal->servings_count)->toBe(2.0)
+        ->and($meal->nutrition_aggregates_synced)->toBeFalse()
+        ->and((float) $meal->total_calories)->toBe(100.0)
+        ->and((float) $meal->total_protein)->toBe(12.5);
+});
+
+test('meal library csv import maps batch macro columns when is bulk is true', function () {
+    mealImportIngredient('Salmon', ['calories' => 200, 'protein' => 25, 'carbs' => 0, 'fat' => 12]);
+
+    $csv = '"Meal Name","Meal Type","Ingredients String","Batch Calories","Batch Protein","Batch Carbs","Batch Fat","Is Bulk","Servings Count"'."\n"
+        .'Bulk Batch Columns,Meal,Salmon:50g,800,48,80,32,true,4'."\n";
+    $file = UploadedFile::fake()->createWithContent('meals.csv', $csv);
+
+    $this->actingAs(User::factory()->create())
+        ->postJson(route('meals.library.import-csv'), ['file' => $file])
+        ->assertOk()
+        ->assertJsonPath('summary.imported', 1);
+
+    $meal = Meal::query()->where('name', 'Bulk Batch Columns')->firstOrFail();
+
+    // Ingredient rollup (100 kcal batch) wins over CSV batch columns, divided by 4 servings.
+    expect($meal->is_bulk)->toBeTrue()
+        ->and($meal->servings_count)->toBe(4.0)
+        ->and((float) $meal->total_calories)->toBe(25.0);
+});
+
 test('meal library csv import errors when is_bulk is true without servings count', function () {
     mealImportIngredient('Salmon', ['calories' => 200, 'protein' => 25, 'carbs' => 0, 'fat' => 12]);
 

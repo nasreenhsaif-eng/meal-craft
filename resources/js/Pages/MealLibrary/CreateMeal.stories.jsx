@@ -25,7 +25,6 @@ const editableMealFixture = {
         totalFat: '3',
         isBulk: true,
         servingsCount: 4,
-        finishedWeightGrams: '',
         imageUrl: '',
         ingredientRows: [
             {
@@ -83,7 +82,7 @@ export default {
         docs: {
             description: {
                 component:
-                    'Create New Meal: fuzzy ingredient combobox (verified library), auto-filled calories/macros from selected ingredients, meal plan tags (Balanced, Hormone Feast, Ketogenic, Sickle Cell Anemia), dietary toggles (Vegan, Vegetarian, Dairy-free, Gluten-free, Nut-free).',
+                    'Create New Meal: fuzzy ingredient combobox (verified library), auto-filled calories/macros from selected ingredients, meal plan tags, dietary toggles. Prepared base ingredients are created only from Ingredient Library → Create Base Ingredient (not from this form).',
             },
         },
     },
@@ -121,6 +120,13 @@ export const CreateMealForm = {
         await new Promise((r) => {
             setTimeout(r, 200);
         });
+
+        const baseIngredientToggle = [...canvasElement.querySelectorAll('button, label, span')].find((el) =>
+            /use this recipe as a base ingredient/i.test(el.textContent ?? ''),
+        );
+        if (baseIngredientToggle) {
+            throw new Error('Create meal form should not include “use as base ingredient” toggle');
+        }
 
         const nameInput = canvasElement.querySelector('#create-meal-name');
         if (!(nameInput instanceof HTMLInputElement)) {

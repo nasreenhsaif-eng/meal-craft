@@ -2,9 +2,9 @@
 
 namespace App\Services;
 
-use App\Enums\RecipeCategory;
 use App\Models\Ingredient;
 use App\Models\Meal;
+use App\Support\IngredientLibraryCategory;
 use Illuminate\Support\Facades\Log;
 
 final class MealRecipeAsIngredientSyncService
@@ -56,7 +56,7 @@ final class MealRecipeAsIngredientSyncService
         }
 
         $libraryCategory = $meal->isBaseRecipeCategory()
-            ? RecipeCategory::BaseRecipe->value
+            ? IngredientLibraryCategory::BaseIngredient
             : __('Recipe');
 
         return [
@@ -73,7 +73,7 @@ final class MealRecipeAsIngredientSyncService
             'iron' => round((float) ($nutrition['iron'] ?? 0) * $factor, 4),
             'magnesium' => round((float) ($nutrition['magnesium'] ?? 0) * $factor, 4),
             'density' => 1.0,
-            'is_verified' => false,
+            'is_verified' => $meal->isBaseRecipeCategory(),
             'micronutrients' => $micros,
             'source_meal_id' => $meal->id,
         ];

@@ -67,7 +67,6 @@ class StoreMealFromLibraryRequest extends FormRequest
             'ingredients.*.name' => ['nullable', 'string', 'max:255'],
             'ingredients.*.amount_grams' => ['nullable', 'numeric', 'min:0'],
             'photo' => ['nullable', 'image', 'max:5120'],
-            'use_as_base_ingredient' => ['sometimes', 'boolean'],
             'finished_weight_grams' => ['nullable', 'numeric', 'min:0'],
             'is_bulk' => ['sometimes', 'boolean'],
             'servings_count' => [

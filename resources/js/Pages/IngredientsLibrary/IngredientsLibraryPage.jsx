@@ -7,8 +7,14 @@ import DropdownTextInput from '../../Components/Atoms/TextInput/DropdownTextInpu
 import MicronutrientInput from '../../Components/Atoms/TextInput/MicronutrientInput.jsx';
 import Button from '../../Components/Atoms/Button.jsx';
 import SquareCheckbox from '../../Components/Atoms/Icons/SquareCheckbox.jsx';
+import IngredientsLibraryCompositionSection from './IngredientsLibraryCompositionSection.jsx';
 import NutrientBadge from '../../Components/Atoms/MealSystem/NutrientBadge.jsx';
 import CSVUploader from '../../Components/CSVUploader.jsx';
+import {
+    aggregateNutritionFromIngredientRows,
+    gramsFromAmountAndUnit,
+} from '../../meal-library/aggregateIngredientNutrition.ts';
+import { filterIngredientsForCombobox } from '../../meal-library/ingredientSearch.ts';
 
 /** Ingredient taxonomy for the create-ingredient dropdown (Storybook: `DropdownTextInput`). */
 const INGREDIENT_CATEGORY_OPTIONS = [
@@ -16,7 +22,7 @@ const INGREDIENT_CATEGORY_OPTIONS = [
     'Vegetables',
     'Grains',
     'Fats',
-    'Base Recipe',
+    'Base Ingredient',
     'Other',
 ];
 
@@ -28,6 +34,8 @@ const DEFAULT_DIET_TAGS = [
 ];
 
 const PAGE_SIZE = 50;
+
+const UNIT_OPTIONS = ['g', 'kg', 'ml', 'ltr'];
 
 function isPlainObject(value) {
     return value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -54,6 +62,7 @@ function normalizeLibraryRow(raw) {
     return {
         id: String(raw.id ?? ''),
         name: String(raw.name ?? ''),
+        isBaseRecipe: Boolean(raw.isBaseRecipe ?? raw.is_base_recipe),
         category: String(raw.category ?? raw.usda_food_category ?? '').trim(),
         fdc: String(raw.fdc ?? '—'),
         highlights: Array.isArray(raw.highlights) ? raw.highlights : [],
@@ -138,9 +147,13 @@ function dietTagDropdownOptions(items) {
 
 /** @typedef {{ id: string; name: string; category: string; fdc: string; highlights: string[]; calories: number; protein: number; carbs: number; fat: number; vitA: number; vitB6: number; vitB9: number; vitB12: number; vitC: number; vitD: number; vitE: number; vitK: number; calcium: number; iron: number; magnesium: number; potassium: number; zinc: number; sodium: number; sugar: number; fiber: number }} LibraryIngredientRow — `category` is the USDA food category string from the API. */
 
+const EMPTY_COMPOSITION_ROW = { nameQuery: '', selectedName: '', ingredientId: null, amount: '100', unit: 'g' };
+
 export function IngredientsLibraryPageView({
     dietTags = DEFAULT_DIET_TAGS,
     ingredients = [],
+    componentPickerProfiles = [],
+    ingredientStoreUrl = '',
     csvTemplateUrl = '#',
     csvExportUrl = '#',
     csvImportUrl = '#',
@@ -156,6 +169,7 @@ export function IngredientsLibraryPageView({
     const [confirmOpen, setConfirmOpen] = useState(false);
 
     /** Create-ingredient drawer (controlled; reset each time drawer opens). */
+    const [createIsBaseRecipe, setCreateIsBaseRecipe] = useState(false);
     const [createCategory, setCreateCategory] = useState('');
     const [createName, setCreateName] = useState('');
     const [createCalories, setCreateCalories] = useState('');
@@ -164,8 +178,62 @@ export function IngredientsLibraryPageView({
     const [createFat, setCreateFat] = useState('');
     const [createMicronutrients, setCreateMicronutrients] = useState('');
     const [createDietTagLabel, setCreateDietTagLabel] = useState('');
+    const [createFinishedWeightGrams, setCreateFinishedWeightGrams] = useState('');
+    const [createCompositionRows, setCreateCompositionRows] = useState([{ ...EMPTY_COMPOSITION_ROW }]);
+    const [createSaveError, setCreateSaveError] = useState('');
+    const [createCompositionActiveRow, setCreateCompositionActiveRow] = useState(/** @type {number|null} */ (null));
+    const compositionSuggestRootRef = useRef(null);
+    const [compositionSuggestRect, setCompositionSuggestRect] = useState(
+        /** @type {{ left: number; top: number; width: number } | null} */ (null),
+    );
 
     const dietTagOptions = useMemo(() => dietTagDropdownOptions(dietTags), [dietTags]);
+
+    const componentPickerDatabase = useMemo(
+        () =>
+            (Array.isArray(componentPickerProfiles) ? componentPickerProfiles : []).map((p) => ({
+                id: typeof p.id === 'number' && Number.isFinite(p.id) ? p.id : null,
+                name: String(p.name ?? ''),
+                calories: coerceNumber(p.calories),
+                protein: coerceNumber(p.protein),
+                carbs: coerceNumber(p.carbs),
+                fat: coerceNumber(p.fat),
+                b6: coerceNumber(p.b6),
+                b9_folate: coerceNumber(p.b9_folate),
+                b12: coerceNumber(p.b12),
+                iron: coerceNumber(p.iron),
+                magnesium: coerceNumber(p.magnesium),
+                micronutrients: isPlainObject(p.micronutrients) ? p.micronutrients : {},
+                density: typeof p.density === 'number' && Number.isFinite(p.density) ? p.density : 1,
+            })),
+        [componentPickerProfiles],
+    );
+
+    const createCompositionBatchNutrition = useMemo(() => {
+        const { nutrition } = aggregateNutritionFromIngredientRows(createCompositionRows, componentPickerProfiles);
+        return nutrition;
+    }, [createCompositionRows, componentPickerProfiles]);
+
+    const createPer100Preview = useMemo(() => {
+        const rawGrams = createCompositionRows.reduce((sum, row) => {
+            if (!row.ingredientId) {
+                return sum;
+            }
+            return sum + gramsFromAmountAndUnit(row.amount, row.unit);
+        }, 0);
+        const finished = Number(String(createFinishedWeightGrams ?? '').trim());
+        const divisor = Number.isFinite(finished) && finished > 0 ? finished : rawGrams;
+        if (divisor <= 0) {
+            return null;
+        }
+        const factor = 100 / divisor;
+        return {
+            calories: Math.round((createCompositionBatchNutrition.calories ?? 0) * factor * 10) / 10,
+            protein: Math.round((createCompositionBatchNutrition.protein ?? 0) * factor * 10) / 10,
+            carbs: Math.round((createCompositionBatchNutrition.carbs ?? 0) * factor * 10) / 10,
+            fat: Math.round((createCompositionBatchNutrition.fat ?? 0) * factor * 10) / 10,
+        };
+    }, [createCompositionBatchNutrition, createCompositionRows, createFinishedWeightGrams]);
 
     const libraryRows = useMemo(() => {
         const list = Array.isArray(ingredients) ? ingredients : [];
@@ -190,7 +258,114 @@ export function IngredientsLibraryPageView({
         setCreateFat('');
         setCreateMicronutrients('');
         setCreateDietTagLabel('');
+        setCreateIsBaseRecipe(false);
+        setCreateFinishedWeightGrams('');
+        setCreateCompositionRows([{ ...EMPTY_COMPOSITION_ROW }]);
+        setCreateSaveError('');
+        setCreateCompositionActiveRow(null);
     }, [createOpen]);
+
+    useEffect(() => {
+        if (typeof document === 'undefined') {
+            return undefined;
+        }
+        const onDocMouseDown = (event) => {
+            const root = compositionSuggestRootRef.current;
+            if (!root) {
+                return;
+            }
+            const t = event.target;
+            if (!(t instanceof Node)) {
+                return;
+            }
+            if (root.contains(t)) {
+                return;
+            }
+            if (t.closest('[data-composition-ingredient-suggest]')) {
+                return;
+            }
+            setCreateCompositionActiveRow(null);
+        };
+        document.addEventListener('mousedown', onDocMouseDown);
+        return () => document.removeEventListener('mousedown', onDocMouseDown);
+    }, []);
+
+    useEffect(() => {
+        if (typeof window === 'undefined') {
+            return undefined;
+        }
+        if (createCompositionActiveRow === null) {
+            setCompositionSuggestRect(null);
+            return undefined;
+        }
+
+        const updateRect = () => {
+            const el = document.getElementById(`composition-combobox-${createCompositionActiveRow}`);
+            if (!el) {
+                return;
+            }
+            const r = el.getBoundingClientRect();
+            setCompositionSuggestRect({ left: r.left, top: r.bottom, width: r.width });
+        };
+
+        updateRect();
+        window.addEventListener('resize', updateRect);
+        window.addEventListener('scroll', updateRect, true);
+
+        return () => {
+            window.removeEventListener('resize', updateRect);
+            window.removeEventListener('scroll', updateRect, true);
+        };
+    }, [createCompositionActiveRow]);
+
+    function submitCreateIngredient() {
+        if (!ingredientStoreUrl) {
+            setCreateSaveError('Ingredient save URL is not configured.');
+            return;
+        }
+
+        if (createName.trim() === '') {
+            setCreateSaveError('Enter a name.');
+            return;
+        }
+
+        if (createIsBaseRecipe) {
+            const components = createCompositionRows
+                .filter((row) => row.ingredientId != null)
+                .map((row) => ({
+                    ingredient_id: row.ingredientId,
+                    amount_grams: gramsFromAmountAndUnit(row.amount, row.unit),
+                }))
+                .filter((row) => row.amount_grams > 0);
+
+            if (components.length === 0) {
+                setCreateSaveError('Add at least one component with a positive amount.');
+                return;
+            }
+
+            setCreateSaveError('');
+            router.post(ingredientStoreUrl, {
+                name: createName.trim(),
+                is_base_recipe: true,
+                finished_weight_grams:
+                    createFinishedWeightGrams.trim() === '' ? null : Number(createFinishedWeightGrams.trim()),
+                components,
+            });
+
+            return;
+        }
+
+        setCreateSaveError('');
+        router.post(ingredientStoreUrl, {
+            name: createName.trim(),
+            is_base_recipe: false,
+            category: createCategory.trim() === '' ? null : createCategory.trim(),
+            calories: createCalories.trim() === '' ? 0 : Number(createCalories.trim()),
+            protein: createProtein.trim() === '' ? 0 : Number(createProtein.trim()),
+            carbs: createCarbs.trim() === '' ? 0 : Number(createCarbs.trim()),
+            fat: createFat.trim() === '' ? 0 : Number(createFat.trim()),
+        });
+    }
 
     useEffect(() => {
         if (typeof document === 'undefined') {
@@ -335,7 +510,7 @@ export function IngredientsLibraryPageView({
                         aria-describedby="ingredients-library-desc"
                     >
                         <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:gap-x-4 sm:gap-y-3">
-                            <div className="shrink-0">
+                            <div className="flex shrink-0 flex-wrap gap-2">
                                 <Button
                                     label="Create ingredient"
                                     variant="primary"
@@ -549,9 +724,16 @@ export function IngredientsLibraryPageView({
                                         </td>
                                         <td className="sticky left-[54px] z-10 bg-white px-4 py-3">
                                             <div className="min-w-0">
-                                                <p className="truncate font-body text-sm font-semibold text-[#1F2937]">
-                                                    {r.name}
-                                                </p>
+                                                <div className="flex min-w-0 flex-wrap items-center gap-2">
+                                                    <p className="truncate font-body text-sm font-semibold text-[#1F2937]">
+                                                        {r.name}
+                                                    </p>
+                                                    {r.isBaseRecipe ? (
+                                                        <span className="shrink-0 rounded-[4px] border border-[#5A6B44]/40 bg-[#E8EDE3] px-2 py-0.5 font-montserrat text-[10px] font-bold uppercase tracking-wide text-[#5A6B44]">
+                                                            Base Recipe
+                                                        </span>
+                                                    ) : null}
+                                                </div>
                                                 <p className="mt-0.5 font-body text-xs text-[#555555]">
                                                     ID: {r.id}
                                                 </p>
@@ -626,85 +808,131 @@ export function IngredientsLibraryPageView({
                         onClick={() => setCreateOpen(false)}
                         aria-label="Close create ingredient drawer"
                     />
-                    <div className="absolute right-0 top-0 h-full w-full max-w-[520px] bg-white shadow-2xl">
-                        <div className="flex items-center justify-between border-b border-gray-200 px-6 py-5">
+                    <div className="absolute right-0 top-0 flex h-full w-full max-w-5xl flex-col bg-white shadow-2xl">
+                        <div className="flex shrink-0 items-center justify-between border-b border-gray-200 px-8 py-5 lg:px-10">
                             <div>
                                 <p className="font-montserrat text-sm font-bold uppercase tracking-[0.14em] text-[#555555]">
-                                    Create ingredient
+                                    Ingredient library
                                 </p>
                                 <p className="mt-0.5 font-montserrat text-[18px] font-bold tracking-tight text-[#262A22]">
-                                    New ingredient
+                                    {createIsBaseRecipe ? 'Create base recipe' : 'Create ingredient'}
                                 </p>
                             </div>
                             <Button label="Close" variant="ghost" onClick={() => setCreateOpen(false)} />
                         </div>
-                        <div className="space-y-4 p-6">
-                            <DropdownTextInput
-                                label="Ingredient Category"
-                                value={createCategory}
-                                options={INGREDIENT_CATEGORY_OPTIONS}
-                                onChange={setCreateCategory}
-                                listboxAriaLabel="Ingredient Category"
-                                className="!max-w-none"
-                            />
-                            <DropdownTextInput
-                                label="Diet tag (optional)"
-                                value={createDietTagLabel}
-                                options={dietTagOptions}
-                                onChange={setCreateDietTagLabel}
-                                listboxAriaLabel="Diet tag"
-                                className="!max-w-none"
-                            />
-                            <TextInput
-                                label="Name"
-                                placeholder="e.g. Chicken breast"
-                                value={createName}
-                                onChange={(e) => setCreateName(e.target.value)}
-                                className="!max-w-none"
-                            />
-                            <div className="grid grid-cols-2 gap-4">
+                        <div className="min-h-0 flex-1 overflow-y-auto px-8 py-6 lg:px-10">
+                            <div className="mx-auto w-full max-w-4xl space-y-5">
                                 <TextInput
-                                    label="Calories"
-                                    placeholder="0"
-                                    value={createCalories}
-                                    onChange={(e) => setCreateCalories(e.target.value)}
+                                    label="Name"
+                                    placeholder={createIsBaseRecipe ? 'e.g. Red Thai curry paste' : 'e.g. Chicken breast'}
+                                    value={createName}
+                                    onChange={(e) => setCreateName(e.target.value)}
                                     className="!max-w-none"
                                 />
-                                <TextInput
-                                    label="Protein"
-                                    placeholder="0"
-                                    value={createProtein}
-                                    onChange={(e) => setCreateProtein(e.target.value)}
-                                    className="!max-w-none"
-                                />
-                                <TextInput
-                                    label="Carbs"
-                                    placeholder="0"
-                                    value={createCarbs}
-                                    onChange={(e) => setCreateCarbs(e.target.value)}
-                                    className="!max-w-none"
-                                />
-                                <TextInput
-                                    label="Fat"
-                                    placeholder="0"
-                                    value={createFat}
-                                    onChange={(e) => setCreateFat(e.target.value)}
-                                    className="!max-w-none"
-                                />
+                                <div className="rounded-[12px] border border-gray-200 bg-white p-4">
+                                    <button
+                                        type="button"
+                                        className="inline-flex items-center gap-3"
+                                        onClick={() => setCreateIsBaseRecipe((v) => !v)}
+                                        aria-pressed={createIsBaseRecipe}
+                                    >
+                                        <SquareCheckbox checked={createIsBaseRecipe} />
+                                        <span className="font-montserrat text-sm font-bold text-[#262A22]">
+                                            This is a Base Recipe
+                                        </span>
+                                    </button>
+                                    <p className="mt-2 font-body text-sm text-[#555555]">
+                                        Base recipes combine other library ingredients; macros are calculated per 100g and
+                                        stored in the ingredient library only.
+                                    </p>
+                                </div>
+
+                                {createIsBaseRecipe ? (
+                                    <IngredientsLibraryCompositionSection
+                                        rows={createCompositionRows}
+                                        onRowsChange={setCreateCompositionRows}
+                                        componentPickerDatabase={componentPickerDatabase}
+                                        activeRow={createCompositionActiveRow}
+                                        onActiveRowChange={setCreateCompositionActiveRow}
+                                        suggestRect={compositionSuggestRect}
+                                        suggestRootRef={compositionSuggestRootRef}
+                                        finishedWeightGrams={createFinishedWeightGrams}
+                                        onFinishedWeightChange={setCreateFinishedWeightGrams}
+                                        per100Preview={createPer100Preview}
+                                    />
+                                ) : (
+                                    <>
+                                        <DropdownTextInput
+                                            label="Ingredient Category"
+                                            value={createCategory}
+                                            options={INGREDIENT_CATEGORY_OPTIONS}
+                                            onChange={setCreateCategory}
+                                            listboxAriaLabel="Ingredient Category"
+                                            className="!max-w-none"
+                                        />
+                                        <DropdownTextInput
+                                            label="Diet tag (optional)"
+                                            value={createDietTagLabel}
+                                            options={dietTagOptions}
+                                            onChange={setCreateDietTagLabel}
+                                            listboxAriaLabel="Diet tag"
+                                            className="!max-w-none"
+                                        />
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <TextInput
+                                                label="Calories"
+                                                placeholder="0"
+                                                value={createCalories}
+                                                onChange={(e) => setCreateCalories(e.target.value)}
+                                                className="!max-w-none"
+                                            />
+                                            <TextInput
+                                                label="Protein"
+                                                placeholder="0"
+                                                value={createProtein}
+                                                onChange={(e) => setCreateProtein(e.target.value)}
+                                                className="!max-w-none"
+                                            />
+                                            <TextInput
+                                                label="Carbs"
+                                                placeholder="0"
+                                                value={createCarbs}
+                                                onChange={(e) => setCreateCarbs(e.target.value)}
+                                                className="!max-w-none"
+                                            />
+                                            <TextInput
+                                                label="Fat"
+                                                placeholder="0"
+                                                value={createFat}
+                                                onChange={(e) => setCreateFat(e.target.value)}
+                                                className="!max-w-none"
+                                            />
+                                        </div>
+                                        <MicronutrientInput
+                                            label="Micronutrients"
+                                            value={createMicronutrients}
+                                            onChange={(e) => setCreateMicronutrients(e.target.value)}
+                                            placeholder="Example: B12: 2.4 mcg, Folate: 400 mcg, Iron: 18 mg, Magnesium: 400 mg"
+                                            className="!max-w-none"
+                                        />
+                                    </>
+                                )}
+
+                                {createSaveError ? (
+                                    <p className="font-body text-sm text-[#C44F5D]" role="alert">
+                                        {createSaveError}
+                                    </p>
+                                ) : null}
                             </div>
-                            <MicronutrientInput
-                                label="Micronutrients"
-                                value={createMicronutrients}
-                                onChange={(e) => setCreateMicronutrients(e.target.value)}
-                                placeholder="Example: B12: 2.4 mcg, Folate: 400 mcg, Iron: 18 mg, Magnesium: 400 mg"
-                                className="!max-w-none"
-                            />
-                            <div className="pt-2">
+                        </div>
+                        <div className="shrink-0 border-t border-gray-200 bg-white px-8 py-5 lg:px-10">
+                            <div className="mx-auto w-full max-w-4xl">
                                 <Button
-                                    label="Add ingredient"
+                                    label={createIsBaseRecipe ? 'Save base recipe' : 'Save ingredient'}
                                     variant="primary"
                                     type="button"
-                                    onClick={() => setCreateOpen(false)}
+                                    className="w-full justify-center"
+                                    onClick={submitCreateIngredient}
                                 />
                             </div>
                         </div>

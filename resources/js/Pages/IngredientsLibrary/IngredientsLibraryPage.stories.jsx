@@ -132,7 +132,7 @@ export default {
         docs: {
             description: {
                 component:
-                    'Vertical order: sticky page title → Create + CSV → full-width search (name, USDA category, SC highlights) → table. No category dropdown; type e.g. “Vegetables” or “Folate” to filter.',
+                    'Vertical order: sticky page title → Create ingredient + CSV → full-width search (name, USDA category, SC highlights) → table. Create drawer: optional “This is a Base Recipe” toggles composition UI vs raw macros.',
             },
         },
     },
@@ -190,4 +190,67 @@ export const ScrollUnderStickyBar = {
             <IngredientsLibraryPageView ingredients={sampleIngredientsScroll} {...csvUrls} />
         </IngredientsStoryShell>
     ),
+};
+
+const sampleComponentPickerProfiles = sampleIngredientsMix.map((row) => ({
+    id: Number(String(row.id).replace(/\D/g, '')) || 1,
+    name: row.name,
+    calories: row.calories,
+    protein: row.protein,
+    carbs: row.carbs,
+    fat: row.fat,
+    density: 1,
+    micronutrients: {},
+    b6: 0,
+    b9_folate: 0,
+    b12: 0,
+    iron: 0,
+    magnesium: 0,
+}));
+
+/** Single **Create ingredient** opens the unified drawer; base recipe mode is toggled in-drawer. */
+export const CreateIngredientUnifiedModal = {
+    render: () => (
+        <IngredientsStoryShell>
+            <IngredientsLibraryPageView
+                ingredients={sampleIngredientsMix}
+                componentPickerProfiles={sampleComponentPickerProfiles}
+                {...csvUrls}
+            />
+        </IngredientsStoryShell>
+    ),
+    play: async ({ canvasElement }) => {
+        const createBtn = [...canvasElement.querySelectorAll('button')].find(
+            (b) => b.textContent?.trim() === 'Create ingredient',
+        );
+        if (!createBtn) {
+            throw new Error('Expected a "Create ingredient" toolbar button');
+        }
+        createBtn.click();
+        await new Promise((r) => {
+            setTimeout(r, 80);
+        });
+        const rawHeading = [...document.querySelectorAll('p')].find(
+            (p) => p.textContent?.trim() === 'Create ingredient',
+        );
+        if (!rawHeading) {
+            throw new Error('Expected drawer heading "Create ingredient"');
+        }
+        const baseToggle = [...document.querySelectorAll('button')].find((b) =>
+            b.textContent?.includes('This is a Base Recipe'),
+        );
+        if (!baseToggle) {
+            throw new Error('Expected "This is a Base Recipe" toggle in the drawer');
+        }
+        baseToggle.click();
+        await new Promise((r) => {
+            setTimeout(r, 80);
+        });
+        const baseHeading = [...document.querySelectorAll('p')].find(
+            (p) => p.textContent?.trim() === 'Create base recipe',
+        );
+        if (!baseHeading) {
+            throw new Error('Expected drawer heading "Create base recipe" after toggling base recipe mode');
+        }
+    },
 };

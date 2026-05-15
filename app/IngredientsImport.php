@@ -3,11 +3,17 @@
 namespace App;
 
 use App\Models\Ingredient;
+use App\Services\BaseIngredientService;
+use App\Support\IngredientLibraryCategory;
+use App\Support\RecipeComponentsCsvParser;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Str;
+use InvalidArgumentException;
 
 final class IngredientsImport
 {
+    public function __construct(private BaseIngredientService $baseIngredientService) {}
+
     /**
      * Import a CSV with per-100g nutrition columns into the ingredient library.
      *
@@ -35,6 +41,11 @@ final class IngredientsImport
      *
      * Physical (optional):
      * - density — g/ml for converting volume units to mass in recipes (default 1.0 when omitted)
+     *
+     * Base recipe (optional):
+     * - is_base_recipe — 0 or 1
+     * - recipe_components — comma- or pipe-separated {@code ingredient_id:amount} pairs (e.g. {@code 12:100,34:50g})
+     * - finished_weight_grams — optional cooked yield for per-100 g scaling
      */
     public function import(UploadedFile $file): int
     {
@@ -78,6 +89,13 @@ final class IngredientsImport
             $name = trim((string) ($record['name'] ?? ''));
 
             if ($name === '') {
+                continue;
+            }
+
+            if ($this->recordIsBaseRecipe($record)) {
+                $this->importBaseRecipeRow($name, $record);
+                $imported++;
+
                 continue;
             }
 
@@ -249,5 +267,42 @@ final class IngredientsImport
     private function floatOrZero(mixed $value): float
     {
         return (float) ($this->toFloat($value) ?? 0.0);
+    }
+
+    /**
+     * @param  array<string, mixed>  $record
+     */
+    private function recordIsBaseRecipe(array $record): bool
+    {
+        $flag = strtolower(trim((string) ($record['is_base_recipe'] ?? '')));
+
+        return in_array($flag, ['1', 'true', 'yes', 'y'], true);
+    }
+
+    /**
+     * @param  array<string, mixed>  $record
+     */
+    private function importBaseRecipeRow(string $name, array $record): void
+    {
+        $componentsCell = trim((string) ($record['recipe_components'] ?? ''));
+
+        if ($componentsCell === '') {
+            throw new InvalidArgumentException(__('Base recipe row :name requires recipe_components.', ['name' => $name]));
+        }
+
+        $componentRows = RecipeComponentsCsvParser::parseToComponentRows($componentsCell);
+        $finished = $this->toFloat($record['finished_weight_grams'] ?? null);
+
+        $existing = Ingredient::query()
+            ->where('name', $name)
+            ->whereIn('usda_food_category', IngredientLibraryCategory::preparedLabels())
+            ->first();
+
+        $this->baseIngredientService->upsert(
+            $existing,
+            $name,
+            $componentRows,
+            $finished !== null && $finished > 0 ? $finished : null,
+        );
     }
 }

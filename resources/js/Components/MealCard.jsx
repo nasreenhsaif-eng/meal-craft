@@ -5,6 +5,7 @@ import RoundIconButton from './Atoms/Icons/RoundIconButton.jsx';
 import SquareCheckbox from './Atoms/Icons/SquareCheckbox.jsx';
 import { IconEdit } from './Atoms/SvgIcons.jsx';
 import MealCraftLogo from './Atoms/Logo/MealCraftLogo.jsx';
+import { resolveMealImageUrl } from '../meal-library/resolveMealImageUrl.ts';
 
 /**
  * Same shell as {@link MealCardClientViewNano} `deck` (consultation card, non-ribbon).
@@ -91,9 +92,9 @@ export default function MealCard({
         return null;
     }
 
-    const resolvedImageUrl = String(
+    const resolvedImageUrl = resolveMealImageUrl(
         photoUrl ?? imageUrl ?? mealRecord?.photoUrl ?? mealRecord?.imageUrl ?? '',
-    ).trim();
+    );
     const resolvedImageAlt = String(imageAlt ?? mealRecord?.imageAlt ?? '').trim();
     const resolvedMacros = macros ?? mealRecord?.nutritionalSummary ?? mealRecord?.macros ?? null;
 
