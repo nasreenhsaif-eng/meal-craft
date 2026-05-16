@@ -31,6 +31,7 @@ export type IngredientProfile = {
 export const MEAL_LIBRARY_CSV_CATEGORY_VALUES = [
     'Breakfast',
     'Meal',
+    'Main Salad',
     'Base Recipe',
     'Side Salad',
     'Soup',

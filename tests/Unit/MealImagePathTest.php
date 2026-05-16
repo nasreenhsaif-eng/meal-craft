@@ -14,16 +14,30 @@ test('normalize strips public prefix slashes and storage url segment', function 
         ->and(MealImagePath::normalizeForDatabase('  '))->toBeNull();
 });
 
+test('normalize converts same app http urls to relative images path', function () {
+    expect(MealImagePath::normalizeForDatabase('http://meal-craft.test/images/meals/stew.png'))
+        ->toBe('images/meals/stew.png')
+        ->and(MealImagePath::normalizeForDatabase('https://example.com/cdn/photo.jpg'))
+        ->toBe('https://example.com/cdn/photo.jpg');
+});
+
+test('normalize strips markdown image links from csv cells', function () {
+    $markdown = '[http://meal-craft.test/images/meals/stew.png](https://www.google.com/search?q=test)';
+
+    expect(MealImagePath::normalizeForDatabase($markdown))->toBe('images/meals/stew.png');
+});
+
 test('resolve url uses asset for public images directory', function () {
     $url = MealImagePath::resolveUrl('images/meals/placeholder.svg');
 
     expect($url)->toContain('images/meals/placeholder.svg');
 });
 
-test('resolve url returns placeholder when public image file is missing', function () {
+test('resolve url returns intended asset path when public image file is missing', function () {
     $url = MealImagePath::resolveUrl('images/meals/does-not-exist.jpg');
 
-    expect($url)->toContain('images/meals/placeholder.svg');
+    expect($url)->toContain('images/meals/does-not-exist.jpg')
+        ->and($url)->not->toContain('placeholder.svg');
 });
 
 test('resolve url finds alternate extension under public images meals', function () {
@@ -37,8 +51,20 @@ test('resolve url finds alternate extension under public images meals', function
     expect($url)->toContain('Chocolate-Orange-Brownie-(N).png');
 });
 
-test('resolve url returns absolute http urls unchanged', function () {
+test('resolve url returns absolute http urls unchanged for external hosts', function () {
     expect(MealImagePath::resolveUrl('https://cdn.example.com/a.jpg'))->toBe('https://cdn.example.com/a.jpg');
+});
+
+test('resolve url rewrites same app http urls to current asset base', function () {
+    $url = MealImagePath::resolveUrl('http://meal-craft.test/images/meals/stew.png');
+
+    expect($url)->toContain('images/meals/stew.png');
+});
+
+test('resolve url serves storage disk paths', function () {
+    $url = MealImagePath::resolveUrl('meals/upload.jpg');
+
+    expect($url)->toContain('storage/meals/upload.jpg');
 });
 
 test('should delete from public disk is false for web images and remote urls', function () {

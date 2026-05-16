@@ -43,4 +43,23 @@ final class MealLibraryTaxonomy
 
         return null;
     }
+
+    /**
+     * Return the canonical dietary tag string if {@code $raw} matches one of {@see self::DIETARY_TAGS} (case-insensitive).
+     */
+    public static function resolveDietaryTagCanonical(string $raw): ?string
+    {
+        $t = trim($raw);
+        if ($t === '') {
+            return null;
+        }
+
+        foreach (self::DIETARY_TAGS as $canonical) {
+            if (strcasecmp($canonical, $t) === 0) {
+                return $canonical;
+            }
+        }
+
+        return null;
+    }
 }

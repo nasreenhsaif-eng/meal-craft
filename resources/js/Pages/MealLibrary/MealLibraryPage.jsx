@@ -29,7 +29,11 @@ import {
     mealHasG6pdTriggerInEditor,
     sickleCellHighlightBadgeLabels,
 } from '../../meal-library/mealSafetyAndSickle.ts';
-import { DIETARY_TAG_OPTIONS, MEAL_PLAN_TAG_OPTIONS } from '../../meal-library/mealTaxonomy.js';
+import {
+    canonicalDietTagsFromList,
+    DIETARY_TAG_OPTIONS,
+    MEAL_PLAN_TAG_OPTIONS,
+} from '../../meal-library/mealTaxonomy.js';
 import { resolvePerServingActualForTargets, scaleNutritionRecord } from '../../meal-library/bulkPlanningVariance.ts';
 import { downloadMissingIngredientsCSV } from '../../meal-library/downloadMissingIngredientsCSV.ts';
 import { downloadMealCraftCsvTemplate } from '../../meal-library/generateLibraryExportCSV.ts';
@@ -332,37 +336,71 @@ function mealLibraryItemUpdateUrl(mealStoreUrl, mealId) {
     return `${String(mealStoreUrl).replace(/\/?$/, '')}/${mealId}`;
 }
 
-/** @param {Record<string, string | string[]> | undefined} errors */
-function firstMealLibraryValidationMessage(errors) {
-    if (!errors || typeof errors !== 'object') {
-        return null;
-    }
-    for (const value of Object.values(errors)) {
+/** @param {unknown} errors */
+function mealLibraryValidationMessages(errors) {
+    /** @type {string[]} */
+    const messages = [];
+    const walk = (value) => {
         if (typeof value === 'string' && value.trim() !== '') {
-            return value.trim();
+            messages.push(value.trim());
+            return;
         }
         if (Array.isArray(value)) {
-            const message = value.find((entry) => typeof entry === 'string' && entry.trim() !== '');
-            if (message) {
-                return message.trim();
-            }
+            value.forEach(walk);
+            return;
         }
-    }
-    return null;
+        if (value && typeof value === 'object') {
+            Object.values(value).forEach(walk);
+        }
+    };
+    walk(errors);
+    return messages;
 }
 
-/** @param {import('@inertiajs/react').FormDataConvertible} payload */
-function postMealLibraryForm(url, payload, { onSuccess, onError }) {
-    router.post(url, payload, {
-        forceFormData: true,
+/** @param {Record<string, unknown>} payload */
+function mealLibraryRequestPayloadForPost(payload) {
+    const prepared = { ...payload };
+    for (const key of ['servings_count', 'target_calories', 'target_protein', 'target_carbs', 'target_fat']) {
+        if (prepared[key] === null || prepared[key] === undefined) {
+            delete prepared[key];
+        }
+    }
+    return prepared;
+}
+
+/**
+ * @param {string} url
+ * @param {Record<string, unknown>} payload
+ * @param {{
+ *   onSuccess?: () => void;
+ *   onError?: (errors: Record<string, string | string[]>) => void;
+ *   onSaveMessage?: (message: string | null) => void;
+ * }} callbacks
+ */
+function postMealLibraryForm(url, payload, { onSuccess, onError, onSaveMessage }) {
+    const body = mealLibraryRequestPayloadForPost(payload);
+    const hasPhoto = body.photo instanceof File;
+
+    router.post(url, body, {
+        forceFormData: hasPhoto,
         preserveScroll: true,
         preserveState: false,
-        onSuccess,
-        onError: (errors) => {
-            const message = firstMealLibraryValidationMessage(errors);
-            if (message) {
+        onSuccess: () => {
+            onSaveMessage?.(null);
+            onSuccess?.();
+        },
+        onFlash: (flash) => {
+            if (flash?.error) {
+                const message = String(flash.error);
+                onSaveMessage?.(message);
                 window.alert(message);
             }
+        },
+        onError: (errors) => {
+            const messages = mealLibraryValidationMessages(errors);
+            const message = messages.length > 0 ? messages.join('\n') : 'Could not save the meal. Check the form and try again.';
+            onSaveMessage?.(message);
+            window.alert(message);
             onError?.(errors);
         },
     });
@@ -491,6 +529,7 @@ export function MealLibraryPageContent({
     const [ingredientPasteField, setIngredientPasteField] = useState('');
     const [ingredientPasteMissingLabels, setIngredientPasteMissingLabels] = useState(/** @type {string[]} */ ([]));
     const [ingredientPasteApplyError, setIngredientPasteApplyError] = useState('');
+    const [mealSaveError, setMealSaveError] = useState(/** @type {string | null} */ (null));
     const mealPlanMultiOptions = useMemo(() => mealPlanTagOptionsForMulti(MEAL_PLAN_TAG_OPTIONS), []);
 
     const resetCreateForm = useCallback(() => {
@@ -517,6 +556,7 @@ export function MealLibraryPageContent({
         setIngredientPasteField('');
         setIngredientPasteMissingLabels([]);
         setIngredientPasteApplyError('');
+        setMealSaveError(null);
     }, []);
 
     const closeCreateModal = useCallback(() => {
@@ -533,7 +573,7 @@ export function MealLibraryPageContent({
         setFormType(String(ef.category ?? 'Meal'));
         const mpt = Array.isArray(ef.mealPlanTags) ? ef.mealPlanTags.filter((t) => typeof t === 'string' && t.trim() !== '') : [];
         setSelectedMealPlanTags(mpt.length ? [...mpt] : ef.mealPlanTag ? [String(ef.mealPlanTag)] : []);
-        setSelectedDietTags(Array.isArray(ef.dietTags) ? [...ef.dietTags] : []);
+        setSelectedDietTags(canonicalDietTagsFromList(Array.isArray(ef.dietTags) ? ef.dietTags : []));
         const cpv = Array.isArray(ef.cyclePhaseValues)
             ? ef.cyclePhaseValues.filter((v) => typeof v === 'string' && v.trim() !== '')
             : [];
@@ -856,17 +896,6 @@ export function MealLibraryPageContent({
         }
     }
 
-    const verifiedIngredientIds = useMemo(() => {
-        const ids = new Set();
-        for (const profile of ingredientProfiles ?? []) {
-            const id = profile?.id;
-            if (id != null && Number.isFinite(Number(id))) {
-                ids.add(Number(id));
-            }
-        }
-        return ids;
-    }, [ingredientProfiles]);
-
     function buildIngredientsForStore() {
         return ingredientRows
             .map((r) => {
@@ -881,7 +910,7 @@ export function MealLibraryPageContent({
                 };
                 const ingredientId =
                     r.ingredientId != null && Number.isFinite(Number(r.ingredientId)) ? Number(r.ingredientId) : null;
-                if (ingredientId != null && verifiedIngredientIds.has(ingredientId)) {
+                if (ingredientId != null) {
                     row.ingredient_id = ingredientId;
                 }
                 return row;
@@ -942,7 +971,7 @@ export function MealLibraryPageContent({
             short_description: formHighlight,
             description: formInstructions,
             highlight: formHighlight,
-            diet_tags: selectedDietTags,
+            diet_tags: canonicalDietTagsFromList(selectedDietTags),
             is_bulk: useBulk,
             servings_count: useBulk ? servingsDivisor : null,
         });
@@ -996,6 +1025,7 @@ export function MealLibraryPageContent({
 
         postMealLibraryForm(mealStoreUrl, payload, {
             onSuccess: () => closeCreateModal(),
+            onSaveMessage: setMealSaveError,
         });
     }
 
@@ -1012,6 +1042,7 @@ export function MealLibraryPageContent({
 
         postMealLibraryForm(mealStoreUrl, payload, {
             onSuccess: () => closeCreateModal(),
+            onSaveMessage: setMealSaveError,
         });
     }
 
@@ -1028,8 +1059,10 @@ export function MealLibraryPageContent({
         }
 
         const updateUrl = mealLibraryItemUpdateUrl(mealStoreUrl, mealId);
+        setMealSaveError(null);
         postMealLibraryForm(updateUrl, payload, {
             onSuccess: () => closeCreateModal(),
+            onSaveMessage: setMealSaveError,
         });
     }
 
@@ -2451,6 +2484,14 @@ export function MealLibraryPageContent({
                                 </div>
                                 </div>
                                 <div className="border-t border-gray-200 bg-white px-10 pb-10 pt-6">
+                                    {mealSaveError ? (
+                                        <p
+                                            className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
+                                            role="alert"
+                                        >
+                                            {mealSaveError}
+                                        </p>
+                                    ) : null}
                                     {mealToEdit?.editForm?.id ? (
                                         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                             <Button

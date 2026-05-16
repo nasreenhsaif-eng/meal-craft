@@ -231,6 +231,38 @@ test('meal library update strips unknown meal plan tags before validation', func
     expect($meal->meal_plan_tags)->toBe(['Balanced']);
 });
 
+test('meal library update strips unknown diet tags before validation', function () {
+    $user = User::factory()->create();
+
+    $meal = Meal::query()->create([
+        'name' => 'Diet tagged meal',
+        'category' => RecipeCategory::Meal,
+        'meal_type' => MealType::fromRecipeCategory(RecipeCategory::Meal),
+        'diet_tags' => ['Paleo', 'Vegan'],
+        'total_calories' => 300,
+        'total_protein' => 15,
+        'total_carbs' => 30,
+        'total_fat' => 10,
+        'nutrition_aggregates_synced' => false,
+    ]);
+
+    $this->actingAs($user)
+        ->post(route('admin.meal-library.update', $meal), [
+            'name' => 'Diet tagged meal',
+            'total_calories' => 310,
+            'total_protein' => 16,
+            'total_carbs' => 31,
+            'total_fat' => 10,
+            'category' => 'Meal',
+            'diet_tags' => ['Paleo', 'Vegan'],
+        ])
+        ->assertRedirect(route('admin.meal-library'))
+        ->assertSessionHas('success');
+
+    $meal->refresh();
+    expect($meal->diet_tags)->toBe(['Vegan']);
+});
+
 test('meal library store accepts duplicate submission context flash message', function () {
     $user = User::factory()->create();
 

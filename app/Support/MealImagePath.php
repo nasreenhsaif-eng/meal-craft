@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Storage;
  * Normalizes persisted meal {@code image_path} values and resolves them to browser URLs.
  *
  * Supported stored shapes:
- * - Absolute URLs ({@code http://}, {@code https://})
+ * - Absolute URLs ({@code http://}, {@code https://}) — same-app {@code /images/…} and {@code /storage/…} paths are stored relatively
  * - Public web assets under {@code /images/...} (files in {@code public/images/...})
  * - Files on the {@code public} storage disk (e.g. {@code meals/…} from uploads)
  */
@@ -25,9 +25,14 @@ final class MealImagePath
             return null;
         }
 
-        $s = trim(str_replace('\\', '/', $raw));
+        $s = self::stripMarkdownLink(trim(str_replace('\\', '/', $raw)));
         if ($s === '') {
             return null;
+        }
+
+        if (str_starts_with($s, 'http://') || str_starts_with($s, 'https://')) {
+            $fromUrl = self::relativePathFromHttpUrl($s);
+            $s = $fromUrl ?? $s;
         }
 
         if (str_starts_with($s, 'http://') || str_starts_with($s, 'https://')) {
@@ -78,12 +83,13 @@ final class MealImagePath
         }
 
         if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
-            return $path;
+            $fromUrl = self::relativePathFromHttpUrl($path);
+
+            return $fromUrl !== null ? self::resolveUrl($fromUrl) : $path;
         }
 
-        $relative = self::findExistingRelativePath(ltrim($path, '/'));
-
-        if ($relative === null) {
+        $relative = self::resolveRelativePathForDisplay(ltrim($path, '/'));
+        if ($relative === '') {
             return self::placeholderUrl();
         }
 
@@ -128,6 +134,90 @@ final class MealImagePath
         }
 
         return true;
+    }
+
+    /**
+     * Spreadsheet cells sometimes contain markdown links: {@code [url](url)}.
+     */
+    public static function stripMarkdownLink(string $raw): string
+    {
+        if (preg_match('/\[([^\]]*)\]\(([^)]+)\)/', $raw, $matches) !== 1) {
+            return $raw;
+        }
+
+        $label = trim((string) $matches[1]);
+        $href = trim((string) $matches[2]);
+
+        if (self::cellLooksLikeImageReference($label)) {
+            return $label;
+        }
+
+        if (self::cellLooksLikeImageReference($href)) {
+            return $href;
+        }
+
+        return $label !== '' ? $label : $href;
+    }
+
+    public static function cellLooksLikeImageReference(string $value): bool
+    {
+        if ($value === '') {
+            return false;
+        }
+
+        if (str_contains($value, '/images/') || str_starts_with($value, 'images/')) {
+            return true;
+        }
+
+        if (str_contains($value, '/storage/') || str_starts_with($value, 'meals/')) {
+            return true;
+        }
+
+        if (str_starts_with($value, 'http://') || str_starts_with($value, 'https://')) {
+            return self::relativePathFromHttpUrl($value) !== null
+                || (bool) preg_match('/\.(jpe?g|png|gif|webp|svg)(\?.*)?$/i', $value);
+        }
+
+        return (bool) preg_match('/\.(jpe?g|png|gif|webp|svg)(\?.*)?$/i', $value);
+    }
+
+    /**
+     * Extract a storable relative path from an absolute app URL ({@code /images/…} or {@code /storage/…}).
+     */
+    public static function relativePathFromHttpUrl(string $url): ?string
+    {
+        $path = parse_url($url, PHP_URL_PATH);
+        if (! is_string($path) || $path === '') {
+            return null;
+        }
+
+        $path = ltrim(str_replace('\\', '/', $path), '/');
+
+        if (str_starts_with($path, 'images/')) {
+            return $path;
+        }
+
+        if (str_starts_with($path, 'storage/')) {
+            $trimmed = substr($path, strlen('storage/'));
+
+            return $trimmed !== '' ? $trimmed : null;
+        }
+
+        return null;
+    }
+
+    /**
+     * Prefer an existing file (with extension fallback); otherwise keep the normalized CSV path for URL building.
+     */
+    private static function resolveRelativePathForDisplay(string $relative): string
+    {
+        if ($relative === '' || $relative === self::PLACEHOLDER_RELATIVE) {
+            return '';
+        }
+
+        $existing = self::findExistingRelativePath($relative);
+
+        return $existing ?? $relative;
     }
 
     private static function findExistingRelativePath(string $relative): ?string

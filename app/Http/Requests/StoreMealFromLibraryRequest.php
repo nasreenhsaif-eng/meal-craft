@@ -77,6 +77,20 @@ class StoreMealFromLibraryRequest extends FormRequest
             }
             $this->merge(['cycle_phases' => array_values(array_unique($phaseValues))]);
         }
+
+        if ($this->has('diet_tags') && is_array($this->input('diet_tags'))) {
+            $dietTags = [];
+            foreach ($this->input('diet_tags') as $tag) {
+                if (! is_string($tag) || trim($tag) === '') {
+                    continue;
+                }
+                $canonical = MealLibraryTaxonomy::resolveDietaryTagCanonical($tag);
+                if ($canonical !== null) {
+                    $dietTags[] = $canonical;
+                }
+            }
+            $this->merge(['diet_tags' => array_values(array_unique($dietTags))]);
+        }
     }
 
     /**

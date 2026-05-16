@@ -190,7 +190,7 @@ test('meal library livewire import exposes unique pending ingredients for downlo
 test('meal library csv rejects invalid category but defaults when category column is absent', function () {
     mealImportIngredient('Salmon');
 
-    $invalidCsv = "Meal_Name,Category,Ingredient_Quantities,Instructions,Description_Highlight\nX,Main Salad,Salmon:100,.,.\n";
+    $invalidCsv = "Meal_Name,Category,Ingredient_Quantities,Instructions,Description_Highlight\nX,Brunch,Salmon:100,.,.\n";
     $invalidFile = UploadedFile::fake()->createWithContent('meals-invalid.csv', $invalidCsv);
 
     $invalidResponse = $this->actingAs(User::factory()->create())
@@ -201,6 +201,16 @@ test('meal library csv rejects invalid category but defaults when category colum
 
     $row = collect($invalidResponse->json('rows'))->first();
     expect($row['message'])->toBe(__('Invalid Category or Meal Type.'));
+
+    $mainSaladCsv = "Meal_Name,Category,Ingredient_Quantities,Instructions,Description_Highlight\nSalad Bowl,Main Salad,Salmon:100,.,.\n";
+    $mainSaladFile = UploadedFile::fake()->createWithContent('meals-main-salad.csv', $mainSaladCsv);
+
+    $this->actingAs(User::factory()->create())
+        ->postJson(route('meals.library.import-csv'), ['file' => $mainSaladFile])
+        ->assertOk()
+        ->assertJsonPath('summary.imported', 1);
+
+    expect(Meal::query()->where('name', 'Salad Bowl')->firstOrFail()->category)->toBe(RecipeCategory::MainSalad);
 
     $defaultCsv = "Meal_Name,Ingredient_Quantities\nDefaulted,Salmon:100\n";
     $defaultFile = UploadedFile::fake()->createWithContent('meals-default.csv', $defaultCsv);
@@ -332,6 +342,23 @@ test('meal library csv import maps Image URL column to image_path with normalize
 
     $meal = Meal::query()->where('name', 'Photo Meal')->firstOrFail();
     expect($meal->image_path)->toBe('images/meals/spicy-stew.jpg');
+});
+
+test('meal library csv import normalizes markdown and local app image urls', function () {
+    mealImportIngredient('Salmon', ['calories' => 200, 'protein' => 25, 'carbs' => 0, 'fat' => 12]);
+
+    $markdownUrl = '[http://meal-craft.test/images/meals/smoky-stew.png](https://www.google.com/search?q=test)';
+    $csv = "Meal_Name,Category,Ingredient_Quantities,Instructions,Description_Highlight,Image_URL\n"
+        .'Markdown Meal,Meal,Salmon:100g,.,.,"'.$markdownUrl.'"'."\n";
+    $file = UploadedFile::fake()->createWithContent('meals-markdown-image.csv', $csv);
+
+    $this->actingAs(User::factory()->create())
+        ->postJson(route('meals.library.import-csv'), ['file' => $file])
+        ->assertOk()
+        ->assertJsonPath('summary.imported', 1);
+
+    expect(Meal::query()->where('name', 'Markdown Meal')->firstOrFail()->image_path)
+        ->toBe('images/meals/smoky-stew.png');
 });
 
 test('meal library csv import maps Image URL header with spaces to image_path', function () {

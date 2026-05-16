@@ -76,9 +76,28 @@ final class MealCsvLibraryImportService
         return [
             RecipeCategory::Breakfast,
             RecipeCategory::Meal,
+            RecipeCategory::MainSalad,
             RecipeCategory::SideSalad,
             RecipeCategory::Soup,
             RecipeCategory::Dessert,
+        ];
+    }
+
+    /**
+     * Common spreadsheet labels mapped to library categories (case-insensitive).
+     *
+     * @return array<string, RecipeCategory>
+     */
+    private static function mealLibraryCategoryAliases(): array
+    {
+        return [
+            'lunch' => RecipeCategory::Meal,
+            'dinner' => RecipeCategory::Meal,
+            'main' => RecipeCategory::Meal,
+            'main course' => RecipeCategory::Meal,
+            'entree' => RecipeCategory::Meal,
+            'entrée' => RecipeCategory::Meal,
+            'salad' => RecipeCategory::SideSalad,
         ];
     }
 
@@ -459,6 +478,11 @@ final class MealCsvLibraryImportService
         }
 
         $norm = $this->normalizeCategoryLabel($raw);
+
+        $alias = self::mealLibraryCategoryAliases()[$norm] ?? null;
+        if ($alias instanceof RecipeCategory) {
+            return $alias;
+        }
 
         foreach (self::mealLibraryCsvAllowedCategories() as $case) {
             if ($norm === $this->normalizeCategoryLabel($case->value)) {
@@ -1187,7 +1211,7 @@ final class MealCsvLibraryImportService
         $hasMealImageColumn = array_key_exists('meal_image_path', $assoc);
         $csvImageNormalized = null;
         if ($hasMealImageColumn) {
-            $imageCell = trim((string) $assoc['meal_image_path']);
+            $imageCell = MealImagePath::stripMarkdownLink(trim((string) $assoc['meal_image_path']));
             $csvImageNormalized = $imageCell === '' ? null : MealImagePath::normalizeForDatabase($imageCell);
         }
 
