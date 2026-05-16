@@ -2,6 +2,43 @@
  * Ensures meal image src values from CSV / API resolve to same-origin URLs under
  * {@code public/images/…}, {@code storage/…}, or absolute http(s) URLs.
  */
+const PUBLIC_MEALS_DIR = 'images/meals';
+
+function hasImageExtension(path: string): boolean {
+    return /\.(jpe?g|png|gif|webp|svg)$/i.test(path);
+}
+
+function encodePathSegments(path: string): string {
+    return path
+        .split('/')
+        .filter((segment) => segment.length > 0)
+        .map((segment) => encodeURIComponent(segment))
+        .join('/');
+}
+
+function encodeAbsoluteUrlPath(url: string): string {
+    try {
+        const parsed = new URL(url);
+        const segments = parsed.pathname.split('/').filter((segment) => segment.length > 0);
+        parsed.pathname = `/${segments.map((segment) => encodeURIComponent(segment)).join('/')}`;
+        return parsed.toString();
+    } catch {
+        return url;
+    }
+}
+
+function ensurePrefixedRelativePath(path: string): string {
+    const trimmed = path.replace(/^\/+/, '');
+    if (trimmed.startsWith('images/') || trimmed.startsWith('meals/')) {
+        return trimmed;
+    }
+    if (hasImageExtension(trimmed)) {
+        const filename = trimmed.includes('/') ? trimmed.split('/').pop() ?? trimmed : trimmed;
+        return `${PUBLIC_MEALS_DIR}/${filename}`;
+    }
+    return trimmed;
+}
+
 function cellLooksLikeImageReference(value: string): boolean {
     if (value === '') {
         return false;
@@ -16,10 +53,10 @@ function cellLooksLikeImageReference(value: string): boolean {
     }
 
     if (/^https?:\/\//i.test(value)) {
-        return relativePathFromAbsoluteImageUrl(value) !== null || /\.(jpe?g|png|gif|webp|svg)(\?.*)?$/i.test(value);
+        return relativePathFromAbsoluteImageUrl(value) !== null || hasImageExtension(value);
     }
 
-    return /\.(jpe?g|png|gif|webp|svg)(\?.*)?$/i.test(value);
+    return hasImageExtension(value);
 }
 
 export function stripMarkdownImageLink(raw: string): string {
@@ -46,7 +83,7 @@ export function stripMarkdownImageLink(raw: string): string {
 export function relativePathFromAbsoluteImageUrl(url: string): string | null {
     try {
         const parsed = new URL(url);
-        let path = parsed.pathname.replace(/^\/+/, '');
+        let path = decodeURIComponent(parsed.pathname).replace(/^\/+/, '');
 
         if (path.startsWith('images/')) {
             return path;
@@ -62,6 +99,15 @@ export function relativePathFromAbsoluteImageUrl(url: string): string | null {
     }
 }
 
+function buildOriginUrl(relativePath: string): string {
+    const encoded = encodePathSegments(relativePath);
+    if (typeof window !== 'undefined') {
+        return `${window.location.origin}/${encoded}`;
+    }
+
+    return `/${encoded}`;
+}
+
 export function resolveMealImageUrl(raw?: string | null): string {
     let value = stripMarkdownImageLink(String(raw ?? '').trim());
     if (value === '') {
@@ -71,18 +117,18 @@ export function resolveMealImageUrl(raw?: string | null): string {
     if (/^https?:\/\//i.test(value)) {
         const relative = relativePathFromAbsoluteImageUrl(value);
         if (relative) {
-            value = relative;
+            value = ensurePrefixedRelativePath(relative);
         } else {
-            return value;
+            return encodeAbsoluteUrlPath(value);
         }
     }
 
     if (value.startsWith('//')) {
         if (typeof window !== 'undefined') {
-            return `${window.location.protocol}${value}`;
+            return encodeAbsoluteUrlPath(`${window.location.protocol}${value}`);
         }
 
-        return `https:${value}`;
+        return encodeAbsoluteUrlPath(`https:${value}`);
     }
 
     value = value.replace(/^public\/+/i, '').replace(/^\/+/, '');
@@ -91,34 +137,15 @@ export function resolveMealImageUrl(raw?: string | null): string {
         value = value.slice('storage/'.length);
     }
 
-    if (value.startsWith('/')) {
-        if (typeof window !== 'undefined') {
-            return `${window.location.origin}${value}`;
-        }
-
-        return value;
-    }
+    value = ensurePrefixedRelativePath(value);
 
     if (value.startsWith('images/')) {
-        if (typeof window !== 'undefined') {
-            return `${window.location.origin}/${value}`;
-        }
-
-        return `/${value}`;
+        return buildOriginUrl(value);
     }
 
     if (value.startsWith('meals/')) {
-        const storagePath = `storage/${value}`;
-        if (typeof window !== 'undefined') {
-            return `${window.location.origin}/${storagePath}`;
-        }
-
-        return `/${storagePath}`;
+        return buildOriginUrl(`storage/${value}`);
     }
 
-    if (typeof window !== 'undefined') {
-        return `${window.location.origin}/${value}`;
-    }
-
-    return `/${value}`;
+    return buildOriginUrl(value);
 }

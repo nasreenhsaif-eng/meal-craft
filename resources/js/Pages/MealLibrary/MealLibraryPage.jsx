@@ -2257,7 +2257,7 @@ export function MealLibraryPageContent({
                                             value={formInstructions}
                                             onChange={(e) => setFormInstructions(e.target.value)}
                                             rows={4}
-                                            className="block w-full resize-y rounded-[12px] border border-[#E5E7EB] bg-white px-4 py-3 font-body text-[15px] text-[#1F2937] shadow-sm outline-none focus-visible:border-[#5A6B44] focus-visible:ring-2 focus-visible:ring-[#5A6B44] focus-visible:ring-offset-2"
+                                            className="block w-full resize-y whitespace-pre-wrap rounded-[12px] border border-[#E5E7EB] bg-white px-4 py-3 font-body text-[15px] leading-relaxed text-[#1F2937] shadow-sm outline-none focus-visible:border-[#5A6B44] focus-visible:ring-2 focus-visible:ring-[#5A6B44] focus-visible:ring-offset-2"
                                             placeholder="Steps, prep notes, cooking instructions…"
                                         />
                                     </div>

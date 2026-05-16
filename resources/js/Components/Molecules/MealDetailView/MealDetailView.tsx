@@ -5,6 +5,7 @@ import NutrientBadge from '../../Atoms/MealSystem/NutrientBadge.jsx';
 import MealCraftLogo from '../../Atoms/Logo/MealCraftLogo.jsx';
 import { CyclePhaseTag, type CyclePhase } from './CyclePhaseTag';
 import { resolveMealImageUrl } from '../../../meal-library/resolveMealImageUrl.ts';
+import { mealInstructionStepsForDisplay } from '../../../meal-library/mealInstructionsDisplay.ts';
 import { G6PD_HIGHLIGHT_BADGE } from '../../../meal-library/mealSafetyAndSickle.ts';
 
 export type { CyclePhase };
@@ -44,7 +45,7 @@ export type MealDetailModel = {
     sickleRdiFootnote?: string;
     nutritionalData: MealNutritionalData;
     ingredients: string[];
-    instructions: string[];
+    instructions: string[] | string;
     imageUrl?: string | null;
     imageAlt?: string | null;
     /** @deprecated Use shortDescription */
@@ -139,6 +140,7 @@ export default function MealDetailView({ meal, className = '' }: MealDetailViewP
     const resolvedImageUrl = resolveMealImageUrl(imageUrl);
     const resolvedImageAlt = String(imageAlt ?? '').trim();
     const showImage = resolvedImageUrl !== '' && !mediaFailed;
+    const instructionSteps = mealInstructionStepsForDisplay(instructions);
     const scBadges = sickleCellHighlights.filter((b) => b !== G6PD_HIGHLIGHT_BADGE);
 
     return (
@@ -225,8 +227,8 @@ export default function MealDetailView({ meal, className = '' }: MealDetailViewP
                             Instructions
                         </h2>
                         <ol className="list-decimal space-y-4 pl-5 font-montserrat text-sm font-medium leading-relaxed text-[#374151] marker:font-bold md:text-[15px] md:pl-6">
-                            {instructions.map((step, idx) => (
-                                <li key={idx} className="pl-2">
+                            {instructionSteps.map((step, idx) => (
+                                <li key={idx} className="whitespace-pre-line pl-2">
                                     {step}
                                 </li>
                             ))}

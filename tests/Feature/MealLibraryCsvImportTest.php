@@ -6,6 +6,7 @@ use App\Models\Meal;
 use App\Models\MealCsvImportPendingRow;
 use App\Models\User;
 use App\Services\MealCsvLibraryImportService;
+use App\Support\MealInstructionsText;
 use Illuminate\Http\UploadedFile;
 use Livewire\Livewire;
 
@@ -342,6 +343,25 @@ test('meal library csv import maps Image URL column to image_path with normalize
 
     $meal = Meal::query()->where('name', 'Photo Meal')->firstOrFail();
     expect($meal->image_path)->toBe('images/meals/spicy-stew.jpg');
+});
+
+test('meal library csv import normalizes inline numbered instructions into newline separated storage', function () {
+    mealImportIngredient('Salmon', ['calories' => 200, 'protein' => 25, 'carbs' => 0, 'fat' => 12]);
+
+    $instructions = '1. Heat the pan. 2. Add salmon. 3. Serve hot.';
+    $csv = "Meal_Name,Category,Ingredient_Quantities,Instructions,Description_Highlight\n"
+        .'Steps Meal,Meal,Salmon:100g,"'.$instructions.'",.'."\n";
+    $file = UploadedFile::fake()->createWithContent('meals-steps.csv', $csv);
+
+    $this->actingAs(User::factory()->create())
+        ->postJson(route('meals.library.import-csv'), ['file' => $file])
+        ->assertOk()
+        ->assertJsonPath('summary.imported', 1);
+
+    $meal = Meal::query()->where('name', 'Steps Meal')->firstOrFail();
+
+    expect($meal->instructions)->toBe("Heat the pan.\nAdd salmon.\nServe hot.")
+        ->and(MealInstructionsText::linesFromRaw($meal->instructions))->toHaveCount(3);
 });
 
 test('meal library csv import normalizes markdown and local app image urls', function () {

@@ -182,7 +182,7 @@ class Meal extends Model
 
     public function imageUrl(): ?string
     {
-        $url = MealImagePath::resolveUrl($this->image_path);
+        $url = MealImagePath::resolveUrl($this->image_path, $this->name);
 
         return $url === '' ? null : $url;
     }

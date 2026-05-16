@@ -10,11 +10,14 @@ use Illuminate\Support\Facades\Storage;
  * Supported stored shapes:
  * - Absolute URLs ({@code http://}, {@code https://}) — same-app {@code /images/…} and {@code /storage/…} paths are stored relatively
  * - Public web assets under {@code /images/...} (files in {@code public/images/...})
+ * - Bare filenames ({@code stew.png}) under {@code public/images/meals/}
  * - Files on the {@code public} storage disk (e.g. {@code meals/…} from uploads)
  */
 final class MealImagePath
 {
     public const PLACEHOLDER_RELATIVE = 'images/meals/placeholder.svg';
+
+    public const PUBLIC_MEALS_DIRECTORY = 'images/meals';
 
     /** @var list<string> */
     private const FALLBACK_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
@@ -68,45 +71,69 @@ final class MealImagePath
             $s = substr($s, strlen('storage/'));
         }
 
+        $s = self::ensurePrefixedRelativePath($s);
+
         return $s === '' ? null : $s;
     }
 
-    public static function resolveUrl(?string $path): string
+    public static function resolveUrl(?string $path, ?string $mealTitle = null): string
     {
-        if ($path === null) {
-            return '';
+        $mealTitle = $mealTitle !== null ? trim($mealTitle) : null;
+        if ($mealTitle === '') {
+            $mealTitle = null;
+        }
+
+        if ($path === null || trim(str_replace('\\', '/', (string) $path)) === '') {
+            $discovered = $mealTitle !== null
+                ? self::discoverInPublicMealsDirectory('', $mealTitle)
+                : null;
+
+            return $discovered !== null
+                ? self::publicUrlForRelativePath($discovered)
+                : self::placeholderUrl();
         }
 
         $path = trim(str_replace('\\', '/', (string) $path));
-        if ($path === '') {
-            return '';
-        }
 
         if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
             $fromUrl = self::relativePathFromHttpUrl($path);
 
-            return $fromUrl !== null ? self::resolveUrl($fromUrl) : $path;
+            return $fromUrl !== null
+                ? self::resolveUrl($fromUrl, $mealTitle)
+                : self::encodeAbsoluteUrlPath($path);
         }
 
-        $relative = self::resolveRelativePathForDisplay(ltrim($path, '/'));
+        $normalized = self::normalizeForDatabase($path) ?? self::ensurePrefixedRelativePath(ltrim($path, '/'));
+        if ($normalized === '') {
+            return self::placeholderUrl();
+        }
+
+        if (str_starts_with($normalized, 'http://') || str_starts_with($normalized, 'https://')) {
+            return self::encodeAbsoluteUrlPath($normalized);
+        }
+
+        $relative = self::resolveRelativePathForDisplay(ltrim($normalized, '/'), $mealTitle);
         if ($relative === '') {
             return self::placeholderUrl();
         }
 
-        if (str_starts_with($relative, 'images/')) {
-            return asset($relative);
-        }
-
-        if (str_starts_with($relative, 'storage/')) {
-            return asset($relative);
-        }
-
-        return Storage::disk('public')->url($relative);
+        return self::publicUrlForRelativePath($relative);
     }
 
     public static function placeholderUrl(): string
     {
-        return asset(self::PLACEHOLDER_RELATIVE);
+        return self::publicUrlForRelativePath(self::PLACEHOLDER_RELATIVE);
+    }
+
+    /**
+     * Convert a meal title to the filename base used under {@see PUBLIC_MEALS_DIRECTORY}.
+     */
+    public static function mealTitleToImageFileBase(string $title): string
+    {
+        $s = trim(preg_replace('/\s+/u', '-', $title) ?? $title);
+        $s = preg_replace('/-+/u', '-', $s) ?? $s;
+
+        return trim($s, '-');
     }
 
     /**
@@ -175,10 +202,10 @@ final class MealImagePath
 
         if (str_starts_with($value, 'http://') || str_starts_with($value, 'https://')) {
             return self::relativePathFromHttpUrl($value) !== null
-                || (bool) preg_match('/\.(jpe?g|png|gif|webp|svg)(\?.*)?$/i', $value);
+                || self::hasImageExtension($value);
         }
 
-        return (bool) preg_match('/\.(jpe?g|png|gif|webp|svg)(\?.*)?$/i', $value);
+        return self::hasImageExtension($value);
     }
 
     /**
@@ -192,6 +219,7 @@ final class MealImagePath
         }
 
         $path = ltrim(str_replace('\\', '/', $path), '/');
+        $path = rawurldecode($path);
 
         if (str_starts_with($path, 'images/')) {
             return $path;
@@ -206,18 +234,150 @@ final class MealImagePath
         return null;
     }
 
-    /**
-     * Prefer an existing file (with extension fallback); otherwise keep the normalized CSV path for URL building.
-     */
-    private static function resolveRelativePathForDisplay(string $relative): string
+    private static function ensurePrefixedRelativePath(string $path): string
     {
-        if ($relative === '' || $relative === self::PLACEHOLDER_RELATIVE) {
+        $path = ltrim($path, '/');
+
+        if ($path === '') {
             return '';
         }
 
-        $existing = self::findExistingRelativePath($relative);
+        if (str_starts_with($path, 'images/') || str_starts_with($path, 'meals/')) {
+            return $path;
+        }
 
-        return $existing ?? $relative;
+        if (self::hasImageExtension($path)) {
+            return self::PUBLIC_MEALS_DIRECTORY.'/'.basename($path);
+        }
+
+        return $path;
+    }
+
+    private static function hasImageExtension(string $path): bool
+    {
+        return (bool) preg_match('/\.(jpe?g|png|gif|webp|svg)$/i', $path);
+    }
+
+    private static function publicUrlForRelativePath(string $relative): string
+    {
+        if (str_starts_with($relative, 'images/') || str_starts_with($relative, 'storage/')) {
+            return self::assetUrlForRelativePath($relative);
+        }
+
+        return self::encodeAbsoluteUrlPath(Storage::disk('public')->url($relative));
+    }
+
+    private static function assetUrlForRelativePath(string $relative): string
+    {
+        return rtrim((string) config('app.url'), '/').'/'.self::encodeRelativePathSegments($relative);
+    }
+
+    private static function encodeRelativePathSegments(string $relative): string
+    {
+        $parts = explode('/', ltrim($relative, '/'));
+
+        return implode('/', array_map(rawurlencode(...), $parts));
+    }
+
+    private static function encodeAbsoluteUrlPath(string $url): string
+    {
+        $parts = parse_url($url);
+        if (! is_array($parts) || ! isset($parts['path'])) {
+            return $url;
+        }
+
+        $segments = explode('/', trim((string) $parts['path'], '/'));
+        $encodedPath = '/'.implode('/', array_map(rawurlencode(...), $segments));
+        $scheme = $parts['scheme'] ?? 'https';
+        $host = $parts['host'] ?? '';
+        $port = isset($parts['port']) ? ':'.$parts['port'] : '';
+        $query = isset($parts['query']) ? '?'.$parts['query'] : '';
+        $fragment = isset($parts['fragment']) ? '#'.$parts['fragment'] : '';
+
+        return $scheme.'://'.$host.$port.$encodedPath.$query.$fragment;
+    }
+
+    /**
+     * Prefer an existing file (with extension fallback), then discover by meal title / prefix.
+     */
+    private static function resolveRelativePathForDisplay(string $relative, ?string $mealTitle): string
+    {
+        if ($relative === '' || $relative === self::PLACEHOLDER_RELATIVE) {
+            $relative = '';
+        } else {
+            $relative = self::ensurePrefixedRelativePath($relative);
+        }
+
+        $existing = $relative !== '' ? self::findExistingRelativePath($relative) : null;
+        if ($existing !== null) {
+            return $existing;
+        }
+
+        $discovered = self::discoverInPublicMealsDirectory($relative, $mealTitle);
+        if ($discovered !== null) {
+            return $discovered;
+        }
+
+        return $relative;
+    }
+
+    private static function discoverInPublicMealsDirectory(string $storedRelative, ?string $mealTitle): ?string
+    {
+        $dirPath = public_path(self::PUBLIC_MEALS_DIRECTORY);
+        if (! is_dir($dirPath)) {
+            return null;
+        }
+
+        $wantedBase = pathinfo($storedRelative, PATHINFO_FILENAME);
+        /** @var list<string> $candidates */
+        $candidates = [];
+        if ($mealTitle !== null && $mealTitle !== '') {
+            $candidates[] = self::mealTitleToImageFileBase($mealTitle);
+        }
+        if ($wantedBase !== '' && $wantedBase !== '.') {
+            $candidates[] = $wantedBase;
+        }
+
+        $files = scandir($dirPath);
+        if ($files === false) {
+            return null;
+        }
+
+        foreach ($files as $file) {
+            if ($file === '.' || $file === '..') {
+                continue;
+            }
+            $base = pathinfo($file, PATHINFO_FILENAME);
+            foreach ($candidates as $candidate) {
+                if (strcasecmp($base, $candidate) === 0) {
+                    return self::PUBLIC_MEALS_DIRECTORY.'/'.$file;
+                }
+            }
+        }
+
+        if ($wantedBase !== '' && $wantedBase !== '.') {
+            $best = null;
+            $bestLen = 0;
+            foreach ($files as $file) {
+                if ($file === '.' || $file === '..') {
+                    continue;
+                }
+                $base = pathinfo($file, PATHINFO_FILENAME);
+                if (
+                    (str_starts_with($base, $wantedBase) || str_starts_with($wantedBase, $base))
+                    && strlen($base) > $bestLen
+                ) {
+                    $best = self::PUBLIC_MEALS_DIRECTORY.'/'.$file;
+                    $bestLen = strlen($base);
+                }
+            }
+
+            if ($best !== null) {
+                return $best;
+            }
+        }
+
+        return null;
     }
 
     private static function findExistingRelativePath(string $relative): ?string
@@ -226,13 +386,15 @@ final class MealImagePath
             return null;
         }
 
+        $relative = self::ensurePrefixedRelativePath($relative);
+
         if (self::fileExistsForRelativePath($relative)) {
             return $relative;
         }
 
         $directory = pathinfo($relative, PATHINFO_DIRNAME);
         $filename = pathinfo($relative, PATHINFO_FILENAME);
-        if ($filename === '') {
+        if ($filename === '' || $filename === '.') {
             return null;
         }
 

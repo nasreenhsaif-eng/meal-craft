@@ -15,6 +15,7 @@ use App\Support\IngredientLibraryNameMatcher;
 use App\Support\IngredientQuantityStringParser;
 use App\Support\MealCsvHeaderCatalog;
 use App\Support\MealImagePath;
+use App\Support\MealInstructionsText;
 use App\Support\MealLibraryBulkNutrition;
 use App\Support\MealLibraryDelimitedCellParser;
 use App\Support\MealLibraryTaxonomy;
@@ -1202,7 +1203,7 @@ final class MealCsvLibraryImportService
             );
         }
 
-        $instructions = isset($assoc['instructions']) ? trim((string) $assoc['instructions']) : '';
+        $instructions = MealInstructionsText::normalizeForStorage($assoc['instructions'] ?? null) ?? '';
         $shortDescription = isset($assoc['short_description']) ? trim((string) $assoc['short_description']) : '';
 
         $mealPlanTags = $this->mealPlanTagsAcceptedFromCsvCell((string) ($assoc['meal_plan_tags'] ?? ''));

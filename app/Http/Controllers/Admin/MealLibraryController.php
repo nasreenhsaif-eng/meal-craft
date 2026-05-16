@@ -18,6 +18,7 @@ use App\Support\IngredientAllergenCatalog;
 use App\Support\IngredientG6pdSafety;
 use App\Support\IngredientLibraryNameMatcher;
 use App\Support\MealImagePath;
+use App\Support\MealInstructionsText;
 use App\Support\MealLibraryBulkNutrition;
 use App\Support\MealLibraryTaxonomy;
 use App\Support\SickleCellNutrientRdi;
@@ -807,9 +808,11 @@ class MealLibraryController extends Controller
      */
     private function instructionsFromValidated(array $data): ?string
     {
-        $text = trim((string) ($data['instructions'] ?? $data['description'] ?? ''));
+        $raw = ($data['instructions'] ?? null) !== null && trim((string) $data['instructions']) !== ''
+            ? (string) $data['instructions']
+            : (string) ($data['description'] ?? '');
 
-        return $text !== '' ? $text : null;
+        return MealInstructionsText::normalizeForStorage($raw);
     }
 
     /**
@@ -847,26 +850,13 @@ class MealLibraryController extends Controller
      */
     private function instructionsLinesFromText(string $instructionsRaw): array
     {
-        if ($instructionsRaw === '') {
+        $steps = MealInstructionsText::linesFromRaw($instructionsRaw);
+
+        if ($steps === []) {
             return [__('No written instructions on file.')];
         }
 
-        $parts = preg_split('/\r\n|\r|\n/', $instructionsRaw) ?: [];
-        $steps = [];
-        foreach ($parts as $part) {
-            $line = trim((string) $part);
-            if ($line === '') {
-                continue;
-            }
-            $line = preg_replace('/^\d+[\.\)]\s*/', '', $line) ?? $line;
-            $steps[] = trim($line);
-        }
-
-        if ($steps === []) {
-            return [$instructionsRaw];
-        }
-
-        return array_values($steps);
+        return $steps;
     }
 
     /**
@@ -1057,7 +1047,7 @@ class MealLibraryController extends Controller
 
     private function mealImageUrl(Meal $meal): string
     {
-        return MealImagePath::resolveUrl($meal->image_path);
+        return MealImagePath::resolveUrl($meal->image_path, $meal->name);
     }
 
     /**
