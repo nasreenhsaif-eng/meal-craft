@@ -29,6 +29,53 @@ export function normalizeIngredientKey(name: string): string {
     return name.trim().toLowerCase().replace(/\s+/g, ' ');
 }
 
+/** Strip trailing “(Base)” / “(Base Recipe)” labels used in meal CSV rows. */
+export function stripBaseRecipeSuffix(label: string): string {
+    return label
+        .trim()
+        .replace(/\s*\(\s*base(?:\s+recipe)?\s*\)\s*$/iu, '')
+        .replace(/\s*-\s*base(?:\s+recipe)?\s*$/iu, '')
+        .trim();
+}
+
+function resolveIngredientProfile(
+    label: string,
+    ingredientId: number | null,
+    byId: Map<number, IngredientProfile>,
+    byName: Map<string, IngredientProfile>,
+): IngredientProfile | undefined {
+    if (ingredientId != null && Number.isFinite(ingredientId)) {
+        const byIdMatch = byId.get(ingredientId);
+        if (byIdMatch) {
+            return byIdMatch;
+        }
+    }
+
+    const trimmed = label.trim();
+    if (!trimmed) {
+        return undefined;
+    }
+
+    const keys = [normalizeIngredientKey(trimmed), normalizeIngredientKey(stripBaseRecipeSuffix(trimmed))].filter(
+        (k, i, arr) => k !== '' && arr.indexOf(k) === i,
+    );
+
+    for (const key of keys) {
+        const match = byName.get(key);
+        if (match) {
+            return match;
+        }
+    }
+
+    for (const profile of byName.values()) {
+        if (profile.is_prepared_base && keys.some((k) => normalizeIngredientKey(profile.name) === k)) {
+            return profile;
+        }
+    }
+
+    return undefined;
+}
+
 export function gramsFromAmountAndUnit(amount: string, unit: string): number {
     const n = Number(amount);
     if (!Number.isFinite(n) || n <= 0) {
@@ -100,17 +147,8 @@ export function aggregateNutritionFromIngredientRows(
             continue;
         }
 
-        let ing: IngredientProfile | undefined;
-        if (r.ingredientId != null && Number.isFinite(r.ingredientId)) {
-            ing = byId.get(r.ingredientId);
-        }
-        if (!ing) {
-            const label = (r.selectedName || r.nameQuery || '').trim();
-            if (!label) {
-                continue;
-            }
-            ing = byName.get(normalizeIngredientKey(label));
-        }
+        const label = (r.selectedName || r.nameQuery || '').trim();
+        const ing = resolveIngredientProfile(label, r.ingredientId, byId, byName);
         if (!ing) {
             continue;
         }

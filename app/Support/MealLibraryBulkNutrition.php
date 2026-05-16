@@ -85,6 +85,32 @@ final class MealLibraryBulkNutrition
     }
 
     /**
+     * Per-serving nutrition for Meal Library UI (detail modal, planning targets).
+     * Uses ingredient pivot rollup; divides batch totals when {@code $meal->is_bulk}.
+     *
+     * @return array<string, float>
+     */
+    public static function perServingNutritionForMealDisplay(Meal $meal): array
+    {
+        $meal->loadMissing('ingredients');
+
+        if ($meal->ingredients->isEmpty()) {
+            return $meal->persistedNutritionAsCalculatorShape();
+        }
+
+        $batch = RecipeNutritionCalculator::fromMeal($meal);
+
+        if ($meal->is_bulk) {
+            $servings = (float) ($meal->servings_count ?? 0);
+            if ($servings > 0) {
+                return self::scaleNutrition($batch, 1 / $servings);
+            }
+        }
+
+        return $batch;
+    }
+
+    /**
      * @param  array<string, float>  $batchNutrition
      * @param  array{calories?: float, protein?: float, carbs?: float, fat?: float}|null  $csvBatchMacros
      * @return array<string, float>
@@ -130,7 +156,7 @@ final class MealLibraryBulkNutrition
      * @param  array<string, float>  $nutrition
      * @return array<string, float>
      */
-    private static function scaleNutrition(array $nutrition, float $factor): array
+    public static function scaleNutrition(array $nutrition, float $factor): array
     {
         if (! is_finite($factor) || $factor <= 0) {
             return [];

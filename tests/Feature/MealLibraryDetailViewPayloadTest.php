@@ -47,6 +47,8 @@ test('meal library index includes detailView on each meal for the detail modal',
             ->component('Admin/MealLibrary')
             ->has('meals', 1)
             ->where('meals.0.title', 'Detail Payload Meal')
+            ->where('meals.0.macros.calories', 50)
+            ->where('meals.0.detailView.nutritionalData.sections.0.rows.0.value', '50')
             ->has('meals.0.detailView')
             ->where('meals.0.detailView.shortDescription', 'Great for mornings.')
             ->has('meals.0.detailView.sickleCellHighlights')

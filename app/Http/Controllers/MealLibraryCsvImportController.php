@@ -5,8 +5,10 @@ namespace App\Http\Controllers;
 use App\Services\MealCsvLibraryImportService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rules\File;
 use Illuminate\Validation\ValidationException;
+use Throwable;
 
 /**
  * Authenticated JSON endpoint for bulk meal-library CSV import.
@@ -44,7 +46,30 @@ class MealLibraryCsvImportController extends Controller
             ], 422);
         }
 
-        $result = $mealCsvLibraryImportService->processUploadedFile($validated['file'], $request->user());
+        try {
+            $result = $mealCsvLibraryImportService->processUploadedFile($validated['file'], $request->user());
+        } catch (Throwable $e) {
+            Log::error('Meal library CSV import failed with an exception.', [
+                'message' => $e->getMessage(),
+                'exception' => $e::class,
+            ]);
+
+            return response()->json([
+                'message' => __('The CSV could not be imported. Check that ingredients use a supported format such as Name (115g) or Name:115g, separated by commas or |.'),
+                'summary' => [
+                    'imported' => 0,
+                    'updated' => 0,
+                    'duplicates_created' => 0,
+                    'pending_ingredient_input' => 0,
+                    'errors' => 1,
+                ],
+                'unique_pending_ingredients' => [],
+                'csv_unrecognized_headers' => [],
+                'rows' => [],
+                'import_error_lines' => [],
+            ], 500);
+        }
+
         $result['import_error_lines'] = $this->importErrorLinesForJsonResponse($result['rows'] ?? []);
 
         return response()->json($result);

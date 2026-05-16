@@ -97,6 +97,28 @@ test('base ingredient service upsert uses sum of components when finished weight
         ->and($base->components)->toHaveCount(1);
 });
 
+test('ingredient library csv import resolves pipe-separated name weight recipe components', function () {
+    $user = User::factory()->create();
+    $carrots = verifiedIngredient('Carrots, raw', ['calories' => 40, 'protein' => 1, 'carbs' => 9, 'fat' => 0]);
+
+    $header = 'name,category,fdc_id,calories,protein,carbs,fat,b6,b9_folate,b12,iron,magnesium,fiber,sugar,calcium,potassium,sodium,zinc,vitamin_c,vitamin_a,vitamin_e,vitamin_d,vitamin_k,density,is_base_recipe,recipe_components,description,instructions,finished_weight_grams,g6pd_trigger';
+    $row = 'Carrot Paste,,,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,"Carrots, raw (150g)",,,200,';
+    $csv = $header."\n".$row."\n";
+
+    $this->actingAs($user)
+        ->post(route('admin.ingredient-library.import-csv'), [
+            'file' => UploadedFile::fake()->createWithContent('ingredients.csv', $csv),
+        ])
+        ->assertRedirect(route('admin.ingredient-library'))
+        ->assertSessionHas('success');
+
+    $base = Ingredient::query()->where('name', 'Carrot Paste')->firstOrFail();
+
+    expect($base->isPreparedBaseIngredient())->toBeTrue()
+        ->and($base->components)->toHaveCount(1)
+        ->and($base->components->first()->id)->toBe($carrots->id);
+});
+
 test('ingredient library csv import creates base recipe from is_base_recipe and recipe_components', function () {
     $user = User::factory()->create();
     $child = verifiedIngredient('Tomato', ['calories' => 80, 'protein' => 4, 'carbs' => 16, 'fat' => 0]);

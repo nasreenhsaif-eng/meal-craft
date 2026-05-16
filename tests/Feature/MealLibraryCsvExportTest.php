@@ -76,12 +76,12 @@ test('meal library export csv uses meal craft master headers and maps meals', fu
 
     $csv = $response->streamedContent();
     expect($csv)->not->toBe('')
-        ->and($csv)->toContain('Meal Name')
-        ->and($csv)->toContain('Short Description')
-        ->and($csv)->toContain('Meal Plan Tags')
-        ->and($csv)->toContain('Cycle Phase (comma or pipe separated')
-        ->and($csv)->toContain('Target Calories (kcal)')
-        ->and($csv)->toContain('Variance Notes')
+        ->and($csv)->toContain('name')
+        ->and($csv)->toContain('description')
+        ->and($csv)->toContain('meal_tags')
+        ->and($csv)->toContain('cycle_phase')
+        ->and($csv)->toContain('target_cal')
+        ->and($csv)->toContain('variance_notes')
         ->and($csv)->toContain('Rice Bowl')
         ->and($csv)->toContain('Follicular')
         ->and($csv)->toContain('Comfort carbs.')

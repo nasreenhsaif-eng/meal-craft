@@ -4,25 +4,26 @@ import type { CyclePhase } from '../Components/Molecules/MealDetailView/CyclePha
 /**
  * Must match {@see App\Services\MealCraftMasterCsvExport::HEADERS}.
  */
+/** Must match {@see App\Support\MealCsvHeaderCatalog::MASTER_HEADERS}. */
 export const MEAL_CRAFT_MASTER_CSV_HEADERS = [
-    'Meal Name',
-    'Description',
-    'Meal Plan Tags (comma or pipe separated; e.g. Balanced | Ketogenic)',
-    'Cycle Phase (comma or pipe separated; Menstrual, Follicular, Ovulatory, or Luteal — values or labels)',
-    'Dietary Tags',
-    'Safety Alerts',
-    'Ingredients',
-    'Instructions',
-    'Photo URL',
-    'Target Calories (kcal)',
-    'Target Protein (g)',
-    'Target Fat (g)',
-    'Target Net Carbs (g)',
-    'Calculated Calories',
-    'Calculated Protein',
-    'Calculated Fat',
-    'Calculated Net Carbs',
-    'Variance Notes',
+    'name',
+    'description',
+    'meal_tags',
+    'cycle_phase',
+    'dietary_tags',
+    'safety_alerts',
+    'ingredients',
+    'instructions',
+    'photo_url',
+    'target_cal',
+    'target_pro',
+    'target_fat',
+    'target_carbs',
+    'calc_cal',
+    'calc_pro',
+    'calc_fat',
+    'calc_carbs',
+    'variance_notes',
 ] as const;
 
 export const MEAL_CRAFT_MASTER_MISSING_PHOTO_PLACEHOLDER = 'NO_PHOTO_URL';

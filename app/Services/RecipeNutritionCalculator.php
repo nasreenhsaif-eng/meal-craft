@@ -23,6 +23,7 @@ final class RecipeNutritionCalculator
 
         $byId = Ingredient::query()
             ->whereIn('id', $ingredientIds)
+            ->with(['components'])
             ->get()
             ->keyBy('id');
 
@@ -72,20 +73,10 @@ final class RecipeNutritionCalculator
             }
 
             $factor = $grams / 100.0;
-            $micros = is_array($ingredient->micronutrients) ? $ingredient->micronutrients : [];
+            $per100 = self::per100gNutritionForIngredient($ingredient);
 
-            $nutrition['calories'] += ((float) $ingredient->calories) * $factor;
-            $nutrition['protein'] += ((float) $ingredient->protein) * $factor;
-            $nutrition['carbs'] += ((float) $ingredient->carbs) * $factor;
-            $nutrition['fat'] += ((float) $ingredient->fat) * $factor;
-            $nutrition['b6'] += ((float) ($ingredient->b6 ?? 0)) * $factor;
-            $nutrition['b9_folate'] += ((float) ($ingredient->b9_folate ?? 0)) * $factor;
-            $nutrition['b12'] += ((float) ($ingredient->b12 ?? 0)) * $factor;
-            $nutrition['iron'] += ((float) ($ingredient->iron ?? 0)) * $factor;
-            $nutrition['magnesium'] += ((float) ($ingredient->magnesium ?? 0)) * $factor;
-
-            foreach ($jsonKeys as $key) {
-                $nutrition[$key] += self::micronutrientPer100g($micros, $key) * $factor;
+            foreach ($nutrition as $key => $_value) {
+                $nutrition[$key] += ((float) ($per100[$key] ?? 0)) * $factor;
             }
         }
 
@@ -143,6 +134,125 @@ final class RecipeNutritionCalculator
     public static function sickleCellProgramMealHighlight(array $nutrition): bool
     {
         return SickleCellNutrientRdi::hasAnyHighlight($nutrition);
+    }
+
+    /**
+     * Per-100 g nutrition for a library row. Prepared base ingredients prefer live rollup from
+     * {@see Ingredient::components()} when stored parent macros are empty or components exist.
+     *
+     * @return array<string, float>
+     */
+    public static function per100gNutritionForIngredient(Ingredient $ingredient): array
+    {
+        $ingredient->loadMissing('components');
+
+        if ($ingredient->isPreparedBaseIngredient() && $ingredient->components->isNotEmpty()) {
+            $fromFormulation = self::per100gFromComponentFormulation($ingredient);
+            if (self::per100gHasMeaningfulCalories($fromFormulation)) {
+                return $fromFormulation;
+            }
+        }
+
+        return self::per100gFromStoredColumns($ingredient);
+    }
+
+    /**
+     * @return array<string, float>
+     */
+    private static function per100gFromStoredColumns(Ingredient $ingredient): array
+    {
+        $micros = is_array($ingredient->micronutrients) ? $ingredient->micronutrients : [];
+
+        $nutrition = [
+            'calories' => (float) $ingredient->calories,
+            'protein' => (float) $ingredient->protein,
+            'carbs' => (float) $ingredient->carbs,
+            'fat' => (float) $ingredient->fat,
+            'b6' => (float) ($ingredient->b6 ?? 0),
+            'b9_folate' => (float) ($ingredient->b9_folate ?? 0),
+            'b12' => (float) ($ingredient->b12 ?? 0),
+            'iron' => (float) ($ingredient->iron ?? 0),
+            'magnesium' => (float) ($ingredient->magnesium ?? 0),
+            'fiber' => self::micronutrientPer100g($micros, 'fiber'),
+            'sugar' => self::micronutrientPer100g($micros, 'sugar'),
+            'calcium' => self::micronutrientPer100g($micros, 'calcium'),
+            'potassium' => self::micronutrientPer100g($micros, 'potassium'),
+            'sodium' => self::micronutrientPer100g($micros, 'sodium'),
+            'zinc' => self::micronutrientPer100g($micros, 'zinc'),
+            'vitamin_c' => self::micronutrientPer100g($micros, 'vitamin_c'),
+            'vitamin_a' => self::micronutrientPer100g($micros, 'vitamin_a'),
+            'vitamin_e' => self::micronutrientPer100g($micros, 'vitamin_e'),
+            'vitamin_d' => self::micronutrientPer100g($micros, 'vitamin_d'),
+            'vitamin_k' => self::micronutrientPer100g($micros, 'vitamin_k'),
+        ];
+
+        foreach ($nutrition as $key => $value) {
+            $nutrition[$key] = round($value, 4);
+        }
+
+        return $nutrition;
+    }
+
+    /**
+     * @return array<string, float>
+     */
+    private static function per100gFromComponentFormulation(Ingredient $parent): array
+    {
+        $rows = [];
+        $totalGrams = 0.0;
+
+        foreach ($parent->components as $child) {
+            $grams = (float) ($child->pivot->amount_grams ?? 0);
+            if ($grams <= 0) {
+                continue;
+            }
+
+            $rows[] = [
+                'ingredient_id' => (int) $child->getKey(),
+                'amount_grams' => $grams,
+            ];
+            $totalGrams += $grams;
+        }
+
+        if ($rows === [] || $totalGrams <= 0) {
+            return self::per100gFromStoredColumns($parent);
+        }
+
+        $batch = self::fromRows($rows);
+        $factor = 100.0 / $totalGrams;
+
+        return self::scaleNutritionValues($batch, $factor);
+    }
+
+    /**
+     * @param  array<string, float>  $nutrition
+     * @return array<string, float>
+     */
+    private static function scaleNutritionValues(array $nutrition, float $factor): array
+    {
+        if (! is_finite($factor) || $factor <= 0) {
+            return [];
+        }
+
+        $out = [];
+        foreach ($nutrition as $key => $value) {
+            if (! is_numeric($value)) {
+                continue;
+            }
+            $out[$key] = round((float) $value * $factor, 4);
+        }
+
+        return $out;
+    }
+
+    /**
+     * @param  array<string, float>  $per100
+     */
+    private static function per100gHasMeaningfulCalories(array $per100): bool
+    {
+        $calories = (float) ($per100['calories'] ?? 0);
+
+        return is_finite($calories) && $calories > 0;
     }
 
     /**

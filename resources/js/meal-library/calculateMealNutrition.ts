@@ -8,6 +8,8 @@ import { gramsFromIngredientAmountAndUnit, parseIngredientQuantityString } from 
 export type IngredientProfile = {
     /** Present when loaded from the verified ingredient library (meal library create form). */
     id?: number;
+    /** Prepared base ingredient / base recipe row in the ingredient library. */
+    is_prepared_base?: boolean;
     /** Canonical slugs aligned with `IngredientAllergenCatalog` (PHP). */
     common_allergens?: readonly string[];
     name: string;

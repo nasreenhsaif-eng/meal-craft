@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\CyclePhase;
 use App\Models\Meal;
+use App\Support\MealCsvHeaderCatalog;
 use App\Support\MealImagePath;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\Pivot;
@@ -14,26 +15,7 @@ use Illuminate\Database\Eloquent\Relations\Pivot;
 final class MealCraftMasterCsvExport
 {
     /** @var list<string> */
-    public const HEADERS = [
-        'Meal Name',
-        'Short Description',
-        'Meal Plan Tags (comma or pipe separated; e.g. Balanced | Ketogenic)',
-        'Cycle Phase (comma or pipe separated; Menstrual, Follicular, Ovulatory, or Luteal — values or labels)',
-        'Dietary Tags',
-        'Safety Alerts',
-        'Ingredients',
-        'Instructions',
-        'Photo URL',
-        'Target Calories (kcal)',
-        'Target Protein (g)',
-        'Target Fat (g)',
-        'Target Net Carbs (g)',
-        'Calculated Calories',
-        'Calculated Protein',
-        'Calculated Fat',
-        'Calculated Net Carbs',
-        'Variance Notes',
-    ];
+    public const HEADERS = MealCsvHeaderCatalog::MASTER_HEADERS;
 
     /**
      * When {@see Meal::$image_path} is empty, emit this placeholder so spreadsheets stay explicit.

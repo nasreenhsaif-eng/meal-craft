@@ -1,3 +1,5 @@
+import { expandMissingIngredientNames } from './ingredientQuantityString.ts';
+
 /**
  * Bulk ingredient CSV template (must match App\IngredientsImport column order).
  */
@@ -58,7 +60,7 @@ function cellForHeader(header: (typeof MISSING_INGREDIENT_CSV_HEADERS)[number], 
  * @param missingArray - Unique ingredient name strings from the meal library parser
  */
 export function downloadMissingIngredientsCSV(missingArray: string[]): void {
-    const names = Array.isArray(missingArray) ? missingArray : [];
+    const names = expandMissingIngredientNames(Array.isArray(missingArray) ? missingArray : []);
     const headerLine = MISSING_INGREDIENT_CSV_HEADERS.join(',');
     const bodyLines = names.map((raw) => {
         const name = typeof raw === 'string' ? raw : String(raw);

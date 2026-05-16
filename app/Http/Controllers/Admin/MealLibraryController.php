@@ -16,7 +16,9 @@ use App\Services\MealCsvLibraryImportService;
 use App\Services\RecipeNutritionCalculator;
 use App\Support\IngredientAllergenCatalog;
 use App\Support\IngredientG6pdSafety;
+use App\Support\IngredientLibraryNameMatcher;
 use App\Support\MealImagePath;
+use App\Support\MealLibraryBulkNutrition;
 use App\Support\MealLibraryTaxonomy;
 use App\Support\SickleCellNutrientRdi;
 use Illuminate\Http\JsonResponse;
@@ -58,6 +60,7 @@ class MealLibraryController extends Controller
 
         $ingredientProfiles = Ingredient::query()
             ->where('is_verified', true)
+            ->with(['components'])
             ->orderBy('name')
             ->get()
             ->map(fn (Ingredient $ingredient): array => $this->toIngredientProfile($ingredient))
@@ -209,6 +212,34 @@ class MealLibraryController extends Controller
         $dietTags = array_values(array_unique(array_filter($data['diet_tags'] ?? [])));
         $planPhaseBundle = $this->mealPlanTagsAndCyclePhasesForPersistence($data);
 
+        $ingredientRows = is_array($data['ingredients'] ?? null) ? $data['ingredients'] : [];
+        if ($ingredientRows !== []) {
+            $selfDerivedIngredientId = Ingredient::query()
+                ->where('source_meal_id', $meal->id)
+                ->value('id');
+
+            if ($selfDerivedIngredientId !== null) {
+                foreach ($ingredientRows as $row) {
+                    if (! is_array($row)) {
+                        continue;
+                    }
+                    $rowIngredientId = $row['ingredient_id'] ?? null;
+                    if ($rowIngredientId !== null && (int) $rowIngredientId === (int) $selfDerivedIngredientId) {
+                        return redirect()
+                            ->route('admin.meal-library')
+                            ->with('error', __('This meal cannot include its own linked library ingredient row. Remove that ingredient line and try again.'));
+                    }
+                }
+            }
+
+            $byIngredientGrams = $this->aggregateIngredientGramsFromLibraryRows($ingredientRows);
+            if ($byIngredientGrams === []) {
+                return redirect()
+                    ->route('admin.meal-library')
+                    ->with('error', __('Could not match any ingredients to your library. Check names (e.g. “Vegetable Broth (Base)” must exist as a base ingredient) and try again.'));
+            }
+        }
+
         DB::transaction(function () use ($request, $data, $meal, $category, $mealType, $planPhaseBundle, $dietTags): void {
             $updateData = [
                 'name' => $data['name'],
@@ -314,31 +345,16 @@ class MealLibraryController extends Controller
     {
         $byIngredientGrams = [];
         foreach ($ingredientRows as $row) {
+            if (! is_array($row)) {
+                continue;
+            }
+
             $grams = (float) ($row['amount_grams'] ?? 0);
             if ($grams <= 0) {
                 continue;
             }
 
-            $ingredient = null;
-            $ingredientId = $row['ingredient_id'] ?? null;
-            if ($ingredientId !== null && $ingredientId !== '') {
-                $ingredient = Ingredient::query()
-                    ->whereKey((int) $ingredientId)
-                    ->where('is_verified', true)
-                    ->first();
-            }
-
-            if ($ingredient === null) {
-                $name = trim((string) ($row['name'] ?? ''));
-                if ($name === '') {
-                    continue;
-                }
-                $ingredient = Ingredient::query()
-                    ->where('name', $name)
-                    ->where('is_verified', true)
-                    ->first();
-            }
-
+            $ingredient = $this->resolveLibraryIngredientFromMealFormRow($row);
             if ($ingredient === null) {
                 continue;
             }
@@ -348,6 +364,28 @@ class MealLibraryController extends Controller
         }
 
         return $byIngredientGrams;
+    }
+
+    /**
+     * @param  array<string, mixed>  $row
+     */
+    private function resolveLibraryIngredientFromMealFormRow(array $row): ?Ingredient
+    {
+        $ingredientId = $row['ingredient_id'] ?? null;
+        if ($ingredientId !== null && $ingredientId !== '') {
+            $ingredient = Ingredient::query()->whereKey((int) $ingredientId)->first();
+
+            if ($ingredient !== null) {
+                return $ingredient;
+            }
+        }
+
+        $name = trim((string) ($row['name'] ?? ''));
+        if ($name === '') {
+            return null;
+        }
+
+        return IngredientLibraryNameMatcher::resolveForImportLabel($name);
     }
 
     /**
@@ -651,6 +689,8 @@ class MealLibraryController extends Controller
             $nutrition = $this->nutritionFromStoredTotals($meal);
         }
 
+        $nutritionForDetailView = MealLibraryBulkNutrition::perServingNutritionForMealDisplay($meal);
+
         $nutrientHighlights = $this->nutrientHighlightsForUi($nutrition);
         $ingredientIds = $meal->ingredients->pluck('id')->map(fn ($id): int => (int) $id)->all();
         if (IngredientG6pdSafety::mealContainsG6pdTrigger($ingredientIds)) {
@@ -679,7 +719,7 @@ class MealLibraryController extends Controller
             'tags' => $this->tagsForMealCard($meal),
             'nutrientHighlights' => $nutrientHighlights,
             'safetyAlertTags' => array_values($safetyAlertTags),
-            'detailView' => $this->buildMealDetailViewPayload($meal, $nutrition, $safetyAlertTags),
+            'detailView' => $this->buildMealDetailViewPayload($meal, $nutritionForDetailView, $safetyAlertTags),
             'editForm' => $this->mealEditFormSnapshot($meal),
         ];
     }
@@ -1025,27 +1065,41 @@ class MealLibraryController extends Controller
      */
     private function toIngredientProfile(Ingredient $ingredient): array
     {
+        $per100 = RecipeNutritionCalculator::per100gNutritionForIngredient($ingredient);
         $micros = is_array($ingredient->micronutrients) ? $ingredient->micronutrients : [];
 
         return [
             'id' => (int) $ingredient->getKey(),
             'name' => $ingredient->name,
-            'calories' => (float) $ingredient->calories,
-            'protein' => (float) $ingredient->protein,
-            'carbs' => (float) $ingredient->carbs,
-            'fat' => (float) $ingredient->fat,
-            'b6' => (float) $ingredient->b6,
-            'b9_folate' => (float) $ingredient->b9_folate,
-            'b12' => (float) $ingredient->b12,
-            'iron' => (float) $ingredient->iron,
-            'magnesium' => (float) $ingredient->magnesium,
-            'micronutrients' => $micros,
+            'calories' => (float) ($per100['calories'] ?? 0),
+            'protein' => (float) ($per100['protein'] ?? 0),
+            'carbs' => (float) ($per100['carbs'] ?? 0),
+            'fat' => (float) ($per100['fat'] ?? 0),
+            'b6' => (float) ($per100['b6'] ?? 0),
+            'b9_folate' => (float) ($per100['b9_folate'] ?? 0),
+            'b12' => (float) ($per100['b12'] ?? 0),
+            'iron' => (float) ($per100['iron'] ?? 0),
+            'magnesium' => (float) ($per100['magnesium'] ?? 0),
+            'micronutrients' => array_merge($micros, [
+                'fiber' => (float) ($per100['fiber'] ?? $micros['fiber'] ?? 0),
+                'sugar' => (float) ($per100['sugar'] ?? $micros['sugar'] ?? 0),
+                'calcium' => (float) ($per100['calcium'] ?? $micros['calcium'] ?? 0),
+                'potassium' => (float) ($per100['potassium'] ?? $micros['potassium'] ?? 0),
+                'sodium' => (float) ($per100['sodium'] ?? $micros['sodium'] ?? 0),
+                'zinc' => (float) ($per100['zinc'] ?? $micros['zinc'] ?? 0),
+                'vitamin_c' => (float) ($per100['vitamin_c'] ?? $micros['vitamin_c'] ?? 0),
+                'vitamin_a' => (float) ($per100['vitamin_a'] ?? $micros['vitamin_a'] ?? 0),
+                'vitamin_e' => (float) ($per100['vitamin_e'] ?? $micros['vitamin_e'] ?? 0),
+                'vitamin_d' => (float) ($per100['vitamin_d'] ?? $micros['vitamin_d'] ?? 0),
+                'vitamin_k' => (float) ($per100['vitamin_k'] ?? $micros['vitamin_k'] ?? 0),
+            ]),
             'density' => (float) ($ingredient->density ?? 0) > 0 ? (float) $ingredient->density : 1.0,
             'common_allergens' => array_values(array_filter(
                 is_array($ingredient->common_allergens) ? $ingredient->common_allergens : [],
                 static fn ($v): bool => is_string($v) && $v !== '',
             )),
             'is_g6pd_trigger' => IngredientG6pdSafety::ingredientHasEffectiveG6pdTrigger($ingredient),
+            'is_prepared_base' => $ingredient->isPreparedBaseIngredient(),
         ];
     }
 }

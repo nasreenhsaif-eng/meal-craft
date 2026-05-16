@@ -332,6 +332,42 @@ function mealLibraryItemUpdateUrl(mealStoreUrl, mealId) {
     return `${String(mealStoreUrl).replace(/\/?$/, '')}/${mealId}`;
 }
 
+/** @param {Record<string, string | string[]> | undefined} errors */
+function firstMealLibraryValidationMessage(errors) {
+    if (!errors || typeof errors !== 'object') {
+        return null;
+    }
+    for (const value of Object.values(errors)) {
+        if (typeof value === 'string' && value.trim() !== '') {
+            return value.trim();
+        }
+        if (Array.isArray(value)) {
+            const message = value.find((entry) => typeof entry === 'string' && entry.trim() !== '');
+            if (message) {
+                return message.trim();
+            }
+        }
+    }
+    return null;
+}
+
+/** @param {import('@inertiajs/react').FormDataConvertible} payload */
+function postMealLibraryForm(url, payload, { onSuccess, onError }) {
+    router.post(url, payload, {
+        forceFormData: true,
+        preserveScroll: true,
+        preserveState: false,
+        onSuccess,
+        onError: (errors) => {
+            const message = firstMealLibraryValidationMessage(errors);
+            if (message) {
+                window.alert(message);
+            }
+            onError?.(errors);
+        },
+    });
+}
+
 /** Delete selected — ghost/disabled styling (matches Ingredients Library). */
 function deleteSelectedButtonClass(anySelected) {
     return [
@@ -579,8 +615,12 @@ export function MealLibraryPageContent({
         const ingredientBackedOk = hasResolvedIngredientLines && (!isBulkRecipe || svc != null);
         const cal = Number(formCalories);
         const batchCalOk = formCalories.trim() !== '' && Number.isFinite(cal) && cal >= 0;
+        const editingExisting = Boolean(mealToEdit?.editForm?.id);
         if (!nameOk) {
             return false;
+        }
+        if (editingExisting && batchCalOk && hasResolvedIngredientLines) {
+            return !isBulkRecipe || svc != null;
         }
         if (!batchCalOk && !ingredientBackedOk) {
             return false;
@@ -589,7 +629,7 @@ export function MealLibraryPageContent({
             return true;
         }
         return svc != null;
-    }, [formName, formCalories, isBulkRecipe, bulkServingsCount, ingredientRows]);
+    }, [formName, formCalories, isBulkRecipe, bulkServingsCount, ingredientRows, mealToEdit]);
 
     const ingredientDatabase = useMemo(
         () =>
@@ -816,6 +856,17 @@ export function MealLibraryPageContent({
         }
     }
 
+    const verifiedIngredientIds = useMemo(() => {
+        const ids = new Set();
+        for (const profile of ingredientProfiles ?? []) {
+            const id = profile?.id;
+            if (id != null && Number.isFinite(Number(id))) {
+                ids.add(Number(id));
+            }
+        }
+        return ids;
+    }, [ingredientProfiles]);
+
     function buildIngredientsForStore() {
         return ingredientRows
             .map((r) => {
@@ -828,8 +879,10 @@ export function MealLibraryPageContent({
                     name,
                     amount_grams: Math.round(grams * 100) / 100,
                 };
-                if (r.ingredientId != null && Number.isFinite(r.ingredientId)) {
-                    row.ingredient_id = r.ingredientId;
+                const ingredientId =
+                    r.ingredientId != null && Number.isFinite(Number(r.ingredientId)) ? Number(r.ingredientId) : null;
+                if (ingredientId != null && verifiedIngredientIds.has(ingredientId)) {
+                    row.ingredient_id = ingredientId;
                 }
                 return row;
             })
@@ -941,9 +994,7 @@ export function MealLibraryPageContent({
             return;
         }
 
-        router.post(mealStoreUrl, payload, {
-            forceFormData: true,
-            preserveScroll: true,
+        postMealLibraryForm(mealStoreUrl, payload, {
             onSuccess: () => closeCreateModal(),
         });
     }
@@ -959,9 +1010,7 @@ export function MealLibraryPageContent({
             return;
         }
 
-        router.post(mealStoreUrl, payload, {
-            forceFormData: true,
-            preserveScroll: true,
+        postMealLibraryForm(mealStoreUrl, payload, {
             onSuccess: () => closeCreateModal(),
         });
     }
@@ -979,9 +1028,7 @@ export function MealLibraryPageContent({
         }
 
         const updateUrl = mealLibraryItemUpdateUrl(mealStoreUrl, mealId);
-        router.post(updateUrl, payload, {
-            forceFormData: true,
-            preserveScroll: true,
+        postMealLibraryForm(updateUrl, payload, {
             onSuccess: () => closeCreateModal(),
         });
     }
@@ -1670,6 +1717,19 @@ export function MealLibraryPageContent({
                                                   your library. Add them via Ingredient Library import, and those meals will
                                                   be created automatically.
                                               </p>
+                                          </div>
+                                      ) : null}
+                                      {(mealCsvImportResultModal.uniquePending ?? []).length > 0 ? (
+                                          <div className="rounded-[12px] border border-amber-200/80 bg-white px-4 py-3 text-amber-950">
+                                              <p className="font-semibold">Missing from ingredient library</p>
+                                              <p className="mt-1 text-sm text-[#555555]">
+                                                  This is not a crash — the meal was held until these exist in your library.
+                                              </p>
+                                              <ul className="mt-2 max-h-40 list-disc space-y-0.5 overflow-y-auto pl-5 text-sm">
+                                                  {(mealCsvImportResultModal.uniquePending ?? []).map((name) => (
+                                                      <li key={String(name)}>{String(name)}</li>
+                                                  ))}
+                                              </ul>
                                           </div>
                                       ) : null}
                                       {(mealCsvImportResultModal.csvUnrecognizedHeaders ?? []).length > 0 ? (

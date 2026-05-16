@@ -48,7 +48,8 @@ final class IngredientsImport
      *
      * Base recipe (optional):
      * - is_base_recipe — 0 or 1
-     * - recipe_components — comma- or pipe-separated {@code ingredient_id:amount} pairs (e.g. {@code 12:100,34:50g})
+     * - recipe_components — {@code ingredient_id:amount} pairs (comma/pipe-separated) or pipe-separated
+     *   {@code Ingredient Name (Weightg)} segments (e.g. {@code Carrots, raw (100g) | Onion (50g)})
      * - finished_weight_grams — optional cooked yield for per-100 g scaling
      */
     public function import(UploadedFile $file): int
@@ -64,6 +65,9 @@ final class IngredientsImport
 
         $headers = null;
         $imported = 0;
+        $csvRowNumber = 1;
+        /** @var list<string> $importErrors */
+        $importErrors = [];
 
         foreach ($csv as $row) {
             if (! is_array($row) || $row === [null] || $row === []) {
@@ -77,6 +81,8 @@ final class IngredientsImport
 
                 continue;
             }
+
+            $csvRowNumber++;
 
             if (count($row) < count($headers)) {
                 $row = array_pad($row, count($headers), null);
@@ -97,8 +103,12 @@ final class IngredientsImport
             }
 
             if ($this->recordIsBaseRecipe($record)) {
-                $this->importBaseRecipeRow($name, $record);
-                $imported++;
+                try {
+                    $this->importBaseRecipeRow($name, $record, $csvRowNumber);
+                    $imported++;
+                } catch (InvalidArgumentException $e) {
+                    $importErrors[] = $e->getMessage();
+                }
 
                 continue;
             }
@@ -107,6 +117,13 @@ final class IngredientsImport
 
             $this->upsertByNameSafely($name, $attrs);
             $imported++;
+        }
+
+        if ($importErrors !== []) {
+            throw new InvalidArgumentException(
+                __('Ingredient import finished with :count error(s):', ['count' => count($importErrors)])
+                ."\n".implode("\n", $importErrors),
+            );
         }
 
         return $imported;
@@ -317,7 +334,7 @@ final class IngredientsImport
     /**
      * @param  array<string, mixed>  $record
      */
-    private function importBaseRecipeRow(string $name, array $record): void
+    private function importBaseRecipeRow(string $name, array $record, int $csvRowNumber): void
     {
         $componentsCell = trim((string) ($record['recipe_components'] ?? ''));
 
@@ -325,7 +342,7 @@ final class IngredientsImport
             throw new InvalidArgumentException(__('Base recipe row :name requires recipe_components.', ['name' => $name]));
         }
 
-        $componentRows = RecipeComponentsCsvParser::parseToComponentRows($componentsCell);
+        $componentRows = RecipeComponentsCsvParser::parseToComponentRows($componentsCell, $csvRowNumber, $name);
         $finished = $this->toFloat($record['finished_weight_grams'] ?? null);
 
         $existing = Ingredient::query()

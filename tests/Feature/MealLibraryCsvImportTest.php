@@ -187,23 +187,30 @@ test('meal library livewire import exposes unique pending ingredients for downlo
         ->assertSee(__('Download missing ingredients'));
 });
 
-test('meal library csv rejects invalid or missing category', function () {
+test('meal library csv rejects invalid category but defaults when category column is absent', function () {
     mealImportIngredient('Salmon');
 
-    $csv = "Meal_Name,Category,Ingredient_Quantities,Instructions,Description_Highlight\nX,Main Salad,Salmon:100,.,.\n";
-    $file = UploadedFile::fake()->createWithContent('meals.csv', $csv);
+    $invalidCsv = "Meal_Name,Category,Ingredient_Quantities,Instructions,Description_Highlight\nX,Main Salad,Salmon:100,.,.\n";
+    $invalidFile = UploadedFile::fake()->createWithContent('meals-invalid.csv', $invalidCsv);
 
-    $response = $this->actingAs(User::factory()->create())
-        ->postJson(route('meals.library.import-csv'), ['file' => $file]);
+    $invalidResponse = $this->actingAs(User::factory()->create())
+        ->postJson(route('meals.library.import-csv'), ['file' => $invalidFile]);
 
-    $response->assertOk()
-        ->assertJsonPath('summary.errors', 1)
-        ->assertJsonPath('summary.imported', 0)
-        ->assertJsonPath('summary.updated', 0)
-        ->assertJsonPath('summary.duplicates_created', 0);
+    $invalidResponse->assertOk()
+        ->assertJsonPath('summary.errors', 1);
 
-    $row = collect($response->json('rows'))->first();
-    expect($row['message'])->toBe(__('Invalid or Missing Category or Meal Type.'));
+    $row = collect($invalidResponse->json('rows'))->first();
+    expect($row['message'])->toBe(__('Invalid Category or Meal Type.'));
+
+    $defaultCsv = "Meal_Name,Ingredient_Quantities\nDefaulted,Salmon:100\n";
+    $defaultFile = UploadedFile::fake()->createWithContent('meals-default.csv', $defaultCsv);
+
+    $this->actingAs(User::factory()->create())
+        ->postJson(route('meals.library.import-csv'), ['file' => $defaultFile])
+        ->assertOk()
+        ->assertJsonPath('summary.imported', 1);
+
+    expect(Meal::query()->where('name', 'Defaulted')->firstOrFail()->category)->toBe(RecipeCategory::Meal);
 });
 
 test('meal library csv flags calorie warning for breakfast over 250 kcal but still imports', function () {
@@ -479,7 +486,7 @@ test('meal library csv import returns a non-empty message string for each failed
 });
 
 test('meal library csv import missing required column message lists missing fields', function () {
-    $csv = "Meal_Name,Ingredient_Quantities\nX,Salmon:100\n";
+    $csv = "Category,Ingredient_Quantities\nMeal,Salmon:100\n";
     $file = UploadedFile::fake()->createWithContent('meals.csv', $csv);
 
     $response = $this->actingAs(User::factory()->create())
@@ -488,7 +495,53 @@ test('meal library csv import missing required column message lists missing fiel
         ->assertJsonPath('summary.errors', 1);
 
     $message = (string) collect($response->json('rows'))->firstWhere('status', 'error')['message'];
-    expect($message)->toContain('Category');
+    expect($message)->toContain('Meal_Name');
+});
+
+test('meal library csv import accepts concise master export headers without category column', function () {
+    mealImportIngredient('Salmon', ['calories' => 200, 'protein' => 25, 'carbs' => 0, 'fat' => 12]);
+    mealImportIngredient('Quinoa', ['calories' => 120, 'protein' => 4, 'carbs' => 22, 'fat' => 2]);
+
+    $csv = 'name,description,meal_tags,cycle_phase,dietary_tags,safety_alerts,ingredients,instructions,photo_url,target_cal,target_pro,target_fat,target_carbs,calc_cal,calc_pro,calc_fat,calc_carbs,variance_notes'."\n"
+        .'Example Salmon Bowl,Bright bowl.,,Follicular,"Low GI, High protein",Shellfish,Salmon (120g) | Quinoa (100g),Grill salmon.,,600,45,20,35,588,43,21,28,kcal: 12'."\n";
+    $file = UploadedFile::fake()->createWithContent('meals.csv', $csv);
+
+    $this->actingAs(User::factory()->create())
+        ->postJson(route('meals.library.import-csv'), ['file' => $file])
+        ->assertOk()
+        ->assertJsonPath('summary.imported', 1)
+        ->assertJsonPath('csv_unrecognized_headers', []);
+
+    $meal = Meal::query()->where('name', 'Example Salmon Bowl')->firstOrFail();
+    expect($meal->category)->toBe(RecipeCategory::Meal)
+        ->and($meal->diet_tags)->toEqualCanonicalizing(['Low GI', 'High protein']);
+});
+
+test('meal library csv import still accepts legacy long master export headers', function () {
+    mealImportIngredient('Salmon', ['calories' => 200, 'protein' => 25, 'carbs' => 0, 'fat' => 12]);
+
+    $csv = 'Meal Name,Description,Ingredients,Target Calories (kcal)'."\n"
+        .'Legacy Header Bowl,Notes.,Salmon:100g,400'."\n";
+    $file = UploadedFile::fake()->createWithContent('meals-legacy.csv', $csv);
+
+    $this->actingAs(User::factory()->create())
+        ->postJson(route('meals.library.import-csv'), ['file' => $file])
+        ->assertOk()
+        ->assertJsonPath('summary.imported', 1);
+
+    expect(Meal::query()->where('name', 'Legacy Header Bowl')->exists())->toBeTrue();
+});
+
+test('meal library csv import maps Ingredients header alias', function () {
+    mealImportIngredient('Salmon', ['calories' => 200, 'protein' => 25, 'carbs' => 0, 'fat' => 12]);
+
+    $csv = "name,ingredients\nAlias Bowl,Salmon:100g\n";
+    $file = UploadedFile::fake()->createWithContent('meals.csv', $csv);
+
+    $this->actingAs(User::factory()->create())
+        ->postJson(route('meals.library.import-csv'), ['file' => $file])
+        ->assertOk()
+        ->assertJsonPath('summary.imported', 1);
 });
 
 test('meal library csv import returns 422 when file is missing', function () {

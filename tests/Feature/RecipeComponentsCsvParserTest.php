@@ -52,3 +52,41 @@ test('recipe components csv parser rejects invalid segments', function () {
     expect(fn () => RecipeComponentsCsvParser::parseToComponentRows('abc:100'))
         ->toThrow(InvalidArgumentException::class);
 });
+
+test('recipe components csv parser resolves comma-containing ingredient names with pipe separation', function () {
+    $carrots = Ingredient::factory()->create([
+        'is_verified' => true,
+        'name' => 'Carrots, raw',
+        'calories' => 40,
+        'density' => 1,
+    ]);
+    $onion = Ingredient::factory()->create([
+        'is_verified' => true,
+        'name' => 'Onion',
+        'calories' => 40,
+        'density' => 1,
+    ]);
+
+    $rows = RecipeComponentsCsvParser::parseToComponentRows('Carrots, raw (100g) | Onion (50g)');
+
+    expect($rows)->toHaveCount(2)
+        ->and($rows[0]['ingredient_id'])->toBe($carrots->id)
+        ->and($rows[0]['amount_grams'])->toBe(100.0)
+        ->and($rows[1]['ingredient_id'])->toBe($onion->id)
+        ->and($rows[1]['amount_grams'])->toBe(50.0);
+});
+
+test('recipe components csv parser reports row context for bare ingredient names', function () {
+    Ingredient::factory()->create(['is_verified' => true, 'name' => 'Carrots, raw']);
+
+    try {
+        RecipeComponentsCsvParser::parseToComponentRows('Carrots', 5, 'Veg Base');
+        expect(false)->toBeTrue('expected exception');
+    } catch (InvalidArgumentException $e) {
+        expect($e->getMessage())
+            ->toContain('CSV row 5')
+            ->toContain('Veg Base')
+            ->toContain('Ingredient Name (Weightg)')
+            ->toContain('Carrots');
+    }
+});

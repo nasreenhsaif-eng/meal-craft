@@ -49,6 +49,34 @@ class StoreMealFromLibraryRequest extends FormRequest
         if ($merge !== []) {
             $this->merge($merge);
         }
+
+        if ($this->has('meal_plan_tags') && is_array($this->input('meal_plan_tags'))) {
+            $planTags = [];
+            foreach ($this->input('meal_plan_tags') as $tag) {
+                if (! is_string($tag) || trim($tag) === '') {
+                    continue;
+                }
+                $canonical = MealLibraryTaxonomy::resolveMealPlanTagCanonical($tag);
+                if ($canonical !== null) {
+                    $planTags[] = $canonical;
+                }
+            }
+            $this->merge(['meal_plan_tags' => array_values(array_unique($planTags))]);
+        }
+
+        if ($this->has('cycle_phases') && is_array($this->input('cycle_phases'))) {
+            $phaseValues = [];
+            foreach ($this->input('cycle_phases') as $phase) {
+                if (! is_string($phase) || trim($phase) === '') {
+                    continue;
+                }
+                $enum = CyclePhase::tryFrom($phase);
+                if ($enum !== null) {
+                    $phaseValues[] = $enum->value;
+                }
+            }
+            $this->merge(['cycle_phases' => array_values(array_unique($phaseValues))]);
+        }
     }
 
     /**
@@ -86,7 +114,7 @@ class StoreMealFromLibraryRequest extends FormRequest
             'description' => ['nullable', 'string', 'max:65535'],
             'highlight' => ['nullable', 'string', 'max:2000'],
             'ingredients' => ['nullable', 'array'],
-            'ingredients.*.ingredient_id' => ['nullable', 'integer', Rule::exists('ingredients', 'id')->where('is_verified', true)],
+            'ingredients.*.ingredient_id' => ['nullable', 'integer', 'exists:ingredients,id'],
             'ingredients.*.name' => ['nullable', 'string', 'max:255'],
             'ingredients.*.amount_grams' => ['nullable', 'numeric', 'min:0'],
             'photo' => ['nullable', 'image', 'max:5120'],
