@@ -113,3 +113,27 @@ export const Default = {
         </div>
     ),
 };
+
+export const ListViewWithReorder = {
+    name: 'List view (drag to reorder)',
+    args: {
+        initialViewMode: 'list',
+    },
+    render: (args) => (
+        <div className="min-h-screen w-full bg-gray-50 p-8">
+            <MealLibraryStoryShell>
+                <MealLibraryPageContent
+                    {...args}
+                    meals={sampleMeals}
+                    ingredientProfiles={sampleIngredientProfiles}
+                    onRowReorder={(updated) => {
+                        console.log(
+                            'onRowReorder',
+                            updated.map((m) => m.title),
+                        );
+                    }}
+                />
+            </MealLibraryStoryShell>
+        </div>
+    ),
+};

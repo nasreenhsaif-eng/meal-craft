@@ -33,11 +33,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('/ingredient-library/base-ingredient', [IngredientLibraryController::class, 'store'])->name('ingredient-library.base-ingredient.store');
             Route::post('/ingredient-library/base-ingredient/{ingredient}', [IngredientLibraryController::class, 'update'])->name('ingredient-library.base-ingredient.update');
             Route::post('/ingredient-library', [IngredientLibraryController::class, 'store'])->name('ingredient-library.store');
+            Route::post('/ingredient-library/bulk-destroy', [IngredientLibraryController::class, 'bulkDestroy'])->name('ingredient-library.bulk-destroy');
             Route::post('/ingredient-library/{ingredient}', [IngredientLibraryController::class, 'update'])->name('ingredient-library.update');
             Route::get('/meal-library', [MealLibraryController::class, 'index'])->name('meal-library');
             Route::get('/meal-library/csv-template', [MealLibraryController::class, 'downloadMealCraftCsvTemplate'])->name('meal-library.csv-template');
             Route::post('/meal-library', [MealController::class, 'store'])->name('meal-library.store');
             Route::post('/meal-library/bulk-destroy', [MealLibraryController::class, 'bulkDestroy'])->name('meal-library.bulk-destroy');
+            Route::post('/meal-library/reorder', [MealLibraryController::class, 'reorder'])->name('meal-library.reorder');
             Route::post('/meal-library/{meal}', [MealController::class, 'update'])->name('meal-library.update');
             Route::get('/meal-plan-library', [MealPlanLibraryController::class, 'index'])->name('meal-plan-library');
 

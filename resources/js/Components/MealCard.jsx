@@ -2,10 +2,11 @@ import { useState } from 'react';
 import MacroGrid from './MacroGrid.jsx';
 import Button from './Atoms/Button.jsx';
 import RoundIconButton from './Atoms/Icons/RoundIconButton.jsx';
-import SquareCheckbox from './Atoms/Icons/SquareCheckbox.jsx';
 import { IconEdit } from './Atoms/SvgIcons.jsx';
 import MealCraftLogo from './Atoms/Logo/MealCraftLogo.jsx';
+import CategoryBadge from './MealSystem/CategoryBadges.jsx';
 import { resolveMealImageUrl } from '../meal-library/resolveMealImageUrl.ts';
+import { resolveMealCategoryBadgeProps } from '../meal-library/mealCategoryBadge.ts';
 
 /**
  * Same shell as {@link MealCardClientViewNano} `deck` (consultation card, non-ribbon).
@@ -52,7 +53,7 @@ function MacroGridDeckSection({ macros }) {
  * @param {{ calories: unknown; protein: unknown; carbs: unknown; fat: unknown }} [props.macros]
  * @param {boolean} [props.adminControls]
  * @param {boolean} [props.showActions]
- * @param {boolean} [props.showAdminSelectionCheckbox]
+ * @param {string} [props.category] Meal library category (e.g. Breakfast, Meal, Soup).
  * @param {boolean} [props.selected]
  * @param {(next?: boolean) => void} [props.onToggleSelected]
  * @param {() => void} [props.onEdit]
@@ -73,7 +74,7 @@ export default function MealCard({
     macros,
     adminControls = false,
     showActions = false,
-    showAdminSelectionCheckbox = true,
+    category: categoryProp,
     selected = false,
     onToggleSelected,
     onEdit,
@@ -97,6 +98,9 @@ export default function MealCard({
     );
     const resolvedImageAlt = String(imageAlt ?? mealRecord?.imageAlt ?? '').trim();
     const resolvedMacros = macros ?? mealRecord?.nutritionalSummary ?? mealRecord?.macros ?? null;
+    const resolvedCategoryRaw =
+        categoryProp ?? mealRecord?.category ?? mealRecord?.mealType ?? mealRecord?.meal_type ?? '';
+    const categoryBadgeProps = resolveMealCategoryBadgeProps(resolvedCategoryRaw);
 
     const isAdmin = Boolean(isAdminProp) || variant === 'admin';
     const showAdminChrome = isAdmin && (Boolean(showActions) || Boolean(adminControls));
@@ -150,23 +154,6 @@ export default function MealCard({
                     </div>
                 ) : null}
 
-                {showAdminChrome && showAdminSelectionCheckbox ? (
-                    <div className="absolute left-3 top-3 z-30">
-                        <button
-                            type="button"
-                            className="inline-flex items-center rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5A6B44] focus-visible:ring-offset-2"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                onToggleSelected?.(!selected);
-                            }}
-                            aria-pressed={selected}
-                            aria-label={selected ? `Deselect ${resolvedTitle}` : `Select ${resolvedTitle}`}
-                        >
-                            <SquareCheckbox checked={selected} presentational />
-                        </button>
-                    </div>
-                ) : null}
-
                 {showAdminChrome ? (
                     <div className="absolute right-3 top-3 z-30">
                         <RoundIconButton
@@ -180,6 +167,14 @@ export default function MealCard({
                 ) : null}
 
                 <div className="relative aspect-[4/3] w-full shrink-0 overflow-hidden bg-[#F8F9F6]">
+                    {showAdminChrome ? (
+                        <div className="pointer-events-none absolute left-3 top-3 z-30">
+                            <CategoryBadge
+                                variant={categoryBadgeProps.variant}
+                                label={categoryBadgeProps.label}
+                            />
+                        </div>
+                    ) : null}
                     {showImage ? (
                         <img
                             src={resolvedImageUrl}

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Enums\DietTag;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\BulkDestroyIngredientsFromLibraryRequest;
 use App\Http\Requests\StoreIngredientLibraryRequest;
 use App\Models\Ingredient;
 use App\Services\BaseIngredientService;
@@ -11,6 +12,7 @@ use App\Support\IngredientAllergenCatalog;
 use App\Support\IngredientG6pdSafety;
 use App\Support\IngredientLibraryCategory;
 use App\Support\SickleCellNutrientRdi;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -70,7 +72,51 @@ class IngredientLibraryController extends Controller
             'csvTemplateUrl' => asset('templates/ingredients-library-template.csv'),
             'csvExportUrl' => route('admin.ingredient-library.export-csv'),
             'csvImportUrl' => route('admin.ingredient-library.import-csv'),
+            'ingredientBulkDestroyUrl' => route('admin.ingredient-library.bulk-destroy'),
         ]);
+    }
+
+    public function bulkDestroy(BulkDestroyIngredientsFromLibraryRequest $request): RedirectResponse|JsonResponse
+    {
+        $ids = $request->validated('ids');
+
+        $deletedCount = 0;
+
+        Ingredient::query()
+            ->whereIn('id', $ids)
+            ->orderBy('id')
+            ->each(function (Ingredient $ingredient) use (&$deletedCount): void {
+                $ingredient->delete();
+                $deletedCount++;
+            });
+
+        if ($deletedCount === 0) {
+            $message = __('No ingredients were removed. They may already be deleted.');
+
+            if ($request->expectsJson()) {
+                return response()->json(['message' => $message, 'deleted' => 0], 422);
+            }
+
+            return redirect()
+                ->route('admin.ingredient-library')
+                ->with('error', $message);
+        }
+
+        $message = $deletedCount === 1
+            ? __('1 ingredient removed from the library.')
+            : __(':count ingredients removed from the library.', ['count' => $deletedCount]);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => $message,
+                'deleted' => $deletedCount,
+                'deleted_ids' => $ids,
+            ]);
+        }
+
+        return redirect()
+            ->route('admin.ingredient-library')
+            ->with('success', $message);
     }
 
     public function store(StoreIngredientLibraryRequest $request, BaseIngredientService $service): RedirectResponse

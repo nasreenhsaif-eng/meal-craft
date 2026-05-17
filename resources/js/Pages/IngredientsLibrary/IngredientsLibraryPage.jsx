@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import axios from 'axios';
 import { router, usePage } from '@inertiajs/react';
 import AdminInertiaShell from '../../Layouts/AdminInertiaShell.jsx';
 import TextInput from '../../Components/Atoms/TextInput/TextInput.jsx';
@@ -143,6 +144,7 @@ function dietTagDropdownOptions(items) {
  *   csvTemplateUrl?: string;
  *   csvExportUrl?: string;
  *   csvImportUrl?: string;
+ *   ingredientBulkDestroyUrl?: string;
  *   flashSuccess?: string | null;
  * }} props
  */
@@ -156,6 +158,7 @@ export function IngredientsLibraryPageView({
     ingredients = [],
     componentPickerProfiles = [],
     ingredientStoreUrl = '',
+    ingredientBulkDestroyUrl = '',
     csvTemplateUrl = '#',
     csvExportUrl = '#',
     csvImportUrl = '#',
@@ -169,6 +172,11 @@ export function IngredientsLibraryPageView({
     const [selectedRows, setSelectedRows] = useState(/** @type {string[]} */ ([]));
     const [createOpen, setCreateOpen] = useState(false);
     const [confirmOpen, setConfirmOpen] = useState(false);
+    const [deleteBusy, setDeleteBusy] = useState(false);
+    const [deleteError, setDeleteError] = useState(/** @type {string | null} */ (null));
+    const [libraryRows, setLibraryRows] = useState(() =>
+        (Array.isArray(ingredients) ? ingredients : []).map((raw) => normalizeLibraryRow(raw)),
+    );
     const [detailModal, setDetailModal] = useState(
         /** @type {null | { title: string; detailView: object }} */ (null),
     );
@@ -242,16 +250,16 @@ export function IngredientsLibraryPageView({
         };
     }, [createCompositionBatchNutrition, createCompositionRows, createFinishedWeightGrams]);
 
-    const libraryRows = useMemo(() => {
+    useEffect(() => {
         const list = Array.isArray(ingredients) ? ingredients : [];
-        return list.map((raw) => normalizeLibraryRow(raw));
+        setLibraryRows(list.map((raw) => normalizeLibraryRow(raw)));
     }, [ingredients]);
 
     const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
     useEffect(() => {
         setVisibleCount(PAGE_SIZE);
-    }, [query, ingredients]);
+    }, [query, libraryRows]);
 
     useEffect(() => {
         if (!createOpen) {
@@ -493,9 +501,88 @@ export function IngredientsLibraryPageView({
         });
     }
 
+    const handleConfirmDelete = useCallback(async () => {
+        setDeleteError(null);
+
+        if (selectedRows.length === 0) {
+            setConfirmOpen(false);
+            return;
+        }
+
+        if (!ingredientBulkDestroyUrl) {
+            setDeleteError('Delete is unavailable. Hard-refresh this page (Cmd+Shift+R), then try again.');
+            return;
+        }
+
+        const ids = selectedRows
+            .map((id) => {
+                const n = Number(id);
+                return Number.isInteger(n) && n > 0 ? n : null;
+            })
+            .filter((id) => id !== null);
+
+        if (ids.length === 0) {
+            setDeleteError('No valid ingredients were selected.');
+            return;
+        }
+
+        const deletedIdSet = new Set(ids.map(String));
+        setDeleteBusy(true);
+
+        const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
+        try {
+            await axios.post(
+                ingredientBulkDestroyUrl,
+                { ids },
+                {
+                    headers: {
+                        Accept: 'application/json',
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        ...(token ? { 'X-CSRF-TOKEN': token } : {}),
+                    },
+                },
+            );
+
+            setConfirmOpen(false);
+            setSelectedRows([]);
+            setLibraryRows((prev) => prev.filter((r) => !deletedIdSet.has(String(r.id))));
+            void router.reload({ only: ['ingredients', 'componentPickerProfiles'], preserveScroll: true });
+        } catch (error) {
+            const responseMessage =
+                error &&
+                typeof error === 'object' &&
+                'response' in error &&
+                error.response &&
+                typeof error.response === 'object' &&
+                'data' in error.response &&
+                error.response.data &&
+                typeof error.response.data === 'object' &&
+                'message' in error.response.data &&
+                typeof error.response.data.message === 'string'
+                    ? error.response.data.message
+                    : null;
+
+            if (error && typeof error === 'object' && 'response' in error && error.response?.status === 419) {
+                setDeleteError('Your session expired. Refresh the page and sign in again.');
+            } else {
+                setDeleteError(responseMessage ?? 'Could not delete ingredients. Please try again.');
+            }
+        } finally {
+            setDeleteBusy(false);
+        }
+    }, [ingredientBulkDestroyUrl, selectedRows]);
+
     return (
         <div className={`min-h-screen ${PAGE_BG} px-4 pb-8 pt-4 font-sans md:px-8`}>
             <div className="mx-auto max-w-[1400px] space-y-6">
+                {deleteError ? (
+                    <p className="rounded-[12px] border border-[#C44F5D]/30 bg-[#FDF2F3] px-4 py-3 font-body text-sm text-[#8B2E38]">
+                        {deleteError}
+                    </p>
+                ) : null}
+
                 {flashSuccess ? (
                     <div
                         role="status"
@@ -1059,16 +1146,16 @@ export function IngredientsLibraryPageView({
                                 className="w-full"
                             />
                             <Button
-                                label="Delete permanently"
+                                label={deleteBusy ? 'Deleting…' : 'Delete permanently'}
                                 variant="ghost"
+                                disabled={deleteBusy}
                                 className={
                                     // Same as Delete selected: ghost bg/text utilities can beat plain overrides in CSS order.
                                     'w-full rounded-[12px] transition-colors duration-200 ' +
                                     '!bg-[#C44F5D] !text-white hover:!bg-[#B14552] hover:!text-white'
                                 }
                                 onClick={() => {
-                                    setSelectedRows([]);
-                                    setConfirmOpen(false);
+                                    void handleConfirmDelete();
                                 }}
                             />
                         </div>
@@ -1082,9 +1169,19 @@ export function IngredientsLibraryPageView({
 
 /** Inertia-connected page body; wraps {@link IngredientsLibraryPageView} with `usePage` flash. */
 export function IngredientsLibraryPageContent(props) {
-    const { flash } = usePage().props;
-    const flashSuccess = typeof flash?.success === 'string' ? flash.success : null;
-    return <IngredientsLibraryPageView {...props} flashSuccess={flashSuccess} />;
+    const { props: pageProps } = usePage();
+    const flashSuccess = typeof pageProps.flash?.success === 'string' ? pageProps.flash.success : null;
+    const ingredientBulkDestroyUrl =
+        props.ingredientBulkDestroyUrl ??
+        (typeof pageProps.ingredientBulkDestroyUrl === 'string' ? pageProps.ingredientBulkDestroyUrl : '');
+
+    return (
+        <IngredientsLibraryPageView
+            {...props}
+            flashSuccess={flashSuccess}
+            ingredientBulkDestroyUrl={ingredientBulkDestroyUrl}
+        />
+    );
 }
 
 function IngredientsLibraryPage(props) {

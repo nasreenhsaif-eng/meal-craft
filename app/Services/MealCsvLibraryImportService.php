@@ -22,6 +22,7 @@ use App\Support\MealLibraryTaxonomy;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * Imports meal rows from CSV using the ingredient library (per-100 g nutrition).
@@ -1330,9 +1331,13 @@ final class MealCsvLibraryImportService
                     return ['id' => (int) $existingMeal->id, 'was_update' => true];
                 }
 
-                $meal = Meal::query()->create(array_merge($basePayload, [
+                $createPayload = array_merge($basePayload, [
                     'image_path' => $hasMealImageColumn ? $csvImageNormalized : null,
-                ]));
+                ]);
+                if (Schema::hasColumn('meals', 'library_sort_order')) {
+                    $createPayload['library_sort_order'] = Meal::nextLibrarySortOrder();
+                }
+                $meal = Meal::query()->create($createPayload);
                 $meal->ingredients()->sync($sync);
 
                 return ['id' => (int) $meal->id, 'was_update' => false];

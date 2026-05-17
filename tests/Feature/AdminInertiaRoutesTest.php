@@ -40,7 +40,8 @@ test('admin ingredient library renders inertia page with diet tag options', func
             ->has('csvExportUrl')
             ->has('csvImportUrl')
             ->has('componentPickerProfiles')
-            ->has('ingredientStoreUrl'));
+            ->has('ingredientStoreUrl')
+            ->has('ingredientBulkDestroyUrl'));
 });
 
 test('admin ingredient library passes verified ingredients as flattened rows', function () {
@@ -88,6 +89,7 @@ test('admin meal library renders inertia page with cycle phase options and meal 
             ->has('mealCategoryOptions')
             ->has('mealStoreUrl')
             ->has('mealBulkDestroyUrl')
+            ->has('mealReorderUrl')
             ->has('csvMealCraftTemplateUrl')
             ->has('csvExportUrl')
             ->has('csvImportUrl')

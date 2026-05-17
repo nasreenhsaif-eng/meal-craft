@@ -27,7 +27,7 @@ export default {
     argTypes: {
         isAdmin: { control: 'boolean' },
         selected: { control: 'boolean' },
-        showAdminSelectionCheckbox: { control: 'boolean' },
+        category: { control: 'text' },
         meal: { control: 'object' },
     },
 };
@@ -38,7 +38,6 @@ export const AdminViewWithActions = {
         isAdmin: true,
         adminControls: true,
         showActions: true,
-        showAdminSelectionCheckbox: true,
         selected: true,
         meal: mushroomOmeletteAdminMealFixture,
         onViewDetails: () => {},
@@ -58,33 +57,12 @@ export const ClientViewWithActions = {
         isAdmin: false,
         meal: {
             title: 'Turmeric Lentil Soup',
+            category: 'Soup',
             imageUrl: 'https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&w=1400&q=80',
             macros: { calories: 380, protein: '22g', carbs: '52g', fat: '10g' },
         },
         onViewDetails: () => {},
         onCraftThisMeal: () => {},
-    },
-    render: (args) => (
-        <MealCardStoryCanvas>
-            <MealCard {...args} />
-        </MealCardStoryCanvas>
-    ),
-};
-
-export const AdminGridNoSelectionCheckbox = {
-    name: 'Admin grid (no selection checkbox)',
-    args: {
-        isAdmin: true,
-        adminControls: true,
-        showActions: true,
-        showAdminSelectionCheckbox: false,
-        meal: {
-            title: 'Herb-roasted vegetables',
-            imageUrl: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=1400&q=80',
-            macros: { calories: 180, protein: '4g', carbs: '22g', fat: '9g' },
-        },
-        onViewDetails: () => {},
-        onEdit: () => {},
     },
     render: (args) => (
         <MealCardStoryCanvas>
@@ -126,6 +104,7 @@ export const SideBySide = {
                             isAdmin={false}
                             meal={{
                                 title: 'Turmeric Lentil Soup',
+                                category: 'Soup',
                                 imageUrl:
                                     'https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&w=1400&q=80',
                                 macros: { calories: 380, protein: '22g', carbs: '52g', fat: '10g' },
@@ -139,9 +118,9 @@ export const SideBySide = {
                             isAdmin
                             adminControls
                             showActions
-                            showAdminSelectionCheckbox={false}
                             meal={{
                                 title: 'Crispy Cod + Greens',
+                                category: 'Meal',
                                 imageUrl:
                                     'https://images.unsplash.com/photo-1529692236671-f1f6cf9683ba?auto=format&fit=crop&w=1400&q=80',
                                 macros: { calories: 540, protein: '46g', carbs: '26g', fat: '22g' },

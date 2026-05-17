@@ -7,6 +7,7 @@ use App\Enums\MealType;
 use App\Enums\RecipeCategory;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\BulkDestroyMealsFromLibraryRequest;
+use App\Http\Requests\ReorderMealsFromLibraryRequest;
 use App\Http\Requests\StoreMealFromLibraryRequest;
 use App\Models\Ingredient;
 use App\Models\Meal;
@@ -53,7 +54,6 @@ class MealLibraryController extends Controller
             ->with(['ingredients' => function ($query): void {
                 $query->orderBy('ingredients.name');
             }])
-            ->latest('updated_at')
             ->get()
             ->map(fn (Meal $meal): array => $this->toMealRow($meal))
             ->values()
@@ -126,6 +126,39 @@ class MealLibraryController extends Controller
             ->with('success', $message);
     }
 
+    public function reorder(ReorderMealsFromLibraryRequest $request): RedirectResponse|JsonResponse
+    {
+        if (! $this->mealLibrarySchemaReady() || ! Schema::hasColumn('meals', 'library_sort_order')) {
+            $message = __('Run `php artisan migrate` to update the database, then try again.');
+
+            if ($request->expectsJson()) {
+                return response()->json(['message' => $message], 503);
+            }
+
+            return redirect()
+                ->route('admin.meal-library')
+                ->with('error', $message);
+        }
+
+        $ids = $request->validated('ids');
+
+        DB::transaction(function () use ($ids): void {
+            foreach ($ids as $position => $id) {
+                Meal::queryForMealLibrary()
+                    ->where('id', $id)
+                    ->update(['library_sort_order' => (int) $position]);
+            }
+        });
+
+        if ($request->expectsJson()) {
+            return response()->json(['message' => __('Meal order saved.')]);
+        }
+
+        return redirect()
+            ->route('admin.meal-library')
+            ->with('success', __('Meal order saved.'));
+    }
+
     public function store(StoreMealFromLibraryRequest $request): RedirectResponse
     {
         if (! $this->mealLibrarySchemaReady()) {
@@ -176,6 +209,9 @@ class MealLibraryController extends Controller
             $nutritionTargets = $this->nutritionTargetsFromValidated($data);
             if ($nutritionTargets !== null) {
                 $createData = array_merge($createData, $nutritionTargets);
+            }
+            if (Schema::hasColumn('meals', 'library_sort_order')) {
+                $createData['library_sort_order'] = Meal::nextLibrarySortOrder();
             }
             $meal = Meal::query()->create($createData);
 
@@ -661,6 +697,7 @@ class MealLibraryController extends Controller
             'cyclePhases' => CyclePhase::toDropdownOptions(),
             'mealStoreUrl' => route('admin.meal-library.store'),
             'mealBulkDestroyUrl' => route('admin.meal-library.bulk-destroy'),
+            'mealReorderUrl' => route('admin.meal-library.reorder'),
             'csvMealCraftTemplateUrl' => route('admin.meal-library.csv-template'),
             'csvExportUrl' => route('meals.library.export-csv'),
             'csvImportUrl' => route('meals.library.import-csv'),

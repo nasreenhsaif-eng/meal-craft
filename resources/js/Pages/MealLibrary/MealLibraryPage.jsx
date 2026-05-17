@@ -10,7 +10,7 @@ import Button from '../../Components/Atoms/Button.jsx';
 import PillButton from '../../Components/Atoms/Button/Button.jsx';
 import MealCard from '../../Components/MealCard.jsx';
 import MealDetailView from '../../Components/Molecules/MealDetailView/MealDetailView';
-import MealListRow from '../../Components/MealListRow.jsx';
+import MealLibrarySortableTable from '../../Components/MealLibrary/MealLibrarySortableTable.jsx';
 import CSVUploader from '../../Components/CSVUploader.jsx';
 import RoundIconButton from '../../Components/Atoms/Icons/RoundIconButton.jsx';
 import { IconLayoutGrid, IconLayoutList } from '../../Components/Atoms/SvgIcons.jsx';
@@ -427,6 +427,7 @@ function deleteSelectedButtonClass(anySelected) {
  *   csvImportUrl?: string;
  *   mealStoreUrl?: string;
  *   mealBulkDestroyUrl?: string;
+ *   mealReorderUrl?: string;
  *   initialViewMode?: 'grid' | 'list';
  *   flashSuccess?: string | null;
  *   flashError?: string | null;
@@ -437,7 +438,10 @@ function deleteSelectedButtonClass(anySelected) {
  * ) => void | Promise<void>;
  *   storyInitialCreateModalOpen?: boolean;
  *   storyInitialMealToEdit?: object | null;
+ *   onRowReorder?: (updatedMeals: object[]) => void;
  * }} props
+ *
+ * Presentational body (no Inertia). Use in Storybook; the live app wraps this via {@link MealLibraryPage}.
  */
 export function MealLibraryPageContent({
     cyclePhases = DEFAULT_CYCLE_PHASES,
@@ -448,6 +452,7 @@ export function MealLibraryPageContent({
     csvImportUrl = '#',
     mealStoreUrl = '#',
     mealBulkDestroyUrl = '',
+    mealReorderUrl = '',
     initialViewMode,
     flashSuccess = null,
     flashError = null,
@@ -455,8 +460,8 @@ export function MealLibraryPageContent({
     onCreateMealSubmit,
     storyInitialCreateModalOpen = false,
     storyInitialMealToEdit = null,
+    onRowReorder,
 }) {
-    const page = usePage();
     const [query, setQuery] = useState('');
     const [mealRows, setMealRows] = useState(meals);
     const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
@@ -819,6 +824,55 @@ export function MealLibraryPageContent({
         });
     }
 
+    const handleMealRowReorder = useCallback(
+        (updatedMeals) => {
+            setMealRows(updatedMeals);
+            onRowReorder?.(updatedMeals);
+        },
+        [onRowReorder],
+    );
+
+    const persistMealRowReorder = useCallback(
+        async (updatedMeals) => {
+            handleMealRowReorder(updatedMeals);
+
+            if (!mealReorderUrl) {
+                return;
+            }
+
+            const ids = updatedMeals
+                .map((m) => {
+                    const n = Number(m?.id);
+                    return Number.isInteger(n) && n > 0 ? n : null;
+                })
+                .filter((id) => id !== null);
+
+            if (ids.length === 0) {
+                return;
+            }
+
+            const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
+            try {
+                await axios.post(
+                    mealReorderUrl,
+                    { ids },
+                    {
+                        headers: {
+                            Accept: 'application/json',
+                            'Content-Type': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                            ...(token ? { 'X-CSRF-TOKEN': token } : {}),
+                        },
+                    },
+                );
+            } catch {
+                void router.reload({ only: ['meals'], preserveScroll: true });
+            }
+        },
+        [handleMealRowReorder, mealReorderUrl],
+    );
+
     async function handleConfirmDelete() {
         setDeleteError(null);
 
@@ -827,9 +881,7 @@ export function MealLibraryPageContent({
             return;
         }
 
-        const destroyUrl =
-            mealBulkDestroyUrl ||
-            (typeof page.props.mealBulkDestroyUrl === 'string' ? page.props.mealBulkDestroyUrl : '');
+        const destroyUrl = mealBulkDestroyUrl || '';
 
         if (!destroyUrl) {
             setDeleteError('Delete is unavailable. Hard-refresh this page (Cmd+Shift+R), then try again.');
@@ -1598,7 +1650,6 @@ export function MealLibraryPageContent({
                                                 isAdmin
                                                 adminControls
                                                 showActions
-                                                showAdminSelectionCheckbox
                                                 selected={selectedSet.has(meal.id)}
                                                 onToggleSelected={() => toggleRow(meal.id)}
                                                 meal={meal}
@@ -1625,54 +1676,15 @@ export function MealLibraryPageContent({
                             </>
                         ) : (
                             <>
-                                <div className="overflow-x-auto">
-                                    <table className="min-w-[640px] w-full border-collapse text-[#1F2937]">
-                                        <thead className="bg-white">
-                                            <tr className="border-b border-gray-200">
-                                                <th className="w-[52px] px-3 py-3 text-left">
-                                                    <button
-                                                        type="button"
-                                                        onClick={toggleAllVisible}
-                                                        aria-label={allVisibleSelected ? 'Deselect all visible' : 'Select all visible'}
-                                                        className="inline-flex items-center rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5A6B44] focus-visible:ring-offset-2"
-                                                    >
-                                                        <SquareCheckbox checked={allVisibleSelected} />
-                                                    </button>
-                                                </th>
-                                                <th className="min-w-0 px-4 py-3 text-left">
-                                                    <span className="font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#374151]">
-                                                        Name
-                                                    </span>
-                                                </th>
-                                                <th className="w-[120px] px-3 py-3 text-left">
-                                                    <span className="font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#374151]">
-                                                        Type
-                                                    </span>
-                                                </th>
-                                                <th className="w-[100px] px-3 py-3 text-right">
-                                                    <span className="font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#374151]">
-                                                        Calories
-                                                    </span>
-                                                </th>
-                                                <th className="min-w-[180px] px-3 py-3 text-left">
-                                                    <span className="font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#374151]">
-                                                        Macros
-                                                    </span>
-                                                </th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {displayedMeals.map((meal) => (
-                                                <MealListRow
-                                                    key={meal.id}
-                                                    meal={meal}
-                                                    selected={selectedSet.has(meal.id)}
-                                                    onToggleSelected={() => toggleRow(meal.id)}
-                                                />
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
+                                <MealLibrarySortableTable
+                                    displayedMeals={displayedMeals}
+                                    mealRows={mealRows}
+                                    selectedSet={selectedSet}
+                                    allVisibleSelected={allVisibleSelected}
+                                    onToggleAllVisible={toggleAllVisible}
+                                    onToggleRow={toggleRow}
+                                    onRowReorder={persistMealRowReorder}
+                                />
                                 {loadMoreFooter}
                             </>
                         )}
@@ -2660,19 +2672,24 @@ export function MealLibraryPageContent({
     );
 }
 
+/** Inertia page: supplies flash + bulk-destroy URL from server props, then renders {@link MealLibraryPageContent}. */
 function MealLibraryPage(props) {
-    const page = usePage();
-    const flashSuccess = typeof page.props.flash?.success === 'string' ? page.props.flash.success : null;
-    const flashError = typeof page.props.flash?.error === 'string' ? page.props.flash.error : null;
+    const { props: pageProps } = usePage();
+    const flashSuccess = typeof pageProps.flash?.success === 'string' ? pageProps.flash.success : null;
+    const flashError = typeof pageProps.flash?.error === 'string' ? pageProps.flash.error : null;
     const mealLibrarySchemaNotice =
-        typeof page.props.mealLibrarySchemaNotice === 'string' ? page.props.mealLibrarySchemaNotice : null;
+        typeof pageProps.mealLibrarySchemaNotice === 'string' ? pageProps.mealLibrarySchemaNotice : null;
     const mealBulkDestroyUrl =
         props.mealBulkDestroyUrl ??
-        (typeof page.props.mealBulkDestroyUrl === 'string' ? page.props.mealBulkDestroyUrl : '');
+        (typeof pageProps.mealBulkDestroyUrl === 'string' ? pageProps.mealBulkDestroyUrl : '');
+    const mealReorderUrl =
+        props.mealReorderUrl ?? (typeof pageProps.mealReorderUrl === 'string' ? pageProps.mealReorderUrl : '');
+
     return (
         <MealLibraryPageContent
             {...props}
             mealBulkDestroyUrl={mealBulkDestroyUrl}
+            mealReorderUrl={mealReorderUrl}
             flashSuccess={flashSuccess}
             flashError={flashError}
             mealLibrarySchemaNotice={mealLibrarySchemaNotice}

@@ -68,6 +68,7 @@ class Meal extends Model
         'safety_alert_tags',
         'sickle_cell_program_highlight',
         'nutrition_aggregates_synced',
+        'library_sort_order',
     ];
 
     protected function casts(): array
@@ -141,7 +142,18 @@ class Meal extends Model
      */
     public static function queryForMealLibrary(): Builder
     {
-        return static::query()->visibleInMealLibrary();
+        return static::query()
+            ->visibleInMealLibrary()
+            ->orderBy('library_sort_order')
+            ->orderByDesc('updated_at')
+            ->orderBy('id');
+    }
+
+    public static function nextLibrarySortOrder(): int
+    {
+        $max = static::queryForMealLibrary()->max('library_sort_order');
+
+        return $max !== null ? ((int) $max) + 1 : 0;
     }
 
     /**
