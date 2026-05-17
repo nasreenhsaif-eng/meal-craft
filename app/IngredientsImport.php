@@ -4,6 +4,7 @@ namespace App;
 
 use App\Models\Ingredient;
 use App\Services\BaseIngredientService;
+use App\Support\BaseRecipeInstructionsText;
 use App\Support\IngredientG6pdSafety;
 use App\Support\IngredientLibraryCategory;
 use App\Support\RecipeComponentsCsvParser;
@@ -336,6 +337,8 @@ final class IngredientsImport
      */
     private function importBaseRecipeRow(string $name, array $record, int $csvRowNumber): void
     {
+        $record = BaseRecipeInstructionsText::stripImageFieldsFromCsvRecord($record);
+
         $componentsCell = trim((string) ($record['recipe_components'] ?? ''));
 
         if ($componentsCell === '') {
@@ -350,13 +353,7 @@ final class IngredientsImport
             ->whereIn('usda_food_category', IngredientLibraryCategory::preparedLabels())
             ->first();
 
-        $libraryText = null;
-        foreach (['description', 'instructions'] as $field) {
-            if (array_key_exists($field, $record)) {
-                $libraryText ??= [];
-                $libraryText[$field] = $record[$field];
-            }
-        }
+        $libraryText = $this->libraryTextFromBaseRecipeRecord($record);
 
         $ingredient = $this->baseIngredientService->upsert(
             $existing,
@@ -385,5 +382,26 @@ final class IngredientsImport
         } elseif (array_key_exists('g6pd_trigger', $record)) {
             $ingredient->update(['is_g6pd_trigger' => false]);
         }
+    }
+
+    /**
+     * @param  array<string, mixed>  $record
+     * @return array<string, string|null>|null
+     */
+    private function libraryTextFromBaseRecipeRecord(array $record): ?array
+    {
+        $out = [];
+
+        if (array_key_exists('description', $record)) {
+            $out['description'] = $this->nullableCsvTextFromRecord($record, 'description');
+        }
+
+        if (array_key_exists('instructions', $record)) {
+            $out['instructions'] = BaseRecipeInstructionsText::normalizeForStorage(
+                $this->nullableCsvTextFromRecord($record, 'instructions'),
+            );
+        }
+
+        return $out === [] ? null : $out;
     }
 }

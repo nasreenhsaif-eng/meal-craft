@@ -229,6 +229,8 @@ final class MealCsvLibraryImportService
             ]);
         }
 
+        MealImagePath::resetPublicMealsSlugIndex();
+
         $lineNumber = 1;
         $rowsOut = [];
         $imported = 0;
@@ -298,9 +300,16 @@ final class MealCsvLibraryImportService
     private function indexMealsByNormalizedName(): array
     {
         $map = [];
-        foreach (Meal::query()->orderByDesc('updated_at')->orderByDesc('id')->cursor() as $meal) {
+        foreach (Meal::withTrashed()->orderByDesc('updated_at')->orderByDesc('id')->cursor() as $meal) {
             $key = self::normalizeMealNameKey($meal->name);
             if (! isset($map[$key])) {
+                $map[$key] = $meal;
+
+                continue;
+            }
+
+            $existing = $map[$key];
+            if ($existing->trashed() && ! $meal->trashed()) {
                 $map[$key] = $meal;
             }
         }
@@ -1211,11 +1220,10 @@ final class MealCsvLibraryImportService
         $cyclePhaseStrings = $this->cyclePhaseEnumValuesFromCsvCell((string) ($assoc['cycle_phases'] ?? ''));
 
         $hasMealImageColumn = array_key_exists('meal_image_path', $assoc);
-        $csvImageNormalized = null;
-        if ($hasMealImageColumn) {
-            $imageCell = MealImagePath::stripMarkdownLink(trim((string) $assoc['meal_image_path']));
-            $csvImageNormalized = $imageCell === '' ? null : MealImagePath::normalizeForDatabase($imageCell);
-        }
+        $resolvedImagePath = MealImagePath::resolveImagePathForImport(
+            $hasMealImageColumn ? (string) ($assoc['meal_image_path'] ?? '') : null,
+            $mealName,
+        );
 
         $calc = $this->calculateMealNutritionFromSegments($segments, $mealCategory);
 
@@ -1280,7 +1288,7 @@ final class MealCsvLibraryImportService
                 $mealPlanTags,
                 $cyclePhaseStrings,
                 $hasMealImageColumn,
-                $csvImageNormalized,
+                $resolvedImagePath,
                 $mealOptionalAttrs,
                 $nutritionResolution,
             ): array {
@@ -1319,11 +1327,14 @@ final class MealCsvLibraryImportService
                     'sickle_cell_program_highlight' => $nutritionResolution['sickle_cell_program_highlight'],
                 ], $nutritionResolution['attributes'], $planPhasePayload, $mealOptionalAttrs);
 
-                if ($hasMealImageColumn) {
-                    $basePayload['image_path'] = $csvImageNormalized;
+                if ($hasMealImageColumn || $resolvedImagePath !== null) {
+                    $basePayload['image_path'] = $resolvedImagePath;
                 }
 
                 if ($existingMeal !== null) {
+                    if ($existingMeal->trashed()) {
+                        $existingMeal->restore();
+                    }
                     $existingMeal->refresh();
                     $existingMeal->update($basePayload);
                     $existingMeal->ingredients()->sync($sync);
@@ -1332,7 +1343,7 @@ final class MealCsvLibraryImportService
                 }
 
                 $createPayload = array_merge($basePayload, [
-                    'image_path' => $hasMealImageColumn ? $csvImageNormalized : null,
+                    'image_path' => $resolvedImagePath,
                 ]);
                 if (Schema::hasColumn('meals', 'library_sort_order')) {
                     $createPayload['library_sort_order'] = Meal::nextLibrarySortOrder();

@@ -8,6 +8,7 @@ use App\Http\Requests\BulkDestroyIngredientsFromLibraryRequest;
 use App\Http\Requests\StoreIngredientLibraryRequest;
 use App\Models\Ingredient;
 use App\Services\BaseIngredientService;
+use App\Support\BaseRecipeInstructionsText;
 use App\Support\IngredientAllergenCatalog;
 use App\Support\IngredientG6pdSafety;
 use App\Support\IngredientLibraryCategory;
@@ -305,7 +306,8 @@ class IngredientLibraryController extends Controller
             $out['description'] = is_string($data['description']) ? $data['description'] : ($data['description'] === null ? null : (string) $data['description']);
         }
         if (array_key_exists('instructions', $data)) {
-            $out['instructions'] = is_string($data['instructions']) ? $data['instructions'] : ($data['instructions'] === null ? null : (string) $data['instructions']);
+            $raw = is_string($data['instructions']) ? $data['instructions'] : ($data['instructions'] === null ? null : (string) $data['instructions']);
+            $out['instructions'] = BaseRecipeInstructionsText::normalizeForStorage($raw);
         }
 
         return $out === [] ? null : $out;
@@ -478,6 +480,7 @@ class IngredientLibraryController extends Controller
             if ($line === '') {
                 continue;
             }
+            $line = preg_replace('/^Step\s+\d{1,2}\s*:\s*/iu', '', $line) ?? $line;
             $line = preg_replace('/^\d+[\.\)]\s*/', '', $line) ?? $line;
             $steps[] = trim($line);
         }

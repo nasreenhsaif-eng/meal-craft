@@ -5,6 +5,66 @@ use Tests\TestCase;
 
 uses(TestCase::class);
 
+test('normalize treats NO_PHOTO_URL export placeholder as null', function () {
+    expect(MealImagePath::normalizeForDatabase('NO_PHOTO_URL'))->toBeNull()
+        ->and(MealImagePath::normalizeCsvPhotoCell('NO_PHOTO_URL'))->toBeNull()
+        ->and(MealImagePath::isMissingPhotoPlaceholder('no_photo_url'))->toBeTrue();
+});
+
+test('loose match slug strips punctuation and case', function () {
+    expect(MealImagePath::looseMatchSlug('Marinated-Pineapple,-Peppers,-Red-Onion-&-Cilantro-Side-Salad'))
+        ->toBe('marinatedpineapplepeppersredonioncilantrosidesalad')
+        ->and(MealImagePath::looseMatchSlug('marinated_pineapple_peppers_salad.png'))
+        ->toBe('marinatedpineapplepepperssalad');
+});
+
+test('discover relative path matches meal title to underscored filename via loose slug', function () {
+    $file = public_path('images/meals/marinated_pineapple_peppers_salad.png');
+    if (! is_file($file)) {
+        $this->markTestSkipped('marinated_pineapple_peppers_salad.png not in public/images/meals.');
+    }
+
+    MealImagePath::resetPublicMealsSlugIndex();
+
+    $relative = MealImagePath::discoverRelativePathForMealTitle(
+        'Marinated Pineapple, Peppers, Red Onion & Cilantro Side Salad',
+    );
+
+    expect($relative)->toBe('images/meals/marinated_pineapple_peppers_salad.png');
+});
+
+test('resolve image path for import ignores NO_PHOTO_URL and discovers by meal name', function () {
+    $file = public_path('images/meals/marinated_pineapple_peppers_salad.png');
+    if (! is_file($file)) {
+        $this->markTestSkipped('marinated_pineapple_peppers_salad.png not in public/images/meals.');
+    }
+
+    MealImagePath::resetPublicMealsSlugIndex();
+
+    $path = MealImagePath::resolveImagePathForImport(
+        'NO_PHOTO_URL',
+        'Marinated Pineapple, Peppers, Red Onion & Cilantro Side Salad',
+    );
+
+    expect($path)->toBe('images/meals/marinated_pineapple_peppers_salad.png');
+});
+
+test('resolve url discovers image from meal title when stored path is null', function () {
+    $file = public_path('images/meals/marinated_pineapple_peppers_salad.png');
+    if (! is_file($file)) {
+        $this->markTestSkipped('marinated_pineapple_peppers_salad.png not in public/images/meals.');
+    }
+
+    MealImagePath::resetPublicMealsSlugIndex();
+
+    $url = MealImagePath::resolveUrl(
+        null,
+        'Marinated Pineapple, Peppers, Red Onion & Cilantro Side Salad',
+    );
+
+    expect($url)->toContain('marinated_pineapple_peppers_salad.png');
+});
+
 test('normalize strips public prefix slashes and storage url segment', function () {
     expect(MealImagePath::normalizeForDatabase('/images/meals/stew.jpg'))->toBe('images/meals/stew.jpg')
         ->and(MealImagePath::normalizeForDatabase('public/images/meals/stew.jpg'))->toBe('images/meals/stew.jpg')

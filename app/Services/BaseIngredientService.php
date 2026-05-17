@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Ingredient;
+use App\Support\BaseRecipeInstructionsText;
 use App\Support\IngredientLibraryCategory;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -76,10 +77,18 @@ final class BaseIngredientService
                 if (array_key_exists($key, $libraryText)) {
                     $raw = $libraryText[$key];
                     $trimmed = $raw === null ? '' : trim((string) $raw);
-                    $attrs[$key] = $trimmed !== '' ? $trimmed : null;
+                    if ($key === 'instructions') {
+                        $attrs[$key] = BaseRecipeInstructionsText::normalizeForStorage(
+                            $trimmed !== '' ? $trimmed : null,
+                        );
+                    } else {
+                        $attrs[$key] = $trimmed !== '' ? $trimmed : null;
+                    }
                 }
             }
         }
+
+        $attrs['source_meal_id'] = null;
 
         return DB::transaction(function () use ($existing, $attrs, $sync): Ingredient {
             if ($existing !== null) {

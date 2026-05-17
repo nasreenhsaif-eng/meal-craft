@@ -19,8 +19,10 @@ final class MealCraftMasterCsvExport
 
     /**
      * When {@see Meal::$image_path} is empty, emit this placeholder so spreadsheets stay explicit.
+     *
+     * @deprecated Use {@see MealImagePath::MISSING_PHOTO_PLACEHOLDER}
      */
-    public const MISSING_PHOTO_PLACEHOLDER = 'NO_PHOTO_URL';
+    public const MISSING_PHOTO_PLACEHOLDER = MealImagePath::MISSING_PHOTO_PLACEHOLDER;
 
     /**
      * @param  array{
@@ -255,8 +257,8 @@ final class MealCraftMasterCsvExport
     private function photoUrlForMeal(Meal $meal): string
     {
         $path = $meal->image_path;
-        if ($path === null || $path === '') {
-            return self::MISSING_PHOTO_PLACEHOLDER;
+        if ($path === null || $path === '' || MealImagePath::isMissingPhotoPlaceholder($path)) {
+            return MealImagePath::MISSING_PHOTO_PLACEHOLDER;
         }
 
         $url = MealImagePath::resolveUrl($path);

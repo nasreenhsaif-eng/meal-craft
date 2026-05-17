@@ -329,6 +329,69 @@ test('calculateMealNutritionForCsvRow attaches calorie warnings when category is
     expect($calc['calorie_warnings'])->not->toBeEmpty();
 });
 
+test('meal library csv import restores soft deleted meal instead of creating duplicate', function () {
+    mealImportIngredient('Salmon', ['calories' => 200, 'protein' => 25, 'carbs' => 0, 'fat' => 12]);
+
+    $meal = Meal::query()->create([
+        'name' => 'Restore Me Bowl',
+        'category' => RecipeCategory::Meal,
+        'total_calories' => 100,
+        'total_protein' => 10,
+        'total_carbs' => 5,
+        'total_fat' => 5,
+        'total_b6' => 0,
+        'total_folate' => 0,
+        'total_b12' => 0,
+        'total_iron' => 0,
+        'total_magnesium' => 0,
+        'total_fiber' => 0,
+        'total_sugar' => 0,
+        'total_calcium' => 0,
+        'total_potassium' => 0,
+        'total_sodium' => 0,
+        'total_zinc' => 0,
+        'total_vitamin_c' => 0,
+        'total_vitamin_a' => 0,
+        'total_vitamin_e' => 0,
+        'total_vitamin_d' => 0,
+        'total_vitamin_k' => 0,
+    ]);
+    $meal->delete();
+
+    $csv = "Meal_Name,Category,Ingredient_Quantities,Instructions,Description_Highlight\n"
+        .'Restore Me Bowl,Meal,Salmon:100g,.,.'."\n";
+    $file = UploadedFile::fake()->createWithContent('meals-restore.csv', $csv);
+
+    $this->actingAs(User::factory()->create())
+        ->postJson(route('meals.library.import-csv'), ['file' => $file])
+        ->assertOk()
+        ->assertJsonPath('summary.imported', 0)
+        ->assertJsonPath('summary.updated', 1);
+
+    expect(Meal::queryForMealLibrary()->where('name', 'Restore Me Bowl')->count())->toBe(1)
+        ->and(Meal::withTrashed()->where('name', 'Restore Me Bowl')->count())->toBe(1);
+});
+
+test('meal library master csv import auto discovers image when photo_url is NO_PHOTO_URL', function () {
+    if (! is_file(public_path('images/meals/coconut-chicken-curry.png'))) {
+        $this->markTestSkipped('coconut-chicken-curry.png not in public/images/meals.');
+    }
+
+    mealImportIngredient('Chicken', ['calories' => 200, 'protein' => 25, 'carbs' => 0, 'fat' => 12]);
+
+    $csv = 'name,description,meal_tags,cycle_phase,dietary_tags,safety_alerts,ingredients,instructions,photo_url,target_cal,target_pro,target_fat,target_carbs,calc_cal,calc_pro,calc_fat,calc_carbs,variance_notes'."\n"
+        .'Coconut Chicken Curry,Spicy curry.,,,,,Chicken (100g),Simmer.,NO_PHOTO_URL,,,,,,,,,'."\n";
+    $file = UploadedFile::fake()->createWithContent('meals-photo-discover.csv', $csv);
+
+    $this->actingAs(User::factory()->create())
+        ->postJson(route('meals.library.import-csv'), ['file' => $file])
+        ->assertOk()
+        ->assertJsonPath('summary.imported', 1);
+
+    expect(Meal::query()->where('name', 'Coconut Chicken Curry')->firstOrFail()->image_path)
+        ->toBe('images/meals/coconut-chicken-curry.png');
+});
+
 test('meal library csv import maps Image URL column to image_path with normalized public path', function () {
     mealImportIngredient('Salmon', ['calories' => 200, 'protein' => 25, 'carbs' => 0, 'fat' => 12]);
 

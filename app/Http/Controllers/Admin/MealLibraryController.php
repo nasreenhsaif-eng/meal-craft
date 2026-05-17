@@ -93,8 +93,16 @@ class MealLibraryController extends Controller
             ->whereIn('id', $ids)
             ->orderBy('id')
             ->each(function (Meal $meal) use (&$deletedCount): void {
-                $meal->delete();
-                $deletedCount++;
+                $nameKey = strtolower(trim($meal->name));
+
+                Meal::withTrashed()
+                    ->visibleInMealLibrary()
+                    ->whereRaw('lower(trim(name)) = ?', [$nameKey])
+                    ->orderBy('id')
+                    ->each(function (Meal $row) use (&$deletedCount): void {
+                        $row->forceDelete();
+                        $deletedCount++;
+                    });
             });
 
         if ($deletedCount === 0) {

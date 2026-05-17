@@ -37,7 +37,7 @@ test('guest cannot bulk destroy meals from meal library', function () {
     expect(Meal::query()->find($meal->id))->not->toBeNull();
 });
 
-test('authenticated user can bulk soft delete meals from meal library', function () {
+test('authenticated user can permanently delete meals from meal library', function () {
     $user = User::factory()->create();
 
     $keep = Meal::query()->create([
@@ -99,7 +99,71 @@ test('authenticated user can bulk soft delete meals from meal library', function
         ->toContain($keep->id)
         ->not->toContain($remove->id);
 
-    expect(Meal::withTrashed()->find($remove->id)?->trashed())->toBeTrue();
+    expect(Meal::withTrashed()->find($remove->id))->toBeNull();
+});
+
+test('bulk destroy removes duplicate soft deleted meals with the same name', function () {
+    $user = User::factory()->create();
+
+    $older = Meal::query()->create([
+        'name' => 'Smashed white Beans',
+        'category' => RecipeCategory::Meal,
+        'total_calories' => 50,
+        'total_protein' => 1,
+        'total_carbs' => 1,
+        'total_fat' => 1,
+        'total_b6' => 0,
+        'total_folate' => 0,
+        'total_b12' => 0,
+        'total_iron' => 0,
+        'total_magnesium' => 0,
+        'total_fiber' => 0,
+        'total_sugar' => 0,
+        'total_calcium' => 0,
+        'total_potassium' => 0,
+        'total_sodium' => 0,
+        'total_zinc' => 0,
+        'total_vitamin_c' => 0,
+        'total_vitamin_a' => 0,
+        'total_vitamin_e' => 0,
+        'total_vitamin_d' => 0,
+        'total_vitamin_k' => 0,
+    ]);
+    $older->delete();
+
+    $active = Meal::query()->create([
+        'name' => 'Smashed white Beans',
+        'category' => RecipeCategory::Meal,
+        'total_calories' => 60,
+        'total_protein' => 1,
+        'total_carbs' => 1,
+        'total_fat' => 1,
+        'total_b6' => 0,
+        'total_folate' => 0,
+        'total_b12' => 0,
+        'total_iron' => 0,
+        'total_magnesium' => 0,
+        'total_fiber' => 0,
+        'total_sugar' => 0,
+        'total_calcium' => 0,
+        'total_potassium' => 0,
+        'total_sodium' => 0,
+        'total_zinc' => 0,
+        'total_vitamin_c' => 0,
+        'total_vitamin_a' => 0,
+        'total_vitamin_e' => 0,
+        'total_vitamin_d' => 0,
+        'total_vitamin_k' => 0,
+    ]);
+
+    $this->actingAs($user)
+        ->post(route('admin.meal-library.bulk-destroy'), ['ids' => [$active->id]])
+        ->assertRedirect(route('admin.meal-library'))
+        ->assertSessionHas('success');
+
+    expect(Meal::withTrashed()->find($older->id))->toBeNull()
+        ->and(Meal::withTrashed()->find($active->id))->toBeNull()
+        ->and(Meal::queryForMealLibrary()->whereRaw('lower(trim(name)) = ?', ['smashed white beans'])->exists())->toBeFalse();
 });
 
 test('bulk destroy excludes base recipes from deletion even when id is submitted', function () {

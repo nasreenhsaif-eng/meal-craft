@@ -119,6 +119,29 @@ test('ingredient library csv import resolves pipe-separated name weight recipe c
         ->and($base->components->first()->id)->toBe($carrots->id);
 });
 
+test('ingredient library csv import normalizes base recipe instructions into Step lines', function () {
+    $user = User::factory()->create();
+    $child = verifiedIngredient('Coriander', ['calories' => 20, 'protein' => 2, 'carbs' => 3, 'fat' => 0]);
+
+    $header = 'name,category,fdc_id,calories,protein,carbs,fat,b6,b9_folate,b12,iron,magnesium,fiber,sugar,calcium,potassium,sodium,zinc,vitamin_c,vitamin_a,vitamin_e,vitamin_d,vitamin_k,density,is_base_recipe,recipe_components,description,instructions,finished_weight_grams,g6pd_trigger,image_url';
+    $instructions = 'Chop coriander. Mince garlic. Whisk oil and lime.';
+    $row = "Dressing Base,,,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,{$child->id}:50,,{$instructions},100,0,http://example.com/photo.jpg";
+    $csv = $header."\n".$row."\n";
+
+    $this->actingAs($user)
+        ->post(route('admin.ingredient-library.import-csv'), [
+            'file' => UploadedFile::fake()->createWithContent('ingredients.csv', $csv),
+        ])
+        ->assertRedirect(route('admin.ingredient-library'))
+        ->assertSessionHas('success');
+
+    $base = Ingredient::query()->where('name', 'Dressing Base')->firstOrFail();
+
+    expect($base->instructions)->toBe(
+        "Step 1: Chop coriander.\nStep 2: Mince garlic.\nStep 3: Whisk oil and lime.",
+    );
+});
+
 test('ingredient library csv import creates base recipe from is_base_recipe and recipe_components', function () {
     $user = User::factory()->create();
     $child = verifiedIngredient('Tomato', ['calories' => 80, 'protein' => 4, 'carbs' => 16, 'fat' => 0]);
