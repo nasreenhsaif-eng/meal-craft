@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Enums\DietTag;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\BulkDestroyIngredientsFromLibraryRequest;
 use App\Http\Requests\StoreIngredientLibraryRequest;
@@ -66,14 +65,8 @@ class IngredientLibraryController extends Controller
             ->all();
 
         return Inertia::render('Admin/IngredientsLibrary', [
-            'dietTags' => DietTag::toDropdownOptions(),
             'ingredients' => $ingredients,
             'componentPickerProfiles' => $componentPickerProfiles,
-            'ingredientStoreUrl' => route('admin.ingredient-library.store'),
-            'csvTemplateUrl' => asset('templates/ingredients-library-template.csv'),
-            'csvExportUrl' => route('admin.ingredient-library.export-csv'),
-            'csvImportUrl' => route('admin.ingredient-library.import-csv'),
-            'ingredientBulkDestroyUrl' => route('admin.ingredient-library.bulk-destroy'),
         ]);
     }
 

@@ -13,7 +13,6 @@ use App\Models\Ingredient;
 use App\Models\Meal;
 use App\Services\BaseIngredientService;
 use App\Services\MealCraftMasterCsvExport;
-use App\Services\MealCsvLibraryImportService;
 use App\Services\RecipeNutritionCalculator;
 use App\Support\IngredientAllergenCatalog;
 use App\Support\IngredientG6pdSafety;
@@ -695,27 +694,10 @@ class MealLibraryController extends Controller
      */
     private function mealLibraryIndexPayload(array $meals, array $ingredientProfiles): array
     {
-        $payload = [
+        return [
             'meals' => $meals,
             'ingredientProfiles' => $ingredientProfiles,
-            'mealCategoryOptions' => array_map(
-                static fn (RecipeCategory $category): string => $category->value,
-                MealCsvLibraryImportService::mealLibraryCsvAllowedCategories(),
-            ),
-            'cyclePhases' => CyclePhase::toDropdownOptions(),
-            'mealStoreUrl' => route('admin.meal-library.store'),
-            'mealBulkDestroyUrl' => route('admin.meal-library.bulk-destroy'),
-            'mealReorderUrl' => route('admin.meal-library.reorder'),
-            'csvMealCraftTemplateUrl' => route('admin.meal-library.csv-template'),
-            'csvExportUrl' => route('meals.library.export-csv'),
-            'csvImportUrl' => route('meals.library.import-csv'),
         ];
-
-        if (! $this->mealLibrarySchemaReady()) {
-            $payload['mealLibrarySchemaNotice'] = __('Database update required: run `php artisan migrate` in the project root, then refresh this page.');
-        }
-
-        return $payload;
     }
 
     /**

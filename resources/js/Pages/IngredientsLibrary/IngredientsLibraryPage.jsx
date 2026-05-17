@@ -17,6 +17,11 @@ import {
     gramsFromAmountAndUnit,
 } from '../../meal-library/aggregateIngredientNutrition.ts';
 import { filterIngredientsForCombobox } from '../../meal-library/ingredientSearch.ts';
+import {
+    dietTagsFromPage,
+    ingredientLibraryUrls,
+    resolveUrl,
+} from '../../meal-craft/mealCraftPageProps.js';
 
 /** Ingredient taxonomy for the create-ingredient dropdown (Storybook: `DropdownTextInput`). */
 const INGREDIENT_CATEGORY_OPTIONS = [
@@ -1167,19 +1172,29 @@ export function IngredientsLibraryPageView({
     );
 }
 
-/** Inertia-connected page body; wraps {@link IngredientsLibraryPageView} with `usePage` flash. */
+/** Inertia-connected page body; wraps {@link IngredientsLibraryPageView} with `usePage` flash + shared Meal Craft URLs. */
 export function IngredientsLibraryPageContent(props) {
     const { props: pageProps } = usePage();
     const flashSuccess = typeof pageProps.flash?.success === 'string' ? pageProps.flash.success : null;
-    const ingredientBulkDestroyUrl =
-        props.ingredientBulkDestroyUrl ??
-        (typeof pageProps.ingredientBulkDestroyUrl === 'string' ? pageProps.ingredientBulkDestroyUrl : '');
+    const sharedIngredientUrls = ingredientLibraryUrls(pageProps);
 
     return (
         <IngredientsLibraryPageView
             {...props}
+            dietTags={
+                Array.isArray(props.dietTags) && props.dietTags.length > 0
+                    ? props.dietTags
+                    : dietTagsFromPage(pageProps)
+            }
             flashSuccess={flashSuccess}
-            ingredientBulkDestroyUrl={ingredientBulkDestroyUrl}
+            ingredientStoreUrl={resolveUrl(props.ingredientStoreUrl, sharedIngredientUrls.store)}
+            ingredientBulkDestroyUrl={resolveUrl(
+                props.ingredientBulkDestroyUrl,
+                pageProps.ingredientBulkDestroyUrl ?? sharedIngredientUrls.bulkDestroy,
+            )}
+            csvTemplateUrl={resolveUrl(props.csvTemplateUrl, sharedIngredientUrls.template)}
+            csvExportUrl={resolveUrl(props.csvExportUrl, sharedIngredientUrls.exportCsv)}
+            csvImportUrl={resolveUrl(props.csvImportUrl, sharedIngredientUrls.importCsv)}
         />
     );
 }

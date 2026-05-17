@@ -32,16 +32,12 @@ test('admin ingredient library renders inertia page with diet tag options', func
         ->assertOk()
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->component('Admin/IngredientsLibrary')
-            ->has('dietTags')
-            ->has('dietTags.0.value')
-            ->has('dietTags.0.label')
+            ->has('mealCraft.urls.ingredientLibrary.bulkDestroy')
+            ->has('mealCraft.taxonomy.dietTags.0.value')
+            ->has('mealCraft.taxonomy.dietTags.0.label')
+            ->has('ingredientBulkDestroyUrl')
             ->has('ingredients')
-            ->has('csvTemplateUrl')
-            ->has('csvExportUrl')
-            ->has('csvImportUrl')
-            ->has('componentPickerProfiles')
-            ->has('ingredientStoreUrl')
-            ->has('ingredientBulkDestroyUrl'));
+            ->has('componentPickerProfiles'));
 });
 
 test('admin ingredient library passes verified ingredients as flattened rows', function () {
@@ -83,17 +79,18 @@ test('admin meal library renders inertia page with cycle phase options and meal 
         ->assertOk()
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->component('Admin/MealLibrary')
-            ->has('cyclePhases')
-            ->has('meals')
-            ->has('ingredientProfiles')
-            ->has('mealCategoryOptions')
-            ->has('mealStoreUrl')
+            ->has('mealCraft.urls.mealLibrary.store')
+            ->has('mealCraft.urls.mealLibrary.bulkDestroy')
+            ->has('mealCraft.urls.mealLibrary.reorder')
+            ->has('mealCraft.urls.mealLibrary.importCsv')
+            ->has('mealCraft.taxonomy.cyclePhases.0.value')
+            ->has('mealCraft.taxonomy.mealCategories')
+            ->has('mealCraft.constants.missingPhotoPlaceholder')
             ->has('mealBulkDestroyUrl')
             ->has('mealReorderUrl')
-            ->has('csvMealCraftTemplateUrl')
-            ->has('csvExportUrl')
-            ->has('csvImportUrl')
-            ->where('cyclePhases.0.value', 'menstrual'));
+            ->has('meals')
+            ->has('ingredientProfiles')
+            ->where('mealCraft.taxonomy.cyclePhases.0.value', 'menstrual'));
 });
 
 test('admin meal plan library renders inertia page with diet type and cycle phase options', function () {

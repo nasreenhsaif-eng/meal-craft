@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Support\MealCraftInertiaSharedData;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -35,6 +36,8 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        $mealCraft = MealCraftInertiaSharedData::forRequest($request);
+
         return [
             ...parent::share($request),
             'auth' => [
@@ -49,6 +52,12 @@ class HandleInertiaRequests extends Middleware
                 'success' => $request->session()->get('success'),
                 'error' => $request->session()->get('error'),
             ],
+            'mealCraft' => $mealCraft !== [] ? $mealCraft : null,
+            // Backward-compatible aliases (prefer `mealCraft.urls.*` in new code).
+            'mealBulkDestroyUrl' => $mealCraft['urls']['mealLibrary']['bulkDestroy'] ?? null,
+            'mealReorderUrl' => $mealCraft['urls']['mealLibrary']['reorder'] ?? null,
+            'ingredientBulkDestroyUrl' => $mealCraft['urls']['ingredientLibrary']['bulkDestroy'] ?? null,
+            'mealLibrarySchemaNotice' => $mealCraft['notices']['mealLibrarySchema'] ?? null,
         ];
     }
 }

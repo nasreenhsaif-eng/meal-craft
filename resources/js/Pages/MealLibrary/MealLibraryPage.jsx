@@ -23,6 +23,11 @@ import { gramsFromIngredientAmountAndUnit, parseIngredientQuantityString } from 
 import { buildIngredientPasteHighlightParts } from '../../meal-library/ingredientPasteHighlight.ts';
 import { filterIngredientsForCombobox } from '../../meal-library/ingredientSearch.ts';
 import {
+    cyclePhasesFromPage,
+    mealLibraryUrls,
+    resolveUrl,
+} from '../../meal-craft/mealCraftPageProps.js';
+import {
     collectSafetyAlertLabelsFromIngredientSelection,
     G6PD_HIGHLIGHT_BADGE,
     G6PD_TRIGGER_SAFETY_LABEL,
@@ -2672,24 +2677,33 @@ export function MealLibraryPageContent({
     );
 }
 
-/** Inertia page: supplies flash + bulk-destroy URL from server props, then renders {@link MealLibraryPageContent}. */
+/** Inertia page: supplies flash + shared Meal Craft URLs from {@link HandleInertiaRequests}, then renders {@link MealLibraryPageContent}. */
 function MealLibraryPage(props) {
     const { props: pageProps } = usePage();
     const flashSuccess = typeof pageProps.flash?.success === 'string' ? pageProps.flash.success : null;
     const flashError = typeof pageProps.flash?.error === 'string' ? pageProps.flash.error : null;
+    const sharedMealUrls = mealLibraryUrls(pageProps);
     const mealLibrarySchemaNotice =
-        typeof pageProps.mealLibrarySchemaNotice === 'string' ? pageProps.mealLibrarySchemaNotice : null;
-    const mealBulkDestroyUrl =
-        props.mealBulkDestroyUrl ??
-        (typeof pageProps.mealBulkDestroyUrl === 'string' ? pageProps.mealBulkDestroyUrl : '');
-    const mealReorderUrl =
-        props.mealReorderUrl ?? (typeof pageProps.mealReorderUrl === 'string' ? pageProps.mealReorderUrl : '');
+        typeof props.mealLibrarySchemaNotice === 'string'
+            ? props.mealLibrarySchemaNotice
+            : typeof pageProps.mealLibrarySchemaNotice === 'string'
+              ? pageProps.mealLibrarySchemaNotice
+              : (pageProps.mealCraft?.notices?.mealLibrarySchema ?? null);
 
     return (
         <MealLibraryPageContent
             {...props}
-            mealBulkDestroyUrl={mealBulkDestroyUrl}
-            mealReorderUrl={mealReorderUrl}
+            cyclePhases={
+                Array.isArray(props.cyclePhases) && props.cyclePhases.length > 0
+                    ? props.cyclePhases
+                    : cyclePhasesFromPage(pageProps)
+            }
+            mealBulkDestroyUrl={resolveUrl(props.mealBulkDestroyUrl, pageProps.mealBulkDestroyUrl ?? sharedMealUrls.bulkDestroy)}
+            mealReorderUrl={resolveUrl(props.mealReorderUrl, pageProps.mealReorderUrl ?? sharedMealUrls.reorder)}
+            mealStoreUrl={resolveUrl(props.mealStoreUrl, sharedMealUrls.store)}
+            csvMealCraftTemplateUrl={resolveUrl(props.csvMealCraftTemplateUrl, sharedMealUrls.mealCraftTemplate)}
+            csvExportUrl={resolveUrl(props.csvExportUrl, sharedMealUrls.exportCsv)}
+            csvImportUrl={resolveUrl(props.csvImportUrl, sharedMealUrls.importCsv)}
             flashSuccess={flashSuccess}
             flashError={flashError}
             mealLibrarySchemaNotice={mealLibrarySchemaNotice}
