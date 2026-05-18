@@ -100,6 +100,11 @@ final class MealCsvLibraryImportService
             'entree' => RecipeCategory::Meal,
             'entrée' => RecipeCategory::Meal,
             'salad' => RecipeCategory::SideSalad,
+            'snack' => RecipeCategory::Dessert,
+            'treat' => RecipeCategory::Dessert,
+            'treats' => RecipeCategory::Dessert,
+            'sweet' => RecipeCategory::Dessert,
+            'sweets' => RecipeCategory::Dessert,
         ];
     }
 
@@ -127,6 +132,30 @@ final class MealCsvLibraryImportService
      *     }>
      * }
      */
+    public function processPath(string $path, ?User $user = null): array
+    {
+        if (! is_file($path) || ! is_readable($path)) {
+            return [
+                'summary' => $this->emptySummaryWithErrors(1),
+                'unique_pending_ingredients' => [],
+                'csv_unrecognized_headers' => [],
+                'rows' => [[
+                    'line' => 0,
+                    'status' => self::STATUS_ERROR,
+                    'message' => (string) __('The CSV file could not be read.'),
+                ]],
+            ];
+        }
+
+        return $this->processUploadedFile(new UploadedFile(
+            $path,
+            basename($path),
+            'text/csv',
+            null,
+            true,
+        ), $user);
+    }
+
     public function processUploadedFile(UploadedFile $file, ?User $user = null): array
     {
         $path = $file->getRealPath();
@@ -235,6 +264,8 @@ final class MealCsvLibraryImportService
         $rowsOut = [];
         $imported = 0;
         $updated = 0;
+        $ingredientLibraryImported = 0;
+        $ingredientLibraryUpdated = 0;
         $pending = 0;
         $errors = 0;
 
@@ -263,6 +294,8 @@ final class MealCsvLibraryImportService
             match ($result['outcome']) {
                 'imported' => $imported++,
                 'updated' => $updated++,
+                'ingredient_imported' => $ingredientLibraryImported++,
+                'ingredient_updated' => $ingredientLibraryUpdated++,
                 'pending' => $pending++,
                 'error' => $errors++,
             };
@@ -274,6 +307,8 @@ final class MealCsvLibraryImportService
             'summary' => [
                 'imported' => $imported,
                 'updated' => $updated,
+                'ingredient_library_imported' => $ingredientLibraryImported,
+                'ingredient_library_updated' => $ingredientLibraryUpdated,
                 'duplicates_created' => 0,
                 'pending_ingredient_input' => $pending,
                 'errors' => $errors,
@@ -318,13 +353,23 @@ final class MealCsvLibraryImportService
     }
 
     /**
-     * @return array{imported: int, updated: int, duplicates_created: int, pending_ingredient_input: int, errors: int}
+     * @return array{
+     *     imported: int,
+     *     updated: int,
+     *     ingredient_library_imported: int,
+     *     ingredient_library_updated: int,
+     *     duplicates_created: int,
+     *     pending_ingredient_input: int,
+     *     errors: int
+     * }
      */
     private function emptySummaryWithErrors(int $errors): array
     {
         return [
             'imported' => 0,
             'updated' => 0,
+            'ingredient_library_imported' => 0,
+            'ingredient_library_updated' => 0,
             'duplicates_created' => 0,
             'pending_ingredient_input' => 0,
             'errors' => $errors,
@@ -1108,6 +1153,7 @@ final class MealCsvLibraryImportService
             match ($result['outcome']) {
                 'imported' => $imported++,
                 'updated' => $updated++,
+                'ingredient_imported', 'ingredient_updated' => null,
                 'pending' => $stillPending++,
                 'error' => $errors++,
             };
@@ -1360,6 +1406,7 @@ final class MealCsvLibraryImportService
             $freshMeal = Meal::query()->find($mealId);
             if ($freshMeal !== null) {
                 $mealsByNormalizedName[self::normalizeMealNameKey($freshMeal->name)] = $freshMeal;
+                $this->clearMistakenStandaloneBaseIngredientForMealName($freshMeal->name);
                 MealRecipeAsIngredientSyncService::syncFromPersistedMeal($freshMeal, false);
             }
 
@@ -1414,7 +1461,7 @@ final class MealCsvLibraryImportService
      *     pending_ingredients: list<string>
      * }  $calc
      * @param  array<string, mixed>  $optionalMealAttrs
-     * @return array{row: array<string, mixed>, outcome: 'imported'|'updated'|'error'}
+     * @return array{row: array<string, mixed>, outcome: 'ingredient_imported'|'ingredient_updated'|'error'}
      */
     private function importBaseIngredientCsvRow(
         int $lineNumber,
@@ -1468,10 +1515,11 @@ final class MealCsvLibraryImportService
                     'meal_name' => $name,
                     'category' => IngredientLibraryCategory::BaseIngredient,
                     'status' => $wasUpdate ? self::STATUS_UPDATED : self::STATUS_IMPORTED,
+                    'saved_to' => 'ingredient_library',
                     'ingredient_id' => (int) $ingredient->getKey(),
                     'message' => __('Saved as base ingredient in the Ingredient Library (not the Meal Library).'),
                 ],
-                'outcome' => $wasUpdate ? 'updated' : 'imported',
+                'outcome' => $wasUpdate ? 'ingredient_updated' : 'ingredient_imported',
             ];
         } catch (\InvalidArgumentException $e) {
             return $this->mealCsvImportAssocErrorResult($lineNumber, $e->getMessage(), $name);
@@ -1519,6 +1567,38 @@ final class MealCsvLibraryImportService
                 'description_highlight' => $shortDescription !== '' ? $shortDescription : null,
             ],
         );
+    }
+
+    /**
+     * Remove a duplicate base-ingredient row created when a meal was mistakenly imported with
+     * Category "Base Ingredient" — keeps Meal Library and Ingredient Library in sync for names like
+     * consumer meals (e.g. "Apple Pie Balls") that belong in the meal list only.
+     */
+    private function clearMistakenStandaloneBaseIngredientForMealName(string $mealName): void
+    {
+        $normalized = strtolower(trim($mealName));
+        if ($normalized === '') {
+            return;
+        }
+
+        $mistaken = Ingredient::query()
+            ->whereRaw('lower(trim(name)) = ?', [$normalized])
+            ->whereIn('usda_food_category', IngredientLibraryCategory::preparedLabels())
+            ->whereNull('source_meal_id')
+            ->get();
+
+        foreach ($mistaken as $ingredient) {
+            $usedAsComponent = DB::table('ingredient_component')
+                ->where('child_ingredient_id', $ingredient->id)
+                ->exists();
+
+            if ($usedAsComponent) {
+                continue;
+            }
+
+            $ingredient->components()->detach();
+            $ingredient->delete();
+        }
     }
 
     private function clearPendingMealRowForUserAndMeal(int $userId, string $mealName): void

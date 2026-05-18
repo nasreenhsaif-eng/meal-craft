@@ -53,6 +53,21 @@ final class IngredientsImport
      *   {@code Ingredient Name (Weightg)} segments (e.g. {@code Carrots, raw (100g) | Onion (50g)})
      * - finished_weight_grams — optional cooked yield for per-100 g scaling
      */
+    public function importFromPath(string $path): int
+    {
+        if (! is_file($path) || ! is_readable($path)) {
+            return 0;
+        }
+
+        return $this->import(new UploadedFile(
+            $path,
+            basename($path),
+            'text/csv',
+            null,
+            true,
+        ));
+    }
+
     public function import(UploadedFile $file): int
     {
         $path = $file->getRealPath();

@@ -654,6 +654,76 @@ test('meal library csv import maps Ingredients header alias', function () {
         ->assertJsonPath('summary.imported', 1);
 });
 
+test('meal library csv import saves apple pie balls as dessert in meal library not ingredient library', function () {
+    mealImportIngredient('Rolled Oats', ['calories' => 380, 'protein' => 13, 'carbs' => 68, 'fat' => 7]);
+    mealImportIngredient('Almond Butter', ['calories' => 614, 'protein' => 21, 'carbs' => 19, 'fat' => 55]);
+
+    $csv = "Meal_Name,Category,Ingredient_Quantities\n"
+        ."Apple Pie Balls,Dessert,Rolled Oats:40 | Almond Butter:15\n";
+    $file = UploadedFile::fake()->createWithContent('meals.csv', $csv);
+
+    $this->actingAs(User::factory()->create())
+        ->postJson(route('meals.library.import-csv'), ['file' => $file])
+        ->assertOk()
+        ->assertJsonPath('summary.imported', 1)
+        ->assertJsonPath('summary.ingredient_library_imported', 0);
+
+    $meal = Meal::queryForMealLibrary()->where('name', 'Apple Pie Balls')->first();
+    expect($meal)->not->toBeNull()
+        ->and($meal->category)->toBe(RecipeCategory::Dessert)
+        ->and(Ingredient::query()
+            ->where('name', 'Apple Pie Balls')
+            ->whereIn('usda_food_category', ['Base Ingredient', 'Base Recipe'])
+            ->exists())->toBeFalse();
+});
+
+test('meal library csv import removes mistaken base ingredient when same name is imported as meal', function () {
+    mealImportIngredient('Rolled Oats', ['calories' => 380, 'protein' => 13, 'carbs' => 68, 'fat' => 7]);
+
+    $mistaken = Ingredient::factory()->create([
+        'name' => 'Apple Pie Balls',
+        'usda_food_category' => 'Base Ingredient',
+        'is_verified' => true,
+        'calories' => 200,
+        'protein' => 5,
+        'carbs' => 30,
+        'fat' => 8,
+    ]);
+    $mistaken->components()->attach([
+        mealImportIngredient('Rolled Oats')->id => ['amount_grams' => 40],
+    ]);
+
+    $csv = "Meal_Name,Category,Ingredient_Quantities\n"
+        ."Apple Pie Balls,Dessert,Rolled Oats:40\n";
+    $file = UploadedFile::fake()->createWithContent('meals.csv', $csv);
+
+    $this->actingAs(User::factory()->create())
+        ->postJson(route('meals.library.import-csv'), ['file' => $file])
+        ->assertOk()
+        ->assertJsonPath('summary.imported', 1);
+
+    expect(Meal::queryForMealLibrary()->where('name', 'Apple Pie Balls')->exists())->toBeTrue()
+        ->and(Ingredient::query()->whereKey($mistaken->id)->exists())->toBeFalse();
+});
+
+test('meal library csv import saves base ingredient category rows to ingredient library not meal library', function () {
+    $child = mealImportIngredient('Tomato Paste', ['calories' => 80, 'protein' => 4, 'carbs' => 16, 'fat' => 0]);
+
+    $csv = "Meal_Name,Category,Ingredient_Quantities\nHouse Sauce,Base Ingredient,Tomato Paste:100g\n";
+    $file = UploadedFile::fake()->createWithContent('meals.csv', $csv);
+
+    $this->actingAs(User::factory()->create())
+        ->postJson(route('meals.library.import-csv'), ['file' => $file])
+        ->assertOk()
+        ->assertJsonPath('summary.imported', 0)
+        ->assertJsonPath('summary.updated', 0)
+        ->assertJsonPath('summary.ingredient_library_imported', 1)
+        ->assertJsonPath('summary.ingredient_library_updated', 0);
+
+    expect(Meal::queryForMealLibrary()->where('name', 'House Sauce')->exists())->toBeFalse()
+        ->and(Ingredient::query()->where('name', 'House Sauce')->exists())->toBeTrue();
+});
+
 test('meal library csv import returns 422 when file is missing', function () {
     $this->actingAs(User::factory()->create())
         ->postJson(route('meals.library.import-csv'), [])

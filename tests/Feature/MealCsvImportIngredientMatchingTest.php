@@ -176,6 +176,39 @@ test('meal csv import matches verified library row with zero calories', function
     expect(IngredientLibraryNameMatcher::resolveForImportLabel('Sea Salt'))->not->toBeNull();
 });
 
+test('meal csv import imports meal when base ingredients are stored with base suffix on name', function () {
+    $base = Ingredient::factory()->create([
+        'name' => 'Rosemary Garlic Chicken (Base)',
+        'usda_food_category' => 'Base Ingredient',
+        'is_verified' => true,
+        'calories' => 120,
+        'protein' => 20,
+        'carbs' => 0,
+        'fat' => 4,
+    ]);
+    Ingredient::factory()->create([
+        'name' => 'Walnuts',
+        'is_verified' => true,
+        'calories' => 654,
+        'protein' => 15,
+        'carbs' => 14,
+        'fat' => 65,
+    ]);
+
+    $csv = "Meal_Name,Category,Ingredient_Quantities\n"
+        .'Chicken Bowl,Meal,Rosemary Garlic Chicken (Base):100 | Walnuts:20'."\n";
+    $file = UploadedFile::fake()->createWithContent('meals.csv', $csv);
+
+    $this->actingAs(User::factory()->create())
+        ->postJson(route('meals.library.import-csv'), ['file' => $file])
+        ->assertOk()
+        ->assertJsonPath('summary.imported', 1)
+        ->assertJsonPath('summary.pending_ingredient_input', 0);
+
+    $meal = Meal::query()->where('name', 'Chicken Bowl')->with('ingredients')->firstOrFail();
+    expect($meal->ingredients->pluck('id')->all())->toContain($base->id);
+});
+
 test('meal csv import matches base ingredient category rows shown in library', function () {
     Ingredient::factory()->create([
         'name' => 'House Salmon Blend',

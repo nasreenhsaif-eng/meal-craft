@@ -35,6 +35,8 @@ class MealLibraryCsvImportController extends Controller
                 'summary' => [
                     'imported' => 0,
                     'updated' => 0,
+                    'ingredient_library_imported' => 0,
+                    'ingredient_library_updated' => 0,
                     'duplicates_created' => 0,
                     'pending_ingredient_input' => 0,
                     'errors' => 0,

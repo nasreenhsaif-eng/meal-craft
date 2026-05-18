@@ -79,6 +79,7 @@ test('admin meal library renders inertia page with cycle phase options and meal 
         ->assertOk()
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->component('Admin/MealLibrary')
+            ->has('csrfToken')
             ->has('mealCraft.urls.mealLibrary.store')
             ->has('mealCraft.urls.mealLibrary.bulkDestroy')
             ->has('mealCraft.urls.mealLibrary.reorder')

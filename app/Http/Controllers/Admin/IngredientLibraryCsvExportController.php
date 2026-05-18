@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\IngredientsImport;
 use App\Models\Ingredient;
+use App\Support\CsvSpreadsheetCellText;
 use App\Support\IngredientG6pdSafety;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -56,7 +57,9 @@ class IngredientLibraryCsvExportController extends Controller
                 return;
             }
 
-            fputcsv($handle, $headers, ',', '"', '\\');
+            echo "\xEF\xBB\xBF";
+
+            fputcsv($handle, $headers, ',', '"', '\\', "\r\n");
 
             Ingredient::query()
                 ->where('is_verified', true)
@@ -75,8 +78,8 @@ class IngredientLibraryCsvExportController extends Controller
                             ))
                             ->implode(',');
                     }
-                    $description = (string) ($ingredient->description ?? '');
-                    $instructions = (string) ($ingredient->instructions ?? '');
+                    $description = CsvSpreadsheetCellText::exportSingleLine($ingredient->description);
+                    $instructions = CsvSpreadsheetCellText::exportMultilineAsEscapedNewlines($ingredient->instructions);
                     fputcsv($handle, [
                         $ingredient->name,
                         $ingredient->usda_food_category ?? '',
@@ -108,7 +111,7 @@ class IngredientLibraryCsvExportController extends Controller
                         $instructions,
                         '',
                         $ingredient->is_g6pd_trigger || IngredientG6pdSafety::canonicalNameIndicatesG6pdTrigger($ingredient->name) ? 1 : 0,
-                    ], ',', '"', '\\');
+                    ], ',', '"', '\\', "\r\n");
                 });
 
             fclose($handle);

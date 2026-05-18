@@ -35,6 +35,12 @@ import {
     sickleCellHighlightBadgeLabels,
 } from '../../meal-library/mealSafetyAndSickle.ts';
 import {
+    compressMealPhotoForUpload,
+    isMealPhotoCompressible,
+    MEAL_PHOTO_UPLOAD_TARGET_BYTES,
+} from '../../lib/compressMealPhotoForUpload.js';
+import { CSRF_SESSION_EXPIRED_MESSAGE, laravelAxiosJsonHeaders } from '../../lib/csrfToken.js';
+import {
     canonicalDietTagsFromList,
     DIETARY_TAG_OPTIONS,
     MEAL_PLAN_TAG_OPTIONS,
@@ -195,6 +201,65 @@ function mealCsvImportModalErrorDisplayLines(modal) {
     }
 
     return out;
+}
+
+/** @param {Record<string, unknown> | null | undefined} summary */
+function mealCsvImportMealLibrarySavedCount(summary) {
+    if (!summary || typeof summary !== 'object') {
+        return 0;
+    }
+    return (Number(summary.imported) || 0) + (Number(summary.updated) || 0);
+}
+
+/** @param {Record<string, unknown> | null | undefined} summary */
+function mealCsvImportIngredientLibrarySavedCount(summary) {
+    if (!summary || typeof summary !== 'object') {
+        return 0;
+    }
+    return (Number(summary.ingredient_library_imported) || 0) + (Number(summary.ingredient_library_updated) || 0);
+}
+
+/** @param {unknown[]} rows */
+function mealCsvImportPendingMealNames(rows) {
+    if (!Array.isArray(rows)) {
+        return [];
+    }
+    const names = [];
+    for (const row of rows) {
+        if (!row || typeof row !== 'object') {
+            continue;
+        }
+        if (mealCsvImportRowNormalizedStatus(row) !== 'pending_ingredient_input') {
+            continue;
+        }
+        const r = /** @type {Record<string, unknown>} */ (row);
+        const name = typeof r.meal_name === 'string' ? r.meal_name.trim() : '';
+        if (name !== '') {
+            names.push(name);
+        }
+    }
+    return names;
+}
+
+/** @param {unknown[]} rows */
+function mealCsvImportIngredientLibraryRowNames(rows) {
+    if (!Array.isArray(rows)) {
+        return [];
+    }
+    const names = [];
+    for (const row of rows) {
+        if (!row || typeof row !== 'object') {
+            continue;
+        }
+        const r = /** @type {Record<string, unknown>} */ (row);
+        if (r.saved_to === 'ingredient_library' || r.ingredient_id != null) {
+            const name = typeof r.meal_name === 'string' ? r.meal_name.trim() : '';
+            if (name !== '') {
+                names.push(name);
+            }
+        }
+    }
+    return names;
 }
 
 const MEAL_FORM_TYPE_OPTIONS = ['Breakfast', 'Meal', 'Side Salad', 'Soup', 'Dessert'];
@@ -437,6 +502,7 @@ function deleteSelectedButtonClass(anySelected) {
  *   flashSuccess?: string | null;
  *   flashError?: string | null;
  *   mealLibrarySchemaNotice?: string | null;
+ *   csrfToken?: string;
  *   onCreateMealSubmit?: (
  *     payload: Record<string, unknown>,
  *     meta?: { action: 'create' | 'update' | 'duplicate'; mealId?: string },
@@ -462,6 +528,7 @@ export function MealLibraryPageContent({
     flashSuccess = null,
     flashError = null,
     mealLibrarySchemaNotice = null,
+    csrfToken = '',
     onCreateMealSubmit,
     storyInitialCreateModalOpen = false,
     storyInitialMealToEdit = null,
@@ -476,14 +543,19 @@ export function MealLibraryPageContent({
     const [deleteError, setDeleteError] = useState(/** @type {string | null} */ (null));
     const [mealCsvImportResultModal, setMealCsvImportResultModal] = useState(null);
 
-    const dismissMealCsvImportModal = useCallback(() => {
-        setMealCsvImportResultModal(null);
+    const reloadMealLibraryRows = useCallback(() => {
         void router.reload({
             only: ['meals'],
             preserveState: true,
             preserveScroll: true,
         });
     }, []);
+
+    const dismissMealCsvImportModal = useCallback(() => {
+        setMealCsvImportResultModal(null);
+        setQuery('');
+        reloadMealLibraryRows();
+    }, [reloadMealLibraryRows]);
     const [createOpen, setCreateOpen] = useState(false);
     const [mealToEdit, setMealToEdit] = useState(/** @type {object | null} */ (storyInitialMealToEdit ?? null));
     const [mealDetailModal, setMealDetailModal] = useState(
@@ -856,18 +928,14 @@ export function MealLibraryPageContent({
                 return;
             }
 
-            const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-
             try {
                 await axios.post(
                     mealReorderUrl,
                     { ids },
                     {
                         headers: {
-                            Accept: 'application/json',
+                            ...laravelAxiosJsonHeaders(csrfToken),
                             'Content-Type': 'application/json',
-                            'X-Requested-With': 'XMLHttpRequest',
-                            ...(token ? { 'X-CSRF-TOKEN': token } : {}),
                         },
                     },
                 );
@@ -875,7 +943,7 @@ export function MealLibraryPageContent({
                 void router.reload({ only: ['meals'], preserveScroll: true });
             }
         },
-        [handleMealRowReorder, mealReorderUrl],
+        [csrfToken, handleMealRowReorder, mealReorderUrl],
     );
 
     async function handleConfirmDelete() {
@@ -908,18 +976,14 @@ export function MealLibraryPageContent({
         const deletedIdSet = new Set(ids.map(String));
         setDeleteBusy(true);
 
-        const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-
         try {
             await axios.post(
                 destroyUrl,
                 { ids },
                 {
                     headers: {
-                        Accept: 'application/json',
+                        ...laravelAxiosJsonHeaders(csrfToken),
                         'Content-Type': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest',
-                        ...(token ? { 'X-CSRF-TOKEN': token } : {}),
                     },
                 },
             );
@@ -1056,12 +1120,40 @@ export function MealLibraryPageContent({
         return payload;
     }
 
-    function handleMealPhotoChange(event) {
+    async function handleMealPhotoChange(event) {
         const input = event.target;
-        const file = input.files && input.files[0] ? input.files[0] : null;
-        setFormPhoto(file);
-        setMealPhotoPreviewUrl(file ? URL.createObjectURL(file) : null);
+        const file = input.files?.[0] ?? null;
         input.value = '';
+
+        if (!file) {
+            setFormPhoto(null);
+            setMealPhotoPreviewUrl(null);
+
+            return;
+        }
+
+        try {
+            const prepared = await compressMealPhotoForUpload(file);
+
+            if (prepared.size > MEAL_PHOTO_UPLOAD_TARGET_BYTES) {
+                const formatHint = isMealPhotoCompressible(file)
+                    ? 'Try a smaller image or export it as JPG.'
+                    : 'HEIC and AVIF photos must be under about 1.5 MB, or save as JPG/PNG first.';
+
+                window.alert(`This photo is too large to upload (${formatHint})`);
+                setFormPhoto(null);
+                setMealPhotoPreviewUrl(null);
+
+                return;
+            }
+
+            setFormPhoto(prepared);
+            setMealPhotoPreviewUrl(URL.createObjectURL(prepared));
+        } catch {
+            window.alert('Could not process this image. Try another file or save it as JPG.');
+            setFormPhoto(null);
+            setMealPhotoPreviewUrl(null);
+        }
     }
 
     function clearMealPhotoSelection() {
@@ -1518,14 +1610,9 @@ export function MealLibraryPageContent({
                                     onUpload={async (file) => {
                                         const formData = new FormData();
                                         formData.append('file', file);
-                                        const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
                                         try {
                                             const { data } = await axios.post(csvImportUrl, formData, {
-                                                headers: {
-                                                    Accept: 'application/json',
-                                                    'X-Requested-With': 'XMLHttpRequest',
-                                                    ...(token ? { 'X-CSRF-TOKEN': token } : {}),
-                                                },
+                                                headers: laravelAxiosJsonHeaders(csrfToken),
                                             });
                                             setMealCsvImportResultModal({
                                                 summary: data?.summary ?? {},
@@ -1542,12 +1629,17 @@ export function MealLibraryPageContent({
                                                     ? data.csv_unrecognized_headers
                                                     : [],
                                             });
+                                            if (mealCsvImportMealLibrarySavedCount(data?.summary) > 0) {
+                                                reloadMealLibraryRows();
+                                            }
                                         } catch (e) {
                                             const body = e?.response?.data;
                                             const msg =
-                                                (typeof body?.message === 'string' && body.message) ||
-                                                (Array.isArray(body?.errors?.file) ? String(body.errors.file[0]) : null) ||
-                                                'CSV import failed. Check the file and try again.';
+                                                e?.response?.status === 419
+                                                    ? CSRF_SESSION_EXPIRED_MESSAGE
+                                                    : (typeof body?.message === 'string' && body.message) ||
+                                                      (Array.isArray(body?.errors?.file) ? String(body.errors.file[0]) : null) ||
+                                                      'CSV import failed. Check the file and try again.';
                                             const validationErrors =
                                                 body?.errors && typeof body.errors === 'object' && !Array.isArray(body.errors)
                                                     ? body.errors
@@ -1741,18 +1833,49 @@ export function MealLibraryPageContent({
                                   </div>
                               ) : (
                                   <div className="mt-6 space-y-4 font-body text-sm text-[#262A22]">
-                                      <div className="flex gap-3 rounded-[12px] border border-[#E5E7EB] bg-[#F8F9F6] px-4 py-3">
-                                          <span className="text-lg leading-none text-[#5A6B44]" aria-hidden>
-                                              ✓
-                                          </span>
-                                          <p>
-                                              <span className="font-semibold">
-                                                  {(Number(mealCsvImportResultModal.summary?.imported) || 0) +
-                                                      (Number(mealCsvImportResultModal.summary?.updated) || 0)}
-                                              </span>{' '}
-                                              meal row(s) saved successfully (new or updated).
-                                          </p>
-                                      </div>
+                                      {mealCsvImportMealLibrarySavedCount(mealCsvImportResultModal.summary) > 0 ? (
+                                          <div className="flex gap-3 rounded-[12px] border border-[#E5E7EB] bg-[#F8F9F6] px-4 py-3">
+                                              <span className="text-lg leading-none text-[#5A6B44]" aria-hidden>
+                                                  ✓
+                                              </span>
+                                              <p>
+                                                  <span className="font-semibold">
+                                                      {mealCsvImportMealLibrarySavedCount(mealCsvImportResultModal.summary)}
+                                                  </span>{' '}
+                                                  meal(s) saved to the Meal Library (new or updated).
+                                              </p>
+                                          </div>
+                                      ) : null}
+                                      {mealCsvImportIngredientLibrarySavedCount(mealCsvImportResultModal.summary) > 0 ? (
+                                          <div className="flex gap-3 rounded-[12px] border border-amber-200 bg-amber-50 px-4 py-3 text-amber-950">
+                                              <span className="text-lg leading-none" aria-hidden>
+                                                  ⚠
+                                              </span>
+                                              <div>
+                                                  <p>
+                                                      <span className="font-semibold">
+                                                          {mealCsvImportIngredientLibrarySavedCount(
+                                                              mealCsvImportResultModal.summary,
+                                                          )}
+                                                      </span>{' '}
+                                                      row(s) were saved to the{' '}
+                                                      <span className="font-semibold">Ingredient Library</span> as base
+                                                      recipes (Category = Base Ingredient), not the Meal Library. Check
+                                                      Ingredient Library for those names.
+                                                  </p>
+                                                  {mealCsvImportIngredientLibraryRowNames(mealCsvImportResultModal.rows ?? [])
+                                                      .length > 0 ? (
+                                                      <ul className="mt-2 max-h-32 list-disc space-y-0.5 overflow-y-auto pl-5 text-sm">
+                                                          {mealCsvImportIngredientLibraryRowNames(
+                                                              mealCsvImportResultModal.rows ?? [],
+                                                          ).map((name) => (
+                                                              <li key={name}>{name}</li>
+                                                          ))}
+                                                      </ul>
+                                                  ) : null}
+                                              </div>
+                                          </div>
+                                      ) : null}
                                       {(Number(mealCsvImportResultModal.summary?.pending_ingredient_input) || 0) > 0 ? (
                                           <div className="flex gap-3 rounded-[12px] border border-amber-200 bg-amber-50 px-4 py-3 text-amber-950">
                                               <span className="text-lg leading-none" aria-hidden>
@@ -1774,7 +1897,17 @@ export function MealLibraryPageContent({
                                               <p className="font-semibold">Missing from ingredient library</p>
                                               <p className="mt-1 text-sm text-[#555555]">
                                                   This is not a crash — the meal was held until these exist in your library.
+                                                  After you add them, upload the ingredient CSV on the Ingredient Library page;
+                                                  the meal will be created automatically (or re-upload this meal CSV).
                                               </p>
+                                              {mealCsvImportPendingMealNames(mealCsvImportResultModal.rows ?? []).length > 0 ? (
+                                                  <p className="mt-2 text-sm">
+                                                      <span className="font-semibold">Meal waiting:</span>{' '}
+                                                      {mealCsvImportPendingMealNames(mealCsvImportResultModal.rows ?? []).join(
+                                                          ', ',
+                                                      )}
+                                                  </p>
+                                              ) : null}
                                               <ul className="mt-2 max-h-40 list-disc space-y-0.5 overflow-y-auto pl-5 text-sm">
                                                   {(mealCsvImportResultModal.uniquePending ?? []).map((name) => (
                                                       <li key={String(name)}>{String(name)}</li>
@@ -2328,7 +2461,7 @@ export function MealLibraryPageContent({
                                             <div className="aspect-[4/3] w-full">
                                                 <div className="flex h-full flex-col items-center justify-center px-6 text-center">
                                                     <p className="max-w-2xl font-montserrat text-[14px] font-bold uppercase leading-relaxed tracking-[0.10em] text-[#5A6B44]">
-                                                        Upload photo (JPG, PNG, WebP, HEIC, or AVIF — max 5&nbsp;MB)
+                                                        Upload photo (JPG, PNG, or WebP — large files are resized automatically)
                                                     </p>
                                                     <p className="mt-6 font-body text-sm text-[#6B7280]">
                                                         {formPhoto ? formPhoto.name : 'Click to choose a file'}
@@ -2707,6 +2840,7 @@ function MealLibraryPage(props) {
             flashSuccess={flashSuccess}
             flashError={flashError}
             mealLibrarySchemaNotice={mealLibrarySchemaNotice}
+            csrfToken={typeof pageProps.csrfToken === 'string' ? pageProps.csrfToken : ''}
         />
     );
 }

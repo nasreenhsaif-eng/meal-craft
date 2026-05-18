@@ -13,6 +13,22 @@ use Illuminate\Http\UploadedFile;
 
 uses(RefreshDatabase::class);
 
+test('ingredient matcher resolves base ingredient when library name includes base suffix', function () {
+    $chicken = Ingredient::factory()->create([
+        'name' => 'Rosemary Garlic Chicken (Base)',
+        'usda_food_category' => 'Base Ingredient',
+        'is_verified' => true,
+        'calories' => 120,
+        'protein' => 20,
+        'carbs' => 0,
+        'fat' => 4,
+    ]);
+
+    $resolved = IngredientLibraryNameMatcher::resolveForImportLabel('Rosemary Garlic Chicken (Base)');
+
+    expect($resolved?->id)->toBe($chicken->id);
+});
+
 test('ingredient matcher resolves vegetable broth base suffix to prepared base ingredient', function () {
     $broth = Ingredient::factory()->create([
         'name' => 'Vegetable Broth',

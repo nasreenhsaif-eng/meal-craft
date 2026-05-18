@@ -153,6 +153,19 @@ final class IngredientLibraryNameMatcher
             return $baseResolved;
         }
 
+        foreach (self::importLabelSynonyms($label) as $synonym) {
+            $synonymResolved = self::resolveForImportLabel($synonym);
+            if ($synonymResolved !== null) {
+                Log::info('Meal CSV import: resolved ingredient via label synonym.', [
+                    'label' => $label,
+                    'synonym' => $synonym,
+                    'matched_name' => $synonymResolved->name,
+                ]);
+
+                return $synonymResolved;
+            }
+        }
+
         Log::warning('Meal CSV import: could not map ingredient label to library item.', [
             'label' => $label,
             'normalized' => $primaryKey,
@@ -160,6 +173,24 @@ final class IngredientLibraryNameMatcher
         ]);
 
         return null;
+    }
+
+    /**
+     * Alternate library names to try when a spreadsheet label does not exact-match.
+     *
+     * @return list<string>
+     */
+    private static function importLabelSynonyms(string $label): array
+    {
+        $key = self::normalizeLookupKey($label);
+
+        /** @var array<string, list<string>> $map */
+        $map = [
+            'rocca' => ['Arugula', 'Rocket', 'Rucola'],
+            'parmesan cheese' => ['Parmesan', 'Cheese, Parmesan'],
+        ];
+
+        return $map[$key] ?? [];
     }
 
     /**
@@ -374,27 +405,87 @@ final class IngredientLibraryNameMatcher
             }
         }
 
+        $stripped = self::stripBaseRecipeSuffix($label);
+        if ($stripped !== '' && self::labelIndicatesBaseRecipe($label)) {
+            return self::resolveVerifiedIngredientByStrippedName($stripped);
+        }
+
         return null;
+    }
+
+    /**
+     * Match any verified library row whose name matches after stripping a trailing "(Base)" suffix.
+     */
+    private static function resolveVerifiedIngredientByStrippedName(string $strippedName): ?Ingredient
+    {
+        $strippedNorm = self::normalizeLookupKey($strippedName);
+        if ($strippedNorm === '') {
+            return null;
+        }
+
+        return self::queryMealImportLibrary()
+            ->where(function ($q) use ($strippedNorm): void {
+                $q->whereRaw('lower(trim(name)) LIKE ?', [$strippedNorm.'%'])
+                    ->orWhereRaw('lower(trim(COALESCE(standardized_name, ""))) LIKE ?', [$strippedNorm.'%']);
+            })
+            ->orderByRaw('LENGTH(trim(name)) ASC')
+            ->orderBy('id')
+            ->limit(40)
+            ->get()
+            ->first(fn (Ingredient $ingredient): bool => self::normalizeLookupKey(
+                self::stripBaseRecipeSuffix((string) $ingredient->name)
+            ) === $strippedNorm);
     }
 
     private static function resolvePreparedBaseIngredientByName(string $name): ?Ingredient
     {
-        $name = trim(self::stripBaseRecipeSuffix($name));
-        if ($name === '') {
+        $trimmed = trim($name);
+        if ($trimmed === '') {
             return null;
         }
 
-        $norm = self::normalizeLookupKey($name);
+        $stripped = trim(self::stripBaseRecipeSuffix($trimmed));
+        $normKeys = array_values(array_unique(array_filter([
+            self::normalizeLookupKey($trimmed),
+            $stripped !== '' && $stripped !== $trimmed ? self::normalizeLookupKey($stripped) : '',
+        ], static fn (string $key): bool => $key !== '')));
 
-        return Ingredient::query()
-            ->where('is_verified', true)
-            ->whereIn('usda_food_category', IngredientLibraryCategory::preparedLabels())
-            ->where(function ($q) use ($norm): void {
-                $q->whereRaw('lower(trim(name)) = ?', [$norm])
-                    ->orWhereRaw('lower(trim(COALESCE(standardized_name, ""))) = ?', [$norm]);
+        $preparedQuery = self::queryMealImportLibrary()
+            ->whereIn('usda_food_category', IngredientLibraryCategory::preparedLabels());
+
+        foreach ($normKeys as $norm) {
+            $match = (clone $preparedQuery)
+                ->where(function ($q) use ($norm): void {
+                    $q->whereRaw('lower(trim(name)) = ?', [$norm])
+                        ->orWhereRaw('lower(trim(COALESCE(standardized_name, ""))) = ?', [$norm]);
+                })
+                ->orderBy('id')
+                ->first();
+
+            if ($match !== null) {
+                return $match;
+            }
+        }
+
+        if ($stripped === '') {
+            return null;
+        }
+
+        $strippedNorm = self::normalizeLookupKey($stripped);
+
+        // Library row may be stored as "Rosemary Garlic Chicken (Base)" while the meal CSV uses the same label.
+        return (clone $preparedQuery)
+            ->where(function ($q) use ($strippedNorm): void {
+                $q->whereRaw('lower(trim(name)) LIKE ?', [$strippedNorm.'%'])
+                    ->orWhereRaw('lower(trim(COALESCE(standardized_name, ""))) LIKE ?', [$strippedNorm.'%']);
             })
+            ->orderByRaw('LENGTH(trim(name)) ASC')
             ->orderBy('id')
-            ->first();
+            ->limit(40)
+            ->get()
+            ->first(fn (Ingredient $ingredient): bool => self::normalizeLookupKey(
+                self::stripBaseRecipeSuffix((string) $ingredient->name)
+            ) === $strippedNorm);
     }
 
     private static function resolveMealLinkedBaseIngredient(string $name): ?Ingredient

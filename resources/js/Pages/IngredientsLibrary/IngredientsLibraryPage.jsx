@@ -22,6 +22,7 @@ import {
     ingredientLibraryUrls,
     resolveUrl,
 } from '../../meal-craft/mealCraftPageProps.js';
+import { laravelAxiosJsonHeaders } from '../../lib/csrfToken.js';
 
 /** Ingredient taxonomy for the create-ingredient dropdown (Storybook: `DropdownTextInput`). */
 const INGREDIENT_CATEGORY_OPTIONS = [
@@ -151,6 +152,7 @@ function dietTagDropdownOptions(items) {
  *   csvImportUrl?: string;
  *   ingredientBulkDestroyUrl?: string;
  *   flashSuccess?: string | null;
+ *   csrfToken?: string;
  * }} props
  */
 
@@ -168,6 +170,7 @@ export function IngredientsLibraryPageView({
     csvExportUrl = '#',
     csvImportUrl = '#',
     flashSuccess = null,
+    csrfToken = '',
 }) {
     const [query, setQuery] = useState('');
     const [searchOpen, setSearchOpen] = useState(false);
@@ -534,18 +537,14 @@ export function IngredientsLibraryPageView({
         const deletedIdSet = new Set(ids.map(String));
         setDeleteBusy(true);
 
-        const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-
         try {
             await axios.post(
                 ingredientBulkDestroyUrl,
                 { ids },
                 {
                     headers: {
-                        Accept: 'application/json',
+                        ...laravelAxiosJsonHeaders(csrfToken),
                         'Content-Type': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest',
-                        ...(token ? { 'X-CSRF-TOKEN': token } : {}),
                     },
                 },
             );
@@ -1195,6 +1194,7 @@ export function IngredientsLibraryPageContent(props) {
             csvTemplateUrl={resolveUrl(props.csvTemplateUrl, sharedIngredientUrls.template)}
             csvExportUrl={resolveUrl(props.csvExportUrl, sharedIngredientUrls.exportCsv)}
             csvImportUrl={resolveUrl(props.csvImportUrl, sharedIngredientUrls.importCsv)}
+            csrfToken={typeof pageProps.csrfToken === 'string' ? pageProps.csrfToken : ''}
         />
     );
 }

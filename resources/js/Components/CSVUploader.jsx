@@ -113,7 +113,12 @@ export default function CSVUploader({
                     </a>
                 ) : null}
                 {exportUrl ? (
-                    <a href={exportUrl} className={linkClass}>
+                    <a
+                        href={exportUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`${linkClass} cursor-pointer`}
+                    >
                         Export CSV
                     </a>
                 ) : null}
