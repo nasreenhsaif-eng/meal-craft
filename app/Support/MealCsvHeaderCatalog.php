@@ -43,18 +43,32 @@ final class MealCsvHeaderCatalog
      */
     private const SHORT_CANONICAL_KEYS = [
         'name' => 'meal_name',
+        'meal name' => 'meal_name',
         'description' => 'short_description',
+        'short description' => 'short_description',
         'meal tags' => 'meal_plan_tags',
+        'meal plan tag' => 'meal_plan_tags',
         'cycle phase' => 'cycle_phases',
         'dietary tags' => 'dietary_tags',
         'safety alerts' => 'safety_alerts',
         'ingredients' => 'ingredient_quantities',
+        'ingredients string' => 'ingredient_quantities',
+        'meal type' => 'category',
         'instructions' => 'instructions',
         'photo url' => 'meal_image_path',
+        'image url' => 'meal_image_path',
         'target cal' => 'target_calories',
+        'target calories' => 'target_calories',
         'target pro' => 'target_protein',
+        'target protein' => 'target_protein',
         'target fat' => 'target_fat',
         'target carbs' => 'target_carbs',
+        'batch calories' => 'batch_calories',
+        'batch protein' => 'batch_protein',
+        'batch carbs' => 'batch_carbs',
+        'batch fat' => 'batch_fat',
+        'is bulk' => 'is_bulk',
+        'servings count' => 'servings_count',
         'calc cal' => 'calculated_calories',
         'calc pro' => 'calculated_protein',
         'calc fat' => 'calculated_fat',
@@ -118,7 +132,7 @@ final class MealCsvHeaderCatalog
      */
     public static function mealNameHeaderHints(): array
     {
-        return ['name', 'Meal_Name', 'Meal Name'];
+        return ['meal_name', 'name', 'Meal_Name', 'Meal Name'];
     }
 
     /**
@@ -126,6 +140,6 @@ final class MealCsvHeaderCatalog
      */
     public static function ingredientQuantitiesHeaderHints(): array
     {
-        return ['ingredients', 'Ingredient_Quantities', 'Ingredients String'];
+        return ['ingredients_string', 'ingredients', 'Ingredient_Quantities', 'Ingredients String'];
     }
 }

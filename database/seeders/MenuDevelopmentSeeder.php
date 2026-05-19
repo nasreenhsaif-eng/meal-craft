@@ -12,8 +12,10 @@ use InvalidArgumentException;
  * Seeds the ingredient library and meal library from version-controlled CSV masters.
  *
  * Paste working export rows into:
- * - database/data/menu/ingredients.csv (30 columns; upserted by `name` via updateOrCreate, supports is_base_recipe)
- * - database/data/menu/meals.csv (19 columns; upserted by meal name via updateOrCreate)
+ * - database/data/menu/ingredients.csv — 30-column production schema (snake_case headers; upserted by {@code name})
+ * - database/data/menu/meals.csv — 19-column production schema (snake_case headers; upserted by {@code meal_name})
+ *
+ * Required meal columns: {@code meal_name}, {@code ingredients_string}. See {@see MenuDevelopmentCsv::MEAL_HEADERS}.
  */
 class MenuDevelopmentSeeder extends Seeder
 {
@@ -85,6 +87,16 @@ class MenuDevelopmentSeeder extends Seeder
                 ->implode(' | ');
 
             $this->command?->warn("Menu seed: meal row errors — {$lines}");
+
+            $headerRowError = collect($result['rows'] ?? [])
+                ->first(fn (array $row): bool => ($row['line'] ?? null) === 1 && ($row['status'] ?? '') === 'error');
+
+            if ($headerRowError !== null && str_contains((string) ($headerRowError['message'] ?? ''), 'required columns')) {
+                throw new InvalidArgumentException(
+                    'meals.csv headers do not match the production schema. Required: meal_name, ingredients_string. '
+                    .'Expected columns: '.implode(', ', MenuDevelopmentCsv::MEAL_HEADERS),
+                );
+            }
         }
     }
 }

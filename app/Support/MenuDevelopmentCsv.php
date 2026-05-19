@@ -3,7 +3,6 @@
 namespace App\Support;
 
 use App\Http\Controllers\Admin\IngredientLibraryCsvExportController;
-use App\Services\MealCraftMasterCsvExport;
 
 /**
  * Paths and helpers for version-controlled menu master CSV files used by {@see Database\Seeders\MenuDevelopmentSeeder}.
@@ -53,12 +52,32 @@ final class MenuDevelopmentCsv
     ];
 
     /**
-     * Meal Craft master template columns (19 fields; must match {@see MealCraftMasterCsvExport::MEAL_CRAFT_CSV_TEMPLATE_HEADERS}).
-     * Rows upsert by meal name ({@code Meal Name} / {@code Meal_Name}).
+     * Production meal master CSV columns (snake_case; 19 fields).
+     * Rows upsert by {@code meal_name}. Legacy Title Case headers remain accepted by the importer.
      *
      * @var list<string>
      */
-    public const MEAL_HEADERS = MealCraftMasterCsvExport::MEAL_CRAFT_CSV_TEMPLATE_HEADERS;
+    public const MEAL_HEADERS = [
+        'meal_name',
+        'meal_type',
+        'ingredients_string',
+        'target_calories',
+        'target_protein',
+        'target_carbs',
+        'target_fat',
+        'batch_calories',
+        'batch_protein',
+        'batch_carbs',
+        'batch_fat',
+        'is_bulk',
+        'servings_count',
+        'meal_plan_tag',
+        'cycle_phase',
+        'safety_alerts',
+        'image_url',
+        'short_description',
+        'instructions',
+    ];
 
     public static function ingredientsPath(): string
     {

@@ -15,6 +15,24 @@ test('meal csv header catalog resolves short headers to internal keys', function
         ->and(MealCsvHeaderCatalog::shortCanonicalKey('photo url'))->toBe('meal_image_path');
 });
 
+test('meal csv header catalog resolves production snake_case headers', function () {
+    expect(MealCsvHeaderCatalog::shortCanonicalKey(
+        MealCsvHeaderCatalog::normalizeHeaderToken('meal_name'),
+    ))->toBe('meal_name')
+        ->and(MealCsvHeaderCatalog::shortCanonicalKey(
+            MealCsvHeaderCatalog::normalizeHeaderToken('ingredients_string'),
+        ))->toBe('ingredient_quantities')
+        ->and(MealCsvHeaderCatalog::shortCanonicalKey(
+            MealCsvHeaderCatalog::normalizeHeaderToken('target_protein'),
+        ))->toBe('target_protein')
+        ->and(MealCsvHeaderCatalog::shortCanonicalKey(
+            MealCsvHeaderCatalog::normalizeHeaderToken('is_bulk'),
+        ))->toBe('is_bulk')
+        ->and(MealCsvHeaderCatalog::shortCanonicalKey(
+            MealCsvHeaderCatalog::normalizeHeaderToken('short_description'),
+        ))->toBe('short_description');
+});
+
 test('meal csv header catalog normalizes underscore aliases', function () {
     expect(MealCsvHeaderCatalog::normalizeHeaderToken('target_pro'))->toBe('target pro')
         ->and(MealCsvHeaderCatalog::shortCanonicalKey(

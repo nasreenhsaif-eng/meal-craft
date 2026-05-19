@@ -40,6 +40,11 @@ test('menu development seeder skips empty csv files with only headers', function
         ->and(Meal::query()->count())->toBe(0);
 });
 
+test('menu development csv meal headers use production snake_case labels', function () {
+    expect(MenuDevelopmentCsv::MEAL_HEADERS)->toContain('meal_name', 'ingredients_string', 'meal_type', 'is_bulk')
+        ->and(MenuDevelopmentCsv::MEAL_HEADERS[0])->toBe('meal_name');
+});
+
 test('menu development csv helper detects data rows', function () {
     $path = MenuDevelopmentCsv::ingredientsPath();
 
