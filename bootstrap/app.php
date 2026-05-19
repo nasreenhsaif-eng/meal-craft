@@ -36,7 +36,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $exceptions->shouldRenderJsonWhen(function (Request $request, Throwable $e): bool {
             // Match by path so CSRF/auth failures still return JSON even if the route name is not resolved yet.
-            if (in_array($request->path(), ['ingredient-analysis', 'ingredients/from-analysis'], true)) {
+            if (in_array($request->path(), ['ingredient-analysis', 'ingredients/from-analysis', 'meals/library/import-csv'], true)) {
                 return true;
             }
 

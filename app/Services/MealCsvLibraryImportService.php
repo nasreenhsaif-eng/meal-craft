@@ -1034,19 +1034,18 @@ final class MealCsvLibraryImportService
             return [];
         }
 
-        if (count($pendingLabels) === 1
-            && IngredientQuantityStringParser::cellLooksLikeCommaSeparatedIngredientList($qtyCell)) {
-            $fromCell = IngredientQuantityStringParser::ingredientNamesFromCell($qtyCell);
-            if (count($fromCell) > 1) {
-                return array_values(array_unique($fromCell));
+        if (IngredientQuantityStringParser::cellLooksLikeCommaSeparatedIngredientList($qtyCell)) {
+            $actuallyMissing = $this->unresolvedIngredientNamesFromCell($qtyCell);
+            if ($actuallyMissing !== []) {
+                return $actuallyMissing;
             }
         }
 
         $expanded = [];
         foreach ($pendingLabels as $label) {
             if (IngredientQuantityStringParser::cellLooksLikeCommaSeparatedIngredientList($label)) {
-                $fromLabel = IngredientQuantityStringParser::ingredientNamesFromCell($label);
-                if (count($fromLabel) > 1) {
+                $fromLabel = $this->unresolvedIngredientNamesFromCell($label);
+                if ($fromLabel !== []) {
                     array_push($expanded, ...$fromLabel);
 
                     continue;
@@ -1056,6 +1055,28 @@ final class MealCsvLibraryImportService
         }
 
         return array_values(array_unique($expanded));
+    }
+
+    /**
+     * Ingredient labels from a multi-segment cell that still do not resolve in the verified library.
+     *
+     * @return list<string>
+     */
+    private function unresolvedIngredientNamesFromCell(string $cell): array
+    {
+        $missing = [];
+
+        foreach (IngredientQuantityStringParser::ingredientNamesFromCell($cell) as $name) {
+            $name = trim($name);
+            if ($name === '') {
+                continue;
+            }
+            if (IngredientLibraryNameMatcher::resolveForImportLabel($name) === null) {
+                $missing[] = $name;
+            }
+        }
+
+        return array_values(array_unique($missing));
     }
 
     private function gramsForIngredientAmountUnit(Ingredient $ingredient, float $amount, string $unit): float

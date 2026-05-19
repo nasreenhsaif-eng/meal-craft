@@ -142,6 +142,20 @@ test('guest cannot post meal library csv import', function () {
     $this->postJson(route('meals.library.import-csv'), ['file' => $file])->assertUnauthorized();
 });
 
+test('admin meal library csv import redirects with session flash for inertia ui', function () {
+    mealImportIngredient('Rice');
+
+    $csv = "Meal_Name,Category,Ingredient_Quantities,Instructions,Description_Highlight\nBowl,Meal,Rice:100,Cook.,A bowl.\n";
+    $file = UploadedFile::fake()->createWithContent('meals.csv', $csv);
+
+    $this->actingAs(User::factory()->create())
+        ->post(route('admin.meal-library.import-csv'), ['file' => $file])
+        ->assertRedirect(route('admin.meal-library'))
+        ->assertSessionHas('mealCsvImportResult');
+
+    expect(Meal::query()->where('name', 'Bowl')->exists())->toBeTrue();
+});
+
 test('meal library csv import accepts utf-8 bom on header row', function () {
     mealImportIngredient('Rice');
 

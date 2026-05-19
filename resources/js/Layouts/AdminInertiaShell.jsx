@@ -1,6 +1,8 @@
+import { useEffect } from 'react';
 import { usePage } from '@inertiajs/react';
 import AuthenticatedLayout from './AuthenticatedLayout.jsx';
 import { ADMIN_NAV_PATHS } from '../Components/Admin/AdminSidebar.jsx';
+import { syncCsrfMetaTag } from '../lib/csrfToken.js';
 
 const WIDE = 'mx-auto w-full max-w-[1400px]';
 
@@ -57,7 +59,13 @@ function isAdminAppPath(url) {
  * @param {{ children: import('react').ReactNode }} props
  */
 export default function AdminInertiaShell({ children }) {
-    const { component, auth, url } = usePage();
+    const { component, url, props: pageProps } = usePage();
+    const { auth, csrfToken } = pageProps;
+    const csrfTokenString = typeof csrfToken === 'string' ? csrfToken : '';
+
+    useEffect(() => {
+        syncCsrfMetaTag(csrfTokenString);
+    }, [csrfTokenString]);
     const c = SHELL_BY_COMPONENT[component] ?? {
         pageTitle: 'Meal Craft Admin',
         activePath: '',

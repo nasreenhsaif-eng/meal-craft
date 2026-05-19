@@ -147,6 +147,43 @@ test('meal csv import lists individual pending ingredient names for comma separa
         ->and($pending)->not->toContain($cell);
 });
 
+test('meal csv import only lists unresolved ingredients when comma separated cell is partially in library', function () {
+    Ingredient::factory()->create([
+        'name' => 'Creamy Cumin Hummus (Base)',
+        'usda_food_category' => 'Base Ingredient',
+        'is_verified' => true,
+    ]);
+    Ingredient::factory()->create([
+        'name' => 'Quinoa Bread (Base)',
+        'usda_food_category' => 'Base Ingredient',
+        'is_verified' => true,
+    ]);
+    Ingredient::factory()->create([
+        'name' => 'Almond whole',
+        'usda_food_category' => 'Fats/Nuts',
+        'is_verified' => true,
+    ]);
+
+    $cell = 'Creamy Cumin Hummus (Base) (200g), Spiced Aleppo Ground Beef (Base) (150g), Quinoa Bread (Base) (80g), Almond whole (30g)';
+
+    $csv = 'name,ingredients'."\n"
+        .'Hummus Bowl,"'.$cell.'"'."\n";
+    $file = UploadedFile::fake()->createWithContent('meals.csv', $csv);
+
+    $response = $this->actingAs(User::factory()->create())
+        ->postJson(route('meals.library.import-csv'), ['file' => $file]);
+
+    $response->assertOk()
+        ->assertJsonPath('summary.pending_ingredient_input', 1);
+
+    $pending = $response->json('unique_pending_ingredients');
+
+    expect($pending)->toBe(['Spiced Aleppo Ground Beef (Base)'])
+        ->and($pending)->not->toContain('Creamy Cumin Hummus (Base)')
+        ->and($pending)->not->toContain('Quinoa Bread (Base)')
+        ->and($pending)->not->toContain('Almond whole');
+});
+
 test('meal csv import resolves olive oil extra virgin label to usda style library name', function () {
     Ingredient::factory()->create([
         'name' => 'Oil, olive, extra virgin',

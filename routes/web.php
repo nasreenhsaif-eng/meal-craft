@@ -7,9 +7,10 @@ use App\Http\Controllers\Admin\IngredientLibraryCsvExportController;
 use App\Http\Controllers\Admin\IngredientLibraryCsvImportController;
 use App\Http\Controllers\Admin\MealController;
 use App\Http\Controllers\Admin\MealLibraryController;
+use App\Http\Controllers\Admin\MealLibraryCsvImportController;
 use App\Http\Controllers\Admin\MealPlanLibraryController;
 use App\Http\Controllers\MealLibraryCsvExportController;
-use App\Http\Controllers\MealLibraryCsvImportController;
+use App\Http\Controllers\MealLibraryCsvImportController as JsonMealLibraryCsvImportController;
 use App\Models\Meal;
 use Illuminate\Support\Facades\Route;
 
@@ -37,6 +38,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('/ingredient-library/{ingredient}', [IngredientLibraryController::class, 'update'])->name('ingredient-library.update');
             Route::get('/meal-library', [MealLibraryController::class, 'index'])->name('meal-library');
             Route::get('/meal-library/csv-template', [MealLibraryController::class, 'downloadMealCraftCsvTemplate'])->name('meal-library.csv-template');
+            Route::post('/meal-library/import-csv', MealLibraryCsvImportController::class)->name('meal-library.import-csv');
             Route::post('/meal-library', [MealController::class, 'store'])->name('meal-library.store');
             Route::post('/meal-library/bulk-destroy', [MealLibraryController::class, 'bulkDestroy'])->name('meal-library.bulk-destroy');
             Route::post('/meal-library/reorder', [MealLibraryController::class, 'reorder'])->name('meal-library.reorder');
@@ -50,7 +52,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::livewire('ingredients', 'pages::ingredients')->name('ingredients.index');
     Route::livewire('meals', 'pages::meals')->name('meals.index');
     Route::livewire('meals/{meal}/edit', 'pages::meals')->name('meals.edit');
-    Route::post('meals/library/import-csv', MealLibraryCsvImportController::class)->name('meals.library.import-csv');
+    Route::post('meals/library/import-csv', JsonMealLibraryCsvImportController::class)->name('meals.library.import-csv');
     Route::get('meals/library/export-csv', MealLibraryCsvExportController::class)->name('meals.library.export-csv');
     Route::livewire('meal-plans', 'pages::meal-plans')->name('meal-plans.index');
     Route::livewire('meal-plans/four-week', 'pages::meal-plans-four-week')->name('meal-plans.four-week');

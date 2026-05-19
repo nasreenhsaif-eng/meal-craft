@@ -58,7 +58,7 @@ final class MealCraftInertiaSharedData
                 'bulkDestroy' => route('admin.meal-library.bulk-destroy'),
                 'reorder' => route('admin.meal-library.reorder'),
                 'mealCraftTemplate' => route('admin.meal-library.csv-template'),
-                'importCsv' => route('meals.library.import-csv'),
+                'importCsv' => route('admin.meal-library.import-csv'),
                 'exportCsv' => route('meals.library.export-csv'),
             ],
         ];

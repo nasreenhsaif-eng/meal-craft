@@ -1,8 +1,12 @@
 import '../css/app.css';
+import axios from 'axios';
 import { createInertiaApp } from '@inertiajs/react';
 import { Component } from 'react';
 import { createRoot } from 'react-dom/client';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
+import { configureLaravelAxios } from './lib/csrfToken.js';
+
+configureLaravelAxios(axios);
 
 class InertiaErrorBoundary extends Component {
     constructor(props) {

@@ -39,7 +39,7 @@ import {
     isMealPhotoCompressible,
     MEAL_PHOTO_UPLOAD_TARGET_BYTES,
 } from '../../lib/compressMealPhotoForUpload.js';
-import { CSRF_SESSION_EXPIRED_MESSAGE, laravelAxiosJsonHeaders } from '../../lib/csrfToken.js';
+import { laravelAxiosJsonHeaders } from '../../lib/csrfToken.js';
 import {
     canonicalDietTagsFromList,
     DIETARY_TAG_OPTIONS,
@@ -127,6 +127,40 @@ function mealCsvImportResponseRows(data) {
     }
 
     return [];
+}
+
+/**
+ * @param {unknown} data
+ */
+function buildMealCsvImportModalFromPayload(data) {
+    if (!data || typeof data !== 'object') {
+        return null;
+    }
+
+    const d = /** @type {Record<string, unknown>} */ (data);
+
+    if (d.error === true) {
+        return {
+            error: typeof d.message === 'string' ? d.message : 'CSV import failed.',
+            summary: d.summary && typeof d.summary === 'object' ? d.summary : {},
+            uniquePending: Array.isArray(d.unique_pending_ingredients) ? d.unique_pending_ingredients : [],
+            rows: mealCsvImportResponseRows(d),
+            import_error_lines: Array.isArray(d.import_error_lines) ? d.import_error_lines : [],
+            csvUnrecognizedHeaders: Array.isArray(d.csv_unrecognized_headers) ? d.csv_unrecognized_headers : [],
+            validationErrors:
+                d.validationErrors && typeof d.validationErrors === 'object' && !Array.isArray(d.validationErrors)
+                    ? d.validationErrors
+                    : null,
+        };
+    }
+
+    return {
+        summary: d.summary && typeof d.summary === 'object' ? d.summary : {},
+        uniquePending: Array.isArray(d.unique_pending_ingredients) ? d.unique_pending_ingredients : [],
+        rows: mealCsvImportResponseRows(d),
+        import_error_lines: Array.isArray(d.import_error_lines) ? d.import_error_lines : [],
+        csvUnrecognizedHeaders: Array.isArray(d.csv_unrecognized_headers) ? d.csv_unrecognized_headers : [],
+    };
 }
 
 /**
@@ -501,6 +535,7 @@ function deleteSelectedButtonClass(anySelected) {
  *   initialViewMode?: 'grid' | 'list';
  *   flashSuccess?: string | null;
  *   flashError?: string | null;
+ *   mealCsvImportFlash?: object | null;
  *   mealLibrarySchemaNotice?: string | null;
  *   csrfToken?: string;
  *   onCreateMealSubmit?: (
@@ -527,6 +562,7 @@ export function MealLibraryPageContent({
     initialViewMode,
     flashSuccess = null,
     flashError = null,
+    mealCsvImportFlash = null,
     mealLibrarySchemaNotice = null,
     csrfToken = '',
     onCreateMealSubmit,
@@ -542,6 +578,13 @@ export function MealLibraryPageContent({
     const [deleteBusy, setDeleteBusy] = useState(false);
     const [deleteError, setDeleteError] = useState(/** @type {string | null} */ (null));
     const [mealCsvImportResultModal, setMealCsvImportResultModal] = useState(null);
+
+    useEffect(() => {
+        const modal = buildMealCsvImportModalFromPayload(mealCsvImportFlash);
+        if (modal) {
+            setMealCsvImportResultModal(modal);
+        }
+    }, [mealCsvImportFlash]);
 
     const reloadMealLibraryRows = useCallback(() => {
         void router.reload({
@@ -1607,55 +1650,35 @@ export function MealLibraryPageContent({
                                     }
                                     exportUrl={csvExportUrl}
                                     uploadBusyLabel="Parsing & importing…"
-                                    onUpload={async (file) => {
-                                        const formData = new FormData();
-                                        formData.append('file', file);
-                                        try {
-                                            const { data } = await axios.post(csvImportUrl, formData, {
-                                                headers: laravelAxiosJsonHeaders(csrfToken),
-                                            });
-                                            setMealCsvImportResultModal({
-                                                summary: data?.summary ?? {},
-                                                uniquePending: Array.isArray(data?.unique_pending_ingredients)
-                                                    ? data.unique_pending_ingredients
-                                                    : [],
-                                                rows: mealCsvImportResponseRows(data),
-                                                import_error_lines: Array.isArray(data?.import_error_lines)
-                                                    ? data.import_error_lines
-                                                    : Array.isArray(data?.importErrorLines)
-                                                      ? data.importErrorLines
-                                                      : [],
-                                                csvUnrecognizedHeaders: Array.isArray(data?.csv_unrecognized_headers)
-                                                    ? data.csv_unrecognized_headers
-                                                    : [],
-                                            });
-                                            if (mealCsvImportMealLibrarySavedCount(data?.summary) > 0) {
-                                                reloadMealLibraryRows();
-                                            }
-                                        } catch (e) {
-                                            const body = e?.response?.data;
-                                            const msg =
-                                                e?.response?.status === 419
-                                                    ? CSRF_SESSION_EXPIRED_MESSAGE
-                                                    : (typeof body?.message === 'string' && body.message) ||
-                                                      (Array.isArray(body?.errors?.file) ? String(body.errors.file[0]) : null) ||
-                                                      'CSV import failed. Check the file and try again.';
-                                            const validationErrors =
-                                                body?.errors && typeof body.errors === 'object' && !Array.isArray(body.errors)
-                                                    ? body.errors
-                                                    : null;
-                                            setMealCsvImportResultModal({
-                                                error: typeof msg === 'string' ? msg : 'CSV import failed.',
-                                                summary: {},
-                                                uniquePending: [],
-                                                rows: [],
-                                                import_error_lines: Array.isArray(body?.import_error_lines)
-                                                    ? body.import_error_lines
-                                                    : [],
-                                                csvUnrecognizedHeaders: [],
-                                                validationErrors,
-                                            });
-                                        }
+                                    onUpload={(file) => {
+                                        router.post(
+                                            csvImportUrl,
+                                            { file },
+                                            {
+                                                forceFormData: true,
+                                                preserveScroll: true,
+                                                onError: (errors) => {
+                                                    const fileMessages = errors?.file;
+                                                    const fileMessage = Array.isArray(fileMessages)
+                                                        ? String(fileMessages[0] ?? '')
+                                                        : typeof fileMessages === 'string'
+                                                          ? fileMessages
+                                                          : '';
+                                                    setMealCsvImportResultModal({
+                                                        error:
+                                                            fileMessage ||
+                                                            'CSV import failed. Check the file and try again.',
+                                                        summary: {},
+                                                        uniquePending: [],
+                                                        rows: [],
+                                                        import_error_lines: [],
+                                                        csvUnrecognizedHeaders: [],
+                                                        validationErrors:
+                                                            errors && typeof errors === 'object' ? errors : null,
+                                                    });
+                                                },
+                                            },
+                                        );
                                     }}
                                 />
                             </div>
@@ -2815,6 +2838,10 @@ function MealLibraryPage(props) {
     const { props: pageProps } = usePage();
     const flashSuccess = typeof pageProps.flash?.success === 'string' ? pageProps.flash.success : null;
     const flashError = typeof pageProps.flash?.error === 'string' ? pageProps.flash.error : null;
+    const mealCsvImportFlash =
+        pageProps.flash?.mealCsvImportResult && typeof pageProps.flash.mealCsvImportResult === 'object'
+            ? pageProps.flash.mealCsvImportResult
+            : null;
     const sharedMealUrls = mealLibraryUrls(pageProps);
     const mealLibrarySchemaNotice =
         typeof props.mealLibrarySchemaNotice === 'string'
@@ -2839,6 +2866,7 @@ function MealLibraryPage(props) {
             csvImportUrl={resolveUrl(props.csvImportUrl, sharedMealUrls.importCsv)}
             flashSuccess={flashSuccess}
             flashError={flashError}
+            mealCsvImportFlash={mealCsvImportFlash}
             mealLibrarySchemaNotice={mealLibrarySchemaNotice}
             csrfToken={typeof pageProps.csrfToken === 'string' ? pageProps.csrfToken : ''}
         />
