@@ -132,6 +132,37 @@ function mealCsvImportResponseRows(data) {
 /**
  * @param {unknown} data
  */
+/** @param {Record<string, unknown> | null | undefined} summary */
+function mealCsvImportModalHasVisibleOutcome(summary, uniquePending, rows, importErrorLines) {
+    if ((Array.isArray(uniquePending) ? uniquePending.length : 0) > 0) {
+        return true;
+    }
+    if ((Array.isArray(importErrorLines) ? importErrorLines.length : 0) > 0) {
+        return true;
+    }
+    if (mealCsvImportMealLibrarySavedCount(summary) > 0) {
+        return true;
+    }
+    if (mealCsvImportIngredientLibrarySavedCount(summary) > 0) {
+        return true;
+    }
+    if ((Number(summary?.pending_ingredient_input) || 0) > 0) {
+        return true;
+    }
+    if ((Number(summary?.errors) || 0) > 0) {
+        return true;
+    }
+    if (Array.isArray(rows)) {
+        for (const row of rows) {
+            if (mealCsvImportRowNormalizedStatus(row) === 'pending_ingredient_input') {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
 function buildMealCsvImportModalFromPayload(data) {
     if (!data || typeof data !== 'object') {
         return null;
@@ -1657,6 +1688,13 @@ export function MealLibraryPageContent({
                                             {
                                                 forceFormData: true,
                                                 preserveScroll: true,
+                                                onSuccess: (page) => {
+                                                    const flash = page.props?.flash?.mealCsvImportResult;
+                                                    const modal = buildMealCsvImportModalFromPayload(flash);
+                                                    if (modal) {
+                                                        setMealCsvImportResultModal(modal);
+                                                    }
+                                                },
                                                 onError: (errors) => {
                                                     const fileMessages = errors?.file;
                                                     const fileMessage = Array.isArray(fileMessages)
@@ -1955,6 +1993,26 @@ export function MealLibraryPageContent({
                                               {Number(mealCsvImportResultModal.summary?.errors) || 0} row(s) had errors (see
                                               CSV template rules).
                                           </p>
+                                      ) : null}
+                                      {!mealCsvImportModalHasVisibleOutcome(
+                                          mealCsvImportResultModal.summary,
+                                          mealCsvImportResultModal.uniquePending,
+                                          mealCsvImportResultModal.rows,
+                                          mealCsvImportResultModal.import_error_lines,
+                                      ) ? (
+                                          <div
+                                              className="rounded-[12px] border border-amber-200 bg-amber-50 px-4 py-3 text-amber-950"
+                                              role="alert"
+                                          >
+                                              <p className="font-semibold">Import finished — no meals saved</p>
+                                              <p className="mt-1 text-sm">
+                                                  The file was read but nothing was imported or updated. Check that
+                                                  ingredient names in{' '}
+                                                  <span className="font-mono text-xs">ingredients_string</span> exist in
+                                                  your verified Ingredient Library, then upload again. You should also
+                                                  see pending-ingredient details above when rows were held.
+                                              </p>
+                                          </div>
                                       ) : null}
                                       {(() => {
                                           const lines = mealCsvImportModalErrorDisplayLines(mealCsvImportResultModal);

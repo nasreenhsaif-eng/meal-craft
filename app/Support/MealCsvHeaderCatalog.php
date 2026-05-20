@@ -44,6 +44,7 @@ final class MealCsvHeaderCatalog
     private const SHORT_CANONICAL_KEYS = [
         'name' => 'meal_name',
         'meal name' => 'meal_name',
+        'meal_name' => 'meal_name',
         'description' => 'short_description',
         'short description' => 'short_description',
         'meal tags' => 'meal_plan_tags',
