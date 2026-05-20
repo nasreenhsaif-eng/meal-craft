@@ -6,6 +6,7 @@ use App\Models\Ingredient;
 use App\Models\Meal;
 use App\Models\User;
 use App\Services\BaseIngredientService;
+use App\Services\MealCsvLibraryImportService;
 use App\Support\IngredientLibraryCategory;
 use Illuminate\Http\UploadedFile;
 use Inertia\Testing\AssertableInertia;
@@ -161,6 +162,95 @@ test('ingredient library csv import creates base recipe from is_base_recipe and 
 
     expect($base->isPreparedBaseIngredient())->toBeTrue()
         ->and((float) $base->calories)->toBe(60.0);
+});
+
+test('ingredient library csv import explains when nested base recipe component is missing', function () {
+    $user = User::factory()->create();
+    verifiedIngredient('Chicken Breast', ['calories' => 165, 'protein' => 31, 'carbs' => 0, 'fat' => 3.6]);
+
+    $header = 'name,category,fdc_id,calories,protein,carbs,fat,b6,b9_folate,b12,iron,magnesium,fiber,sugar,calcium,potassium,sodium,zinc,vitamin_c,vitamin_a,vitamin_e,vitamin_d,vitamin_k,density,is_base_recipe,recipe_components,description,instructions,finished_weight_grams,g6pd_trigger';
+    $row = 'Tandoori Chicken (Base),Base Ingredient,,150,28,1.5,3.2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,"Chicken Breast (500g) | Tandoori Spice Mix (Base) (45g)",,,400,';
+    $csv = $header."\n".$row."\n";
+
+    $this->actingAs($user)
+        ->post(route('admin.ingredient-library.import-csv'), [
+            'file' => UploadedFile::fake()->createWithContent('ingredients.csv', $csv),
+        ])
+        ->assertRedirect(route('admin.ingredient-library'))
+        ->assertSessionHas('error', fn (string $message): bool => str_contains($message, 'Nested base recipe')
+            && str_contains($message, 'Tandoori Spice Mix (Base)')
+            && str_contains($message, 'Import that base recipe'));
+});
+
+test('ingredient library csv import allows nested base recipe components', function () {
+    $user = User::factory()->create();
+    $spice = verifiedIngredient('Tandoori Spice Mix (Base)', [
+        'usda_food_category' => IngredientLibraryCategory::BaseIngredient,
+        'calories' => 200,
+        'protein' => 5,
+        'carbs' => 10,
+        'fat' => 8,
+    ]);
+    verifiedIngredient('Chicken Breast', ['calories' => 165, 'protein' => 31, 'carbs' => 0, 'fat' => 3.6]);
+
+    $header = 'name,category,fdc_id,calories,protein,carbs,fat,b6,b9_folate,b12,iron,magnesium,fiber,sugar,calcium,potassium,sodium,zinc,vitamin_c,vitamin_a,vitamin_e,vitamin_d,vitamin_k,density,is_base_recipe,recipe_components,description,instructions,finished_weight_grams,g6pd_trigger';
+    $row = 'Tandoori Chicken (Base),Base Ingredient,,150,28,1.5,3.2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,"Chicken Breast (500g) | Tandoori Spice Mix (Base) (45g)",,,400,';
+    $csv = $header."\n".$row."\n";
+
+    $this->actingAs($user)
+        ->post(route('admin.ingredient-library.import-csv'), [
+            'file' => UploadedFile::fake()->createWithContent('ingredients.csv', $csv),
+        ])
+        ->assertRedirect(route('admin.ingredient-library'))
+        ->assertSessionHas('success');
+
+    $base = Ingredient::query()->where('name', 'Tandoori Chicken (Base)')->firstOrFail();
+
+    expect($base->isPreparedBaseIngredient())->toBeTrue()
+        ->and($base->components->pluck('id')->all())->toContain($spice->id);
+});
+
+test('ingredient library csv import accepts meal_name header and pipe-separated recipe components', function () {
+    $user = User::factory()->create();
+    verifiedIngredient('Eggplant', ['calories' => 25, 'protein' => 1, 'carbs' => 6, 'fat' => 0]);
+    verifiedIngredient('Olive Oil (Extra Virgin)', ['calories' => 884, 'protein' => 0, 'carbs' => 0, 'fat' => 100]);
+
+    $header = 'Meal_Name,category,fdc_id,calories,protein,carbs,fat,b6,b9_folate,b12,iron,magnesium,fiber,sugar,calcium,potassium,sodium,zinc,vitamin_c,vitamin_a,vitamin_e,vitamin_d,vitamin_k,density,is_base_recipe,recipe_components,description,instructions,finished_weight_grams,g6pd_trigger';
+    $row = 'Roasted Vegetables (Base),Base Ingredient,,62,1.3,6.4,3.8,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,"Eggplant (200g) | Olive Oil (Extra Virgin) (14g)",Short desc.,Step 1: Roast.,400,';
+    $csv = $header."\n".$row."\n";
+
+    $this->actingAs($user)
+        ->post(route('admin.ingredient-library.import-csv'), [
+            'file' => UploadedFile::fake()->createWithContent('ingredients.csv', $csv),
+        ])
+        ->assertRedirect(route('admin.ingredient-library'))
+        ->assertSessionHas('success', fn (string $message): bool => str_contains($message, '1 ingredient'));
+
+    $base = Ingredient::query()->where('name', 'Roasted Vegetables (Base)')->firstOrFail();
+
+    expect($base->isPreparedBaseIngredient())->toBeTrue()
+        ->and($base->components)->toHaveCount(2);
+});
+
+test('meal library csv import maps recipe_components column for base recipe category', function () {
+    $user = User::factory()->create();
+    verifiedIngredient('Eggplant', ['calories' => 25, 'protein' => 1, 'carbs' => 6, 'fat' => 0]);
+
+    $csv = "name,category,recipe_components\nRoasted Veg (Base),Bases,Eggplant (200g)\n";
+
+    $result = app(MealCsvLibraryImportService::class)->processPath(
+        (function () use ($csv): string {
+            $path = tempnam(sys_get_temp_dir(), 'meal-csv-');
+            file_put_contents($path, $csv);
+
+            return $path;
+        })(),
+        $user,
+    );
+
+    expect($result['summary']['ingredient_library_imported'])->toBe(1)
+        ->and($result['rows'][0]['status'] ?? '')->toBe('imported')
+        ->and($result['rows'][0]['saved_to'] ?? '')->toBe('ingredient_library');
 });
 
 test('base recipe meals are excluded from meal library inertia index', function () {

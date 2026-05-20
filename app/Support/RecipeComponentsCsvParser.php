@@ -4,7 +4,6 @@ namespace App\Support;
 
 use App\Enums\RecipeAmountUnit;
 use App\Models\Ingredient;
-use App\Services\MealCsvLibraryImportService;
 use App\Services\RecipeIngredientUnitConverter;
 use InvalidArgumentException;
 
@@ -158,8 +157,15 @@ final class RecipeComponentsCsvParser
         $ingredient = self::findVerifiedComponentIngredient($name);
 
         if ($ingredient === null) {
+            $message = IngredientLibraryNameMatcher::labelIndicatesBaseRecipe($name)
+                ? __(
+                    'Nested base recipe “:name” is not in the verified ingredient library yet. Import that base recipe in its own CSV row first (with is_base_recipe = TRUE), then import “:parent”.',
+                    ['name' => $name, 'parent' => (string) $baseRecipeName],
+                )
+                : __('Ingredient “:name” was not found in the verified library.', ['name' => $name]);
+
             throw new InvalidArgumentException(self::formatContextMessage(
-                __('Ingredient “:name” was not found in the verified library.', ['name' => $name]),
+                $message,
                 $csvRowNumber,
                 $baseRecipeName,
                 $segment,
@@ -220,20 +226,13 @@ final class RecipeComponentsCsvParser
 
     private static function findVerifiedComponentIngredient(string $name): ?Ingredient
     {
-        $normalized = MealCsvLibraryImportService::normalizeMealNameKey($name);
+        $match = IngredientLibraryNameMatcher::resolveForImportLabel($name);
 
-        if ($normalized === '') {
+        if ($match === null || ! $match->is_verified) {
             return null;
         }
 
-        return Ingredient::query()
-            ->where('is_verified', true)
-            ->where(function ($query): void {
-                $query->whereNull('usda_food_category')
-                    ->orWhereNotIn('usda_food_category', IngredientLibraryCategory::preparedLabels());
-            })
-            ->whereRaw('lower(trim(name)) = ?', [$normalized])
-            ->first();
+        return $match;
     }
 
     /**

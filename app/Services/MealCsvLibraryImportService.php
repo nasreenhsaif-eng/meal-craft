@@ -93,6 +93,8 @@ final class MealCsvLibraryImportService
     private static function mealLibraryCategoryAliases(): array
     {
         return [
+            'bases' => RecipeCategory::BaseRecipe,
+            'base' => RecipeCategory::BaseRecipe,
             'lunch' => RecipeCategory::Meal,
             'dinner' => RecipeCategory::Meal,
             'main' => RecipeCategory::Meal,
@@ -664,8 +666,11 @@ final class MealCsvLibraryImportService
             || $t === 'ingredients string'
             || $t === 'ingredient quantities'
             || $t === 'ingredient quantities string'
+            || $t === 'recipe components'
+            || $t === 'recipe_components'
             || (str_contains($t, 'ingredients') && str_contains($t, 'string'))
             || (str_contains($t, 'ingredient') && (str_contains($t, 'quantit') || str_contains($t, 'qty')))
+            || (str_contains($t, 'recipe') && str_contains($t, 'component'))
         ) {
             return 'ingredient_quantities';
         }

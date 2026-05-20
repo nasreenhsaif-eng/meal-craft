@@ -44,7 +44,15 @@ class IngredientLibraryCsvImportController extends Controller
         }
 
         if (($mealFollowUp['still_pending'] ?? 0) > 0) {
-            $message .= ' '.__('Some meal CSV rows are still waiting on ingredients that are not in the library yet.');
+            $message .= ' '.__(
+                'Some meal CSV rows are still waiting on ingredients that are not in the verified library yet. Re-import the meal CSV from the Meal Library page, or add the missing ingredients and upload again.',
+            );
+        }
+
+        if ($count === 0 && ($mealFollowUp['still_pending'] ?? 0) > 0) {
+            $message .= ' '.__(
+                'This ingredient CSV did not update any rows. For base recipes, use the ingredient template columns name, is_base_recipe, and recipe_components (not Meal_Name).',
+            );
         }
 
         return redirect()

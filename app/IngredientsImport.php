@@ -112,6 +112,8 @@ final class IngredientsImport
                 continue;
             }
 
+            $record = $this->normalizeIngredientImportRecordKeys($record);
+
             $name = trim((string) ($record['name'] ?? ''));
 
             if ($name === '') {
@@ -185,6 +187,36 @@ final class IngredientsImport
             ->trim()
             ->replace(' ', '_')
             ->value();
+    }
+
+    /**
+     * Accept meal-export column labels on the ingredient-library CSV importer.
+     *
+     * @param  array<string, mixed>  $record
+     * @return array<string, mixed>
+     */
+    private function normalizeIngredientImportRecordKeys(array $record): array
+    {
+        if (trim((string) ($record['name'] ?? '')) === '' && array_key_exists('meal_name', $record)) {
+            $record['name'] = $record['meal_name'];
+        }
+
+        if (trim((string) ($record['recipe_components'] ?? '')) === '') {
+            foreach (['ingredient_quantities', 'ingredients', 'ingredients_string'] as $altKey) {
+                $alt = trim((string) ($record[$altKey] ?? ''));
+                if ($alt !== '') {
+                    $record['recipe_components'] = $alt;
+                    break;
+                }
+            }
+        }
+
+        if (trim((string) ($record['recipe_components'] ?? '')) !== ''
+            && trim((string) ($record['is_base_recipe'] ?? '')) === '') {
+            $record['is_base_recipe'] = '1';
+        }
+
+        return $record;
     }
 
     /**
