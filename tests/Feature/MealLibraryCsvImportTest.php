@@ -7,6 +7,7 @@ use App\Models\MealCsvImportPendingRow;
 use App\Models\User;
 use App\Services\MealCsvLibraryImportService;
 use App\Support\MealInstructionsText;
+use App\Support\MenuDevelopmentCsv;
 use Illuminate\Http\UploadedFile;
 use Livewire\Livewire;
 
@@ -504,6 +505,61 @@ test('meal library csv import accepts master template headers with spaces', func
         ->and($meal->is_bulk)->toBeTrue()
         ->and($meal->servings_count)->toBe(2.0)
         ->and($meal->safety_alert_tags)->toEqualCanonicalizing(['Peanuts', 'Dairy']);
+});
+
+test('meal library csv import parses production snake_case is_bulk FALSE and servings_count from column indices', function () {
+    mealImportIngredient('Salmon', ['calories' => 200, 'protein' => 25, 'carbs' => 0, 'fat' => 12]);
+
+    $headers = implode(',', MenuDevelopmentCsv::MEAL_HEADERS);
+    $csv = $headers."\n"
+        .'Bulk Index Bowl,Meal,Salmon:100g,400,48,42,22,800,48,80,32,TRUE,4,Balanced,Follicular,,,Short.,Cook.'."\n";
+    $file = UploadedFile::fake()->createWithContent('meals.csv', $csv);
+
+    $this->actingAs(User::factory()->create())
+        ->postJson(route('meals.library.import-csv'), ['file' => $file])
+        ->assertOk()
+        ->assertJsonPath('summary.imported', 1);
+
+    $meal = Meal::query()->where('name', 'Bulk Index Bowl')->firstOrFail();
+
+    expect($meal->is_bulk)->toBeTrue()
+        ->and($meal->servings_count)->toBe(4.0)
+        ->and((float) $meal->total_calories)->toBe(50.0);
+});
+
+test('meal library csv import parses uppercase FALSE for is_bulk via filter_var', function () {
+    mealImportIngredient('Salmon', ['calories' => 200, 'protein' => 25, 'carbs' => 0, 'fat' => 12]);
+
+    $headers = implode(',', MenuDevelopmentCsv::MEAL_HEADERS);
+    $csv = $headers."\n"
+        .'Solo Index Bowl,Meal,Salmon:50g,,,,,,,,,FALSE,,,,,,,,'."\n";
+    $file = UploadedFile::fake()->createWithContent('meals.csv', $csv);
+
+    $this->actingAs(User::factory()->create())
+        ->postJson(route('meals.library.import-csv'), ['file' => $file])
+        ->assertOk()
+        ->assertJsonPath('summary.imported', 1);
+
+    expect(Meal::query()->where('name', 'Solo Index Bowl')->firstOrFail()->is_bulk)->toBeFalse();
+});
+
+test('meal library csv import applies production column indices when trailing csv cells are omitted', function () {
+    mealImportIngredient('Salmon', ['calories' => 200, 'protein' => 25, 'carbs' => 0, 'fat' => 12]);
+
+    $headers = implode(',', MenuDevelopmentCsv::MEAL_HEADERS);
+    $csv = $headers."\n"
+        .'Trailing Omit Bowl,Meal,Salmon:100g,400,48,42,22,800,48,80,32,true,6'."\n";
+    $file = UploadedFile::fake()->createWithContent('meals.csv', $csv);
+
+    $this->actingAs(User::factory()->create())
+        ->postJson(route('meals.library.import-csv'), ['file' => $file])
+        ->assertOk()
+        ->assertJsonPath('summary.imported', 1);
+
+    $meal = Meal::query()->where('name', 'Trailing Omit Bowl')->firstOrFail();
+
+    expect($meal->is_bulk)->toBeTrue()
+        ->and($meal->servings_count)->toBe(6.0);
 });
 
 test('meal library csv import parses is_bulk false from string false', function () {

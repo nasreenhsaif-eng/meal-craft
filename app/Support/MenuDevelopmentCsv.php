@@ -79,6 +79,12 @@ final class MenuDevelopmentCsv
         'instructions',
     ];
 
+    /** Column index for {@code is_bulk} in {@see self::MEAL_HEADERS} (0-based). */
+    public const MEAL_IS_BULK_COLUMN_INDEX = 11;
+
+    /** Column index for {@code servings_count} in {@see self::MEAL_HEADERS} (0-based). */
+    public const MEAL_SERVINGS_COUNT_COLUMN_INDEX = 12;
+
     public static function ingredientsPath(): string
     {
         return database_path(self::INGREDIENTS_RELATIVE_PATH);

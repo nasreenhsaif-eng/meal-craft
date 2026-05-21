@@ -2,6 +2,7 @@
 
 use App\Services\MealCraftMasterCsvExport;
 use App\Support\MealCsvHeaderCatalog;
+use App\Support\MenuDevelopmentCsv;
 
 test('master csv export headers use concise catalog labels', function () {
     expect(MealCraftMasterCsvExport::HEADERS)->toBe(MealCsvHeaderCatalog::MASTER_HEADERS);
@@ -38,4 +39,10 @@ test('meal csv header catalog normalizes underscore aliases', function () {
         ->and(MealCsvHeaderCatalog::shortCanonicalKey(
             MealCsvHeaderCatalog::normalizeHeaderToken('target_pro'),
         ))->toBe('target_protein');
+});
+
+test('meal csv header catalog detects production meal column order', function () {
+    expect(MealCsvHeaderCatalog::matchesProductionMealHeaderRow(MenuDevelopmentCsv::MEAL_HEADERS))->toBeTrue()
+        ->and(MenuDevelopmentCsv::MEAL_HEADERS[MenuDevelopmentCsv::MEAL_IS_BULK_COLUMN_INDEX])->toBe('is_bulk')
+        ->and(MenuDevelopmentCsv::MEAL_HEADERS[MenuDevelopmentCsv::MEAL_SERVINGS_COUNT_COLUMN_INDEX])->toBe('servings_count');
 });

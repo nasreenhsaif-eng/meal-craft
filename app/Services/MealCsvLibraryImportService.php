@@ -19,6 +19,7 @@ use App\Support\MealInstructionsText;
 use App\Support\MealLibraryBulkNutrition;
 use App\Support\MealLibraryDelimitedCellParser;
 use App\Support\MealLibraryTaxonomy;
+use App\Support\MenuDevelopmentCsv;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -282,6 +283,7 @@ final class MealCsvLibraryImportService
             }
 
             $assoc = $this->associateRow($headerMap, $data);
+            $assoc = $this->enrichAssocFromProductionColumnPositions($assoc, $data, $headerLine);
             $result = $this->importMealCsvAssocRow(
                 $lineNumber,
                 $assoc,
@@ -755,11 +757,11 @@ final class MealCsvLibraryImportService
             return 'variance_notes';
         }
 
-        if ($t === 'is bulk') {
+        if ($t === 'is bulk' || $t === 'is_bulk') {
             return 'is_bulk';
         }
 
-        if ($t === 'servings count' || (str_contains($t, 'serving') && str_contains($t, 'count'))) {
+        if ($t === 'servings count' || $t === 'servings_count' || (str_contains($t, 'serving') && str_contains($t, 'count'))) {
             return 'servings_count';
         }
 
@@ -792,6 +794,38 @@ final class MealCsvLibraryImportService
         }
 
         return $out;
+    }
+
+    /**
+     * When the CSV uses the production column order, read bulk fields from fixed indices
+     * so values are not lost when {@see associateRow()} misses trailing cells or headers shift.
+     *
+     * @param  array<string, string>  $assoc
+     * @param  list<string|null>  $data
+     * @param  list<string|null>  $headerLine
+     * @return array<string, string>
+     */
+    private function enrichAssocFromProductionColumnPositions(array $assoc, array $data, array $headerLine): array
+    {
+        if (! MealCsvHeaderCatalog::matchesProductionMealHeaderRow($headerLine)) {
+            return $assoc;
+        }
+
+        $isBulkCell = trim((string) ($data[MenuDevelopmentCsv::MEAL_IS_BULK_COLUMN_INDEX] ?? ''));
+        $assoc['is_bulk'] = $isBulkCell;
+
+        $servingsIndex = MenuDevelopmentCsv::MEAL_SERVINGS_COUNT_COLUMN_INDEX;
+        $servingsCell = trim((string) ($data[$servingsIndex] ?? ''));
+        if ($servingsCell !== '') {
+            $assoc['servings_count'] = $servingsCell;
+        } else {
+            $isBulkParsed = filter_var($isBulkCell, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+            $assoc['servings_count'] = $isBulkParsed === true
+                ? (string) (int) ($data[$servingsIndex] ?? 4)
+                : '';
+        }
+
+        return $assoc;
     }
 
     /**
@@ -854,20 +888,20 @@ final class MealCsvLibraryImportService
                 }
                 $attributes['is_bulk'] = $parsed;
             }
-            $isBulkEffective = (bool) ($attributes['is_bulk'] ?? false);
+            $isBulkEffective = $attributes['is_bulk'] ?? false;
         }
 
         if (array_key_exists('servings_count', $assoc)) {
             $cell = trim((string) $assoc['servings_count']);
             if ($cell !== '') {
-                if (! is_numeric($cell) || (float) $cell <= 0) {
+                if (! is_numeric($cell) || (int) $cell <= 0) {
                     return [
                         'valid' => false,
                         'message' => __('Servings Count must be a positive number.'),
                         'attributes' => [],
                     ];
                 }
-                $attributes['servings_count'] = (float) $cell;
+                $attributes['servings_count'] = (float) (int) $cell;
             }
         }
 
@@ -905,14 +939,21 @@ final class MealCsvLibraryImportService
 
     private function parseCsvStrictBoolean(string $cell): ?bool
     {
-        $s = strtolower(trim($cell));
-        if ($s === '') {
+        $trimmed = trim($cell);
+        if ($trimmed === '') {
             return null;
         }
-        if (in_array($s, ['true', '1', 'yes', 'y'], true)) {
+
+        $filtered = filter_var($trimmed, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+        if ($filtered !== null) {
+            return $filtered;
+        }
+
+        $s = strtolower($trimmed);
+        if (in_array($s, ['yes', 'y'], true)) {
             return true;
         }
-        if (in_array($s, ['false', '0', 'no', 'n'], true)) {
+        if (in_array($s, ['no', 'n'], true)) {
             return false;
         }
 

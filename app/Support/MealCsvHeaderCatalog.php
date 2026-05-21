@@ -69,7 +69,9 @@ final class MealCsvHeaderCatalog
         'batch carbs' => 'batch_carbs',
         'batch fat' => 'batch_fat',
         'is bulk' => 'is_bulk',
+        'is_bulk' => 'is_bulk',
         'servings count' => 'servings_count',
+        'servings_count' => 'servings_count',
         'calc cal' => 'calculated_calories',
         'calc pro' => 'calculated_protein',
         'calc fat' => 'calculated_fat',
@@ -124,6 +126,41 @@ final class MealCsvHeaderCatalog
         }
 
         return self::SHORT_CANONICAL_KEYS[$normalizedToken] ?? null;
+    }
+
+    /**
+     * Whether the header row matches the production meal CSV column order
+     * ({@see MenuDevelopmentCsv::MEAL_HEADERS}), including bulk columns at indices 11 and 12.
+     *
+     * @param  list<string|null>  $headerLine
+     */
+    public static function matchesProductionMealHeaderRow(array $headerLine): bool
+    {
+        if (count($headerLine) < MenuDevelopmentCsv::MEAL_SERVINGS_COUNT_COLUMN_INDEX + 1) {
+            return false;
+        }
+
+        foreach (MenuDevelopmentCsv::MEAL_HEADERS as $index => $expectedHeader) {
+            if (! isset($headerLine[$index])) {
+                return false;
+            }
+
+            $actualToken = self::normalizeHeaderToken((string) $headerLine[$index]);
+            $expectedToken = self::normalizeHeaderToken($expectedHeader);
+
+            if ($actualToken === '' || $expectedToken === '') {
+                return false;
+            }
+
+            $actualKey = self::shortCanonicalKey($actualToken);
+            $expectedKey = self::shortCanonicalKey($expectedToken);
+
+            if ($actualKey === null || $expectedKey === null || $actualKey !== $expectedKey) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
