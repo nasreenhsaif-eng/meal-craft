@@ -246,6 +246,47 @@ test('meal csv import imports meal when base ingredients are stored with base su
     expect($meal->ingredients->pluck('id')->all())->toContain($base->id);
 });
 
+test('meal csv import resolves onion power typo to onion powder in library', function () {
+    Ingredient::factory()->create([
+        'name' => 'Onion Powder',
+        'is_verified' => true,
+        'calories' => 341,
+        'protein' => 10,
+        'carbs' => 79,
+        'fat' => 1,
+    ]);
+    Ingredient::factory()->create([
+        'name' => 'Sweet Potato',
+        'is_verified' => true,
+        'calories' => 86,
+        'protein' => 1.6,
+        'carbs' => 20,
+        'fat' => 0.1,
+    ]);
+    Ingredient::factory()->create([
+        'name' => 'Eggs (Large)',
+        'is_verified' => true,
+        'calories' => 143,
+        'protein' => 13,
+        'carbs' => 1,
+        'fat' => 10,
+    ]);
+
+    $csv = "Meal_Name,Category,Ingredient_Quantities\n"
+        .'Spiced Sweet Potato and Egg Hash,Meal,Sweet Potato (150g) | Eggs (Large) (100g) | Onion Power (2g)'."\n";
+    $file = UploadedFile::fake()->createWithContent('meals.csv', $csv);
+
+    $this->actingAs(User::factory()->create())
+        ->postJson(route('meals.library.import-csv'), ['file' => $file])
+        ->assertOk()
+        ->assertJsonPath('summary.imported', 1)
+        ->assertJsonPath('summary.pending_ingredient_input', 0);
+
+    $meal = Meal::query()->where('name', 'Spiced Sweet Potato and Egg Hash')->with('ingredients')->firstOrFail();
+
+    expect($meal->ingredients->pluck('name')->all())->toContain('Onion Powder');
+});
+
 test('meal csv import matches base ingredient category rows shown in library', function () {
     Ingredient::factory()->create([
         'name' => 'House Salmon Blend',

@@ -166,6 +166,24 @@ final class IngredientLibraryNameMatcher
             }
         }
 
+        foreach (self::typoCorrectedLabels($label) as $corrected) {
+            $correctedKey = self::normalizeLookupKey($corrected);
+            $correctedResolved = self::resolveByLabels([$corrected])->get($correctedKey);
+            if ($correctedResolved === null) {
+                $correctedResolved = self::fuzzyResolveNeedle($correctedKey);
+            }
+
+            if ($correctedResolved !== null) {
+                Log::info('Meal CSV import: resolved ingredient via typo-corrected label.', [
+                    'label' => $label,
+                    'corrected_label' => $corrected,
+                    'matched_name' => $correctedResolved->name,
+                ]);
+
+                return $correctedResolved;
+            }
+        }
+
         Log::warning('Meal CSV import: could not map ingredient label to library item.', [
             'label' => $label,
             'normalized' => $primaryKey,
@@ -188,9 +206,42 @@ final class IngredientLibraryNameMatcher
         $map = [
             'rocca' => ['Arugula', 'Rocket', 'Rucola'],
             'parmesan cheese' => ['Parmesan', 'Cheese, Parmesan'],
+            'onion power' => ['Onion Powder'],
+            'garlic power' => ['Garlic Powder'],
         ];
 
         return $map[$key] ?? [];
+    }
+
+    /**
+     * Spreadsheet typos that are one word off from a common library name.
+     *
+     * @return list<string>
+     */
+    public static function typoCorrectedLabels(string $label): array
+    {
+        $label = trim($label);
+        if ($label === '') {
+            return [];
+        }
+
+        $variants = [];
+
+        if (preg_match('/\bpower\b/iu', $label)) {
+            $powder = preg_replace('/\bpower\b/iu', 'Powder', $label);
+            if (is_string($powder) && $powder !== $label) {
+                $variants[] = $powder;
+            }
+        }
+
+        if (preg_match('/\bpoweder\b/iu', $label)) {
+            $powder = preg_replace('/\bpoweder\b/iu', 'Powder', $label);
+            if (is_string($powder) && $powder !== $label) {
+                $variants[] = $powder;
+            }
+        }
+
+        return array_values(array_unique($variants));
     }
 
     /**
