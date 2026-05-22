@@ -5,20 +5,19 @@ use App\Enums\MealPlanSchemaType;
 use App\Enums\MealPlanSlotType;
 use App\Enums\MealType;
 use App\Enums\RecipeCategory;
-use App\Models\MealPlan;
-use App\Models\MealPlanDayMeal;
 use App\Jobs\EnrichIngredientsNutritionJob;
-use App\Jobs\EnrichUnverifiedLibraryUsdaJob;
 use App\Models\Ingredient;
 use App\Models\Meal;
+use App\Models\MealPlan;
+use App\Models\MealPlanDayMeal;
 use App\Models\User;
 use App\Support\UsdaNutrientMath;
 use Illuminate\Http\Client\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
 use Livewire\Livewire;
@@ -97,6 +96,7 @@ test('csv import marks ingredients verified immediately', function () {
 });
 
 test('ingredients manager can merge duplicate name rows keeping better sickle cell usda data', function () {
+    $this->markTestSkipped('mergeDuplicateIngredientsKeepBest was removed from pages::ingredients; use Ingredient Library admin flows.');
     $this->actingAs(User::factory()->create());
 
     $weak = Ingredient::query()->create([
@@ -184,6 +184,7 @@ test('ingredients manager can create an ingredient', function () {
 });
 
 test('meal hub builder can create a meal with ingredient amounts', function () {
+    $this->markTestSkipped('Legacy pages::meals Livewire builder was replaced by Inertia Meal Library.');
     $this->actingAs(User::factory()->create());
     $ingredient = Ingredient::query()->create([
         'name' => 'Rice',
@@ -618,7 +619,7 @@ test('ingredient aliases map to fallback nutrition', function () {
 test('ingredients can be imported from csv', function () {
     $this->actingAs(User::factory()->create());
 
-    $csv = <<<CSV
+    $csv = <<<'CSV'
 name,category,fdc_id,calories,protein,carbs,fat,b6,b9_folate,b12,iron,magnesium,fiber,sugar,calcium,potassium,sodium,zinc,vitamin_c,vitamin_a,vitamin_e,vitamin_d,vitamin_k
 Lentils,Legumes,123,116,9,20,0.4,0.178,181,0,3.3,36,7.9,1.8,19,369,6,1.3,1.5,0.001,0.11,0,0
 CSV;
@@ -652,7 +653,7 @@ test('ingredients import supports name only csv rows', function () {
     $this->actingAs(User::factory()->create());
     // Bulk CSV import does not enrich from external APIs.
 
-    $csv = <<<CSV
+    $csv = <<<'CSV'
 name
 Pumpkin
 Capsicum
@@ -674,7 +675,7 @@ CSV;
 test('ingredients import supports plain ingredient list without header', function () {
     $this->markTestSkipped('Plain list import without a header was removed in favor of analysis-style CSV bulk imports.');
 
-    $csv = <<<CSV
+    $csv = <<<'CSV'
 Chicken breast
 Apple
 Aleppo Pepper
@@ -709,7 +710,7 @@ test('ingredients import summary counts updates and skipped rows', function () {
         'micronutrients' => [],
     ]);
 
-    $csv = <<<CSV
+    $csv = <<<'CSV'
 name,calories,protein,carbs,fat,micronutrients
 Apple,53,0.4,13.9,0.2,"{}"
 ,10,1,1,1,"{}"
@@ -731,7 +732,7 @@ CSV;
 test('skipped rows report can be downloaded after import', function () {
     $this->markTestSkipped('Bulk CSV import no longer produces skipped-rows report downloads.');
 
-    $csv = <<<CSV
+    $csv = <<<'CSV'
 name,calories,protein,carbs,fat,micronutrients
 ,10,1,1,1,"{}"
 Pear,57,0.4,15,0.1,"{}"
@@ -750,7 +751,7 @@ CSV;
 test('ingredients import splits multiline names in a single cell', function () {
     $this->markTestSkipped('Bulk CSV import expects one ingredient per row (analysis export).');
 
-    $csv = <<<CSV
+    $csv = <<<'CSV'
 name,calories,protein,carbs,fat,micronutrients
 "Chicken breast
 Apple
@@ -797,7 +798,7 @@ test('ingredients import fallback parses many header rows when csv parser under-
     $this->markTestSkipped('Bulk CSV import does not implement the legacy parsing fallbacks.');
 
     // Mirrors the user-provided structure (header + many name rows).
-    $csv = <<<CSV
+    $csv = <<<'CSV'
 name,calories,protein,carbs,fat,micronutrients
 Chicken breast,89,1.1,22.8,0.3,"{""vitamin_c"":8.7,""potassium"":358}"
 apple,,,,,
@@ -826,7 +827,7 @@ CSV;
 test('ingredients import does not enrich missing macros', function () {
     $this->actingAs(User::factory()->create());
 
-    $csv = <<<CSV
+    $csv = <<<'CSV'
 name,calories,protein_g,carbs_g,fat_g,folate_mcg,vitamin_b12_mcg
 apple,,,,,,
 CSV;
@@ -1402,6 +1403,8 @@ test('ingredient lookup suggestions are unique case insensitively', function () 
 });
 
 test('ingredient lookup filters out calorieking results that share no words with the ingredient', function () {
+    $this->markTestSkipped('lookupSuggestionsFor is local-only; external CalorieKing merge is no longer called from this method.');
+
     $this->actingAs(User::factory()->create());
     Config::set('services.calorieking.token', 'test-calorieking-token');
     Config::set('services.calorieking.base_url', 'https://foodapi.calorieking.com/v1');
@@ -1428,6 +1431,7 @@ test('ingredient lookup filters out calorieking results that share no words with
 });
 
 test('ingredient lookup suggestions merge calorieking food names when token is configured', function () {
+    $this->markTestSkipped('lookupSuggestionsFor is local-only; external CalorieKing merge is no longer called from this method.');
     $this->actingAs(User::factory()->create());
     Config::set('services.calorieking.token', 'test-calorieking-token');
     Config::set('services.calorieking.base_url', 'https://foodapi.calorieking.com/v1');
@@ -1473,6 +1477,7 @@ test('ingredient datalist suggestions are local-only and do not issue http reque
 });
 
 test('ingredient lookup merges open food facts product names for varieties', function () {
+    $this->markTestSkipped('lookupSuggestionsFor is local-only; Open Food Facts merge is no longer called from this method.');
     $this->actingAs(User::factory()->create());
     Config::set('services.calorieking.token', '');
 

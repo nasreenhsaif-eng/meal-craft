@@ -302,7 +302,7 @@ test('bulk import library csv round-trips from synchronized export stream', func
     $csv = str_replace("\r\n", "\n", (string) stream_get_contents($handle));
     fclose($handle);
 
-    Meal::query()->delete();
+    Meal::query()->forceDelete();
 
     expect(Meal::query()->count())->toBe(0);
 
