@@ -4,9 +4,11 @@ import { createInertiaApp } from '@inertiajs/react';
 import { Component } from 'react';
 import { createRoot } from 'react-dom/client';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
-import { configureLaravelAxios } from './lib/csrfToken.js';
+import { configureLaravelAxios, configureLaravelInertia } from './lib/csrfToken.js';
+import { router } from '@inertiajs/react';
 
 configureLaravelAxios(axios);
+configureLaravelInertia(router);
 
 class InertiaErrorBoundary extends Component {
     constructor(props) {

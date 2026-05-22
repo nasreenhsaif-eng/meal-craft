@@ -1,6 +1,7 @@
 <?php
 
 use App\Support\MealImagePath;
+use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 uses(TestCase::class);
@@ -172,6 +173,24 @@ test('resolve url serves storage disk paths', function () {
     $url = MealImagePath::resolveUrl('meals/upload.jpg');
 
     expect($url)->toContain('storage/meals/upload.jpg');
+});
+
+test('resolve image path for import downloads remote photo url into public images meals', function () {
+    $png = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==');
+
+    Http::fake([
+        'https://cdn.example.com/*' => Http::response($png, 200, ['Content-Type' => 'image/png']),
+    ]);
+
+    $relative = MealImagePath::resolveImagePathForImport(
+        'https://cdn.example.com/photos/salmon-bowl.png',
+        'Remote Photo Bowl',
+    );
+
+    expect($relative)->toMatch('#^images/meals/Remote-Photo-Bowl(-[a-f0-9]{8})?\.png$#')
+        ->and(is_file(public_path($relative)))->toBeTrue();
+
+    @unlink(public_path($relative));
 });
 
 test('should delete from public disk is false for web images and remote urls', function () {

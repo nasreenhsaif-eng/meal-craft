@@ -2,6 +2,9 @@
 
 namespace App\Support;
 
+use Illuminate\Http\Client\Response;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
 /**
@@ -27,6 +30,18 @@ final class MealImagePath
 
     /** @var list<string> */
     private const FALLBACK_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+
+    private const REMOTE_IMAGE_MAX_BYTES = 10_485_760;
+
+    /** @var array<string, string> */
+    private const MIME_TO_EXTENSION = [
+        'image/jpeg' => 'jpg',
+        'image/jpg' => 'jpg',
+        'image/png' => 'png',
+        'image/gif' => 'gif',
+        'image/webp' => 'webp',
+        'image/svg+xml' => 'svg',
+    ];
 
     /**
      * Cached map of {@see looseMatchSlug()} => relative path under {@see PUBLIC_MEALS_DIRECTORY}.
@@ -108,7 +123,9 @@ final class MealImagePath
 
         if ($normalized !== null) {
             if (str_starts_with($normalized, 'http://') || str_starts_with($normalized, 'https://')) {
-                return $normalized;
+                $downloaded = self::downloadRemoteImageToPublicMeals($normalized, $mealName);
+
+                return $downloaded ?? $normalized;
             }
 
             $existing = self::findExistingRelativePath($normalized);
@@ -733,5 +750,132 @@ final class MealImagePath
         }
 
         return storage_path('app/public/'.$relative);
+    }
+
+    /**
+     * Download a remote image URL into {@see PUBLIC_MEALS_DIRECTORY} for CSV import / library storage.
+     */
+    public static function downloadRemoteImageToPublicMeals(string $url, string $mealName): ?string
+    {
+        $url = trim($url);
+        if ($url === '' || (! str_starts_with($url, 'http://') && ! str_starts_with($url, 'https://'))) {
+            return null;
+        }
+
+        try {
+            $response = Http::timeout(25)
+                ->withOptions(['allow_redirects' => ['max' => 5]])
+                ->get($url);
+        } catch (\Throwable $e) {
+            Log::warning('Meal image download failed: HTTP request error.', [
+                'url' => $url,
+                'meal' => $mealName,
+                'message' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+
+        if (! $response->successful()) {
+            Log::warning('Meal image download failed: non-success HTTP status.', [
+                'url' => $url,
+                'meal' => $mealName,
+                'status' => $response->status(),
+            ]);
+
+            return null;
+        }
+
+        $body = $response->body();
+        if ($body === '' || strlen($body) > self::REMOTE_IMAGE_MAX_BYTES) {
+            Log::warning('Meal image download failed: empty or oversized response body.', [
+                'url' => $url,
+                'meal' => $mealName,
+                'bytes' => strlen($body),
+            ]);
+
+            return null;
+        }
+
+        $extension = self::extensionFromImageResponse($response, $url);
+        if ($extension === null) {
+            Log::warning('Meal image download failed: response is not a supported image type.', [
+                'url' => $url,
+                'meal' => $mealName,
+                'content_type' => $response->header('Content-Type'),
+            ]);
+
+            return null;
+        }
+
+        $base = self::mealTitleToImageFileBase($mealName);
+        if ($base === '') {
+            $base = 'meal-image';
+        }
+
+        $directory = public_path(self::PUBLIC_MEALS_DIRECTORY);
+        if (! is_dir($directory) && ! mkdir($directory, 0755, true) && ! is_dir($directory)) {
+            return null;
+        }
+
+        $filename = $base.'.'.$extension;
+        $relative = self::PUBLIC_MEALS_DIRECTORY.'/'.$filename;
+        $absolute = public_path($relative);
+
+        if (is_file($absolute)) {
+            $filename = $base.'-'.substr(sha1($url), 0, 8).'.'.$extension;
+            $relative = self::PUBLIC_MEALS_DIRECTORY.'/'.$filename;
+            $absolute = public_path($relative);
+        }
+
+        if (file_put_contents($absolute, $body) === false) {
+            Log::warning('Meal image download failed: could not write file.', [
+                'url' => $url,
+                'meal' => $mealName,
+                'path' => $relative,
+            ]);
+
+            return null;
+        }
+
+        return $relative;
+    }
+
+    private static function extensionFromImageResponse(Response $response, string $url): ?string
+    {
+        $contentType = strtolower(trim(explode(';', (string) $response->header('Content-Type'))[0]));
+        if ($contentType !== '' && isset(self::MIME_TO_EXTENSION[$contentType])) {
+            return self::MIME_TO_EXTENSION[$contentType];
+        }
+
+        $path = parse_url($url, PHP_URL_PATH);
+        if (is_string($path) && $path !== '') {
+            $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+            if ($ext === 'jpeg') {
+                return 'jpg';
+            }
+            if (in_array($ext, ['jpg', 'png', 'gif', 'webp', 'svg'], true)) {
+                return $ext;
+            }
+        }
+
+        if (self::bytesLookLikeImage($response->body())) {
+            return 'jpg';
+        }
+
+        return null;
+    }
+
+    private static function bytesLookLikeImage(string $bytes): bool
+    {
+        if (strlen($bytes) < 12) {
+            return false;
+        }
+
+        return str_starts_with($bytes, "\xFF\xD8\xFF")
+            || str_starts_with($bytes, "\x89PNG\r\n\x1a\n")
+            || str_starts_with($bytes, 'GIF87a')
+            || str_starts_with($bytes, 'GIF89a')
+            || (str_starts_with($bytes, 'RIFF') && substr($bytes, 8, 4) === 'WEBP');
     }
 }

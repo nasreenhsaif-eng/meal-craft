@@ -11,6 +11,7 @@ use App\Support\BaseRecipeInstructionsText;
 use App\Support\IngredientAllergenCatalog;
 use App\Support\IngredientG6pdSafety;
 use App\Support\IngredientLibraryCategory;
+use App\Support\MealImagePath;
 use App\Support\SickleCellNutrientRdi;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -366,7 +367,7 @@ class IngredientLibraryController extends Controller
             'nutritionalData' => $this->nutritionalDataPer100gSidebar($nutrition),
             'ingredients' => $ingredientLines,
             'instructions' => $this->instructionsLinesFromText($instructionsRaw),
-            'imageUrl' => null,
+            'imageUrl' => MealImagePath::resolveUrl($ingredient->image_path, $ingredient->name),
             'imageAlt' => $ingredient->name,
             'nutritionSubheading' => __('Per 100 g totals'),
             'sickleRdiFootnote' => __('High Source: ≥20%% of daily RDI per 100 g'),

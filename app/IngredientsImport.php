@@ -160,9 +160,10 @@ final class IngredientsImport
         /** @var Ingredient|null $existingByName */
         $existingByName = Ingredient::query()->where('name', $name)->first();
 
-        $incomingFdcId = $this->toInt($attrs['fdc_id'] ?? null);
+        $incomingFdcId = $this->toFdcIdOrNull($attrs['fdc_id'] ?? null);
+        $attrs['fdc_id'] = $incomingFdcId;
 
-        if ($incomingFdcId !== null && $incomingFdcId > 0) {
+        if ($incomingFdcId !== null) {
             /** @var Ingredient|null $existingByFdc */
             $existingByFdc = Ingredient::query()->where('fdc_id', $incomingFdcId)->first();
 
@@ -268,7 +269,7 @@ final class IngredientsImport
         $attrs = [
             'name' => $name,
             'usda_food_category' => $this->toStringOrNull($record['category'] ?? null),
-            'fdc_id' => $this->toInt($record['fdc_id'] ?? null),
+            'fdc_id' => $this->toFdcIdOrNull($record['fdc_id'] ?? null),
             'calories' => $calories,
             'protein' => $protein,
             'carbs' => $carbs,
@@ -362,6 +363,16 @@ final class IngredientsImport
         }
 
         return (int) $value;
+    }
+
+    /**
+     * USDA FDC ids are positive; 0/blank means "not linked" and must be null (unique index allows many nulls).
+     */
+    private function toFdcIdOrNull(mixed $value): ?int
+    {
+        $id = $this->toInt($value);
+
+        return ($id !== null && $id > 0) ? $id : null;
     }
 
     private function floatOrZero(mixed $value): float

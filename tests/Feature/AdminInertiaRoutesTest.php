@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Ingredient;
+use App\Models\MealCsvImportPendingRow;
 use App\Models\User;
 use Inertia\Testing\AssertableInertia;
 
@@ -71,6 +72,25 @@ test('admin ingredient library passes verified ingredients as flattened rows', f
             ->where('ingredients.0.fiber', 1.25));
 });
 
+test('admin meal library renders pending csv imports for the signed in user', function () {
+    $user = User::factory()->create();
+
+    MealCsvImportPendingRow::query()->create([
+        'user_id' => $user->id,
+        'meal_name_key' => 'test bowl',
+        'meal_name' => 'Test Bowl',
+        'category' => 'Meal',
+        'ingredient_quantities' => 'Mystery Spice:5',
+    ]);
+
+    $this->actingAs($user)
+        ->get('/admin/meal-library')
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Admin/MealLibrary')
+            ->where('pendingMealImports', ['Test Bowl']));
+});
+
 test('admin meal library renders inertia page with cycle phase options and meal store url', function () {
     $user = User::factory()->create();
 
@@ -80,6 +100,7 @@ test('admin meal library renders inertia page with cycle phase options and meal 
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->component('Admin/MealLibrary')
             ->has('csrfToken')
+            ->has('pendingMealImports')
             ->has('mealCraft.urls.mealLibrary.store')
             ->has('mealCraft.urls.mealLibrary.bulkDestroy')
             ->has('mealCraft.urls.mealLibrary.reorder')

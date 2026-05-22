@@ -34,6 +34,7 @@ class Ingredient extends Model
         'name',
         'description',
         'instructions',
+        'image_path',
         'usda_food_category',
         'fdc_id',
         'calories',

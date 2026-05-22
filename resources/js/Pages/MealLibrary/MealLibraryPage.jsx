@@ -39,7 +39,7 @@ import {
     isMealPhotoCompressible,
     MEAL_PHOTO_UPLOAD_TARGET_BYTES,
 } from '../../lib/compressMealPhotoForUpload.js';
-import { laravelAxiosJsonHeaders } from '../../lib/csrfToken.js';
+import { laravelAxiosJsonHeaders, resolveCsrfToken } from '../../lib/csrfToken.js';
 import {
     canonicalDietTagsFromList,
     DIETARY_TAG_OPTIONS,
@@ -282,6 +282,33 @@ function mealCsvImportIngredientLibrarySavedCount(summary) {
         return 0;
     }
     return (Number(summary.ingredient_library_imported) || 0) + (Number(summary.ingredient_library_updated) || 0);
+}
+
+/**
+ * @param {{ rows?: unknown[] } | null | undefined} modal
+ * @returns {string | null}
+ */
+function firstMealLibrarySavedNameFromImportModal(modal) {
+    if (!modal?.rows || !Array.isArray(modal.rows)) {
+        return null;
+    }
+
+    for (const row of modal.rows) {
+        if (!row || typeof row !== 'object') {
+            continue;
+        }
+        const status = mealCsvImportRowNormalizedStatus(row);
+        if (status !== 'imported' && status !== 'updated') {
+            continue;
+        }
+        const r = /** @type {Record<string, unknown>} */ (row);
+        const name = typeof r.meal_name === 'string' ? r.meal_name.trim() : '';
+        if (name !== '') {
+            return name;
+        }
+    }
+
+    return null;
 }
 
 /** @param {unknown[]} rows */
@@ -567,6 +594,7 @@ function deleteSelectedButtonClass(anySelected) {
  *   flashSuccess?: string | null;
  *   flashError?: string | null;
  *   mealCsvImportFlash?: object | null;
+ *   pendingMealImports?: string[];
  *   mealLibrarySchemaNotice?: string | null;
  *   csrfToken?: string;
  *   onCreateMealSubmit?: (
@@ -594,6 +622,7 @@ export function MealLibraryPageContent({
     flashSuccess = null,
     flashError = null,
     mealCsvImportFlash = null,
+    pendingMealImports = [],
     mealLibrarySchemaNotice = null,
     csrfToken = '',
     onCreateMealSubmit,
@@ -614,6 +643,11 @@ export function MealLibraryPageContent({
         const modal = buildMealCsvImportModalFromPayload(mealCsvImportFlash);
         if (modal) {
             setMealCsvImportResultModal(modal);
+            const savedName = firstMealLibrarySavedNameFromImportModal(modal);
+            if (savedName) {
+                setQuery(savedName);
+                setVisibleCount(PAGE_SIZE);
+            }
         }
     }, [mealCsvImportFlash]);
 
@@ -626,10 +660,11 @@ export function MealLibraryPageContent({
     }, []);
 
     const dismissMealCsvImportModal = useCallback(() => {
+        const savedName = firstMealLibrarySavedNameFromImportModal(mealCsvImportResultModal);
         setMealCsvImportResultModal(null);
-        setQuery('');
+        setQuery(savedName ?? '');
         reloadMealLibraryRows();
-    }, [reloadMealLibraryRows]);
+    }, [mealCsvImportResultModal, reloadMealLibraryRows]);
     const [createOpen, setCreateOpen] = useState(false);
     const [mealToEdit, setMealToEdit] = useState(/** @type {object | null} */ (storyInitialMealToEdit ?? null));
     const [mealDetailModal, setMealDetailModal] = useState(
@@ -1020,7 +1055,7 @@ export function MealLibraryPageContent({
         [csrfToken, handleMealRowReorder, mealReorderUrl],
     );
 
-    async function handleConfirmDelete() {
+    function handleConfirmDelete() {
         setDeleteError(null);
 
         if (selectedRows.length === 0) {
@@ -1050,45 +1085,34 @@ export function MealLibraryPageContent({
         const deletedIdSet = new Set(ids.map(String));
         setDeleteBusy(true);
 
-        try {
-            await axios.post(
-                destroyUrl,
-                { ids },
-                {
-                    headers: {
-                        ...laravelAxiosJsonHeaders(csrfToken),
-                        'Content-Type': 'application/json',
-                    },
+        router.post(
+            destroyUrl,
+            { ids, _token: resolveCsrfToken(csrfToken) },
+            {
+                preserveScroll: true,
+                preserveState: true,
+                onSuccess: (page) => {
+                    if (page?.props?.flash?.error) {
+                        setDeleteError(String(page.props.flash.error));
+                        return;
+                    }
+
+                    setConfirmOpen(false);
+                    setSelectedRows([]);
+                    setMealRows((prev) => prev.filter((m) => !deletedIdSet.has(String(m.id))));
                 },
-            );
-
-            setConfirmOpen(false);
-            setSelectedRows([]);
-            setMealRows((prev) => prev.filter((m) => !deletedIdSet.has(String(m.id))));
-            router.reload({ only: ['meals'], preserveScroll: true });
-        } catch (error) {
-            const responseMessage =
-                error &&
-                typeof error === 'object' &&
-                'response' in error &&
-                error.response &&
-                typeof error.response === 'object' &&
-                'data' in error.response &&
-                error.response.data &&
-                typeof error.response.data === 'object' &&
-                'message' in error.response.data &&
-                typeof error.response.data.message === 'string'
-                    ? error.response.data.message
-                    : null;
-
-            if (error && typeof error === 'object' && 'response' in error && error.response?.status === 419) {
-                setDeleteError('Your session expired. Refresh the page and sign in again.');
-            } else {
-                setDeleteError(responseMessage ?? 'Could not delete meals. Please try again.');
-            }
-        } finally {
-            setDeleteBusy(false);
-        }
+                onError: (errors) => {
+                    const message =
+                        errors && typeof errors === 'object' && 'message' in errors && typeof errors.message === 'string'
+                            ? errors.message
+                            : null;
+                    setDeleteError(message ?? 'Could not delete meals. Please try again.');
+                },
+                onFinish: () => {
+                    setDeleteBusy(false);
+                },
+            },
+        );
     }
 
     function buildIngredientsForStore() {
@@ -1635,6 +1659,28 @@ export function MealLibraryPageContent({
                         className="rounded-[12px] border border-[#C44F5D]/40 bg-[#FDF2F2] px-4 py-3 font-body text-sm text-[#7F1D1D]"
                     >
                         {flashError}
+                    </div>
+                ) : null}
+                {Array.isArray(pendingMealImports) && pendingMealImports.length > 0 ? (
+                    <div
+                        role="status"
+                        className="rounded-[12px] border border-amber-300 bg-amber-50 px-4 py-3 font-body text-sm text-amber-950"
+                    >
+                        <p className="font-semibold">
+                            {pendingMealImports.length === 1
+                                ? '1 meal is waiting to be added'
+                                : `${pendingMealImports.length} meals are waiting to be added`}
+                        </p>
+                        <p className="mt-1">
+                            These CSV rows were not saved to the library because one or more ingredients are missing from
+                            the verified Ingredients Library:{' '}
+                            <span className="font-medium">{pendingMealImports.join(', ')}</span>.
+                        </p>
+                        <p className="mt-2 text-xs">
+                            Add the missing ingredients (or fix spelling), then upload the meal CSV again from this page.
+                            You can also use &quot;Download missing ingredients&quot; from the last import summary if it is
+                            still open.
+                        </p>
                     </div>
                 ) : null}
                 {mealLibrarySchemaNotice ? (
@@ -2925,6 +2971,13 @@ function MealLibraryPage(props) {
             flashSuccess={flashSuccess}
             flashError={flashError}
             mealCsvImportFlash={mealCsvImportFlash}
+            pendingMealImports={
+                Array.isArray(props.pendingMealImports)
+                    ? props.pendingMealImports
+                    : Array.isArray(pageProps.pendingMealImports)
+                      ? pageProps.pendingMealImports
+                      : []
+            }
             mealLibrarySchemaNotice={mealLibrarySchemaNotice}
             csrfToken={typeof pageProps.csrfToken === 'string' ? pageProps.csrfToken : ''}
         />

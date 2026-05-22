@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import axios from 'axios';
 import { router, usePage } from '@inertiajs/react';
 import AdminInertiaShell from '../../Layouts/AdminInertiaShell.jsx';
 import TextInput from '../../Components/Atoms/TextInput/TextInput.jsx';
@@ -22,7 +21,7 @@ import {
     ingredientLibraryUrls,
     resolveUrl,
 } from '../../meal-craft/mealCraftPageProps.js';
-import { laravelAxiosJsonHeaders } from '../../lib/csrfToken.js';
+import { resolveCsrfToken } from '../../lib/csrfToken.js';
 
 /** Ingredient taxonomy for the create-ingredient dropdown (Storybook: `DropdownTextInput`). */
 const INGREDIENT_CATEGORY_OPTIONS = [
@@ -509,7 +508,7 @@ export function IngredientsLibraryPageView({
         });
     }
 
-    const handleConfirmDelete = useCallback(async () => {
+    const handleConfirmDelete = useCallback(() => {
         setDeleteError(null);
 
         if (selectedRows.length === 0) {
@@ -537,45 +536,26 @@ export function IngredientsLibraryPageView({
         const deletedIdSet = new Set(ids.map(String));
         setDeleteBusy(true);
 
-        try {
-            await axios.post(
-                ingredientBulkDestroyUrl,
-                { ids },
-                {
-                    headers: {
-                        ...laravelAxiosJsonHeaders(csrfToken),
-                        'Content-Type': 'application/json',
-                    },
-                },
-            );
+        router.post(ingredientBulkDestroyUrl, { ids, _token: resolveCsrfToken(csrfToken) }, {
+            preserveScroll: true,
+            preserveState: true,
+            onSuccess: (page) => {
+                if (page?.props?.flash?.error) {
+                    setDeleteError(String(page.props.flash.error));
+                    return;
+                }
 
-            setConfirmOpen(false);
-            setSelectedRows([]);
-            setLibraryRows((prev) => prev.filter((r) => !deletedIdSet.has(String(r.id))));
-            void router.reload({ only: ['ingredients', 'componentPickerProfiles'], preserveScroll: true });
-        } catch (error) {
-            const responseMessage =
-                error &&
-                typeof error === 'object' &&
-                'response' in error &&
-                error.response &&
-                typeof error.response === 'object' &&
-                'data' in error.response &&
-                error.response.data &&
-                typeof error.response.data === 'object' &&
-                'message' in error.response.data &&
-                typeof error.response.data.message === 'string'
-                    ? error.response.data.message
-                    : null;
-
-            if (error && typeof error === 'object' && 'response' in error && error.response?.status === 419) {
-                setDeleteError('Your session expired. Refresh the page and sign in again.');
-            } else {
-                setDeleteError(responseMessage ?? 'Could not delete ingredients. Please try again.');
-            }
-        } finally {
-            setDeleteBusy(false);
-        }
+                setConfirmOpen(false);
+                setSelectedRows([]);
+                setLibraryRows((prev) => prev.filter((r) => !deletedIdSet.has(String(r.id))));
+            },
+            onError: () => {
+                setDeleteError('Could not delete ingredients. Please try again.');
+            },
+            onFinish: () => {
+                setDeleteBusy(false);
+            },
+        });
     }, [ingredientBulkDestroyUrl, selectedRows]);
 
     return (

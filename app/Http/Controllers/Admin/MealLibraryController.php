@@ -11,6 +11,8 @@ use App\Http\Requests\ReorderMealsFromLibraryRequest;
 use App\Http\Requests\StoreMealFromLibraryRequest;
 use App\Models\Ingredient;
 use App\Models\Meal;
+use App\Models\MealCsvImportPendingRow;
+use App\Models\User;
 use App\Services\BaseIngredientService;
 use App\Services\MealCraftMasterCsvExport;
 use App\Services\RecipeNutritionCalculator;
@@ -24,6 +26,7 @@ use App\Support\MealLibraryTaxonomy;
 use App\Support\SickleCellNutrientRdi;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
@@ -43,10 +46,12 @@ class MealLibraryController extends Controller
         ]);
     }
 
-    public function index(): Response
+    public function index(Request $request): Response
     {
+        $user = $request->user();
+
         if (! $this->mealLibrarySchemaReady()) {
-            return Inertia::render('Admin/MealLibrary', $this->mealLibraryIndexPayload([], []));
+            return Inertia::render('Admin/MealLibrary', $this->mealLibraryIndexPayload([], [], $user));
         }
 
         $meals = Meal::queryForMealLibrary()
@@ -67,7 +72,7 @@ class MealLibraryController extends Controller
             ->values()
             ->all();
 
-        return Inertia::render('Admin/MealLibrary', $this->mealLibraryIndexPayload($meals, $ingredientProfiles));
+        return Inertia::render('Admin/MealLibrary', $this->mealLibraryIndexPayload($meals, $ingredientProfiles, $user));
     }
 
     public function bulkDestroy(BulkDestroyMealsFromLibraryRequest $request): RedirectResponse|JsonResponse
@@ -692,11 +697,26 @@ class MealLibraryController extends Controller
      * @param  list<array<string, mixed>>  $ingredientProfiles
      * @return array<string, mixed>
      */
-    private function mealLibraryIndexPayload(array $meals, array $ingredientProfiles): array
+    /**
+     * @return array{meals: list<array<string, mixed>>, ingredientProfiles: list<array<string, mixed>>, pendingMealImports: list<string>}
+     */
+    private function mealLibraryIndexPayload(array $meals, array $ingredientProfiles, ?User $user = null): array
     {
+        $pendingMealImports = [];
+
+        if ($user !== null) {
+            $pendingMealImports = MealCsvImportPendingRow::query()
+                ->where('user_id', $user->getKey())
+                ->orderBy('meal_name')
+                ->pluck('meal_name')
+                ->values()
+                ->all();
+        }
+
         return [
             'meals' => $meals,
             'ingredientProfiles' => $ingredientProfiles,
+            'pendingMealImports' => $pendingMealImports,
         ];
     }
 

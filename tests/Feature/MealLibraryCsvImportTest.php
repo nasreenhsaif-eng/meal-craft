@@ -9,6 +9,7 @@ use App\Services\MealCsvLibraryImportService;
 use App\Support\MealInstructionsText;
 use App\Support\MenuDevelopmentCsv;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Http;
 use Livewire\Livewire;
 
 function mealImportIngredient(string $name, array $overrides = []): Ingredient
@@ -407,6 +408,32 @@ test('meal library master csv import auto discovers image when photo_url is NO_P
         ->toBe('images/meals/coconut-chicken-curry.png');
 });
 
+test('meal library csv import downloads photo_url from remote http into public images meals', function () {
+    $png = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==');
+
+    Http::fake([
+        'https://images.example.com/*' => Http::response($png, 200, ['Content-Type' => 'image/png']),
+    ]);
+
+    mealImportIngredient('Salmon', ['calories' => 200, 'protein' => 25, 'carbs' => 0, 'fat' => 12]);
+
+    $csv = 'name,ingredients,photo_url'."\n"
+        .'Remote Photo Meal,Salmon:100g,https://images.example.com/meals/remote.png'."\n";
+    $file = UploadedFile::fake()->createWithContent('meals-remote-photo.csv', $csv);
+
+    $this->actingAs(User::factory()->create())
+        ->postJson(route('meals.library.import-csv'), ['file' => $file])
+        ->assertOk()
+        ->assertJsonPath('summary.imported', 1);
+
+    $meal = Meal::query()->where('name', 'Remote Photo Meal')->firstOrFail();
+
+    expect($meal->image_path)->toMatch('#^images/meals/Remote-Photo-Meal(-[a-f0-9]{8})?\.png$#')
+        ->and(is_file(public_path((string) $meal->image_path)))->toBeTrue();
+
+    @unlink(public_path((string) $meal->image_path));
+});
+
 test('meal library csv import maps Image URL column to image_path with normalized public path', function () {
     mealImportIngredient('Salmon', ['calories' => 200, 'protein' => 25, 'carbs' => 0, 'fat' => 12]);
 
@@ -792,6 +819,34 @@ test('meal library csv import saves base ingredient category rows to ingredient 
 
     expect(Meal::queryForMealLibrary()->where('name', 'House Sauce')->exists())->toBeFalse()
         ->and(Ingredient::query()->where('name', 'House Sauce')->exists())->toBeTrue();
+});
+
+test('meal library csv import downloads photo_url for base ingredient category into ingredient library', function () {
+    mealImportIngredient('Butternut Squash', ['calories' => 45, 'protein' => 1, 'carbs' => 12, 'fat' => 0]);
+
+    Http::fake([
+        'https://cdn.example.com/*' => Http::response(
+            file_get_contents(public_path('images/meals/placeholder.svg')),
+            200,
+            ['Content-Type' => 'image/svg+xml'],
+        ),
+    ]);
+
+    $csv = "Meal_Name,Category,Ingredient_Quantities,photo_url\n"
+        ."Pumpkin Puree (Base),Base Ingredient,Butternut Squash:1000g,https://cdn.example.com/pumpkin.png\n";
+    $file = UploadedFile::fake()->createWithContent('meals.csv', $csv);
+
+    $this->actingAs(User::factory()->create())
+        ->postJson(route('meals.library.import-csv'), ['file' => $file])
+        ->assertOk()
+        ->assertJsonPath('summary.ingredient_library_imported', 1);
+
+    $ingredient = Ingredient::query()->where('name', 'Pumpkin Puree (Base)')->firstOrFail();
+
+    expect($ingredient->image_path)->toMatch('#^images/meals/Pumpkin-Puree-\(Base\)(-[a-f0-9]{8})?\.svg$#')
+        ->and(is_file(public_path((string) $ingredient->image_path)))->toBeTrue();
+
+    @unlink(public_path((string) $ingredient->image_path));
 });
 
 test('meal library csv import returns 422 when file is missing', function () {

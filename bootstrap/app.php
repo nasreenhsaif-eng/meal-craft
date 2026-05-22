@@ -6,6 +6,7 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Exceptions\PostTooLargeException;
 use Illuminate\Http\Request;
+use Illuminate\Session\TokenMismatchException;
 use Symfony\Component\HttpFoundation\Response;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -20,6 +21,17 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        $exceptions->render(function (TokenMismatchException $exception, Request $request): ?Response {
+            if ($request->header('X-Inertia')) {
+                return redirect()->back()->with(
+                    'error',
+                    'Your session expired. Refresh the page (Cmd+Shift+R), then try again.',
+                );
+            }
+
+            return null;
+        });
+
         $exceptions->render(function (PostTooLargeException $exception, Request $request): ?Response {
             $message = 'The upload is too large for the server. Use a smaller photo, or increase PHP post_max_size and upload_max_filesize (Herd: run herd ini).';
 

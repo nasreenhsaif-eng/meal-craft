@@ -20,7 +20,7 @@ final class BaseIngredientService
 
     /**
      * @param  array<int, array{ingredient_id: int, amount_grams: float}>  $componentRows
-     * @param  array<string, string|null>|null  $libraryText  When set, may include {@code description} and/or {@code instructions} keys to upsert (empty string → null).
+     * @param  array<string, string|null>|null  $libraryText  When set, may include {@code description}, {@code instructions}, and/or {@code image_path} keys to upsert (empty string → null).
      */
     public function upsert(
         ?Ingredient $existing,
@@ -73,7 +73,7 @@ final class BaseIngredientService
 
         $attrs = $this->ingredientAttributesFromBatch($name, $batchNutrition, $divisorGrams);
         if ($libraryText !== null) {
-            foreach (['description', 'instructions'] as $key) {
+            foreach (['description', 'instructions', 'image_path'] as $key) {
                 if (array_key_exists($key, $libraryText)) {
                     $raw = $libraryText[$key];
                     $trimmed = $raw === null ? '' : trim((string) $raw);
@@ -81,6 +81,8 @@ final class BaseIngredientService
                         $attrs[$key] = BaseRecipeInstructionsText::normalizeForStorage(
                             $trimmed !== '' ? $trimmed : null,
                         );
+                    } elseif ($key === 'image_path') {
+                        $attrs[$key] = $trimmed !== '' ? $trimmed : null;
                     } else {
                         $attrs[$key] = $trimmed !== '' ? $trimmed : null;
                     }

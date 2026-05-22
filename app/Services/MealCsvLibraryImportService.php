@@ -1368,7 +1368,15 @@ final class MealCsvLibraryImportService
         }
 
         if ($mealCategory === RecipeCategory::BaseRecipe) {
-            return $this->importBaseIngredientCsvRow($lineNumber, $mealName, $calc, $optionalMealAttrs);
+            return $this->importBaseIngredientCsvRow(
+                $lineNumber,
+                $mealName,
+                $calc,
+                $optionalMealAttrs,
+                $instructions,
+                $shortDescription,
+                $resolvedImagePath,
+            );
         }
 
         try {
@@ -1535,6 +1543,9 @@ final class MealCsvLibraryImportService
         string $name,
         array $calc,
         array $optionalMealAttrs,
+        string $instructions = '',
+        string $shortDescription = '',
+        ?string $resolvedImagePath = null,
     ): array {
         $finished = isset($optionalMealAttrs['finished_weight_grams'])
             ? (float) $optionalMealAttrs['finished_weight_grams']
@@ -1553,12 +1564,25 @@ final class MealCsvLibraryImportService
             ];
         }
 
+        /** @var array<string, string|null> $libraryText */
+        $libraryText = [];
+        if ($instructions !== '') {
+            $libraryText['instructions'] = $instructions;
+        }
+        if ($shortDescription !== '') {
+            $libraryText['description'] = $shortDescription;
+        }
+        if ($resolvedImagePath !== null && trim($resolvedImagePath) !== '') {
+            $libraryText['image_path'] = $resolvedImagePath;
+        }
+
         try {
             $ingredient = app(BaseIngredientService::class)->upsert(
                 $existing,
                 $name,
                 $componentRows,
                 $finished,
+                $libraryText !== [] ? $libraryText : null,
             );
 
             Meal::query()
