@@ -6,10 +6,12 @@ beforeEach(function () {
     $this->skipUnlessFortifyFeature(Features::registration());
 });
 
-test('registration screen can be rendered', function () {
-    $response = $this->get(route('register'));
+test('fortify register page renders the customer join form', function () {
+    $this->get('/register')->assertOk();
+});
 
-    $response->assertOk();
+test('join page can be rendered', function () {
+    $this->get(route('join'))->assertOk();
 });
 
 test('new users can register', function () {
@@ -21,7 +23,7 @@ test('new users can register', function () {
     ]);
 
     $response->assertSessionHasNoErrors()
-        ->assertRedirect(route('admin.dashboard', absolute: false));
+        ->assertRedirect(route('onboarding.show', ['step' => 'welcome'], absolute: false));
 
     $this->assertAuthenticated();
 });

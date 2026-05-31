@@ -20,6 +20,7 @@ export const ADMIN_NAV_HREFS = {
     [ADMIN_NAV_PATHS.ingredientDb]: '/admin/ingredient-library',
     [ADMIN_NAV_PATHS.mealHub]: '/admin/meal-library',
     [ADMIN_NAV_PATHS.mealPlans]: '/admin/meal-plan-library',
+    [ADMIN_NAV_PATHS.customerProfiles]: '/admin/customers',
 };
 
 const GROUPS = [
@@ -53,7 +54,7 @@ const GROUPS = [
     {
         label: 'User intelligence',
         items: [
-            { path: ADMIN_NAV_PATHS.customerProfiles, label: 'Customer Profiles', Icon: IconUsers },
+            { path: ADMIN_NAV_PATHS.customerProfiles, label: 'Customer Profiles', Icon: IconUsers, href: ADMIN_NAV_HREFS[ADMIN_NAV_PATHS.customerProfiles] },
             { path: ADMIN_NAV_PATHS.discoveryInsights, label: 'Discovery Insights', Icon: IconChart },
         ],
     },

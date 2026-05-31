@@ -42,6 +42,27 @@ const SHELL_BY_COMPONENT = {
         hidePageTitle: true,
         contentWrapperClassName: WIDE,
     },
+    'Admin/Settings/Profile': {
+        pageTitle: 'Settings',
+        activePath: '',
+        showSearch: false,
+        hidePageTitle: true,
+        contentWrapperClassName: WIDE,
+    },
+    'Admin/Settings/Security': {
+        pageTitle: 'Settings',
+        activePath: '',
+        showSearch: false,
+        hidePageTitle: true,
+        contentWrapperClassName: WIDE,
+    },
+    'Admin/Settings/Appearance': {
+        pageTitle: 'Settings',
+        activePath: '',
+        showSearch: false,
+        hidePageTitle: true,
+        contentWrapperClassName: WIDE,
+    },
 };
 
 /** Inertia `page.url` is the current path (may omit leading slash in some adapters). */

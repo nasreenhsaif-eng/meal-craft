@@ -2,16 +2,24 @@
 
 namespace App\Support;
 
+use App\Enums\CustomerActivityLevel;
+use App\Enums\CustomerGoal;
+use App\Enums\CustomerSex;
 use App\Enums\CyclePhase;
 use App\Enums\DietTag;
+use App\Enums\DietType;
+use App\Enums\MacroSplitStyle;
+use App\Enums\OnboardingStep;
 use App\Enums\RecipeCategory;
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Models\CustomerProfile;
+use App\Models\User;
 use App\Services\MealCsvLibraryImportService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Global Inertia props for Meal Craft admin library workflows (CSV import/export, bulk actions, taxonomy).
+ * Global Inertia props for Meal Craft admin library workflows and customer onboarding.
  *
  * Shared from {@see HandleInertiaRequests} for authenticated users.
  */
@@ -22,25 +30,59 @@ final class MealCraftInertiaSharedData
      */
     public static function forRequest(Request $request): array
     {
-        if ($request->user() === null) {
+        $user = $request->user();
+
+        if ($user === null) {
             return [];
         }
 
+        $data = [];
+
+        if ($user->isAdmin()) {
+            $data = [
+                'urls' => self::adminUrls(),
+                'constants' => self::constants(),
+                'taxonomy' => self::adminTaxonomy(),
+                'csv' => self::csv(),
+                'notices' => [
+                    'mealLibrarySchema' => self::mealLibrarySchemaNotice(),
+                ],
+            ];
+        }
+
+        $data['onboarding'] = self::onboarding($user);
+
+        return $data;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public static function onboarding(User $user): array
+    {
+        $profile = $user->customerProfile;
+
         return [
-            'urls' => self::urls(),
-            'constants' => self::constants(),
-            'taxonomy' => self::taxonomy(),
-            'csv' => self::csv(),
-            'notices' => [
-                'mealLibrarySchema' => self::mealLibrarySchemaNotice(),
-            ],
+            'steps' => array_map(
+                static fn (OnboardingStep $step): array => [
+                    'value' => $step->value,
+                    'label' => $step->label(),
+                ],
+                OnboardingStep::orderedFor($profile),
+            ),
+            'currentStep' => $user->currentOnboardingStep()->value,
+            'completed' => $user->hasCompletedOnboarding(),
+            'customerName' => $user->name,
+            'urls' => self::onboardingUrls(),
+            'options' => self::onboardingOptions(),
+            'profile' => self::profileSnapshot($profile),
         ];
     }
 
     /**
      * @return array<string, mixed>
      */
-    private static function urls(): array
+    private static function adminUrls(): array
     {
         return [
             'ingredientLibrary' => [
@@ -65,6 +107,103 @@ final class MealCraftInertiaSharedData
     }
 
     /**
+     * @return array<string, string>
+     */
+    private static function onboardingUrls(): array
+    {
+        return [
+            'index' => route('onboarding.index'),
+            'welcome' => route('onboarding.welcome.store'),
+            'gender' => route('onboarding.gender.store'),
+            'periodTracking' => route('onboarding.period-tracking.store'),
+            'birthday' => route('onboarding.birthday.store'),
+            'height' => route('onboarding.height.store'),
+            'weight' => route('onboarding.weight.store'),
+            'targetWeight' => route('onboarding.target-weight.store'),
+            'activity' => route('onboarding.activity.store'),
+            'macros' => route('onboarding.macros.store'),
+            'meals' => route('onboarding.meals.store'),
+            'review' => route('onboarding.review.store'),
+            'appHome' => route('app.home'),
+            'consultation' => route('consultation.crafted-for-you'),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private static function onboardingOptions(): array
+    {
+        return [
+            'sex' => EnumDropdownOptions::fromBackedEnum(CustomerSex::class),
+            'activityLevels' => EnumDropdownOptions::fromBackedEnum(CustomerActivityLevel::class),
+            'goals' => CustomerGoal::toDropdownOptions(),
+            'dietTypes' => DietType::toDropdownOptions(),
+            'macroSplitStyles' => [
+                ['value' => MacroSplitStyle::Balanced->value, 'label' => __('Balanced')],
+                ['value' => MacroSplitStyle::HighProtein->value, 'label' => __('High protein')],
+            ],
+            'allergens' => self::allergenOptions(),
+            'dislikes' => CustomerDislikeCatalog::toDropdownOptions(),
+        ];
+    }
+
+    /**
+     * @return list<array{value: string, label: string}>
+     */
+    private static function allergenOptions(): array
+    {
+        $options = [];
+
+        foreach (IngredientAllergenCatalog::labelsBySlug() as $slug => $label) {
+            $options[] = [
+                'value' => $slug,
+                'label' => (string) str_replace('Contains: ', '', $label),
+            ];
+        }
+
+        return $options;
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private static function profileSnapshot(?CustomerProfile $profile): ?array
+    {
+        if ($profile === null) {
+            return null;
+        }
+
+        return [
+            'weightKg' => $profile->weight_kg,
+            'targetWeightKg' => $profile->target_weight_kg,
+            'heightCm' => $profile->height_cm,
+            'age' => $profile->age,
+            'dateOfBirth' => $profile->date_of_birth?->toDateString(),
+            'sex' => $profile->sex?->value,
+            'activityLevel' => $profile->activity_level?->value,
+            'goal' => $profile->goal?->value,
+            'dietType' => $profile->diet_type?->value,
+            'macroSplitStyle' => $profile->macro_split_style?->value,
+            'dailyCalorieTarget' => $profile->daily_calorie_target,
+            'allergies' => $profile->allergies ?? [],
+            'dislikes' => $profile->dislikes ?? [],
+            'loggedPeriods' => $profile->logged_periods ?? [],
+            'logged_periods' => $profile->logged_periods ?? [],
+            'averageCycleLength' => $profile->average_cycle_length,
+            'average_cycle_length' => $profile->average_cycle_length,
+            'weight_kg' => $profile->weight_kg,
+            'target_weight_kg' => $profile->target_weight_kg,
+            'height_cm' => $profile->height_cm,
+            'age' => $profile->age,
+            'date_of_birth' => $profile->date_of_birth?->toDateString(),
+            'activity_level' => $profile->activity_level?->value,
+            'macro_split_style' => $profile->macro_split_style?->value,
+            'daily_calorie_target' => $profile->daily_calorie_target,
+        ];
+    }
+
+    /**
      * @return array<string, mixed>
      */
     private static function constants(): array
@@ -77,7 +216,7 @@ final class MealCraftInertiaSharedData
     /**
      * @return array<string, mixed>
      */
-    private static function taxonomy(): array
+    private static function adminTaxonomy(): array
     {
         return [
             'mealCategories' => array_map(

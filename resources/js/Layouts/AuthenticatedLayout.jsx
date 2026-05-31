@@ -52,7 +52,7 @@ export default function AuthenticatedLayout({
             activePath={activePath}
             onNavigate={handleNavigate}
             userAvatar={userAvatar}
-            onAccountSettingsClick={() => router.visit('/settings/profile')}
+            onAccountSettingsClick={() => router.visit('/admin/settings/profile')}
             showSearch={showSearch}
             hidePageTitle={hidePageTitle}
             contentWrapperClassName={contentWrapperClassName}

@@ -7,6 +7,7 @@
  * @property {object} [taxonomy]
  * @property {object} [csv]
  * @property {object} [notices]
+ * @property {object} [onboarding]
  */
 
 /**
@@ -52,6 +53,44 @@ export function cyclePhasesFromPage(pageProps) {
 export function dietTagsFromPage(pageProps) {
     const tags = mealCraftFromPage(pageProps).taxonomy?.dietTags;
     return Array.isArray(tags) ? tags : [];
+}
+
+/**
+ * Customer onboarding shared props (`mealCraft.onboarding`).
+ *
+ * @param {object} pageProps
+ * @returns {object}
+ */
+export function onboardingFromPage(pageProps) {
+    const onboarding = mealCraftFromPage(pageProps).onboarding;
+    return onboarding && typeof onboarding === 'object' ? onboarding : {};
+}
+
+/**
+ * @param {object} pageProps
+ * @returns {Record<string, string>}
+ */
+export function onboardingUrls(pageProps) {
+    const urls = onboardingFromPage(pageProps).urls;
+    return urls && typeof urls === 'object' ? urls : {};
+}
+
+/**
+ * @param {object} pageProps
+ * @returns {Record<string, { value: string; label: string }[]>}
+ */
+export function onboardingOptions(pageProps) {
+    const options = onboardingFromPage(pageProps).options;
+    return options && typeof options === 'object' ? options : {};
+}
+
+/**
+ * @param {object} pageProps
+ * @returns {object | null}
+ */
+export function onboardingProfile(pageProps) {
+    const profile = onboardingFromPage(pageProps).profile;
+    return profile && typeof profile === 'object' ? profile : null;
 }
 
 /**

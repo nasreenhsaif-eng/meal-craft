@@ -89,3 +89,45 @@ export function isIsoDateDisabled(iso, minIso, maxIso) {
 
     return false;
 }
+
+/**
+ * @param {string} iso
+ * @param {number} days
+ * @returns {string | null}
+ */
+export function addDaysToIso(iso, days) {
+    const date = parseIsoDate(iso);
+
+    if (!date) {
+        return null;
+    }
+
+    date.setDate(date.getDate() + days);
+
+    return toIsoDate(date);
+}
+
+/**
+ * @param {string} startIso
+ * @param {string} endIso
+ */
+export function daysBetweenIso(startIso, endIso) {
+    const start = parseIsoDate(startIso);
+    const end = parseIsoDate(endIso);
+
+    if (!start || !end) {
+        return 0;
+    }
+
+    const msPerDay = 24 * 60 * 60 * 1000;
+
+    return Math.round((end.getTime() - start.getTime()) / msPerDay);
+}
+
+/**
+ * @param {Date} date
+ * @param {number} months
+ */
+export function addMonthsToDate(date, months) {
+    return new Date(date.getFullYear(), date.getMonth() + months, date.getDate());
+}
