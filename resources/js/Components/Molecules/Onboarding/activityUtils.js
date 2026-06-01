@@ -5,12 +5,12 @@ export const ACTIVITY_LEVEL_OPTIONS = [
         description: 'Little to no movement',
     },
     {
-        value: 'moderate',
+        value: 'lightly_active',
         label: 'Somewhat Active',
         description: 'Moderate movement (daily walks, light tasks)',
     },
     {
-        value: 'active',
+        value: 'moderately_active',
         label: 'Highly Active',
         description: 'Intense regular activity',
     },
@@ -21,11 +21,13 @@ export const ACTIVITY_LEVEL_OPTIONS = [
     },
 ];
 
+import { normalizeActivityLevel } from '../../../meal-craft/onboarding/onboardingNormalize.js';
+
 export const ACTIVITY_LEVEL_VALUES = ACTIVITY_LEVEL_OPTIONS.map((option) => option.value);
 
 /** @returns {string} */
 export function defaultActivityLevel() {
-    return 'moderate';
+    return 'lightly_active';
 }
 
 /**
@@ -33,8 +35,10 @@ export function defaultActivityLevel() {
  * @returns {string}
  */
 export function resolveActivityLevel(value) {
-    if (typeof value === 'string' && ACTIVITY_LEVEL_VALUES.includes(value)) {
-        return value;
+    const normalized = normalizeActivityLevel(value);
+
+    if (ACTIVITY_LEVEL_VALUES.includes(normalized)) {
+        return normalized;
     }
 
     return defaultActivityLevel();

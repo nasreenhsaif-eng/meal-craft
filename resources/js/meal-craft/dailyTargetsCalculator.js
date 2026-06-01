@@ -1,10 +1,17 @@
 /** @typedef {'male' | 'female'} CustomerSex */
 
-/** @typedef {'sedentary' | 'light' | 'moderate' | 'active' | 'very_active'} ActivityLevel */
+/**
+ * Canonical store activity levels (four-step wizard).
+ * Legacy server/UI keys are normalized via {@link resolveActivityLevel}.
+ *
+ * @typedef {'sedentary' | 'lightly_active' | 'moderately_active' | 'very_active'} StoreActivityLevel
+ */
 
 /** @typedef {'lose_weight' | 'maintain' | 'gain_muscle'} CustomerGoal */
 
-/** @typedef {'balanced' | 'high_protein'} MacroSplitStyle */
+/**
+ * @typedef {'balanced' | 'ketobiotic' | 'cycle_sync' | 'sickle_cell_warrior' | 'sickle_cell'} DietProtocolId
+ */
 
 /**
  * @typedef {{
@@ -14,11 +21,11 @@
  *   height_cm?: number | null;
  *   age?: number | null;
  *   sex?: CustomerSex | string | null;
- *   activityLevel?: ActivityLevel | string | null;
- *   activity_level?: ActivityLevel | string | null;
+ *   activityLevel?: string | null;
+ *   activity_level?: string | null;
  *   goal?: CustomerGoal | string | null;
- *   macroSplitStyle?: MacroSplitStyle | string | null;
- *   macro_split_style?: MacroSplitStyle | string | null;
+ *   diet_protocol?: DietProtocolId | string | null;
+ *   dietProtocol?: DietProtocolId | string | null;
  *   dailyCalorieTarget?: number | null;
  *   daily_calorie_target?: number | null;
  *   proteinPercentage?: number | null;
@@ -43,35 +50,52 @@
  *   proteinPercentage: number;
  *   carbPercentage: number;
  *   fatPercentage: number;
+ *   goal: CustomerGoal;
  * }} DailyTargetsResult
  */
 
+import { GOAL_CALORIE_DELTA } from './onboarding/onboardingConstants.js';
+import { normalizeActivityLevel, normalizeDietProtocol } from './onboarding/onboardingNormalize.js';
+
 export const MIN_DAILY_CALORIES = 1200;
 
+/** @type {Record<string, number>} */
 export const ACTIVITY_MULTIPLIERS = {
     sedentary: 1.2,
+    lightly_active: 1.375,
+    moderately_active: 1.55,
+    very_active: 1.725,
     light: 1.375,
-    moderate: 1.55,
-    active: 1.725,
-    very_active: 1.9,
+    moderate: 1.375,
+    active: 1.55,
 };
 
-export const GOAL_CALORIE_ADJUSTMENTS = {
-    lose_weight: -0.1,
-    maintain: 0,
-    gain_muscle: 0.1,
-};
-
-export const MACRO_PRESETS = {
+/** @type {Record<DietProtocolId, { proteinPercentage: number; carbPercentage: number; fatPercentage: number }>} */
+export const DIET_PROTOCOL_MACRO_PRESETS = {
     balanced: {
         proteinPercentage: 30,
         carbPercentage: 40,
         fatPercentage: 30,
     },
-    high_protein: {
-        proteinPercentage: 45,
-        carbPercentage: 25,
+    ketobiotic: {
+        proteinPercentage: 20,
+        carbPercentage: 10,
+        fatPercentage: 70,
+    },
+    cycle_sync: {
+        proteinPercentage: 25,
+        carbPercentage: 45,
         fatPercentage: 30,
+    },
+    sickle_cell_warrior: {
+        proteinPercentage: 25,
+        carbPercentage: 50,
+        fatPercentage: 25,
+    },
+    sickle_cell: {
+        proteinPercentage: 25,
+        carbPercentage: 50,
+        fatPercentage: 25,
     },
 };
 
@@ -107,13 +131,11 @@ function resolveSex(profile) {
 }
 
 /**
- * @param {OnboardingProfileInput} profile
- * @returns {ActivityLevel}
+ * @param {string | null | undefined} level
+ * @returns {StoreActivityLevel}
  */
-function resolveActivityLevel(profile) {
-    const level = profile.activityLevel ?? profile.activity_level ?? 'moderate';
-
-    return ACTIVITY_MULTIPLIERS[level] ? level : 'moderate';
+export function resolveActivityLevel(level) {
+    return normalizeActivityLevel(level);
 }
 
 /**
@@ -123,7 +145,7 @@ function resolveActivityLevel(profile) {
 export function resolveCustomerGoal(profile) {
     const explicitGoal = profile.goal;
 
-    if (explicitGoal && GOAL_CALORIE_ADJUSTMENTS[explicitGoal]) {
+    if (explicitGoal === 'lose_weight' || explicitGoal === 'maintain' || explicitGoal === 'gain_muscle') {
         return explicitGoal;
     }
 
@@ -155,10 +177,11 @@ export function calculateMifflinStJeorBmr(weightKg, heightCm, age, sex) {
 
 /**
  * @param {number} bmr
- * @param {ActivityLevel} activityLevel
+ * @param {string} activityLevel
  */
 export function calculateTdee(bmr, activityLevel) {
-    const multiplier = ACTIVITY_MULTIPLIERS[activityLevel] ?? ACTIVITY_MULTIPLIERS.moderate;
+    const normalized = resolveActivityLevel(activityLevel);
+    const multiplier = ACTIVITY_MULTIPLIERS[normalized] ?? ACTIVITY_MULTIPLIERS.lightly_active;
 
     return bmr * multiplier;
 }
@@ -168,9 +191,15 @@ export function calculateTdee(bmr, activityLevel) {
  * @param {CustomerGoal} goal
  */
 export function applyGoalCalorieAdjustment(tdee, goal) {
-    const adjustment = GOAL_CALORIE_ADJUSTMENTS[goal] ?? 0;
+    if (goal === 'lose_weight') {
+        return Math.max(MIN_DAILY_CALORIES, tdee - GOAL_CALORIE_DELTA.deficit);
+    }
 
-    return Math.max(MIN_DAILY_CALORIES, tdee * (1 + adjustment));
+    if (goal === 'gain_muscle') {
+        return Math.max(MIN_DAILY_CALORIES, tdee + GOAL_CALORIE_DELTA.surplus);
+    }
+
+    return Math.max(MIN_DAILY_CALORIES, tdee);
 }
 
 /**
@@ -189,9 +218,9 @@ function resolveMacroPercentages(profile) {
         };
     }
 
-    const style = profile.macroSplitStyle ?? profile.macro_split_style ?? 'balanced';
+    const protocol = normalizeDietProtocol(profile.diet_protocol ?? profile.dietProtocol ?? 'balanced');
 
-    return MACRO_PRESETS[style] ?? MACRO_PRESETS.balanced;
+    return DIET_PROTOCOL_MACRO_PRESETS[protocol] ?? DIET_PROTOCOL_MACRO_PRESETS.balanced;
 }
 
 /**
@@ -221,7 +250,7 @@ export function calculateDailyTargets(profile) {
     const heightCm = resolveHeightCm(profile);
     const age = resolveAge(profile);
     const sex = resolveSex(profile);
-    const activityLevel = resolveActivityLevel(profile);
+    const activityLevel = resolveActivityLevel(profile.activityLevel ?? profile.activity_level ?? 'lightly_active');
     const goal = resolveCustomerGoal(profile);
     const macroPercentages = resolveMacroPercentages(profile);
 
@@ -245,6 +274,7 @@ export function calculateDailyTargets(profile) {
         bmr: Math.round(bmr),
         tdee: Math.round(tdee),
         dailyCalories,
+        goal,
         ...macroGrams,
         ...macroPercentages,
     };

@@ -11,6 +11,8 @@ import {
     toIsoDate,
 } from '../../Components/Molecules/Onboarding/wheelDateUtils.js';
 import { onboardingFromPage } from '../../meal-craft/mealCraftPageProps.js';
+import { useOnboardingStore } from '../../meal-craft/onboarding/OnboardingProvider.jsx';
+import customerOnboardingLayout from '../../Layouts/customerOnboardingLayout.js';
 import { OnboardingShell } from './Welcome.jsx';
 
 /**
@@ -117,8 +119,12 @@ export function OnboardingBirthdayInner({
 export default function Birthday() {
     const onboarding = onboardingFromPage(usePage().props);
     const profile = onboarding.profile ?? {};
+    const { state, patch } = useOnboardingStore();
     const initialDate =
-        profile.dateOfBirth ?? profile.date_of_birth ?? toIsoDate(defaultBirthdayValue());
+        state.birthdate ||
+        profile.dateOfBirth ||
+        profile.date_of_birth ||
+        toIsoDate(defaultBirthdayValue());
 
     const { data, setData, post, processing, errors } = useForm({
         date_of_birth: initialDate,
@@ -129,8 +135,14 @@ export default function Birthday() {
             dateOfBirth={data.date_of_birth}
             errors={errors}
             processing={processing}
-            onDateChange={(isoDate) => setData('date_of_birth', isoDate)}
-            onSubmit={() => post(onboarding.urls?.birthday ?? '/onboarding/birthday')}
+            onDateChange={(isoDate) => {
+                setData('date_of_birth', isoDate);
+                patch({ birthdate: isoDate });
+            }}
+            onSubmit={() => {
+                patch({ birthdate: data.date_of_birth });
+                post(onboarding.urls?.birthday ?? '/onboarding/birthday');
+            }}
             steps={onboarding.steps ?? []}
             currentStep={onboarding.currentStep ?? 'birthday'}
             customerName={onboarding.customerName ?? ''}
@@ -138,4 +150,4 @@ export default function Birthday() {
     );
 }
 
-Birthday.layout = (page) => page;
+Birthday.layout = customerOnboardingLayout;

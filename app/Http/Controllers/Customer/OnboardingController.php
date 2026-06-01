@@ -4,27 +4,28 @@ namespace App\Http\Controllers\Customer;
 
 use App\Enums\CustomerActivityLevel;
 use App\Enums\CustomerSex;
-use App\Enums\MacroSplitStyle;
+use App\Enums\DietProtocol;
 use App\Enums\OnboardingStep;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Customer\StoreOnboardingActivityRequest;
 use App\Http\Requests\Customer\StoreOnboardingBirthdayRequest;
+use App\Http\Requests\Customer\StoreOnboardingDietProtocolRequest;
+use App\Http\Requests\Customer\StoreOnboardingFoodFiltersRequest;
 use App\Http\Requests\Customer\StoreOnboardingGenderRequest;
 use App\Http\Requests\Customer\StoreOnboardingHeightRequest;
 use App\Http\Requests\Customer\StoreOnboardingPeriodTrackingRequest;
 use App\Http\Requests\Customer\StoreOnboardingTargetWeightRequest;
 use App\Http\Requests\Customer\StoreOnboardingWeightRequest;
 use App\Models\User;
-use App\Services\Nutrition\OnboardingCalorieCalculator;
-use App\Services\Nutrition\UserPlanCalculator;
+use App\Services\Nutrition\OnboardingDailyTargetsCalculator;
+use App\Services\Nutrition\PeriodTrackingPhaseService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Inertia\Inertia;
 use Inertia\Response;
-use InvalidArgumentException;
 
-class OnboardingWizardController extends Controller
+class OnboardingController extends Controller
 {
     public function index(Request $request): RedirectResponse
     {
@@ -35,20 +36,10 @@ class OnboardingWizardController extends Controller
         ]);
     }
 
-    public function show(Request $request, string $step): RedirectResponse|Response
+    public function show(Request $request, string $step): Response
     {
         $user = $request->user();
-        $requestedStep = $this->resolveStep($step);
-        $currentStep = $user?->currentOnboardingStep() ?? OnboardingStep::Welcome;
-
-        if ($requestedStep !== $currentStep) {
-            return redirect()->route('onboarding.show', ['step' => $currentStep->value]);
-        }
-
-        if ($requestedStep === OnboardingStep::PeriodTracking
-            && ! OnboardingStep::shouldShowPeriodTracking($user?->customerProfile)) {
-            return redirect()->route('onboarding.show', ['step' => $currentStep->value]);
-        }
+        $requestedStep = OnboardingStep::normalizeStoredStep(OnboardingStep::from($step));
 
         return Inertia::render($this->pageForStep($requestedStep), $this->stepProps($user, $requestedStep));
     }
@@ -61,11 +52,13 @@ class OnboardingWizardController extends Controller
     public function storeGender(StoreOnboardingGenderRequest $request): RedirectResponse
     {
         $user = $request->user();
+        $sex = CustomerSex::from($request->validated('sex'));
 
         $user->customerProfile()->updateOrCreate(
             ['user_id' => $user->id],
             [
-                'sex' => CustomerSex::from($request->validated('sex')),
+                'sex' => $sex,
+                'gender' => $sex->value,
             ],
         );
 
@@ -75,12 +68,20 @@ class OnboardingWizardController extends Controller
     public function storePeriodTracking(StoreOnboardingPeriodTrackingRequest $request): RedirectResponse
     {
         $user = $request->user();
+        $loggedPeriods = $request->validated('logged_periods');
+        $averageCycleLength = $request->validated('average_cycle_length');
+
+        $periodTrackingData = PeriodTrackingPhaseService::buildPeriodTrackingData(
+            $loggedPeriods,
+            $averageCycleLength,
+        );
 
         $user->customerProfile()->updateOrCreate(
             ['user_id' => $user->id],
             [
-                'logged_periods' => $request->validated('logged_periods'),
-                'average_cycle_length' => $request->validated('average_cycle_length'),
+                'logged_periods' => $loggedPeriods,
+                'average_cycle_length' => $averageCycleLength,
+                'period_tracking_data' => $periodTrackingData,
             ],
         );
 
@@ -96,6 +97,7 @@ class OnboardingWizardController extends Controller
             ['user_id' => $user->id],
             [
                 'date_of_birth' => $dateOfBirth->toDateString(),
+                'birthdate' => $dateOfBirth->toDateString(),
                 'age' => (int) $dateOfBirth->diffInYears(now()),
             ],
         );
@@ -148,70 +150,85 @@ class OnboardingWizardController extends Controller
     public function storeActivity(StoreOnboardingActivityRequest $request): RedirectResponse
     {
         $user = $request->user();
+        $activity = CustomerActivityLevel::tryFromStored($request->validated('activity_level'));
 
         $user->customerProfile()->updateOrCreate(
             ['user_id' => $user->id],
             [
-                'activity_level' => CustomerActivityLevel::from($request->validated('activity_level')),
+                'activity_level' => $activity,
             ],
         );
 
         return $this->advanceStep($request, OnboardingStep::Activity);
     }
 
-    public function storeMacros(StoreOnboardingMacrosRequest $request): RedirectResponse
+    public function storeDietProtocol(StoreOnboardingDietProtocolRequest $request): RedirectResponse
     {
         $user = $request->user();
-        $validated = $request->validated();
-        $profile = $user->customerProfile;
+        $protocol = DietProtocol::tryFromStored($request->validated('diet_protocol'));
+
+        $user->customerProfile()->updateOrCreate(
+            ['user_id' => $user->id],
+            [
+                'diet_protocol' => $protocol->value,
+            ],
+        );
+
+        $profile = $user->fresh()->customerProfile;
+
+        if ($profile !== null) {
+            $targets = OnboardingDailyTargetsCalculator::calculate($profile);
+
+            $profile->update([
+                'daily_calorie_target' => $targets['daily_calories'],
+                'protein_percentage' => $targets['protein_percentage'],
+                'carb_percentage' => $targets['carb_percentage'],
+                'fat_percentage' => $targets['fat_percentage'],
+            ]);
+        }
+
+        return $this->advanceStep($request, OnboardingStep::DietProtocol);
+    }
+
+    public function storeDailyTargets(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+        $profile = $user?->customerProfile;
 
         if ($profile === null) {
             abort(403);
         }
 
-        $macroStyle = MacroSplitStyle::from($validated['macro_split_style']);
-        $percentages = $macroStyle->percentages();
-
-        $dailyCalories = isset($validated['daily_calorie_target'])
-            ? (int) $validated['daily_calorie_target']
-            : OnboardingCalorieCalculator::estimateDailyCalories(
-                (float) $profile->weight_kg,
-                (float) $profile->height_cm,
-                (int) $profile->age,
-                $profile->sex,
-                $profile->activity_level,
-            );
+        $targets = OnboardingDailyTargetsCalculator::calculate($profile);
 
         $profile->update([
-            'macro_split_style' => $macroStyle,
-            'daily_calorie_target' => $dailyCalories,
-            'protein_percentage' => $percentages['protein_percentage'],
-            'carb_percentage' => $percentages['carb_percentage'],
-            'fat_percentage' => $percentages['fat_percentage'],
+            'daily_calorie_target' => $targets['daily_calories'],
+            'protein_percentage' => $targets['protein_percentage'],
+            'carb_percentage' => $targets['carb_percentage'],
+            'fat_percentage' => $targets['fat_percentage'],
         ]);
 
-        return $this->advanceStep($request, OnboardingStep::Macros);
+        return $this->advanceStep($request, OnboardingStep::DailyTargets);
     }
 
-    public function storeMeals(Request $request): RedirectResponse
-    {
-        return $this->advanceStep($request, OnboardingStep::Meals);
-    }
-
-    public function storeReview(Request $request): RedirectResponse
+    public function storeFoodFilters(StoreOnboardingFoodFiltersRequest $request): RedirectResponse
     {
         $user = $request->user();
         $profile = $user?->customerProfile;
 
-        if ($profile === null || $user->currentOnboardingStep() !== OnboardingStep::Review) {
+        if ($profile === null || $user->currentOnboardingStep() !== OnboardingStep::FoodFilters) {
             return redirect()->route('onboarding.show', [
                 'step' => $user?->currentOnboardingStep()->value ?? OnboardingStep::Welcome->value,
             ]);
         }
 
+        $foodFilters = array_values($request->validated('allergies') ?? []);
+
         $profile->update([
+            'allergies' => $foodFilters,
+            'food_filters' => $foodFilters,
             'onboarding_completed_at' => now(),
-            'onboarding_step' => OnboardingStep::Review,
+            'onboarding_step' => OnboardingStep::FoodFilters,
         ]);
 
         return redirect()->route('app.home');
@@ -241,17 +258,10 @@ class OnboardingWizardController extends Controller
         return redirect()->route('onboarding.show', ['step' => $nextStep->value]);
     }
 
-    private function resolveStep(string $step): OnboardingStep
-    {
-        try {
-            return OnboardingStep::from($step);
-        } catch (\ValueError) {
-            throw new InvalidArgumentException('Invalid onboarding step.');
-        }
-    }
-
     private function pageForStep(OnboardingStep $step): string
     {
+        $step = OnboardingStep::normalizeStoredStep($step);
+
         return match ($step) {
             OnboardingStep::Welcome => 'Onboarding/Welcome',
             OnboardingStep::Gender => 'Onboarding/Gender',
@@ -261,9 +271,12 @@ class OnboardingWizardController extends Controller
             OnboardingStep::Weight => 'Onboarding/Weight',
             OnboardingStep::TargetWeight => 'Onboarding/TargetWeight',
             OnboardingStep::Activity => 'Onboarding/Activity',
-            OnboardingStep::Macros => 'Onboarding/Macros',
-            OnboardingStep::Meals => 'Onboarding/Meals',
-            OnboardingStep::Review => 'Onboarding/Review',
+            OnboardingStep::DietProtocol => 'Onboarding/DietProtocol',
+            OnboardingStep::DailyTargets => 'Onboarding/DailyTargetsSummary',
+            OnboardingStep::FoodFilters => 'Onboarding/FoodFilter',
+            OnboardingStep::Macros => 'Onboarding/DietProtocol',
+            OnboardingStep::Meals => 'Onboarding/DailyTargetsSummary',
+            OnboardingStep::Review => 'Onboarding/DailyTargetsSummary',
         };
     }
 
@@ -272,18 +285,27 @@ class OnboardingWizardController extends Controller
      */
     private function stepProps(?User $user, OnboardingStep $step): array
     {
-        if ($step !== OnboardingStep::Review) {
+        if ($step !== OnboardingStep::DailyTargets || $user?->customerProfile === null) {
             return [];
         }
 
-        $profile = $user?->customerProfile;
-
-        if ($profile === null) {
-            return ['reviewPlan' => null];
-        }
+        $targets = OnboardingDailyTargetsCalculator::calculate($user->customerProfile);
 
         return [
-            'reviewPlan' => UserPlanCalculator::calculateUserPlan($profile),
+            'computedTargets' => [
+                'bmr' => $targets['bmr'],
+                'tdee' => $targets['tdee'],
+                'dailyCalories' => $targets['daily_calories'],
+                'proteinGrams' => $targets['protein_grams'],
+                'carbGrams' => $targets['carb_grams'],
+                'fatGrams' => $targets['fat_grams'],
+                'proteinPercentage' => $targets['protein_percentage'],
+                'carbPercentage' => $targets['carb_percentage'],
+                'fatPercentage' => $targets['fat_percentage'],
+                'goal' => $targets['goal'],
+                'dietProtocol' => $targets['diet_protocol'],
+                'currentPhase' => $targets['current_phase'],
+            ],
         ];
     }
 }

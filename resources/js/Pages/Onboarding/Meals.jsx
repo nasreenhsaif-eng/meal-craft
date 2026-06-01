@@ -1,6 +1,7 @@
 import { router, usePage } from '@inertiajs/react';
 import Button from '../../Components/Atoms/Button/Button.jsx';
 import { onboardingFromPage } from '../../meal-craft/mealCraftPageProps.js';
+import customerOnboardingLayout from '../../Layouts/customerOnboardingLayout.js';
 import { OnboardingShell } from './Welcome.jsx';
 
 export default function Meals() {
@@ -32,4 +33,4 @@ export default function Meals() {
     );
 }
 
-Meals.layout = (page) => page;
+Meals.layout = customerOnboardingLayout;

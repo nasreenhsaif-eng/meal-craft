@@ -54,6 +54,34 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Diet protocol macro splits (% of calories)
+    |--------------------------------------------------------------------------
+    */
+    'diet_protocol_macro_presets' => [
+        'balanced' => [
+            'protein_percentage' => 30.0,
+            'carb_percentage' => 40.0,
+            'fat_percentage' => 30.0,
+        ],
+        'ketobiotic' => [
+            'protein_percentage' => 20.0,
+            'carb_percentage' => 10.0,
+            'fat_percentage' => 70.0,
+        ],
+        'cycle_sync' => [
+            'protein_percentage' => 25.0,
+            'carb_percentage' => 45.0,
+            'fat_percentage' => 30.0,
+        ],
+        'sickle_cell_warrior' => [
+            'protein_percentage' => 25.0,
+            'carb_percentage' => 50.0,
+            'fat_percentage' => 25.0,
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Activity multipliers (Harris–Benedict / standard TDEE factors)
     |--------------------------------------------------------------------------
     */
@@ -62,7 +90,19 @@ return [
         'light' => 1.375,
         'moderate' => 1.55,
         'active' => 1.725,
-        'very_active' => 1.9,
+        'very_active' => 1.725,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Onboarding wizard activity multipliers (canonical four-step scale)
+    |--------------------------------------------------------------------------
+    */
+    'onboarding_activity_multipliers' => [
+        'sedentary' => 1.2,
+        'lightly_active' => 1.375,
+        'moderately_active' => 1.55,
+        'very_active' => 1.725,
     ],
 
 ];

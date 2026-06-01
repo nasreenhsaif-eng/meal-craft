@@ -3,6 +3,7 @@
 use App\Enums\OnboardingStep;
 use App\Models\CustomerProfile;
 use App\Models\User;
+use App\Support\MealCraftInertiaSharedData;
 
 test('customer onboarding welcome step advances to gender', function () {
     $customer = User::factory()->customer()->create();
@@ -64,9 +65,15 @@ test('customer can save period tracking and advance to birthday', function () {
         ])
         ->assertRedirect(route('onboarding.show', ['step' => OnboardingStep::Birthday->value]));
 
-    expect($customer->fresh()->customerProfile?->logged_periods)->toBe([
+    $profile = $customer->fresh()->customerProfile;
+
+    expect($profile?->logged_periods)->toBe([
         ['start' => '2026-04-20', 'end' => '2026-04-26'],
-    ])->and($customer->fresh()->customerProfile?->average_cycle_length)->toBe(28)
+    ])->and($profile?->average_cycle_length)->toBe(28)
+        ->and($profile?->period_tracking_data)->toBeArray()
+        ->and($profile?->period_tracking_data['logged_periods'] ?? null)->toBe([
+            ['start' => '2026-04-20', 'end' => '2026-04-26'],
+        ])
         ->and($customer->fresh()->currentOnboardingStep())->toBe(OnboardingStep::Birthday);
 });
 
@@ -288,7 +295,7 @@ test('activity onboarding page renders with shared props', function () {
             ->where('mealCraft.onboarding.currentStep', OnboardingStep::Activity->value));
 });
 
-test('customer can save activity and advance to macros', function () {
+test('customer can save activity and advance to diet protocol', function () {
     $customer = User::factory()->customer()->create();
     CustomerProfile::factory()->for($customer)->withoutOnboarding()->create([
         'onboarding_step' => OnboardingStep::Activity,
@@ -302,14 +309,46 @@ test('customer can save activity and advance to macros', function () {
 
     $this->actingAs($customer)
         ->post(route('onboarding.activity.store'), [
-            'activity_level' => 'moderate',
+            'activity_level' => 'lightly_active',
         ])
-        ->assertRedirect(route('onboarding.show', ['step' => OnboardingStep::Macros->value]));
+        ->assertRedirect(route('onboarding.show', ['step' => OnboardingStep::DietProtocol->value]));
 
     $profile = $customer->fresh()->customerProfile;
 
-    expect($profile?->activity_level?->value)->toBe('moderate')
-        ->and($customer->fresh()->currentOnboardingStep())->toBe(OnboardingStep::Macros);
+    expect($profile?->activity_level?->value)->toBe('lightly_active')
+        ->and($customer->fresh()->currentOnboardingStep())->toBe(OnboardingStep::DietProtocol);
+});
+
+test('diet protocol submission calculates and persists daily targets', function () {
+    $customer = User::factory()->customer()->create();
+    CustomerProfile::factory()->for($customer)->withoutOnboarding()->create([
+        'onboarding_step' => OnboardingStep::DietProtocol,
+        'sex' => 'female',
+        'date_of_birth' => '1992-03-03',
+        'age' => 32,
+        'height_cm' => 165,
+        'weight_kg' => 68,
+        'target_weight_kg' => 65,
+        'activity_level' => 'lightly_active',
+    ]);
+
+    $this->actingAs($customer)
+        ->post(route('onboarding.diet-protocol.store'), [
+            'diet_protocol' => 'ketobiotic',
+        ])
+        ->assertRedirect(route('onboarding.show', ['step' => OnboardingStep::DailyTargets->value]));
+
+    $profile = $customer->fresh()->customerProfile;
+
+    expect($profile?->diet_protocol)->toBe('ketobiotic')
+        ->and($profile?->daily_calorie_target)->toBeGreaterThan(1200)
+        ->and($profile?->fat_percentage)->toBe(70.0)
+        ->and($customer->fresh()->currentOnboardingStep())->toBe(OnboardingStep::DailyTargets);
+
+    $shared = MealCraftInertiaSharedData::onboarding($customer->fresh());
+
+    expect($shared['computedTargets']['dailyCalories'] ?? null)->toBe($profile?->daily_calorie_target)
+        ->and($shared['computedTargets']['fatPercentage'] ?? null)->toBe(70.0);
 });
 
 test('customer cannot skip ahead in onboarding', function () {
@@ -317,7 +356,7 @@ test('customer cannot skip ahead in onboarding', function () {
     CustomerProfile::factory()->for($customer)->withoutOnboarding()->create();
 
     $this->actingAs($customer)
-        ->get(route('onboarding.show', ['step' => OnboardingStep::Review->value]))
+        ->get(route('onboarding.show', ['step' => OnboardingStep::FoodFilters->value]))
         ->assertRedirect(route('onboarding.show', ['step' => OnboardingStep::Welcome->value]));
 });
 
@@ -342,17 +381,20 @@ test('onboarding pages receive shared meal craft onboarding props', function () 
 
 test('completed onboarding unlocks the customer app home', function () {
     $customer = User::factory()->customer()->create();
-    CustomerProfile::factory()->for($customer)->create([
-        'onboarding_step' => OnboardingStep::Review,
+    CustomerProfile::factory()->for($customer)->withoutOnboarding()->create([
+        'onboarding_step' => OnboardingStep::FoodFilters,
     ]);
 
     $this->actingAs($customer)
-        ->post(route('onboarding.review.store'))
+        ->post(route('onboarding.food-filters.store'), [
+            'allergies' => ['gluten', 'dairy'],
+        ])
         ->assertRedirect(route('app.home'));
 
     $profile = $customer->fresh()->customerProfile;
 
-    expect($profile?->onboarding_completed_at)->not->toBeNull();
+    expect($profile?->onboarding_completed_at)->not->toBeNull()
+        ->and($profile?->food_filters)->toBe(['gluten', 'dairy']);
 
     $this->actingAs($customer)
         ->get(route('app.home'))

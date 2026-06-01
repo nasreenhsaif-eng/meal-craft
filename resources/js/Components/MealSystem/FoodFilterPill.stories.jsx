@@ -23,6 +23,7 @@ export const Playground = {
 };
 
 export const Active = {
+    name: 'Active (secondary)',
     args: {
         label: 'Dairy',
         isActive: true,

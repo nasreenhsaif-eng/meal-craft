@@ -8,7 +8,9 @@ use App\Enums\MealType;
 use App\Enums\RecipeCategory;
 use App\Services\RecipeNutritionCalculator;
 use App\Support\MealImagePath;
+use Database\Factories\MealFactory;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -16,7 +18,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Meal extends Model
 {
-    use SoftDeletes;
+    /** @use HasFactory<MealFactory> */
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'name',

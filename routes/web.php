@@ -12,7 +12,7 @@ use App\Http\Controllers\Admin\MealLibraryController;
 use App\Http\Controllers\Admin\MealLibraryCsvImportController;
 use App\Http\Controllers\Admin\MealPlanLibraryController;
 use App\Http\Controllers\Customer\CustomerAppController;
-use App\Http\Controllers\Customer\OnboardingWizardController;
+use App\Http\Controllers\Customer\OnboardingController;
 use App\Http\Controllers\MealLibraryCsvExportController;
 use App\Http\Controllers\MealLibraryCsvImportController as JsonMealLibraryCsvImportController;
 use App\Models\Meal;
@@ -89,19 +89,21 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             ->name('onboarding.')
             ->middleware('onboarding.incomplete')
             ->group(function (): void {
-                Route::get('/', [OnboardingWizardController::class, 'index'])->name('index');
-                Route::get('/{step}', [OnboardingWizardController::class, 'show'])->name('show');
-                Route::post('/welcome', [OnboardingWizardController::class, 'storeWelcome'])->name('welcome.store');
-                Route::post('/gender', [OnboardingWizardController::class, 'storeGender'])->name('gender.store');
-                Route::post('/period-tracking', [OnboardingWizardController::class, 'storePeriodTracking'])->name('period-tracking.store');
-                Route::post('/birthday', [OnboardingWizardController::class, 'storeBirthday'])->name('birthday.store');
-                Route::post('/height', [OnboardingWizardController::class, 'storeHeight'])->name('height.store');
-                Route::post('/weight', [OnboardingWizardController::class, 'storeWeight'])->name('weight.store');
-                Route::post('/target-weight', [OnboardingWizardController::class, 'storeTargetWeight'])->name('target-weight.store');
-                Route::post('/activity', [OnboardingWizardController::class, 'storeActivity'])->name('activity.store');
-                Route::post('/macros', [OnboardingWizardController::class, 'storeMacros'])->name('macros.store');
-                Route::post('/meals', [OnboardingWizardController::class, 'storeMeals'])->name('meals.store');
-                Route::post('/review', [OnboardingWizardController::class, 'storeReview'])->name('review.store');
+                Route::get('/', [OnboardingController::class, 'index'])->name('index');
+                Route::get('/{step}', [OnboardingController::class, 'show'])
+                    ->middleware('onboarding.step')
+                    ->name('show');
+                Route::post('/welcome', [OnboardingController::class, 'storeWelcome'])->name('welcome.store');
+                Route::post('/gender', [OnboardingController::class, 'storeGender'])->name('gender.store');
+                Route::post('/period-tracking', [OnboardingController::class, 'storePeriodTracking'])->name('period-tracking.store');
+                Route::post('/birthday', [OnboardingController::class, 'storeBirthday'])->name('birthday.store');
+                Route::post('/height', [OnboardingController::class, 'storeHeight'])->name('height.store');
+                Route::post('/weight', [OnboardingController::class, 'storeWeight'])->name('weight.store');
+                Route::post('/target-weight', [OnboardingController::class, 'storeTargetWeight'])->name('target-weight.store');
+                Route::post('/activity', [OnboardingController::class, 'storeActivity'])->name('activity.store');
+                Route::post('/diet-protocol', [OnboardingController::class, 'storeDietProtocol'])->name('diet-protocol.store');
+                Route::post('/daily-targets', [OnboardingController::class, 'storeDailyTargets'])->name('daily-targets.store');
+                Route::post('/food-filters', [OnboardingController::class, 'storeFoodFilters'])->name('food-filters.store');
             });
 
         Route::prefix('app')

@@ -14,8 +14,17 @@ enum OnboardingStep: string
     case Weight = 'weight';
     case TargetWeight = 'target_weight';
     case Activity = 'activity';
+    case DietProtocol = 'diet_protocol';
+    case DailyTargets = 'daily_targets';
+    case FoodFilters = 'food_filters';
+
+    /** @deprecated Replaced by {@see self::DietProtocol} */
     case Macros = 'macros';
+
+    /** @deprecated Removed from onboarding flow */
     case Meals = 'meals';
+
+    /** @deprecated Completion marker for legacy profiles */
     case Review = 'review';
 
     public function label(): string
@@ -29,6 +38,9 @@ enum OnboardingStep: string
             self::Weight => __('Weight'),
             self::TargetWeight => __('Target weight'),
             self::Activity => __('Activity'),
+            self::DietProtocol => __('Diet protocol'),
+            self::DailyTargets => __('Daily targets'),
+            self::FoodFilters => __('Food filters'),
             self::Macros => __('Macro split'),
             self::Meals => __('Choose meals'),
             self::Review => __('Review'),
@@ -50,9 +62,12 @@ enum OnboardingStep: string
             self::Height => self::Weight,
             self::Weight => self::TargetWeight,
             self::TargetWeight => self::Activity,
-            self::Activity => self::Macros,
-            self::Macros => self::Meals,
-            self::Meals => self::Review,
+            self::Activity => self::DietProtocol,
+            self::DietProtocol => self::DailyTargets,
+            self::DailyTargets => self::FoodFilters,
+            self::FoodFilters => null,
+            self::Macros => self::DietProtocol,
+            self::Meals => self::DailyTargets,
             self::Review => null,
         };
 
@@ -79,15 +94,33 @@ enum OnboardingStep: string
             self::Weight => self::Height,
             self::TargetWeight => self::Weight,
             self::Activity => self::TargetWeight,
+            self::DietProtocol => self::Activity,
+            self::DailyTargets => self::DietProtocol,
+            self::FoodFilters => self::DailyTargets,
             self::Macros => self::Activity,
-            self::Meals => self::Macros,
-            self::Review => self::Meals,
+            self::Meals => self::DietProtocol,
+            self::Review => self::DailyTargets,
         };
     }
 
     public static function shouldShowPeriodTracking(?CustomerProfile $profile): bool
     {
         return $profile?->sex === CustomerSex::Female;
+    }
+
+    /**
+     * Map legacy persisted steps onto the current flow.
+     */
+    public static function normalizeStoredStep(self|string $step): self
+    {
+        $resolved = $step instanceof self ? $step : self::from($step);
+
+        return match ($resolved) {
+            self::Macros => self::DietProtocol,
+            self::Meals => self::DailyTargets,
+            self::Review => self::FoodFilters,
+            default => $resolved,
+        };
     }
 
     /**
@@ -104,9 +137,9 @@ enum OnboardingStep: string
             self::Weight,
             self::TargetWeight,
             self::Activity,
-            self::Macros,
-            self::Meals,
-            self::Review,
+            self::DietProtocol,
+            self::DailyTargets,
+            self::FoodFilters,
         ];
     }
 

@@ -1,17 +1,5 @@
 import { OnboardingGenderInner } from './Gender.jsx';
-
-const ONBOARDING_STEPS = [
-    { value: 'welcome', label: 'Welcome' },
-    { value: 'gender', label: 'Gender' },
-    { value: 'birthday', label: 'Birthday' },
-    { value: 'height', label: 'Height' },
-    { value: 'weight', label: 'Weight' },
-    { value: 'target_weight', label: 'Target weight' },
-    { value: 'activity', label: 'Activity' },
-    { value: 'macros', label: 'Macro split' },
-    { value: 'meals', label: 'Choose meals' },
-    { value: 'review', label: 'Review' },
-];
+import { ONBOARDING_STEPS } from './onboardingSteps.js';
 
 const SEX_OPTIONS = [
     { value: 'male', label: 'Male' },

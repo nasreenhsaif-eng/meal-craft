@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\CustomerOnboardingMiddleware;
 use App\Http\Middleware\EnsureOnboardingComplete;
 use App\Http\Middleware\EnsureOnboardingIncomplete;
 use App\Http\Middleware\EnsureUserIsAdmin;
@@ -30,6 +31,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'customer' => EnsureUserIsCustomer::class,
             'onboarding.complete' => EnsureOnboardingComplete::class,
             'onboarding.incomplete' => EnsureOnboardingIncomplete::class,
+            'onboarding.step' => CustomerOnboardingMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

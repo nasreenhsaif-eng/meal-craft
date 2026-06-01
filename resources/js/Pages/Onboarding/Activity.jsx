@@ -1,15 +1,19 @@
 import { useState } from 'react';
 import { useForm, usePage } from '@inertiajs/react';
-import Button from '../../Components/Atoms/Button/Button.jsx';
-import HeightSnapColumn from '../../Components/Molecules/Onboarding/HeightSnapColumn.jsx';
+import OnboardingInlineDescription from '../../Components/Molecules/Onboarding/OnboardingInlineDescription.jsx';
+import OnboardingOptionButton from '../../Components/Molecules/Onboarding/OnboardingOptionButton.jsx';
 import {
-    ACTIVITY_LEVEL_VALUES,
-    activityDescription,
-    activityLabel,
+    ACTIVITY_LEVEL_OPTIONS,
     defaultActivityLevel,
     resolveActivityLevel,
 } from '../../Components/Molecules/Onboarding/activityUtils.js';
 import { onboardingFromPage } from '../../meal-craft/mealCraftPageProps.js';
+import { useOnboardingStore } from '../../meal-craft/onboarding/OnboardingProvider.jsx';
+import customerOnboardingLayout from '../../Layouts/customerOnboardingLayout.js';
+import {
+    activityLevelToServer,
+    normalizeActivityLevel,
+} from '../../meal-craft/onboarding/onboardingNormalize.js';
 import { OnboardingShell } from './Welcome.jsx';
 
 /**
@@ -62,39 +66,67 @@ export function OnboardingActivityInner({
             centerHeader
         >
             <form
-                className="flex w-full flex-col gap-6"
+                className="flex w-full flex-col gap-5"
                 onSubmit={(event) => {
                     event.preventDefault();
                     onSubmit?.();
                 }}
             >
-                <div className="mx-auto w-full max-w-[300px]">
-                    <HeightSnapColumn
-                        ariaLabel="Daily activity level"
-                        items={ACTIVITY_LEVEL_VALUES}
-                        value={activityLevel}
-                        onChange={setActivityLevel}
-                        formatItem={(item) => activityLabel(String(item))}
-                    />
-                </div>
+                <fieldset className="w-full min-w-0 border-0 p-0">
+                    <legend className="sr-only">Daily activity level</legend>
+                    <div className="flex w-full flex-col gap-2.5" role="group" aria-label="Daily activity level">
+                        {ACTIVITY_LEVEL_OPTIONS.map((option) => {
+                            const selected = activityLevel === option.value;
+                            const descriptionId = `activity-level-desc-${option.value}`;
 
-                <p className="block w-full shrink-0 text-center font-montserrat text-sm leading-normal text-[#555555]">
-                    {activityDescription(activityLevel)}
-                </p>
+                            return (
+                                <div key={option.value} className="flex w-full flex-col">
+                                    <OnboardingOptionButton
+                                        label={option.label}
+                                        selected={selected}
+                                        onSelect={() => setActivityLevel(option.value)}
+                                        describedBy={descriptionId}
+                                    />
+                                    <div
+                                        className={[
+                                            'grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none',
+                                            selected ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]',
+                                        ].join(' ')}
+                                        aria-hidden={!selected}
+                                    >
+                                        <div className="min-h-0 overflow-hidden">
+                                            <OnboardingInlineDescription id={descriptionId}>
+                                                {option.description}
+                                            </OnboardingInlineDescription>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                    {errors.activity_level ? (
+                        <p className="mt-3 text-center text-sm text-red-600" role="alert">
+                            {errors.activity_level}
+                        </p>
+                    ) : null}
+                </fieldset>
 
-                {errors.activity_level ? (
-                    <p className="text-center text-sm text-red-600" role="alert">
-                        {errors.activity_level}
-                    </p>
-                ) : null}
-
-                <div className="flex w-full justify-center">
-                    <Button
+                <div className="pt-1">
+                    <button
                         type="submit"
-                        label={processing ? 'Saving…' : 'Next'}
                         disabled={processing}
-                        className="min-w-[200px] uppercase tracking-[0.08em]"
-                    />
+                        className={[
+                            'inline-flex h-[50px] w-full min-h-[50px] items-center justify-center rounded-[12px]',
+                            'font-montserrat text-[16px] font-bold uppercase leading-none tracking-[0.08em] text-white',
+                            'transition-all duration-200 ease-in-out',
+                            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-protocol-selected focus-visible:ring-offset-2',
+                            processing
+                                ? 'cursor-not-allowed border-2 border-protocol-selected/40 bg-protocol-selected/40'
+                                : 'border-2 border-protocol-selected bg-protocol-selected hover:border-protocol-selected-hover hover:bg-protocol-selected-hover active:border-protocol-selected-pressed active:bg-protocol-selected-pressed',
+                        ].join(' ')}
+                    >
+                        {processing ? 'Saving…' : 'Next'}
+                    </button>
                 </div>
             </form>
         </OnboardingShell>
@@ -104,9 +136,12 @@ export function OnboardingActivityInner({
 export default function Activity() {
     const onboarding = onboardingFromPage(usePage().props);
     const profile = onboarding.profile ?? {};
+    const { state, patch } = useOnboardingStore();
 
     const { data, setData, post, processing, errors } = useForm({
-        activity_level: resolveActivityLevel(profile.activityLevel ?? profile.activity_level ?? defaultActivityLevel()),
+        activity_level: resolveActivityLevel(
+            state.activityLevel || profile.activityLevel || profile.activity_level || defaultActivityLevel(),
+        ),
     });
 
     return (
@@ -114,8 +149,18 @@ export default function Activity() {
             activityLevel={data.activity_level}
             errors={errors}
             processing={processing}
-            onActivityLevelChange={(value) => setData('activity_level', value)}
-            onSubmit={() => post(onboarding.urls?.activity ?? '/onboarding/activity')}
+            onActivityLevelChange={(value) => {
+                const normalized = normalizeActivityLevel(value);
+                setData('activity_level', normalized);
+                patch({ activityLevel: normalized });
+            }}
+            onSubmit={() => {
+                const normalized = normalizeActivityLevel(data.activity_level);
+                patch({ activityLevel: normalized });
+                post(onboarding.urls?.activity ?? '/onboarding/activity', {
+                    activity_level: activityLevelToServer(normalized),
+                });
+            }}
             steps={onboarding.steps ?? []}
             currentStep={onboarding.currentStep ?? 'activity'}
             customerName={onboarding.customerName ?? ''}
@@ -123,4 +168,4 @@ export default function Activity() {
     );
 }
 
-Activity.layout = (page) => page;
+Activity.layout = customerOnboardingLayout;

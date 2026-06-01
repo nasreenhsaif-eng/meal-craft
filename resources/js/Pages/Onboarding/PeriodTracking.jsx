@@ -13,6 +13,8 @@ import {
     removePeriodByKey,
 } from '../../Components/Molecules/Onboarding/periodTrackingUtils.js';
 import { onboardingFromPage } from '../../meal-craft/mealCraftPageProps.js';
+import { useOnboardingStore } from '../../meal-craft/onboarding/OnboardingProvider.jsx';
+import customerOnboardingLayout from '../../Layouts/customerOnboardingLayout.js';
 import { OnboardingShell } from './Welcome.jsx';
 
 /**
@@ -149,11 +151,17 @@ export function OnboardingPeriodTrackingInner({
 export default function PeriodTracking() {
     const onboarding = onboardingFromPage(usePage().props);
     const profile = onboarding.profile ?? {};
+    const { state, patch } = useOnboardingStore();
 
     const { data, setData, post, processing, errors } = useForm({
-        logged_periods: profile.logged_periods ?? profile.loggedPeriods ?? [],
+        logged_periods: state.periodTracking.loggedPeriods.length
+            ? state.periodTracking.loggedPeriods
+            : (profile.logged_periods ?? profile.loggedPeriods ?? []),
         average_cycle_length:
-            profile.average_cycle_length ?? profile.averageCycleLength ?? DEFAULT_CYCLE_LENGTH_DAYS,
+            state.periodTracking.averageCycleLength ??
+            profile.average_cycle_length ??
+            profile.averageCycleLength ??
+            DEFAULT_CYCLE_LENGTH_DAYS,
     });
 
     const handleAverageCycleLengthChange = useCallback(
@@ -174,9 +182,21 @@ export default function PeriodTracking() {
                     typeof next === 'function' ? next(data.logged_periods) : next;
 
                 setData('logged_periods', resolved);
+                patch({ periodTracking: { loggedPeriods: resolved } });
             }}
-            onAverageCycleLengthChange={handleAverageCycleLengthChange}
-            onSubmit={() => post(onboarding.urls?.periodTracking ?? '/onboarding/period-tracking')}
+            onAverageCycleLengthChange={(value) => {
+                handleAverageCycleLengthChange(value);
+                patch({ periodTracking: { averageCycleLength: value } });
+            }}
+            onSubmit={() => {
+                patch({
+                    periodTracking: {
+                        loggedPeriods: data.logged_periods,
+                        averageCycleLength: data.average_cycle_length,
+                    },
+                });
+                post(onboarding.urls?.periodTracking ?? '/onboarding/period-tracking');
+            }}
             steps={onboarding.steps ?? []}
             currentStep={onboarding.currentStep ?? 'period_tracking'}
             customerName={onboarding.customerName ?? ''}
@@ -184,4 +204,4 @@ export default function PeriodTracking() {
     );
 }
 
-PeriodTracking.layout = (page) => page;
+PeriodTracking.layout = customerOnboardingLayout;

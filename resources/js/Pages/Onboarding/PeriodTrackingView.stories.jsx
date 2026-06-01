@@ -1,18 +1,5 @@
 import { OnboardingPeriodTrackingInner } from './PeriodTracking.jsx';
-
-const ONBOARDING_STEPS_FEMALE = [
-    { value: 'welcome', label: 'Welcome' },
-    { value: 'gender', label: 'Gender' },
-    { value: 'period_tracking', label: 'Track your period' },
-    { value: 'birthday', label: 'Birthday' },
-    { value: 'height', label: 'Height' },
-    { value: 'weight', label: 'Weight' },
-    { value: 'target_weight', label: 'Target weight' },
-    { value: 'activity', label: 'Activity' },
-    { value: 'macros', label: 'Macro split' },
-    { value: 'meals', label: 'Choose meals' },
-    { value: 'review', label: 'Review' },
-];
+import { ONBOARDING_STEPS } from './onboardingSteps.js';
 
 export default {
     title: 'MealCraft/Pages/Onboarding/PeriodTrackingView',
@@ -31,7 +18,7 @@ export default {
 export const Default = {
     render: () => (
         <OnboardingPeriodTrackingInner
-            steps={ONBOARDING_STEPS_FEMALE}
+            steps={ONBOARDING_STEPS}
             currentStep="period_tracking"
             customerName="Amina Saif"
         />
@@ -46,7 +33,7 @@ export const WithLoggedPeriods = {
                 { start: '2026-04-20', end: '2026-04-26' },
                 { start: '2026-03-18', end: '2026-03-23' },
             ]}
-            steps={ONBOARDING_STEPS_FEMALE}
+            steps={ONBOARDING_STEPS}
             currentStep="period_tracking"
             customerName="Amina Saif"
         />
@@ -63,7 +50,7 @@ export const WithCalculatedCycleLength = {
                 { start: '2026-03-03', end: '2026-03-07' },
                 { start: '2026-03-31', end: '2026-04-04' },
             ]}
-            steps={ONBOARDING_STEPS_FEMALE}
+            steps={ONBOARDING_STEPS}
             currentStep="period_tracking"
             customerName="Amina Saif"
         />

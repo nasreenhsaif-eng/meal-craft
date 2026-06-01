@@ -1,17 +1,6 @@
 import { OnboardingActivityInner } from './Activity.jsx';
-
-const ONBOARDING_STEPS = [
-    { value: 'welcome', label: 'Welcome' },
-    { value: 'gender', label: 'Gender' },
-    { value: 'birthday', label: 'Birthday' },
-    { value: 'height', label: 'Height' },
-    { value: 'weight', label: 'Weight' },
-    { value: 'target_weight', label: 'Target weight' },
-    { value: 'activity', label: 'Activity' },
-    { value: 'macros', label: 'Macro split' },
-    { value: 'meals', label: 'Choose meals' },
-    { value: 'review', label: 'Review' },
-];
+import { MobileStoryViewport } from '../../storybook/MobileStoryViewport.jsx';
+import { ONBOARDING_STEPS } from './onboardingSteps.js';
 
 export default {
     title: 'MealCraft/Pages/Onboarding/ActivityView',
@@ -20,10 +9,18 @@ export default {
         layout: 'fullscreen',
         docs: {
             description: {
-                component: 'Customer onboarding activity level step with scroll wheel and dynamic description.',
+                component:
+                    'Customer onboarding activity level step — secondary-style option stack with inline description under the active choice.',
             },
         },
     },
+    decorators: [
+        (Story) => (
+            <MobileStoryViewport>
+                <Story />
+            </MobileStoryViewport>
+        ),
+    ],
 };
 
 export const Default = {
@@ -56,7 +53,7 @@ export const ValidationError = {
             steps={ONBOARDING_STEPS}
             currentStep="activity"
             customerName="Amina Saif"
-            activityLevel=""
+            activityLevel="moderate"
             errors={{ activity_level: 'Please select your activity level.' }}
         />
     ),

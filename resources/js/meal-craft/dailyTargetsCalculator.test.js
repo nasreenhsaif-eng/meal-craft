@@ -5,6 +5,7 @@ import {
     calculateMacroGrams,
     calculateMifflinStJeorBmr,
     calculateTdee,
+    DIET_PROTOCOL_MACRO_PRESETS,
     resolveCustomerGoal,
 } from './dailyTargetsCalculator.js';
 
@@ -19,18 +20,19 @@ describe('calculateMifflinStJeorBmr', () => {
 });
 
 describe('calculateDailyTargets', () => {
-    it('derives macro grams from preset percentages', () => {
+    it('derives macro grams from diet protocol percentages', () => {
         const targets = calculateDailyTargets({
             sex: 'female',
             age: 32,
             weight_kg: 68,
             height_cm: 165,
-            activity_level: 'moderate',
-            goal: 'maintain',
-            macro_split_style: 'high_protein',
+            activity_level: 'lightly_active',
+            target_weight_kg: 68,
+            diet_protocol: 'balanced',
         });
 
         expect(targets.dailyCalories).toBeGreaterThan(1200);
+        expect(targets.carbPercentage).toBe(DIET_PROTOCOL_MACRO_PRESETS.balanced.carbPercentage);
         expect(targets.proteinGrams).toBe(
             calculateMacroGrams(
                 targets.dailyCalories,
@@ -41,13 +43,28 @@ describe('calculateDailyTargets', () => {
         );
     });
 
+    it('applies ketobiotic macro split', () => {
+        const targets = calculateDailyTargets({
+            sex: 'female',
+            age: 32,
+            weight_kg: 68,
+            height_cm: 165,
+            activity_level: 'lightly_active',
+            target_weight_kg: 68,
+            diet_protocol: 'ketobiotic',
+        });
+
+        expect(targets.fatPercentage).toBe(70);
+        expect(targets.carbPercentage).toBe(10);
+    });
+
     it('respects an explicit daily calorie override', () => {
         const targets = calculateDailyTargets({
             sex: 'female',
             age: 32,
             weight_kg: 68,
             height_cm: 165,
-            activity_level: 'moderate',
+            activity_level: 'lightly_active',
             daily_calorie_target: 1929,
             protein_percentage: 40,
             carb_percentage: 35,
@@ -73,8 +90,12 @@ describe('resolveCustomerGoal', () => {
 });
 
 describe('applyGoalCalorieAdjustment', () => {
-    it('applies a slight deficit for weight loss goals', () => {
-        expect(applyGoalCalorieAdjustment(2000, 'lose_weight')).toBe(1800);
+    it('applies a 500 kcal deficit for weight loss goals', () => {
+        expect(applyGoalCalorieAdjustment(2000, 'lose_weight')).toBe(1500);
+    });
+
+    it('applies a 300 kcal surplus for muscle gain goals', () => {
+        expect(applyGoalCalorieAdjustment(2000, 'gain_muscle')).toBe(2300);
     });
 
     it('never drops below the minimum calorie floor', () => {
@@ -84,6 +105,6 @@ describe('applyGoalCalorieAdjustment', () => {
 
 describe('calculateTdee', () => {
     it('multiplies BMR by the activity factor', () => {
-        expect(calculateTdee(1390.25, 'moderate')).toBeCloseTo(2154.89, 0);
+        expect(calculateTdee(1390.25, 'lightly_active')).toBeCloseTo(1911.59, 0);
     });
 });

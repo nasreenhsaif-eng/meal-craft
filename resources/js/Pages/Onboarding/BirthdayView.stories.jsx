@@ -1,17 +1,5 @@
 import { OnboardingBirthdayInner } from './Birthday.jsx';
-
-const ONBOARDING_STEPS = [
-    { value: 'welcome', label: 'Welcome' },
-    { value: 'gender', label: 'Gender' },
-    { value: 'birthday', label: 'Birthday' },
-    { value: 'height', label: 'Height' },
-    { value: 'weight', label: 'Weight' },
-    { value: 'target_weight', label: 'Target weight' },
-    { value: 'activity', label: 'Activity' },
-    { value: 'macros', label: 'Macro split' },
-    { value: 'meals', label: 'Choose meals' },
-    { value: 'review', label: 'Review' },
-];
+import { ONBOARDING_STEPS } from './onboardingSteps.js';
 
 export default {
     title: 'MealCraft/Pages/Onboarding/BirthdayView',
@@ -20,7 +8,7 @@ export default {
         layout: 'fullscreen',
         docs: {
             description: {
-                component: 'Customer onboarding birthday step with scrollable month / day / year wheels.',
+                component: 'Customer onboarding birthday step with scrollable wheel date picker.',
             },
         },
     },
@@ -32,20 +20,18 @@ export const Default = {
             steps={ONBOARDING_STEPS}
             currentStep="birthday"
             customerName="Amina Saif"
-            dateOfBirth="1952-03-03"
         />
     ),
 };
 
-export const ValidationError = {
-    name: 'Validation error',
+export const WithDate = {
+    name: 'With date',
     render: () => (
         <OnboardingBirthdayInner
+            dateOfBirth="1992-03-15"
             steps={ONBOARDING_STEPS}
             currentStep="birthday"
             customerName="Amina Saif"
-            dateOfBirth="2015-01-01"
-            errors={{ date_of_birth: 'You must be at least 13 years old to join Meal Craft.' }}
         />
     ),
 };

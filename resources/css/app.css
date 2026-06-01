@@ -11,6 +11,9 @@
   --color-brand-primary: var(--brand-primary-default);
   --color-brand-primary-hover: var(--brand-primary-hover);
   --color-brand-primary-pressed: var(--brand-primary-pressed);
+  --color-protocol-selected: var(--brand-protocol-selected);
+  --color-protocol-selected-hover: var(--brand-protocol-selected-hover);
+  --color-protocol-selected-pressed: var(--brand-protocol-selected-pressed);
   --color-brand-secondary: var(--brand-secondary);
   --color-brand-accent: var(--brand-accent);
   
@@ -54,6 +57,9 @@
   --brand-primary-default: #6E8C47;
   --brand-primary-hover: #6E8C47;
   --brand-primary-pressed: #5A6B44;
+  --brand-protocol-selected: #536643;
+  --brand-protocol-selected-hover: #475538;
+  --brand-protocol-selected-pressed: #3d4830;
   --brand-secondary: #D8A933;
   --brand-accent: #8F55A8;
   --status-error: #C44F5D;

@@ -13,6 +13,8 @@ import {
     feetInchesToCm,
 } from '../../Components/Molecules/Onboarding/heightUtils.js';
 import { onboardingFromPage } from '../../meal-craft/mealCraftPageProps.js';
+import { useOnboardingStore } from '../../meal-craft/onboarding/OnboardingProvider.jsx';
+import customerOnboardingLayout from '../../Layouts/customerOnboardingLayout.js';
 import { OnboardingShell } from './Welcome.jsx';
 
 /**
@@ -156,9 +158,10 @@ export function OnboardingHeightInner({
 export default function Height() {
     const onboarding = onboardingFromPage(usePage().props);
     const profile = onboarding.profile ?? {};
+    const { state, patch } = useOnboardingStore();
 
     const { data, setData, post, processing, errors } = useForm({
-        height_cm: profile.heightCm ?? profile.height_cm ?? defaultHeightCm(),
+        height_cm: state.height ?? profile.heightCm ?? profile.height_cm ?? defaultHeightCm(),
     });
 
     return (
@@ -166,8 +169,14 @@ export default function Height() {
             heightCm={Number(data.height_cm) || defaultHeightCm()}
             errors={errors}
             processing={processing}
-            onHeightCmChange={(value) => setData('height_cm', value)}
-            onSubmit={() => post(onboarding.urls?.height ?? '/onboarding/height')}
+            onHeightCmChange={(value) => {
+                setData('height_cm', value);
+                patch({ height: Number(value) });
+            }}
+            onSubmit={() => {
+                patch({ height: Number(data.height_cm) });
+                post(onboarding.urls?.height ?? '/onboarding/height');
+            }}
             steps={onboarding.steps ?? []}
             currentStep={onboarding.currentStep ?? 'height'}
             customerName={onboarding.customerName ?? ''}
@@ -175,4 +184,4 @@ export default function Height() {
     );
 }
 
-Height.layout = (page) => page;
+Height.layout = customerOnboardingLayout;

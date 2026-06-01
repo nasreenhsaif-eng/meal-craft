@@ -13,6 +13,8 @@ import {
     resolveWeightKg,
 } from '../../Components/Molecules/Onboarding/weightUtils.js';
 import { onboardingFromPage } from '../../meal-craft/mealCraftPageProps.js';
+import { useOnboardingStore } from '../../meal-craft/onboarding/OnboardingProvider.jsx';
+import customerOnboardingLayout from '../../Layouts/customerOnboardingLayout.js';
 import { OnboardingShell } from './Welcome.jsx';
 
 /**
@@ -134,9 +136,10 @@ export function OnboardingWeightInner({
 export default function Weight() {
     const onboarding = onboardingFromPage(usePage().props);
     const profile = onboarding.profile ?? {};
+    const { state, patch } = useOnboardingStore();
 
     const { data, setData, post, processing, errors } = useForm({
-        weight_kg: resolveWeightKg(profile.weightKg ?? profile.weight_kg ?? defaultWeightKg()),
+        weight_kg: resolveWeightKg(state.weight ?? profile.weightKg ?? profile.weight_kg ?? defaultWeightKg()),
     });
 
     return (
@@ -144,8 +147,14 @@ export default function Weight() {
             weightKg={Number(data.weight_kg) || defaultWeightKg()}
             errors={errors}
             processing={processing}
-            onWeightKgChange={(value) => setData('weight_kg', value)}
-            onSubmit={() => post(onboarding.urls?.weight ?? '/onboarding/weight')}
+            onWeightKgChange={(value) => {
+                setData('weight_kg', value);
+                patch({ weight: Number(value) });
+            }}
+            onSubmit={() => {
+                patch({ weight: Number(data.weight_kg) });
+                post(onboarding.urls?.weight ?? '/onboarding/weight');
+            }}
             steps={onboarding.steps ?? []}
             currentStep={onboarding.currentStep ?? 'weight'}
             customerName={onboarding.customerName ?? ''}
@@ -153,4 +162,4 @@ export default function Weight() {
     );
 }
 
-Weight.layout = (page) => page;
+Weight.layout = customerOnboardingLayout;

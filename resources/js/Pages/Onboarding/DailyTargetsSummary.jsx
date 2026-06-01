@@ -8,6 +8,8 @@ import {
     formatMacroPercentage,
 } from '../../meal-craft/dailyTargetsCalculator.js';
 import { onboardingFromPage } from '../../meal-craft/mealCraftPageProps.js';
+import { useOnboardingStore } from '../../meal-craft/onboarding/OnboardingProvider.jsx';
+import customerOnboardingLayout from '../../Layouts/customerOnboardingLayout.js';
 import { OnboardingShell } from './Welcome.jsx';
 
 const MACRO_THEMES = {
@@ -99,7 +101,7 @@ function MacroDetailCard({ name, grams, percentage, theme }) {
 }
 
 /**
- * @param {import('../../meal-craft/dailyTargetsCalculator.js').OnboardingProfileInput} profile
+ * @param {import('../../meal-craft/dailyTargetsCalculator.js').DailyTargetsResult} targets
  * @param {{
  *   onStartPlan?: () => void;
  *   processing?: boolean;
@@ -109,14 +111,16 @@ function MacroDetailCard({ name, grams, percentage, theme }) {
  * }} props
  */
 export function DailyTargetsSummaryInner({
-    profile = {},
+    targets,
     onStartPlan,
     processing = false,
     steps = [],
-    currentStep = 'review',
+    currentStep = 'daily_targets',
     customerName = '',
 }) {
-    const targets = useMemo(() => calculateDailyTargets(profile), [profile]);
+    if (!targets) {
+        return null;
+    }
 
     return (
         <OnboardingShell
@@ -216,17 +220,22 @@ export function DailyTargetsSummaryInner({
 
 export default function DailyTargetsSummary() {
     const onboarding = onboardingFromPage(usePage().props);
-    const profile = onboarding.profile ?? {};
+    const { computedTargets, profileInput } = useOnboardingStore();
+
+    const targets = useMemo(
+        () => computedTargets ?? calculateDailyTargets(profileInput),
+        [computedTargets, profileInput],
+    );
 
     return (
         <DailyTargetsSummaryInner
-            profile={profile}
+            targets={targets}
             steps={onboarding.steps ?? []}
-            currentStep={onboarding.currentStep ?? 'review'}
+            currentStep={onboarding.currentStep ?? 'daily_targets'}
             customerName={onboarding.customerName ?? ''}
-            onStartPlan={() => router.post(onboarding.urls?.review ?? '/onboarding/review')}
+            onStartPlan={() => router.post(onboarding.urls?.dailyTargets ?? '/onboarding/daily-targets')}
         />
     );
 }
 
-DailyTargetsSummary.layout = (page) => page;
+DailyTargetsSummary.layout = customerOnboardingLayout;

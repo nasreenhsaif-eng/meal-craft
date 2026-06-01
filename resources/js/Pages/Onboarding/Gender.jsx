@@ -3,6 +3,8 @@ import { useForm, usePage } from '@inertiajs/react';
 import Button from '../../Components/Atoms/Button/Button.jsx';
 import { GenderOptionCard, genderOptionIcon } from '../../Components/Molecules/Onboarding/GenderOptionCard.jsx';
 import { onboardingFromPage } from '../../meal-craft/mealCraftPageProps.js';
+import { useOnboardingStore } from '../../meal-craft/onboarding/OnboardingProvider.jsx';
+import customerOnboardingLayout from '../../Layouts/customerOnboardingLayout.js';
 import { OnboardingShell } from './Welcome.jsx';
 
 /**
@@ -100,9 +102,10 @@ export default function Gender() {
     const onboarding = onboardingFromPage(usePage().props);
     const profile = onboarding.profile ?? {};
     const options = onboarding.options ?? {};
+    const { state, patch } = useOnboardingStore();
 
     const { data, setData, post, processing, errors } = useForm({
-        sex: profile.sex ?? '',
+        sex: state.gender || profile.sex || '',
     });
 
     return (
@@ -111,8 +114,14 @@ export default function Gender() {
             options={options.sex ?? []}
             errors={errors}
             processing={processing}
-            onSexChange={(value) => setData('sex', value)}
-            onSubmit={() => post(onboarding.urls?.gender ?? '/onboarding/gender')}
+            onSexChange={(value) => {
+                setData('sex', value);
+                patch({ gender: value });
+            }}
+            onSubmit={() => {
+                patch({ gender: data.sex });
+                post(onboarding.urls?.gender ?? '/onboarding/gender');
+            }}
             steps={onboarding.steps ?? []}
             currentStep={onboarding.currentStep ?? 'gender'}
             customerName={onboarding.customerName ?? ''}
@@ -120,4 +129,4 @@ export default function Gender() {
     );
 }
 
-Gender.layout = (page) => page;
+Gender.layout = customerOnboardingLayout;

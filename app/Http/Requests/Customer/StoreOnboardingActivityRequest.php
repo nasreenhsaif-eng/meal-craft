@@ -19,7 +19,14 @@ class StoreOnboardingActivityRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'activity_level' => ['required', Rule::enum(CustomerActivityLevel::class)],
+            'activity_level' => [
+                'required',
+                'string',
+                Rule::in(array_map(
+                    static fn (CustomerActivityLevel $level): string => $level->value,
+                    CustomerActivityLevel::cases(),
+                )),
+            ],
         ];
     }
 }

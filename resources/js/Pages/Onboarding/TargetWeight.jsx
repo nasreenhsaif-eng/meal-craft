@@ -2,6 +2,8 @@ import { useForm, usePage } from '@inertiajs/react';
 import { OnboardingWeightInner } from './Weight.jsx';
 import { defaultWeightKg, resolveTargetWeightKg, resolveWeightKg } from '../../Components/Molecules/Onboarding/weightUtils.js';
 import { onboardingFromPage } from '../../meal-craft/mealCraftPageProps.js';
+import { useOnboardingStore } from '../../meal-craft/onboarding/OnboardingProvider.jsx';
+import customerOnboardingLayout from '../../Layouts/customerOnboardingLayout.js';
 
 export function OnboardingTargetWeightInner({ currentStep = 'target_weight', ...props }) {
     return (
@@ -18,11 +20,14 @@ export function OnboardingTargetWeightInner({ currentStep = 'target_weight', ...
 export default function TargetWeight() {
     const onboarding = onboardingFromPage(usePage().props);
     const profile = onboarding.profile ?? {};
-    const currentWeightKg = resolveWeightKg(profile.weightKg ?? profile.weight_kg ?? defaultWeightKg());
+    const { state, patch } = useOnboardingStore();
+    const currentWeightKg = resolveWeightKg(
+        state.weight ?? profile.weightKg ?? profile.weight_kg ?? defaultWeightKg(),
+    );
 
     const { data, setData, post, processing, errors } = useForm({
         target_weight_kg: resolveTargetWeightKg(
-            profile.targetWeightKg ?? profile.target_weight_kg,
+            state.targetWeight ?? profile.targetWeightKg ?? profile.target_weight_kg,
             currentWeightKg,
         ),
     });
@@ -32,8 +37,14 @@ export default function TargetWeight() {
             weightKg={Number(data.target_weight_kg) || currentWeightKg}
             errors={errors}
             processing={processing}
-            onWeightKgChange={(value) => setData('target_weight_kg', value)}
-            onSubmit={() => post(onboarding.urls?.targetWeight ?? '/onboarding/target-weight')}
+            onWeightKgChange={(value) => {
+                setData('target_weight_kg', value);
+                patch({ targetWeight: Number(value) });
+            }}
+            onSubmit={() => {
+                patch({ targetWeight: Number(data.target_weight_kg) });
+                post(onboarding.urls?.targetWeight ?? '/onboarding/target-weight');
+            }}
             steps={onboarding.steps ?? []}
             currentStep={onboarding.currentStep ?? 'target_weight'}
             customerName={onboarding.customerName ?? ''}
@@ -41,4 +52,4 @@ export default function TargetWeight() {
     );
 }
 
-TargetWeight.layout = (page) => page;
+TargetWeight.layout = customerOnboardingLayout;

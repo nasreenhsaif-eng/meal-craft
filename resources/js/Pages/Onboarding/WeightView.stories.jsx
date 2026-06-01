@@ -1,17 +1,5 @@
 import { OnboardingWeightInner } from './Weight.jsx';
-
-const ONBOARDING_STEPS = [
-    { value: 'welcome', label: 'Welcome' },
-    { value: 'gender', label: 'Gender' },
-    { value: 'birthday', label: 'Birthday' },
-    { value: 'height', label: 'Height' },
-    { value: 'weight', label: 'Weight' },
-    { value: 'target_weight', label: 'Target weight' },
-    { value: 'activity', label: 'Activity' },
-    { value: 'macros', label: 'Macro split' },
-    { value: 'meals', label: 'Choose meals' },
-    { value: 'review', label: 'Review' },
-];
+import { ONBOARDING_STEPS } from './onboardingSteps.js';
 
 export default {
     title: 'MealCraft/Pages/Onboarding/WeightView',
@@ -32,7 +20,7 @@ export const Default = {
             steps={ONBOARDING_STEPS}
             currentStep="weight"
             customerName="Amina Saif"
-            weightKg={70}
+            weightKg={68}
         />
     ),
 };
@@ -44,7 +32,7 @@ export const Pounds = {
             steps={ONBOARDING_STEPS}
             currentStep="weight"
             customerName="Amina Saif"
-            weightKg={68}
+            weightKg={72}
             defaultUnit="lb"
         />
     ),
@@ -58,7 +46,7 @@ export const ValidationError = {
             currentStep="weight"
             customerName="Amina Saif"
             weightKg={30}
-            errors={{ weight_kg: 'Weight must be at least 40 kg.' }}
+            errors={{ weight_kg: 'Weight must be at least 35 kg.' }}
         />
     ),
 };

@@ -2,6 +2,7 @@ import { router, usePage } from '@inertiajs/react';
 import Button from '../../Components/Atoms/Button/Button.jsx';
 import CustomerInertiaShell from '../../Layouts/CustomerInertiaShell.jsx';
 import { onboardingFromPage } from '../../meal-craft/mealCraftPageProps.js';
+import customerOnboardingLayout from '../../Layouts/customerOnboardingLayout.js';
 
 /**
  * @param {object} props
@@ -102,4 +103,4 @@ export default function Welcome() {
     );
 }
 
-Welcome.layout = (page) => page;
+Welcome.layout = customerOnboardingLayout;

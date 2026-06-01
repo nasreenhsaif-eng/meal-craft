@@ -1,17 +1,5 @@
 import { OnboardingTargetWeightInner } from './TargetWeight.jsx';
-
-const ONBOARDING_STEPS = [
-    { value: 'welcome', label: 'Welcome' },
-    { value: 'gender', label: 'Gender' },
-    { value: 'birthday', label: 'Birthday' },
-    { value: 'height', label: 'Height' },
-    { value: 'weight', label: 'Weight' },
-    { value: 'target_weight', label: 'Target weight' },
-    { value: 'activity', label: 'Activity' },
-    { value: 'macros', label: 'Macro split' },
-    { value: 'meals', label: 'Choose meals' },
-    { value: 'review', label: 'Review' },
-];
+import { ONBOARDING_STEPS } from './onboardingSteps.js';
 
 export default {
     title: 'MealCraft/Pages/Onboarding/TargetWeightView',
@@ -32,7 +20,7 @@ export const Default = {
             steps={ONBOARDING_STEPS}
             currentStep="target_weight"
             customerName="Amina Saif"
-            weightKg={68}
+            targetWeightKg={65}
         />
     ),
 };
@@ -44,7 +32,7 @@ export const Pounds = {
             steps={ONBOARDING_STEPS}
             currentStep="target_weight"
             customerName="Amina Saif"
-            weightKg={65}
+            targetWeightKg={68}
             defaultUnit="lb"
         />
     ),
@@ -57,8 +45,8 @@ export const ValidationError = {
             steps={ONBOARDING_STEPS}
             currentStep="target_weight"
             customerName="Amina Saif"
-            weightKg={30}
-            errors={{ target_weight_kg: 'Target weight must be at least 40 kg.' }}
+            targetWeightKg={30}
+            errors={{ target_weight_kg: 'Target weight must be at least 35 kg.' }}
         />
     ),
 };

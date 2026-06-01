@@ -4,6 +4,8 @@ import Button from '../../Components/Atoms/Button/Button.jsx';
 import FoodFilterMultiSelect from '../../Components/MealSystem/FoodFilterMultiSelect.jsx';
 import { FOOD_FILTER_OTHER_ID } from '../../Components/MealSystem/foodFilterOptions.js';
 import { onboardingFromPage } from '../../meal-craft/mealCraftPageProps.js';
+import { useOnboardingStore } from '../../meal-craft/onboarding/OnboardingProvider.jsx';
+import customerOnboardingLayout from '../../Layouts/customerOnboardingLayout.js';
 import { OnboardingShell } from './Welcome.jsx';
 
 /**
@@ -93,10 +95,11 @@ export function OnboardingFoodFilterInner({
 export default function FoodFilter() {
     const onboarding = onboardingFromPage(usePage().props);
     const profile = onboarding.profile ?? {};
+    const { state, patch } = useOnboardingStore();
 
     const { data, setData, post, processing, errors } = useForm({
-        allergies: profile.allergies ?? [],
-        allergy_other: profile.allergy_other ?? '',
+        allergies: state.foodFilters.length ? state.foodFilters : (profile.allergies ?? []),
+        allergy_other: state.allergyOther || profile.allergy_other || '',
     });
 
     const selectedFilters = Array.isArray(data.allergies) ? data.allergies : [];
@@ -109,12 +112,20 @@ export default function FoodFilter() {
             processing={processing}
             onSelectedFiltersChange={(next) => {
                 setData('allergies', next);
+                patch({ foodFilters: next });
                 if (!next.includes(FOOD_FILTER_OTHER_ID)) {
                     setData('allergy_other', '');
+                    patch({ allergyOther: '' });
                 }
             }}
-            onOtherTextChange={(value) => setData('allergy_other', value)}
-            onSubmit={() => post(onboarding.urls?.foodFilters ?? '/onboarding/food-filters')}
+            onOtherTextChange={(value) => {
+                setData('allergy_other', value);
+                patch({ allergyOther: value });
+            }}
+            onSubmit={() => {
+                patch({ foodFilters: data.allergies, allergyOther: data.allergy_other });
+                post(onboarding.urls?.foodFilters ?? '/onboarding/food-filters');
+            }}
             steps={onboarding.steps ?? []}
             currentStep={onboarding.currentStep ?? 'food_filters'}
             customerName={onboarding.customerName ?? ''}
@@ -122,4 +133,4 @@ export default function FoodFilter() {
     );
 }
 
-FoodFilter.layout = (page) => page;
+FoodFilter.layout = customerOnboardingLayout;

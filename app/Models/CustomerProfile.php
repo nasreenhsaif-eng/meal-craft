@@ -27,10 +27,13 @@ class CustomerProfile extends Model
         'height_cm',
         'age',
         'date_of_birth',
+        'birthdate',
         'sex',
+        'gender',
         'activity_level',
         'goal',
         'diet_type',
+        'diet_protocol',
         'macro_split_style',
         'daily_calorie_target',
         'protein_percentage',
@@ -38,6 +41,10 @@ class CustomerProfile extends Model
         'fat_percentage',
         'logged_periods',
         'average_cycle_length',
+        'period_tracking_data',
+        'allergies',
+        'food_filters',
+        'dislikes',
         'onboarding_completed_at',
     ];
 
@@ -49,7 +56,10 @@ class CustomerProfile extends Model
             'height_cm' => 'float',
             'age' => 'integer',
             'date_of_birth' => 'date',
+            'birthdate' => 'date',
             'sex' => CustomerSex::class,
+            'period_tracking_data' => 'array',
+            'food_filters' => 'array',
             'activity_level' => CustomerActivityLevel::class,
             'goal' => CustomerGoal::class,
             'diet_type' => DietType::class,
@@ -65,6 +75,23 @@ class CustomerProfile extends Model
             'onboarding_step' => OnboardingStep::class,
             'onboarding_completed_at' => 'datetime',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::saving(function (CustomerProfile $profile): void {
+            if ($profile->sex !== null) {
+                $profile->gender = $profile->sex->value;
+            }
+
+            if ($profile->date_of_birth !== null) {
+                $profile->birthdate = $profile->date_of_birth;
+            }
+
+            if ($profile->allergies !== null) {
+                $profile->food_filters = $profile->allergies;
+            }
+        });
     }
 
     public function user(): BelongsTo

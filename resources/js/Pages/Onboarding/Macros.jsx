@@ -1,6 +1,7 @@
 import { useForm, usePage } from '@inertiajs/react';
 import Button from '../../Components/Atoms/Button/Button.jsx';
 import { onboardingFromPage } from '../../meal-craft/mealCraftPageProps.js';
+import customerOnboardingLayout from '../../Layouts/customerOnboardingLayout.js';
 import { OnboardingShell } from './Welcome.jsx';
 
 const inputClassName =
@@ -72,4 +73,4 @@ export default function Macros() {
     );
 }
 
-Macros.layout = (page) => page;
+Macros.layout = customerOnboardingLayout;
