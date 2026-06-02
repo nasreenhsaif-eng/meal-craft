@@ -3,7 +3,7 @@ import { OnboardingWeightInner } from './Weight.jsx';
 import { defaultWeightKg, resolveTargetWeightKg, resolveWeightKg } from '../../Components/Molecules/Onboarding/weightUtils.js';
 import { onboardingFromPage } from '../../meal-craft/mealCraftPageProps.js';
 import { useOnboardingStore } from '../../meal-craft/onboarding/OnboardingProvider.jsx';
-import customerOnboardingLayout from '../../Layouts/customerOnboardingLayout.js';
+import customerOnboardingLayout from '../../Layouts/customerOnboardingLayout.jsx';
 
 export function OnboardingTargetWeightInner({ currentStep = 'target_weight', ...props }) {
     return (

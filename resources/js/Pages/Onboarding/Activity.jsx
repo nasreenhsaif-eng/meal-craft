@@ -9,7 +9,7 @@ import {
 } from '../../Components/Molecules/Onboarding/activityUtils.js';
 import { onboardingFromPage } from '../../meal-craft/mealCraftPageProps.js';
 import { useOnboardingStore } from '../../meal-craft/onboarding/OnboardingProvider.jsx';
-import customerOnboardingLayout from '../../Layouts/customerOnboardingLayout.js';
+import customerOnboardingLayout from '../../Layouts/customerOnboardingLayout.jsx';
 import {
     activityLevelToServer,
     normalizeActivityLevel,

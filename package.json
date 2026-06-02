@@ -2,10 +2,13 @@
     "$schema": "https://www.schemastore.org/package.json",
     "private": true,
     "type": "module",
+    "engines": {
+        "node": ">=20 <22"
+    },
     "scripts": {
         "build": "vite build",
         "dev": "vite",
-        "storybook": "storybook dev -p 6006",
+        "storybook": "storybook dev -p 6007 --ci --no-open --host 127.0.0.1",
         "build-storybook": "storybook build"
     },
     "dependencies": {

@@ -116,8 +116,8 @@ export function HeightSnapColumn({
                                 state === 'selected'
                                     ? 'bg-[#6E8C47]/10 text-lg font-bold text-[#364153] opacity-100'
                                     : state === 'adjacent'
-                                      ? 'bg-transparent text-sm font-medium text-[#777777] opacity-30'
-                                      : 'bg-transparent text-sm font-medium text-[#777777] opacity-20',
+                                      ? 'bg-transparent text-sm font-medium text-[#6B7280] opacity-30'
+                                      : 'bg-transparent text-sm font-medium text-[#6B7280] opacity-20',
                             ].join(' ')}
                         >
                             <span>{formatItem(item)}</span>

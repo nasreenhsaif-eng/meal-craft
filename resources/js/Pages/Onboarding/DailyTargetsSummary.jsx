@@ -9,7 +9,7 @@ import {
 } from '../../meal-craft/dailyTargetsCalculator.js';
 import { onboardingFromPage } from '../../meal-craft/mealCraftPageProps.js';
 import { useOnboardingStore } from '../../meal-craft/onboarding/OnboardingProvider.jsx';
-import customerOnboardingLayout from '../../Layouts/customerOnboardingLayout.js';
+import customerOnboardingLayout from '../../Layouts/customerOnboardingLayout.jsx';
 import { OnboardingShell } from './Welcome.jsx';
 
 const MACRO_THEMES = {

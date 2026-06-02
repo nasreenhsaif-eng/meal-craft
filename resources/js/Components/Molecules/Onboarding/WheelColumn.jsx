@@ -75,7 +75,7 @@ export function WheelColumn({
                                 'mx-1 flex h-11 shrink-0 snap-center items-center justify-center rounded-[10px] px-1 font-montserrat text-base leading-none transition-[opacity,font-weight,color,background-color] sm:mx-2 sm:px-2',
                                 selected
                                     ? 'bg-[#6E8C47]/10 font-bold text-[#364153] opacity-100'
-                                    : 'bg-transparent font-medium text-[#777777] opacity-40',
+                                    : 'bg-transparent font-medium text-[#6B7280] opacity-40',
                             ].join(' ')}
                         >
                             {formatItem(item)}

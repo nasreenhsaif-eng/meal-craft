@@ -26,7 +26,7 @@ function CustomerProfilesView({ customers }) {
                     <tbody className="divide-y divide-gray-100">
                         {customers.length === 0 ? (
                             <tr>
-                                <td colSpan={5} className="px-4 py-8 text-center text-[#777777]">
+                                <td colSpan={5} className="px-4 py-8 text-center text-[#6B7280]">
                                     No customer profiles yet.
                                 </td>
                             </tr>

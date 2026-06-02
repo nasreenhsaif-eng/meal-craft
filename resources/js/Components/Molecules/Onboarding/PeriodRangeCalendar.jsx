@@ -190,7 +190,7 @@ export default function PeriodRangeCalendar({
         >
             <div
                 className="box-border w-full overflow-hidden rounded-[12px] border border-border-light bg-white shadow-sm"
-                role="grid"
+                role="group"
                 aria-label={ariaLabel}
             >
                 <div className="flex items-center justify-between gap-2 border-b border-border-light bg-white px-3 py-3 sm:px-4">
@@ -219,11 +219,16 @@ export default function PeriodRangeCalendar({
                     </button>
                 </div>
 
-                <div className="w-full min-w-0 p-2 sm:p-3" aria-labelledby={monthHeadingId}>
-                    <div className={`${gridCols7} mb-2 gap-1`} role="presentation">
+                <div
+                    className="w-full min-w-0 p-2 sm:p-3"
+                    role="grid"
+                    aria-labelledby={monthHeadingId}
+                >
+                    <div className={`${gridCols7} mb-2 gap-1`} role="row">
                         {WEEKDAY_LABELS_MON_FIRST.map((wd) => (
                             <div
                                 key={wd}
+                                role="columnheader"
                                 className="flex min-w-0 items-center justify-center font-sans text-[11px] font-bold uppercase tracking-wide text-grey-94"
                             >
                                 {wd}

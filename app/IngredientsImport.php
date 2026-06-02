@@ -53,7 +53,7 @@ final class IngredientsImport
      *   {@code Ingredient Name (Weightg)} segments (e.g. {@code Carrots, raw (100g) | Onion (50g)})
      * - finished_weight_grams — optional cooked yield for per-100 g scaling
      */
-    public function importFromPath(string $path): int
+    public function importFromPath(string $path, bool $lenientBaseRecipes = false): int
     {
         if (! is_file($path) || ! is_readable($path)) {
             return 0;
@@ -65,10 +65,10 @@ final class IngredientsImport
             'text/csv',
             null,
             true,
-        ));
+        ), $lenientBaseRecipes);
     }
 
-    public function import(UploadedFile $file): int
+    public function import(UploadedFile $file, bool $lenientBaseRecipes = false): int
     {
         $path = $file->getRealPath();
 
@@ -125,7 +125,16 @@ final class IngredientsImport
                     $this->importBaseRecipeRow($name, $record, $csvRowNumber);
                     $imported++;
                 } catch (InvalidArgumentException $e) {
-                    $importErrors[] = $e->getMessage();
+                    if ($lenientBaseRecipes) {
+                        // The menu CSV backup may reference legacy ingredient ids inside `recipe_components`.
+                        // In that case, fall back to importing the base recipe as a standalone verified ingredient row
+                        // (nutrition values are already present in the CSV), and skip the component graph.
+                        $attrs = $this->mapRecordToIngredientAttributes($record);
+                        $this->upsertByNameSafely($name, $attrs);
+                        $imported++;
+                    } else {
+                        $importErrors[] = $e->getMessage();
+                    }
                 }
 
                 continue;

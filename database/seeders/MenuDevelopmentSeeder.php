@@ -36,7 +36,7 @@ class MenuDevelopmentSeeder extends Seeder
         }
 
         try {
-            $count = app(IngredientsImport::class)->importFromPath($path);
+            $count = app(IngredientsImport::class)->importFromPath($path, lenientBaseRecipes: true);
         } catch (InvalidArgumentException $exception) {
             $this->command?->error('Menu seed: ingredients.csv import failed.');
             $this->command?->error($exception->getMessage());

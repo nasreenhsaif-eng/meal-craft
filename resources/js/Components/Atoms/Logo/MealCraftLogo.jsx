@@ -255,6 +255,7 @@ export default function MealCraftLogo({
     presentation = 'inline',
     onSplashComplete,
 }) {
+    const ariaLabel = typeof alt === 'string' && alt.trim().length ? alt : 'Meal Craft';
     const vKey = String(variant ?? 'smart')
         .trim()
         .toLowerCase();
@@ -314,7 +315,7 @@ export default function MealCraftLogo({
                 className={['block shrink-0 max-w-full overflow-hidden', className].filter(Boolean).join(' ')}
                 viewBox={vb}
                 role="img"
-                aria-label={alt}
+                aria-label={ariaLabel}
                 xmlns="http://www.w3.org/2000/svg"
                 width={pxWidth != null ? pxWidth : undefined}
                 height={pxWidth != null ? pxWidth / aspect : undefined}

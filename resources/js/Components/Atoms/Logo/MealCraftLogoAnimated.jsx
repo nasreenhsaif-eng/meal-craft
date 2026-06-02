@@ -47,6 +47,7 @@ export function MealCraftLogoAnimatedIdentity({
     presentation = 'inline',
     onSplashComplete,
 }) {
+    const ariaLabel = typeof alt === 'string' && alt.trim().length ? alt : 'Meal Craft';
     const isSplash = presentation === 'splash' && variant === 'marketing-animated';
     const [exiting, setExiting] = useState(false);
 
@@ -173,7 +174,7 @@ export function MealCraftLogoAnimatedIdentity({
         return (
             <motion.div
                 role="img"
-                aria-label={alt}
+                aria-label={ariaLabel}
                 data-meal-craft-logo
                 data-variant={variant}
                 className={`fixed inset-0 z-50 flex select-none flex-col items-center justify-center overflow-hidden px-4 ${rootClass}`}
@@ -197,7 +198,7 @@ export function MealCraftLogoAnimatedIdentity({
     return (
         <div
             role="img"
-            aria-label={alt}
+            aria-label={ariaLabel}
             data-meal-craft-logo
             data-variant={variant}
             data-tagline-opacity={variant !== 'minimal-animated' ? ANIMATED_TAGLINE_OPACITY : undefined}

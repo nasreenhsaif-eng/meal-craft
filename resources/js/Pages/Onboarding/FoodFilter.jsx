@@ -5,7 +5,7 @@ import FoodFilterMultiSelect from '../../Components/MealSystem/FoodFilterMultiSe
 import { FOOD_FILTER_OTHER_ID } from '../../Components/MealSystem/foodFilterOptions.js';
 import { onboardingFromPage } from '../../meal-craft/mealCraftPageProps.js';
 import { useOnboardingStore } from '../../meal-craft/onboarding/OnboardingProvider.jsx';
-import customerOnboardingLayout from '../../Layouts/customerOnboardingLayout.js';
+import customerOnboardingLayout from '../../Layouts/customerOnboardingLayout.jsx';
 import { OnboardingShell } from './Welcome.jsx';
 
 /**

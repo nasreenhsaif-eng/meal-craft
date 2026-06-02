@@ -2,7 +2,7 @@ import { router, usePage } from '@inertiajs/react';
 import Button from '../../Components/Atoms/Button/Button.jsx';
 import CustomerInertiaShell from '../../Layouts/CustomerInertiaShell.jsx';
 import { onboardingFromPage } from '../../meal-craft/mealCraftPageProps.js';
-import customerOnboardingLayout from '../../Layouts/customerOnboardingLayout.js';
+import customerOnboardingLayout from '../../Layouts/customerOnboardingLayout.jsx';
 
 /**
  * @param {object} props
@@ -26,7 +26,7 @@ function OnboardingStepNav({ steps, currentStep }) {
                                 ? 'bg-[#556C37] text-white'
                                 : complete
                                   ? 'bg-[#E8EFE0] text-[#556C37]'
-                                  : 'bg-white text-[#777777]'
+                                  : 'bg-white text-[#6B7280]'
                         }`}
                     >
                         {step.label}
