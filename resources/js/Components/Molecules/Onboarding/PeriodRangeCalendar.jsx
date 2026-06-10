@@ -19,7 +19,7 @@ import {
 const gridCols7 = 'grid w-full min-w-0 [grid-template-columns:repeat(7,minmax(0,1fr))]';
 
 const cellBase =
-    'relative flex aspect-square min-h-[44px] w-full min-w-0 flex-col items-center justify-center gap-0.5 rounded-[12px] border border-transparent font-sans text-sm font-medium tabular-nums transition-colors duration-150';
+    'relative flex aspect-square min-h-[44px] w-full min-w-0 flex-col items-center justify-center gap-0.5 rounded-[12px] border border-transparent font-sans text-sm font-medium tabular-nums';
 const cellFocus =
     'outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-status-error focus-visible:ring-offset-2';
 
@@ -186,7 +186,7 @@ export default function PeriodRangeCalendar({
     return (
         <div
             id={id}
-            className={`relative mx-auto box-border w-full min-w-[280px] max-w-[400px] ${className}`.trim()}
+            className={`relative box-border w-full min-w-0 md:mx-auto md:max-w-[400px] ${className}`.trim()}
         >
             <div
                 className="box-border w-full overflow-hidden rounded-[12px] border border-border-light bg-white shadow-sm"

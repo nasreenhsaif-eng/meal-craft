@@ -1,11 +1,16 @@
+import CustomerAppHeaderActions from '../../Components/Molecules/Customer/CustomerAppHeaderActions.jsx';
 import CustomerInertiaShell from '../../Layouts/CustomerInertiaShell.jsx';
+import { resolveInertiaLayoutChild } from '../../lib/resolveInertiaLayoutChild.js';
 
 /**
  * @param {object} props
  */
 export default function Home({ customerName, profile }) {
     return (
-        <CustomerInertiaShell customerName={customerName}>
+        <CustomerInertiaShell
+            customerName={customerName}
+            headerActions={<CustomerAppHeaderActions />}
+        >
             <div className="rounded-[16px] border border-gray-200 bg-white p-8 shadow-sm">
                 <h1 className="font-montserrat text-3xl font-semibold text-[#262A22]">Welcome back{customerName ? `, ${customerName}` : ''}</h1>
                 <p className="mt-3 text-sm text-[#555555]">
@@ -31,4 +36,4 @@ export default function Home({ customerName, profile }) {
     );
 }
 
-Home.layout = (page) => page;
+Home.layout = (pageOrProps) => resolveInertiaLayoutChild(pageOrProps);

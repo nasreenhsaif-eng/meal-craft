@@ -19,7 +19,8 @@ test('customers cannot access the admin dashboard', function () {
 
     $this->actingAs($customer)
         ->get(route('admin.dashboard'))
-        ->assertForbidden();
+        ->assertRedirect(route('onboarding.show', ['step' => OnboardingStep::Gender->value]))
+        ->assertSessionHas('error');
 });
 
 test('customers cannot access kitchen routes', function () {
@@ -28,18 +29,34 @@ test('customers cannot access kitchen routes', function () {
 
     $this->actingAs($customer)
         ->get(route('meals.index'))
-        ->assertForbidden();
+        ->assertRedirect(route('app.home'))
+        ->assertSessionHas('error');
 });
 
 test('admins can preview customer onboarding', function () {
     $admin = User::factory()->create(['role' => UserRole::Admin]);
 
     $this->actingAs($admin)
-        ->get(route('onboarding.show', ['step' => OnboardingStep::Welcome->value]))
+        ->get(route('onboarding.show', ['step' => OnboardingStep::Gender->value]))
         ->assertSuccessful()
         ->assertInertia(fn ($page) => $page
-            ->component('Onboarding/Welcome')
+            ->component('Onboarding/Container')
+            ->where('activeStep', OnboardingStep::Gender->value)
             ->has('mealCraft.onboarding.options.sex'));
+});
+
+test('admins can save diet protocol while previewing onboarding', function () {
+    $admin = User::factory()->create(['role' => UserRole::Admin]);
+    CustomerProfile::factory()->for($admin)->withoutOnboarding()->create([
+        'onboarding_step' => OnboardingStep::DietProtocol,
+        'sex' => 'male',
+    ]);
+
+    $this->actingAs($admin)
+        ->post(route('onboarding.diet-protocol.store'), [
+            'diet_protocol' => 'balanced',
+        ])
+        ->assertRedirect(route('onboarding.show', ['step' => OnboardingStep::Birthday->value]));
 });
 
 test('customers cannot access the customer app before onboarding is complete', function () {
@@ -48,7 +65,7 @@ test('customers cannot access the customer app before onboarding is complete', f
 
     $this->actingAs($customer)
         ->get(route('app.home'))
-        ->assertRedirect(route('onboarding.show', ['step' => OnboardingStep::Welcome->value]));
+        ->assertRedirect(route('onboarding.show', ['step' => OnboardingStep::Gender->value]));
 });
 
 test('inactive users cannot log in', function () {
@@ -63,13 +80,23 @@ test('inactive users cannot log in', function () {
     $this->assertGuest();
 });
 
-test('admin users are redirected to the admin dashboard after login', function () {
+test('admin users are redirected to the portal choice screen after login', function () {
     $admin = User::factory()->create(['role' => UserRole::Admin]);
 
     $this->post(route('login.store'), [
         'email' => $admin->email,
         'password' => 'password',
-    ])->assertRedirect(route('admin.dashboard', absolute: false));
+    ])->assertRedirect(route('login.portal-choice', absolute: false));
+});
+
+test('customer users with completed onboarding are redirected to the app after login', function () {
+    $customer = User::factory()->customer()->create();
+    CustomerProfile::factory()->for($customer)->create();
+
+    $this->post(route('login.store'), [
+        'email' => $customer->email,
+        'password' => 'password',
+    ])->assertRedirect(route('app.home', absolute: false));
 });
 
 test('customer users are redirected to onboarding after login', function () {
@@ -79,5 +106,5 @@ test('customer users are redirected to onboarding after login', function () {
     $this->post(route('login.store'), [
         'email' => $customer->email,
         'password' => 'password',
-    ])->assertRedirect(route('onboarding.show', ['step' => OnboardingStep::Welcome->value], absolute: false));
+    ])->assertRedirect(route('onboarding.show', ['step' => OnboardingStep::Gender->value], absolute: false));
 });

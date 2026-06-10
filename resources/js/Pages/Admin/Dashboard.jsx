@@ -5,6 +5,7 @@ import { router, usePage } from '@inertiajs/react';
 import UserManagementTable from '../../Components/Admin/UserManagementTable.jsx';
 import DropdownTextInput from '../../Components/Atoms/TextInput/DropdownTextInput.jsx';
 import AdminInertiaShell from '../../Layouts/AdminInertiaShell.jsx';
+import adminInertiaLayout from '../../lib/adminInertiaLayout.jsx';
 
 function formatCurrency(value) {
     try {
@@ -265,4 +266,4 @@ export default function Dashboard() {
     );
 }
 
-Dashboard.layout = (page) => <AdminInertiaShell>{page}</AdminInertiaShell>;
+Dashboard.layout = adminInertiaLayout;

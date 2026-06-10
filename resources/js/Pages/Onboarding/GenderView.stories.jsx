@@ -1,4 +1,5 @@
 import { OnboardingGenderInner } from './Gender.jsx';
+import { withOnboardingMobileFrame } from './onboardingStoryDecorators.jsx';
 import { ONBOARDING_STEPS } from './onboardingSteps.js';
 
 const SEX_OPTIONS = [
@@ -18,6 +19,7 @@ export default {
             },
         },
     },
+    decorators: withOnboardingMobileFrame,
 };
 
 export const Default = {

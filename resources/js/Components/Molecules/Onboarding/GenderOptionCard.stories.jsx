@@ -6,7 +6,7 @@ export default {
     parameters: {
         docs: {
             description: {
-                component: 'Selectable gender card used in the customer onboarding profile step.',
+                component: 'Full-width secondary gender choice with inline icon and label.',
             },
         },
     },
@@ -51,9 +51,11 @@ export const FemaleSelected = {
 
 export const Pair = {
     render: () => (
-        <div className="mx-auto grid w-full max-w-[280px] grid-cols-2 gap-3 sm:max-w-xs sm:gap-4">
-            <GenderOptionCard label="Male" selected icon={genderOptionIcon('male')} className="w-full" />
-            <GenderOptionCard label="Female" icon={genderOptionIcon('female')} className="w-full" />
+        <div className="w-full max-w-md px-4">
+            <div className="flex w-full flex-col gap-3 [&_.mc-gender-option]:w-full">
+                <GenderOptionCard label="Male" selected icon={genderOptionIcon('male')} />
+                <GenderOptionCard label="Female" icon={genderOptionIcon('female')} />
+            </div>
         </div>
     ),
 };

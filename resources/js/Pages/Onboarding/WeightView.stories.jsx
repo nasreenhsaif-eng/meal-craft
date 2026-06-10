@@ -1,4 +1,5 @@
 import { OnboardingWeightInner } from './Weight.jsx';
+import { withOnboardingMobileFrame } from './onboardingStoryDecorators.jsx';
 import { ONBOARDING_STEPS } from './onboardingSteps.js';
 
 export default {
@@ -12,6 +13,7 @@ export default {
             },
         },
     },
+    decorators: withOnboardingMobileFrame,
 };
 
 export const Default = {

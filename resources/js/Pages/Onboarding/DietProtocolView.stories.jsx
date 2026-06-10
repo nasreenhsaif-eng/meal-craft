@@ -1,5 +1,5 @@
 import { OnboardingDietProtocolInner } from './DietProtocol.jsx';
-import { MobileStoryViewport } from '../../storybook/MobileStoryViewport.jsx';
+import { withOnboardingMobileFrame } from './onboardingStoryDecorators.jsx';
 import { ONBOARDING_STEPS } from './onboardingSteps.js';
 
 export default {
@@ -14,13 +14,7 @@ export default {
             },
         },
     },
-    decorators: [
-        (Story) => (
-            <MobileStoryViewport>
-                <Story />
-            </MobileStoryViewport>
-        ),
-    ],
+    decorators: withOnboardingMobileFrame,
 };
 
 export const Default = {
@@ -31,6 +25,33 @@ export const Default = {
             currentStep="diet_protocol"
             customerName="Amina Saif"
             protocol="balanced"
+            gender="female"
+        />
+    ),
+};
+
+export const MaleProfile = {
+    name: 'Male profile (no cycle sync)',
+    render: () => (
+        <OnboardingDietProtocolInner
+            steps={ONBOARDING_STEPS}
+            currentStep="diet_protocol"
+            customerName="James Okonkwo"
+            protocol="balanced"
+            gender="male"
+        />
+    ),
+};
+
+export const ThyroidSelected = {
+    name: 'Thyroid Protocol selected',
+    render: () => (
+        <OnboardingDietProtocolInner
+            protocol="thyroid"
+            steps={ONBOARDING_STEPS}
+            currentStep="diet_protocol"
+            customerName="Amina Saif"
+            gender="female"
         />
     ),
 };
@@ -55,6 +76,7 @@ export const CycleSyncSelected = {
             steps={ONBOARDING_STEPS}
             currentStep="diet_protocol"
             customerName="Amina Saif"
+            gender="female"
         />
     ),
 };

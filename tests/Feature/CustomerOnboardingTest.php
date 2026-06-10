@@ -5,18 +5,16 @@ use App\Models\CustomerProfile;
 use App\Models\User;
 use App\Support\MealCraftInertiaSharedData;
 
-test('customer onboarding welcome step advances to gender', function () {
+test('legacy onboarding welcome url redirects to gender', function () {
     $customer = User::factory()->customer()->create();
     CustomerProfile::factory()->for($customer)->withoutOnboarding()->create();
 
     $this->actingAs($customer)
-        ->post(route('onboarding.welcome.store'))
+        ->get(route('onboarding.show', ['step' => 'welcome']))
         ->assertRedirect(route('onboarding.show', ['step' => OnboardingStep::Gender->value]));
-
-    expect($customer->fresh()->currentOnboardingStep())->toBe(OnboardingStep::Gender);
 });
 
-test('female customer advances to period tracking after gender', function () {
+test('female customer advances to diet protocol after gender', function () {
     $customer = User::factory()->customer()->create();
     CustomerProfile::factory()->for($customer)->withoutOnboarding()->create([
         'onboarding_step' => OnboardingStep::Gender,
@@ -26,15 +24,15 @@ test('female customer advances to period tracking after gender', function () {
         ->post(route('onboarding.gender.store'), [
             'sex' => 'female',
         ])
-        ->assertRedirect(route('onboarding.show', ['step' => OnboardingStep::PeriodTracking->value]));
+        ->assertRedirect(route('onboarding.show', ['step' => OnboardingStep::DietProtocol->value]));
 
     $profile = $customer->fresh()->customerProfile;
 
     expect($profile?->sex?->value)->toBe('female')
-        ->and($customer->fresh()->currentOnboardingStep())->toBe(OnboardingStep::PeriodTracking);
+        ->and($customer->fresh()->currentOnboardingStep())->toBe(OnboardingStep::DietProtocol);
 });
 
-test('male customer skips period tracking and advances to birthday', function () {
+test('male customer advances to diet protocol after gender', function () {
     $customer = User::factory()->customer()->create();
     CustomerProfile::factory()->for($customer)->withoutOnboarding()->create([
         'onboarding_step' => OnboardingStep::Gender,
@@ -44,9 +42,9 @@ test('male customer skips period tracking and advances to birthday', function ()
         ->post(route('onboarding.gender.store'), [
             'sex' => 'male',
         ])
-        ->assertRedirect(route('onboarding.show', ['step' => OnboardingStep::Birthday->value]));
+        ->assertRedirect(route('onboarding.show', ['step' => OnboardingStep::DietProtocol->value]));
 
-    expect($customer->fresh()->currentOnboardingStep())->toBe(OnboardingStep::Birthday);
+    expect($customer->fresh()->currentOnboardingStep())->toBe(OnboardingStep::DietProtocol);
 });
 
 test('customer can save period tracking and advance to birthday', function () {
@@ -54,6 +52,7 @@ test('customer can save period tracking and advance to birthday', function () {
     CustomerProfile::factory()->for($customer)->withoutOnboarding()->create([
         'onboarding_step' => OnboardingStep::PeriodTracking,
         'sex' => 'female',
+        'diet_protocol' => 'cycle_sync',
     ]);
 
     $this->actingAs($customer)
@@ -82,6 +81,7 @@ test('customer period tracking stores calculated average cycle length from multi
     CustomerProfile::factory()->for($customer)->withoutOnboarding()->create([
         'onboarding_step' => OnboardingStep::PeriodTracking,
         'sex' => 'female',
+        'diet_protocol' => 'cycle_sync',
     ]);
 
     $this->actingAs($customer)
@@ -99,6 +99,34 @@ test('customer period tracking stores calculated average cycle length from multi
     expect($customer->fresh()->customerProfile?->average_cycle_length)->toBe(30);
 });
 
+test('customer without cycle sync cannot access period tracking onboarding page', function () {
+    $customer = User::factory()->customer()->create();
+    CustomerProfile::factory()->for($customer)->withoutOnboarding()->create([
+        'onboarding_step' => OnboardingStep::DietProtocol,
+        'sex' => 'female',
+        'diet_protocol' => 'balanced',
+    ]);
+
+    $this->actingAs($customer)
+        ->get(route('onboarding.show', ['step' => OnboardingStep::PeriodTracking->value]))
+        ->assertRedirect(route('onboarding.show', ['step' => OnboardingStep::DietProtocol->value]));
+});
+
+test('customer without cycle sync stuck on period tracking step is advanced to birthday', function () {
+    $customer = User::factory()->customer()->create();
+    CustomerProfile::factory()->for($customer)->withoutOnboarding()->create([
+        'onboarding_step' => OnboardingStep::PeriodTracking,
+        'sex' => 'female',
+        'diet_protocol' => 'ketobiotic',
+    ]);
+
+    $this->actingAs($customer)
+        ->get(route('onboarding.show', ['step' => OnboardingStep::PeriodTracking->value]))
+        ->assertRedirect(route('onboarding.show', ['step' => OnboardingStep::Birthday->value]));
+
+    expect($customer->fresh()->currentOnboardingStep())->toBe(OnboardingStep::Birthday);
+});
+
 test('male customer cannot access period tracking onboarding page', function () {
     $customer = User::factory()->customer()->create();
     CustomerProfile::factory()->for($customer)->withoutOnboarding()->create([
@@ -111,6 +139,38 @@ test('male customer cannot access period tracking onboarding page', function () 
         ->assertRedirect(route('onboarding.show', ['step' => OnboardingStep::Gender->value]));
 });
 
+test('male customer stuck on period tracking step is advanced to birthday', function () {
+    $customer = User::factory()->customer()->create();
+    CustomerProfile::factory()->for($customer)->withoutOnboarding()->create([
+        'onboarding_step' => OnboardingStep::PeriodTracking,
+        'sex' => 'male',
+    ]);
+
+    $this->actingAs($customer)
+        ->get(route('onboarding.show', ['step' => OnboardingStep::PeriodTracking->value]))
+        ->assertRedirect(route('onboarding.show', ['step' => OnboardingStep::Birthday->value]));
+
+    expect($customer->fresh()->currentOnboardingStep())->toBe(OnboardingStep::Birthday);
+});
+
+test('period tracking onboarding page renders for cycle sync customers', function () {
+    $customer = User::factory()->customer()->create();
+    CustomerProfile::factory()->for($customer)->withoutOnboarding()->create([
+        'onboarding_step' => OnboardingStep::PeriodTracking,
+        'sex' => 'female',
+        'diet_protocol' => 'cycle_sync',
+    ]);
+
+    $this->actingAs($customer)
+        ->get(route('onboarding.show', ['step' => OnboardingStep::PeriodTracking->value]))
+        ->assertSuccessful()
+        ->assertInertia(fn ($page) => $page
+            ->component('Onboarding/Container')
+            ->where('activeStep', OnboardingStep::PeriodTracking->value)
+            ->where('mealCraft.onboarding.currentStep', OnboardingStep::PeriodTracking->value)
+            ->has('mealCraft.onboarding.urls.periodTracking'));
+});
+
 test('gender onboarding page renders with shared props', function () {
     $customer = User::factory()->customer()->create();
     CustomerProfile::factory()->for($customer)->withoutOnboarding()->create([
@@ -121,7 +181,8 @@ test('gender onboarding page renders with shared props', function () {
         ->get(route('onboarding.show', ['step' => OnboardingStep::Gender->value]))
         ->assertSuccessful()
         ->assertInertia(fn ($page) => $page
-            ->component('Onboarding/Gender')
+            ->component('Onboarding/Container')
+            ->where('activeStep', OnboardingStep::Gender->value)
             ->has('mealCraft.onboarding.steps')
             ->has('mealCraft.onboarding.urls.gender')
             ->has('mealCraft.onboarding.options.sex')
@@ -158,7 +219,8 @@ test('birthday onboarding page renders with shared props', function () {
         ->get(route('onboarding.show', ['step' => OnboardingStep::Birthday->value]))
         ->assertSuccessful()
         ->assertInertia(fn ($page) => $page
-            ->component('Onboarding/Birthday')
+            ->component('Onboarding/Container')
+            ->where('activeStep', OnboardingStep::Birthday->value)
             ->has('mealCraft.onboarding.steps')
             ->has('mealCraft.onboarding.urls.birthday')
             ->where('mealCraft.onboarding.currentStep', OnboardingStep::Birthday->value));
@@ -195,7 +257,8 @@ test('height onboarding page renders with shared props', function () {
         ->get(route('onboarding.show', ['step' => OnboardingStep::Height->value]))
         ->assertSuccessful()
         ->assertInertia(fn ($page) => $page
-            ->component('Onboarding/Height')
+            ->component('Onboarding/Container')
+            ->where('activeStep', OnboardingStep::Height->value)
             ->has('mealCraft.onboarding.steps')
             ->has('mealCraft.onboarding.urls.height')
             ->where('mealCraft.onboarding.currentStep', OnboardingStep::Height->value));
@@ -211,7 +274,8 @@ test('weight onboarding page renders with shared props', function () {
         ->get(route('onboarding.show', ['step' => OnboardingStep::Weight->value]))
         ->assertSuccessful()
         ->assertInertia(fn ($page) => $page
-            ->component('Onboarding/Weight')
+            ->component('Onboarding/Container')
+            ->where('activeStep', OnboardingStep::Weight->value)
             ->has('mealCraft.onboarding.steps')
             ->has('mealCraft.onboarding.urls.weight')
             ->where('mealCraft.onboarding.currentStep', OnboardingStep::Weight->value));
@@ -250,7 +314,8 @@ test('target weight onboarding page renders with shared props', function () {
         ->get(route('onboarding.show', ['step' => OnboardingStep::TargetWeight->value]))
         ->assertSuccessful()
         ->assertInertia(fn ($page) => $page
-            ->component('Onboarding/TargetWeight')
+            ->component('Onboarding/Container')
+            ->where('activeStep', OnboardingStep::TargetWeight->value)
             ->has('mealCraft.onboarding.steps')
             ->has('mealCraft.onboarding.urls.targetWeight')
             ->where('mealCraft.onboarding.currentStep', OnboardingStep::TargetWeight->value));
@@ -289,13 +354,14 @@ test('activity onboarding page renders with shared props', function () {
         ->get(route('onboarding.show', ['step' => OnboardingStep::Activity->value]))
         ->assertSuccessful()
         ->assertInertia(fn ($page) => $page
-            ->component('Onboarding/Activity')
+            ->component('Onboarding/Container')
+            ->where('activeStep', OnboardingStep::Activity->value)
             ->has('mealCraft.onboarding.steps')
             ->has('mealCraft.onboarding.urls.activity')
             ->where('mealCraft.onboarding.currentStep', OnboardingStep::Activity->value));
 });
 
-test('customer can save activity and advance to diet protocol', function () {
+test('customer can save activity and advance to daily targets', function () {
     $customer = User::factory()->customer()->create();
     CustomerProfile::factory()->for($customer)->withoutOnboarding()->create([
         'onboarding_step' => OnboardingStep::Activity,
@@ -311,12 +377,12 @@ test('customer can save activity and advance to diet protocol', function () {
         ->post(route('onboarding.activity.store'), [
             'activity_level' => 'lightly_active',
         ])
-        ->assertRedirect(route('onboarding.show', ['step' => OnboardingStep::DietProtocol->value]));
+        ->assertRedirect(route('onboarding.show', ['step' => OnboardingStep::DailyTargets->value]));
 
     $profile = $customer->fresh()->customerProfile;
 
     expect($profile?->activity_level?->value)->toBe('lightly_active')
-        ->and($customer->fresh()->currentOnboardingStep())->toBe(OnboardingStep::DietProtocol);
+        ->and($customer->fresh()->currentOnboardingStep())->toBe(OnboardingStep::DailyTargets);
 });
 
 test('diet protocol submission calculates and persists daily targets', function () {
@@ -336,14 +402,14 @@ test('diet protocol submission calculates and persists daily targets', function 
         ->post(route('onboarding.diet-protocol.store'), [
             'diet_protocol' => 'ketobiotic',
         ])
-        ->assertRedirect(route('onboarding.show', ['step' => OnboardingStep::DailyTargets->value]));
+        ->assertRedirect(route('onboarding.show', ['step' => OnboardingStep::Birthday->value]));
 
     $profile = $customer->fresh()->customerProfile;
 
     expect($profile?->diet_protocol)->toBe('ketobiotic')
         ->and($profile?->daily_calorie_target)->toBeGreaterThan(1200)
         ->and($profile?->fat_percentage)->toBe(70.0)
-        ->and($customer->fresh()->currentOnboardingStep())->toBe(OnboardingStep::DailyTargets);
+        ->and($customer->fresh()->currentOnboardingStep())->toBe(OnboardingStep::Birthday);
 
     $shared = MealCraftInertiaSharedData::onboarding($customer->fresh());
 
@@ -351,13 +417,34 @@ test('diet protocol submission calculates and persists daily targets', function 
         ->and($shared['computedTargets']['fatPercentage'] ?? null)->toBe(70.0);
 });
 
-test('customer cannot skip ahead in onboarding', function () {
+test('cycle sync diet protocol advances to period tracking', function () {
+    $customer = User::factory()->customer()->create();
+    CustomerProfile::factory()->for($customer)->withoutOnboarding()->create([
+        'onboarding_step' => OnboardingStep::DietProtocol,
+        'sex' => 'female',
+    ]);
+
+    $this->actingAs($customer)
+        ->post(route('onboarding.diet-protocol.store'), [
+            'diet_protocol' => 'cycle_sync',
+        ])
+        ->assertRedirect(route('onboarding.show', ['step' => OnboardingStep::PeriodTracking->value]));
+
+    expect($customer->fresh()->customerProfile?->diet_protocol)->toBe('cycle_sync')
+        ->and($customer->fresh()->currentOnboardingStep())->toBe(OnboardingStep::PeriodTracking);
+});
+
+test('customer can open any onboarding tab ahead of saved progress', function () {
     $customer = User::factory()->customer()->create();
     CustomerProfile::factory()->for($customer)->withoutOnboarding()->create();
 
     $this->actingAs($customer)
         ->get(route('onboarding.show', ['step' => OnboardingStep::FoodFilters->value]))
-        ->assertRedirect(route('onboarding.show', ['step' => OnboardingStep::Welcome->value]));
+        ->assertSuccessful()
+        ->assertInertia(fn ($page) => $page
+            ->component('Onboarding/Container')
+            ->where('activeStep', OnboardingStep::FoodFilters->value)
+            ->where('mealCraft.onboarding.currentStep', OnboardingStep::Gender->value));
 });
 
 test('onboarding pages receive shared meal craft onboarding props', function () {
@@ -370,7 +457,8 @@ test('onboarding pages receive shared meal craft onboarding props', function () 
         ->get(route('onboarding.show', ['step' => OnboardingStep::Activity->value]))
         ->assertSuccessful()
         ->assertInertia(fn ($page) => $page
-            ->component('Onboarding/Activity')
+            ->component('Onboarding/Container')
+            ->where('activeStep', OnboardingStep::Activity->value)
             ->has('mealCraft.onboarding.steps')
             ->has('mealCraft.onboarding.urls.activity')
             ->has('mealCraft.onboarding.options.activityLevels')
@@ -401,12 +489,28 @@ test('completed onboarding unlocks the customer app home', function () {
         ->assertSuccessful();
 });
 
+test('completed customers can reset onboarding for testing', function () {
+    $customer = User::factory()->customer()->create();
+    CustomerProfile::factory()->for($customer)->create([
+        'onboarding_step' => OnboardingStep::FoodFilters,
+    ]);
+
+    $this->actingAs($customer)
+        ->post(route('onboarding.reset'))
+        ->assertRedirect(route('onboarding.show', ['step' => OnboardingStep::Gender->value]));
+
+    $profile = $customer->fresh()->customerProfile;
+
+    expect($profile?->onboarding_completed_at)->toBeNull()
+        ->and($profile?->onboarding_step)->toBe(OnboardingStep::Gender);
+});
+
 test('completed customers are redirected away from onboarding', function () {
     $customer = User::factory()->customer()->create();
     CustomerProfile::factory()->for($customer)->create();
 
     $this->actingAs($customer)
-        ->get(route('onboarding.show', ['step' => OnboardingStep::Welcome->value]))
+        ->get(route('onboarding.show', ['step' => OnboardingStep::Gender->value]))
         ->assertRedirect(route('app.home'));
 });
 

@@ -33,7 +33,7 @@ import { normalizeActivityLevel, normalizeDietProtocol } from './onboardingNorma
 
 export function createInitialOnboardingState() {
     return {
-        currentStep: 'welcome',
+        currentStep: 'gender',
         gender: '',
         periodTracking: {
             loggedPeriods: [],

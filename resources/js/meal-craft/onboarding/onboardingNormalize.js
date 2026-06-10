@@ -46,6 +46,7 @@ export function normalizeDietProtocol(value) {
         keto: 'ketobiotic',
         ketobiotic: 'ketobiotic',
         cycle_sync: 'cycle_sync',
+        thyroid: 'thyroid',
         sickle_cell: 'sickle_cell_warrior',
         sickle_cell_warrior: 'sickle_cell_warrior',
     };

@@ -2,6 +2,7 @@
 
 namespace App\Http\Responses;
 
+use App\Support\PostAuthenticationRedirect;
 use Illuminate\Http\JsonResponse;
 use Laravel\Fortify\Contracts\LoginResponse as LoginResponseContract;
 use Symfony\Component\HttpFoundation\Response;
@@ -16,7 +17,11 @@ class LoginResponse implements LoginResponseContract
             return redirect()->route('login');
         }
 
-        $redirect = redirect()->intended($user->homePath());
+        $target = PostAuthenticationRedirect::pathFor($user);
+
+        $redirect = $user->isAdmin()
+            ? redirect()->to($target)
+            : redirect()->intended($target);
 
         if ($request->wantsJson()) {
             return new JsonResponse([

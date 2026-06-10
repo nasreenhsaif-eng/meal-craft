@@ -1,41 +1,6 @@
-import { router, usePage } from '@inertiajs/react';
-import Button from '../../Components/Atoms/Button/Button.jsx';
+import OnboardingNavHeader from '../../Components/Molecules/Onboarding/OnboardingNavHeader.jsx';
 import CustomerInertiaShell from '../../Layouts/CustomerInertiaShell.jsx';
-import { onboardingFromPage } from '../../meal-craft/mealCraftPageProps.js';
-import customerOnboardingLayout from '../../Layouts/customerOnboardingLayout.jsx';
-
-/**
- * @param {object} props
- * @param {Array<{ value: string, label: string }>} props.steps
- * @param {string} props.currentStep
- */
-function OnboardingStepNav({ steps, currentStep }) {
-    const currentIndex = steps.findIndex((step) => step.value === currentStep);
-
-    return (
-        <ol className="mb-8 flex flex-wrap gap-2">
-            {steps.map((step, index) => {
-                const active = step.value === currentStep;
-                const complete = index < currentIndex;
-
-                return (
-                    <li
-                        key={step.value}
-                        className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ${
-                            active
-                                ? 'bg-[#556C37] text-white'
-                                : complete
-                                  ? 'bg-[#E8EFE0] text-[#556C37]'
-                                  : 'bg-white text-[#6B7280]'
-                        }`}
-                    >
-                        {step.label}
-                    </li>
-                );
-            })}
-        </ol>
-    );
-}
+import { getOnboardingStepIndex } from '../../meal-craft/onboarding/onboardingTabFlow.js';
 
 /**
  * @param {object} props
@@ -44,9 +9,12 @@ function OnboardingStepNav({ steps, currentStep }) {
  * @param {Array<{ value: string, label: string }>} props.steps
  * @param {string} props.currentStep
  * @param {string} props.customerName
+ * @param {Array<{ value: string, label: string }>} [props.visibleSteps]
+ * @param {() => void} [props.onBack]
  * @param {boolean} [props.centerHeader]
  * @param {boolean} [props.hideDefaultHeader]
  * @param {string} [props.titleClassName]
+ * @param {import('react').ReactNode} [props.navHeader]
  * @param {import('react').ReactNode} props.children
  */
 export function OnboardingShell({
@@ -55,52 +23,50 @@ export function OnboardingShell({
     steps,
     currentStep,
     customerName,
+    visibleSteps,
+    onBack,
     centerHeader = false,
     hideDefaultHeader = false,
     titleClassName = '',
+    navHeader,
     children,
 }) {
     const headerAlign = centerHeader ? 'text-center' : '';
+    const stepsForNav = visibleSteps ?? steps;
+    const stepIndex = getOnboardingStepIndex(currentStep, stepsForNav);
+    const canGoBack = stepIndex > 0;
+
+    const navigation =
+        navHeader ??
+        (stepsForNav.length > 0 ? (
+            <OnboardingNavHeader
+                steps={stepsForNav}
+                activeStep={currentStep}
+                onBack={onBack}
+                canGoBack={canGoBack && typeof onBack === 'function'}
+            />
+        ) : null);
 
     return (
-        <CustomerInertiaShell customerName={customerName}>
-            <OnboardingStepNav steps={steps} currentStep={currentStep} />
-            <div className="rounded-[16px] border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
-                {hideDefaultHeader ? null : (
-                    <>
-                        <h1 className={`font-montserrat text-2xl font-semibold text-[#262A22] ${headerAlign} ${titleClassName}`.trim()}>
-                            {title}
-                        </h1>
-                        {description ? (
-                            <p className={`mt-2 text-sm text-[#555555] ${headerAlign}`.trim()}>{description}</p>
-                        ) : null}
-                    </>
-                )}
-                <div className={`w-full min-w-0 ${hideDefaultHeader ? '' : 'mt-6 sm:mt-8'}`.trim()}>{children}</div>
+        <CustomerInertiaShell customerName={customerName} layoutVariant="onboarding">
+            <div className="flex w-full min-w-0 flex-col space-y-6 md:space-y-8">
+                {navigation}
+                <div className="h-auto w-full min-w-0 md:rounded-2xl md:border md:border-gray-100 md:bg-white md:p-8 md:shadow-sm">
+                    {hideDefaultHeader ? null : (
+                        <>
+                            <h1 className={`font-montserrat text-2xl font-semibold text-[#262A22] ${headerAlign} ${titleClassName}`.trim()}>
+                                {title}
+                            </h1>
+                            {description ? (
+                                <p className={`mt-2 text-sm text-[#555555] ${headerAlign}`.trim()}>{description}</p>
+                            ) : null}
+                        </>
+                    )}
+                    <div className={`w-full min-w-0 overflow-x-hidden ${hideDefaultHeader ? '' : 'mt-4 md:mt-5'}`.trim()}>
+                        {children}
+                    </div>
+                </div>
             </div>
         </CustomerInertiaShell>
     );
 }
-
-export default function Welcome() {
-    const onboarding = onboardingFromPage(usePage().props);
-
-    return (
-        <OnboardingShell
-            title="Welcome to Meal Craft"
-            description="We will guide you through a short setup so we can personalize your meals and nutrition targets."
-            steps={onboarding.steps ?? []}
-            currentStep={onboarding.currentStep ?? 'welcome'}
-            customerName={onboarding.customerName ?? ''}
-        >
-            <Button
-                type="button"
-                label="Get started"
-                onClick={() => router.post(onboarding.urls?.welcome ?? '/onboarding/welcome')}
-                className="min-w-[160px]"
-            />
-        </OnboardingShell>
-    );
-}
-
-Welcome.layout = customerOnboardingLayout;

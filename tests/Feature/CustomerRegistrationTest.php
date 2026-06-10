@@ -25,7 +25,7 @@ test('new customers can register through join and are redirected to onboarding',
     ]);
 
     $response->assertSessionHasNoErrors()
-        ->assertRedirect(route('onboarding.show', ['step' => OnboardingStep::Welcome->value], absolute: false));
+        ->assertRedirect(route('onboarding.show', ['step' => OnboardingStep::Gender->value], absolute: false));
 
     $this->assertAuthenticated();
 
@@ -34,7 +34,7 @@ test('new customers can register through join and are redirected to onboarding',
     expect($user)->not->toBeNull()
         ->and($user->isCustomer())->toBeTrue()
         ->and($user->customerProfile)->not->toBeNull()
-        ->and($user->customerProfile->onboarding_step)->toBe(OnboardingStep::Welcome);
+        ->and($user->customerProfile->onboarding_step)->toBe(OnboardingStep::Gender);
 });
 
 test('registration creates customer role only', function () {

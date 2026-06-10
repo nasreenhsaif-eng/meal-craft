@@ -14,7 +14,7 @@ import {
     activityLevelToServer,
     normalizeActivityLevel,
 } from '../../meal-craft/onboarding/onboardingNormalize.js';
-import { OnboardingShell } from './Welcome.jsx';
+import OnboardingStepFrame from '../../Components/Molecules/Onboarding/OnboardingStepFrame.jsx';
 
 /**
  * @param {{
@@ -26,6 +26,7 @@ import { OnboardingShell } from './Welcome.jsx';
  *   steps?: Array<{ value: string; label: string }>;
  *   currentStep?: string;
  *   customerName?: string;
+ *   embedded?: boolean;
  * }} props
  */
 export function OnboardingActivityInner({
@@ -37,6 +38,7 @@ export function OnboardingActivityInner({
     steps = [],
     currentStep = 'activity',
     customerName = '',
+    embedded = false,
 }) {
     const isControlled = onActivityLevelChange !== undefined;
     const initialLevel = resolveActivityLevel(activityLevelProp);
@@ -57,7 +59,8 @@ export function OnboardingActivityInner({
     };
 
     return (
-        <OnboardingShell
+        <OnboardingStepFrame
+            embedded={embedded}
             title="How active are you every day?"
             description="Your activity level influences how many calories you burn, allowing us to provide accurate daily nutrition targets."
             steps={steps}
@@ -111,25 +114,27 @@ export function OnboardingActivityInner({
                     ) : null}
                 </fieldset>
 
-                <div className="pt-1">
-                    <button
-                        type="submit"
-                        disabled={processing}
-                        className={[
-                            'inline-flex h-[50px] w-full min-h-[50px] items-center justify-center rounded-[12px]',
-                            'font-montserrat text-[16px] font-bold uppercase leading-none tracking-[0.08em] text-white',
-                            'transition-all duration-200 ease-in-out',
-                            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-protocol-selected focus-visible:ring-offset-2',
-                            processing
-                                ? 'cursor-not-allowed border-2 border-protocol-selected/40 bg-protocol-selected/40'
-                                : 'border-2 border-protocol-selected bg-protocol-selected hover:border-protocol-selected-hover hover:bg-protocol-selected-hover active:border-protocol-selected-pressed active:bg-protocol-selected-pressed',
-                        ].join(' ')}
-                    >
-                        {processing ? 'Saving…' : 'Next'}
-                    </button>
-                </div>
+                {embedded ? null : (
+                    <div className="pt-1">
+                        <button
+                            type="submit"
+                            disabled={processing}
+                            className={[
+                                'inline-flex h-[50px] w-full min-h-[50px] items-center justify-center rounded-[12px]',
+                                'font-montserrat text-[16px] font-bold uppercase leading-none tracking-[0.08em] text-white',
+                                'transition-all duration-200 ease-in-out',
+                                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-protocol-selected focus-visible:ring-offset-2',
+                                processing
+                                    ? 'cursor-not-allowed border-2 border-protocol-selected/40 bg-protocol-selected/40'
+                                    : 'border-2 border-protocol-selected bg-protocol-selected hover:border-protocol-selected-hover hover:bg-protocol-selected-hover active:border-protocol-selected-pressed active:bg-protocol-selected-pressed',
+                            ].join(' ')}
+                        >
+                            {processing ? 'Saving…' : 'Next'}
+                        </button>
+                    </div>
+                )}
             </form>
-        </OnboardingShell>
+        </OnboardingStepFrame>
     );
 }
 

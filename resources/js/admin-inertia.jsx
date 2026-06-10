@@ -6,6 +6,7 @@ import { createRoot } from 'react-dom/client';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { configureLaravelAxios, configureLaravelInertia } from './lib/csrfToken.js';
 import { router } from '@inertiajs/react';
+import customerOnboardingLayout from './Layouts/customerOnboardingLayout.jsx';
 
 configureLaravelAxios(axios);
 configureLaravelInertia(router);
@@ -36,8 +37,18 @@ class InertiaErrorBoundary extends Component {
 }
 
 createInertiaApp({
-    resolve: (name) =>
-        resolvePageComponent(`./Pages/${name}.jsx`, import.meta.glob('./Pages/**/*.jsx')),
+    resolve: async (name) => {
+        const page = await resolvePageComponent(
+            `./Pages/${name}.jsx`,
+            import.meta.glob('./Pages/**/*.jsx'),
+        );
+
+        if (name.startsWith('Onboarding/') && page.default && !page.default.layout) {
+            page.default.layout = customerOnboardingLayout;
+        }
+
+        return page;
+    },
     setup({ el, App, props }) {
         const rootEl = el ?? document.getElementById('app');
         if (!rootEl) {

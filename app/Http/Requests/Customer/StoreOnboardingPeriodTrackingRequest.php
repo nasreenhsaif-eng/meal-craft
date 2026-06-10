@@ -2,13 +2,20 @@
 
 namespace App\Http\Requests\Customer;
 
+use App\Enums\OnboardingStep;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreOnboardingPeriodTrackingRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->canAccessCustomerPortal() ?? false;
+        $user = $this->user();
+
+        if ($user === null || ! $user->canAccessCustomerPortal()) {
+            return false;
+        }
+
+        return OnboardingStep::shouldShowPeriodTracking($user->customerProfile);
     }
 
     /**

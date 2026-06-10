@@ -195,14 +195,22 @@ export function AdminLayout({
                                     </h1>
                                 )}
                             </div>
-                            <button
-                                type="button"
-                                onClick={onAccountSettingsClick}
-                                className="flex shrink-0 items-center justify-center rounded-full border-2 border-transparent p-0.5 transition-colors hover:border-[#556C37]/35 hover:bg-[#556C37]/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#556C37] focus-visible:ring-offset-2"
-                            >
-                                <span className="sr-only">Account Settings</span>
-                                {userAvatar ?? defaultAvatarVisual}
-                            </button>
+                            <div className="flex shrink-0 items-center gap-2">
+                                <a
+                                    href="/sign-out"
+                                    className="rounded-[10px] px-3 py-2 font-montserrat text-sm font-semibold text-[#555555] transition-colors hover:bg-[#556C37]/10 hover:text-[#3F4F2A] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#556C37] focus-visible:ring-offset-2"
+                                >
+                                    Log out
+                                </a>
+                                <button
+                                    type="button"
+                                    onClick={onAccountSettingsClick}
+                                    className="flex shrink-0 items-center justify-center rounded-full border-2 border-transparent p-0.5 transition-colors hover:border-[#556C37]/35 hover:bg-[#556C37]/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#556C37] focus-visible:ring-offset-2"
+                                >
+                                    <span className="sr-only">Account Settings</span>
+                                    {userAvatar ?? defaultAvatarVisual}
+                                </button>
+                            </div>
                         </div>
                         {showSearch ? (
                             <TextInput

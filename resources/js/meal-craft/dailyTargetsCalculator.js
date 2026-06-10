@@ -10,7 +10,7 @@
 /** @typedef {'lose_weight' | 'maintain' | 'gain_muscle'} CustomerGoal */
 
 /**
- * @typedef {'balanced' | 'ketobiotic' | 'cycle_sync' | 'sickle_cell_warrior' | 'sickle_cell'} DietProtocolId
+ * @typedef {'balanced' | 'ketobiotic' | 'cycle_sync' | 'thyroid' | 'sickle_cell_warrior' | 'sickle_cell'} DietProtocolId
  */
 
 /**
@@ -86,6 +86,11 @@ export const DIET_PROTOCOL_MACRO_PRESETS = {
         proteinPercentage: 25,
         carbPercentage: 45,
         fatPercentage: 30,
+    },
+    thyroid: {
+        proteinPercentage: 30,
+        carbPercentage: 35,
+        fatPercentage: 35,
     },
     sickle_cell_warrior: {
         proteinPercentage: 25,
@@ -290,8 +295,15 @@ export function formatCalorieTarget(value) {
 /**
  * @param {number} grams
  */
+export function formatMacroGramsValue(grams) {
+    return new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 }).format(grams);
+}
+
+/**
+ * @param {number} grams
+ */
 export function formatMacroGrams(grams) {
-    return `${new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 }).format(grams)}g`;
+    return `${formatMacroGramsValue(grams)}g`;
 }
 
 /**

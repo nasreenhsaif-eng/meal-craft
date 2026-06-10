@@ -27,7 +27,7 @@ test('meal craft inertia shared data includes admin library payload for admin us
     expect($shared)->toHaveKeys(['urls', 'constants', 'taxonomy', 'csv', 'notices', 'onboarding'])
         ->and($shared['onboarding']['options']['sex'])->not->toBeEmpty()
         ->and($shared['onboarding']['profile'])->toBeNull()
-        ->and($shared['onboarding']['currentStep'])->toBe(OnboardingStep::Welcome->value)
+        ->and($shared['onboarding']['currentStep'])->toBe(OnboardingStep::Gender->value)
         ->and($shared['onboarding']['urls']['activity'])->toContain('onboarding/activity')
         ->and($shared['constants']['missingPhotoPlaceholder'])->toBe(MealImagePath::MISSING_PHOTO_PLACEHOLDER)
         ->and($shared['urls']['mealLibrary']['bulkDestroy'])->toContain('bulk-destroy')

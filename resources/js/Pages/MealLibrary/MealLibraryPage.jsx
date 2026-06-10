@@ -2,7 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, Fra
 import { createPortal } from 'react-dom';
 import axios from 'axios';
 import { router, usePage } from '@inertiajs/react';
-import AdminInertiaShell from '../../Layouts/AdminInertiaShell.jsx';
+import adminInertiaLayout from '../../lib/adminInertiaLayout.jsx';
 import TextInput from '../../Components/Atoms/TextInput/TextInput.jsx';
 import DropdownTextInput from '../../Components/Atoms/TextInput/DropdownTextInput.jsx';
 import MultiPillDropdown from '../../Components/Atoms/TextInput/MultiPillDropdown.jsx';
@@ -2984,6 +2984,6 @@ function MealLibraryPage(props) {
     );
 }
 
-MealLibraryPage.layout = (page) => <AdminInertiaShell>{page}</AdminInertiaShell>;
+MealLibraryPage.layout = adminInertiaLayout;
 
 export default MealLibraryPage;

@@ -145,4 +145,16 @@
   .mc-auth-login-submit { @apply w-full; }
 
   .mc-auth-footer { @apply mx-auto mt-4 w-full text-center font-sans text-[13px] leading-relaxed text-grey-94 sm:text-sm; }
+
+  .mc-gender-option {
+    display: block;
+    width: 100%;
+    max-width: none;
+  }
+
+  .mc-gender-option__shell {
+    display: flex;
+    width: 100%;
+    max-width: none;
+  }
 }

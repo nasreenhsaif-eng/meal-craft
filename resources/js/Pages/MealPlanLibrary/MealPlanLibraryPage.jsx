@@ -1,6 +1,6 @@
 import { createPortal } from 'react-dom';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import AdminInertiaShell from '../../Layouts/AdminInertiaShell.jsx';
+import adminInertiaLayout from '../../lib/adminInertiaLayout.jsx';
 import Button from '../../Components/Atoms/Button.jsx';
 import PillButton from '../../Components/Atoms/Button/Button.jsx';
 import TextInput from '../../Components/Atoms/TextInput/TextInput.jsx';
@@ -653,6 +653,6 @@ function MealPlanLibraryPage(props) {
     return <MealPlanLibraryPageContent {...props} />;
 }
 
-MealPlanLibraryPage.layout = (page) => <AdminInertiaShell>{page}</AdminInertiaShell>;
+MealPlanLibraryPage.layout = adminInertiaLayout;
 
 export default MealPlanLibraryPage;

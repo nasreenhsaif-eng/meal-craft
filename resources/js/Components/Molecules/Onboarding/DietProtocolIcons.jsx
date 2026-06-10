@@ -122,6 +122,36 @@ export function IconSickleCellWarrior({ className = '' }) {
     );
 }
 
+/**
+ * Butterfly silhouette — thyroid gland metaphor with clean geometric lobes.
+ *
+ * @param {{ className?: string }} props
+ */
+export function IconThyroid({ className = '' }) {
+    const s = DIET_PROTOCOL_ICON_STROKE;
+
+    return (
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden className={iconClass(className)}>
+            <path
+                d="M8.25 9.75c-2.35 0-4 1.85-4 4.05 0 2.45 2.05 4.45 4.55 4.2 1.05-.1 1.95-.65 2.45-1.45"
+                stroke="currentColor"
+                strokeWidth={s}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+            />
+            <path
+                d="M15.75 9.75c2.35 0 4 1.85 4 4.05 0 2.45-2.05 4.45-4.55 4.2-1.05-.1-1.95-.65-2.45-1.45"
+                stroke="currentColor"
+                strokeWidth={s}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+            />
+            <path d="M12 9.5v5" stroke="currentColor" strokeWidth={s} strokeLinecap="round" />
+            <path d="M10.75 12h2.5" stroke="currentColor" strokeWidth={s} strokeLinecap="round" />
+        </svg>
+    );
+}
+
 /** @deprecated Use {@link IconBalanced} */
 export const IconBalancedPlate = IconBalanced;
 

@@ -53,7 +53,7 @@ class CustomerProfileFactory extends Factory
     public function withoutOnboarding(): static
     {
         return $this->state(fn (): array => [
-            'onboarding_step' => OnboardingStep::Welcome,
+            'onboarding_step' => OnboardingStep::Gender,
             'onboarding_completed_at' => null,
             'weight_kg' => null,
             'height_cm' => null,

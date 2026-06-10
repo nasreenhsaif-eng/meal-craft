@@ -3,7 +3,7 @@ import { useForm } from '@inertiajs/react';
 import Button from '../../../Components/Atoms/Button/Button.jsx';
 import TextInput from '../../../Components/Atoms/TextInput/TextInput.jsx';
 import { AdminSettingsLayout } from '../../../Components/Admin/AdminSettingsLayout.jsx';
-import AdminInertiaShell from '../../../Layouts/AdminInertiaShell.jsx';
+import adminInertiaLayout from '../../../lib/adminInertiaLayout.jsx';
 
 /**
  * Security settings markup (Storybook / Inertia).
@@ -128,4 +128,4 @@ export default function Security() {
     );
 }
 
-Security.layout = (page) => <AdminInertiaShell>{page}</AdminInertiaShell>;
+Security.layout = adminInertiaLayout;

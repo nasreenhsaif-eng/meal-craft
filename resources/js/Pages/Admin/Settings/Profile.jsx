@@ -3,7 +3,7 @@ import { useForm } from '@inertiajs/react';
 import Button from '../../../Components/Atoms/Button/Button.jsx';
 import TextInput from '../../../Components/Atoms/TextInput/TextInput.jsx';
 import { AdminSettingsLayout } from '../../../Components/Admin/AdminSettingsLayout.jsx';
-import AdminInertiaShell from '../../../Layouts/AdminInertiaShell.jsx';
+import adminInertiaLayout from '../../../lib/adminInertiaLayout.jsx';
 
 /**
  * Profile settings markup (Storybook / Inertia). Same layout and Tailwind as the live admin page.
@@ -106,4 +106,4 @@ export default function Profile({ profile }) {
     );
 }
 
-Profile.layout = (page) => <AdminInertiaShell>{page}</AdminInertiaShell>;
+Profile.layout = adminInertiaLayout;

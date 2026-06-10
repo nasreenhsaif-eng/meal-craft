@@ -73,6 +73,11 @@ return [
             'carb_percentage' => 45.0,
             'fat_percentage' => 30.0,
         ],
+        'thyroid' => [
+            'protein_percentage' => 30.0,
+            'carb_percentage' => 35.0,
+            'fat_percentage' => 35.0,
+        ],
         'sickle_cell_warrior' => [
             'protein_percentage' => 25.0,
             'carb_percentage' => 50.0,

@@ -32,21 +32,35 @@ class OnboardingController extends Controller
         $user = $request->user();
 
         return redirect()->route('onboarding.show', [
-            'step' => $user?->currentOnboardingStep()->value ?? OnboardingStep::Welcome->value,
+            'step' => $user?->currentOnboardingStep()->value ?? OnboardingStep::entry()->value,
         ]);
     }
 
     public function show(Request $request, string $step): Response
     {
         $user = $request->user();
+        if ($step === OnboardingStep::Welcome->value) {
+            return redirect()->route('onboarding.show', ['step' => OnboardingStep::Gender->value]);
+        }
+
         $requestedStep = OnboardingStep::normalizeStoredStep(OnboardingStep::from($step));
 
-        return Inertia::render($this->pageForStep($requestedStep), $this->stepProps($user, $requestedStep));
+        return Inertia::render('Onboarding/Container', array_merge(
+            ['activeStep' => $requestedStep->value],
+            $this->stepProps($user, $requestedStep),
+        ));
     }
 
-    public function storeWelcome(Request $request): RedirectResponse
+    public function resetForTesting(Request $request): RedirectResponse
     {
-        return $this->advanceStep($request, OnboardingStep::Welcome);
+        $user = $request->user();
+
+        $user?->customerProfile()?->update([
+            'onboarding_step' => OnboardingStep::Gender,
+            'onboarding_completed_at' => null,
+        ]);
+
+        return redirect()->route('onboarding.show', ['step' => OnboardingStep::Gender->value]);
     }
 
     public function storeGender(StoreOnboardingGenderRequest $request): RedirectResponse
@@ -218,7 +232,7 @@ class OnboardingController extends Controller
 
         if ($profile === null || $user->currentOnboardingStep() !== OnboardingStep::FoodFilters) {
             return redirect()->route('onboarding.show', [
-                'step' => $user?->currentOnboardingStep()->value ?? OnboardingStep::Welcome->value,
+                'step' => $user?->currentOnboardingStep()->value ?? OnboardingStep::entry()->value,
             ]);
         }
 
@@ -238,9 +252,9 @@ class OnboardingController extends Controller
     {
         $user = $request->user();
 
-        if ($user === null || $user->currentOnboardingStep() !== $completedStep) {
+        if ($user === null) {
             return redirect()->route('onboarding.show', [
-                'step' => $user?->currentOnboardingStep()->value ?? OnboardingStep::Welcome->value,
+                'step' => OnboardingStep::entry()->value,
             ]);
         }
 
@@ -251,9 +265,16 @@ class OnboardingController extends Controller
             return redirect()->route('app.home');
         }
 
-        $user->customerProfile()?->update([
-            'onboarding_step' => $nextStep,
-        ]);
+        $savedStep = OnboardingStep::normalizeStoredStep($user->currentOnboardingStep());
+        $orderedSteps = OnboardingStep::orderedFor($user->customerProfile);
+        $savedIndex = array_search($savedStep, $orderedSteps, true);
+        $nextIndex = array_search($nextStep, $orderedSteps, true);
+
+        if ($nextIndex !== false && ($savedIndex === false || $nextIndex > $savedIndex)) {
+            $user->customerProfile()?->update([
+                'onboarding_step' => $nextStep,
+            ]);
+        }
 
         return redirect()->route('onboarding.show', ['step' => $nextStep->value]);
     }
@@ -263,7 +284,6 @@ class OnboardingController extends Controller
         $step = OnboardingStep::normalizeStoredStep($step);
 
         return match ($step) {
-            OnboardingStep::Welcome => 'Onboarding/Welcome',
             OnboardingStep::Gender => 'Onboarding/Gender',
             OnboardingStep::PeriodTracking => 'Onboarding/PeriodTracking',
             OnboardingStep::Birthday => 'Onboarding/Birthday',

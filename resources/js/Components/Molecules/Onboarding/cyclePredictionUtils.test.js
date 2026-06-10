@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+    averagePeriodBleedingDays,
     buildHistoricalCyclePhase,
     buildProjectedCycle,
     buildProjectedCycles,
@@ -39,6 +40,22 @@ describe('resolveCycleLengthDays', () => {
         ]);
 
         expect(length).toBe(33);
+    });
+});
+
+describe('averagePeriodBleedingDays', () => {
+    it('defaults to five days when no periods are logged', () => {
+        expect(averagePeriodBleedingDays([])).toBe(5);
+    });
+
+    it('averages bleeding duration across every logged period', () => {
+        expect(
+            averagePeriodBleedingDays([
+                { start: '2026-01-01', end: '2026-01-05' },
+                { start: '2026-02-01', end: '2026-02-04' },
+                { start: '2026-03-03', end: '2026-03-08' },
+            ]),
+        ).toBe(5);
     });
 });
 
@@ -106,6 +123,9 @@ describe('buildProjectedCycles', () => {
         expect(projection.cycleLength).toBe(33);
         expect(projection.projectedCycles.length).toBeGreaterThan(0);
         expect(projection.projectedCycles[0].periodStart).toBe(
+            projectedPeriodStartIso('2026-04-20', 0, 33),
+        );
+        expect(projection.projectedCycles[1].periodStart).toBe(
             projectedPeriodStartIso('2026-04-20', 1, 33),
         );
     });
@@ -143,7 +163,7 @@ describe('resolveDayCellVisualState', () => {
     });
 
     it('marks predicted period days without ovulation styling', () => {
-        const periodDay = projection.projectedCycles[0].periodStart;
+        const periodDay = projection.projectedCycles[1].periodStart;
         const state = resolveDayCellVisualState(
             periodDay,
             { start: null, end: null },
@@ -220,6 +240,42 @@ describe('resolveDayCellVisualState', () => {
             isOvulation: false,
             isFertile: false,
             isPredictedPeriod: false,
+        });
+    });
+
+    it('marks the current-cycle fertile window in the anchor month', () => {
+        const referenceDate = new Date('2026-06-09T12:00:00');
+        const periods = [{ start: '2026-06-01', end: '2026-06-05' }];
+        const projection = buildProjectedCycles(periods, referenceDate);
+        const currentCycle = projection.projectedCycles[0];
+
+        expect(currentCycle.periodStart).toBe('2026-06-01');
+        expect(currentCycle.fertileStart).toBe('2026-06-10');
+        expect(currentCycle.fertileEnd).toBe('2026-06-16');
+
+        const fertileState = resolveDayCellVisualState(
+            currentCycle.fertileStart,
+            { start: null, end: null },
+            periods,
+            projection,
+            referenceDate,
+        );
+
+        expect(fertileState.isFertile).toBe(true);
+        expect(fertileState.isOvulation).toBe(false);
+    });
+
+    it('uses every logged month when averaging cycle length', () => {
+        const periods = [
+            { start: '2026-01-01', end: '2026-01-05' },
+            { start: '2026-02-01', end: '2026-02-05' },
+            { start: '2026-03-03', end: '2026-03-07' },
+            { start: '2026-04-02', end: '2026-04-06' },
+        ];
+
+        expect(resolveAverageCycleLengthMetric(periods)).toEqual({
+            days: 30,
+            isStandard: false,
         });
     });
 });

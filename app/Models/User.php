@@ -62,7 +62,7 @@ class User extends Authenticatable
 
     public function currentOnboardingStep(): OnboardingStep
     {
-        $step = $this->customerProfile?->onboarding_step ?? OnboardingStep::Welcome;
+        $step = $this->customerProfile?->onboarding_step ?? OnboardingStep::Gender;
 
         return OnboardingStep::normalizeStoredStep($step);
     }

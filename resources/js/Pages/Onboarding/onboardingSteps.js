@@ -2,15 +2,14 @@
  * Canonical onboarding step chips — keep in sync with {@see App\Enums\OnboardingStep}.
  */
 export const ONBOARDING_STEPS = [
-    { value: 'welcome', label: 'Welcome' },
     { value: 'gender', label: 'Gender' },
+    { value: 'diet_protocol', label: 'Diet protocol' },
     { value: 'period_tracking', label: 'Track your period' },
     { value: 'birthday', label: 'Birthday' },
     { value: 'height', label: 'Height' },
     { value: 'weight', label: 'Weight' },
     { value: 'target_weight', label: 'Target weight' },
     { value: 'activity', label: 'Activity' },
-    { value: 'diet_protocol', label: 'Diet protocol' },
     { value: 'daily_targets', label: 'Daily targets' },
     { value: 'food_filters', label: 'Food filters' },
 ];

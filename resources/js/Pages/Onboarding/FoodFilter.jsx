@@ -6,7 +6,7 @@ import { FOOD_FILTER_OTHER_ID } from '../../Components/MealSystem/foodFilterOpti
 import { onboardingFromPage } from '../../meal-craft/mealCraftPageProps.js';
 import { useOnboardingStore } from '../../meal-craft/onboarding/OnboardingProvider.jsx';
 import customerOnboardingLayout from '../../Layouts/customerOnboardingLayout.jsx';
-import { OnboardingShell } from './Welcome.jsx';
+import OnboardingStepFrame from '../../Components/Molecules/Onboarding/OnboardingStepFrame.jsx';
 
 /**
  * Food filter onboarding step (Storybook / Inertia).
@@ -22,6 +22,7 @@ import { OnboardingShell } from './Welcome.jsx';
  *   steps?: Array<{ value: string; label: string }>;
  *   currentStep?: string;
  *   customerName?: string;
+ *   embedded?: boolean;
  * }} props
  */
 export function OnboardingFoodFilterInner({
@@ -35,6 +36,7 @@ export function OnboardingFoodFilterInner({
     steps = [],
     currentStep = 'food_filters',
     customerName = '',
+    embedded = false,
 }) {
     const [demoSelected, setDemoSelected] = useState([]);
     const [demoOtherText, setDemoOtherText] = useState('');
@@ -44,7 +46,8 @@ export function OnboardingFoodFilterInner({
     const handleOtherChange = onOtherTextChange ?? setDemoOtherText;
 
     return (
-        <OnboardingShell
+        <OnboardingStepFrame
+            embedded={embedded}
             title="Food filters"
             description="Select any ingredients or sensitivities we should avoid when planning your meals."
             steps={steps}
@@ -53,7 +56,7 @@ export function OnboardingFoodFilterInner({
             centerHeader
         >
             <form
-                className="mx-auto flex w-full max-w-xl flex-col gap-6"
+                className="flex w-full flex-col gap-6 md:mx-auto md:max-w-xl"
                 onSubmit={(event) => {
                     event.preventDefault();
                     onSubmit?.();
@@ -79,16 +82,18 @@ export function OnboardingFoodFilterInner({
                     ) : null}
                 </fieldset>
 
-                <div className="flex w-full justify-center">
-                    <Button
-                        type="submit"
-                        label={processing ? 'Saving…' : 'Confirm'}
-                        disabled={processing}
-                        className="min-w-[200px] uppercase tracking-[0.08em]"
-                    />
-                </div>
+                {embedded ? null : (
+                    <div className="flex w-full justify-center">
+                        <Button
+                            type="submit"
+                            label={processing ? 'Saving…' : 'Confirm'}
+                            disabled={processing}
+                            className="min-w-[200px] uppercase tracking-[0.08em]"
+                        />
+                    </div>
+                )}
             </form>
-        </OnboardingShell>
+        </OnboardingStepFrame>
     );
 }
 

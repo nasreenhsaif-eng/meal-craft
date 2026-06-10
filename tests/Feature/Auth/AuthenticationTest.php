@@ -20,7 +20,7 @@ test('users can authenticate using the login screen', function () {
 
     $response
         ->assertSessionHasNoErrors()
-        ->assertRedirect(route('admin.dashboard', absolute: false));
+        ->assertRedirect(route('login.portal-choice', absolute: false));
 
     $this->assertAuthenticated();
 });

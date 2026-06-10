@@ -115,7 +115,6 @@ final class MealCraftInertiaSharedData
     {
         return [
             'index' => route('onboarding.index'),
-            'welcome' => route('onboarding.welcome.store'),
             'gender' => route('onboarding.gender.store'),
             'periodTracking' => route('onboarding.period-tracking.store'),
             'birthday' => route('onboarding.birthday.store'),
@@ -126,6 +125,7 @@ final class MealCraftInertiaSharedData
             'dietProtocol' => route('onboarding.diet-protocol.store'),
             'dailyTargets' => route('onboarding.daily-targets.store'),
             'foodFilters' => route('onboarding.food-filters.store'),
+            'reset' => route('onboarding.reset'),
             'appHome' => route('app.home'),
             'consultation' => route('consultation.crafted-for-you'),
         ];

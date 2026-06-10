@@ -5,12 +5,13 @@ import {
     calculateDailyTargets,
     formatCalorieTarget,
     formatMacroGrams,
+    formatMacroGramsValue,
     formatMacroPercentage,
 } from '../../meal-craft/dailyTargetsCalculator.js';
 import { onboardingFromPage } from '../../meal-craft/mealCraftPageProps.js';
 import { useOnboardingStore } from '../../meal-craft/onboarding/OnboardingProvider.jsx';
 import customerOnboardingLayout from '../../Layouts/customerOnboardingLayout.jsx';
-import { OnboardingShell } from './Welcome.jsx';
+import OnboardingStepFrame from '../../Components/Molecules/Onboarding/OnboardingStepFrame.jsx';
 
 const MACRO_THEMES = {
     protein: {
@@ -60,15 +61,15 @@ function CheckmarkBadge() {
 function TargetSummaryCard({ label, value, subLabel, className = '' }) {
     return (
         <article
-            className={`rounded-[12px] border border-border-light bg-grey-96 px-5 py-4 text-center ${className}`.trim()}
+            className={`min-w-0 rounded-[12px] border border-border-light bg-grey-96 px-3 py-4 text-center sm:px-5 ${className}`.trim()}
         >
-            <p className="font-montserrat text-[11px] font-bold uppercase tracking-[0.14em] text-grey-94">
+            <p className="font-montserrat text-[10px] font-bold uppercase tracking-[0.12em] text-grey-94 sm:text-[11px] sm:tracking-[0.14em]">
                 {label}
             </p>
-            <p className="mt-2 font-montserrat text-3xl font-bold leading-none text-brand-primary-pressed">
+            <p className="mt-2 font-montserrat text-2xl font-bold leading-none tabular-nums text-brand-primary-pressed sm:text-3xl">
                 {value}
             </p>
-            <p className="mt-1 font-montserrat text-sm font-medium text-grey-33">{subLabel}</p>
+            <p className="mt-1 font-montserrat text-xs font-medium text-grey-33 sm:text-sm">{subLabel}</p>
         </article>
     );
 }
@@ -86,13 +87,14 @@ function MacroDetailCard({ name, grams, percentage, theme }) {
 
     return (
         <div
-            className={`flex min-w-0 flex-1 flex-col items-center rounded-[12px] border px-2 py-4 text-center sm:px-3 ${styles.cardClassName}`.trim()}
+            className={`flex min-w-0 flex-1 flex-col items-center rounded-[12px] border px-1.5 py-3 text-center sm:px-3 sm:py-4 ${styles.cardClassName}`.trim()}
         >
-            <p className={`font-montserrat text-lg font-bold leading-none sm:text-xl ${styles.valueClassName}`}>
+            <p className={`font-montserrat text-base font-bold leading-none tabular-nums sm:text-xl ${styles.valueClassName}`}>
                 {formatMacroGrams(grams)}
             </p>
             <p
-                className={`mt-2 font-montserrat text-xs font-semibold leading-none whitespace-nowrap sm:text-sm ${styles.labelClassName}`}
+                className={`mt-1.5 w-full truncate font-montserrat text-[10px] font-semibold leading-tight sm:mt-2 sm:text-xs ${styles.labelClassName}`}
+                title={`${name} • ${formatMacroPercentage(percentage)}`}
             >
                 {name} • {formatMacroPercentage(percentage)}
             </p>
@@ -108,6 +110,8 @@ function MacroDetailCard({ name, grams, percentage, theme }) {
  *   steps?: Array<{ value: string; label: string }>;
  *   currentStep?: string;
  *   customerName?: string;
+ *   embedded?: boolean;
+ *   hideDefaultHeader?: boolean;
  * }} props
  */
 export function DailyTargetsSummaryInner({
@@ -117,21 +121,24 @@ export function DailyTargetsSummaryInner({
     steps = [],
     currentStep = 'daily_targets',
     customerName = '',
+    embedded = false,
+    hideDefaultHeader = false,
 }) {
     if (!targets) {
         return null;
     }
 
     return (
-        <OnboardingShell
+        <OnboardingStepFrame
+            embedded={embedded}
             title="Your Daily Targets"
             description=""
             steps={steps}
             currentStep={currentStep}
             customerName={customerName}
-            hideDefaultHeader
+            hideDefaultHeader={embedded || hideDefaultHeader}
         >
-            <div className="mx-auto flex w-full max-w-2xl flex-col gap-6">
+            <div className="mx-auto flex h-auto w-full min-w-0 flex-col gap-6">
                 <header className="flex flex-col items-center gap-2 text-center">
                     <CheckmarkBadge />
                     <h1 className="m-0 font-montserrat text-2xl font-bold tracking-tight text-brand-primary-pressed sm:text-3xl">
@@ -139,7 +146,7 @@ export function DailyTargetsSummaryInner({
                     </h1>
                 </header>
 
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="grid w-full min-w-0 grid-cols-2 gap-4">
                     <TargetSummaryCard
                         label="Calorie Target"
                         value={formatCalorieTarget(targets.dailyCalories)}
@@ -147,13 +154,13 @@ export function DailyTargetsSummaryInner({
                     />
                     <TargetSummaryCard
                         label="Protein Target"
-                        value={formatMacroGrams(targets.proteinGrams)}
-                        subLabel="per day"
+                        value={formatMacroGramsValue(targets.proteinGrams)}
+                        subLabel="g / day"
                     />
                 </div>
 
                 <section
-                    className="rounded-[12px] border border-border-light bg-grey-96 px-4 py-5 sm:px-5"
+                    className="min-w-0 rounded-[12px] border border-border-light bg-grey-96 px-3 py-5 sm:px-5"
                     aria-labelledby="macro-breakdown-heading"
                 >
                     <h2
@@ -182,7 +189,7 @@ export function DailyTargetsSummaryInner({
                         />
                     </div>
 
-                    <div className="mt-4 grid grid-cols-3 gap-2 sm:gap-3">
+                    <div className="mt-4 flex w-full items-stretch justify-between gap-2">
                         <MacroDetailCard
                             name="Protein"
                             grams={targets.proteinGrams}
@@ -204,17 +211,19 @@ export function DailyTargetsSummaryInner({
                     </div>
                 </section>
 
-                <div className="flex justify-center pt-2">
-                    <Button
-                        type="button"
-                        label="Craft my plan"
-                        disabled={processing}
-                        onClick={onStartPlan}
-                        className="!inline-flex !h-[50px] !min-h-[50px] w-auto min-w-[240px] max-w-xs shrink-0 whitespace-nowrap px-12 normal-case tracking-normal bg-[#606c4e] hover:bg-brand-primary-pressed disabled:opacity-60"
-                    />
-                </div>
+                {embedded ? null : (
+                    <div className="flex justify-center pt-2">
+                        <Button
+                            type="button"
+                            label="Craft my plan"
+                            disabled={processing}
+                            onClick={onStartPlan}
+                            className="!inline-flex !h-[50px] !min-h-[50px] w-auto min-w-[240px] max-w-xs shrink-0 whitespace-nowrap px-12 normal-case tracking-normal bg-[#606c4e] hover:bg-brand-primary-pressed disabled:opacity-60"
+                        />
+                    </div>
+                )}
             </div>
-        </OnboardingShell>
+        </OnboardingStepFrame>
     );
 }
 

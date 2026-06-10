@@ -36,7 +36,7 @@ class CreateNewUser implements CreatesNewUsers
 
         CustomerProfile::query()->create([
             'user_id' => $user->id,
-            'onboarding_step' => OnboardingStep::Welcome,
+            'onboarding_step' => OnboardingStep::Gender,
         ]);
 
         return $user;

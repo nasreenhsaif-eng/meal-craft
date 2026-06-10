@@ -56,14 +56,14 @@ enum OnboardingStep: string
     {
         $next = match ($this) {
             self::Welcome => self::Gender,
-            self::Gender => self::PeriodTracking,
+            self::Gender => self::DietProtocol,
+            self::DietProtocol => self::PeriodTracking,
             self::PeriodTracking => self::Birthday,
             self::Birthday => self::Height,
             self::Height => self::Weight,
             self::Weight => self::TargetWeight,
             self::TargetWeight => self::Activity,
-            self::Activity => self::DietProtocol,
-            self::DietProtocol => self::DailyTargets,
+            self::Activity => self::DailyTargets,
             self::DailyTargets => self::FoodFilters,
             self::FoodFilters => null,
             self::Macros => self::DietProtocol,
@@ -73,7 +73,7 @@ enum OnboardingStep: string
 
         if ($next === self::PeriodTracking && ! self::shouldShowPeriodTracking($profile)) {
             return match ($this) {
-                self::Gender => self::Birthday,
+                self::DietProtocol => self::Birthday,
                 default => $next,
             };
         }
@@ -84,18 +84,17 @@ enum OnboardingStep: string
     public function previous(?CustomerProfile $profile = null): ?self
     {
         return match ($this) {
-            self::Welcome => null,
-            self::Gender => self::Welcome,
-            self::PeriodTracking => self::Gender,
+            self::Welcome, self::Gender => null,
+            self::DietProtocol => self::Gender,
+            self::PeriodTracking => self::DietProtocol,
             self::Birthday => self::shouldShowPeriodTracking($profile)
                 ? self::PeriodTracking
-                : self::Gender,
+                : self::DietProtocol,
             self::Height => self::Birthday,
             self::Weight => self::Height,
             self::TargetWeight => self::Weight,
             self::Activity => self::TargetWeight,
-            self::DietProtocol => self::Activity,
-            self::DailyTargets => self::DietProtocol,
+            self::DailyTargets => self::Activity,
             self::FoodFilters => self::DailyTargets,
             self::Macros => self::Activity,
             self::Meals => self::DietProtocol,
@@ -105,7 +104,11 @@ enum OnboardingStep: string
 
     public static function shouldShowPeriodTracking(?CustomerProfile $profile): bool
     {
-        return $profile?->sex === CustomerSex::Female;
+        if ($profile === null) {
+            return false;
+        }
+
+        return DietProtocol::tryFromStored($profile->diet_protocol) === DietProtocol::CycleSync;
     }
 
     /**
@@ -116,6 +119,7 @@ enum OnboardingStep: string
         $resolved = $step instanceof self ? $step : self::from($step);
 
         return match ($resolved) {
+            self::Welcome => self::Gender,
             self::Macros => self::DietProtocol,
             self::Meals => self::DailyTargets,
             self::Review => self::FoodFilters,
@@ -124,20 +128,27 @@ enum OnboardingStep: string
     }
 
     /**
+     * First step customers see in the live onboarding wizard.
+     */
+    public static function entry(): self
+    {
+        return self::Gender;
+    }
+
+    /**
      * @return list<self>
      */
     public static function ordered(): array
     {
         return [
-            self::Welcome,
             self::Gender,
+            self::DietProtocol,
             self::PeriodTracking,
             self::Birthday,
             self::Height,
             self::Weight,
             self::TargetWeight,
             self::Activity,
-            self::DietProtocol,
             self::DailyTargets,
             self::FoodFilters,
         ];

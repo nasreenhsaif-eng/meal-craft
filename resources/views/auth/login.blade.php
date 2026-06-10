@@ -22,9 +22,9 @@
         'title' => __('Log in'),
     ])
 </head>
-<body class="min-h-screen bg-white antialiased">
+<body class="min-h-screen w-full bg-white antialiased">
     <script id="mc-auth-login-config" type="application/json">@json($authLoginConfig)</script>
-    <div id="mc-auth-login-root"></div>
+    <div id="mc-auth-login-root" class="min-h-screen w-full"></div>
     @fluxScripts
 </body>
 </html>

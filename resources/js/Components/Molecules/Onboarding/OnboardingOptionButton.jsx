@@ -5,6 +5,7 @@
  *   label: string;
  *   icon?: import('react').ReactNode;
  *   selected?: boolean;
+ *   disabled?: boolean;
  *   onSelect?: () => void;
  *   describedBy?: string;
  *   className?: string;
@@ -14,6 +15,7 @@ export function OnboardingOptionButton({
     label,
     icon,
     selected = false,
+    disabled = false,
     onSelect,
     describedBy,
     className = '',
@@ -22,6 +24,7 @@ export function OnboardingOptionButton({
         <button
             type="button"
             onClick={onSelect}
+            disabled={disabled}
             aria-pressed={selected}
             aria-describedby={selected && describedBy ? describedBy : undefined}
             className={[
@@ -30,6 +33,7 @@ export function OnboardingOptionButton({
                 'font-montserrat text-[13px] font-bold leading-tight tracking-wide text-[#364153]',
                 'transition-all duration-200 ease-in-out',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6E8C47] focus-visible:ring-offset-2',
+                'disabled:pointer-events-none disabled:opacity-60',
                 selected
                     ? 'bg-[#6E8C47]/30 active:bg-[#6E8C47]/35'
                     : 'bg-[#6E8C47]/10 hover:bg-[#6E8C47]/20 active:bg-[#6E8C47]/30',

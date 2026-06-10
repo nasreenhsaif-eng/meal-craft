@@ -12,8 +12,8 @@ import {
 } from '../../Components/Molecules/Onboarding/wheelDateUtils.js';
 import { onboardingFromPage } from '../../meal-craft/mealCraftPageProps.js';
 import { useOnboardingStore } from '../../meal-craft/onboarding/OnboardingProvider.jsx';
+import OnboardingStepFrame from '../../Components/Molecules/Onboarding/OnboardingStepFrame.jsx';
 import customerOnboardingLayout from '../../Layouts/customerOnboardingLayout.jsx';
-import { OnboardingShell } from './Welcome.jsx';
 
 /**
  * Birthday wheel step markup (Storybook / Inertia).
@@ -29,6 +29,7 @@ import { OnboardingShell } from './Welcome.jsx';
  *   customerName?: string;
  *   minAge?: number;
  *   maxAge?: number;
+ *   embedded?: boolean;
  * }} props
  */
 export function OnboardingBirthdayInner({
@@ -42,6 +43,7 @@ export function OnboardingBirthdayInner({
     customerName = '',
     minAge = 13,
     maxAge = 100,
+    embedded = false,
 }) {
     const parsedInitial = parseIsoDate(dateOfBirthProp) ?? defaultBirthdayValue();
     const [demoParts, setDemoParts] = useState(parsedInitial);
@@ -71,7 +73,8 @@ export function OnboardingBirthdayInner({
     };
 
     return (
-        <OnboardingShell
+        <OnboardingStepFrame
+            embedded={embedded}
             title="When is your birthday?"
             description="Your age helps us tailor recommendations to match your changing nutritional needs over time."
             steps={steps}
@@ -103,16 +106,18 @@ export function OnboardingBirthdayInner({
                     ) : null}
                 </div>
 
-                <div className="flex w-full justify-center">
-                    <Button
-                        type="submit"
-                        label={processing ? 'Saving…' : 'Next'}
-                        disabled={processing}
-                        className="min-w-[200px] uppercase tracking-[0.08em]"
-                    />
-                </div>
+                {embedded ? null : (
+                    <div className="flex w-full justify-center">
+                        <Button
+                            type="submit"
+                            label={processing ? 'Saving…' : 'Next'}
+                            disabled={processing}
+                            className="min-w-[200px] uppercase tracking-[0.08em]"
+                        />
+                    </div>
+                )}
             </form>
-        </OnboardingShell>
+        </OnboardingStepFrame>
     );
 }
 

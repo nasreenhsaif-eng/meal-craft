@@ -139,17 +139,14 @@ export default function LoginPage({
                 aria-hidden={!formRevealed}
             >
                 <div className="flex w-full max-w-full flex-col items-center md:px-12">
-                    <div className="mx-auto w-full max-w-[280px]">
-                        <MealCraftLogo variant="smart" width={217} className="w-full" alt="Meal Craft" />
+                    <div className="flex justify-center">
+                        <MealCraftLogo variant="seal-md" width={168} className="h-auto shrink-0" alt="Meal Craft" />
                     </div>
 
                     <header className={`mt-8 w-full ${contentWidthClass}`}>
                         <h1 className="font-sans text-2xl font-bold tracking-tight text-[#6E8C47] sm:text-3xl lg:text-4xl">
                             Welcome to Meal Craft
                         </h1>
-                        <p className="mx-auto mt-3 max-w-prose text-base font-medium leading-relaxed text-grey-94 sm:text-lg">
-                            Your Smart Kitchen Dashboard.
-                        </p>
                     </header>
 
                     {statusMessage ? (

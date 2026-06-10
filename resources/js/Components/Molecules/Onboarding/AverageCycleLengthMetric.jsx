@@ -1,27 +1,15 @@
 function IconCycleArrow() {
     return (
-        <svg className="block h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <svg
+            width={20}
+            height={20}
+            viewBox="0 0 24 24"
+            fill="none"
+            aria-hidden="true"
+            className="size-5 shrink-0"
+        >
             <path
-                d="M12 4a8 8 0 1 1-7.7 6"
-                stroke="currentColor"
-                strokeWidth="1.75"
-                strokeLinecap="round"
-            />
-            <path
-                d="M4 4v4h4"
-                stroke="currentColor"
-                strokeWidth="1.75"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-            />
-            <path
-                d="M12 20a8 8 0 1 0 7.7-6"
-                stroke="currentColor"
-                strokeWidth="1.75"
-                strokeLinecap="round"
-            />
-            <path
-                d="M20 20v-4h-4"
+                d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182"
                 stroke="currentColor"
                 strokeWidth="1.75"
                 strokeLinecap="round"
@@ -47,7 +35,7 @@ export default function AverageCycleLengthMetric({ days, isStandard = false, cla
             role="status"
             aria-live="polite"
         >
-            <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border-light bg-white text-brand-primary-pressed">
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-full border border-border-light bg-white text-brand-primary-pressed">
                 <IconCycleArrow />
             </span>
             <p className="m-0 font-montserrat text-sm leading-snug text-grey-33">

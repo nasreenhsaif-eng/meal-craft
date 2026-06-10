@@ -1,4 +1,4 @@
-import AdminInertiaShell from '../../Layouts/AdminInertiaShell.jsx';
+import adminInertiaLayout from '../../lib/adminInertiaLayout.jsx';
 
 /**
  * @param {object} props
@@ -62,4 +62,4 @@ export default function CustomerProfiles(props) {
     return <CustomerProfilesView {...props} />;
 }
 
-CustomerProfiles.layout = (page) => <AdminInertiaShell>{page}</AdminInertiaShell>;
+CustomerProfiles.layout = adminInertiaLayout;

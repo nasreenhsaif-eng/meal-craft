@@ -1,5 +1,6 @@
 import { calculateDailyTargets } from '../../meal-craft/dailyTargetsCalculator.js';
 import { DailyTargetsSummaryInner } from './DailyTargetsSummary.jsx';
+import { withOnboardingMobileFrame } from './onboardingStoryDecorators.jsx';
 import { ONBOARDING_STEPS } from './onboardingSteps.js';
 
 const DEMO_PROFILE = {
@@ -24,6 +25,7 @@ export default {
             },
         },
     },
+    decorators: withOnboardingMobileFrame,
 };
 
 export const Default = {
@@ -33,6 +35,7 @@ export const Default = {
             steps={ONBOARDING_STEPS}
             currentStep="daily_targets"
             customerName="Amina Saif"
+            hideDefaultHeader
             onStartPlan={() => undefined}
         />
     ),
@@ -54,6 +57,7 @@ export const MaleMaintainBalanced = {
             steps={ONBOARDING_STEPS.filter((step) => step.value !== 'period_tracking')}
             currentStep="daily_targets"
             customerName="James Okonkwo"
+            hideDefaultHeader
             onStartPlan={() => undefined}
         />
     ),
@@ -75,6 +79,7 @@ export const FemaleWeightLoss = {
             steps={ONBOARDING_STEPS}
             currentStep="daily_targets"
             customerName="Amina Saif"
+            hideDefaultHeader
             onStartPlan={() => undefined}
         />
     ),
@@ -94,6 +99,7 @@ export const WithExplicitCalorieOverride = {
             steps={ONBOARDING_STEPS}
             currentStep="daily_targets"
             customerName="Amina Saif"
+            hideDefaultHeader
             onStartPlan={() => undefined}
         />
     ),

@@ -9,7 +9,7 @@ class StoreOnboardingFoodFiltersRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->isCustomer() ?? false;
+        return $this->user()?->canAccessCustomerPortal() ?? false;
     }
 
     /**

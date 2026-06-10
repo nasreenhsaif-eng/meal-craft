@@ -1,4 +1,4 @@
-/** @typedef {'welcome' | 'gender' | 'period_tracking' | 'birthday' | 'height' | 'weight' | 'target_weight' | 'activity' | 'diet_protocol' | 'daily_targets' | 'food_filters'} OnboardingStepId */
+/** @typedef {'gender' | 'period_tracking' | 'birthday' | 'height' | 'weight' | 'target_weight' | 'activity' | 'diet_protocol' | 'daily_targets' | 'food_filters'} OnboardingStepId */
 
 /** @typedef {'male' | 'female'} OnboardingGender */
 
@@ -8,22 +8,21 @@
  */
 
 /**
- * @typedef {'balanced' | 'ketobiotic' | 'cycle_sync' | 'sickle_cell_warrior' | 'sickle_cell'} OnboardingDietProtocol
+ * @typedef {'balanced' | 'ketobiotic' | 'cycle_sync' | 'thyroid' | 'sickle_cell_warrior' | 'sickle_cell'} OnboardingDietProtocol
  */
 
 export const ONBOARDING_STORAGE_KEY = 'mealcraft.onboarding.wizard.v1';
 
 /** @type {readonly OnboardingStepId[]} */
 export const ONBOARDING_FLOW_STEPS = [
-    'welcome',
     'gender',
+    'diet_protocol',
     'period_tracking',
     'birthday',
     'height',
     'weight',
     'target_weight',
     'activity',
-    'diet_protocol',
     'daily_targets',
     'food_filters',
 ];

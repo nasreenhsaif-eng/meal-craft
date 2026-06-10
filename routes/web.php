@@ -11,22 +11,39 @@ use App\Http\Controllers\Admin\MealController;
 use App\Http\Controllers\Admin\MealLibraryController;
 use App\Http\Controllers\Admin\MealLibraryCsvImportController;
 use App\Http\Controllers\Admin\MealPlanLibraryController;
+use App\Http\Controllers\Auth\PortalChoiceController;
+use App\Http\Controllers\Auth\WelcomeController;
 use App\Http\Controllers\Customer\CustomerAppController;
 use App\Http\Controllers\Customer\OnboardingController;
 use App\Http\Controllers\MealLibraryCsvExportController;
 use App\Http\Controllers\MealLibraryCsvImportController as JsonMealLibraryCsvImportController;
 use App\Models\Meal;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('welcome');
+Route::get('/', function (Request $request) {
+    $user = $request->user();
+
+    if ($user !== null) {
+        return redirect($user->homePath());
+    }
+
+    return redirect()->route('login');
 })->name('home');
+
+Route::get('/welcome', [WelcomeController::class, 'show'])->name('welcome');
 
 Route::middleware('guest')->group(function (): void {
     Route::view('/join', 'pages::auth.join')->name('join');
 });
 
+Route::view('/sign-out', 'pages::auth.sign-out')->name('sign-out');
+
 Route::middleware(['auth', 'verified'])->group(function (): void {
+    Route::get('/login/portal-choice', [PortalChoiceController::class, 'show'])
+        ->middleware('portal.choice')
+        ->name('login.portal-choice');
+
     Route::get('dashboard', function () {
         $user = auth()->user();
 
@@ -85,6 +102,9 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     });
 
     Route::middleware('customer')->group(function (): void {
+        Route::post('/onboarding/reset', [OnboardingController::class, 'resetForTesting'])
+            ->name('onboarding.reset');
+
         Route::prefix('onboarding')
             ->name('onboarding.')
             ->middleware('onboarding.incomplete')
@@ -93,7 +113,6 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
                 Route::get('/{step}', [OnboardingController::class, 'show'])
                     ->middleware('onboarding.step')
                     ->name('show');
-                Route::post('/welcome', [OnboardingController::class, 'storeWelcome'])->name('welcome.store');
                 Route::post('/gender', [OnboardingController::class, 'storeGender'])->name('gender.store');
                 Route::post('/period-tracking', [OnboardingController::class, 'storePeriodTracking'])->name('period-tracking.store');
                 Route::post('/birthday', [OnboardingController::class, 'storeBirthday'])->name('birthday.store');

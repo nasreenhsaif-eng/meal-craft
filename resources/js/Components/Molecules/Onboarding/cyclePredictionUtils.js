@@ -65,6 +65,25 @@ export function resolveAnchorDate(periods) {
 /**
  * @param {LoggedPeriod[]} periods
  */
+export function averagePeriodBleedingDays(periods) {
+    if (periods.length === 0) {
+        return PERIOD_BLEEDING_DAYS;
+    }
+
+    let totalDays = 0;
+
+    for (const period of periods) {
+        totalDays += daysBetweenIso(period.start, period.end) + 1;
+    }
+
+    const average = Math.round(totalDays / periods.length);
+
+    return average > 0 ? average : PERIOD_BLEEDING_DAYS;
+}
+
+/**
+ * @param {LoggedPeriod[]} periods
+ */
 export function averageCycleLengthDays(periods) {
     if (periods.length < 2) {
         return DEFAULT_CYCLE_LENGTH_DAYS;
@@ -144,16 +163,23 @@ export function isIsoInInclusiveRange(iso, startIso, endIso) {
  * @param {string} anchorDate
  * @param {number} cycleIndex
  * @param {number} cycleLength
+ * @param {number} [periodBleedingDays]
  * @returns {ProjectedCycle | null}
  */
-export function buildProjectedCycle(anchorDate, cycleIndex, cycleLength) {
+export function buildProjectedCycle(
+    anchorDate,
+    cycleIndex,
+    cycleLength,
+    periodBleedingDays = PERIOD_BLEEDING_DAYS,
+) {
     const periodStart = projectedPeriodStartIso(anchorDate, cycleIndex, cycleLength);
 
     if (!periodStart) {
         return null;
     }
 
-    const periodEnd = addDaysToIso(periodStart, PERIOD_END_OFFSET_DAYS);
+    const bleedingOffset = Math.max(0, periodBleedingDays - 1);
+    const periodEnd = addDaysToIso(periodStart, bleedingOffset);
     const nextPeriodStart = addDaysToIso(periodStart, cycleLength);
     const ovulationDate = nextPeriodStart
         ? addDaysToIso(nextPeriodStart, -OVULATION_DAYS_BEFORE_NEXT_PERIOD)
@@ -240,6 +266,7 @@ export function buildProjectedCycles(
 ) {
     const anchorDate = resolveAnchorDate(loggedPeriods);
     const cycleLength = resolveCycleLengthDays(loggedPeriods);
+    const periodBleedingDays = averagePeriodBleedingDays(loggedPeriods);
     const historicalPhases = buildHistoricalCyclePhases(loggedPeriods);
     /** @type {ProjectedCycle[]} */
     const projectedCycles = [];
@@ -257,10 +284,14 @@ export function buildProjectedCycles(
     const spanDays = Math.max(daysBetweenIso(anchorDate, horizonEndIso), cycleLength);
     const maxCycleIndex = Math.ceil(spanDays / cycleLength) + 1;
 
-    for (let cycleIndex = 1; cycleIndex <= maxCycleIndex; cycleIndex += 1) {
-        const cycle = buildProjectedCycle(anchorDate, cycleIndex, cycleLength);
+    for (let cycleIndex = 0; cycleIndex <= maxCycleIndex; cycleIndex += 1) {
+        const cycle = buildProjectedCycle(anchorDate, cycleIndex, cycleLength, periodBleedingDays);
 
-        if (!cycle || cycle.periodStart > horizonEndIso) {
+        if (!cycle) {
+            break;
+        }
+
+        if (cycleIndex > 0 && cycle.periodStart > horizonEndIso) {
             break;
         }
 
@@ -314,7 +345,7 @@ function resolveProjectedDayFlags(iso, projectedCycles, todayIso, horizonEndIso,
     let isPredictedPeriod = false;
 
     for (const cycle of projectedCycles) {
-        if (iso > horizonEndIso || iso < todayIso) {
+        if (iso > horizonEndIso) {
             continue;
         }
 
@@ -327,6 +358,7 @@ function resolveProjectedDayFlags(iso, projectedCycles, todayIso, horizonEndIso,
         }
 
         if (
+            iso >= todayIso &&
             isIsoInInclusiveRange(iso, cycle.periodStart, cycle.periodEnd) &&
             !isDateInAnyLoggedPeriod(iso, loggedPeriods)
         ) {

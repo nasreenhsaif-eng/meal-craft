@@ -14,8 +14,8 @@ import {
 } from '../../Components/Molecules/Onboarding/weightUtils.js';
 import { onboardingFromPage } from '../../meal-craft/mealCraftPageProps.js';
 import { useOnboardingStore } from '../../meal-craft/onboarding/OnboardingProvider.jsx';
+import OnboardingStepFrame from '../../Components/Molecules/Onboarding/OnboardingStepFrame.jsx';
 import customerOnboardingLayout from '../../Layouts/customerOnboardingLayout.jsx';
-import { OnboardingShell } from './Welcome.jsx';
 
 /**
  * @param {{
@@ -31,6 +31,7 @@ import { OnboardingShell } from './Welcome.jsx';
  *   title?: string;
  *   description?: string;
  *   errorField?: string;
+ *   embedded?: boolean;
  * }} props
  */
 export function OnboardingWeightInner({
@@ -46,6 +47,7 @@ export function OnboardingWeightInner({
     title = 'How much do you weigh?',
     description = 'Weight is used alongside height to accurately calculate your Total Daily Energy Expenditure (TDEE) and target calories.',
     errorField = 'weight_kg',
+    embedded = false,
 }) {
     const isControlled = onWeightKgChange !== undefined;
     const initialKg = resolveWeightKg(weightKgProp);
@@ -85,7 +87,8 @@ export function OnboardingWeightInner({
     };
 
     return (
-        <OnboardingShell
+        <OnboardingStepFrame
+            embedded={embedded}
             title={title}
             description={description}
             steps={steps}
@@ -120,16 +123,18 @@ export function OnboardingWeightInner({
                     </p>
                 ) : null}
 
-                <div className="flex w-full justify-center">
-                    <Button
-                        type="submit"
-                        label={processing ? 'Saving…' : 'Next'}
-                        disabled={processing}
-                        className="min-w-[200px] uppercase tracking-[0.08em]"
-                    />
-                </div>
+                {embedded ? null : (
+                    <div className="flex w-full justify-center">
+                        <Button
+                            type="submit"
+                            label={processing ? 'Saving…' : 'Next'}
+                            disabled={processing}
+                            className="min-w-[200px] uppercase tracking-[0.08em]"
+                        />
+                    </div>
+                )}
             </form>
-        </OnboardingShell>
+        </OnboardingStepFrame>
     );
 }
 

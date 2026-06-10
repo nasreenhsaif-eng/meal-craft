@@ -7,14 +7,16 @@ enum DietProtocol: string
     case Balanced = 'balanced';
     case Ketobiotic = 'ketobiotic';
     case CycleSync = 'cycle_sync';
+    case Thyroid = 'thyroid';
     case SickleCellWarrior = 'sickle_cell_warrior';
 
     public function label(): string
     {
         return match ($this) {
-            self::Balanced => __('Balanced'),
+            self::Balanced => __('Balanced Protocol'),
             self::Ketobiotic => __('Ketobiotic'),
             self::CycleSync => __('Cycle sync'),
+            self::Thyroid => __('Thyroid Protocol'),
             self::SickleCellWarrior => __('Sickle cell warrior'),
         };
     }

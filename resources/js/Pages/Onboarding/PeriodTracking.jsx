@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useForm, usePage } from '@inertiajs/react';
 import Button from '../../Components/Atoms/Button/Button.jsx';
 import AverageCycleLengthMetric from '../../Components/Molecules/Onboarding/AverageCycleLengthMetric.jsx';
@@ -14,8 +14,8 @@ import {
 } from '../../Components/Molecules/Onboarding/periodTrackingUtils.js';
 import { onboardingFromPage } from '../../meal-craft/mealCraftPageProps.js';
 import { useOnboardingStore } from '../../meal-craft/onboarding/OnboardingProvider.jsx';
+import OnboardingStepFrame from '../../Components/Molecules/Onboarding/OnboardingStepFrame.jsx';
 import customerOnboardingLayout from '../../Layouts/customerOnboardingLayout.jsx';
-import { OnboardingShell } from './Welcome.jsx';
 
 /**
  * @typedef {{ start: string; end: string }} LoggedPeriod
@@ -43,6 +43,7 @@ function isCompletedRange(range) {
  *   steps?: Array<{ value: string; label: string }>;
  *   currentStep?: string;
  *   customerName?: string;
+ *   embedded?: boolean;
  * }} props
  */
 export function OnboardingPeriodTrackingInner({
@@ -56,6 +57,7 @@ export function OnboardingPeriodTrackingInner({
     steps = [],
     currentStep = 'period_tracking',
     customerName = '',
+    embedded = false,
 }) {
     const [demoPeriods, setDemoPeriods] = useState(/** @type {LoggedPeriod[]} */ ([]));
     const [draftRange, setDraftRange] = useState({ start: null, end: null });
@@ -66,27 +68,35 @@ export function OnboardingPeriodTrackingInner({
     const loggedPeriods = loggedPeriodsProp ?? demoPeriods;
     const setLoggedPeriods = onLoggedPeriodsChange ?? setDemoPeriods;
 
+    const handleDraftRangeChange = useCallback(
+        (range) => {
+            if (isCompletedRange(range)) {
+                setLoggedPeriods((current) =>
+                    appendPeriodIfMissing(current, { start: range.start, end: range.end }),
+                );
+                setDraftRange({ start: null, end: null });
+
+                return;
+            }
+
+            setDraftRange(range);
+        },
+        [setLoggedPeriods],
+    );
+
+    const cycleMetric = useMemo(() => resolveAverageCycleLengthMetric(loggedPeriods), [loggedPeriods]);
+    const syncAverageCycleLength = useRef(onAverageCycleLengthChange);
+    syncAverageCycleLength.current = onAverageCycleLengthChange;
+
     useEffect(() => {
-        if (!isCompletedRange(draftRange)) {
-            return;
-        }
-
-        setLoggedPeriods((current) =>
-            appendPeriodIfMissing(current, { start: draftRange.start, end: draftRange.end }),
-        );
-        setDraftRange({ start: null, end: null });
-    }, [draftRange, setLoggedPeriods]);
-
-    useEffect(() => {
-        const metric = resolveAverageCycleLengthMetric(loggedPeriods);
-
-        setAvgCycleLength(metric.days);
-        setUsesStandardCycleLength(metric.isStandard);
-        onAverageCycleLengthChange?.(metric.days);
-    }, [loggedPeriods, onAverageCycleLengthChange]);
+        setAvgCycleLength(cycleMetric.days);
+        setUsesStandardCycleLength(cycleMetric.isStandard);
+        syncAverageCycleLength.current?.(cycleMetric.days);
+    }, [cycleMetric.days, cycleMetric.isStandard]);
 
     return (
-        <OnboardingShell
+        <OnboardingStepFrame
+            embedded={embedded}
             title="Track your period"
             description="Log recent cycles so we can personalize nutrition recommendations across your menstrual phases."
             steps={steps}
@@ -96,7 +106,7 @@ export function OnboardingPeriodTrackingInner({
             titleClassName="text-brand-primary-pressed"
         >
             <form
-                className="mx-auto flex w-full max-w-xl flex-col gap-6"
+                className="flex w-full flex-col gap-6 md:mx-auto md:max-w-xl"
                 onSubmit={(event) => {
                     event.preventDefault();
                     onSubmit?.();
@@ -105,7 +115,7 @@ export function OnboardingPeriodTrackingInner({
                 <div className="flex w-full justify-center">
                     <PeriodRangeCalendar
                         rangeValue={draftRange}
-                        onRangeChange={setDraftRange}
+                        onRangeChange={handleDraftRangeChange}
                         loggedPeriods={loggedPeriods}
                         onLoggedPeriodRemove={(key) =>
                             setLoggedPeriods((current) => removePeriodByKey(current, key))
@@ -135,16 +145,18 @@ export function OnboardingPeriodTrackingInner({
                     </p>
                 ) : null}
 
-                <div className="flex w-full justify-center">
-                    <Button
-                        type="submit"
-                        label={processing ? 'Saving…' : 'Next'}
-                        disabled={processing}
-                        className="min-w-[200px] uppercase tracking-[0.08em]"
-                    />
-                </div>
+                {embedded ? null : (
+                    <div className="flex w-full justify-center">
+                        <Button
+                            type="submit"
+                            label={processing ? 'Saving…' : 'Next'}
+                            disabled={processing}
+                            className="min-w-[200px] uppercase tracking-[0.08em]"
+                        />
+                    </div>
+                )}
             </form>
-        </OnboardingShell>
+        </OnboardingStepFrame>
     );
 }
 
@@ -164,9 +176,18 @@ export default function PeriodTracking() {
             DEFAULT_CYCLE_LENGTH_DAYS,
     });
 
-    const handleAverageCycleLengthChange = useCallback(
+    const handleLoggedPeriodsChange = useCallback(
         (next) => {
-            setData('average_cycle_length', next);
+            const resolved = typeof next === 'function' ? next(data.logged_periods) : next;
+
+            setData('logged_periods', resolved);
+        },
+        [data.logged_periods, setData],
+    );
+
+    const handleAverageCycleLengthChange = useCallback(
+        (value) => {
+            setData('average_cycle_length', value);
         },
         [setData],
     );
@@ -177,17 +198,8 @@ export default function PeriodTracking() {
             averageCycleLength={data.average_cycle_length}
             errors={errors}
             processing={processing}
-            onLoggedPeriodsChange={(next) => {
-                const resolved =
-                    typeof next === 'function' ? next(data.logged_periods) : next;
-
-                setData('logged_periods', resolved);
-                patch({ periodTracking: { loggedPeriods: resolved } });
-            }}
-            onAverageCycleLengthChange={(value) => {
-                handleAverageCycleLengthChange(value);
-                patch({ periodTracking: { averageCycleLength: value } });
-            }}
+            onLoggedPeriodsChange={handleLoggedPeriodsChange}
+            onAverageCycleLengthChange={handleAverageCycleLengthChange}
             onSubmit={() => {
                 patch({
                     periodTracking: {

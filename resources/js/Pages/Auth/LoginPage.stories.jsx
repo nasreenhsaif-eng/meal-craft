@@ -44,7 +44,7 @@ export default {
         docs: {
             description: {
                 component:
-                    'Phase 1: full-viewport white (`#FFFFFF`) splash with `MealCraftLogo` `marketing-animated` (~5s hold, then 700ms crossfade), then the login form with static `smart` lockup. **Form only** skips the wait.',
+                    'Phase 1: full-viewport white (`#FFFFFF`) splash with `MealCraftLogo` `marketing-animated` (~5s hold, then 700ms crossfade), then the login form with `seal-md` mark only. **Form only** skips the wait.\n\n**Smart login redirect (server):** after submit, admins/staff → [`PortalChoicePage`](./PortalChoicePage.stories.jsx); customers with incomplete onboarding → `/onboarding/welcome`; customers with completed onboarding → `/app`. Guests start at [`WelcomePage`](./WelcomePage.stories.jsx).',
             },
         },
     },

@@ -21,7 +21,8 @@ test('customers cannot access admin settings', function () {
 
     $this->actingAs($customer)
         ->get(route('admin.settings.profile'))
-        ->assertForbidden();
+        ->assertRedirect($customer->homePath())
+        ->assertSessionHas('error');
 });
 
 test('admin users are redirected away from legacy settings routes', function () {

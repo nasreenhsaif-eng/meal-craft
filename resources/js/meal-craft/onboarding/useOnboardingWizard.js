@@ -8,7 +8,6 @@ import { useOnboardingStore } from './OnboardingProvider.jsx';
  */
 
 const STEP_SUBMIT_URL = {
-    welcome: 'welcome',
     gender: 'gender',
     period_tracking: 'periodTracking',
     birthday: 'birthday',

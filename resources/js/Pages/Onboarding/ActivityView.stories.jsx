@@ -1,5 +1,5 @@
 import { OnboardingActivityInner } from './Activity.jsx';
-import { MobileStoryViewport } from '../../storybook/MobileStoryViewport.jsx';
+import { withOnboardingMobileFrame } from './onboardingStoryDecorators.jsx';
 import { ONBOARDING_STEPS } from './onboardingSteps.js';
 
 export default {
@@ -14,13 +14,7 @@ export default {
             },
         },
     },
-    decorators: [
-        (Story) => (
-            <MobileStoryViewport>
-                <Story />
-            </MobileStoryViewport>
-        ),
-    ],
+    decorators: withOnboardingMobileFrame,
 };
 
 export const Default = {

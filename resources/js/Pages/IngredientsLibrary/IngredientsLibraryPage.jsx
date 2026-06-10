@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { router, usePage } from '@inertiajs/react';
-import AdminInertiaShell from '../../Layouts/AdminInertiaShell.jsx';
+import adminInertiaLayout from '../../lib/adminInertiaLayout.jsx';
 import TextInput from '../../Components/Atoms/TextInput/TextInput.jsx';
 import DropdownTextInput from '../../Components/Atoms/TextInput/DropdownTextInput.jsx';
 import MicronutrientInput from '../../Components/Atoms/TextInput/MicronutrientInput.jsx';
@@ -1183,6 +1183,6 @@ function IngredientsLibraryPage(props) {
     return <IngredientsLibraryPageContent {...props} />;
 }
 
-IngredientsLibraryPage.layout = (page) => <AdminInertiaShell>{page}</AdminInertiaShell>;
+IngredientsLibraryPage.layout = adminInertiaLayout;
 
 export default IngredientsLibraryPage;

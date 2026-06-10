@@ -23,7 +23,7 @@ test('new users can register', function () {
     ]);
 
     $response->assertSessionHasNoErrors()
-        ->assertRedirect(route('onboarding.show', ['step' => 'welcome'], absolute: false));
+        ->assertRedirect(route('onboarding.show', ['step' => 'gender'], absolute: false));
 
     $this->assertAuthenticated();
 });

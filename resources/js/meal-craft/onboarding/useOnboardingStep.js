@@ -44,7 +44,6 @@ export function useOnboardingStepForm(stepId, initialData, mapStateToForm, mapFo
         }
 
         const urlKey = {
-            welcome: 'welcome',
             gender: 'gender',
             period_tracking: 'periodTracking',
             birthday: 'birthday',
