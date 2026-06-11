@@ -17,9 +17,9 @@ enum MacroSplitStyle: string
 
         if (! isset($presets[$key])) {
             return $presets['balanced'] ?? [
-                'protein_percentage' => 30.0,
+                'protein_percentage' => 40.0,
                 'carb_percentage' => 40.0,
-                'fat_percentage' => 30.0,
+                'fat_percentage' => 20.0,
             ];
         }
 

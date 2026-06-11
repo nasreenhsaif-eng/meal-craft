@@ -14,6 +14,7 @@ import { MONTH_LABELS } from './wheelDateUtils.js';
  *   dayOptions?: number[];
  *   yearOptions?: number[];
  *   className?: string;
+ *   visible?: boolean;
  * }} props
  */
 export function WheelDatePicker({
@@ -25,6 +26,7 @@ export function WheelDatePicker({
     dayOptions,
     yearOptions,
     className = '',
+    visible = true,
 }) {
     const resolvedDayOptions = dayOptions ?? Array.from({ length: 31 }, (_, index) => index + 1);
 
@@ -58,6 +60,7 @@ export function WheelDatePicker({
                 items={monthOptions}
                 value={month}
                 onChange={handleMonthChange}
+                visible={visible}
                 formatItem={(value) => MONTH_LABELS[Number(value) - 1] ?? String(value)}
             />
             <WheelColumn
@@ -66,6 +69,7 @@ export function WheelDatePicker({
                 items={resolvedDayOptions}
                 value={day}
                 onChange={handleDayChange}
+                visible={visible}
             />
             <WheelColumn
                 ariaLabel="Birth year"
@@ -73,6 +77,7 @@ export function WheelDatePicker({
                 items={yearOptions ?? []}
                 value={year}
                 onChange={handleYearChange}
+                visible={visible}
             />
         </WheelPickerFrame>
     );

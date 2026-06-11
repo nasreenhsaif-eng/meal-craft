@@ -3,10 +3,10 @@ import { router, usePage } from '@inertiajs/react';
 import Button from '../../Components/Atoms/Button/Button.jsx';
 import {
     calculateDailyTargets,
-    formatCalorieTarget,
+    formatCalorieRange,
     formatMacroGrams,
-    formatMacroGramsValue,
     formatMacroPercentage,
+    goalSummaryCopy,
 } from '../../meal-craft/dailyTargetsCalculator.js';
 import { onboardingFromPage } from '../../meal-craft/mealCraftPageProps.js';
 import { useOnboardingStore } from '../../meal-craft/onboarding/OnboardingProvider.jsx';
@@ -55,13 +55,14 @@ function CheckmarkBadge() {
  *   label: string;
  *   value: string;
  *   subLabel: string;
+ *   summary?: string;
  *   className?: string;
  * }} props
  */
-function TargetSummaryCard({ label, value, subLabel, className = '' }) {
+function TargetSummaryCard({ label, value, subLabel, summary, className = '' }) {
     return (
         <article
-            className={`min-w-0 rounded-[12px] border border-border-light bg-grey-96 px-3 py-4 text-center sm:px-5 ${className}`.trim()}
+            className={`w-full rounded-[12px] border border-border-light bg-grey-96 px-4 py-4 text-center sm:px-6 sm:py-5 ${className}`.trim()}
         >
             <p className="font-montserrat text-[10px] font-bold uppercase tracking-[0.12em] text-grey-94 sm:text-[11px] sm:tracking-[0.14em]">
                 {label}
@@ -70,6 +71,11 @@ function TargetSummaryCard({ label, value, subLabel, className = '' }) {
                 {value}
             </p>
             <p className="mt-1 font-montserrat text-xs font-medium text-grey-33 sm:text-sm">{subLabel}</p>
+            {summary ? (
+                <p className="mt-4 border-t border-border-light pt-4 text-center font-montserrat text-[13px] font-medium leading-relaxed text-grey-33 sm:text-sm">
+                    {summary}
+                </p>
+            ) : null}
         </article>
     );
 }
@@ -138,7 +144,7 @@ export function DailyTargetsSummaryInner({
             customerName={customerName}
             hideDefaultHeader={embedded || hideDefaultHeader}
         >
-            <div className="mx-auto flex h-auto w-full min-w-0 flex-col gap-6">
+            <div className="w-full space-y-6">
                 <header className="flex flex-col items-center gap-2 text-center">
                     <CheckmarkBadge />
                     <h1 className="m-0 font-montserrat text-2xl font-bold tracking-tight text-brand-primary-pressed sm:text-3xl">
@@ -146,21 +152,15 @@ export function DailyTargetsSummaryInner({
                     </h1>
                 </header>
 
-                <div className="grid w-full min-w-0 grid-cols-2 gap-4">
-                    <TargetSummaryCard
-                        label="Calorie Target"
-                        value={formatCalorieTarget(targets.dailyCalories)}
-                        subLabel="kcal / day"
-                    />
-                    <TargetSummaryCard
-                        label="Protein Target"
-                        value={formatMacroGramsValue(targets.proteinGrams)}
-                        subLabel="g / day"
-                    />
-                </div>
+                <TargetSummaryCard
+                    label="Calorie Target"
+                    value={formatCalorieRange(targets.dailyCaloriesMin, targets.dailyCaloriesMax)}
+                    subLabel="kcal / day"
+                    summary={goalSummaryCopy(targets.weightGoal ?? 'maintain')}
+                />
 
                 <section
-                    className="min-w-0 rounded-[12px] border border-border-light bg-grey-96 px-3 py-5 sm:px-5"
+                    className="w-full rounded-[12px] border border-border-light bg-grey-96 px-3 py-5 sm:px-5"
                     aria-labelledby="macro-breakdown-heading"
                 >
                     <h2
@@ -229,11 +229,11 @@ export function DailyTargetsSummaryInner({
 
 export default function DailyTargetsSummary() {
     const onboarding = onboardingFromPage(usePage().props);
-    const { computedTargets, profileInput } = useOnboardingStore();
+    const { profileInput } = useOnboardingStore();
 
     const targets = useMemo(
-        () => computedTargets ?? calculateDailyTargets(profileInput),
-        [computedTargets, profileInput],
+        () => calculateDailyTargets(profileInput),
+        [profileInput],
     );
 
     return (

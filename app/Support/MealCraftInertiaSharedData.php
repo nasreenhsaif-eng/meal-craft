@@ -105,6 +105,10 @@ final class MealCraftInertiaSharedData
                 'importCsv' => route('admin.meal-library.import-csv'),
                 'exportCsv' => route('meals.library.export-csv'),
             ],
+            'mealPlanLibrary' => [
+                'index' => route('admin.meal-plan-library'),
+                'mealSearch' => route('admin.meal-plan-library.meals.search'),
+            ],
         ];
     }
 
@@ -235,6 +239,10 @@ final class MealCraftInertiaSharedData
             'bmr' => $targets['bmr'],
             'tdee' => $targets['tdee'],
             'dailyCalories' => $targets['daily_calories'],
+            'dailyCaloriesMin' => $targets['daily_calories_min'],
+            'dailyCaloriesMax' => $targets['daily_calories_max'],
+            'dailyKjMin' => $targets['daily_kj_min'],
+            'dailyKjMax' => $targets['daily_kj_max'],
             'proteinGrams' => $targets['protein_grams'],
             'carbGrams' => $targets['carb_grams'],
             'fatGrams' => $targets['fat_grams'],
@@ -242,6 +250,7 @@ final class MealCraftInertiaSharedData
             'carbPercentage' => $targets['carb_percentage'],
             'fatPercentage' => $targets['fat_percentage'],
             'goal' => $targets['goal'],
+            'weightGoal' => $targets['weight_goal'],
             'dietProtocol' => $targets['diet_protocol'],
             'currentPhase' => $targets['current_phase'],
         ];

@@ -30,6 +30,7 @@ import customerOnboardingLayout from '../../Layouts/customerOnboardingLayout.jsx
  *   minAge?: number;
  *   maxAge?: number;
  *   embedded?: boolean;
+ *   visible?: boolean;
  * }} props
  */
 export function OnboardingBirthdayInner({
@@ -44,6 +45,7 @@ export function OnboardingBirthdayInner({
     minAge = 13,
     maxAge = 100,
     embedded = false,
+    visible = true,
 }) {
     const parsedInitial = parseIsoDate(dateOfBirthProp) ?? defaultBirthdayValue();
     const [demoParts, setDemoParts] = useState(parsedInitial);
@@ -97,6 +99,7 @@ export function OnboardingBirthdayInner({
                         year={year}
                         dayOptions={dayOptions}
                         yearOptions={yearOptions}
+                        visible={visible}
                         onChange={updateParts}
                     />
                     {errors.date_of_birth ? (

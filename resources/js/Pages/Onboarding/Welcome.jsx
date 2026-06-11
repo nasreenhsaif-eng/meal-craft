@@ -49,9 +49,9 @@ export function OnboardingShell({
 
     return (
         <CustomerInertiaShell customerName={customerName} layoutVariant="onboarding">
-            <div className="flex w-full min-w-0 flex-col space-y-6 md:space-y-8">
+            <div className="flex w-full flex-col space-y-6 md:space-y-8">
                 {navigation}
-                <div className="h-auto w-full min-w-0 md:rounded-2xl md:border md:border-gray-100 md:bg-white md:p-8 md:shadow-sm">
+                <div className="h-auto w-full md:rounded-2xl md:border md:border-gray-100 md:bg-white md:p-8 md:shadow-sm">
                     {hideDefaultHeader ? null : (
                         <>
                             <h1 className={`font-montserrat text-2xl font-semibold text-[#262A22] ${headerAlign} ${titleClassName}`.trim()}>
@@ -62,7 +62,7 @@ export function OnboardingShell({
                             ) : null}
                         </>
                     )}
-                    <div className={`w-full min-w-0 overflow-x-hidden ${hideDefaultHeader ? '' : 'mt-4 md:mt-5'}`.trim()}>
+                    <div className={`w-full ${hideDefaultHeader ? '' : 'mt-4 md:mt-5'}`.trim()}>
                         {children}
                     </div>
                 </div>

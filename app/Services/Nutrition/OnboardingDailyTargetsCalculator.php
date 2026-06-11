@@ -3,6 +3,7 @@
 namespace App\Services\Nutrition;
 
 use App\Enums\CustomerActivityLevel;
+use App\Enums\CustomerGoal;
 use App\Enums\CustomerSex;
 use App\Enums\CyclePhase;
 use App\Enums\DietProtocol;
@@ -16,15 +17,17 @@ final class OnboardingDailyTargetsCalculator
 {
     private const MIN_DAILY_CALORIES = 1200;
 
-    private const DEFICIT_CALORIES = 500;
-
-    private const SURPLUS_CALORIES = 300;
+    private const KCAL_TO_KJ = 4.184;
 
     /**
      * @return array{
      *     bmr: int,
      *     tdee: int,
      *     daily_calories: int,
+     *     daily_calories_min: int,
+     *     daily_calories_max: int,
+     *     daily_kj_min: int,
+     *     daily_kj_max: int,
      *     protein_percentage: float,
      *     carb_percentage: float,
      *     fat_percentage: float,
@@ -32,6 +35,7 @@ final class OnboardingDailyTargetsCalculator
      *     carb_grams: int,
      *     fat_grams: int,
      *     goal: string,
+     *     weight_goal: string,
      *     diet_protocol: string,
      *     current_phase: ?string,
      * }
@@ -49,8 +53,10 @@ final class OnboardingDailyTargetsCalculator
         $tdee = $bmr * $multiplier;
 
         $targetWeight = (float) ($profile->target_weight_kg ?? $weightKg);
-        $dailyCalories = self::applyGoalAdjustment($tdee, $weightKg, $targetWeight);
-        $goal = self::resolveGoal($weightKg, $targetWeight);
+        $weightGoal = self::resolveWeightGoal($profile, $weightKg, $targetWeight);
+        $goal = self::resolveGoal($weightGoal);
+        $calorieRange = self::calculateGoalCalorieRange((int) round($tdee), $weightGoal);
+        $dailyCalories = $calorieRange['midpoint'];
 
         $dietProtocol = DietProtocol::tryFromStored($profile->diet_protocol);
         $periodData = $profile->period_tracking_data ?? [];
@@ -63,7 +69,12 @@ final class OnboardingDailyTargetsCalculator
             'bmr' => (int) round($bmr),
             'tdee' => (int) round($tdee),
             'daily_calories' => $dailyCalories,
+            'daily_calories_min' => $calorieRange['min'],
+            'daily_calories_max' => $calorieRange['max'],
+            'daily_kj_min' => self::kcalToKj($calorieRange['min']),
+            'daily_kj_max' => self::kcalToKj($calorieRange['max']),
             'goal' => $goal,
+            'weight_goal' => $weightGoal,
             'diet_protocol' => $dietProtocol->value,
             'current_phase' => $currentPhase?->value,
             'protein_percentage' => $percentages['protein_percentage'],
@@ -98,30 +109,69 @@ final class OnboardingDailyTargetsCalculator
         return 0;
     }
 
-    private static function applyGoalAdjustment(float $tdee, float $weightKg, float $targetWeightKg): int
+    /**
+     * @return array{min: int, max: int, midpoint: int}
+     */
+    public static function calculateGoalCalorieRange(int $tdee, string $weightGoal): array
     {
-        if ($targetWeightKg < $weightKg - 0.5) {
-            return (int) round(max(self::MIN_DAILY_CALORIES, $tdee - self::DEFICIT_CALORIES));
-        }
+        $min = match ($weightGoal) {
+            'lose' => $tdee - 750,
+            'gain' => $tdee + 300,
+            default => $tdee,
+        };
 
-        if ($targetWeightKg > $weightKg + 0.5) {
-            return (int) round(max(self::MIN_DAILY_CALORIES, $tdee + self::SURPLUS_CALORIES));
-        }
+        $max = match ($weightGoal) {
+            'lose' => $tdee - 500,
+            'gain' => $tdee + 500,
+            default => $tdee + 100,
+        };
 
-        return (int) round(max(self::MIN_DAILY_CALORIES, $tdee));
+        $min = max(self::MIN_DAILY_CALORIES, (int) round($min));
+        $max = max($min, (int) round($max));
+        $midpoint = (int) round(($min + $max) / 2);
+
+        return [
+            'min' => $min,
+            'max' => $max,
+            'midpoint' => $midpoint,
+        ];
     }
 
-    private static function resolveGoal(float $weightKg, float $targetWeightKg): string
+    public static function kcalToKj(int $kcal): int
     {
+        return (int) round($kcal * self::KCAL_TO_KJ);
+    }
+
+    private static function resolveWeightGoal(CustomerProfile $profile, float $weightKg, float $targetWeightKg): string
+    {
+        $goal = $profile->goal;
+
+        if ($goal instanceof CustomerGoal) {
+            return match ($goal) {
+                CustomerGoal::LoseWeight => 'lose',
+                CustomerGoal::GainMuscle => 'gain',
+                default => 'maintain',
+            };
+        }
+
         if ($targetWeightKg < $weightKg - 0.5) {
-            return 'lose_weight';
+            return 'lose';
         }
 
         if ($targetWeightKg > $weightKg + 0.5) {
-            return 'gain_muscle';
+            return 'gain';
         }
 
         return 'maintain';
+    }
+
+    private static function resolveGoal(string $weightGoal): string
+    {
+        return match ($weightGoal) {
+            'lose' => CustomerGoal::LoseWeight->value,
+            'gain' => CustomerGoal::GainMuscle->value,
+            default => CustomerGoal::Maintain->value,
+        };
     }
 
     /**
@@ -143,9 +193,9 @@ final class OnboardingDailyTargetsCalculator
 
         if (! isset($presets[$protocol->value])) {
             return $presets['balanced'] ?? [
-                'protein_percentage' => 30.0,
+                'protein_percentage' => 40.0,
                 'carb_percentage' => 40.0,
-                'fat_percentage' => 30.0,
+                'fat_percentage' => 20.0,
             ];
         }
 
@@ -164,9 +214,9 @@ final class OnboardingDailyTargetsCalculator
         ]);
 
         $balanced = config('customer_nutrition.diet_protocol_macro_presets.balanced', [
-            'protein_percentage' => 30.0,
+            'protein_percentage' => 40.0,
             'carb_percentage' => 40.0,
-            'fat_percentage' => 30.0,
+            'fat_percentage' => 20.0,
         ]);
 
         if ($currentPhase === CyclePhase::Menstrual || $currentPhase === CyclePhase::Follicular) {

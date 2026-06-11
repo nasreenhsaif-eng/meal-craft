@@ -27,6 +27,9 @@ export const ONBOARDING_FLOW_STEPS = [
     'food_filters',
 ];
 
+/** kcal → kJ conversion factor (1 kcal = 4.184 kJ). */
+export const KCAL_TO_KJ = 4.184;
+
 export const GOAL_CALORIE_DELTA = {
     deficit: 500,
     surplus: 300,

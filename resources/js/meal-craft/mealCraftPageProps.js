@@ -39,6 +39,15 @@ export function ingredientLibraryUrls(pageProps) {
 
 /**
  * @param {object} pageProps
+ * @returns {Record<string, string>}
+ */
+export function mealPlanLibraryUrls(pageProps) {
+    const urls = mealCraftFromPage(pageProps).urls?.mealPlanLibrary;
+    return urls && typeof urls === 'object' ? urls : {};
+}
+
+/**
+ * @param {object} pageProps
  * @returns {{ value: string; label: string }[]}
  */
 export function cyclePhasesFromPage(pageProps) {

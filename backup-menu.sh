@@ -8,9 +8,17 @@ if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
     exit 1
 fi
 
+if ! command -v php >/dev/null 2>&1; then
+    echo "Error: php is not available on PATH." >&2
+    exit 1
+fi
+
+echo "Exporting live menu database to CSV..."
+php artisan menu:export-csv
+
 BRANCH="$(git rev-parse --abbrev-ref HEAD)"
 TIMESTAMP="$(date '+%Y-%m-%d %H:%M:%S')"
-MESSAGE="Menu Menu Sync: ${TIMESTAMP}"
+MESSAGE="Menu Sync: ${TIMESTAMP}"
 
 echo "Staging all changes..."
 git add .

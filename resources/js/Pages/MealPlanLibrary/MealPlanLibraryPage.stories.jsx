@@ -37,10 +37,19 @@ export default {
     },
 };
 
+const STORY_SCHEDULER_MEALS = [
+    { id: 1, name: 'Berry oats bowl', category: 'Breakfast' },
+    { id: 2, name: 'Avocado toast', category: 'Breakfast' },
+    { id: 3, name: 'Grilled salmon plate', category: 'Meal' },
+    { id: 4, name: 'Tomato basil soup', category: 'Soup' },
+    { id: 5, name: 'Garden side salad', category: 'Side Salad' },
+    { id: 6, name: 'Dark chocolate mousse', category: 'Dessert' },
+];
+
 export const Default = {
     render: () => (
         <MealPlanLibraryStoryShell>
-            <MealPlanLibraryPageContent />
+            <MealPlanLibraryPageContent schedulerMeals={STORY_SCHEDULER_MEALS} />
         </MealPlanLibraryStoryShell>
     ),
 };

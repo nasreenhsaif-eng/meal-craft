@@ -123,7 +123,7 @@ export function IconSickleCellWarrior({ className = '' }) {
 }
 
 /**
- * Butterfly silhouette — thyroid gland metaphor with clean geometric lobes.
+ * Anatomical thyroid — horizontal butterfly lobes with central isthmus and trachea hint.
  *
  * @param {{ className?: string }} props
  */
@@ -132,22 +132,27 @@ export function IconThyroid({ className = '' }) {
 
     return (
         <svg viewBox="0 0 24 24" fill="none" aria-hidden className={iconClass(className)}>
+            <path d="M12 5.25v2.75" stroke="currentColor" strokeWidth={s} strokeLinecap="round" />
             <path
-                d="M8.25 9.75c-2.35 0-4 1.85-4 4.05 0 2.45 2.05 4.45 4.55 4.2 1.05-.1 1.95-.65 2.45-1.45"
+                d="M12 10.75c0 0-1.65-2.35-4.1-2.1-2.05.2-3.35 2.05-3.1 4.2.25 2.05 2.1 3.45 4 3.15 1.35-.2 2.35-1.15 2.85-2.35"
                 stroke="currentColor"
                 strokeWidth={s}
                 strokeLinecap="round"
                 strokeLinejoin="round"
             />
             <path
-                d="M15.75 9.75c2.35 0 4 1.85 4 4.05 0 2.45-2.05 4.45-4.55 4.2-1.05-.1-1.95-.65-2.45-1.45"
+                d="M12 10.75c0 0 1.65-2.35 4.1-2.1 2.05.2 3.35 2.05 3.1 4.2-.25 2.05-2.1 3.45-4 3.15-1.35-.2-2.35-1.15-2.85-2.35"
                 stroke="currentColor"
                 strokeWidth={s}
                 strokeLinecap="round"
                 strokeLinejoin="round"
             />
-            <path d="M12 9.5v5" stroke="currentColor" strokeWidth={s} strokeLinecap="round" />
-            <path d="M10.75 12h2.5" stroke="currentColor" strokeWidth={s} strokeLinecap="round" />
+            <path
+                d="M10.35 12.35h3.3"
+                stroke="currentColor"
+                strokeWidth={s}
+                strokeLinecap="round"
+            />
         </svg>
     );
 }

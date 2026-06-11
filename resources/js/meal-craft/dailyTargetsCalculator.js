@@ -9,6 +9,8 @@
 
 /** @typedef {'lose_weight' | 'maintain' | 'gain_muscle'} CustomerGoal */
 
+/** @typedef {'lose' | 'maintain' | 'gain'} WeightGoal */
+
 /**
  * @typedef {'balanced' | 'ketobiotic' | 'cycle_sync' | 'thyroid' | 'sickle_cell_warrior' | 'sickle_cell'} DietProtocolId
  */
@@ -24,6 +26,8 @@
  *   activityLevel?: string | null;
  *   activity_level?: string | null;
  *   goal?: CustomerGoal | string | null;
+ *   weight_goal?: WeightGoal | string | null;
+ *   weightGoal?: WeightGoal | string | null;
  *   diet_protocol?: DietProtocolId | string | null;
  *   dietProtocol?: DietProtocolId | string | null;
  *   dailyCalorieTarget?: number | null;
@@ -44,6 +48,10 @@
  *   bmr: number;
  *   tdee: number;
  *   dailyCalories: number;
+ *   dailyCaloriesMin: number;
+ *   dailyCaloriesMax: number;
+ *   dailyKjMin: number;
+ *   dailyKjMax: number;
  *   proteinGrams: number;
  *   carbGrams: number;
  *   fatGrams: number;
@@ -51,11 +59,12 @@
  *   carbPercentage: number;
  *   fatPercentage: number;
  *   goal: CustomerGoal;
+ *   weightGoal: WeightGoal;
  * }} DailyTargetsResult
  */
 
-import { GOAL_CALORIE_DELTA } from './onboarding/onboardingConstants.js';
-import { normalizeActivityLevel, normalizeDietProtocol } from './onboarding/onboardingNormalize.js';
+import { KCAL_TO_KJ } from './onboarding/onboardingConstants.js';
+import { normalizeActivityLevel, normalizeDietProtocol, normalizeWeightGoal } from './onboarding/onboardingNormalize.js';
 
 export const MIN_DAILY_CALORIES = 1200;
 
@@ -73,9 +82,9 @@ export const ACTIVITY_MULTIPLIERS = {
 /** @type {Record<DietProtocolId, { proteinPercentage: number; carbPercentage: number; fatPercentage: number }>} */
 export const DIET_PROTOCOL_MACRO_PRESETS = {
     balanced: {
-        proteinPercentage: 30,
+        proteinPercentage: 40,
         carbPercentage: 40,
-        fatPercentage: 30,
+        fatPercentage: 20,
     },
     ketobiotic: {
         proteinPercentage: 20,
@@ -148,24 +157,103 @@ export function resolveActivityLevel(level) {
  * @returns {CustomerGoal}
  */
 export function resolveCustomerGoal(profile) {
-    const explicitGoal = profile.goal;
+    const weightGoal = resolveWeightGoal(profile);
 
-    if (explicitGoal === 'lose_weight' || explicitGoal === 'maintain' || explicitGoal === 'gain_muscle') {
-        return explicitGoal;
+    if (weightGoal === 'lose') {
+        return 'lose_weight';
+    }
+
+    if (weightGoal === 'gain') {
+        return 'gain_muscle';
+    }
+
+    return 'maintain';
+}
+
+/**
+ * @param {OnboardingProfileInput} profile
+ * @returns {WeightGoal}
+ */
+export function resolveWeightGoal(profile) {
+    const explicit =
+        normalizeWeightGoal(profile.weight_goal) ??
+        normalizeWeightGoal(profile.weightGoal) ??
+        normalizeWeightGoal(profile.goal);
+
+    if (explicit) {
+        return explicit;
     }
 
     const weightKg = resolveWeightKg(profile);
     const targetWeightKg = Number(profile.targetWeightKg ?? profile.target_weight_kg ?? weightKg);
 
     if (targetWeightKg < weightKg - 0.5) {
-        return 'lose_weight';
+        return 'lose';
     }
 
     if (targetWeightKg > weightKg + 0.5) {
-        return 'gain_muscle';
+        return 'gain';
     }
 
     return 'maintain';
+}
+
+/**
+ * @param {number} tdee
+ * @param {WeightGoal} weightGoal
+ * @returns {{ min: number; max: number; midpoint: number }}
+ */
+export function calculateGoalCalorieRange(tdee, weightGoal) {
+    const roundedTdee = Math.round(tdee);
+    let min;
+    let max;
+
+    switch (weightGoal) {
+        case 'lose':
+            min = roundedTdee - 750;
+            max = roundedTdee - 500;
+            break;
+        case 'gain':
+            min = roundedTdee + 300;
+            max = roundedTdee + 500;
+            break;
+        default:
+            min = roundedTdee;
+            max = roundedTdee + 100;
+            break;
+    }
+
+    min = Math.max(MIN_DAILY_CALORIES, Math.round(min));
+    max = Math.max(min, Math.round(max));
+
+    return {
+        min,
+        max,
+        midpoint: Math.round((min + max) / 2),
+    };
+}
+
+/**
+ * @param {number} kcal
+ */
+export function kcalToKj(kcal) {
+    return Math.round(kcal * KCAL_TO_KJ);
+}
+
+/** @type {Record<WeightGoal, string>} */
+export const WEIGHT_GOAL_SUMMARY_COPY = {
+    lose: 'This calorie target will allow you to lose weight at a healthy and sustainable rate of 0.5 to 1 kilogram per week.',
+    maintain: 'This calorie target allows you to maintain your current weight, within a margin of a kilogram.',
+    gain: 'This calorie target will allow you to gain weight at a healthy and sustainable rate of 0.5 to 1 kilogram per week.',
+};
+
+/**
+ * @param {WeightGoal | CustomerGoal | string | null | undefined} weightGoal
+ */
+export function goalSummaryCopy(weightGoal) {
+    const normalized = normalizeWeightGoal(weightGoal) ?? 'maintain';
+
+    return WEIGHT_GOAL_SUMMARY_COPY[normalized];
 }
 
 /**
@@ -193,36 +281,18 @@ export function calculateTdee(bmr, activityLevel) {
 
 /**
  * @param {number} tdee
- * @param {CustomerGoal} goal
+ * @param {CustomerGoal | WeightGoal} goal
  */
 export function applyGoalCalorieAdjustment(tdee, goal) {
-    if (goal === 'lose_weight') {
-        return Math.max(MIN_DAILY_CALORIES, tdee - GOAL_CALORIE_DELTA.deficit);
-    }
+    const weightGoal = normalizeWeightGoal(goal) ?? 'maintain';
 
-    if (goal === 'gain_muscle') {
-        return Math.max(MIN_DAILY_CALORIES, tdee + GOAL_CALORIE_DELTA.surplus);
-    }
-
-    return Math.max(MIN_DAILY_CALORIES, tdee);
+    return calculateGoalCalorieRange(tdee, weightGoal).midpoint;
 }
 
 /**
  * @param {OnboardingProfileInput} profile
  */
 function resolveMacroPercentages(profile) {
-    const protein = profile.proteinPercentage ?? profile.protein_percentage;
-    const carbs = profile.carbPercentage ?? profile.carb_percentage;
-    const fat = profile.fatPercentage ?? profile.fat_percentage;
-
-    if (protein != null && carbs != null && fat != null) {
-        return {
-            proteinPercentage: Number(protein),
-            carbPercentage: Number(carbs),
-            fatPercentage: Number(fat),
-        };
-    }
-
     const protocol = normalizeDietProtocol(profile.diet_protocol ?? profile.dietProtocol ?? 'balanced');
 
     return DIET_PROTOCOL_MACRO_PRESETS[protocol] ?? DIET_PROTOCOL_MACRO_PRESETS.balanced;
@@ -256,17 +326,24 @@ export function calculateDailyTargets(profile) {
     const age = resolveAge(profile);
     const sex = resolveSex(profile);
     const activityLevel = resolveActivityLevel(profile.activityLevel ?? profile.activity_level ?? 'lightly_active');
+    const weightGoal = resolveWeightGoal(profile);
     const goal = resolveCustomerGoal(profile);
     const macroPercentages = resolveMacroPercentages(profile);
 
     const bmr = calculateMifflinStJeorBmr(weightKg, heightCm, age, sex);
     const tdee = calculateTdee(bmr, activityLevel);
+    const calorieRange = calculateGoalCalorieRange(tdee, weightGoal);
 
     const explicitCalories = profile.dailyCalorieTarget ?? profile.daily_calorie_target;
     const dailyCalories =
         explicitCalories != null && explicitCalories !== ''
             ? Math.max(MIN_DAILY_CALORIES, Math.round(Number(explicitCalories)))
-            : Math.round(applyGoalCalorieAdjustment(tdee, goal));
+            : calorieRange.midpoint;
+
+    const dailyCaloriesMin =
+        explicitCalories != null && explicitCalories !== '' ? dailyCalories : calorieRange.min;
+    const dailyCaloriesMax =
+        explicitCalories != null && explicitCalories !== '' ? dailyCalories : calorieRange.max;
 
     const macroGrams = calculateMacroGrams(
         dailyCalories,
@@ -279,10 +356,42 @@ export function calculateDailyTargets(profile) {
         bmr: Math.round(bmr),
         tdee: Math.round(tdee),
         dailyCalories,
+        dailyCaloriesMin,
+        dailyCaloriesMax,
+        dailyKjMin: kcalToKj(dailyCaloriesMin),
+        dailyKjMax: kcalToKj(dailyCaloriesMax),
         goal,
+        weightGoal,
         ...macroGrams,
         ...macroPercentages,
     };
+}
+
+/**
+ * @param {number} min
+ * @param {number} max
+ */
+export function formatCalorieRange(min, max) {
+    const safeMin = Number.isFinite(min) ? min : Number.isFinite(max) ? max : 0;
+    const safeMax = Number.isFinite(max) ? max : safeMin;
+
+    if (safeMin === safeMax) {
+        return formatCalorieTarget(safeMin);
+    }
+
+    return `${formatCalorieTarget(safeMin)} – ${formatCalorieTarget(safeMax)}`;
+}
+
+/**
+ * @param {number} min
+ * @param {number} max
+ */
+export function formatKjRange(min, max) {
+    if (min === max) {
+        return formatCalorieTarget(min);
+    }
+
+    return `${formatCalorieTarget(min)} – ${formatCalorieTarget(max)}`;
 }
 
 /**

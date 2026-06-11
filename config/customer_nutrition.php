@@ -41,9 +41,9 @@ return [
     */
     'macro_presets' => [
         'balanced' => [
-            'protein_percentage' => 30.0,
+            'protein_percentage' => 40.0,
             'carb_percentage' => 40.0,
-            'fat_percentage' => 30.0,
+            'fat_percentage' => 20.0,
         ],
         'high_protein' => [
             'protein_percentage' => 45.0,
@@ -59,9 +59,9 @@ return [
     */
     'diet_protocol_macro_presets' => [
         'balanced' => [
-            'protein_percentage' => 30.0,
+            'protein_percentage' => 40.0,
             'carb_percentage' => 40.0,
-            'fat_percentage' => 30.0,
+            'fat_percentage' => 20.0,
         ],
         'ketobiotic' => [
             'protein_percentage' => 20.0,

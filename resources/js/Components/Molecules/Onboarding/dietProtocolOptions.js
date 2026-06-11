@@ -66,6 +66,16 @@ export function shouldAutoAdvanceDietProtocol(protocolId) {
 }
 
 /**
+ * Non-balanced protocols stay on the step until the user taps Continue.
+ *
+ * @param {DietProtocolId | '' | null | undefined} protocolId
+ * @returns {boolean}
+ */
+export function shouldShowDietProtocolContinueButton(protocolId) {
+    return Boolean(protocolId) && !shouldAutoAdvanceDietProtocol(protocolId);
+}
+
+/**
  * @param {import('../../meal-craft/onboarding/onboardingConstants.js').OnboardingGender | '' | undefined} gender
  * @returns {DietProtocolOption[]}
  */

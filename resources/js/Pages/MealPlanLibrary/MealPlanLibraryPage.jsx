@@ -1,13 +1,20 @@
 import { createPortal } from 'react-dom';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { usePage } from '@inertiajs/react';
 import adminInertiaLayout from '../../lib/adminInertiaLayout.jsx';
+import { mealPlanLibraryUrls, resolveUrl } from '../../meal-craft/mealCraftPageProps.js';
 import Button from '../../Components/Atoms/Button.jsx';
 import PillButton from '../../Components/Atoms/Button/Button.jsx';
 import TextInput from '../../Components/Atoms/TextInput/TextInput.jsx';
 import CSVUploader from '../../Components/CSVUploader.jsx';
 import MealPlanCard from '../../Components/MealPlanCard.jsx';
 import DietaryTagsMultiSelect from '../../Components/MealSystem/DietaryTagsMultiSelect.jsx';
+import MealAutocompleteCombobox from '../../Components/Molecules/MealPlan/MealAutocompleteCombobox.jsx';
 import { MEAL_PLAN_TAG_OPTIONS } from '../../meal-library/mealTaxonomy.js';
+import {
+    SCHEDULER_BREAKFAST_CATEGORIES,
+    SCHEDULER_MEAL_CHOICE_CATEGORIES,
+} from '../../meal-library/mealSearch.ts';
 
 const PAGE_BG = 'bg-[#F8F9F6]';
 
@@ -24,57 +31,6 @@ const DEFAULT_CYCLE_PHASES = [
     { value: 'follicular', label: 'Follicular' },
     { value: 'ovulatory', label: 'Ovulatory' },
     { value: 'luteal', label: 'Luteal' },
-];
-
-const MOCK_MEALS = [
-    {
-        id: 'm-1',
-        name: 'Post-workout salmon bowl',
-        imageUrl: 'https://images.unsplash.com/photo-1553621042-f6e147245754?auto=format&fit=crop&w=900&q=80',
-        nutrition: {
-            calories: 520,
-            protein: 44,
-            carbs: 38,
-            fat: 22,
-            b9_folate: 180,
-            b12: 2.2,
-            iron: 4.5,
-            magnesium: 140,
-            zinc: 3.2,
-        },
-    },
-    {
-        id: 'm-2',
-        name: 'Iron boost lentil stew',
-        imageUrl: 'https://images.unsplash.com/photo-1604908554238-3f9b9b0c4b6c?auto=format&fit=crop&w=900&q=80',
-        nutrition: {
-            calories: 430,
-            protein: 26,
-            carbs: 62,
-            fat: 10,
-            b9_folate: 240,
-            b12: 0.4,
-            iron: 7.2,
-            magnesium: 165,
-            zinc: 2.8,
-        },
-    },
-    {
-        id: 'm-3',
-        name: 'Keto chicken + greens',
-        imageUrl: 'https://images.unsplash.com/photo-1543353071-087092ec393a?auto=format&fit=crop&w=900&q=80',
-        nutrition: {
-            calories: 610,
-            protein: 52,
-            carbs: 14,
-            fat: 38,
-            b9_folate: 110,
-            b12: 1.8,
-            iron: 5.1,
-            magnesium: 120,
-            zinc: 4.0,
-        },
-    },
 ];
 
 const MOCK_PLANS = [
@@ -122,12 +78,22 @@ function sumNutrition(rows) {
  * @param {{
  *   dietTypes?: { value: string; label: string }[];
  *   cyclePhases?: { value: string; label: string }[];
+ *   mealSearchUrl?: string | null;
+ *   schedulerMeals?: import('../../meal-library/mealSearch.ts').MealPickerOption[];
  * }} props
  */
 export function MealPlanLibraryPageContent({
     dietTypes = DEFAULT_DIET_TYPES,
     cyclePhases = DEFAULT_CYCLE_PHASES,
+    mealSearchUrl: mealSearchUrlProp = null,
+    schedulerMeals: schedulerMealsProp = [],
 }) {
+    const { props: pageProps } = usePage();
+    const mealSearchUrl = resolveUrl(
+        typeof mealSearchUrlProp === 'string' ? mealSearchUrlProp : null,
+        mealPlanLibraryUrls(pageProps).mealSearch,
+    );
+    const schedulerMeals = Array.isArray(schedulerMealsProp) ? schedulerMealsProp : [];
     const [query, setQuery] = useState('');
     const [createOpen, setCreateOpen] = useState(false);
 
@@ -145,30 +111,15 @@ export function MealPlanLibraryPageContent({
     const [activeDay, setActiveDay] = useState(1);
 
     const [slotsById, setSlotsById] = useState(
-        /** @type {Record<string, { mealQuery: string; mealId: string }>} */ ({
-            // Day 1 defaults
-            'd1-breakfast-1': { mealQuery: '', mealId: '' },
-            'd1-breakfast-2': { mealQuery: '', mealId: '' },
-            'd1-meal-1': { mealQuery: '', mealId: '' },
-            'd1-meal-2': { mealQuery: '', mealId: '' },
-            'd1-meal-3': { mealQuery: '', mealId: '' },
-            'd1-meal-4': { mealQuery: '', mealId: '' },
-            'd1-sidesalad-1': { mealQuery: '', mealId: '' },
-            'd1-soup-1': { mealQuery: '', mealId: '' },
-            'd1-dessert-1': { mealQuery: '', mealId: '' },
-            'd1-dessert-2': { mealQuery: '', mealId: '' },
+        /** @type {Record<string, { mealQuery: string; mealId: number | null }>} */ ({
+            'd1-breakfast-1': { mealQuery: '', mealId: null },
+            'd1-breakfast-2': { mealQuery: '', mealId: null },
+            'd1-meal-1': { mealQuery: '', mealId: null },
+            'd1-meal-2': { mealQuery: '', mealId: null },
+            'd1-meal-3': { mealQuery: '', mealId: null },
+            'd1-meal-4': { mealQuery: '', mealId: null },
         }),
     );
-
-    const [activeSlotId, setActiveSlotId] = useState(/** @type {string|null} */ (null));
-    const mealSuggestRootRef = useRef(null);
-    const [mealMenuRect, setMealMenuRect] = useState(null);
-
-    useEffect(() => {
-        if (!createOpen) {
-            setActiveSlotId(null);
-        }
-    }, [createOpen]);
 
     useEffect(() => {
         if (typeof document === 'undefined') {
@@ -182,10 +133,6 @@ export function MealPlanLibraryPageContent({
             const root = searchRootRef.current;
             if (root && !root.contains(t) && !t.closest('[data-meal-plan-library-search-suggest]')) {
                 setSearchOpen(false);
-            }
-            const mealRoot = mealSuggestRootRef.current;
-            if (mealRoot && !mealRoot.contains(t) && !t.closest('[data-meal-plan-library-meal-suggest]')) {
-                setActiveSlotId(null);
             }
         };
         document.addEventListener('mousedown', onDocMouseDown);
@@ -217,31 +164,6 @@ export function MealPlanLibraryPageContent({
         };
     }, [searchOpen]);
 
-    useEffect(() => {
-        if (typeof window === 'undefined') {
-            return undefined;
-        }
-        if (activeSlotId === null) {
-            setMealMenuRect(null);
-            return undefined;
-        }
-        const updateRect = () => {
-            const el = document.getElementById(`meal-slot-combobox-${activeSlotId}`);
-            if (!el) {
-                return;
-            }
-            const r = el.getBoundingClientRect();
-            setMealMenuRect({ left: r.left, top: r.bottom, width: r.width });
-        };
-        updateRect();
-        window.addEventListener('resize', updateRect);
-        window.addEventListener('scroll', updateRect, true);
-        return () => {
-            window.removeEventListener('resize', updateRect);
-            window.removeEventListener('scroll', updateRect, true);
-        };
-    }, [activeSlotId]);
-
     const filteredPlans = useMemo(() => {
         const q = query.trim().toLowerCase();
         if (!q) {
@@ -270,21 +192,27 @@ export function MealPlanLibraryPageContent({
         ).slice(0, 10);
     }, [query]);
 
-    const SLOT_SECTIONS = useMemo(() => {
-        return [
-            { key: 'breakfast', label: 'Breakfasts', count: 2 },
-            { key: 'meal', label: 'Meal choices', count: 4 },
-            { key: 'sidesalad', label: 'Side salad', count: 2 },
-            { key: 'soup', label: 'Soup of the day', count: 1 },
-            { key: 'dessert', label: 'Desserts', count: 2 },
-        ];
-    }, []);
+    const SLOT_SECTIONS = useMemo(
+        () => [
+            {
+                key: 'breakfast',
+                label: 'Breakfasts',
+                count: 2,
+                categories: SCHEDULER_BREAKFAST_CATEGORIES,
+            },
+            {
+                key: 'meal',
+                label: 'Meal choices',
+                count: 4,
+                categories: SCHEDULER_MEAL_CHOICE_CATEGORIES,
+            },
+        ],
+        [],
+    );
 
     function slotKey(day, sectionKey, idx) {
         return `d${day}-${sectionKey}-${idx}`;
     }
-
-    const mealById = useMemo(() => new Map(MOCK_MEALS.map((m) => [m.id, m])), []);
 
     return (
         <div className={`min-h-screen ${PAGE_BG} px-4 pb-8 pt-4 font-sans md:px-8`}>
@@ -535,7 +463,7 @@ export function MealPlanLibraryPageContent({
                                         </div>
                                     </div>
 
-                                    <div ref={mealSuggestRootRef} className="mt-6 space-y-5">
+                                    <div className="mt-6 space-y-5">
                                         {SLOT_SECTIONS.map((section) => (
                                             <div key={section.key}>
                                                 <p className="mb-2 font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#555555]">
@@ -545,12 +473,7 @@ export function MealPlanLibraryPageContent({
                                                     {Array.from({ length: section.count }).map((_, idx0) => {
                                                         const idx = idx0 + 1;
                                                         const id = slotKey(activeDay, section.key, idx);
-                                                        const state = slotsById[id] ?? { mealQuery: '', mealId: '' };
-                                                        const q = state.mealQuery.trim().toLowerCase();
-                                                        const matches =
-                                                            q.length < 1
-                                                                ? []
-                                                                : MOCK_MEALS.filter((m) => m.name.toLowerCase().includes(q)).slice(0, 10);
+                                                        const state = slotsById[id] ?? { mealQuery: '', mealId: null };
 
                                                         return (
                                                             <div key={id} className="grid gap-3 md:grid-cols-[120px_1fr] md:items-end">
@@ -562,65 +485,20 @@ export function MealPlanLibraryPageContent({
                                                                         {idx}
                                                                     </p>
                                                                 </div>
-                                                                <div className="relative min-w-0">
-                                                                    <TextInput
-                                                                        id={`meal-slot-combobox-${id}`}
-                                                                        label="Meal"
-                                                                        placeholder="Type to search…"
-                                                                        value={state.mealQuery}
-                                                                        onChange={(e) => {
-                                                                            const v = e.target.value;
-                                                                            setSlotsById((prev) => ({
-                                                                                ...prev,
-                                                                                [id]: { mealQuery: v, mealId: '' },
-                                                                            }));
-                                                                            setActiveSlotId(id);
-                                                                        }}
-                                                                        onFocus={() => setActiveSlotId(id)}
-                                                                        className="!max-w-none"
-                                                                    />
-
-                                                                    {activeSlotId === id && matches.length > 0 && mealMenuRect
-                                                                        ? createPortal(
-                                                                              <div
-                                                                                  data-meal-plan-library-meal-suggest
-                                                                                  className="fixed z-[9999]"
-                                                                                  style={{
-                                                                                      left: `${mealMenuRect.left}px`,
-                                                                                      top: `${mealMenuRect.top + 8}px`,
-                                                                                      width: `${mealMenuRect.width}px`,
-                                                                                  }}
-                                                                              >
-                                                                                  <div className="w-full rounded-[12px] border border-[#E5E7EB] bg-white p-2 shadow-2xl">
-                                                                                      <div className="max-h-56 overflow-auto">
-                                                                                          {matches.map((m) => (
-                                                                                              <button
-                                                                                                  key={m.id}
-                                                                                                  type="button"
-                                                                                                  className="flex w-full items-center justify-between gap-3 rounded-[12px] px-4 py-2 text-left font-montserrat text-sm font-bold text-[#262A22] transition-colors hover:bg-[#F8F9F6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5A6B44] focus-visible:ring-inset"
-                                                                                                  onClick={() => {
-                                                                                                      setSlotsById((prev) => ({
-                                                                                                          ...prev,
-                                                                                                          [id]: { mealQuery: m.name, mealId: m.id },
-                                                                                                      }));
-                                                                                                      setActiveSlotId(null);
-                                                                                                  }}
-                                                                                              >
-                                                                                                  <span className="min-w-0 truncate">
-                                                                                                      {m.name}
-                                                                                                  </span>
-                                                                                                  <span className="shrink-0 text-xs font-medium text-[#555555]">
-                                                                                                      {Math.round(m.nutrition.calories)} kcal
-                                                                                                  </span>
-                                                                                              </button>
-                                                                                          ))}
-                                                                                      </div>
-                                                                                  </div>
-                                                                              </div>,
-                                                                              document.body,
-                                                                          )
-                                                                        : null}
-                                                                </div>
+                                                                <MealAutocompleteCombobox
+                                                                    id={`meal-slot-combobox-${id}`}
+                                                                    displayValue={state.mealQuery}
+                                                                    mealId={state.mealId}
+                                                                    categories={section.categories}
+                                                                    searchUrl={mealSearchUrl}
+                                                                    meals={schedulerMeals}
+                                                                    onChange={({ displayValue, mealId: nextMealId }) => {
+                                                                        setSlotsById((prev) => ({
+                                                                            ...prev,
+                                                                            [id]: { mealQuery: displayValue, mealId: nextMealId },
+                                                                        }));
+                                                                    }}
+                                                                />
                                                             </div>
                                                         );
                                                     })}

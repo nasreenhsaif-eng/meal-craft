@@ -2,8 +2,8 @@ import { useMemo, useState } from 'react';
 import { useForm, usePage } from '@inertiajs/react';
 import Button from '../../Components/Atoms/Button/Button.jsx';
 import HeightFeetInchesPicker from '../../Components/Molecules/Onboarding/HeightFeetInchesPicker.jsx';
-import HeightSnapColumn from '../../Components/Molecules/Onboarding/HeightSnapColumn.jsx';
 import MeasurementUnitToggle from '../../Components/Molecules/Onboarding/MeasurementUnitToggle.jsx';
+import WheelNumberPicker from '../../Components/Molecules/Onboarding/WheelNumberPicker.jsx';
 import {
     HEIGHT_CM_OPTIONS,
     clampFeetInches,
@@ -29,6 +29,7 @@ import customerOnboardingLayout from '../../Layouts/customerOnboardingLayout.jsx
  *   customerName?: string;
  *   defaultUnit?: 'cm' | 'ft_in';
  *   embedded?: boolean;
+ *   visible?: boolean;
  * }} props
  */
 export function OnboardingHeightInner({
@@ -42,6 +43,7 @@ export function OnboardingHeightInner({
     customerName = '',
     defaultUnit = 'cm',
     embedded = false,
+    visible = true,
 }) {
     const isControlled = onHeightCmChange !== undefined;
     const initialCm = clampHeightCm(Number(heightCmProp) || defaultHeightCm());
@@ -116,15 +118,16 @@ export function OnboardingHeightInner({
                     onSubmit?.();
                 }}
             >
-                <div className="flex w-full items-center justify-center gap-3 sm:gap-4">
+                <div className="flex w-full items-center justify-center gap-4 sm:gap-5">
                     <div className={`min-w-0 shrink-0 ${unit === 'cm' ? 'w-[168px]' : 'w-[248px]'}`}>
                         {unit === 'cm' ? (
-                            <HeightSnapColumn
+                            <WheelNumberPicker
                                 ariaLabel="Height in centimeters"
-                                items={HEIGHT_CM_OPTIONS}
+                                options={HEIGHT_CM_OPTIONS}
                                 value={heightCm}
-                                onChange={(next) => setHeightCm(Number(next))}
+                                onChange={(next) => setHeightCm(next)}
                                 unitLabel="cm"
+                                visible={visible}
                             />
                         ) : (
                             <HeightFeetInchesPicker
@@ -132,11 +135,12 @@ export function OnboardingHeightInner({
                                 inches={inches}
                                 onFeetChange={handleFeetChange}
                                 onInchesChange={handleInchesChange}
+                                visible={visible}
                             />
                         )}
                     </div>
 
-                    <MeasurementUnitToggle className="shrink-0" value={unit} onChange={setUnit} />
+                    <MeasurementUnitToggle className="shrink-0 self-center" value={unit} onChange={setUnit} />
                 </div>
 
                 {errors.height_cm ? (

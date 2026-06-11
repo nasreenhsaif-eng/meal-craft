@@ -18,6 +18,9 @@ enum OnboardingStep: string
     case DailyTargets = 'daily_targets';
     case FoodFilters = 'food_filters';
 
+    /** @deprecated Removed from onboarding flow; normalized to {@see self::DailyTargets} */
+    case WeightGoal = 'weight_goal';
+
     /** @deprecated Replaced by {@see self::DietProtocol} */
     case Macros = 'macros';
 
@@ -122,6 +125,7 @@ enum OnboardingStep: string
             self::Welcome => self::Gender,
             self::Macros => self::DietProtocol,
             self::Meals => self::DailyTargets,
+            self::WeightGoal => self::DailyTargets,
             self::Review => self::FoodFilters,
             default => $resolved,
         };

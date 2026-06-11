@@ -5,6 +5,7 @@ import OnboardingOptionButton from '../../Components/Molecules/Onboarding/Onboar
 import {
     dietProtocolOptionsForGender,
     shouldAutoAdvanceDietProtocol,
+    shouldShowDietProtocolContinueButton,
 } from '../../Components/Molecules/Onboarding/dietProtocolOptions.js';
 import { resolveDietProtocol } from '../../Components/Molecules/Onboarding/dietProtocolUtils.js';
 import { onboardingFromPage } from '../../meal-craft/mealCraftPageProps.js';
@@ -97,11 +98,16 @@ export function OnboardingDietProtocolInner({
 
         setProtocol(optionId);
 
-        if (onProtocolSelect && shouldAutoAdvanceDietProtocol(optionId)) {
-            setPendingProtocol(optionId);
-            onProtocolSelect(optionId);
+        if (!onProtocolSelect || !shouldAutoAdvanceDietProtocol(optionId)) {
+            return;
         }
+
+        setPendingProtocol(optionId);
+        onProtocolSelect(optionId);
     };
+
+    const needsManualContinue = shouldShowDietProtocolContinueButton(protocol);
+    const hideInnerNext = embedded || (Boolean(onProtocolSelect) && !needsManualContinue);
 
     return (
         <OnboardingStepFrame
@@ -165,7 +171,7 @@ export function OnboardingDietProtocolInner({
                     ) : null}
                 </div>
 
-                {embedded || onProtocolSelect ? null : (
+                {hideInnerNext ? null : (
                     <div className="pt-1">
                         <button
                             type="button"
@@ -204,6 +210,19 @@ export default function DietProtocol() {
 
     const isBusy = processing || submitting;
 
+    const submitDietProtocol = (normalized) => {
+        setSubmitting(true);
+
+        router.post(
+            onboarding.urls?.dietProtocol ?? '/onboarding/diet-protocol',
+            { diet_protocol: dietProtocolToServer(normalized) },
+            {
+                preserveScroll: true,
+                onFinish: () => setSubmitting(false),
+            },
+        );
+    };
+
     return (
         <OnboardingDietProtocolInner
             protocol={data.diet_protocol}
@@ -223,16 +242,14 @@ export default function DietProtocol() {
                 setData('diet_protocol', normalized);
                 patch({ dietProtocol: normalized });
                 computeTargetsBeforeSummary();
-                setSubmitting(true);
-
-                router.post(
-                    onboarding.urls?.dietProtocol ?? '/onboarding/diet-protocol',
-                    { diet_protocol: dietProtocolToServer(normalized) },
-                    {
-                        preserveScroll: true,
-                        onFinish: () => setSubmitting(false),
-                    },
-                );
+                submitDietProtocol(normalized);
+            }}
+            onSubmit={() => {
+                const normalized = normalizeDietProtocol(data.diet_protocol);
+                setData('diet_protocol', normalized);
+                patch({ dietProtocol: normalized });
+                computeTargetsBeforeSummary();
+                submitDietProtocol(normalized);
             }}
             steps={onboarding.steps ?? []}
             currentStep={onboarding.currentStep ?? 'diet_protocol'}

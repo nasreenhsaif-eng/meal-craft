@@ -371,6 +371,7 @@ test('customer can save activity and advance to daily targets', function () {
         'height_cm' => 175,
         'weight_kg' => 72,
         'target_weight_kg' => 68,
+        'diet_protocol' => 'balanced',
     ]);
 
     $this->actingAs($customer)
@@ -382,6 +383,9 @@ test('customer can save activity and advance to daily targets', function () {
     $profile = $customer->fresh()->customerProfile;
 
     expect($profile?->activity_level?->value)->toBe('lightly_active')
+        ->and($profile?->protein_percentage)->toBe(40.0)
+        ->and($profile?->carb_percentage)->toBe(40.0)
+        ->and($profile?->fat_percentage)->toBe(20.0)
         ->and($customer->fresh()->currentOnboardingStep())->toBe(OnboardingStep::DailyTargets);
 });
 

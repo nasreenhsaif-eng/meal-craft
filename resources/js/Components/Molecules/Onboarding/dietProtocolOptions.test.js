@@ -3,6 +3,7 @@ import {
     AUTO_ADVANCE_DIET_PROTOCOL_ID,
     dietProtocolOptionsForGender,
     shouldAutoAdvanceDietProtocol,
+    shouldShowDietProtocolContinueButton,
 } from './dietProtocolOptions.js';
 
 describe('dietProtocolOptionsForGender', () => {
@@ -28,5 +29,15 @@ describe('shouldAutoAdvanceDietProtocol', () => {
         expect(shouldAutoAdvanceDietProtocol('ketobiotic')).toBe(false);
         expect(shouldAutoAdvanceDietProtocol('thyroid')).toBe(false);
         expect(shouldAutoAdvanceDietProtocol('cycle_sync')).toBe(false);
+    });
+});
+
+describe('shouldShowDietProtocolContinueButton', () => {
+    it('shows continue for manual-advance protocols only', () => {
+        expect(shouldShowDietProtocolContinueButton('balanced')).toBe(false);
+        expect(shouldShowDietProtocolContinueButton('thyroid')).toBe(true);
+        expect(shouldShowDietProtocolContinueButton('ketobiotic')).toBe(true);
+        expect(shouldShowDietProtocolContinueButton('cycle_sync')).toBe(true);
+        expect(shouldShowDietProtocolContinueButton('')).toBe(false);
     });
 });

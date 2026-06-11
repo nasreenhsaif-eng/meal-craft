@@ -38,10 +38,12 @@ export function OnboardingGenderInner({
     const [pendingValue, setPendingValue] = useState('');
     const sex = sexProp ?? demoSex;
     const handleSexChange = onSexChange ?? setDemoSex;
-    const options = optionsProp ?? [
-        { value: 'male', label: 'Male' },
-        { value: 'female', label: 'Female' },
-    ];
+    const options = optionsProp?.length
+        ? optionsProp
+        : [
+              { value: 'male', label: 'Male' },
+              { value: 'female', label: 'Female' },
+          ];
     const isAdvancing = processing || pendingValue !== '';
 
     useEffect(() => {
@@ -131,7 +133,7 @@ export default function Gender() {
     return (
         <OnboardingGenderInner
             sex={data.sex}
-            options={options.sex ?? []}
+            options={options.sex?.length ? options.sex : undefined}
             errors={errors}
             processing={isBusy}
             onSexSelect={(value) => {

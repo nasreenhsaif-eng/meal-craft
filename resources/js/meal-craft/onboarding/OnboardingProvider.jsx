@@ -44,8 +44,10 @@ function writeStorage(state) {
         return;
     }
 
+    const { computedTargets: _computedTargets, ...persisted } = state;
+
     try {
-        window.sessionStorage.setItem(ONBOARDING_STORAGE_KEY, JSON.stringify(state));
+        window.sessionStorage.setItem(ONBOARDING_STORAGE_KEY, JSON.stringify(persisted));
     } catch {
         // ignore quota errors
     }
@@ -94,16 +96,14 @@ export function OnboardingProvider({ children }) {
     const profileInput = useMemo(() => onboardingStateToProfile(state), [state]);
 
     const computedTargets = useMemo(() => {
-        if (state.computedTargets) {
-            return state.computedTargets;
+        const hasMetrics = state.weight != null && state.height != null && state.birthdate !== '';
+
+        if (hasMetrics) {
+            return calculateDailyTargets(profileInput);
         }
 
-        if (!state.weight || !state.height || !state.birthdate) {
-            return null;
-        }
-
-        return calculateDailyTargets(profileInput);
-    }, [state, profileInput]);
+        return serverOnboarding.computedTargets ?? null;
+    }, [state.weight, state.height, state.birthdate, profileInput, serverOnboarding.computedTargets]);
 
     const patch = useCallback((payload) => {
         dispatch({ type: 'PATCH', payload });

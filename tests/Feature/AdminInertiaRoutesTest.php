@@ -124,7 +124,9 @@ test('admin meal plan library renders inertia page with diet type and cycle phas
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->component('Admin/MealPlanLibrary')
             ->has('dietTypes')
-            ->has('cyclePhases'));
+            ->has('cyclePhases')
+            ->has('mealSearchUrl')
+            ->has('schedulerMeals'));
 });
 
 test('guests cannot access admin inertia routes', function (string $path) {

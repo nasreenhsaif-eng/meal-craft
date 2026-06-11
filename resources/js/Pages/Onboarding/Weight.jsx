@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useForm, usePage } from '@inertiajs/react';
 import Button from '../../Components/Atoms/Button/Button.jsx';
-import HeightSnapColumn from '../../Components/Molecules/Onboarding/HeightSnapColumn.jsx';
+import WheelNumberPicker from '../../Components/Molecules/Onboarding/WheelNumberPicker.jsx';
 import WeightUnitToggle from '../../Components/Molecules/Onboarding/WeightUnitToggle.jsx';
 import {
     WEIGHT_KG_OPTIONS,
@@ -32,6 +32,7 @@ import customerOnboardingLayout from '../../Layouts/customerOnboardingLayout.jsx
  *   description?: string;
  *   errorField?: string;
  *   embedded?: boolean;
+ *   visible?: boolean;
  * }} props
  */
 export function OnboardingWeightInner({
@@ -48,6 +49,7 @@ export function OnboardingWeightInner({
     description = 'Weight is used alongside height to accurately calculate your Total Daily Energy Expenditure (TDEE) and target calories.',
     errorField = 'weight_kg',
     embedded = false,
+    visible = true,
 }) {
     const isControlled = onWeightKgChange !== undefined;
     const initialKg = resolveWeightKg(weightKgProp);
@@ -103,18 +105,19 @@ export function OnboardingWeightInner({
                     onSubmit?.();
                 }}
             >
-                <div className="flex w-full items-center justify-center gap-3 sm:gap-4">
-                    <div className="w-[180px] min-w-0 shrink-0">
-                        <HeightSnapColumn
+                <div className="flex w-full items-center justify-center gap-4 sm:gap-5">
+                    <div className="w-[168px] min-w-0 shrink-0">
+                        <WheelNumberPicker
                             ariaLabel={unit === 'kg' ? 'Weight in kilograms' : 'Weight in pounds'}
-                            items={wheelOptions}
+                            options={wheelOptions}
                             value={wheelValue}
                             onChange={handleWheelChange}
                             unitLabel={unit}
+                            visible={visible}
                         />
                     </div>
 
-                    <WeightUnitToggle className="shrink-0" value={unit} onChange={setUnit} />
+                    <WeightUnitToggle className="shrink-0 self-center" value={unit} onChange={setUnit} />
                 </div>
 
                 {errors[errorField] ? (

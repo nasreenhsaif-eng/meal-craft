@@ -173,6 +173,19 @@ class OnboardingController extends Controller
             ],
         );
 
+        $profile = $user->fresh()->customerProfile;
+
+        if ($profile !== null && $profile->weight_kg !== null && $profile->height_cm !== null) {
+            $targets = OnboardingDailyTargetsCalculator::calculate($profile);
+
+            $profile->update([
+                'daily_calorie_target' => $targets['daily_calories'],
+                'protein_percentage' => $targets['protein_percentage'],
+                'carb_percentage' => $targets['carb_percentage'],
+                'fat_percentage' => $targets['fat_percentage'],
+            ]);
+        }
+
         return $this->advanceStep($request, OnboardingStep::Activity);
     }
 
@@ -316,6 +329,10 @@ class OnboardingController extends Controller
                 'bmr' => $targets['bmr'],
                 'tdee' => $targets['tdee'],
                 'dailyCalories' => $targets['daily_calories'],
+                'dailyCaloriesMin' => $targets['daily_calories_min'],
+                'dailyCaloriesMax' => $targets['daily_calories_max'],
+                'dailyKjMin' => $targets['daily_kj_min'],
+                'dailyKjMax' => $targets['daily_kj_max'],
                 'proteinGrams' => $targets['protein_grams'],
                 'carbGrams' => $targets['carb_grams'],
                 'fatGrams' => $targets['fat_grams'],
@@ -323,6 +340,7 @@ class OnboardingController extends Controller
                 'carbPercentage' => $targets['carb_percentage'],
                 'fatPercentage' => $targets['fat_percentage'],
                 'goal' => $targets['goal'],
+                'weightGoal' => $targets['weight_goal'],
                 'dietProtocol' => $targets['diet_protocol'],
                 'currentPhase' => $targets['current_phase'],
             ],

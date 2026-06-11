@@ -53,6 +53,16 @@ class CustomerOnboardingMiddleware
             }
         }
 
+        if ($currentStep === OnboardingStep::WeightGoal) {
+            $profile?->update(['onboarding_step' => OnboardingStep::DailyTargets]);
+
+            return redirect()->route('onboarding.show', ['step' => OnboardingStep::DailyTargets->value]);
+        }
+
+        if ($requestedStep === OnboardingStep::WeightGoal) {
+            return redirect()->route('onboarding.show', ['step' => OnboardingStep::DailyTargets->value]);
+        }
+
         $allowedSteps = OnboardingStep::orderedFor($profile);
         $allowedValues = array_map(static fn (OnboardingStep $step): string => $step->value, $allowedSteps);
 

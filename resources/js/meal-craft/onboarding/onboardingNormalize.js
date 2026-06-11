@@ -1,6 +1,8 @@
 /** @typedef {import('./onboardingConstants.js').OnboardingActivityLevel} OnboardingActivityLevel */
 /** @typedef {import('./onboardingConstants.js').OnboardingDietProtocol} OnboardingDietProtocol */
 
+/** @typedef {'lose' | 'maintain' | 'gain'} OnboardingWeightGoal */
+
 /**
  * @param {string | null | undefined} value
  * @returns {OnboardingActivityLevel}
@@ -70,4 +72,40 @@ export function dietProtocolToServer(value) {
     };
 
     return legacy[normalized] ?? normalized;
+}
+
+/**
+ * @param {string | null | undefined} value
+ * @returns {OnboardingWeightGoal | null}
+ */
+export function normalizeWeightGoal(value) {
+    const map = {
+        lose: 'lose',
+        lose_weight: 'lose',
+        maintain: 'maintain',
+        gain: 'gain',
+        gain_muscle: 'gain',
+    };
+
+    if (typeof value === 'string' && map[value]) {
+        return map[value];
+    }
+
+    return null;
+}
+
+/**
+ * @param {OnboardingWeightGoal} value
+ * @returns {'lose_weight' | 'maintain' | 'gain_muscle'}
+ */
+export function weightGoalToServer(value) {
+    const normalized = normalizeWeightGoal(value);
+
+    const serverMap = {
+        lose: 'lose_weight',
+        maintain: 'maintain',
+        gain: 'gain_muscle',
+    };
+
+    return serverMap[normalized ?? 'maintain'];
 }

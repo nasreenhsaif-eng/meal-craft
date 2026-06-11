@@ -48,7 +48,7 @@ export default function Container() {
     const pageProps = usePage().props;
     const onboarding = onboardingFromPage(pageProps);
     const activeStep = pageProps.activeStep ?? 'gender';
-    const { state, patch, computedTargets, profileInput, computeTargetsBeforeSummary } = useOnboardingStore();
+    const { state, patch, profileInput, computeTargetsBeforeSummary } = useOnboardingStore();
     const [processing, setProcessing] = useState(false);
     const [validationErrors, setValidationErrors] = useState(/** @type {Record<string, string>} */ ({}));
 
@@ -57,12 +57,24 @@ export default function Container() {
         () => getVisibleOnboardingSteps(steps, { gender: state.gender, dietProtocol: state.dietProtocol }),
         [steps, state.gender, state.dietProtocol],
     );
-    const meta = ONBOARDING_STEP_META[activeStep] ?? ONBOARDING_STEP_META.gender;
+    const meta = useMemo(() => {
+        if (ONBOARDING_STEP_META[activeStep]) {
+            return ONBOARDING_STEP_META[activeStep];
+        }
+
+        const stepLabel = visibleSteps.find((step) => step.value === activeStep)?.label ?? 'Onboarding';
+
+        return {
+            title: stepLabel,
+            description: '',
+            centerHeader: true,
+        };
+    }, [activeStep, visibleSteps]);
     const options = onboarding.options ?? {};
 
     const targets = useMemo(
-        () => computedTargets ?? calculateDailyTargets(profileInput),
-        [computedTargets, profileInput],
+        () => calculateDailyTargets(profileInput),
+        [profileInput],
     );
 
     const visitStep = useCallback(
@@ -240,7 +252,7 @@ export default function Container() {
             <OnboardingGenderInner
                 {...sharedInner}
                 sex={state.gender}
-                options={options.sex ?? []}
+                options={options.sex?.length ? options.sex : undefined}
                 onSexSelect={handleGenderSelect}
             />
         ),
@@ -265,6 +277,7 @@ export default function Container() {
         birthday: (
             <OnboardingBirthdayInner
                 {...sharedInner}
+                visible={activeStep === 'birthday'}
                 dateOfBirth={state.birthdate}
                 onDateChange={(iso) => patch({ birthdate: iso })}
             />
@@ -272,6 +285,7 @@ export default function Container() {
         height: (
             <OnboardingHeightInner
                 {...sharedInner}
+                visible={activeStep === 'height'}
                 heightCm={state.height ?? undefined}
                 onHeightCmChange={(value) => patch({ height: value })}
             />
@@ -279,6 +293,7 @@ export default function Container() {
         weight: (
             <OnboardingWeightInner
                 {...sharedInner}
+                visible={activeStep === 'weight'}
                 weightKg={state.weight ?? undefined}
                 onWeightKgChange={(value) => patch({ weight: value })}
             />
@@ -286,6 +301,7 @@ export default function Container() {
         target_weight: (
             <OnboardingTargetWeightInner
                 {...sharedInner}
+                visible={activeStep === 'target_weight'}
                 weightKg={state.targetWeight ?? state.weight ?? undefined}
                 onWeightKgChange={(value) => patch({ targetWeight: value })}
             />
@@ -325,7 +341,7 @@ export default function Container() {
         ),
     };
 
-    const hideFooterNext = meta.hideNext === true;
+    const hideFooterNext = meta.hideNext === true && activeStep !== 'diet_protocol';
 
     return (
         <OnboardingShell
@@ -340,12 +356,12 @@ export default function Container() {
             visibleSteps={visibleSteps}
             onBack={handleBack}
         >
-            <div className="relative min-h-[200px]">
+            <div className="relative min-h-[200px] w-full">
                 {visibleSteps.map((step) => (
                     <div
                         key={step.value}
                         hidden={step.value !== activeStep}
-                        className={step.value === activeStep ? 'block' : 'hidden'}
+                        className={step.value === activeStep ? 'block w-full' : 'hidden'}
                         aria-hidden={step.value !== activeStep}
                     >
                         {stepPanels[step.value] ?? null}
@@ -354,7 +370,7 @@ export default function Container() {
             </div>
 
             {hideFooterNext ? null : (
-                <div className="mt-6 flex w-full justify-center sm:mt-10">
+                <div className="relative z-30 mt-6 flex w-full justify-center sm:mt-10">
                     <Button
                         type="button"
                         label={processing ? 'Saving…' : nextButtonLabel(activeStep)}

@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useCallback, useMemo, useReducer } from 'react';
 import Button from '../../Components/Atoms/Button/Button.jsx';
 import { defaultHeightCm } from '../../Components/Molecules/Onboarding/heightUtils.js';
+import { shouldAutoAdvanceDietProtocol, shouldShowDietProtocolContinueButton } from '../../Components/Molecules/Onboarding/dietProtocolOptions.js';
 import { defaultBirthdayValue, toIsoDate } from '../../Components/Molecules/Onboarding/wheelDateUtils.js';
 import { defaultWeightKg } from '../../Components/Molecules/Onboarding/weightUtils.js';
 import { calculateDailyTargets } from '../../meal-craft/dailyTargetsCalculator.js';
@@ -156,7 +157,7 @@ export function OnboardingFlowViewInner({
 
     const onDietProtocolSelect = useCallback(
         (value) => {
-            if (value !== 'balanced') {
+            if (!shouldAutoAdvanceDietProtocol(value)) {
                 return;
             }
 
@@ -196,8 +197,13 @@ export function OnboardingFlowViewInner({
         }
     }, [currentStep, flowContext, patch]);
 
-    const targets =
-        wizardState.computedTargets ?? calculateDailyTargets(onboardingStateToProfile(wizardState));
+    const targets = useMemo(() => {
+        if (wizardState.weight != null && wizardState.height != null && wizardState.birthdate) {
+            return calculateDailyTargets(onboardingStateToProfile(wizardState));
+        }
+
+        return wizardState.computedTargets ?? null;
+    }, [wizardState]);
 
     const meta = ONBOARDING_STEP_META[currentStep] ?? ONBOARDING_STEP_META.gender;
 
@@ -328,7 +334,8 @@ export function OnboardingFlowViewInner({
                 </AnimatePresence>
             </div>
 
-            {meta.hideNext ? null : (
+            {meta.hideNext &&
+            !(currentStep === 'diet_protocol' && shouldShowDietProtocolContinueButton(wizardState.dietProtocol)) ? null : (
                 <div className="mt-6 flex w-full justify-center sm:mt-10">
                     <Button
                         type="button"
