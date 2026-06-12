@@ -107,7 +107,9 @@ final class MealCraftInertiaSharedData
             ],
             'mealPlanLibrary' => [
                 'index' => route('admin.meal-plan-library'),
+                'store' => route('admin.meal-plan-library.store'),
                 'mealSearch' => route('admin.meal-plan-library.meals.search'),
+                'show' => route('admin.meal-plan-library.show', ['mealPlan' => 0]),
             ],
         ];
     }

@@ -1,6 +1,6 @@
 import { createPortal } from 'react-dom';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { usePage } from '@inertiajs/react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { router, usePage } from '@inertiajs/react';
 import adminInertiaLayout from '../../lib/adminInertiaLayout.jsx';
 import { mealPlanLibraryUrls, resolveUrl } from '../../meal-craft/mealCraftPageProps.js';
 import Button from '../../Components/Atoms/Button.jsx';
@@ -11,10 +11,7 @@ import MealPlanCard from '../../Components/MealPlanCard.jsx';
 import DietaryTagsMultiSelect from '../../Components/MealSystem/DietaryTagsMultiSelect.jsx';
 import MealAutocompleteCombobox from '../../Components/Molecules/MealPlan/MealAutocompleteCombobox.jsx';
 import { MEAL_PLAN_TAG_OPTIONS } from '../../meal-library/mealTaxonomy.js';
-import {
-    SCHEDULER_BREAKFAST_CATEGORIES,
-    SCHEDULER_MEAL_CHOICE_CATEGORIES,
-} from '../../meal-library/mealSearch.ts';
+import { SCHEDULER_SLOT_SECTIONS } from '../../meal-library/mealSearch.ts';
 
 const PAGE_BG = 'bg-[#F8F9F6]';
 
@@ -33,45 +30,118 @@ const DEFAULT_CYCLE_PHASES = [
     { value: 'luteal', label: 'Luteal' },
 ];
 
-const MOCK_PLANS = [
-    {
-        id: 'p-1',
-        name: 'Sickle Cell Support — Level 1',
-        category: 'Clinical',
-        imageUrl: 'https://images.unsplash.com/photo-1543364195-bfe6e4932397?auto=format&fit=crop&w=1200&q=80',
-        tags: ['Sickle Cell Anemia', 'Balanced'],
-        dailyMacros: { calories: 2050, protein: 125, carbs: 245, fat: 70 },
-    },
-    {
-        id: 'p-2',
-        name: 'Hormone Feast — 7 Day Reset',
-        category: 'Wellness',
-        imageUrl: 'https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?auto=format&fit=crop&w=1200&q=80',
-        tags: ['Hormone Feast', 'Balanced'],
-        dailyMacros: { calories: 1850, protein: 110, carbs: 220, fat: 60 },
-    },
-];
+const PLANNING_DAY_COUNT = 7;
 
-function sumNutrition(rows) {
-    const out = {
-        calories: 0,
-        protein: 0,
-        carbs: 0,
-        fat: 0,
-        b9_folate: 0,
-        b12: 0,
-        iron: 0,
-        magnesium: 0,
-        zinc: 0,
-    };
-    rows.forEach((m) => {
-        const n = m?.nutrition ?? {};
-        Object.keys(out).forEach((k) => {
-            const v = n[k];
-            out[k] += typeof v === 'number' && Number.isFinite(v) ? v : 0;
-        });
-    });
+function slotKey(day, sectionKey, idx) {
+    return `d${day}-${sectionKey}-${idx}`;
+}
+
+function createEmptySlotsById() {
+    /** @type {Record<string, { mealQuery: string; mealId: number | null }>} */
+    const out = {};
+    for (let day = 1; day <= PLANNING_DAY_COUNT; day += 1) {
+        for (const section of SCHEDULER_SLOT_SECTIONS) {
+            for (let idx = 1; idx <= section.count; idx += 1) {
+                out[slotKey(day, section.key, idx)] = { mealQuery: '', mealId: null };
+            }
+        }
+    }
     return out;
+}
+
+/** @param {string[]} tags */
+function resolvePlanCategory(tags) {
+    const lowered = tags.map((tag) => String(tag).toLowerCase());
+    if (lowered.some((tag) => tag.includes('sickle'))) {
+        return 'sickle_cell_warrior';
+    }
+    if (lowered.some((tag) => tag.includes('hormone'))) {
+        return 'cycle_sync';
+    }
+    return 'balanced';
+}
+
+/** @param {Record<string, { mealQuery: string; mealId: number | null }>} slotsById */
+function buildSlotsPayload(slotsById) {
+    /** @type {{ day_number: number; slot_type: string; slot_index: number; meal_id: number | null }[]} */
+    const slots = [];
+    for (let day = 1; day <= PLANNING_DAY_COUNT; day += 1) {
+        for (const section of SCHEDULER_SLOT_SECTIONS) {
+            for (let idx = 1; idx <= section.count; idx += 1) {
+                const id = slotKey(day, section.key, idx);
+                const state = slotsById[id] ?? { mealQuery: '', mealId: null };
+                slots.push({
+                    day_number: day,
+                    slot_type: section.slotType,
+                    slot_index: idx,
+                    meal_id: state.mealId,
+                });
+            }
+        }
+    }
+    return slots;
+}
+
+/**
+ * @param {{
+ *   formName: string;
+ *   formDescription: string;
+ *   targets: { calories: string; protein: string; carbs: string; fat: string };
+ *   formTags: string[];
+ *   formCyclePhase: string;
+ *   slotsById: Record<string, { mealQuery: string; mealId: number | null }>;
+ * }} input
+ */
+function validateSchedulerForm(input) {
+    const errors = [];
+    if (!input.formName.trim()) {
+        errors.push('Enter a meal plan name.');
+    }
+    if (!input.formDescription.trim()) {
+        errors.push('Enter a plan description and goal.');
+    }
+    const calories = Number.parseFloat(String(input.targets.calories).trim());
+    if (!Number.isFinite(calories) || calories <= 0) {
+        errors.push('Enter a daily calorie target greater than zero.');
+    }
+    if (resolvePlanCategory(input.formTags) === 'cycle_sync' && !input.formCyclePhase) {
+        errors.push('Select a cycle phase for Hormone Feast plans.');
+    }
+
+    const missingSlots = [];
+    for (let day = 1; day <= PLANNING_DAY_COUNT; day += 1) {
+        for (const section of SCHEDULER_SLOT_SECTIONS) {
+            for (let idx = 1; idx <= section.count; idx += 1) {
+                const id = slotKey(day, section.key, idx);
+                const state = input.slotsById[id];
+                if (!state?.mealId) {
+                    missingSlots.push(`${section.label} option ${idx} on ${WEEKDAY_LABELS[day - 1] ?? `day ${day}`}`);
+                }
+            }
+        }
+    }
+
+    if (missingSlots.length > 0) {
+        const preview = missingSlots.slice(0, 4).join(', ');
+        const suffix = missingSlots.length > 4 ? ` (+${missingSlots.length - 4} more)` : '';
+        errors.push(`Assign a meal to every slot. Still missing: ${preview}${suffix}.`);
+    }
+
+    return errors;
+}
+
+function resetCreateFormState() {
+    return {
+        formName: '',
+        formTags: [],
+        formDescription: '',
+        formCyclePhase: '',
+        targets: { calories: '', protein: '', carbs: '', fat: '' },
+        activeDay: 1,
+        slotsById: createEmptySlotsById(),
+        saveErrors: [],
+        serverError: null,
+    };
 }
 
 /**
@@ -79,23 +149,35 @@ function sumNutrition(rows) {
  *   dietTypes?: { value: string; label: string }[];
  *   cyclePhases?: { value: string; label: string }[];
  *   mealSearchUrl?: string | null;
+ *   mealPlanStoreUrl?: string | null;
  *   schedulerMeals?: import('../../meal-library/mealSearch.ts').MealPickerOption[];
+ *   mealPlans?: { id: number; name: string; category: string; imageUrl?: string | null; tags: string[]; dailyMacros: { calories: number; protein: number; carbs: number; fat: number } }[];
  * }} props
  */
 export function MealPlanLibraryPageContent({
     dietTypes = DEFAULT_DIET_TYPES,
     cyclePhases = DEFAULT_CYCLE_PHASES,
     mealSearchUrl: mealSearchUrlProp = null,
+    mealPlanStoreUrl: mealPlanStoreUrlProp = null,
     schedulerMeals: schedulerMealsProp = [],
+    mealPlans: mealPlansProp = [],
 }) {
     const { props: pageProps } = usePage();
     const mealSearchUrl = resolveUrl(
         typeof mealSearchUrlProp === 'string' ? mealSearchUrlProp : null,
         mealPlanLibraryUrls(pageProps).mealSearch,
     );
+    const mealPlanStoreUrl = resolveUrl(
+        typeof mealPlanStoreUrlProp === 'string' ? mealPlanStoreUrlProp : null,
+        mealPlanLibraryUrls(pageProps).store,
+    );
     const schedulerMeals = Array.isArray(schedulerMealsProp) ? schedulerMealsProp : [];
+    const mealPlans = Array.isArray(mealPlansProp) ? mealPlansProp : [];
+    const flashSuccess = typeof pageProps.flash?.success === 'string' ? pageProps.flash.success : null;
+
     const [query, setQuery] = useState('');
     const [createOpen, setCreateOpen] = useState(false);
+    const [saving, setSaving] = useState(false);
 
     // Search combobox (library header)
     const [searchOpen, setSearchOpen] = useState(false);
@@ -106,20 +188,109 @@ export function MealPlanLibraryPageContent({
     const [formName, setFormName] = useState('');
     const [formTags, setFormTags] = useState(/** @type {string[]} */ ([]));
     const [formDescription, setFormDescription] = useState('');
+    const [formCyclePhase, setFormCyclePhase] = useState('');
     const [targets, setTargets] = useState({ calories: '', protein: '', carbs: '', fat: '' });
+    const [saveErrors, setSaveErrors] = useState(/** @type {string[]} */ ([]));
+    const [serverError, setServerError] = useState(/** @type {string | null} */ (null));
 
     const [activeDay, setActiveDay] = useState(1);
 
-    const [slotsById, setSlotsById] = useState(
-        /** @type {Record<string, { mealQuery: string; mealId: number | null }>} */ ({
-            'd1-breakfast-1': { mealQuery: '', mealId: null },
-            'd1-breakfast-2': { mealQuery: '', mealId: null },
-            'd1-meal-1': { mealQuery: '', mealId: null },
-            'd1-meal-2': { mealQuery: '', mealId: null },
-            'd1-meal-3': { mealQuery: '', mealId: null },
-            'd1-meal-4': { mealQuery: '', mealId: null },
-        }),
-    );
+    const [slotsById, setSlotsById] = useState(createEmptySlotsById);
+
+    const requiresCyclePhase = useMemo(() => resolvePlanCategory(formTags) === 'cycle_sync', [formTags]);
+
+    const openCreateModal = useCallback(() => {
+        const fresh = resetCreateFormState();
+        setFormName(fresh.formName);
+        setFormTags(fresh.formTags);
+        setFormDescription(fresh.formDescription);
+        setFormCyclePhase(fresh.formCyclePhase);
+        setTargets(fresh.targets);
+        setActiveDay(fresh.activeDay);
+        setSlotsById(fresh.slotsById);
+        setSaveErrors(fresh.saveErrors);
+        setServerError(fresh.serverError);
+        setCreateOpen(true);
+    }, []);
+
+    const closeCreateModal = useCallback(() => {
+        setCreateOpen(false);
+        setSaving(false);
+        setSaveErrors([]);
+        setServerError(null);
+    }, []);
+
+    const handleSaveMealPlan = useCallback(() => {
+        const validationErrors = validateSchedulerForm({
+            formName,
+            formDescription,
+            targets,
+            formTags,
+            formCyclePhase,
+            slotsById,
+        });
+
+        if (validationErrors.length > 0) {
+            setSaveErrors(validationErrors);
+            setServerError(null);
+            return;
+        }
+
+        if (!mealPlanStoreUrl) {
+            setServerError('Save URL is not configured.');
+            return;
+        }
+
+        const slots = buildSlotsPayload(slotsById).map((slot) => ({
+            ...slot,
+            meal_id: slot.meal_id,
+        }));
+
+        const payload = {
+            name: formName.trim(),
+            goal: formDescription.trim(),
+            plan_category: resolvePlanCategory(formTags),
+            cycle_phase: requiresCyclePhase ? formCyclePhase : null,
+            target_daily_calories: Number.parseFloat(String(targets.calories).trim()),
+            target_daily_protein_g: targets.protein.trim() === '' ? null : Number.parseFloat(targets.protein),
+            target_daily_carbs_g: targets.carbs.trim() === '' ? null : Number.parseFloat(targets.carbs),
+            target_daily_fat_g: targets.fat.trim() === '' ? null : Number.parseFloat(targets.fat),
+            slots,
+        };
+
+        setSaving(true);
+        setSaveErrors([]);
+        setServerError(null);
+
+        router.post(mealPlanStoreUrl, payload, {
+            preserveScroll: true,
+            onSuccess: () => {
+                closeCreateModal();
+            },
+            onError: (errors) => {
+                const messages = Object.values(errors).flatMap((value) => {
+                    if (Array.isArray(value)) {
+                        return value.map((item) => String(item));
+                    }
+                    return value ? [String(value)] : [];
+                });
+                setSaveErrors(messages.length > 0 ? messages : ['Could not save this meal plan. Check the form and try again.']);
+            },
+            onFinish: () => {
+                setSaving(false);
+            },
+        });
+    }, [
+        closeCreateModal,
+        formCyclePhase,
+        formDescription,
+        formName,
+        formTags,
+        mealPlanStoreUrl,
+        requiresCyclePhase,
+        slotsById,
+        targets,
+    ]);
 
     useEffect(() => {
         if (typeof document === 'undefined') {
@@ -167,9 +338,9 @@ export function MealPlanLibraryPageContent({
     const filteredPlans = useMemo(() => {
         const q = query.trim().toLowerCase();
         if (!q) {
-            return MOCK_PLANS;
+            return mealPlans;
         }
-        return MOCK_PLANS.filter((p) => {
+        return mealPlans.filter((p) => {
             const nameMatch = p.name.toLowerCase().includes(q);
             const categoryMatch = String(p.category ?? '')
                 .toLowerCase()
@@ -177,42 +348,22 @@ export function MealPlanLibraryPageContent({
             const tagMatch = Array.isArray(p.tags) && p.tags.some((t) => String(t).toLowerCase().includes(q));
             return nameMatch || categoryMatch || tagMatch;
         });
-    }, [query]);
+    }, [mealPlans, query]);
 
     const searchMatches = useMemo(() => {
         const q = query.trim().toLowerCase();
         if (q.length < 1) return [];
-        return MOCK_PLANS.filter(
-            (p) =>
-                p.name.toLowerCase().includes(q) ||
-                String(p.category ?? '')
-                    .toLowerCase()
-                    .includes(q) ||
-                p.tags.some((t) => String(t).toLowerCase().includes(q)),
-        ).slice(0, 10);
-    }, [query]);
-
-    const SLOT_SECTIONS = useMemo(
-        () => [
-            {
-                key: 'breakfast',
-                label: 'Breakfasts',
-                count: 2,
-                categories: SCHEDULER_BREAKFAST_CATEGORIES,
-            },
-            {
-                key: 'meal',
-                label: 'Meal choices',
-                count: 4,
-                categories: SCHEDULER_MEAL_CHOICE_CATEGORIES,
-            },
-        ],
-        [],
-    );
-
-    function slotKey(day, sectionKey, idx) {
-        return `d${day}-${sectionKey}-${idx}`;
-    }
+        return mealPlans
+            .filter(
+                (p) =>
+                    p.name.toLowerCase().includes(q) ||
+                    String(p.category ?? '')
+                        .toLowerCase()
+                        .includes(q) ||
+                    p.tags.some((t) => String(t).toLowerCase().includes(q)),
+            )
+            .slice(0, 10);
+    }, [mealPlans, query]);
 
     return (
         <div className={`min-h-screen ${PAGE_BG} px-4 pb-8 pt-4 font-sans md:px-8`}>
@@ -227,6 +378,12 @@ export function MealPlanLibraryPageContent({
                         {cyclePhases.map((p) => `${p.label} (${p.value})`).join(', ')}.
                     </p>
 
+                    {flashSuccess ? (
+                        <p className="mx-5 mt-5 rounded-[12px] border border-[#5A6B44]/30 bg-[#F8F9F6] px-4 py-3 font-body text-sm text-[#262A22]">
+                            {flashSuccess}
+                        </p>
+                    ) : null}
+
                     <div
                         className="flex w-full flex-col gap-6 rounded-t-[12px] border-b border-gray-200 px-5 pb-6 pt-6"
                         aria-describedby="meal-plan-library-desc"
@@ -238,7 +395,7 @@ export function MealPlanLibraryPageContent({
                                     variant="primary"
                                     type="button"
                                     className="shrink-0 uppercase tracking-wide"
-                                    onClick={() => setCreateOpen(true)}
+                                    onClick={openCreateModal}
                                 />
                             </div>
                             <div className="min-w-0 flex-1">
@@ -321,7 +478,10 @@ export function MealPlanLibraryPageContent({
                                             imageUrl={p.imageUrl}
                                             dailyMacros={p.dailyMacros}
                                             tags={p.tags}
-                                            onPrimaryAction={() => {}}
+                                            onPrimaryAction={() => {
+                                                const url = p.showUrl ?? `/admin/meal-plan-library/${p.id}`;
+                                                router.visit(url);
+                                            }}
                                             primaryActionLabel="View details"
                                             className="transition-all duration-200 ease-out hover:-translate-y-0.5 hover:scale-[1.02] hover:shadow-xl active:translate-y-0 active:scale-[0.98] active:shadow-md"
                                         />
@@ -338,7 +498,7 @@ export function MealPlanLibraryPageContent({
                     <button
                         type="button"
                         className="absolute inset-0 bg-black/40"
-                        onClick={() => setCreateOpen(false)}
+                        onClick={closeCreateModal}
                         aria-label="Close create meal plan modal"
                     />
                     <div
@@ -348,7 +508,7 @@ export function MealPlanLibraryPageContent({
                         className="relative w-full max-w-[1200px] overflow-hidden rounded-[12px] bg-[#F8F9F6] shadow-2xl"
                     >
                         <div className="absolute right-3 top-3 z-20">
-                            <Button label="Close" variant="ghost" onClick={() => setCreateOpen(false)} />
+                            <Button label="Close" variant="ghost" onClick={closeCreateModal} />
                         </div>
 
                         <div className="flex max-h-[85vh] flex-col overflow-hidden">
@@ -394,6 +554,30 @@ export function MealPlanLibraryPageContent({
                                                 placeholder="Clinical or wellness objectives…"
                                             />
                                         </div>
+
+                                        {requiresCyclePhase ? (
+                                            <div className="block w-full text-left">
+                                                <label
+                                                    htmlFor="meal-plan-cycle-phase"
+                                                    className="mb-2 block font-montserrat text-sm font-bold leading-snug tracking-tight text-grey-94"
+                                                >
+                                                    Cycle phase
+                                                </label>
+                                                <select
+                                                    id="meal-plan-cycle-phase"
+                                                    value={formCyclePhase}
+                                                    onChange={(e) => setFormCyclePhase(e.target.value)}
+                                                    className="block w-full rounded-[12px] border border-[#E5E7EB] bg-white px-4 py-3 font-body text-[15px] text-[#1F2937] shadow-sm outline-none focus-visible:border-[#5A6B44] focus-visible:ring-2 focus-visible:ring-[#5A6B44] focus-visible:ring-offset-2"
+                                                >
+                                                    <option value="">Select a phase…</option>
+                                                    {cyclePhases.map((phase) => (
+                                                        <option key={phase.value} value={phase.value}>
+                                                            {phase.label}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        ) : null}
 
                                         <div className="rounded-[12px] border border-gray-200 bg-[#F8F9F6] p-4">
                                             <p className="font-montserrat text-sm font-bold text-[#262A22]">Targets</p>
@@ -464,7 +648,7 @@ export function MealPlanLibraryPageContent({
                                     </div>
 
                                     <div className="mt-6 space-y-5">
-                                        {SLOT_SECTIONS.map((section) => (
+                                        {SCHEDULER_SLOT_SECTIONS.map((section) => (
                                             <div key={section.key}>
                                                 <p className="mb-2 font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#555555]">
                                                     {section.label} ({section.count})
@@ -510,11 +694,32 @@ export function MealPlanLibraryPageContent({
                             </div>
 
                             <div className="border-t border-gray-200 bg-[#F8F9F6] px-10 pb-8 pt-6">
+                                {saveErrors.length > 0 ? (
+                                    <div
+                                        className="mb-4 rounded-[12px] border border-red-200 bg-red-50 px-4 py-3"
+                                        role="alert"
+                                    >
+                                        <p className="font-montserrat text-sm font-bold text-red-800">
+                                            Complete the form before saving
+                                        </p>
+                                        <ul className="mt-2 list-disc space-y-1 pl-5 font-body text-sm text-red-700">
+                                            {saveErrors.map((message) => (
+                                                <li key={message}>{message}</li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                ) : null}
+                                {serverError ? (
+                                    <p className="mb-4 rounded-[12px] border border-red-200 bg-red-50 px-4 py-3 font-body text-sm text-red-700" role="alert">
+                                        {serverError}
+                                    </p>
+                                ) : null}
                                 <div className="flex justify-end">
                                     <Button
-                                        label="Save meal plan"
+                                        label={saving ? 'Saving…' : 'Save meal plan'}
                                         variant="primary"
-                                        onClick={() => setCreateOpen(false)}
+                                        onClick={handleSaveMealPlan}
+                                        disabled={saving}
                                         className="justify-center"
                                     />
                                 </div>

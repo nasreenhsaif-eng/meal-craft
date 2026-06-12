@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\MealCyclePhaseTag;
 use App\Enums\MealPlanLibraryCategory;
 use App\Enums\MealPlanSchemaType;
 use App\Enums\MealPlanSlotType;
@@ -9,6 +10,7 @@ use App\Models\Meal;
 use App\Models\MealPlan;
 use App\Models\MealPlanDayMeal;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
 final class MealPlanService
@@ -29,6 +31,66 @@ final class MealPlanService
             'target_total_carbs_g' => $totalCarbsG,
             'target_total_fat_g' => $totalFatG,
         ]);
+    }
+
+    /**
+     * @param  list<array{day_number: int, slot_type: string, slot_index: int, meal_id: int}>  $slots
+     */
+    public function createWeeklyStructuredPlanFromScheduler(
+        string $name,
+        string $goal,
+        MealPlanLibraryCategory $planCategory,
+        ?MealCyclePhaseTag $cyclePhase,
+        float $dailyCalories,
+        ?float $dailyProteinG,
+        ?float $dailyCarbsG,
+        ?float $dailyFatG,
+        array $slots,
+    ): MealPlan {
+        return DB::transaction(function () use (
+            $name,
+            $goal,
+            $planCategory,
+            $cyclePhase,
+            $dailyCalories,
+            $dailyProteinG,
+            $dailyCarbsG,
+            $dailyFatG,
+            $slots,
+        ): MealPlan {
+            $mealPlan = MealPlan::query()->create([
+                'name' => $name,
+                'goal' => $goal,
+                'schema_type' => MealPlanSchemaType::WeeklyStructured,
+                'plan_category' => $planCategory,
+                'cycle_phase' => $planCategory === MealPlanLibraryCategory::CycleSync ? $cyclePhase : null,
+            ]);
+
+            $this->syncMacroTargets(
+                $mealPlan,
+                $dailyCalories * 7.0,
+                $dailyProteinG !== null ? $dailyProteinG * 7.0 : null,
+                $dailyCarbsG !== null ? $dailyCarbsG * 7.0 : null,
+                $dailyFatG !== null ? $dailyFatG * 7.0 : null,
+            );
+
+            foreach ([false, true] as $isOptionB) {
+                foreach ($slots as $slot) {
+                    $slotType = MealPlanSlotType::from((string) $slot['slot_type']);
+
+                    MealPlanDayMeal::query()->create([
+                        'meal_plan_id' => $mealPlan->id,
+                        'meal_id' => (int) $slot['meal_id'],
+                        'day_number' => (int) $slot['day_number'],
+                        'slot_type' => $slotType->value,
+                        'slot_index' => (int) $slot['slot_index'],
+                        'is_option_b' => $isOptionB,
+                    ]);
+                }
+            }
+
+            return $mealPlan->fresh();
+        });
     }
 
     /**
@@ -157,7 +219,7 @@ final class MealPlanService
             'total_folate', 'total_iron', 'cycle_phase_tags',
         ]);
 
-        /** @var \Illuminate\Support\Collection<string, \Illuminate\Support\Collection<int, Meal>> $byMealType */
+        /** @var Collection<string, Collection<int, Meal>> $byMealType */
         $byMealType = $meals->groupBy(fn (Meal $m): string => $m->meal_type?->value ?? '');
 
         MealPlanDayMeal::query()->where('meal_plan_id', $plan->id)->delete();
@@ -166,7 +228,7 @@ final class MealPlanService
             foreach (range(1, $dayCount) as $dayNumber) {
                 foreach ($template as $pairIndex => [$slotType, $slotIndex]) {
                     $mealTypeValue = $slotType->mealType()->value;
-                    /** @var \Illuminate\Support\Collection<int, Meal> $pool */
+                    /** @var Collection<int, Meal> $pool */
                     $pool = $byMealType->get($mealTypeValue, collect());
 
                     $pool = $this->filterMealPoolForLibraryCategory($pool, $plan);

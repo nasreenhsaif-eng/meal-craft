@@ -136,4 +136,5 @@ test('guests cannot access admin inertia routes', function (string $path) {
     '/admin/ingredient-library',
     '/admin/meal-library',
     '/admin/meal-plan-library',
+    '/admin/meal-plan-library/1',
 ]);

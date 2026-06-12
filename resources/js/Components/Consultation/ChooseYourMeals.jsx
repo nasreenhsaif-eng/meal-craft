@@ -138,6 +138,8 @@ export function getIncompleteFullCraftCategoryKeys(categorySelections) {
  * @param {boolean} [props.deckOnly]
  * @param {SelectionCategoryKey} [props.sectionKey]
  * @param {boolean} [props.validationFlash]
+ * @param {boolean} [props.readOnly]
+ * @param {(meal: ConsultationMeal) => void} [props.onViewDetails]
  */
 export function MealSlotCarousel({
     title,
@@ -150,9 +152,13 @@ export function MealSlotCarousel({
     deckOnly = false,
     sectionKey,
     validationFlash = false,
+    readOnly = false,
+    onViewDetails,
 }) {
-    const selectedSet = new Set(selectedIds);
-    const atLimit = selectedIds.length >= maxSelected;
+    const effectiveSelectedIds = readOnly ? cards.map((card) => card.id) : selectedIds;
+    const effectiveMaxSelected = readOnly ? Math.max(cards.length, 1) : maxSelected;
+    const selectedSet = new Set(effectiveSelectedIds);
+    const atLimit = effectiveSelectedIds.length >= effectiveMaxSelected;
     const stackZ = 35 + sectionStackOrder * 6;
 
     return (
@@ -172,8 +178,9 @@ export function MealSlotCarousel({
                         {title}
                     </p>
                     <p className="mt-0.5 font-body text-xs leading-snug text-[#555555] sm:mt-1 sm:text-sm">
-                        {maxSelected === 1 ? 'Select 1' : `Select exactly ${maxSelected}`} • {selectedIds.length}/{maxSelected}{' '}
-                        selected • Swipe the deck to browse
+                        {readOnly
+                            ? `${cards.length} assigned • Swipe the deck to browse`
+                            : `${effectiveMaxSelected === 1 ? 'Select 1' : `Select exactly ${effectiveMaxSelected}`} • ${effectiveSelectedIds.length}/${effectiveMaxSelected} selected • Swipe the deck to browse`}
                     </p>
                 </div>
             ) : null}
@@ -183,7 +190,9 @@ export function MealSlotCarousel({
                 data-consultation-deck=""
             >
                 {cards.length === 0 ? (
-                    <p className="font-body text-sm text-[#666666]">No options match this slot yet.</p>
+                    <p className="font-body text-sm text-[#666666]">
+                        {readOnly ? 'No meal assigned for this slot yet.' : 'No options match this slot yet.'}
+                    </p>
                 ) : (
                     <div className="flex w-full max-w-full justify-center">
                         <div className="relative z-0 w-full min-w-0 max-w-full">
@@ -206,12 +215,13 @@ export function MealSlotCarousel({
                                             imageUrl={meal.imageUrl}
                                             macros={meal.macros}
                                             selected={isSelected}
-                                            disabled={isDisabled}
+                                            disabled={readOnly ? false : isDisabled}
+                                            hideCraftButton={readOnly}
                                             imageLoading={isFront ? 'eager' : 'lazy'}
                                             imageAlt={meal.title ?? ''}
-                                            onToggleSelected={() => onSelect(meal)}
-                                            onViewDetails={() => {}}
-                                            vibrantCraftWhenAtLimit={isDisabled}
+                                            onToggleSelected={readOnly ? undefined : () => onSelect(meal)}
+                                            onViewDetails={() => onViewDetails?.(meal)}
+                                            vibrantCraftWhenAtLimit={!readOnly && isDisabled}
                                         />
                                     );
                                 }}

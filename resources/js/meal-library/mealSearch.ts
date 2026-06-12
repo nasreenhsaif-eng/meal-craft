@@ -12,8 +12,37 @@ export type MealPickerOption = {
 /** Breakfast slots — `RecipeCategory::Breakfast` */
 export const SCHEDULER_BREAKFAST_CATEGORIES = ['Breakfast'] as const;
 
-/** Meal choice slots — main, side salad, dessert, soup */
+/** Main meal slots — `RecipeCategory::Meal` */
+export const SCHEDULER_MAIN_MEAL_CATEGORIES = ['Meal'] as const;
+
+/** Side salad slots — `RecipeCategory::SideSalad` */
+export const SCHEDULER_SIDE_SALAD_CATEGORIES = ['Side Salad'] as const;
+
+/** Dessert slots — `RecipeCategory::Dessert` */
+export const SCHEDULER_DESSERT_CATEGORIES = ['Dessert'] as const;
+
+/** Soup slot — `RecipeCategory::Soup` */
+export const SCHEDULER_SOUP_CATEGORIES = ['Soup'] as const;
+
+/** @deprecated Use category-specific scheduler constants per slot section. */
 export const SCHEDULER_MEAL_CHOICE_CATEGORIES = ['Meal', 'Side Salad', 'Dessert', 'Soup'] as const;
+
+export type SchedulerSlotSection = {
+    key: string;
+    slotType: 'breakfast' | 'main' | 'salad' | 'dessert' | 'soup';
+    label: string;
+    count: number;
+    categories: readonly string[];
+};
+
+/** Matches {@see App\Enums\MealPlanSlotType::daySlotTemplate()} slot layout. */
+export const SCHEDULER_SLOT_SECTIONS: readonly SchedulerSlotSection[] = [
+    { key: 'breakfast', slotType: 'breakfast', label: 'Breakfasts', count: 2, categories: SCHEDULER_BREAKFAST_CATEGORIES },
+    { key: 'meal', slotType: 'main', label: 'Meal choices', count: 4, categories: SCHEDULER_MAIN_MEAL_CATEGORIES },
+    { key: 'sidesalad', slotType: 'salad', label: 'Side salads', count: 2, categories: SCHEDULER_SIDE_SALAD_CATEGORIES },
+    { key: 'dessert', slotType: 'dessert', label: 'Desserts', count: 2, categories: SCHEDULER_DESSERT_CATEGORIES },
+    { key: 'soup', slotType: 'soup', label: 'Soup', count: 1, categories: SCHEDULER_SOUP_CATEGORIES },
+];
 
 export type SchedulerCategoryFilter =
     | typeof SCHEDULER_BREAKFAST_CATEGORIES

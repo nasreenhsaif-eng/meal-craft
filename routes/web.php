@@ -71,7 +71,9 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
                 Route::post('/meal-library/reorder', [MealLibraryController::class, 'reorder'])->name('meal-library.reorder');
                 Route::post('/meal-library/{meal}', [MealController::class, 'update'])->name('meal-library.update');
                 Route::get('/meal-plan-library', [MealPlanLibraryController::class, 'index'])->name('meal-plan-library');
+                Route::post('/meal-plan-library', [MealPlanLibraryController::class, 'store'])->name('meal-plan-library.store');
                 Route::get('/meal-plan-library/meals/search', [MealPlanLibraryController::class, 'searchMeals'])->name('meal-plan-library.meals.search');
+                Route::get('/meal-plan-library/{mealPlan}', [MealPlanLibraryController::class, 'show'])->name('meal-plan-library.show');
                 Route::get('/customers', [CustomerProfileController::class, 'index'])->name('customers');
 
                 Route::prefix('settings')->name('settings.')->group(function (): void {

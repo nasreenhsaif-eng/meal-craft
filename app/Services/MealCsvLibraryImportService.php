@@ -1289,8 +1289,15 @@ final class MealCsvLibraryImportService
             );
         }
 
+        $normKey = self::normalizeMealNameKey($mealName);
+        $existingMealForCategory = $mealsByNormalizedName[$normKey] ?? null;
+
         $categoryRaw = (string) ($assoc['category'] ?? '');
-        $mealCategory = $this->resolveMealLibraryCategoryWithDefault($categoryRaw);
+        if (trim($categoryRaw) === '' && $existingMealForCategory !== null && $existingMealForCategory->category instanceof RecipeCategory) {
+            $mealCategory = $existingMealForCategory->category;
+        } else {
+            $mealCategory = $this->resolveMealLibraryCategoryWithDefault($categoryRaw);
+        }
         if (trim($categoryRaw) !== '' && $this->resolveMealLibraryCategory($categoryRaw) === null) {
             $this->logMealLibraryImportRowFailure($lineNumber, $rawRow, $assoc, 'Invalid Category or Meal Type.');
 

@@ -15,6 +15,7 @@ use App\Models\MealCsvImportPendingRow;
 use App\Models\User;
 use App\Services\BaseIngredientService;
 use App\Services\MealCraftMasterCsvExport;
+use App\Services\MenuDevelopmentCsvExport;
 use App\Services\RecipeNutritionCalculator;
 use App\Support\IngredientAllergenCatalog;
 use App\Support\IngredientG6pdSafety;
@@ -23,6 +24,7 @@ use App\Support\MealImagePath;
 use App\Support\MealInstructionsText;
 use App\Support\MealLibraryBulkNutrition;
 use App\Support\MealLibraryTaxonomy;
+use App\Support\MenuDevelopmentCsv;
 use App\Support\SickleCellNutrientRdi;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -36,6 +38,8 @@ use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
 class MealLibraryController extends Controller
 {
+    public function __construct(private MenuDevelopmentCsvExport $menuDevelopmentCsvExport) {}
+
     public function downloadMealCraftCsvTemplate(): SymfonyResponse
     {
         $csv = MealCraftMasterCsvExport::mealCraftCsvTemplateCsv();
@@ -124,6 +128,8 @@ class MealLibraryController extends Controller
         $message = $deletedCount === 1
             ? __('1 meal removed from the library.')
             : __(':count meals removed from the library.', ['count' => $deletedCount]);
+
+        $this->syncMealMasterCsvFromDatabase();
 
         if ($request->expectsJson()) {
             return response()->json([
@@ -230,6 +236,8 @@ class MealLibraryController extends Controller
             $this->syncLibraryMealIngredientsPhotoAndAggregates($request, $meal, $data);
         });
 
+        $this->syncMealMasterCsvFromDatabase();
+
         $successMessage = ($data['submission_context'] ?? null) === 'duplicate'
             ? __('New meal version saved successfully.')
             : __('Meal created successfully.');
@@ -323,9 +331,16 @@ class MealLibraryController extends Controller
             $this->syncLibraryMealIngredientsPhotoAndAggregates($request, $meal, $data);
         });
 
+        $this->syncMealMasterCsvFromDatabase();
+
         return redirect()
             ->route('admin.meal-library')
             ->with('success', __('Meal updated successfully.'));
+    }
+
+    private function syncMealMasterCsvFromDatabase(): void
+    {
+        $this->menuDevelopmentCsvExport->exportMealsToPath(MenuDevelopmentCsv::mealsPath());
     }
 
     /**
@@ -723,6 +738,16 @@ class MealLibraryController extends Controller
     /**
      * @return array<string, mixed>
      */
+    /**
+     * Meal library row + consultation deck card shape (includes `detailView` for modals).
+     *
+     * @return array<string, mixed>
+     */
+    public function presentMealRowForUi(Meal $meal): array
+    {
+        return $this->toMealRow($meal);
+    }
+
     private function toMealRow(Meal $meal): array
     {
         $meal->loadMissing('ingredients');

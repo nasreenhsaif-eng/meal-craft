@@ -59,6 +59,7 @@ function MacroGridSection({ macros, variant }) {
  * @param {boolean} [props.ribbon] Desktop Netflix ribbon: fill slide cell width.
  * @param {string} [props.className] Extra classes on the outer article.
  * @param {boolean} [props.vibrantCraftWhenAtLimit] Deck only: when selection slots are full, keep cards/buttons full-opacity (no greyed deck).
+ * @param {boolean} [props.hideCraftButton] Read-only decks: hide CRAFT THIS MEAL (detail view only).
  */
 export default function MealCardClientViewNano({
     title,
@@ -75,6 +76,7 @@ export default function MealCardClientViewNano({
     imageLoading = 'lazy',
     className = '',
     vibrantCraftWhenAtLimit = false,
+    hideCraftButton = false,
 }) {
     const [mediaFailed, setMediaFailed] = useState(false);
     const showImage = Boolean(imageUrl) && !mediaFailed;
@@ -195,22 +197,24 @@ export default function MealCardClientViewNano({
                             VIEW DETAILS
                         </button>
 
-                        <div className="mt-1 w-full shrink-0 pb-0.5">
-                            <Button
-                                type="button"
-                                variant={selected ? 'primary' : 'secondary'}
-                                disabled={disabled}
-                                label={selected ? 'SELECTED' : 'CRAFT THIS MEAL'}
-                                aria-label={craftPrimaryAria}
-                                className={`w-full justify-center rounded-[12px] ${btnRow} ${
-                                    disabled && vibrantCraftWhenAtLimit ? '!cursor-default !opacity-100' : ''
-                                }`.trim()}
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    onToggleSelected?.();
-                                }}
-                            />
-                        </div>
+                        {hideCraftButton ? null : (
+                            <div className="mt-1 w-full shrink-0 pb-0.5">
+                                <Button
+                                    type="button"
+                                    variant={selected ? 'primary' : 'secondary'}
+                                    disabled={disabled}
+                                    label={selected ? 'SELECTED' : 'CRAFT THIS MEAL'}
+                                    aria-label={craftPrimaryAria}
+                                    className={`w-full justify-center rounded-[12px] ${btnRow} ${
+                                        disabled && vibrantCraftWhenAtLimit ? '!cursor-default !opacity-100' : ''
+                                    }`.trim()}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onToggleSelected?.();
+                                    }}
+                                />
+                            </div>
+                        )}
                     </div>
                 </div>
             ) : (
@@ -279,19 +283,21 @@ export default function MealCardClientViewNano({
                             VIEW DETAILS
                         </button>
 
-                        <div className="absolute bottom-2 left-2 right-2">
-                            <Button
-                                type="button"
-                                variant={selected ? 'primary' : 'secondary'}
-                                disabled={disabled}
-                                label={selected ? 'SELECTED' : 'CRAFT THIS MEAL'}
-                                className={`w-full justify-center rounded-[12px] ${btnRow}`}
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    onToggleSelected?.();
-                                }}
-                            />
-                        </div>
+                        {hideCraftButton ? null : (
+                            <div className="absolute bottom-2 left-2 right-2">
+                                <Button
+                                    type="button"
+                                    variant={selected ? 'primary' : 'secondary'}
+                                    disabled={disabled}
+                                    label={selected ? 'SELECTED' : 'CRAFT THIS MEAL'}
+                                    className={`w-full justify-center rounded-[12px] ${btnRow}`}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onToggleSelected?.();
+                                    }}
+                                />
+                            </div>
+                        )}
                     </div>
                 </div>
             )}

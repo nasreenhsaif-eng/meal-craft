@@ -63,5 +63,7 @@ test('meal plan library inertia page exposes meal search url', function () {
         ->assertInertia(fn ($page) => $page
             ->component('Admin/MealPlanLibrary')
             ->where('mealSearchUrl', route('admin.meal-plan-library.meals.search'))
-            ->has('schedulerMeals'));
+            ->where('mealPlanStoreUrl', route('admin.meal-plan-library.store'))
+            ->has('schedulerMeals')
+            ->has('mealPlans'));
 });

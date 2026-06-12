@@ -35,6 +35,13 @@ const SHELL_BY_COMPONENT = {
         hidePageTitle: false,
         contentWrapperClassName: WIDE,
     },
+    'Admin/MealPlanDetail': {
+        pageTitle: 'Meal Plan Details',
+        activePath: ADMIN_NAV_PATHS.mealPlans,
+        showSearch: false,
+        hidePageTitle: true,
+        contentWrapperClassName: WIDE,
+    },
     'Admin/CustomerProfiles': {
         pageTitle: 'Customer Profiles',
         activePath: ADMIN_NAV_PATHS.customerProfiles,

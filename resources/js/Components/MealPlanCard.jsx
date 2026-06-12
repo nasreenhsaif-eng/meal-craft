@@ -1,7 +1,7 @@
 import MealCraftLogo from './Atoms/Logo/MealCraftLogo.jsx';
 import MacroGrid from './MacroGrid.jsx';
 import Button from './Atoms/Button.jsx';
-import ProtocolTags from './MealSystem/ProtocolTags.jsx';
+import { ProtocolTag } from './MealSystem/ProtocolTags.jsx';
 import { useMemo, useState } from 'react';
 
 /**
@@ -39,6 +39,8 @@ export default function MealPlanCard({
         };
     }, [dailyMacros]);
 
+    const heroTag = Array.isArray(tags) && tags.length > 0 ? String(tags[0]) : null;
+
     return (
         <article
             className={[
@@ -64,30 +66,34 @@ export default function MealPlanCard({
                     )}
                 </div>
 
-                <div className="absolute right-4 top-4">
-                    <span className="inline-flex items-center rounded-full border border-white/40 bg-white/80 px-3 py-1 font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#262A22] backdrop-blur">
-                        Plan
-                    </span>
-                </div>
+                {heroTag ? (
+                    <div className="absolute right-3 top-3 z-10">
+                        <ProtocolTag label={heroTag} className="bg-white/90 shadow-sm backdrop-blur-sm" />
+                    </div>
+                ) : null}
             </div>
 
-            <div className="px-5 pb-6 pt-4">
-                <header className="space-y-3">
+            <div className="min-w-0 px-4 pb-6 pt-4 sm:px-5">
+                <header className="min-w-0 space-y-3">
                     <h3 className="font-montserrat text-[16px] font-bold tracking-tight text-[#262A22]">{title}</h3>
-                    <div className="rounded-[12px] border border-gray-100 bg-[#F8F9F6] p-4">
+                    <div className="min-w-0 rounded-[12px] border border-gray-100 bg-[#F8F9F6] px-2 py-3 sm:px-2.5">
                         <p className="mb-2 font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#555555]">
                             Daily average macros
                         </p>
-                        <MacroGrid
-                            calories={macroShape.calories}
-                            protein={macroShape.protein}
-                            carbs={macroShape.carbs}
-                            fat={macroShape.fat}
-                        />
+                        <div className="w-full min-w-0">
+                            <MacroGrid
+                                calories={macroShape.calories}
+                                protein={macroShape.protein}
+                                carbs={macroShape.carbs}
+                                fat={macroShape.fat}
+                                compact
+                                fluid
+                                abbreviated={false}
+                                className="!w-full !max-w-full min-w-0"
+                            />
+                        </div>
                     </div>
                 </header>
-
-                <ProtocolTags tags={tags} className="mt-4" />
 
                 <div className="pt-4">
                     <Button

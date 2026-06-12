@@ -263,6 +263,42 @@ test('meal library update strips unknown diet tags before validation', function 
     expect($meal->diet_tags)->toBe(['Vegan']);
 });
 
+test('meal library update persists meal type category changes and syncs meals csv master', function () {
+    $user = User::factory()->create();
+
+    $meal = Meal::query()->create([
+        'name' => 'Category Change Bowl',
+        'category' => RecipeCategory::Meal,
+        'meal_type' => MealType::fromRecipeCategory(RecipeCategory::Meal),
+        'total_calories' => 200,
+        'total_protein' => 10,
+        'total_carbs' => 20,
+        'total_fat' => 5,
+        'nutrition_aggregates_synced' => false,
+    ]);
+
+    $this->actingAs($user)
+        ->post(route('admin.meal-library.update', $meal), [
+            'name' => 'Category Change Bowl',
+            'total_calories' => 175,
+            'total_protein' => 8,
+            'total_carbs' => 18,
+            'total_fat' => 4,
+            'category' => 'Dessert',
+        ])
+        ->assertRedirect(route('admin.meal-library'))
+        ->assertSessionHas('success');
+
+    $meal->refresh();
+
+    expect($meal->category)->toBe(RecipeCategory::Dessert)
+        ->and($meal->meal_type)->toBe(MealType::Dessert);
+
+    $csv = file_get_contents(database_path('data/menu/meals.csv')) ?: '';
+    expect($csv)->toContain('Category Change Bowl')
+        ->and($csv)->toContain(',Dessert,');
+});
+
 test('meal library store accepts duplicate submission context flash message', function () {
     $user = User::factory()->create();
 
