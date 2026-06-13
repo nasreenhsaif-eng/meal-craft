@@ -81,6 +81,14 @@ function getDesktopTrackScrollExtent(track) {
 const DESKTOP_CARD_SHELL =
     'flex min-h-[232px] w-[270px] shrink-0 flex-col items-stretch sm:min-h-[248px] sm:w-[286px] lg:min-h-[264px] lg:w-[302px] transform-gpu';
 
+/** Static row (1–2 items): side-by-side, centered — no carousel chrome */
+const STATIC_CARD_SHELL_SINGLE =
+    'flex min-h-[232px] w-full max-w-[302px] shrink-0 flex-col items-stretch sm:min-h-[248px] sm:w-[286px] lg:min-h-[264px] lg:w-[302px] transform-gpu';
+
+/** Two-up row: each card takes half the row (minus gap) so they stay horizontal on mobile */
+const STATIC_CARD_SHELL_PAIR =
+    'flex min-h-[232px] w-[calc((100%-1rem)/2)] min-w-0 max-w-[302px] shrink-0 flex-col items-stretch sm:min-h-[248px] sm:w-[calc((100%-1.5rem)/2)] lg:min-h-[264px] lg:max-w-[302px] transform-gpu';
+
 const DESKTOP_MEDIA = '(min-width: 768px)';
 
 function useIsDesktopLayout() {
@@ -593,6 +601,36 @@ export default function StackedDeckCarousel({ title: _title, items: itemsProp, m
         isDesktopLayout,
         itemCount,
     ]);
+
+    const useCarousel = itemCount > 2;
+
+    if (!useCarousel && itemCount > 0) {
+        const isPair = itemCount === 2;
+
+        return (
+            <div className="relative w-full">
+                <div
+                    className={[
+                        'mx-auto flex w-full flex-row flex-nowrap items-stretch justify-center py-4',
+                        isPair ? 'max-w-[min(100%,calc(302px*2+1.5rem))] gap-4 px-3 sm:gap-6 sm:px-6' : 'max-w-[302px] px-4',
+                    ].join(' ')}
+                >
+                    {items.map((item, idx) => (
+                        <div
+                            key={`static-${getKey(item, idx)}`}
+                            className={isPair ? STATIC_CARD_SHELL_PAIR : STATIC_CARD_SHELL_SINGLE}
+                        >
+                            {renderMealCard(item, idx, {
+                                isFront: true,
+                                stackPos: null,
+                                deckLayout: 'ribbon',
+                            })}
+                        </div>
+                    ))}
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="group relative w-full md:px-16 lg:px-20">

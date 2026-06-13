@@ -164,6 +164,7 @@ class MealPlanLibraryController extends Controller
             ],
             'days' => array_values($daysByNumber),
             'libraryUrl' => route('admin.meal-plan-library'),
+            'ingredientProfiles' => $this->mealLibrary->verifiedIngredientProfilesForUi(),
         ]);
     }
 

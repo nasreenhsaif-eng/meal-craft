@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import MacroGrid from './MacroGrid.jsx';
 import Button from './Atoms/Button.jsx';
+import RoundIconButton from './Atoms/Icons/RoundIconButton.jsx';
+import { IconEdit } from './Atoms/SvgIcons.jsx';
 import MealCraftLogo from './Atoms/Logo/MealCraftLogo.jsx';
 
 /**
@@ -50,9 +52,11 @@ function MacroGridSection({ macros, variant }) {
  * @param {string} [props.imageAlt]
  * @param {{ calories: string|number, protein: string|number, carbs: string|number, fat: string|number }} [props.macros] Between title and VIEW DETAILS (compact grid; deck uses fluid width).
  * @param {boolean} [props.selected]
+ * @param {boolean} [props.assigned] Assigned-to-plan checkmark without selection chrome.
  * @param {boolean} [props.disabled]
  * @param {() => void} [props.onToggleSelected]
  * @param {() => void} [props.onViewDetails]
+ * @param {() => void} [props.onEdit] Admin/plan editor — pencil overlay (matches Meal Library card).
  * @param {boolean} [props.deck] Smaller sequential layout for stacked deck carousels.
  * @param {'front'|'back'|undefined} [props.deckStackRole] Depth cue for carousel: front gets a subtle left-facing stack shadow.
  * @param {'eager'|'lazy'} [props.imageLoading] Hero/front slides should use eager; stack backs use lazy.
@@ -67,9 +71,11 @@ export default function MealCardClientViewNano({
     imageAlt = '',
     macros,
     selected = false,
+    assigned = false,
     disabled = false,
     onToggleSelected,
     onViewDetails,
+    onEdit,
     deck = false,
     deckStackRole,
     ribbon = false,
@@ -80,6 +86,8 @@ export default function MealCardClientViewNano({
 }) {
     const [mediaFailed, setMediaFailed] = useState(false);
     const showImage = Boolean(imageUrl) && !mediaFailed;
+
+    const showCheckmark = assigned || selected;
 
     /** Crafted-for-YOU (deck): 2px linear gradient rim only — no outer drop shadow (integrated radiant border). */
     const radiantBorderClass = selected
@@ -136,16 +144,28 @@ export default function MealCardClientViewNano({
                     className={`relative flex w-full min-h-0 flex-1 flex-col overflow-hidden bg-white ${innerR} ${cardShadowClass}`.trim()}
                     style={deckSelectedInnerGlow}
                 >
-                    {selected ? (
-                        <div className="pointer-events-none absolute right-2.5 top-2.5 z-30 rounded-full bg-gradient-to-br from-[#B8D49F] to-[#6E8C47] p-[2px]">
-                            <div className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[#5A6B44] text-[10px] font-bold text-white shadow-sm">
-                                ✓
-                            </div>
-                        </div>
-                    ) : null}
-
                     {/* Landscape-forward hero — shorter than 2:3 portrait so the deck feels wider / less tall. */}
                     <div className="relative aspect-[4/3] w-full shrink-0 overflow-hidden bg-[#F8F9F6]">
+                        {onEdit ? (
+                            <div className="absolute left-3 top-3 z-30">
+                                <RoundIconButton
+                                    icon={<IconEdit />}
+                                    ariaLabel={`Edit ${title}`}
+                                    intent="default"
+                                    onClick={() => {
+                                        onEdit();
+                                    }}
+                                    className="!h-9 !w-9 !min-h-0 !rounded-lg !border-0 !bg-transparent !shadow-none hover:!border-0 hover:!bg-black/[0.06] active:!scale-[95%]"
+                                />
+                            </div>
+                        ) : null}
+                        {showCheckmark ? (
+                            <div className="pointer-events-none absolute right-2.5 top-2.5 z-30 rounded-full bg-gradient-to-br from-[#B8D49F] to-[#6E8C47] p-[2px]">
+                                <div className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[#5A6B44] text-[10px] font-bold text-white shadow-sm">
+                                    ✓
+                                </div>
+                            </div>
+                        ) : null}
                         {showImage ? (
                             <img
                                 src={imageUrl}

@@ -93,6 +93,292 @@ export const FULL_CRAFT_CATEGORY_SECTIONS = Object.freeze([
     },
 ]);
 
+/** @typedef {{ calories: number; protein: number; carbs: number; fat: number }} MacroTotals */
+
+/** Category rows for plan / admin day macro breakdown (soup omitted when empty). */
+export const PLAN_MACRO_CATEGORY_ROWS = Object.freeze([
+    { key: 'breakfasts', label: 'Breakfast', optional: false },
+    { key: 'meals', label: 'Meals chosen', optional: false },
+    { key: 'sideSalads', label: 'Side salad', optional: false },
+    { key: 'desserts', label: 'Desserts', optional: false },
+    { key: 'soup', label: 'Soup', optional: true },
+]);
+
+/**
+ * Sum deck card macros for assigned / selected meals in one category.
+ *
+ * @param {ConsultationMeal[]} meals
+ * @returns {MacroTotals}
+ */
+export function sumMealCardMacros(meals) {
+    return (meals ?? []).reduce(
+        (acc, meal) => {
+            const macros = meal?.macros ?? {};
+
+            return {
+                calories: acc.calories + Number(macros.calories ?? 0),
+                protein: acc.protein + Number(macros.protein ?? 0),
+                carbs: acc.carbs + Number(macros.carbs ?? 0),
+                fat: acc.fat + Number(macros.fat ?? 0),
+            };
+        },
+        { calories: 0, protein: 0, carbs: 0, fat: 0 },
+    );
+}
+
+/**
+ * Build per-category macro segments for a day's assigned meals.
+ *
+ * @param {Partial<Record<SelectionCategoryKey, ConsultationMeal[]>> | null | undefined} categories
+ * @returns {Array<{ key: SelectionCategoryKey; label: string; optional: boolean; itemCount: number; totals: MacroTotals }>}
+ */
+export function buildCategoryMacroBreakdown(categories) {
+    /** @type {Array<{ key: SelectionCategoryKey; label: string; optional: boolean; itemCount: number; totals: MacroTotals }>} */
+    const rows = [];
+
+    for (const row of PLAN_MACRO_CATEGORY_ROWS) {
+        const items = categories?.[row.key] ?? [];
+        if (row.optional && items.length === 0) {
+            continue;
+        }
+
+        rows.push({
+            key: row.key,
+            label: row.label,
+            optional: row.optional,
+            itemCount: items.length,
+            totals: sumMealCardMacros(items),
+        });
+    }
+
+    return rows;
+}
+
+/**
+ * @param {Partial<Record<SelectionCategoryKey, ConsultationMeal[]>> | null | undefined} categories
+ */
+export function hasSoupChoiceForDay(categories) {
+    return (categories?.soup ?? []).length > 0;
+}
+
+/**
+ * Sum macros for a day's categories, omitting soup when none assigned.
+ *
+ * @param {Partial<Record<SelectionCategoryKey, ConsultationMeal[]>> | null | undefined} categories
+ * @returns {MacroTotals}
+ */
+export function sumActiveDayMacros(categories) {
+    if (!categories) {
+        return { calories: 0, protein: 0, carbs: 0, fat: 0 };
+    }
+
+    const keys = /** @type {SelectionCategoryKey[]} */ ([
+        'breakfasts',
+        'meals',
+        'sideSalads',
+        'desserts',
+        ...(hasSoupChoiceForDay(categories) ? ['soup'] : []),
+    ]);
+
+    return sumMealCardMacros(keys.flatMap((key) => categories[key] ?? []));
+}
+
+const PLAN_MACRO_CELL_META = Object.freeze([
+    { key: 'calories', label: 'Calories', shortLabel: 'Cal', color: '#5A6B44' },
+    { key: 'protein', label: 'Protein', shortLabel: 'Pro', color: '#916A00' },
+    { key: 'carbs', label: 'Carbs', shortLabel: 'Carb', color: '#8F55A8' },
+    { key: 'fat', label: 'Fat', shortLabel: 'Fat', color: '#2F4C9B' },
+]);
+
+const PLAN_MACRO_TABLE_GRID =
+    'grid grid-cols-[5.5rem_repeat(4,minmax(0,1fr))] items-center gap-x-2 gap-y-2 sm:grid-cols-[6rem_repeat(4,minmax(0,1fr))] sm:gap-x-3';
+
+/** @param {'calories' | 'protein' | 'carbs' | 'fat'} key @param {number | string | null | undefined} raw */
+function formatPlanMacroValue(key, raw) {
+    const n = Number(raw ?? 0);
+    if (key === 'calories') {
+        return String(Math.round(n));
+    }
+    if (!Number.isFinite(n)) {
+        return '0';
+    }
+    return Number.isInteger(n) ? String(n) : String(Number.parseFloat(n.toFixed(1)));
+}
+
+/**
+ * @param {object} props
+ * @param {string} [props.planCategoryLabel]
+ */
+function PlanMacroTableHeader({ planCategoryLabel = '' }) {
+    return (
+        <>
+            {planCategoryLabel ? (
+                <span className="justify-self-start rounded-full bg-[#E8EFE0] px-2.5 py-1 font-montserrat text-[10px] font-semibold text-[#5A6B44] sm:px-3 sm:text-xs">
+                    {planCategoryLabel}
+                </span>
+            ) : (
+                <div aria-hidden="true" />
+            )}
+            {PLAN_MACRO_CELL_META.map((cell) => (
+                <p
+                    key={cell.key}
+                    className="truncate text-center font-montserrat text-[9px] font-semibold uppercase tracking-[0.12em] sm:text-[10px]"
+                    style={{ color: cell.color }}
+                >
+                    {cell.label}
+                </p>
+            ))}
+        </>
+    );
+}
+
+/**
+ * Four aligned macro value cells — no per-row labels (master header supplies column names).
+ *
+ * @param {object} props
+ * @param {MacroTotals} props.macros
+ * @param {string} [props.cellClassName]
+ * @param {string} [props.lastCellClassName]
+ */
+function PlanMacroValueCells({ macros, cellClassName = '', lastCellClassName = '' }) {
+    return (
+        <>
+            {PLAN_MACRO_CELL_META.map((cell, index) => (
+                <p
+                    key={cell.key}
+                    className={[
+                        'truncate text-center text-sm font-bold tabular-nums leading-none sm:text-[15px]',
+                        cellClassName,
+                        index === PLAN_MACRO_CELL_META.length - 1 ? lastCellClassName : '',
+                    ]
+                        .join(' ')
+                        .trim()}
+                    style={{ color: cell.color }}
+                >
+                    {formatPlanMacroValue(cell.key, macros?.[cell.key])}
+                </p>
+            ))}
+        </>
+    );
+}
+
+/**
+ * Compact inline macro row — fixed 4-column grid (no fluid shrink overlap).
+ *
+ * @param {object} props
+ * @param {MacroTotals} props.macros
+ * @param {string} [props.ariaLabel]
+ */
+export function PlanMacroSummaryRow({ macros, ariaLabel = 'Macros' }) {
+    return (
+        <div className="grid w-full grid-cols-4 gap-2 sm:gap-3" role="group" aria-label={ariaLabel}>
+            {PLAN_MACRO_CELL_META.map((cell) => (
+                <div key={cell.key} className="min-w-0 text-center">
+                    <p
+                        className="truncate text-sm font-bold tabular-nums leading-none sm:text-[15px]"
+                        style={{ color: cell.color }}
+                    >
+                        {formatPlanMacroValue(cell.key, macros?.[cell.key])}
+                    </p>
+                </div>
+            ))}
+        </div>
+    );
+}
+
+/**
+ * Stacked category macro rows for meal plan detail / admin day views.
+ *
+ * @param {object} props
+ * @param {Partial<Record<SelectionCategoryKey, ConsultationMeal[]>>} props.categories
+ * @param {string} [props.dayLabel]
+ */
+export function PlanDayMacroBreakdown({ categories, dayLabel }) {
+    const rows = useMemo(() => buildCategoryMacroBreakdown(categories), [categories]);
+
+    if (rows.length === 0) {
+        return null;
+    }
+
+    return (
+        <>
+            <p className="col-span-full mt-4 border-t border-gray-100 pt-3 font-montserrat text-[11px] font-bold uppercase tracking-[0.12em] text-[#5A6B44]">
+                {dayLabel ? `${dayLabel} breakdown` : 'Choice breakdown'}
+            </p>
+            {rows.map((row) => (
+                <div key={row.key} className="contents" role="row">
+                    <p
+                        className="rounded-l-[10px] bg-[#F8F9F6] py-2 pl-2 font-montserrat text-[11px] font-bold leading-tight text-[#262A22] sm:pl-3 sm:text-xs"
+                        role="rowheader"
+                    >
+                        {row.label}
+                    </p>
+                    <PlanMacroValueCells
+                        macros={row.totals}
+                        cellClassName="bg-[#F8F9F6] py-2"
+                        lastCellClassName="rounded-r-[10px]"
+                    />
+                </div>
+            ))}
+        </>
+    );
+}
+
+/**
+ * Optional soup opt-in control (Full Craft / meal plan detail).
+ *
+ * @param {object} props
+ * @param {boolean} props.checked
+ * @param {(next: boolean) => void} props.onChange
+ * @param {string} [props.header]
+ */
+export function SoupOfTheDayOptIn({ checked, onChange, header = 'Soup of the Day' }) {
+    return (
+        <div className="relative isolate w-full overflow-x-clip overflow-y-visible py-0.5">
+            <p className="px-4 font-montserrat text-[15px] font-bold leading-snug tracking-tight text-[#262A22] sm:text-base md:px-0">
+                {header}
+            </p>
+            <button
+                type="button"
+                aria-pressed={checked}
+                className="mt-2 flex w-full max-w-full items-center justify-start gap-3 px-4 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5A6B44]/35 focus-visible:ring-offset-2 sm:mt-2.5 md:px-0"
+                onClick={() => onChange(!checked)}
+            >
+                <SquareCheckbox checked={checked} presentational className="shrink-0" />
+                <span className="min-w-0 truncate whitespace-nowrap font-body text-xs font-normal leading-none tracking-tight text-[#262A22] sm:text-sm">
+                    I would like Soup of the Day (Optional)
+                </span>
+            </button>
+        </div>
+    );
+}
+
+/**
+ * Full-width macro panel for meal plan detail pages (day total + category breakdown).
+ *
+ * @param {object} props
+ * @param {MacroTotals} props.activeDayTotals
+ * @param {Partial<Record<SelectionCategoryKey, ConsultationMeal[]>>} [props.categories]
+ * @param {string} [props.dayLabel]
+ * @param {string} [props.planCategoryLabel]
+ */
+export function PlanMacroSummaryPanel({ activeDayTotals, categories, dayLabel = 'Day', planCategoryLabel = '' }) {
+    return (
+        <div className="w-full rounded-[12px] border border-gray-200 bg-white px-4 py-4 sm:px-5">
+            <div className={PLAN_MACRO_TABLE_GRID} role="table" aria-label={`${dayLabel} macro summary`}>
+                <PlanMacroTableHeader planCategoryLabel={planCategoryLabel} />
+
+                <p className="font-montserrat text-[11px] font-bold uppercase tracking-[0.1em] text-[#5A6B44]">
+                    {dayLabel} total
+                </p>
+                <PlanMacroValueCells macros={activeDayTotals} />
+
+                {categories ? <PlanDayMacroBreakdown categories={categories} dayLabel={dayLabel} /> : null}
+            </div>
+        </div>
+    );
+}
+
 /**
  * Full Craft: required slots satisfied (breakfast ×1, meals ×2, side ×1, dessert ×1). Soup optional.
  *
@@ -140,6 +426,7 @@ export function getIncompleteFullCraftCategoryKeys(categorySelections) {
  * @param {boolean} [props.validationFlash]
  * @param {boolean} [props.readOnly]
  * @param {(meal: ConsultationMeal) => void} [props.onViewDetails]
+ * @param {(meal: ConsultationMeal) => void} [props.onEditMeal]
  */
 export function MealSlotCarousel({
     title,
@@ -154,12 +441,23 @@ export function MealSlotCarousel({
     validationFlash = false,
     readOnly = false,
     onViewDetails,
+    onEditMeal,
 }) {
-    const effectiveSelectedIds = readOnly ? cards.map((card) => card.id) : selectedIds;
-    const effectiveMaxSelected = readOnly ? Math.max(cards.length, 1) : maxSelected;
-    const selectedSet = new Set(effectiveSelectedIds);
-    const atLimit = effectiveSelectedIds.length >= effectiveMaxSelected;
+    const selectedSet = new Set(selectedIds);
+    const atLimit = selectedIds.length >= maxSelected;
     const stackZ = 35 + sectionStackOrder * 6;
+    const showSwipeHint = cards.length > 2;
+
+    const deckSubheader = (() => {
+        if (readOnly) {
+            return showSwipeHint ? `${cards.length} assigned • Swipe the deck to browse` : `${cards.length} assigned`;
+        }
+        const selectionPart = maxSelected === 1 ? 'Select 1' : `Select exactly ${maxSelected}`;
+        const countPart = `${selectedIds.length}/${maxSelected} selected`;
+        return showSwipeHint
+            ? `${selectionPart} • ${countPart} • Swipe the deck to browse`
+            : `${selectionPart} • ${countPart}`;
+    })();
 
     return (
         <div
@@ -178,9 +476,7 @@ export function MealSlotCarousel({
                         {title}
                     </p>
                     <p className="mt-0.5 font-body text-xs leading-snug text-[#555555] sm:mt-1 sm:text-sm">
-                        {readOnly
-                            ? `${cards.length} assigned • Swipe the deck to browse`
-                            : `${effectiveMaxSelected === 1 ? 'Select 1' : `Select exactly ${effectiveMaxSelected}`} • ${effectiveSelectedIds.length}/${effectiveMaxSelected} selected • Swipe the deck to browse`}
+                        {deckSubheader}
                     </p>
                 </div>
             ) : null}
@@ -204,7 +500,7 @@ export function MealSlotCarousel({
                                 renderCard={(m, _idx, { isFront, deckLayout }) => {
                                     const meal = /** @type {ConsultationMeal} */ (m);
                                     const isSelected = selectedSet.has(meal.id);
-                                    const isDisabled = !isSelected && atLimit;
+                                    const isDisabled = !readOnly && !isSelected && atLimit;
 
                                     return (
                                         <MealCardClientViewNano
@@ -214,13 +510,15 @@ export function MealSlotCarousel({
                                             title={meal.title ?? ''}
                                             imageUrl={meal.imageUrl}
                                             macros={meal.macros}
-                                            selected={isSelected}
-                                            disabled={readOnly ? false : isDisabled}
+                                            selected={!readOnly && isSelected}
+                                            assigned={readOnly && isSelected}
+                                            disabled={isDisabled}
                                             hideCraftButton={readOnly}
                                             imageLoading={isFront ? 'eager' : 'lazy'}
                                             imageAlt={meal.title ?? ''}
                                             onToggleSelected={readOnly ? undefined : () => onSelect(meal)}
                                             onViewDetails={() => onViewDetails?.(meal)}
+                                            onEdit={onEditMeal ? () => onEditMeal(meal) : undefined}
                                             vibrantCraftWhenAtLimit={!readOnly && isDisabled}
                                         />
                                     );
@@ -361,26 +659,16 @@ export default function ChooseYourMeals({
                 className="relative isolate w-full overflow-x-clip overflow-y-visible py-0.5"
                 style={{ zIndex: 35 + FULL_CRAFT_CATEGORY_SECTIONS.length * 6 }}
             >
-                <p className="px-4 font-montserrat text-[15px] font-bold leading-snug tracking-tight text-[#262A22] sm:text-base md:px-0">
-                    {soupSectionDef.header}
-                </p>
-                <button
-                    type="button"
-                    aria-pressed={soupOptIn}
-                    className="mt-2 flex w-full max-w-full items-center justify-start gap-3 px-4 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5A6B44]/35 focus-visible:ring-offset-2 sm:mt-2.5 md:px-0"
-                    onClick={() => {
-                        const next = !soupOptIn;
+                <SoupOfTheDayOptIn
+                    checked={soupOptIn}
+                    header={soupSectionDef.header}
+                    onChange={(next) => {
                         setSoupOptIn(next);
                         if (!next) {
                             onSoupOptInChange?.(false);
                         }
                     }}
-                >
-                    <SquareCheckbox checked={soupOptIn} presentational className="shrink-0" />
-                    <span className="min-w-0 truncate whitespace-nowrap font-body text-xs font-normal leading-none tracking-tight text-[#262A22] sm:text-sm">
-                        I would like Soup of the Day (Optional)
-                    </span>
-                </button>
+                />
 
                 <AnimatePresence initial={false}>
                     {soupOptIn ? (

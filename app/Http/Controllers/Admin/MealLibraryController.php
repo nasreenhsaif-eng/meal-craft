@@ -748,6 +748,23 @@ class MealLibraryController extends Controller
         return $this->toMealRow($meal);
     }
 
+    /**
+     * Verified ingredient profiles for meal editor comboboxes and live nutrition rollups.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function verifiedIngredientProfilesForUi(): array
+    {
+        return Ingredient::query()
+            ->where('is_verified', true)
+            ->with(['components'])
+            ->orderBy('name')
+            ->get()
+            ->map(fn (Ingredient $ingredient): array => $this->toIngredientProfile($ingredient))
+            ->values()
+            ->all();
+    }
+
     private function toMealRow(Meal $meal): array
     {
         $meal->loadMissing('ingredients');

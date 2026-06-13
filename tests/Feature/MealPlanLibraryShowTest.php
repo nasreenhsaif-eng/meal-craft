@@ -74,5 +74,6 @@ test('authenticated users can view meal plan detail with day categories', functi
             ->where('days.0.categories.breakfasts.0.title', 'Detail Breakfast')
             ->where('days.0.categories.meals.0.title', 'Detail Main')
             ->has('days.0.categories.breakfasts.0.detailView')
+            ->has('ingredientProfiles')
             ->has('libraryUrl'));
 });
