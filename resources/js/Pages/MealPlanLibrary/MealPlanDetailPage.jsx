@@ -255,28 +255,30 @@ export default function MealPlanDetailPage({
                     />
                 </div>
 
-                <div className="sticky top-0 z-30 -mx-4 border-b border-gray-200 bg-[#F8F9F6]/95 px-4 py-3 backdrop-blur-sm sm:-mx-6 sm:px-6 lg:mx-0 lg:rounded-[12px] lg:border lg:px-4">
-                    <div
-                        className="flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-                        role="tablist"
-                        aria-label="Meal plan days"
-                    >
-                        {planDays.map((day) => {
-                            const selected = day.dayNumber === activeDay;
-                            return (
-                                <PillButton
-                                    key={day.dayNumber}
-                                    type="button"
-                                    role="tab"
-                                    aria-selected={selected}
-                                    label={day.label}
-                                    variant={selected ? 'primary' : 'outline'}
-                                    size="sm"
-                                    onClick={() => setActiveDay(day.dayNumber)}
-                                    className={selected ? 'shrink-0' : 'shrink-0 ring-1 ring-[#E5E7EB]'}
-                                />
-                            );
-                        })}
+                <div className="sticky top-0 z-30 overflow-visible rounded-[12px] border border-gray-200 bg-[#F8F9F6]/95 p-3 backdrop-blur-sm sm:p-4">
+                    <div className="overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                        <div
+                            className="flex w-max min-w-full items-center gap-2 px-1 py-2"
+                            role="tablist"
+                            aria-label="Meal plan days"
+                        >
+                            {planDays.map((day) => {
+                                const selected = day.dayNumber === activeDay;
+                                return (
+                                    <PillButton
+                                        key={day.dayNumber}
+                                        type="button"
+                                        role="tab"
+                                        aria-selected={selected}
+                                        label={day.label}
+                                        variant={selected ? 'primary' : 'tab'}
+                                        size="sm"
+                                        onClick={() => setActiveDay(day.dayNumber)}
+                                        className="shrink-0"
+                                    />
+                                );
+                            })}
+                        </div>
                     </div>
                 </div>
 

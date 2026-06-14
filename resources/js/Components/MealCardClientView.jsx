@@ -2,6 +2,7 @@ import { useState } from 'react';
 import MacroGrid from './MacroGrid.jsx';
 import Button from './Atoms/Button.jsx';
 import MealCraftLogo from './Atoms/Logo/MealCraftLogo.jsx';
+import SelectionCheckBadge from './Atoms/Icons/SelectionCheckBadge.jsx';
 
 /**
  * MealCardClientView — compact fixed-size card for Storybook / standalone previews.
@@ -37,8 +38,7 @@ export default function MealCardClientView({
     const [mediaFailed, setMediaFailed] = useState(false);
     const showImage = Boolean(imageUrl) && !mediaFailed;
 
-    const radiantBorderClass = selected ? 'bg-gradient-to-br from-[#B8D49F] to-[#6E8C47] p-px' : 'bg-transparent p-0';
-    const outerGlow = selected ? { filter: 'drop-shadow(0 0 4px rgba(184, 212, 159, 0.85))' } : undefined;
+    const selectedShellClass = selected ? 'ring-2 ring-[#5A6B44]/35 ring-offset-0' : '';
 
     const svgDeckShadow = selected
         ? undefined
@@ -52,21 +52,15 @@ export default function MealCardClientView({
 
     return (
         <article
-            className={`${sizeShell} flex min-h-0 flex-col ${radiantBorderClass} rounded-[10px] font-montserrat ${className}`.trim()}
-            style={outerGlow}
+            className={`${sizeShell} flex min-h-0 flex-col ${selectedShellClass} rounded-[10px] font-montserrat ${className}`.trim()}
         >
             <div
                 className="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-[8px] border border-black/5 bg-white"
                 style={svgDeckShadow}
             >
                 {selected ? (
-                    <div
-                        className="pointer-events-none absolute right-3 top-3 z-30 rounded-full bg-gradient-to-br from-[#B8D49F] to-[#6E8C47] p-px"
-                        style={{ filter: 'drop-shadow(0 0 4px rgba(184, 212, 159, 0.9))' }}
-                    >
-                        <div className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#5A6B44] text-white shadow-sm">
-                            ✓
-                        </div>
+                    <div className="pointer-events-none absolute right-3 top-3 z-30">
+                        <SelectionCheckBadge size="lg" />
                     </div>
                 ) : null}
 

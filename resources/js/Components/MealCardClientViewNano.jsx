@@ -4,6 +4,7 @@ import Button from './Atoms/Button.jsx';
 import RoundIconButton from './Atoms/Icons/RoundIconButton.jsx';
 import { IconEdit } from './Atoms/SvgIcons.jsx';
 import MealCraftLogo from './Atoms/Logo/MealCraftLogo.jsx';
+import SelectionCheckBadge from './Atoms/Icons/SelectionCheckBadge.jsx';
 
 /**
  * Single {@link MacroGrid} usage — deck vs fixed preview only change wrappers (no duplicate grid markup).
@@ -89,14 +90,8 @@ export default function MealCardClientViewNano({
 
     const showCheckmark = assigned || selected;
 
-    /** Crafted-for-YOU (deck): 2px linear gradient rim only — no outer drop shadow (integrated radiant border). */
-    const radiantBorderClass = selected
-        ? deck
-            ? 'bg-gradient-to-br from-[#B8D49F] to-[#5A6B44] p-[2px]'
-            : 'bg-gradient-to-br from-[#B8D49F] to-[#6E8C47] p-[2px]'
-        : 'bg-transparent p-0';
-    const outerGlow = selected && !deck ? { filter: 'drop-shadow(0 0 4px rgba(184, 212, 159, 0.85))' } : undefined;
-    const deckSelectedInnerGlow = deck && selected ? { boxShadow: 'inset 0 0 8px rgba(184, 212, 159, 0.4)' } : undefined;
+    /** Selected: subtle dark ring only — no light-green gradient rim or glow (keeps check badge clean). */
+    const selectedShellClass = selected ? 'ring-2 ring-[#5A6B44]/35 ring-offset-0' : '';
     const cardShadowClass =
         deck ? (selected ? 'shadow-none ring-0' : 'shadow-none') : selected ? 'shadow-none' : 'shadow-md';
     /** Mobile 3D stack only — fan depth cue (not used on flat desktop ribbon). */
@@ -120,8 +115,8 @@ export default function MealCardClientViewNano({
             ? 'h-full w-full min-h-0 min-w-0 max-w-full rounded-[12px] flex flex-col'
             : 'mx-auto w-[270px] max-w-[min(270px,100%)] shrink-0 rounded-[12px] flex flex-col'
         : 'w-[240px] h-[320px] rounded-[12px]';
-    /** Inner face: 12px card − 2px gradient ring ⇒ 10px inner radius when selected. */
-    const innerR = deck ? (selected ? 'rounded-[10px]' : 'rounded-[12px]') : 'rounded-[10px]';
+    /** Inner face radius — uniform; no gradient padding inset. */
+    const innerR = deck ? 'rounded-[12px]' : 'rounded-[10px]';
     const photoR = deck ? '' : 'rounded-t-[10px]';
     const titleClass = deck ? 'min-h-0 text-[17px] leading-snug' : 'min-h-[32px] text-[14px]';
     const bodyPad = deck ? '' : 'gap-0.5 px-2 pb-10 pt-2';
@@ -136,13 +131,11 @@ export default function MealCardClientViewNano({
 
     return (
         <article
-            className={`relative font-montserrat ${shell} ${radiantBorderClass} ${articleShadowDeck} ${articleDeckStackShadow} ${deckBackRimClass} ${selectedDeckRaise} ${deck ? 'bg-[#FFFFFF]' : ''} ${className}`.trim()}
-            style={outerGlow ?? undefined}
+            className={`relative font-montserrat ${shell} ${selectedShellClass} ${articleShadowDeck} ${articleDeckStackShadow} ${deckBackRimClass} ${selectedDeckRaise} ${deck ? 'bg-[#FFFFFF]' : ''} ${className}`.trim()}
         >
             {deck ? (
                 <div
                     className={`relative flex w-full min-h-0 flex-1 flex-col overflow-hidden bg-white ${innerR} ${cardShadowClass}`.trim()}
-                    style={deckSelectedInnerGlow}
                 >
                     {/* Landscape-forward hero — shorter than 2:3 portrait so the deck feels wider / less tall. */}
                     <div className="relative aspect-[4/3] w-full shrink-0 overflow-hidden bg-[#F8F9F6]">
@@ -160,10 +153,8 @@ export default function MealCardClientViewNano({
                             </div>
                         ) : null}
                         {showCheckmark ? (
-                            <div className="pointer-events-none absolute right-2.5 top-2.5 z-30 rounded-full bg-gradient-to-br from-[#B8D49F] to-[#6E8C47] p-[2px]">
-                                <div className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[#5A6B44] text-[10px] font-bold text-white shadow-sm">
-                                    ✓
-                                </div>
+                            <div className="pointer-events-none absolute right-2.5 top-2.5 z-30">
+                                <SelectionCheckBadge />
                             </div>
                         ) : null}
                         {showImage ? (
@@ -241,14 +232,9 @@ export default function MealCardClientViewNano({
                 <div
                     className={`relative flex h-full flex-col overflow-hidden bg-white ${innerR} ${cardShadowClass}`.trim()}
                 >
-                    {selected ? (
-                        <div
-                            className="pointer-events-none absolute right-2 top-2 z-30 rounded-full bg-gradient-to-br from-[#B8D49F] to-[#6E8C47] p-[2px]"
-                            style={{ filter: 'drop-shadow(0 0 4px rgba(184, 212, 159, 0.9))' }}
-                        >
-                            <div className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-[#5A6B44] text-xs font-bold text-white shadow-sm">
-                                ✓
-                            </div>
+                    {showCheckmark ? (
+                        <div className="pointer-events-none absolute right-2 top-2 z-30">
+                            <SelectionCheckBadge size="md" />
                         </div>
                     ) : null}
 

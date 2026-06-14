@@ -4,7 +4,7 @@
  *
  * @param {{
  *   label: string;
- *   variant?: 'primary' | 'secondary' | 'outline';
+ *   variant?: 'primary' | 'secondary' | 'outline' | 'tab';
  *   size?: 'md' | 'sm';
  *   className?: string;
  *   type?: 'button' | 'submit' | 'reset';
@@ -44,6 +44,11 @@ function Button({ label, variant = 'primary', size = 'md', className = '', type 
             'dark:hover:bg-zinc-800 dark:hover:text-zinc-100',
             'dark:active:bg-zinc-700',
         ].join(' '),
+        tab: [
+            'box-border border border-[#E5E7EB] bg-white text-[#364153] shadow-none',
+            'hover:bg-[#F3F4F6] hover:text-[#364153]',
+            'active:bg-[#E5E7EB] active:scale-95',
+        ].join(' '),
     };
 
     let variantClass;
@@ -53,6 +58,9 @@ function Button({ label, variant = 'primary', size = 'md', className = '', type 
             break;
         case 'outline':
             variantClass = variants.outline;
+            break;
+        case 'tab':
+            variantClass = variants.tab;
             break;
         case 'primary':
         default:

@@ -7,6 +7,7 @@ import MealCraftLogo from './Atoms/Logo/MealCraftLogo.jsx';
 import CategoryBadge from './MealSystem/CategoryBadges.jsx';
 import { resolveMealImageUrl } from '../meal-library/resolveMealImageUrl.ts';
 import { resolveMealCategoryBadgeProps } from '../meal-library/mealCategoryBadge.ts';
+import SelectionCheckBadge from './Atoms/Icons/SelectionCheckBadge.jsx';
 
 /**
  * Same shell as {@link MealCardClientViewNano} `deck` (consultation card, non-ribbon).
@@ -130,27 +131,21 @@ export default function MealCard({
             ? `${resolvedTitle} is selected for your craft. Tap to remove from this slot.`
             : `Craft the ${resolvedTitle} meal`;
 
-    /** Client-only: consultation deck selected rim (matches {@link MealCardClientViewNano}). */
-    const radiantBorderClass =
-        !isAdmin && selected ? 'bg-gradient-to-br from-[#B8D49F] to-[#5A6B44] p-[2px]' : 'bg-transparent p-0';
-    const innerR = !isAdmin && selected ? 'rounded-[10px]' : 'rounded-[12px]';
-    const deckSelectedInnerGlow =
-        !isAdmin && selected ? { boxShadow: 'inset 0 0 8px rgba(184, 212, 159, 0.4)' } : undefined;
+    /** Client-only: subtle selected ring — no light-green gradient or inset glow. */
+    const selectedShellClass = !isAdmin && selected ? 'ring-2 ring-[#5A6B44]/35 ring-offset-0' : '';
+    const innerR = 'rounded-[12px]';
 
     const titleClass = 'min-h-0 text-[17px] leading-snug';
     const btnRow = '!h-[36px] !min-h-[36px] !px-3 !text-[12px]';
 
     return (
-        <article className={`relative ${DECK_SHELL} ${radiantBorderClass} ${className}`.trim()}>
+        <article className={`relative ${DECK_SHELL} ${selectedShellClass} ${className}`.trim()}>
             <div
                 className={`relative flex w-full min-h-0 flex-1 flex-col overflow-hidden bg-white ${innerR} shadow-none`.trim()}
-                style={deckSelectedInnerGlow}
             >
                 {!isAdmin && selected ? (
-                    <div className="pointer-events-none absolute right-2.5 top-2.5 z-30 rounded-full bg-gradient-to-br from-[#B8D49F] to-[#6E8C47] p-[2px]">
-                        <div className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[#5A6B44] text-[10px] font-bold text-white shadow-sm">
-                            ✓
-                        </div>
+                    <div className="pointer-events-none absolute right-2.5 top-2.5 z-30">
+                        <SelectionCheckBadge />
                     </div>
                 ) : null}
 
