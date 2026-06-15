@@ -25,7 +25,7 @@ Banana,Fruits,173944,89,1.1,22.8,0.3,0.37,20,0,0.3,27,2.6,12.2,5,358,1,0.1,8.7,3
 Barberries,Spices,168153,316,3.8,63.9,0,0,0,0,20,20,7.4,27,40,120,15,0.5,24,10,0,0,0,1,0,,,,,0
 "Base Soup",Fats,9874,187.98,26.88,30.44,37.65,7.45,495,5.82,10.45,192.92,0,0,0,0,0,0,0,0,0,0,0,0.23,0,,"Line1 Line2, comma","Step 1\nStep 2",,0
 Basil,Herbs,172232,23,3.15,2.65,0.64,0.15,68,0,3.17,64,1.6,0.3,177,295,4,0.81,18,264,0.8,0,415,1,0,,,,,0
-"Basil Pesto (House)","Base Ingredient",,392.16,2,3.14,42.47,0.1474,35.9474,0,2.0105,35.0105,0.9579,0.2105,103.3579,176.8105,411.8211,0.4947,11.1158,138.9474,6.4947,0,243.8632,1,1,"80:40,129:50,193:5,244:1","Clean nut-free herbaceous basil pesto fluid","Step 1: Place fresh basil leaves, raw garlic, and sea salt into a food processor.\nStep 2: Pulse while slowly streaming in extra virgin olive oil until a vibrant, smooth green emulsion forms.",,0
+"Basil Pesto (House)","Base Ingredient",,388.07,1.98,3.1,42.03,0.1458,35.5729,0,1.9896,34.6458,0.9479,0.2083,102.2813,174.9688,407.5313,0.4896,11,137.5,6.4271,0,241.3229,1,1,"80:40,129:50,193:5,244:1","Clean nut-free herbaceous basil pesto fluid","Step 1: Place fresh basil leaves, raw garlic, and sea salt into a food processor.\nStep 2: Pulse while slowly streaming in extra virgin olive oil until a vibrant, smooth green emulsion forms.",,0
 "Basmati Brown",Grains,169704,362,7.5,76.2,2.7,0.51,20,0,1.5,143,3.4,0.8,23,268,7,2,0,0,0.1,0,1.1,1,0,,,,,0
 "Basmati Rice (Brown)",Grains,1104383,162,4.1,33.5,1.1,0.15,14,0,0.6,72,1.7,0.3,7,110,2,0.1,0,0,0.2,0,0,1,0,,,,,0
 "Basmati Rice (White)",Grains,1104382,121,3.1,34.7,0.2,0.05,5,0,0.1,4,0.8,0.1,2,25,0,0.6,0,0,0,0,0,1,0,,,,,0
@@ -107,7 +107,7 @@ Clove,Spices,,274,6,65.5,13,0.39,0,0,11.8,259,33.9,2.4,632,1020,27,2.3,0.2,0,8.8
 Cornmeal,Grains,169695,362,8.1,76.9,3.6,0.37,30,0,3.5,127,7.3,1.6,6,315,35,2.2,0,11,0.4,0,0.3,1,0,,,,,0
 Couscous,Grains,169733,112,3.8,23.2,0.2,0.05,15,0,0.4,8,1.4,0.1,2,58,5,0.3,0,0,0.1,0,0.1,1,0,,,,,0
 "Cranberries (D)",Fruits,171722,308,0.1,82.5,1.4,0.04,0,0,0.4,5,5.3,72.6,10,40,5,0.1,0.2,2,1.1,0,3.8,1,0,,,,,0
-"Creamy Cumin Hummus (Base)","Base Ingredient",,215.45,9.04,23.21,10.87,0.12,131.86,0,3.92,51.44,6.7467,3.4867,114.3733,289.8133,154.6867,1.8267,4.12,1.66,0.28,0,2.74,1,1,"170:100,184:1,193:3,210:10,244:0.5,255:25,284:20","Silky smooth blended chickpeas with rich tahini, garlic, and fresh cumin","Step 1: Place cooked chickpeas, minced garlic, sea salt, ground cumin, lemon juice, and tahini into a high-speed food processor.\nStep 2: Purée on high for 3 minutes until a thick paste forms.\nStep 3: Drop in ice cubes and slowly stream in cold filtered water while running the motor constantly to emulsify.\nStep 4: Process for another 2 to 3 minutes until the matrix turns ultra-creamy, pale, and light; chill before serving.",,1
+"Creamy Cumin Hummus (Base)","Base Ingredient",,202.61,8.5,21.83,10.23,0.1129,124.0063,0,3.6865,48.3824,6.3448,3.279,107.5611,272.5517,145.4734,1.7179,3.8746,1.5611,0.2633,0,2.5768,1,1,"170:100,184:1,193:3,210:10,244:0.5,255:25,284:20","Silky smooth blended chickpeas with rich tahini, garlic, and fresh cumin","Step 1: Place cooked chickpeas, minced garlic, sea salt, ground cumin, lemon juice, and tahini into a high-speed food processor.\nStep 2: Purée on high for 3 minutes until a thick paste forms.\nStep 3: Drop in ice cubes and slowly stream in cold filtered water while running the motor constantly to emulsify.\nStep 4: Process for another 2 to 3 minutes until the matrix turns ultra-creamy, pale, and light; chill before serving.",,1
 Cucumber,Vegetable,,15,0.7,3.6,0.1,0.04,7,0,0.3,13,0.5,1.7,16,147,2,0.2,2.8,5,0.1,0,16.4,1,0,,,,,0
 "Cucumber Pickle (Base)","Base Ingredient",,12.5,0.58,3,0.08,0.0333,5.8333,0,0.2583,10.85,0.4167,1.4167,13.7333,122.8667,647.8,0.1667,2.3333,4.1667,0.0833,0,13.6667,1,1,,"Tangy, quick-pickled cucumber slices.","Slice cucumbers thinly. Toss with rice vinegar and sea salt. Let sit for 10 minutes.",,0
 "Cumin Seeds",Spices,171324,375,17.8,44.2,22.3,0.44,10,0,66.4,366,10.5,2.3,931,1788,168,4.8,7.7,64,3.3,0,5.4,1,0,,,,,0
@@ -208,6 +208,7 @@ Mushrooms,Vegetables,169251,22,3.1,3.3,0.3,0.1,16,0,0.5,9,1,2,3,318,5,0.5,2.1,0,
 "Mustard Dressing (Base)","Base Ingredient",,550.85,0.53,4.43,60.56,0.0769,3.9451,0,0.5165,5.6374,0.4725,0.8791,15.8242,66.7253,854.1099,0.0989,14.1319,0.6264,8.8352,0,31.6484,1,1,,"A sharp, zesty non-toxic dressing utilizing clean fats and a punch of warm mustard oil.","Step 1: Mince the raw garlic finely.\nStep 2: Whisk the extra virgin olive oil, mustard oil, and fresh lemon juice together in a small bowl.\nStep 3: Stir in the minced garlic, sea salt, and black pepper until completely emulsified.",,0
 "Mustard Oil","Fats & Oils",171019,884,0,0,100,0,0,0,0,0,0,0,0,0,0,0,0,0,15.2,0,0,0.92,0,,,,,0
 "Napa Cabbage",Vegetables,169229,16,1.2,3.2,0.2,0.05,79,0,0.3,13,1.2,1.4,77,238,11,0.2,27,16,0.1,0,42.9,1,0,,,,,0
+Nutmeg,Spices,,525,6,49.2,36.3,0.16,76,0,3,183,20.8,2.8,184,350,16,2.1,3,102,0,0,0,0.45,0,,"Whole or freshly ground organic nutmeg kernels","Intensely aromatic and warm seed seasoning profile.",,0
 "Nutritional Yeast",Pantry,1104888,400,53.3,33.3,0,30,2000,15,5.3,133,26.7,0,100,2000,133,13.3,0,0,0,0,0,1,0,,,,,0
 "Oats (Rolled)",Grains,1101825,389,16.9,66.3,6.9,0.12,56,0,4.7,177,10.6,0,54,429,2,4,0,0,0.4,0,2,1,0,,,,,0
 Okra,Vegetables,169255,33,1.9,7.5,0.2,0.21,60,0,0.6,57,3.2,1.5,82,299,7,0.6,23,36,0.3,0,31.3,1,0,,,,,0
@@ -270,7 +271,7 @@ Saffron,Spices,171328,310,11.4,65.4,5.9,1.01,93,0,11.1,264,3.9,0,111,1724,148,1.
 Salmon,Protein,173686,208,20.4,0,13.4,0.6,26,3.2,0.3,27,0,0,9,363,59,0.4,0,12,1.1,11,0.5,1,0,,,,,0
 "Salmon (Raw)",Proteins,175167,208,20.4,0,13.4,0.64,26,3.2,0.3,27,0,0,9,363,59,0.4,0,12,1.1,11,0.5,1,0,,,,,0
 "Sardines (Canned)",Proteins,175139,208,24.6,0,11.5,0.17,10,8.9,2.9,39,0,0,382,397,307,1.3,0,32,2,4.8,2.6,1,0,,,,,0
-"Sauteed Mint Basil Koosa (Base)","Base Ingredient",,42.42,1.37,3.54,2.95,0.2348,28.2087,0,0.5739,21.287,1.2087,2.6174,24.0261,287.4,9.0087,0.3478,19.5478,18.713,0.4957,0,13.2783,1,1,"58:3,68:2,129:2,220:120","Pan-seared koosa rounds tossed with fresh hand-torn mint and basil leaves","Step 1: Sauté uniform koosa squash coins in extra virgin olive oil over medium-high heat until skin edges char and turn deep golden.\nStep 2: Remove from heat source and fold fresh soft mint and sweet basil leaves directly over the hot squash matrix.",,0
+"Sauteed Mint Basil Koosa (Base)","Base Ingredient",,38.41,1.24,3.2,2.67,0.2126,25.5433,0,0.5197,19.2756,1.0945,2.3701,21.7559,260.2441,8.1575,0.315,17.7008,16.9449,0.4488,0,12.0236,1,1,"58:3,68:2,129:2,220:120","Pan-seared koosa rounds tossed with fresh hand-torn mint and basil leaves","Step 1: Sauté uniform koosa squash coins in extra virgin olive oil over medium-high heat until skin edges char and turn deep golden.\nStep 2: Remove from heat source and fold fresh soft mint and sweet basil leaves directly over the hot squash matrix.",,0
 "Sea Salt",Pantry,,0,0,0,0,0,0,0,0.3,1,0,0,24,2,38758,0.1,0,0,0,0,0,1,0,,,,,0
 "Seaweed (Nori)",Vegetables,170487,35,5.8,5.1,0.3,0.15,146,0,1.1,20,0.3,0.5,70,356,48,1.1,3,260,1,0,4,1,0,,,,,0
 "Sesame Oil",Fats,171415,884,0,0,100,0,0,0,0,0,0,0,0,0,0,0,0,0,1.4,0,13.6,1,0,,,,,0
@@ -314,7 +315,7 @@ Tempeh,Proteins,174272,192,20.3,7.6,10.8,0.3,52,0.1,2.7,81,0,0,111,412,9,1.1,0,0
 "Tofu (Firm)",Proteins,172448,83,10,2.3,4.8,0.08,15,0,1.6,58,1,0.6,350,148,9,1.1,0,9,0.1,0,2.4,1,0,,,,,0
 "Tomato (Raw)",Vegetables,170457,18,0.9,3.9,0.2,0.08,15,0,0.3,11,1.2,2.6,10,237,5,0.2,13.7,42,0.5,0,7.9,1,0,,,,,0
 "Tomato Paste",Pantry,170458,82,4.3,18.9,0.5,0.22,15,0,3,35,4.1,11.3,36,1014,59,0.6,21.9,76,4.3,0,11.4,1,0,,,,,0
-"Tomato Sauce (Sub-Base)","Base Ingredient",,20.98,1.03,4.56,0.21,0.1,15.06,0,0.34,11.51,1.24,2.62,13.74,245.03,199.13,0.22,14.32,42,0.5,0,7.93,1,1,"193:2,244:0.5,261:100","House-simmered sugar-free smooth tomato reduction","Step 1: Simmer crushed fresh tomatoes with minced raw garlic and sea salt over low heat for 20 minutes until flavors emulsify and reduce.",,0
+"Tomato Sauce (Sub-Base)","Base Ingredient",,20.47,1,4.45,0.2,0.0976,14.6927,0,0.3317,11.2293,1.2098,2.5561,13.4049,239.0537,194.2732,0.2146,13.9707,40.9756,0.4878,0,7.7366,1,1,"193:2,244:0.5,261:100","House-simmered sugar-free smooth tomato reduction","Step 1: Simmer crushed fresh tomatoes with minced raw garlic and sea salt over low heat for 20 minutes until flavors emulsify and reduce.",,0
 "Tuna (Canned)",Proteins,171986,116,25.5,0,0.8,0.35,2,2.5,1.5,27,0,0,11,237,338,0.7,0,19,0.7,1.7,0.1,1,0,,,,,0
 Turmeric,Spice,,312,9.7,67.1,3.3,0.1,39,0,55,193,22.7,3.2,168,2080,27,4.5,0.7,0,3.1,0,13.4,1,0,,,,,0
 "Turmeric (Ground)",Spices,,312,9.7,67.1,3.3,1.8,39,0,55,193,22.7,3.2,168,2080,27,4.5,25.9,0,3.1,0,13.4,1,0,,,,,0
@@ -344,4 +345,3 @@ Zucchini,Vegetables,169252,17,1.2,3.1,0.3,0.22,24,0,0.4,18,1,2.5,16,261,8,0.3,17
 "cumin powder","Spices / Pantry",172233,375,17.8,44.2,22.3,0.4,10,0,66.4,366,10.5,2.3,931,1788,168,4.8,7.7,64,3.3,0,5.4,1,0,,"Fine ground cumin seed powder, deeply aromatic and earthy.",,,0
 curry,"Base Ingredient",,159.6,3.08,9,13.12,0.056,41.4,0,1.24,27,4.04,2.06,14.8,194.8,7758.2,0.6,8.24,0.4,0.1,0,0.38,1,1,,,,,0
 "mustard seeds","Spices / Pantry",,508,26.1,28.1,36.2,0.4,10,0,9.2,370,12.2,6.8,266,738,13,6.1,7.1,3,5.1,0,5.4,1,0,,"Whole mustard seeds used for tempering and sputtering in hot oil.",,,0
-"Nutmeg","Spices",171326,525,6.0,49.2,36.3,0.16,76,0.0,3.0,183,20.8,2.8,184,350,16,2.1,3.0,102.0,0.0,0.0,0.0,0.45,FALSE,,"Whole or freshly ground organic nutmeg kernels","Intensely aromatic and warm seed seasoning profile.",100,,
