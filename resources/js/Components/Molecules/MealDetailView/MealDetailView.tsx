@@ -55,11 +55,13 @@ export type MealDetailModel = {
 export type MealDetailViewProps = {
     meal: MealDetailModel;
     className?: string;
+    /** Hides the hero image block (used for base recipes without photos). */
+    hideImage?: boolean;
 };
 
 const G6PD_SAFETY_ALERT_BADGE = 'G6PD Safety Alert';
 
-function MealNutritionSummaryTable({ data }: { data: MealNutritionalData }): ReactElement | null {
+export function MealNutritionSummaryTable({ data }: { data: MealNutritionalData }): ReactElement | null {
     if (!data.sections?.length) {
         return null;
     }
@@ -116,7 +118,7 @@ function MealNutritionSummaryTable({ data }: { data: MealNutritionalData }): Rea
     );
 }
 
-export default function MealDetailView({ meal, className = '' }: MealDetailViewProps): ReactElement {
+export default function MealDetailView({ meal, className = '', hideImage = false }: MealDetailViewProps): ReactElement {
     const [mediaFailed, setMediaFailed] = useState(false);
     const {
         shortDescription,
@@ -158,28 +160,30 @@ export default function MealDetailView({ meal, className = '' }: MealDetailViewP
         >
             <div className="grid grid-cols-1 gap-0 lg:grid-cols-[13fr_7fr]">
                 <article className="space-y-8 rounded-[12px] border border-gray-200 bg-white p-6 shadow-sm md:p-8 lg:rounded-r-none lg:border-r-0">
-                    <div className="-mx-6 -mt-6 mb-6 aspect-[4/3] w-[calc(100%+3rem)] max-w-none overflow-hidden rounded-t-[12px] bg-[#F8F9F6] md:-mx-8 md:-mt-8 md:w-[calc(100%+4rem)]">
-                        {showImage ? (
-                            <img
-                                src={resolvedImageUrl}
-                                alt={resolvedImageAlt || 'Meal photo'}
-                                className="h-full w-full object-cover"
-                                loading="lazy"
-                                decoding="async"
-                                onError={() => setMediaFailed(true)}
-                            />
-                        ) : (
-                            <div className="flex h-full min-h-[12rem] w-full items-center justify-center bg-[#F8F9F6]">
-                                <MealCraftLogo
-                                    variant="seal-sm"
-                                    width={72}
-                                    className="opacity-70"
-                                    alt="No meal image"
-                                    title="MealCraft"
+                    {!hideImage ? (
+                        <div className="-mx-6 -mt-6 mb-6 aspect-[4/3] w-[calc(100%+3rem)] max-w-none overflow-hidden rounded-t-[12px] bg-[#F8F9F6] md:-mx-8 md:-mt-8 md:w-[calc(100%+4rem)]">
+                            {showImage ? (
+                                <img
+                                    src={resolvedImageUrl}
+                                    alt={resolvedImageAlt || 'Meal photo'}
+                                    className="h-full w-full object-cover"
+                                    loading="lazy"
+                                    decoding="async"
+                                    onError={() => setMediaFailed(true)}
                                 />
-                            </div>
-                        )}
-                    </div>
+                            ) : (
+                                <div className="flex h-full min-h-[12rem] w-full items-center justify-center bg-[#F8F9F6]">
+                                    <MealCraftLogo
+                                        variant="seal-sm"
+                                        width={72}
+                                        className="opacity-70"
+                                        alt="No meal image"
+                                        title="MealCraft"
+                                    />
+                                </div>
+                            )}
+                        </div>
+                    ) : null}
 
                     <div className="flex flex-col gap-4">
                         {dietaryTags?.length ? (

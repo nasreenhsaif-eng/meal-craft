@@ -191,6 +191,13 @@ final class RecipeComponentsCsvParser
         $ingredient = Ingredient::query()->whereKey($ingredientId)->where('is_verified', true)->first();
 
         if ($ingredient === null) {
+            $legacyName = LegacyMenuIngredientIdMap::nameForLegacyId($ingredientId);
+            if ($legacyName !== null) {
+                $ingredient = IngredientLibraryNameMatcher::resolveForImportLabel($legacyName);
+            }
+        }
+
+        if ($ingredient === null) {
             throw new InvalidArgumentException(__('Ingredient :id was not found in the verified library.', ['id' => $ingredientId]));
         }
 

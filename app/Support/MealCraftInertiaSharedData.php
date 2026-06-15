@@ -91,6 +91,8 @@ final class MealCraftInertiaSharedData
                 'index' => route('admin.ingredient-library'),
                 'store' => route('admin.ingredient-library.store'),
                 'baseStore' => route('admin.ingredient-library.base-ingredient.store'),
+                'baseUpdate' => route('admin.ingredient-library.base-ingredient.update', ['ingredient' => 0]),
+                'baseUpdate' => route('admin.ingredient-library.base-ingredient.update', ['ingredient' => 0]),
                 'importCsv' => route('admin.ingredient-library.import-csv'),
                 'exportCsv' => route('admin.ingredient-library.export-csv'),
                 'bulkDestroy' => route('admin.ingredient-library.bulk-destroy'),

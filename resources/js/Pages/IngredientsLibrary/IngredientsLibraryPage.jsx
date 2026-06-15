@@ -6,18 +6,15 @@ import TextInput from '../../Components/Atoms/TextInput/TextInput.jsx';
 import DropdownTextInput from '../../Components/Atoms/TextInput/DropdownTextInput.jsx';
 import MicronutrientInput from '../../Components/Atoms/TextInput/MicronutrientInput.jsx';
 import Button from '../../Components/Atoms/Button.jsx';
-import MealDetailView from '../../Components/Molecules/MealDetailView/MealDetailView.tsx';
 import SquareCheckbox from '../../Components/Atoms/Icons/SquareCheckbox.jsx';
-import IngredientsLibraryCompositionSection from './IngredientsLibraryCompositionSection.jsx';
+import BaseRecipeEditorView from './BaseRecipeEditorView.jsx';
 import NutrientBadge from '../../Components/Atoms/MealSystem/NutrientBadge.jsx';
 import CSVUploader from '../../Components/CSVUploader.jsx';
-import {
-    aggregateNutritionFromIngredientRows,
-    gramsFromAmountAndUnit,
-} from '../../meal-library/aggregateIngredientNutrition.ts';
+import { gramsFromAmountAndUnit } from '../../meal-library/aggregateIngredientNutrition.ts';
 import { filterIngredientsForCombobox } from '../../meal-library/ingredientSearch.ts';
 import {
     dietTagsFromPage,
+    ingredientLibraryBaseUpdateUrl,
     ingredientLibraryUrls,
     resolveUrl,
 } from '../../meal-craft/mealCraftPageProps.js';
@@ -94,6 +91,7 @@ function normalizeLibraryRow(raw) {
         sugar: pick('sugar', 'sugar'),
         fiber: pick('fiber', 'fiber'),
         detailView: isPlainObject(raw.detailView) ? raw.detailView : null,
+        baseRecipeEdit: isPlainObject(raw.baseRecipeEdit) ? raw.baseRecipeEdit : null,
     };
 }
 const ROW_HOVER = 'hover:bg-[#F8F9F6]';
@@ -164,6 +162,7 @@ export function IngredientsLibraryPageView({
     ingredients = [],
     componentPickerProfiles = [],
     ingredientStoreUrl = '',
+    ingredientBaseUpdateUrl = '',
     ingredientBulkDestroyUrl = '',
     csvTemplateUrl = '#',
     csvExportUrl = '#',
@@ -185,7 +184,15 @@ export function IngredientsLibraryPageView({
         (Array.isArray(ingredients) ? ingredients : []).map((raw) => normalizeLibraryRow(raw)),
     );
     const [detailModal, setDetailModal] = useState(
-        /** @type {null | { title: string; detailView: object }} */ (null),
+        /** @type {null | {
+         *   ingredientId: string;
+         *   name: string;
+         *   rows: { nameQuery: string; selectedName: string; ingredientId: number | null; amount: string; unit: string }[];
+         *   finishedWeightGrams: string;
+         *   description: string;
+         *   instructions: string;
+         *   saveError: string;
+         * }} */ (null),
     );
 
     /** Create-ingredient drawer (controlled; reset each time drawer opens). */
@@ -203,11 +210,6 @@ export function IngredientsLibraryPageView({
     const [createSaveError, setCreateSaveError] = useState('');
     const [createBaseDescription, setCreateBaseDescription] = useState('');
     const [createBaseInstructions, setCreateBaseInstructions] = useState('');
-    const [createCompositionActiveRow, setCreateCompositionActiveRow] = useState(/** @type {number|null} */ (null));
-    const compositionSuggestRootRef = useRef(null);
-    const [compositionSuggestRect, setCompositionSuggestRect] = useState(
-        /** @type {{ left: number; top: number; width: number } | null} */ (null),
-    );
 
     const dietTagOptions = useMemo(() => dietTagDropdownOptions(dietTags), [dietTags]);
 
@@ -230,32 +232,6 @@ export function IngredientsLibraryPageView({
             })),
         [componentPickerProfiles],
     );
-
-    const createCompositionBatchNutrition = useMemo(() => {
-        const { nutrition } = aggregateNutritionFromIngredientRows(createCompositionRows, componentPickerProfiles);
-        return nutrition;
-    }, [createCompositionRows, componentPickerProfiles]);
-
-    const createPer100Preview = useMemo(() => {
-        const rawGrams = createCompositionRows.reduce((sum, row) => {
-            if (!row.ingredientId) {
-                return sum;
-            }
-            return sum + gramsFromAmountAndUnit(row.amount, row.unit);
-        }, 0);
-        const finished = Number(String(createFinishedWeightGrams ?? '').trim());
-        const divisor = Number.isFinite(finished) && finished > 0 ? finished : rawGrams;
-        if (divisor <= 0) {
-            return null;
-        }
-        const factor = 100 / divisor;
-        return {
-            calories: Math.round((createCompositionBatchNutrition.calories ?? 0) * factor * 10) / 10,
-            protein: Math.round((createCompositionBatchNutrition.protein ?? 0) * factor * 10) / 10,
-            carbs: Math.round((createCompositionBatchNutrition.carbs ?? 0) * factor * 10) / 10,
-            fat: Math.round((createCompositionBatchNutrition.fat ?? 0) * factor * 10) / 10,
-        };
-    }, [createCompositionBatchNutrition, createCompositionRows, createFinishedWeightGrams]);
 
     useEffect(() => {
         const list = Array.isArray(ingredients) ? ingredients : [];
@@ -286,61 +262,7 @@ export function IngredientsLibraryPageView({
         setCreateSaveError('');
         setCreateBaseDescription('');
         setCreateBaseInstructions('');
-        setCreateCompositionActiveRow(null);
     }, [createOpen]);
-
-    useEffect(() => {
-        if (typeof document === 'undefined') {
-            return undefined;
-        }
-        const onDocMouseDown = (event) => {
-            const root = compositionSuggestRootRef.current;
-            if (!root) {
-                return;
-            }
-            const t = event.target;
-            if (!(t instanceof Node)) {
-                return;
-            }
-            if (root.contains(t)) {
-                return;
-            }
-            if (t.closest('[data-composition-ingredient-suggest]')) {
-                return;
-            }
-            setCreateCompositionActiveRow(null);
-        };
-        document.addEventListener('mousedown', onDocMouseDown);
-        return () => document.removeEventListener('mousedown', onDocMouseDown);
-    }, []);
-
-    useEffect(() => {
-        if (typeof window === 'undefined') {
-            return undefined;
-        }
-        if (createCompositionActiveRow === null) {
-            setCompositionSuggestRect(null);
-            return undefined;
-        }
-
-        const updateRect = () => {
-            const el = document.getElementById(`composition-combobox-${createCompositionActiveRow}`);
-            if (!el) {
-                return;
-            }
-            const r = el.getBoundingClientRect();
-            setCompositionSuggestRect({ left: r.left, top: r.bottom, width: r.width });
-        };
-
-        updateRect();
-        window.addEventListener('resize', updateRect);
-        window.addEventListener('scroll', updateRect, true);
-
-        return () => {
-            window.removeEventListener('resize', updateRect);
-            window.removeEventListener('scroll', updateRect, true);
-        };
-    }, [createCompositionActiveRow]);
 
     function submitCreateIngredient() {
         if (!ingredientStoreUrl) {
@@ -367,12 +289,17 @@ export function IngredientsLibraryPageView({
                 return;
             }
 
+            const finishedWeight = Number(createFinishedWeightGrams.trim());
+            if (!Number.isFinite(finishedWeight) || finishedWeight <= 0) {
+                setCreateSaveError('Enter a finished cooked weight in grams.');
+                return;
+            }
+
             setCreateSaveError('');
             router.post(ingredientStoreUrl, {
                 name: createName.trim(),
                 is_base_recipe: true,
-                finished_weight_grams:
-                    createFinishedWeightGrams.trim() === '' ? null : Number(createFinishedWeightGrams.trim()),
+                finished_weight_grams: finishedWeight,
                 components,
                 description: createBaseDescription.trim(),
                 instructions: createBaseInstructions.trim(),
@@ -390,6 +317,78 @@ export function IngredientsLibraryPageView({
             protein: createProtein.trim() === '' ? 0 : Number(createProtein.trim()),
             carbs: createCarbs.trim() === '' ? 0 : Number(createCarbs.trim()),
             fat: createFat.trim() === '' ? 0 : Number(createFat.trim()),
+        });
+    }
+
+    function openBaseRecipeEditor(row) {
+        const edit = row.baseRecipeEdit;
+        const rows = Array.isArray(edit?.compositionRows) && edit.compositionRows.length > 0
+            ? edit.compositionRows.map((r) => ({
+                  nameQuery: String(r.nameQuery ?? r.selectedName ?? ''),
+                  selectedName: String(r.selectedName ?? ''),
+                  ingredientId:
+                      typeof r.ingredientId === 'number' && Number.isFinite(r.ingredientId) ? r.ingredientId : null,
+                  amount: String(r.amount ?? '100'),
+                  unit: String(r.unit ?? 'g'),
+              }))
+            : [{ ...EMPTY_COMPOSITION_ROW }];
+
+        setDetailModal({
+            ingredientId: row.id,
+            name: row.name,
+            rows,
+            finishedWeightGrams: String(edit?.finishedWeightGrams ?? ''),
+            description: String(edit?.description ?? ''),
+            instructions: String(edit?.instructions ?? ''),
+            saveError: '',
+        });
+    }
+
+    function submitDetailBaseRecipe() {
+        if (!detailModal) {
+            return;
+        }
+
+        const updateUrl =
+            ingredientBaseUpdateUrl !== ''
+                ? ingredientBaseUpdateUrl.replace(/\/0$/, `/${detailModal.ingredientId}`)
+                : `/admin/ingredient-library/base-ingredient/${detailModal.ingredientId}`;
+
+        if (detailModal.name.trim() === '') {
+            setDetailModal((prev) => (prev ? { ...prev, saveError: 'Enter a name.' } : prev));
+            return;
+        }
+
+        const components = detailModal.rows
+            .filter((row) => row.ingredientId != null)
+            .map((row) => ({
+                ingredient_id: row.ingredientId,
+                amount_grams: gramsFromAmountAndUnit(row.amount, row.unit),
+            }))
+            .filter((row) => row.amount_grams > 0);
+
+        if (components.length === 0) {
+            setDetailModal((prev) =>
+                prev ? { ...prev, saveError: 'Add at least one component with a positive amount.' } : prev,
+            );
+            return;
+        }
+
+        const finishedWeight = Number(detailModal.finishedWeightGrams.trim());
+        if (!Number.isFinite(finishedWeight) || finishedWeight <= 0) {
+            setDetailModal((prev) =>
+                prev ? { ...prev, saveError: 'Enter a finished cooked weight in grams.' } : prev,
+            );
+            return;
+        }
+
+        setDetailModal((prev) => (prev ? { ...prev, saveError: '' } : prev));
+        router.post(updateUrl, {
+            name: detailModal.name.trim(),
+            finished_weight_grams: finishedWeight,
+            components,
+            description: detailModal.description.trim(),
+            instructions: detailModal.instructions.trim(),
         });
     }
 
@@ -807,16 +806,11 @@ export function IngredientsLibraryPageView({
                                         <td className="sticky left-[54px] z-10 bg-white px-4 py-3">
                                             <div className="min-w-0">
                                                 <div className="flex min-w-0 flex-wrap items-center gap-2">
-                                                    {r.isBaseRecipe && r.detailView ? (
+                                                    {r.isBaseRecipe ? (
                                                         <button
                                                             type="button"
                                                             className="truncate text-left font-body text-sm font-semibold text-[#1F2937] underline decoration-[#5A6B44]/40 underline-offset-2 outline-none hover:text-[#5A6B44] focus-visible:ring-2 focus-visible:ring-[#5A6B44]/35"
-                                                            onClick={() =>
-                                                                setDetailModal({
-                                                                    title: r.name,
-                                                                    detailView: r.detailView,
-                                                                })
-                                                            }
+                                                            onClick={() => openBaseRecipeEditor(r)}
                                                         >
                                                             {r.name}
                                                         </button>
@@ -903,33 +897,74 @@ export function IngredientsLibraryPageView({
                         type="button"
                         className="absolute inset-0 bg-black/40"
                         onClick={() => setDetailModal(null)}
-                        aria-label="Close recipe details"
+                        aria-label="Close base recipe editor"
                     />
                     <div
                         role="dialog"
                         aria-modal="true"
                         aria-labelledby="ingredient-library-detail-title"
-                        className="relative w-full max-w-[960px] rounded-[12px] bg-[#F8F9F6] p-4 shadow-2xl md:p-6"
+                        className="relative flex max-h-[min(92vh,calc(100dvh-2rem))] w-full max-w-5xl flex-col rounded-[12px] bg-[#F8F9F6] p-4 shadow-2xl md:p-6"
                     >
-                        <div className="mb-4 flex items-start justify-between gap-3">
-                            <div className="min-w-0 flex-1">
-                                <h2
+                        <div className="mb-4 flex shrink-0 items-start justify-between gap-3">
+                            <div className="min-w-0 flex-1 space-y-3">
+                                <p className="font-montserrat text-sm font-bold uppercase tracking-[0.14em] text-[#555555]">
+                                    Edit base recipe
+                                </p>
+                                <TextInput
                                     id="ingredient-library-detail-title"
-                                    className="font-montserrat text-xl font-bold tracking-tight text-[#262A22] md:text-2xl"
-                                >
-                                    {detailModal.title}
-                                </h2>
-                                {detailModal.detailView?.shortDescription ||
-                                detailModal.detailView?.description ? (
-                                    <p className="mt-1 line-clamp-2 font-montserrat text-sm font-medium text-[#555555] md:text-base">
-                                        {detailModal.detailView.shortDescription ||
-                                            detailModal.detailView.description}
-                                    </p>
-                                ) : null}
+                                    label="Name"
+                                    value={detailModal.name}
+                                    onChange={(e) =>
+                                        setDetailModal((prev) => (prev ? { ...prev, name: e.target.value } : prev))
+                                    }
+                                    className="!max-w-none"
+                                />
                             </div>
                             <Button label="Close" variant="ghost" type="button" onClick={() => setDetailModal(null)} />
                         </div>
-                        <MealDetailView meal={detailModal.detailView} className="max-h-[min(78vh,calc(100dvh-11rem))]" />
+                        <div className="min-h-0 flex-1 overflow-y-auto">
+                            <BaseRecipeEditorView
+                                rows={detailModal.rows}
+                                onRowsChange={(updater) =>
+                                    setDetailModal((prev) =>
+                                        prev
+                                            ? {
+                                                  ...prev,
+                                                  rows: typeof updater === 'function' ? updater(prev.rows) : updater,
+                                              }
+                                            : prev,
+                                    )
+                                }
+                                ingredientDatabase={componentPickerDatabase}
+                                ingredientProfiles={componentPickerProfiles}
+                                finishedWeightGrams={detailModal.finishedWeightGrams}
+                                onFinishedWeightChange={(value) =>
+                                    setDetailModal((prev) => (prev ? { ...prev, finishedWeightGrams: value } : prev))
+                                }
+                                description={detailModal.description}
+                                onDescriptionChange={(value) =>
+                                    setDetailModal((prev) => (prev ? { ...prev, description: value } : prev))
+                                }
+                                instructions={detailModal.instructions}
+                                onInstructionsChange={(value) =>
+                                    setDetailModal((prev) => (prev ? { ...prev, instructions: value } : prev))
+                                }
+                            />
+                        </div>
+                        {detailModal.saveError ? (
+                            <p className="mt-4 shrink-0 font-body text-sm text-[#C44F5D]" role="alert">
+                                {detailModal.saveError}
+                            </p>
+                        ) : null}
+                        <div className="mt-4 shrink-0 border-t border-gray-200 pt-4">
+                            <Button
+                                label="Save base recipe"
+                                variant="primary"
+                                type="button"
+                                className="w-full justify-center"
+                                onClick={submitDetailBaseRecipe}
+                            />
+                        </div>
                     </div>
                 </div>
             ) : null}
@@ -955,7 +990,7 @@ export function IngredientsLibraryPageView({
                             <Button label="Close" variant="ghost" onClick={() => setCreateOpen(false)} />
                         </div>
                         <div className="min-h-0 flex-1 overflow-y-auto px-8 py-6 lg:px-10">
-                            <div className="mx-auto w-full max-w-4xl space-y-5">
+                            <div className="mx-auto w-full max-w-5xl space-y-5">
                                 <TextInput
                                     label="Name"
                                     placeholder={createIsBaseRecipe ? 'e.g. Red Thai curry paste' : 'e.g. Chicken breast'}
@@ -982,42 +1017,18 @@ export function IngredientsLibraryPageView({
                                 </div>
 
                                 {createIsBaseRecipe ? (
-                                    <>
-                                        <IngredientsLibraryCompositionSection
-                                            rows={createCompositionRows}
-                                            onRowsChange={setCreateCompositionRows}
-                                            componentPickerDatabase={componentPickerDatabase}
-                                            activeRow={createCompositionActiveRow}
-                                            onActiveRowChange={setCreateCompositionActiveRow}
-                                            suggestRect={compositionSuggestRect}
-                                            suggestRootRef={compositionSuggestRootRef}
-                                            finishedWeightGrams={createFinishedWeightGrams}
-                                            onFinishedWeightChange={setCreateFinishedWeightGrams}
-                                            per100Preview={createPer100Preview}
-                                        />
-                                        <div className="grid gap-2">
-                                        <label className="font-montserrat text-[13px] font-bold tracking-wide text-[#374151]">
-                                            Short description
-                                            <textarea
-                                                value={createBaseDescription}
-                                                onChange={(e) => setCreateBaseDescription(e.target.value)}
-                                                placeholder="One-line summary shown under the recipe title"
-                                                rows={2}
-                                                className="mt-1 w-full resize-y rounded-[12px] border border-[#E5E7EB] bg-white px-4 py-3 font-body text-sm text-[#1F2937] outline-none ring-[#5A6B44]/35 placeholder:text-[#9CA3AF] focus:border-[#5A6B44]/35 focus:ring-2"
-                                            />
-                                        </label>
-                                        <label className="font-montserrat text-[13px] font-bold tracking-wide text-[#374151]">
-                                            Instructions
-                                            <textarea
-                                                value={createBaseInstructions}
-                                                onChange={(e) => setCreateBaseInstructions(e.target.value)}
-                                                placeholder="One step per line"
-                                                rows={4}
-                                                className="mt-1 w-full resize-y rounded-[12px] border border-[#E5E7EB] bg-white px-4 py-3 font-body text-sm text-[#1F2937] outline-none ring-[#5A6B44]/35 placeholder:text-[#9CA3AF] focus:border-[#5A6B44]/35 focus:ring-2"
-                                            />
-                                        </label>
-                                    </div>
-                                    </>
+                                    <BaseRecipeEditorView
+                                        rows={createCompositionRows}
+                                        onRowsChange={setCreateCompositionRows}
+                                        ingredientDatabase={componentPickerDatabase}
+                                        ingredientProfiles={componentPickerProfiles}
+                                        finishedWeightGrams={createFinishedWeightGrams}
+                                        onFinishedWeightChange={setCreateFinishedWeightGrams}
+                                        description={createBaseDescription}
+                                        onDescriptionChange={setCreateBaseDescription}
+                                        instructions={createBaseInstructions}
+                                        onInstructionsChange={setCreateBaseInstructions}
+                                    />
                                 ) : (
                                     <>
                                         <DropdownTextInput
@@ -1084,7 +1095,7 @@ export function IngredientsLibraryPageView({
                             </div>
                         </div>
                         <div className="shrink-0 border-t border-gray-200 bg-white px-8 py-5 lg:px-10">
-                            <div className="mx-auto w-full max-w-4xl">
+                            <div className="mx-auto w-full max-w-5xl">
                                 <Button
                                     label={createIsBaseRecipe ? 'Save base recipe' : 'Save ingredient'}
                                     variant="primary"
@@ -1167,6 +1178,7 @@ export function IngredientsLibraryPageContent(props) {
             }
             flashSuccess={flashSuccess}
             ingredientStoreUrl={resolveUrl(props.ingredientStoreUrl, sharedIngredientUrls.store)}
+            ingredientBaseUpdateUrl={ingredientLibraryBaseUpdateUrl(pageProps, 0)}
             ingredientBulkDestroyUrl={resolveUrl(
                 props.ingredientBulkDestroyUrl,
                 pageProps.ingredientBulkDestroyUrl ?? sharedIngredientUrls.bulkDestroy,

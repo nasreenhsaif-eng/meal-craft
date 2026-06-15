@@ -30,6 +30,21 @@ function verifiedIngredient(string $name, array $overrides = []): Ingredient
     ], $overrides));
 }
 
+test('base recipe store requires finished cooked weight', function () {
+    $user = User::factory()->create();
+    $child = verifiedIngredient('Honey');
+
+    $this->actingAs($user)
+        ->post(route('admin.ingredient-library.store'), [
+            'name' => 'Honey Glaze',
+            'is_base_recipe' => true,
+            'components' => [
+                ['ingredient_id' => $child->id, 'amount_grams' => 100],
+            ],
+        ])
+        ->assertSessionHasErrors('finished_weight_grams');
+});
+
 test('admin can store a base recipe via unified ingredient library store route', function () {
     $user = User::factory()->create();
     $child = verifiedIngredient('Honey', ['calories' => 300, 'protein' => 0, 'carbs' => 80, 'fat' => 0]);

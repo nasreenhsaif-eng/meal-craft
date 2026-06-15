@@ -1,5 +1,5 @@
 meal_name,meal_type,ingredients_string,target_calories,target_protein,target_carbs,target_fat,batch_calories,batch_protein,batch_carbs,batch_fat,is_bulk,servings_count,meal_plan_tag,cycle_phase,safety_alerts,image_url,short_description,instructions
-"Mediterranean Omelet",Breakfast,"Basil:3 | Bell Pepper (Red):30 | Black Pepper:3 | Egg:60 | Kalamata Olives:15 | Olive Oil (Extra Virgin):10 | Parsley:5 | Sea Salt:5 | Shallots:20 | Thyme (Fresh):2 | Tomato (Raw):30",350,24,12,23,,,,,false,,Balanced,,,meals/0EshaJqrxAXR3UIkPM0VK3axPfMkivDyPwsHXeCd.png,"Earthy and rich in B-vitamins for morning mental clarity.","Whisk eggs in a bowl with chopped fresh herbs and a pinch of salt and pepper.
+"Mediterranean Omelet",Breakfast,"Basil:3 | Bell Pepper (Red):30 | Black Pepper:3 | Egg:100 | Kalamata Olives:15 | Olive Oil (Extra Virgin):5 | Parsley:5 | Sea Salt:5 | Shallots:20 | Thyme (Fresh):2 | Tomato (Raw):30",350,24,12,23,,,,,false,,Balanced,,,meals/0EshaJqrxAXR3UIkPM0VK3axPfMkivDyPwsHXeCd.png,"Earthy and rich in B-vitamins for morning mental clarity.","Whisk eggs in a bowl with chopped fresh herbs and a pinch of salt and pepper.
 Heat olive oil in a skillet, add baby spinach and sauté for 45 seconds until wilted.
 Pour egg mixture over spinach; cook for 2 minutes until base sets.
 Layer roasted peppers, fresh tomatoes, olives, and goat cheese on one half.

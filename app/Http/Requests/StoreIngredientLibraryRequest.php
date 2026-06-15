@@ -39,7 +39,7 @@ class StoreIngredientLibraryRequest extends FormRequest
             return [
                 'name' => ['required', 'string', 'max:255'],
                 'is_base_recipe' => ['sometimes', 'boolean'],
-                'finished_weight_grams' => ['nullable', 'numeric', 'gt:0'],
+                'finished_weight_grams' => ['required', 'numeric', 'gt:0'],
                 'components' => ['required', 'array', 'min:1'],
                 'components.*.ingredient_id' => [
                     'required',

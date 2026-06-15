@@ -285,6 +285,49 @@ class IngredientLibraryController extends Controller
             'detailView' => $ingredient->isPreparedBaseIngredient()
                 ? $this->buildBaseIngredientDetailViewPayload($ingredient)
                 : null,
+            'baseRecipeEdit' => $ingredient->isPreparedBaseIngredient()
+                ? $this->buildBaseRecipeEditPayload($ingredient)
+                : null,
+        ];
+    }
+
+    /**
+     * Editable composition rows for the ingredient-library base recipe editor.
+     *
+     * @return array<string, mixed>
+     */
+    private function buildBaseRecipeEditPayload(Ingredient $ingredient): array
+    {
+        $rows = [];
+        $totalGrams = 0.0;
+
+        foreach ($ingredient->components as $child) {
+            $grams = (float) ($child->pivot->amount_grams ?? 0);
+            $totalGrams += $grams;
+            $rows[] = [
+                'ingredientId' => (int) $child->id,
+                'selectedName' => $child->name,
+                'nameQuery' => $child->name,
+                'amount' => $this->formatTrimmedDecimal($grams, 2),
+                'unit' => 'g',
+            ];
+        }
+
+        if ($rows === []) {
+            $rows[] = [
+                'ingredientId' => null,
+                'selectedName' => '',
+                'nameQuery' => '',
+                'amount' => '100',
+                'unit' => 'g',
+            ];
+        }
+
+        return [
+            'finishedWeightGrams' => $totalGrams > 0 ? $this->formatTrimmedDecimal($totalGrams, 2) : '',
+            'description' => trim((string) ($ingredient->description ?? '')),
+            'instructions' => trim((string) ($ingredient->instructions ?? '')),
+            'compositionRows' => $rows,
         ];
     }
 
