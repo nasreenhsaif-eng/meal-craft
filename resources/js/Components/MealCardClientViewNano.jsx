@@ -62,6 +62,7 @@ function MacroGridSection({ macros, variant }) {
  * @param {'front'|'back'|undefined} [props.deckStackRole] Depth cue for carousel: front gets a subtle left-facing stack shadow.
  * @param {'eager'|'lazy'} [props.imageLoading] Hero/front slides should use eager; stack backs use lazy.
  * @param {boolean} [props.ribbon] Desktop Netflix ribbon: fill slide cell width.
+ * @param {boolean} [props.alignActionsBottom] Static two-up row: align craft buttons on the same baseline.
  * @param {string} [props.className] Extra classes on the outer article.
  * @param {boolean} [props.vibrantCraftWhenAtLimit] Deck only: when selection slots are full, keep cards/buttons full-opacity (no greyed deck).
  * @param {boolean} [props.hideCraftButton] Read-only decks: hide CRAFT THIS MEAL (detail view only).
@@ -80,6 +81,7 @@ export default function MealCardClientViewNano({
     deck = false,
     deckStackRole,
     ribbon = false,
+    alignActionsBottom = false,
     imageLoading = 'lazy',
     className = '',
     vibrantCraftWhenAtLimit = false,
@@ -179,8 +181,16 @@ export default function MealCardClientViewNano({
                         )}
                     </div>
 
-                    <div className="relative flex flex-col gap-0 px-3 pb-2 pt-0">
-                        <div className="min-h-[2.5rem] shrink-0">
+                    <div
+                        className={`relative flex flex-col gap-0 px-3 pb-2 pt-0 ${alignActionsBottom ? 'min-h-0 flex-1' : ''}`.trim()}
+                    >
+                        <div
+                            className={
+                                alignActionsBottom
+                                    ? 'flex h-[3rem] shrink-0 items-start justify-center'
+                                    : 'min-h-[2.5rem] shrink-0'
+                            }
+                        >
                             <h3
                                 className={`mt-2 w-full text-center font-bold tracking-tight text-[#262A22] ${titleClass}`}
                                 style={{
@@ -209,7 +219,9 @@ export default function MealCardClientViewNano({
                         </button>
 
                         {hideCraftButton ? null : (
-                            <div className="mt-1 w-full shrink-0 pb-0.5">
+                            <div
+                                className={`w-full shrink-0 pb-0.5 ${alignActionsBottom ? 'mt-auto pt-1' : 'mt-1'}`.trim()}
+                            >
                                 <Button
                                     type="button"
                                     variant={selected ? 'primary' : 'secondary'}

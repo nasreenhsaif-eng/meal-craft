@@ -188,13 +188,15 @@ final class RecipeComponentsCsvParser
             throw new InvalidArgumentException(__('Recipe components require positive ingredient ids and amounts.'));
         }
 
-        $ingredient = Ingredient::query()->whereKey($ingredientId)->where('is_verified', true)->first();
+        $ingredient = null;
+
+        $legacyName = LegacyMenuIngredientIdMap::nameForLegacyId($ingredientId);
+        if ($legacyName !== null) {
+            $ingredient = IngredientLibraryNameMatcher::resolveForImportLabel($legacyName);
+        }
 
         if ($ingredient === null) {
-            $legacyName = LegacyMenuIngredientIdMap::nameForLegacyId($ingredientId);
-            if ($legacyName !== null) {
-                $ingredient = IngredientLibraryNameMatcher::resolveForImportLabel($legacyName);
-            }
+            $ingredient = Ingredient::query()->whereKey($ingredientId)->where('is_verified', true)->first();
         }
 
         if ($ingredient === null) {

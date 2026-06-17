@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Ingredient;
+use App\Support\LegacyMenuIngredientIdMap;
 use App\Support\RecipeComponentsCsvParser;
 
 test('recipe components csv parser parses comma and pipe separated id amount pairs', function () {
@@ -44,6 +45,40 @@ test('recipe components csv parser resolves meal library style name segments', f
     expect($rows)->toHaveCount(1)
         ->and($rows[0]['ingredient_id'])->toBe($mango->id)
         ->and($rows[0]['amount_grams'])->toBe(2000.0);
+});
+
+test('recipe components csv parser prefers legacy id map over recycled database ids', function () {
+    $legacySugar = Ingredient::factory()->create([
+        'is_verified' => true,
+        'name' => 'Recycled Legacy Id Holder',
+        'calories' => 1,
+    ]);
+
+    $mappedSugar = Ingredient::factory()->create([
+        'is_verified' => true,
+        'name' => 'Mapped Sugar',
+        'calories' => 400,
+    ]);
+
+    $mapPath = database_path('data/menu/legacy_ingredient_id_map.json');
+    $original = is_file($mapPath) ? file_get_contents($mapPath) : '{}';
+    file_put_contents($mapPath, json_encode([
+        (string) $legacySugar->id => 'Mapped Sugar',
+    ], JSON_THROW_ON_ERROR));
+
+    try {
+        LegacyMenuIngredientIdMap::resetCacheForTesting();
+        $rows = RecipeComponentsCsvParser::parseToComponentRows("{$legacySugar->id}:100");
+
+        expect($rows)->toHaveCount(1)
+            ->and($rows[0]['ingredient_id'])->toBe($mappedSugar->id)
+            ->and($rows[0]['amount_grams'])->toBe(100.0);
+    } finally {
+        if ($original !== false) {
+            file_put_contents($mapPath, $original);
+        }
+        LegacyMenuIngredientIdMap::resetCacheForTesting();
+    }
 });
 
 test('recipe components csv parser rejects invalid segments', function () {

@@ -4,15 +4,67 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Fixed daily components (same calories for every customer)
+    | Customer plan calorie tiers (kcal / day)
+    |--------------------------------------------------------------------------
+    */
+    'plan_tiers' => [1000, 1200, 1500, 1800, 2000],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Production weekly meal plan (admin scheduler)
     |--------------------------------------------------------------------------
     |
-    | Soup, side salad, and dessert each use a fixed 150 kcal budget.
+    | Customers see soups (and future fixed slots) from this weekly structured
+    | plan. When null, the latest weekly structured plan is used.
     |
     */
-    'fixed_meal_calories' => 150.0,
+    'production_meal_plan_id' => env('CUSTOMER_PRODUCTION_MEAL_PLAN_ID'),
 
-    'fixed_meal_slots' => ['soup', 'side_salad', 'dessert'],
+    /*
+    |--------------------------------------------------------------------------
+    | Consultation craft calorie budgets
+    |--------------------------------------------------------------------------
+    */
+    'business_craft_calories' => 500,
+    'business_side_planning_midpoint' => 175.0,
+
+    /*
+    |--------------------------------------------------------------------------
+    | Slot behaviour
+    |--------------------------------------------------------------------------
+    |
+    | scalable         — portion scales to hit slot target within the plan tier
+    | fixed_portion    — standard kitchen portion; calories count toward tier
+    | optional_add_on  — standard portion; calories added on top (does not rescale others)
+    |
+    */
+    'slot_behaviors' => [
+        'breakfast' => 'scalable',
+        'main' => 'scalable',
+        'side_salad' => 'fixed_portion',
+        'dessert' => 'fixed_portion',
+        'soup' => 'optional_add_on',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Slots that count toward the core plan tier (soup excluded — additive)
+    |--------------------------------------------------------------------------
+    */
+    'core_fixed_portion_slots' => ['side_salad', 'dessert'],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Menu-development calorie bands per slot (min / target / max kcal)
+    |--------------------------------------------------------------------------
+    */
+    'slot_calorie_bands' => [
+        'breakfast' => ['min' => 200.0, 'target' => 240.0, 'max' => 280.0],
+        'main' => ['min' => 300.0, 'target' => 360.0, 'max' => 420.0],
+        'side_salad' => ['min' => 150.0, 'target' => 175.0, 'max' => 200.0],
+        'dessert' => ['min' => 140.0, 'target' => 170.0, 'max' => 200.0],
+        'soup' => ['min' => 120.0, 'target' => 150.0, 'max' => 180.0],
+    ],
 
     /*
     |--------------------------------------------------------------------------
@@ -26,12 +78,25 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Share of scalable budget (after core fixed portions) per slot
+    |--------------------------------------------------------------------------
+    |
+    | Weights must sum to 1.0 across breakfast + (main_each × main count).
+    |
+    */
+    'scalable_slot_weights' => [
+        'breakfast' => 0.20,
+        'main_each' => 0.40,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Baseline calories (library design targets when no meals exist yet)
     |--------------------------------------------------------------------------
     */
     'baseline_calories' => [
-        'breakfast' => 250.0,
-        'main' => 375.0,
+        'breakfast' => 240.0,
+        'main' => 360.0,
     ],
 
     /*

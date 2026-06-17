@@ -42,13 +42,56 @@ final class LegacyMenuIngredientIdMap
             }
         }
 
+        foreach (self::manualOverrides() as $legacyId => $ingredientName) {
+            $map[$legacyId] = $ingredientName;
+        }
+
         self::$map = $map;
 
         return self::$map;
     }
 
+    /**
+     * Authoritative legacy-id → library-name fixes when git inference or recycled DB ids disagree.
+     *
+     * @return LegacyMap
+     */
+    private static function manualOverrides(): array
+    {
+        return [
+            309 => 'Cashew Nuts',
+            316 => 'Chicken Breast',
+            337 => 'Eggplant',
+            359 => 'Curry Spice Mix',
+            372 => 'Water (Filtered)',
+            384 => 'Quinoa (White)',
+            387 => 'Rosemary (Fresh)',
+            403 => 'Tahini',
+            420 => 'Zucchini',
+            433 => 'Za\'atar',
+            450 => 'Basil',
+            465 => 'Turmeric Powder',
+            515 => 'Fresh Coriander',
+            516 => 'Ginger',
+            522 => 'Mustard Oil',
+            584 => 'Oregano',
+            436 => 'Beef Chuck Roast',
+            466 => 'Basmati Rice (White)',
+            495 => 'Cherry Tomatoes',
+            498 => 'Quinoa Flour',
+            503 => 'Apple Cider Vinegar',
+            335 => 'Fresh Parsley',
+            587 => 'Chili Powder',
+        ];
+    }
+
     public static function nameForLegacyId(int $legacyId): ?string
     {
         return self::legacyIdToName()[$legacyId] ?? null;
+    }
+
+    public static function resetCacheForTesting(): void
+    {
+        self::$map = null;
     }
 }

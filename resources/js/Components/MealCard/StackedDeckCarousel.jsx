@@ -87,7 +87,7 @@ const STATIC_CARD_SHELL_SINGLE =
 
 /** Two-up row: each card takes half the row (minus gap) so they stay horizontal on mobile */
 const STATIC_CARD_SHELL_PAIR =
-    'flex min-h-[232px] w-[calc((100%-1rem)/2)] min-w-0 max-w-[302px] shrink-0 flex-col items-stretch sm:min-h-[248px] sm:w-[calc((100%-1.5rem)/2)] lg:min-h-[264px] lg:max-w-[302px] transform-gpu';
+    'flex h-full min-h-[232px] w-[calc((100%-1rem)/2)] min-w-0 max-w-[302px] shrink-0 flex-col items-stretch self-stretch sm:min-h-[248px] sm:w-[calc((100%-1.5rem)/2)] lg:min-h-[264px] lg:max-w-[302px] transform-gpu';
 
 const DESKTOP_MEDIA = '(min-width: 768px)';
 
@@ -151,7 +151,7 @@ function MobileDeckBackLayer({ depth, xRaw, children }) {
  * @param {T[]} [props.meals] Alias for `items` (live data from parent).
  * @param {string} [props.deckScopeKey] When this identity changes (e.g. day + slot), deck indices reset without breaking circular wrap logic.
  * @param {(item: T, index: number) => string} props.getKey
- * @param {(item: T, index: number, ctx: { isFront: boolean, stackPos: (1|2|3|null), deckLayout: 'ribbon'|'stack' }) => import('react').ReactNode} props.renderCard
+ * @param {(item: T, index: number, ctx: { isFront: boolean, stackPos: (1|2|3|null), deckLayout: 'ribbon'|'stack'|'staticPair' }) => import('react').ReactNode} props.renderCard
  */
 export default function StackedDeckCarousel({ title: _title, items: itemsProp, meals, getKey, renderCard, deckScopeKey }) {
     const items = meals ?? itemsProp ?? [];
@@ -623,7 +623,7 @@ export default function StackedDeckCarousel({ title: _title, items: itemsProp, m
                             {renderMealCard(item, idx, {
                                 isFront: true,
                                 stackPos: null,
-                                deckLayout: 'ribbon',
+                                deckLayout: 'staticPair',
                             })}
                         </div>
                     ))}
@@ -636,10 +636,10 @@ export default function StackedDeckCarousel({ title: _title, items: itemsProp, m
         <div className="group relative w-full md:px-16 lg:px-20">
             {/* Desktop ≥768px — triplicate ribbon + align snap; no 3D stack in DOM */}
             {isDesktopLayout && itemCount > 0 ? (
-                <div className="relative w-full overflow-x-clip overflow-y-visible bg-[#F8F9F6] pb-2 pt-4 outline-none ring-0">
+                <div className="relative w-full overflow-x-clip overflow-y-visible pb-2 pt-4 outline-none ring-0">
                     <div
                         ref={desktopGalleryRef}
-                        className="relative min-h-[10rem] w-full min-w-0 bg-[#F8F9F6] px-8 py-6 outline-none ring-0 md:px-16 lg:px-20"
+                        className="relative min-h-[10rem] w-full min-w-0 px-8 py-6 outline-none ring-0 md:px-16 lg:px-20"
                     >
                         <div className="relative overflow-x-clip">
                         <motion.div

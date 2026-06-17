@@ -411,7 +411,7 @@ test('diet protocol submission calculates and persists daily targets', function 
     $profile = $customer->fresh()->customerProfile;
 
     expect($profile?->diet_protocol)->toBe('ketobiotic')
-        ->and($profile?->daily_calorie_target)->toBeGreaterThan(1200)
+        ->and($profile?->daily_calorie_target)->toBeIn([1000, 1200, 1500, 1800, 2000])
         ->and($profile?->fat_percentage)->toBe(70.0)
         ->and($customer->fresh()->currentOnboardingStep())->toBe(OnboardingStep::Birthday);
 
@@ -490,7 +490,11 @@ test('completed onboarding unlocks the customer app home', function () {
 
     $this->actingAs($customer)
         ->get(route('app.home'))
-        ->assertSuccessful();
+        ->assertSuccessful()
+        ->assertInertia(fn ($page) => $page
+            ->component('App/Home')
+            ->where('consultationUrl', route('consultation.crafted-for-you'))
+            ->where('craftPlan', null));
 });
 
 test('completed customers can reset onboarding for testing', function () {

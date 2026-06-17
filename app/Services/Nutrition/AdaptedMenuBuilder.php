@@ -12,22 +12,38 @@ use App\Services\RecipeNutritionCalculator;
 use App\Support\MealPlanSlotBasedDayNutrition;
 
 /**
- * Builds the customer-facing menu: scales Breakfast + Main meals by the plan multiplier,
- * and returns fixed Soup / Side Salad / Dessert at 150 kcal each (unscaled).
+ * Builds the customer-facing menu with per-meal scaling for breakfast and mains,
+ * and standard fixed portions for side salads and desserts. Soup is an optional
+ * add-on at standard portion (no scaling).
  */
 final class AdaptedMenuBuilder
 {
     /**
+     * @param  array{
+     *     include_soup?: bool,
+     *     soup_calories?: float,
+     *     side_salad_calories?: float,
+     *     dessert_calories?: float,
+     *     snap_to_tier?: bool,
+     *     craft_key?: string
+     * }  $options
      * @return array{
      *     plan: array<string, mixed>,
-     *     fixed_meals: list<array<string, mixed>>,
-     *     scalable_meals: list<array<string, mixed>>
+     *     fixed_portion_meals: list<array<string, mixed>>,
+     *     optional_add_on_meals: list<array<string, mixed>>,
+     *     scalable_meals: list<array<string, mixed>>,
+     *     fixed_meals: list<array<string, mixed>>
      * }
      */
-    public static function build(CustomerProfile $profile): array
+    public static function build(CustomerProfile $profile, array $options = []): array
     {
-        $plan = UserPlanCalculator::calculateUserPlan($profile);
-        $multiplier = (float) $plan['scaling_multiplier'];
+        $plan = UserPlanCalculator::calculateUserPlan($profile, $options);
+
+        $craftKey = isset($options['craft_key']) ? (string) $options['craft_key'] : '';
+
+        if ($craftKey !== '' && in_array($craftKey, CraftCaloriePlanner::keys(), true)) {
+            $plan = CraftCaloriePlanner::applyCraftToPlan($plan, $craftKey);
+        }
 
         $meals = Meal::queryForMealLibrary()
             ->with('ingredients')
@@ -35,7 +51,8 @@ final class AdaptedMenuBuilder
             ->orderBy('name')
             ->get();
 
-        $fixedMeals = [];
+        $fixedPortionMeals = [];
+        $optionalAddOnMeals = [];
         $scalableMeals = [];
 
         foreach ($meals as $meal) {
@@ -45,32 +62,90 @@ final class AdaptedMenuBuilder
                 continue;
             }
 
-            if (self::isFixedSlot($slot)) {
-                $fixedMeals[] = self::serializeFixedMeal($meal, $slot, $profile);
+            $behavior = UserPlanCalculator::slotBehavior($slot);
+
+            if ($behavior === 'fixed_portion') {
+                $fixedPortionMeals[] = self::serializeStandardPortionMeal($meal, $slot, $profile);
 
                 continue;
             }
 
-            if (self::isScalableSlot($slot)) {
-                $scalableMeals[] = self::serializeScaledMeal($meal, $slot, $multiplier, $plan);
+            if ($behavior === 'optional_add_on') {
+                $optionalAddOnMeals[] = self::serializeStandardPortionMeal($meal, $slot, $profile, isOptionalAddOn: true);
+
+                continue;
+            }
+
+            if ($behavior === 'scalable') {
+                $scalableMeals[] = self::serializeScaledMeal($meal, $slot, $plan);
             }
         }
 
         return [
             'plan' => $plan,
-            'fixed_meals' => $fixedMeals,
+            'fixed_portion_meals' => $fixedPortionMeals,
+            'optional_add_on_meals' => $optionalAddOnMeals,
             'scalable_meals' => $scalableMeals,
+            'fixed_meals' => $fixedPortionMeals,
+            'scheduled_soups_by_weekday' => ProductionWeeklyMenuSchedule::scheduledSoupsByWeekday($profile),
+            'production_meal_plan_id' => ProductionWeeklyMenuSchedule::resolveProductionMealPlan()?->id,
         ];
     }
 
-    private static function isFixedSlot(string $slot): bool
+    /**
+     * @param  array{
+     *     include_soup?: bool,
+     *     soup_calories?: float,
+     *     side_salad_calories?: float,
+     *     dessert_calories?: float,
+     *     snap_to_tier?: bool,
+     *     craft_key?: string
+     * }  $options
+     * @return array<string, mixed>|null
+     */
+    public static function adaptMealForProfile(CustomerProfile $profile, Meal $meal, array $options = []): ?array
     {
-        return in_array($slot, ['soup', 'side_salad', 'dessert'], true);
+        $meal->loadMissing('ingredients');
+        $slot = self::resolveSlot($meal);
+
+        if ($slot === null) {
+            return null;
+        }
+
+        $plan = UserPlanCalculator::calculateUserPlan($profile, $options);
+
+        $craftKey = isset($options['craft_key']) ? (string) $options['craft_key'] : '';
+
+        if ($craftKey !== '' && in_array($craftKey, CraftCaloriePlanner::keys(), true)) {
+            $plan = CraftCaloriePlanner::applyCraftToPlan($plan, $craftKey);
+        }
+        $behavior = UserPlanCalculator::slotBehavior($slot);
+
+        if ($behavior === 'scalable') {
+            return self::serializeScaledMeal($meal, $slot, $plan);
+        }
+
+        return self::serializeStandardPortionMeal(
+            $meal,
+            $slot,
+            $profile,
+            isOptionalAddOn: $behavior === 'optional_add_on',
+        );
     }
 
-    private static function isScalableSlot(string $slot): bool
+    public static function mealScalingMultiplier(Meal $meal, string $slot, array $plan): float
     {
-        return in_array($slot, ['breakfast', 'main'], true);
+        $baselineCalories = (float) ($meal->nutritionForDisplay()['calories'] ?? 0);
+
+        if ($baselineCalories <= 0) {
+            return 1.0;
+        }
+
+        $slotTarget = $slot === 'breakfast'
+            ? (float) $plan['scalable_slot_targets']['breakfast']['calories']
+            : (float) $plan['scalable_slot_targets']['main_each']['calories'];
+
+        return max(0.0, round($slotTarget / $baselineCalories, 4));
     }
 
     private static function resolveSlot(Meal $meal): ?string
@@ -103,26 +178,30 @@ final class AdaptedMenuBuilder
     /**
      * @return array<string, mixed>
      */
-    private static function serializeFixedMeal(Meal $meal, string $slot, CustomerProfile $profile): array
-    {
-        $targetCalories = UserPlanCalculator::fixedCaloriesPerMeal();
+    private static function serializeStandardPortionMeal(
+        Meal $meal,
+        string $slot,
+        CustomerProfile $profile,
+        bool $isOptionalAddOn = false,
+    ): array {
         $baseline = $meal->nutritionForDisplay();
-        $ingredients = self::serializeIngredients($meal, 1.0);
+        $normalizedBaseline = self::normalizeNutritionKeys($baseline);
 
         return [
             'id' => $meal->id,
             'name' => $meal->name,
             'slot' => $slot,
+            'portion_behavior' => UserPlanCalculator::slotBehavior($slot),
             'is_scaled' => false,
+            'scaling_multiplier' => 1.0,
+            'counts_toward_core_tier' => ! $isOptionalAddOn,
             'image_url' => $meal->imageUrl(),
             'instructions' => $meal->instructions,
             'short_description' => $meal->short_description,
-            'baseline_nutrition' => self::normalizeNutritionKeys($baseline),
-            'adapted_nutrition' => self::normalizeNutritionKeys(
-                MealPlanSlotBasedDayNutrition::placeholderNutrition($targetCalories)
-            ),
-            'ingredients' => $ingredients,
-            'fixed_calorie_budget' => $targetCalories,
+            'baseline_nutrition' => $normalizedBaseline,
+            'adapted_nutrition' => $normalizedBaseline,
+            'ingredients' => self::serializeScaledIngredients($meal, 1.0),
+            'planning_midpoint_calories' => UserPlanCalculator::slotPlanningMidpoint($slot),
             'macro_split' => [
                 'protein_percentage' => (float) $profile->protein_percentage,
                 'carb_percentage' => (float) $profile->carb_percentage,
@@ -135,8 +214,9 @@ final class AdaptedMenuBuilder
      * @param  array<string, mixed>  $plan
      * @return array<string, mixed>
      */
-    private static function serializeScaledMeal(Meal $meal, string $slot, float $multiplier, array $plan): array
+    private static function serializeScaledMeal(Meal $meal, string $slot, array $plan): array
     {
+        $multiplier = self::mealScalingMultiplier($meal, $slot, $plan);
         $baseline = $meal->nutritionForDisplay();
         $scaledRows = self::scaledIngredientRows($meal, $multiplier);
         $adaptedNutrition = RecipeNutritionCalculator::fromRows($scaledRows);
@@ -145,8 +225,10 @@ final class AdaptedMenuBuilder
             'id' => $meal->id,
             'name' => $meal->name,
             'slot' => $slot,
-            'is_scaled' => true,
+            'portion_behavior' => UserPlanCalculator::slotBehavior($slot),
+            'is_scaled' => $multiplier !== 1.0,
             'scaling_multiplier' => $multiplier,
+            'counts_toward_core_tier' => true,
             'image_url' => $meal->imageUrl(),
             'instructions' => $meal->instructions,
             'short_description' => $meal->short_description,
@@ -194,14 +276,6 @@ final class AdaptedMenuBuilder
         }
 
         return $rows;
-    }
-
-    /**
-     * @return list<array<string, mixed>>
-     */
-    private static function serializeIngredients(Meal $meal, float $multiplier): array
-    {
-        return self::serializeScaledIngredients($meal, $multiplier);
     }
 
     /**

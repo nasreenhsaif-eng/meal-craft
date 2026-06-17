@@ -30,6 +30,25 @@ it('applies a deficit calorie range when goal is lose weight', function () {
         ->and($targets['daily_kj_max'])->toBe((int) round($targets['daily_calories_max'] * 4.184));
 });
 
+it('snaps daily calories to the nearest configured plan tier', function () {
+    $profile = new CustomerProfile([
+        'sex' => CustomerSex::Female,
+        'age' => 32,
+        'weight_kg' => 68,
+        'target_weight_kg' => 68,
+        'height_cm' => 165,
+        'activity_level' => CustomerActivityLevel::LightlyActive,
+        'diet_protocol' => DietProtocol::Balanced->value,
+        'goal' => CustomerGoal::Maintain,
+    ]);
+
+    $targets = OnboardingDailyTargetsCalculator::calculate($profile);
+
+    expect($targets['plan_tier'])->toBeIn([1000, 1200, 1500, 1800, 2000])
+        ->and($targets['daily_calories'])->toBe($targets['plan_tier'])
+        ->and($targets['plan_tiers'])->toBe([1000, 1200, 1500, 1800, 2000]);
+});
+
 it('applies a maintain calorie range from TDEE to TDEE + 100', function () {
     $profile = new CustomerProfile([
         'sex' => CustomerSex::Female,

@@ -1,11 +1,16 @@
 <?php
 
+use App\Enums\MealPlanSchemaType;
+use App\Enums\MealPlanSlotType;
 use App\Enums\MealType;
 use App\Enums\RecipeCategory;
 use App\Models\CustomerProfile;
 use App\Models\Ingredient;
 use App\Models\Meal;
+use App\Models\MealPlan;
+use App\Models\MealPlanDayMeal;
 use App\Models\User;
+use App\Services\Nutrition\AdaptedMenuBuilder;
 use App\Services\Nutrition\UserPlanCalculator;
 
 test('guests cannot post onboarding', function () {
@@ -30,7 +35,7 @@ test('authenticated user can complete onboarding and receive a plan', function (
 
     $response->assertCreated()
         ->assertJsonPath('profile.macro_split_style', 'high_protein')
-        ->assertJsonPath('plan.fixed.calories', 450)
+        ->assertJsonPath('plan.fixed.calories', 345)
         ->assertJsonStructure([
             'plan' => [
                 'scaling_multiplier',
@@ -46,7 +51,7 @@ test('authenticated user can complete onboarding and receive a plan', function (
     ]);
 });
 
-test('adapted menu requires completed onboarding', function () {
+test('adapted menu requires a calorie target on the customer profile', function () {
     $user = User::factory()->create();
 
     $this->actingAs($user)
@@ -54,7 +59,20 @@ test('adapted menu requires completed onboarding', function () {
         ->assertUnprocessable();
 });
 
-test('adapted menu scales breakfast and main meals by customer multiplier', function () {
+test('adapted menu is available during onboarding when daily calorie target is set', function () {
+    $user = User::factory()->create();
+    CustomerProfile::factory()->for($user)->create([
+        'daily_calorie_target' => 1500,
+        'onboarding_completed_at' => null,
+    ]);
+
+    $this->actingAs($user)
+        ->getJson('/api/menu/adapted')
+        ->assertSuccessful()
+        ->assertJsonPath('plan.plan_tier', 1500);
+});
+
+test('adapted menu scales breakfast and main meals by per-meal multiplier toward slot target', function () {
     $user = User::factory()->create();
     CustomerProfile::factory()->for($user)->create([
         'daily_calorie_target' => 2000,
@@ -96,18 +114,170 @@ test('adapted menu scales breakfast and main meals by customer multiplier', func
 
     $profile = CustomerProfile::query()->where('user_id', $user->id)->first();
     $plan = UserPlanCalculator::calculateUserPlan($profile);
-    $multiplier = $plan['scaling_multiplier'];
+    $expectedBreakfastMultiplier = AdaptedMenuBuilder::mealScalingMultiplier($breakfast, 'breakfast', $plan);
 
     $response = $this->actingAs($user)->getJson('/api/menu/adapted');
 
     $response->assertSuccessful()
-        ->assertJsonPath('plan.scaling_multiplier', $multiplier);
+        ->assertJsonPath('plan.scaling_multiplier', $plan['scaling_multiplier']);
 
     $scalable = collect($response->json('scalable_meals'));
     $scaledBreakfast = $scalable->firstWhere('name', 'Test Breakfast');
 
     expect($scaledBreakfast)->not->toBeNull()
         ->and($scaledBreakfast['is_scaled'])->toBeTrue()
+        ->and($scaledBreakfast['scaling_multiplier'])->toEqual($expectedBreakfastMultiplier)
         ->and((float) $scaledBreakfast['ingredients'][0]['adapted_amount_grams'])
-        ->toEqual(round(100 * $multiplier, 2));
+        ->toEqual(round(100 * $expectedBreakfastMultiplier, 2));
+});
+
+test('adapted menu returns fixed portion meals with unscaled recipe nutrition', function () {
+    $user = User::factory()->create();
+    CustomerProfile::factory()->for($user)->create([
+        'daily_calorie_target' => 1500,
+        'protein_percentage' => 30,
+        'carb_percentage' => 40,
+        'fat_percentage' => 30,
+    ]);
+
+    $salad = Meal::factory()->create([
+        'name' => 'Test Side Salad',
+        'meal_type' => MealType::Salad,
+        'category' => RecipeCategory::SideSalad,
+        'total_calories' => 180,
+        'total_protein' => 6,
+        'total_carbs' => 12,
+        'total_fat' => 10,
+        'library_sort_order' => 3,
+    ]);
+
+    $response = $this->actingAs($user)->getJson('/api/menu/adapted');
+
+    $response->assertSuccessful();
+
+    $fixed = collect($response->json('fixed_portion_meals'));
+    $sideSalad = $fixed->firstWhere('name', 'Test Side Salad');
+
+    expect($sideSalad)->not->toBeNull()
+        ->and($sideSalad['portion_behavior'])->toBe('fixed_portion')
+        ->and($sideSalad['is_scaled'])->toBeFalse()
+        ->and($sideSalad['scaling_multiplier'])->toEqual(1.0)
+        ->and($sideSalad['counts_toward_core_tier'])->toBeTrue()
+        ->and((float) $sideSalad['baseline_nutrition']['calories'])->toBe(180.0)
+        ->and((float) $sideSalad['adapted_nutrition']['calories'])->toBe(180.0);
+});
+
+test('adapted menu lists soups as optional add-ons and include_soup raises day total', function () {
+    $user = User::factory()->create();
+    CustomerProfile::factory()->for($user)->create([
+        'daily_calorie_target' => 1500,
+        'protein_percentage' => 30,
+        'carb_percentage' => 40,
+        'fat_percentage' => 30,
+    ]);
+
+    Meal::factory()->create([
+        'name' => 'Test Soup',
+        'meal_type' => MealType::Soup,
+        'category' => RecipeCategory::Soup,
+        'total_calories' => 140,
+        'total_protein' => 8,
+        'total_carbs' => 16,
+        'total_fat' => 4,
+        'library_sort_order' => 4,
+    ]);
+
+    $withoutSoup = $this->actingAs($user)->getJson('/api/menu/adapted');
+    $withSoup = $this->actingAs($user)->getJson('/api/menu/adapted?include_soup=1');
+
+    $withoutSoup->assertSuccessful();
+    $withSoup->assertSuccessful()
+        ->assertJsonPath('include_soup', true)
+        ->assertJsonPath('plan.include_soup', true)
+        ->assertJsonPath('plan.day_total_calories', 1650);
+
+    $soups = collect($withSoup->json('optional_add_on_meals'));
+    $soup = $soups->firstWhere('name', 'Test Soup');
+
+    expect($soup)->not->toBeNull()
+        ->and($soup['portion_behavior'])->toBe('optional_add_on')
+        ->and($soup['counts_toward_core_tier'])->toBeFalse()
+        ->and((float) $soup['adapted_nutrition']['calories'])->toBe(140.0)
+        ->and((float) $withoutSoup->json('plan.day_total_calories'))->toEqual(1500.0);
+});
+
+test('adapted menu exposes admin-scheduled soups per weekday from production meal plan', function () {
+    $user = User::factory()->create();
+    CustomerProfile::factory()->for($user)->create([
+        'daily_calorie_target' => 1500,
+    ]);
+
+    $mondaySoup = Meal::factory()->create([
+        'name' => 'Monday Lentil Soup',
+        'meal_type' => MealType::Soup,
+        'category' => RecipeCategory::Soup,
+        'total_calories' => 150,
+    ]);
+
+    $tuesdaySoup = Meal::factory()->create([
+        'name' => 'Tuesday Tomato Soup',
+        'meal_type' => MealType::Soup,
+        'category' => RecipeCategory::Soup,
+        'total_calories' => 145,
+    ]);
+
+    $plan = MealPlan::query()->create([
+        'name' => 'Production Weekly',
+        'goal' => 'Customer production schedule',
+        'schema_type' => MealPlanSchemaType::WeeklyStructured,
+        'plan_category' => 'balanced',
+    ]);
+
+    foreach ([1 => $mondaySoup, 2 => $tuesdaySoup] as $dayNumber => $meal) {
+        MealPlanDayMeal::query()->create([
+            'meal_plan_id' => $plan->id,
+            'meal_id' => $meal->id,
+            'day_number' => $dayNumber,
+            'slot_type' => MealPlanSlotType::Soup->value,
+            'slot_index' => 1,
+            'is_option_b' => false,
+        ]);
+    }
+
+    config(['customer_nutrition.production_meal_plan_id' => $plan->id]);
+
+    $response = $this->actingAs($user)->getJson('/api/menu/adapted');
+
+    $response->assertSuccessful()
+        ->assertJsonPath('production_meal_plan_id', $plan->id)
+        ->assertJsonPath('scheduled_soups_by_weekday.1.name', 'Monday Lentil Soup')
+        ->assertJsonPath('scheduled_soups_by_weekday.2.name', 'Tuesday Tomato Soup');
+
+    expect($response->json('scheduled_soups_by_weekday.3'))->toBeNull();
+});
+
+test('adapted menu applies craft-specific calorie budgets when craft_key is provided', function () {
+    $user = User::factory()->create();
+    CustomerProfile::factory()->for($user)->create([
+        'daily_calorie_target' => 1500,
+    ]);
+
+    $response = $this->actingAs($user)->getJson('/api/menu/adapted?craft_key=business');
+
+    $response->assertSuccessful()
+        ->assertJsonPath('plan.craft_key', 'business')
+        ->assertJsonPath('plan.craft_day_calories', 500);
+});
+
+test('adapted menu day craft subtracts one main meal from the plan tier', function () {
+    $user = User::factory()->create();
+    CustomerProfile::factory()->for($user)->create([
+        'daily_calorie_target' => 2000,
+    ]);
+
+    $response = $this->actingAs($user)->getJson('/api/menu/adapted?craft_key=day');
+
+    $response->assertSuccessful()
+        ->assertJsonPath('plan.craft_key', 'day')
+        ->assertJsonPath('plan.craft_day_calories', 1338);
 });

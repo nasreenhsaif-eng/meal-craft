@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import PillButton from '../Atoms/Button/Button.jsx';
 import SquareCheckbox from '../Atoms/Icons/SquareCheckbox.jsx';
 import StackedDeckCarousel from '../MealCard/StackedDeckCarousel.jsx';
@@ -45,6 +45,73 @@ export function filterMealsByCategory(source, mealTypeLabel) {
     return source.filter((m) => mealMatchesConsultationCategory(m, mealTypeLabel));
 }
 
+/**
+ * Demo fallback when no production schedule is loaded.
+ *
+ * @param {ConsultationMeal[]} source
+ */
+export function soupOfTheDayMeals(source) {
+    const soups = filterMealsByCategory(source, 'Soup');
+
+    return soups.length > 0 ? [soups[0]] : [];
+}
+
+/** Max cards shown per category deck in consultation (matches fixture / product caps). */
+export const CONSULTATION_DECK_OPTION_LIMITS = Object.freeze({
+    breakfast: 2,
+    meal: 4,
+    sidesalad: 2,
+    dessert: 2,
+});
+
+const CONSULTATION_SLOT_MEAL_TYPE_LABELS = Object.freeze({
+    breakfast: 'Breakfast',
+    meal: 'Meal',
+    sidesalad: 'Side salad',
+    dessert: 'Dessert',
+    soup: 'Soup',
+});
+
+/**
+ * Consultation decks always show a fixed number of options per slot — never the full library.
+ *
+ * @param {ConsultationMeal[]} source
+ * @param {'breakfast' | 'meal' | 'sidesalad' | 'dessert' | 'soup'} slotKey
+ */
+export function consultationDeckOptionsForSlotKey(source, slotKey) {
+    const mealTypeLabel = CONSULTATION_SLOT_MEAL_TYPE_LABELS[slotKey];
+    if (!mealTypeLabel) {
+        return [];
+    }
+
+    const filtered = source.filter((meal) => meal.mealType === mealTypeLabel);
+    const limit = CONSULTATION_DECK_OPTION_LIMITS[slotKey];
+
+    return limit !== undefined ? filtered.slice(0, limit) : filtered;
+}
+
+/**
+ * Consultation UI only ever surfaces capped deck options — same shape as the original MOCK_MEALS fixture.
+ *
+ * @param {ConsultationMeal[]} source
+ */
+export function buildConsultationDeckCatalog(source) {
+    /** @type {ConsultationMeal[]} */
+    const catalog = [];
+    const seen = new Set();
+
+    for (const slotKey of /** @type {const} */ (['breakfast', 'meal', 'sidesalad', 'dessert'])) {
+        for (const meal of consultationDeckOptionsForSlotKey(source, slotKey)) {
+            if (!seen.has(meal.id)) {
+                seen.add(meal.id);
+                catalog.push(meal);
+            }
+        }
+    }
+
+    return catalog;
+}
+
 /** Default slot caps for Full Craft (soup optional: max 1 when opted in). */
 export const DEFAULT_FULL_CRAFT_MAX_SELECTIONS = Object.freeze({
     breakfasts: 1,
@@ -86,7 +153,7 @@ export const FULL_CRAFT_CATEGORY_SECTIONS = Object.freeze([
     {
         selectionKey: 'soup',
         deckSuffix: 'soup',
-        header: 'Soup of the Day',
+        header: 'Soup for this day',
         mealTypeLabel: 'Soup',
         defaultMax: 1,
         soupOptional: true,
@@ -332,7 +399,7 @@ export function PlanDayMacroBreakdown({ categories, dayLabel }) {
  * @param {(next: boolean) => void} props.onChange
  * @param {string} [props.header]
  */
-export function SoupOfTheDayOptIn({ checked, onChange, header = 'Soup of the Day' }) {
+export function SoupOfTheDayOptIn({ checked, onChange, header = 'Soup for this day' }) {
     return (
         <div className="relative isolate w-full overflow-x-clip overflow-y-visible py-0.5">
             <p className="px-4 font-montserrat text-[15px] font-bold leading-snug tracking-tight text-[#262A22] sm:text-base md:px-0">
@@ -346,7 +413,7 @@ export function SoupOfTheDayOptIn({ checked, onChange, header = 'Soup of the Day
             >
                 <SquareCheckbox checked={checked} presentational className="shrink-0" />
                 <span className="min-w-0 truncate whitespace-nowrap font-body text-xs font-normal leading-none tracking-tight text-[#262A22] sm:text-sm">
-                    I would like Soup of the Day (Optional)
+                    I would like to add soup for this day (optional)
                 </span>
             </button>
         </div>
@@ -408,6 +475,30 @@ export function getIncompleteFullCraftCategoryKeys(categorySelections) {
         const have = categorySelections[key]?.length ?? 0;
         return have !== need;
     });
+}
+
+const INCOMPLETE_SELECTION_LABELS = Object.freeze({
+    breakfasts: 'breakfast',
+    meals: '2 main meals',
+    sideSalads: 'side salad',
+    desserts: 'dessert',
+});
+
+/**
+ * @param {SelectionCategoryKey[]} missingKeys
+ */
+export function incompleteSelectionWarningMessage(missingKeys) {
+    if (missingKeys.length === 0) {
+        return 'Select all required meals before continuing.';
+    }
+
+    const parts = missingKeys.map((key) => INCOMPLETE_SELECTION_LABELS[key] ?? key);
+
+    if (parts.length === 1) {
+        return `Please select a ${parts[0]} before continuing.`;
+    }
+
+    return `Please select: ${parts.join(', ')}.`;
 }
 
 /**
@@ -506,6 +597,7 @@ export function MealSlotCarousel({
                                         <MealCardClientViewNano
                                             deck
                                             ribbon={deckLayout === 'ribbon'}
+                                            alignActionsBottom={deckLayout === 'staticPair'}
                                             deckStackRole={isFront ? 'front' : 'back'}
                                             title={meal.title ?? ''}
                                             imageUrl={meal.imageUrl}
@@ -538,7 +630,11 @@ export function MealSlotCarousel({
  * @param {() => void} [props.onFooterNext]
  * @param {boolean} [props.footerNextDisabled]
  * @param {string} [props.footerNextLabel]
+ * @param {string} [props.footerIncompleteMessage]
+ * @param {ConsultationMeal[]} [props.scheduledSoupMeals]
+ * @param {ConsultationMeal[]} [props.soupCatalogMeals] Full menu catalog for soup fallback (deck meals omit soup).
  * @param {(enabled: boolean) => void} [props.onSoupOptInChange]
+ * @param {string} [props.panelClassName] Height class for the viewport-locked panel shell.
  */
 export default function ChooseYourMeals({
     dayName = '',
@@ -564,13 +660,80 @@ export default function ChooseYourMeals({
     onFooterNext,
     footerNextDisabled = false,
     footerNextLabel = 'NEXT',
+    footerIncompleteMessage = 'Select all required meals before continuing.',
+    scheduledSoupMeals = [],
+    soupCatalogMeals = [],
     onSoupOptInChange,
+    panelClassName = 'h-[100dvh] min-h-screen',
 }) {
     const craftingSubtitle = `CRAFTING YOUR ${String(dayName).trim().toUpperCase()}`;
 
     const [soupOptIn, setSoupOptIn] = useState(() => (categorySelections?.soup?.length ?? 0) > 0);
 
     const [validationFlashKeys, setValidationFlashKeys] = useState(/** @type {SelectionCategoryKey[]} */ ([]));
+    const [incompleteWarning, setIncompleteWarning] = useState(/** @type {string | null} */ (null));
+
+    const scrollContainerRef = useRef(/** @type {HTMLDivElement | null} */ (null));
+
+    const wheelDeltaY = useCallback((event, element) => {
+        if (event.deltaMode === 1) {
+            return event.deltaY * 16;
+        }
+
+        if (event.deltaMode === 2) {
+            return event.deltaY * element.clientHeight;
+        }
+
+        return event.deltaY;
+    }, []);
+
+    const forwardWheelToMealScroller = useCallback(
+        (event) => {
+            const scroller = scrollContainerRef.current;
+            if (!scroller) {
+                return;
+            }
+
+            const deltaY = wheelDeltaY(event, scroller);
+            if (deltaY === 0 || Math.abs(deltaY) <= Math.abs(event.deltaX)) {
+                return;
+            }
+
+            if (!(event.target instanceof Node) || !scroller.contains(event.target)) {
+                return;
+            }
+
+            const maxScrollTop = scroller.scrollHeight - scroller.clientHeight;
+            if (maxScrollTop <= 0) {
+                return;
+            }
+
+            const canScrollDown = scroller.scrollTop < maxScrollTop - 1;
+            const canScrollUp = scroller.scrollTop > 0;
+
+            if ((deltaY > 0 && canScrollDown) || (deltaY < 0 && canScrollUp)) {
+                scroller.scrollTop = Math.max(0, Math.min(maxScrollTop, scroller.scrollTop + deltaY));
+                event.preventDefault();
+                event.stopPropagation();
+            }
+        },
+        [wheelDeltaY],
+    );
+
+    useLayoutEffect(() => {
+        const scroller = scrollContainerRef.current;
+        if (!scroller) {
+            return undefined;
+        }
+
+        scroller.addEventListener('wheel', forwardWheelToMealScroller, { capture: true, passive: false });
+        document.addEventListener('wheel', forwardWheelToMealScroller, { capture: true, passive: false });
+
+        return () => {
+            scroller.removeEventListener('wheel', forwardWheelToMealScroller, { capture: true });
+            document.removeEventListener('wheel', forwardWheelToMealScroller, { capture: true });
+        };
+    }, [forwardWheelToMealScroller]);
 
     useEffect(() => {
         setSoupOptIn((categorySelections?.soup?.length ?? 0) > 0);
@@ -585,8 +748,15 @@ export default function ChooseYourMeals({
     useEffect(() => {
         if (layout === 'categories' && categorySelections && isFullCraftCategoriesComplete(categorySelections)) {
             setValidationFlashKeys([]);
+            setIncompleteWarning(null);
         }
     }, [layout, categorySelections]);
+
+    useEffect(() => {
+        if (layout !== 'categories' && !footerNextDisabled) {
+            setIncompleteWarning(null);
+        }
+    }, [layout, footerNextDisabled]);
 
     const soupSectionDef = FULL_CRAFT_CATEGORY_SECTIONS.find((s) => s.selectionKey === 'soup');
 
@@ -598,14 +768,34 @@ export default function ChooseYourMeals({
     /** Full Craft: gate only on required slot counts; other layouts defer to `footerNextDisabled`. */
     const craftFooterDisabled = layout === 'categories' ? !categoriesComplete : footerNextDisabled;
 
-    const triggerIncompleteFlash = useCallback(() => {
-        if (!categorySelections) {
+    const showIncompleteValidation = useCallback(() => {
+        if (layout === 'categories') {
+            if (!categorySelections) {
+                setValidationFlashKeys([...FULL_CRAFT_REQUIRED_SELECTION_KEYS]);
+                setIncompleteWarning(incompleteSelectionWarningMessage([...FULL_CRAFT_REQUIRED_SELECTION_KEYS]));
+                window.setTimeout(() => setValidationFlashKeys([]), 2200);
+                return;
+            }
+
+            const missing = getIncompleteFullCraftCategoryKeys(categorySelections);
+            setValidationFlashKeys(missing);
+            setIncompleteWarning(incompleteSelectionWarningMessage(missing));
+            window.setTimeout(() => setValidationFlashKeys([]), 2200);
             return;
         }
-        const missing = getIncompleteFullCraftCategoryKeys(categorySelections);
-        setValidationFlashKeys(missing);
-        window.setTimeout(() => setValidationFlashKeys([]), 2200);
-    }, [categorySelections]);
+
+        setIncompleteWarning(footerIncompleteMessage);
+    }, [layout, categorySelections, footerIncompleteMessage]);
+
+    const handleFooterNextClick = useCallback(() => {
+        if (craftFooterDisabled) {
+            showIncompleteValidation();
+            return;
+        }
+
+        setIncompleteWarning(null);
+        onFooterNext?.();
+    }, [craftFooterDisabled, onFooterNext, showIncompleteValidation]);
 
     const categorySections = useMemo(() => {
         if (layout !== 'categories' || !meals?.length || !categorySelections || typeof onToggleCategory !== 'function') {
@@ -649,6 +839,16 @@ export default function ChooseYourMeals({
         validationFlashKeys,
     ]);
 
+    const soupDeckMeals = useMemo(() => {
+        if (scheduledSoupMeals.length > 0) {
+            return scheduledSoupMeals;
+        }
+
+        const catalog = soupCatalogMeals.length > 0 ? soupCatalogMeals : meals;
+
+        return soupOfTheDayMeals(catalog);
+    }, [meals, scheduledSoupMeals, soupCatalogMeals]);
+
     const soupBlock =
         layout === 'categories' &&
         meals?.length &&
@@ -685,7 +885,7 @@ export default function ChooseYourMeals({
                                 deckOnly
                                 title=""
                                 deckScopeKey={`${deckScopePrefix ? `${deckScopePrefix}-` : ''}${soupSectionDef.deckSuffix}`}
-                                cards={filterMealsByCategory(meals, soupSectionDef.mealTypeLabel)}
+                                cards={soupDeckMeals}
                                 selectedIds={categorySelections.soup ?? []}
                                 maxSelected={
                                     maxSelectionsByCategory?.soup !== undefined
@@ -707,19 +907,11 @@ export default function ChooseYourMeals({
         meals?.length &&
         typeof onSelectMeal === 'function';
 
-    const scrollAreaBack =
-        layout === 'categories' && typeof onFooterBack === 'function' ? (
-            <div className="mt-3 border-t border-gray-200/80 pt-3">
-                <PillButton label="BACK" variant="outline" size="md" className="min-w-[120px] px-10" onClick={onFooterBack} />
-            </div>
-        ) : null;
-
     const mainScrollable =
         layout === 'categories' ? (
             <div className="flex flex-col gap-1.5 md:gap-2">
                 {categorySections}
                 {soupBlock}
-                {scrollAreaBack}
             </div>
         ) : children ? (
             children
@@ -735,57 +927,14 @@ export default function ChooseYourMeals({
             />
         ) : null;
 
-    const scrollBottomNext =
-        typeof onFooterNext === 'function' ? (
-            <div
-                className="mt-6 border-t border-gray-200/90 px-4 pb-4 pt-6 max-md:px-4 md:px-6"
-                onClick={() => {
-                    if (layout === 'categories' && !categoriesComplete) {
-                        triggerIncompleteFlash();
-                    }
-                }}
-            >
-                <div
-                    className={`flex flex-wrap items-center gap-3 ${layout !== 'categories' && typeof onFooterBack === 'function' ? 'justify-between' : 'justify-center'}`}
-                >
-                    {layout !== 'categories' && typeof onFooterBack === 'function' ? (
-                        <PillButton
-                            type="button"
-                            label="BACK"
-                            variant="outline"
-                            size="md"
-                            className="min-w-[120px] px-10"
-                            onClick={onFooterBack}
-                        />
-                    ) : null}
-                    <div className="inline-flex min-h-[50px] min-w-[140px] items-center justify-center">
-                        <PillButton
-                            type="button"
-                            label={footerNextLabel}
-                            variant="primary"
-                            size="md"
-                            disabled={craftFooterDisabled}
-                            aria-disabled={craftFooterDisabled}
-                            className={[
-                                'min-w-[140px] px-10',
-                                craftFooterDisabled ? 'pointer-events-none opacity-40' : '',
-                            ].join(' ')}
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                if (!craftFooterDisabled) {
-                                    onFooterNext?.();
-                                }
-                            }}
-                        />
-                    </div>
-                </div>
-            </div>
-        ) : null;
+    const showStickyFooterNav = typeof onFooterNext === 'function';
 
     const showLegacyNavigation = typeof onFooterNext !== 'function' && navigation;
 
     return (
-        <section className="box-border flex h-[100dvh] min-h-screen w-full flex-col overflow-x-clip border border-gray-200 bg-white shadow-sm max-md:rounded-none max-md:border-x-0 md:rounded-[12px]">
+        <section
+            className={`box-border flex w-full flex-col overflow-x-clip border border-gray-200 bg-white shadow-sm max-md:rounded-none max-md:border-x-0 md:rounded-[12px] ${panelClassName}`.trim()}
+        >
             <div className="shrink-0 border-b border-gray-200 px-4 py-3 text-left max-md:px-4 sm:px-5 sm:py-4 md:p-6">
                 <div className="min-w-0 space-y-1 sm:space-y-1.5">
                     <p className="font-montserrat text-[15px] font-bold leading-snug tracking-tight text-[#262A22] sm:text-[16px]">
@@ -805,12 +954,24 @@ export default function ChooseYourMeals({
             </div>
 
             <div className="flex min-h-0 flex-1 flex-col overflow-x-clip">
-                <div className="mc-choose-meals-scroll min-h-0 flex-1 overflow-y-auto overscroll-y-contain pt-2 max-md:px-0 max-md:pb-4 md:px-5 md:pb-8 md:pt-4 [-webkit-overflow-scrolling:touch]">
+                <div
+                    ref={scrollContainerRef}
+                    className="mc-choose-meals-scroll min-h-0 flex-1 overflow-y-auto overscroll-y-contain pt-2 max-md:px-0 max-md:pb-4 md:px-5 md:pb-8 md:pt-4 [-webkit-overflow-scrolling:touch]"
+                >
                     <div className="relative z-0 min-w-0 space-y-0">{mainScrollable}</div>
-                    {scrollBottomNext}
                 </div>
 
                 <div className="sticky bottom-0 z-[120] shrink-0 border-t border-gray-200 bg-white p-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-[0_-4px_24px_rgba(15,23,42,0.06)] max-md:px-4 md:px-6">
+                    {incompleteWarning ? (
+                        <div
+                            className="mb-3 rounded-[12px] border border-red-200 bg-red-50 px-4 py-3"
+                            role="alert"
+                            aria-live="polite"
+                        >
+                            <p className="font-body text-sm font-semibold text-red-800">{incompleteWarning}</p>
+                        </div>
+                    ) : null}
+
                     <div className="flex flex-wrap items-center justify-between gap-3">
                         {summaryLabel ? (
                             <p className="font-montserrat text-sm font-bold text-[#262A22]">{summaryLabel}</p>
@@ -822,6 +983,34 @@ export default function ChooseYourMeals({
                         </p>
                     </div>
                     {hintText ? <p className="mt-1.5 font-body text-xs text-[#555555]">{hintText}</p> : null}
+
+                    {showStickyFooterNav ? (
+                        <div
+                            className={`mt-3 flex flex-wrap items-center gap-3 ${typeof onFooterBack === 'function' ? 'justify-between' : 'justify-center'}`}
+                        >
+                            {typeof onFooterBack === 'function' ? (
+                                <PillButton
+                                    type="button"
+                                    label="BACK"
+                                    variant="outline"
+                                    size="md"
+                                    className="min-w-[120px] px-10"
+                                    onClick={onFooterBack}
+                                />
+                            ) : (
+                                <span className="hidden min-w-[120px] sm:block" aria-hidden="true" />
+                            )}
+                            <PillButton
+                                type="button"
+                                label={footerNextLabel}
+                                variant="primary"
+                                size="md"
+                                aria-disabled={craftFooterDisabled}
+                                className={['min-w-[140px] px-10', craftFooterDisabled ? 'opacity-60' : ''].join(' ')}
+                                onClick={handleFooterNextClick}
+                            />
+                        </div>
+                    ) : null}
                 </div>
 
                 {showLegacyNavigation ? (

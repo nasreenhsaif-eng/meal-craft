@@ -7,6 +7,7 @@ use App\Services\BaseIngredientService;
 use App\Support\BaseRecipeInstructionsText;
 use App\Support\IngredientG6pdSafety;
 use App\Support\IngredientLibraryCategory;
+use App\Support\IngredientLibraryNameMatcher;
 use App\Support\RecipeComponentsCsvParser;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Str;
@@ -226,6 +227,14 @@ final class IngredientsImport
             $record['is_base_recipe'] = '1';
         }
 
+        $name = trim((string) ($record['name'] ?? ''));
+        if ($name !== '' && IngredientLibraryNameMatcher::labelIndicatesBaseRecipe($name)) {
+            $category = trim((string) ($record['category'] ?? ''));
+            if (! IngredientLibraryCategory::isPrepared($category)) {
+                $record['category'] = IngredientLibraryCategory::BaseIngredient;
+            }
+        }
+
         return $record;
     }
 
@@ -298,6 +307,10 @@ final class IngredientsImport
             if (array_key_exists($field, $record)) {
                 $attrs[$field] = $this->nullableCsvTextFromRecord($record, $field);
             }
+        }
+
+        if (IngredientLibraryNameMatcher::labelIndicatesBaseRecipe($name)) {
+            $attrs['usda_food_category'] = IngredientLibraryCategory::BaseIngredient;
         }
 
         return $attrs;

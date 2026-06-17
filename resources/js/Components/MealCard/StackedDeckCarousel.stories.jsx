@@ -17,29 +17,53 @@ const MEALS = [
     },
     {
         id: 'm3',
-        title: 'Turmeric lentil soup',
-        imageUrl: 'https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&w=1400&q=80',
-        macros: { calories: 380, protein: '22g', carbs: '52g', fat: '10g' },
+        title: 'Ketogenic steak + greens',
+        imageUrl: 'https://images.unsplash.com/photo-1551183053-bf91a1d81141?auto=format&fit=crop&w=1400&q=80',
+        macros: { calories: 720, protein: '55g', carbs: '14g', fat: '46g' },
     },
     {
         id: 'm4',
+        title: 'Hormone Feast turkey + sweet potato',
+        imageUrl: 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=1400&q=80',
+        macros: { calories: 640, protein: '46g', carbs: '62g', fat: '20g' },
+    },
+];
+
+const DESSERTS = [
+    {
+        id: 'd1',
         title: 'Dessert — yogurt berries',
         imageUrl: 'https://images.unsplash.com/photo-1499636136210-6f4ee915583e?auto=format&fit=crop&w=1400&q=80',
         macros: { calories: 220, protein: '12g', carbs: '24g', fat: '8g' },
     },
     {
-        id: 'm5',
-        title: 'Egg white veggie scramble',
-        imageUrl: 'https://images.unsplash.com/photo-1525351484163-7529414344d8?auto=format&fit=crop&w=1400&q=80',
-        macros: { calories: 312, protein: '28g', carbs: '12g', fat: '16g' },
-    },
-    {
-        id: 'm6',
-        title: 'Side salad crunch bowl',
-        imageUrl: 'https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?auto=format&fit=crop&w=1400&q=80',
-        macros: { calories: 260, protein: '8g', carbs: '18g', fat: '17g' },
+        id: 'd2',
+        title: 'Dessert — cacao chia mousse',
+        imageUrl: 'https://images.unsplash.com/photo-1495147466023-ac5c588e2e94?auto=format&fit=crop&w=1400&q=80',
+        macros: { calories: 260, protein: '10g', carbs: '28g', fat: '13g' },
     },
 ];
+
+function DeckCard({ meal, ctx, selectedId, onToggle }) {
+    const { isFront, deckLayout } = ctx;
+
+    return (
+        <MealCardClientViewNano
+            deck
+            ribbon={deckLayout === 'ribbon'}
+            alignActionsBottom={deckLayout === 'staticPair'}
+            deckStackRole={isFront ? 'front' : 'back'}
+            title={meal.title}
+            imageUrl={meal.imageUrl}
+            imageAlt={meal.title}
+            macros={meal.macros}
+            selected={selectedId === meal.id}
+            imageLoading={isFront ? 'eager' : 'lazy'}
+            onToggleSelected={() => onToggle(meal.id)}
+            onViewDetails={() => {}}
+        />
+    );
+}
 
 export default {
     title: 'MealCraft/Components/MealCard/StackedDeckCarousel',
@@ -49,29 +73,29 @@ export default {
     },
 };
 
-export const Default = {
+/**
+ * Consultation “Meals of the Day” ribbon — 4 capped options, white panel (no tinted strip).
+ */
+export const ConsultationMealsRibbon = {
     render: () => {
         const [selectedId, setSelectedId] = useState(null);
+
         return (
-            <div className="max-w-5xl bg-[#F8F9F6] p-6">
+            <div className="max-w-5xl bg-white p-6">
+                <p className="mb-4 font-montserrat text-sm font-bold text-[#262A22]">
+                    Choose Your Meals of the Day — select exactly 2
+                </p>
                 <StackedDeckCarousel
-                    title="Meal options"
+                    title=""
                     meals={MEALS}
-                    deckScopeKey="storybook-default"
+                    deckScopeKey="storybook-consultation-meals-ribbon"
                     getKey={(m) => m.id}
-                    renderCard={(m, _idx, { isFront, deckLayout }) => (
-                        <MealCardClientViewNano
-                            deck
-                            ribbon={deckLayout === 'ribbon'}
-                            deckStackRole={isFront ? 'front' : 'back'}
-                            title={m.title}
-                            imageUrl={m.imageUrl}
-                            imageAlt={m.title}
-                            macros={m.macros}
-                            selected={selectedId === m.id}
-                            imageLoading={isFront ? 'eager' : 'lazy'}
-                            onToggleSelected={() => setSelectedId((prev) => (prev === m.id ? null : m.id))}
-                            onViewDetails={() => {}}
+                    renderCard={(m, idx, ctx) => (
+                        <DeckCard
+                            meal={m}
+                            ctx={ctx}
+                            selectedId={selectedId}
+                            onToggle={(id) => setSelectedId((prev) => (prev === id ? null : id))}
                         />
                     )}
                 />
@@ -80,3 +104,34 @@ export const Default = {
     },
 };
 
+/**
+ * Two-up static row (breakfast / side salad / dessert) — craft buttons align on one baseline.
+ */
+export const StaticPairDesserts = {
+    render: () => {
+        const [selectedId, setSelectedId] = useState(null);
+
+        return (
+            <div className="max-w-5xl bg-white p-6">
+                <p className="mb-4 font-montserrat text-sm font-bold text-[#262A22]">Desserts — select 1</p>
+                <StackedDeckCarousel
+                    title=""
+                    meals={DESSERTS}
+                    deckScopeKey="storybook-static-pair-desserts"
+                    getKey={(m) => m.id}
+                    renderCard={(m, idx, ctx) => (
+                        <DeckCard
+                            meal={m}
+                            ctx={ctx}
+                            selectedId={selectedId}
+                            onToggle={(id) => setSelectedId((prev) => (prev === id ? null : id))}
+                        />
+                    )}
+                />
+            </div>
+        );
+    },
+};
+
+/** @deprecated Use ConsultationMealsRibbon — kept as alias for existing Chromatic baselines. */
+export const Default = ConsultationMealsRibbon;

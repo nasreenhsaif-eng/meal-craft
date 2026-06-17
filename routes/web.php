@@ -7,12 +7,14 @@ use App\Http\Controllers\Admin\CustomerProfileController;
 use App\Http\Controllers\Admin\IngredientLibraryController;
 use App\Http\Controllers\Admin\IngredientLibraryCsvExportController;
 use App\Http\Controllers\Admin\IngredientLibraryCsvImportController;
+use App\Http\Controllers\Admin\KitchenLogisticsController;
 use App\Http\Controllers\Admin\MealController;
 use App\Http\Controllers\Admin\MealLibraryController;
 use App\Http\Controllers\Admin\MealLibraryCsvImportController;
 use App\Http\Controllers\Admin\MealPlanLibraryController;
 use App\Http\Controllers\Auth\PortalChoiceController;
 use App\Http\Controllers\Auth\WelcomeController;
+use App\Http\Controllers\Customer\ConsultationCraftedForYouController;
 use App\Http\Controllers\Customer\CustomerAppController;
 use App\Http\Controllers\Customer\OnboardingController;
 use App\Http\Controllers\MealLibraryCsvExportController;
@@ -75,6 +77,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
                 Route::get('/meal-plan-library/meals/search', [MealPlanLibraryController::class, 'searchMeals'])->name('meal-plan-library.meals.search');
                 Route::get('/meal-plan-library/{mealPlan}', [MealPlanLibraryController::class, 'show'])->name('meal-plan-library.show');
                 Route::get('/customers', [CustomerProfileController::class, 'index'])->name('customers');
+                Route::get('/kitchen-logistics', [KitchenLogisticsController::class, 'index'])->name('kitchen-logistics');
 
                 Route::prefix('settings')->name('settings.')->group(function (): void {
                     Route::redirect('/', '/admin/settings/profile')->name('index');
@@ -135,7 +138,8 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
                 Route::get('/', [CustomerAppController::class, 'home'])->name('home');
             });
 
-        Route::view('consultation/crafted-for-you', 'pages.consultation.crafted-for-you')->name('consultation.crafted-for-you');
+        Route::get('consultation/crafted-for-you', ConsultationCraftedForYouController::class)
+            ->name('consultation.crafted-for-you');
     });
 });
 

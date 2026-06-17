@@ -4,8 +4,10 @@ namespace App\Console\Commands;
 
 use App\IngredientsImport;
 use App\Models\Ingredient;
+use App\Services\BaseIngredientService;
 use App\Services\RecipeNutritionCalculator;
 use App\Support\MenuDevelopmentCsv;
+use App\Support\RecipeComponentsCsvParser;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Process;
@@ -16,11 +18,12 @@ class RestoreBaseRecipeComponentsCommand extends Command
     protected $signature = 'menu:restore-base-recipe-components
                             {--commit=6aaa0e5 : Git commit containing the legacy ingredients.csv snapshot}
                             {--import : Re-import restored base recipes into the database after updating the CSV}
+                            {--sync-all : Resolve every base recipe row from recipe_components and upsert DB + CSV}
                             {--dry-run : Show what would be restored without writing files}';
 
     protected $description = 'Restore base-recipe recipe_components from a legacy ingredients.csv git snapshot';
 
-    public function handle(IngredientsImport $ingredientsImport): int
+    public function handle(IngredientsImport $ingredientsImport, BaseIngredientService $baseIngredientService): int
     {
         $legacyRows = $this->legacyRows();
         if ($legacyRows === []) {
@@ -45,6 +48,15 @@ class RestoreBaseRecipeComponentsCommand extends Command
 
         if (! $this->option('dry-run')) {
             $this->writeLegacyMap($legacyMap);
+        }
+
+        if ($this->option('sync-all')) {
+            return $this->syncAllBaseRecipeComponents(
+                $baseIngredientService,
+                $currentRows,
+                $currentIndex,
+                $currentPath,
+            );
         }
 
         $restored = 0;
@@ -112,6 +124,113 @@ class RestoreBaseRecipeComponentsCommand extends Command
             $this->info("Imported {$count} ingredient CSV row(s) with strict base-recipe components.");
         } else {
             $this->comment('Run with --import to load restored components into the database.');
+        }
+
+        return self::SUCCESS;
+    }
+
+    /**
+     * @param  list<list<string|null>>  $rows
+     * @param  array<string, int>  $index
+     */
+    private function syncAllBaseRecipeComponents(
+        BaseIngredientService $service,
+        array $rows,
+        array $index,
+        string $csvPath,
+    ): int {
+        $synced = 0;
+        $errors = [];
+
+        foreach ($rows as $rowIndex => $row) {
+            if ($rowIndex === 0 || ! $this->rowIsBaseRecipe($row, $index)) {
+                continue;
+            }
+
+            $name = trim((string) ($row[$index['name']] ?? ''));
+            $componentsCell = trim((string) ($row[$index['recipe_components']] ?? ''));
+            if ($name === '' || $componentsCell === '') {
+                continue;
+            }
+
+            try {
+                $componentRows = RecipeComponentsCsvParser::parseToComponentRows(
+                    $componentsCell,
+                    $rowIndex + 1,
+                    $name,
+                );
+            } catch (InvalidArgumentException $exception) {
+                $errors[] = "{$name}: {$exception->getMessage()}";
+
+                continue;
+            }
+
+            if ($componentRows === []) {
+                continue;
+            }
+
+            $ingredient = Ingredient::query()
+                ->where('name', $name)
+                ->where('is_verified', true)
+                ->first();
+
+            if ($ingredient === null || ! $ingredient->isPreparedBaseIngredient()) {
+                $errors[] = "{$name}: verified base ingredient row not found in the database.";
+
+                continue;
+            }
+
+            $finished = $this->toFloat($row[$index['finished_weight_grams']] ?? null);
+            if ($finished <= 0) {
+                $finished = array_sum(array_column($componentRows, 'amount_grams'));
+            }
+
+            $libraryText = [
+                'description' => trim((string) ($row[$index['description']] ?? '')),
+                'instructions' => trim((string) ($row[$index['instructions']] ?? '')),
+            ];
+
+            try {
+                $service->upsert(
+                    $ingredient,
+                    $name,
+                    $componentRows,
+                    $finished > 0 ? $finished : null,
+                    $libraryText,
+                );
+            } catch (InvalidArgumentException $exception) {
+                $errors[] = "{$name}: {$exception->getMessage()}";
+
+                continue;
+            }
+
+            $resolvedCell = collect($componentRows)
+                ->map(static fn (array $component): string => sprintf(
+                    '%d:%s',
+                    (int) $component['ingredient_id'],
+                    rtrim(rtrim(number_format((float) $component['amount_grams'], 4, '.', ''), '0'), '.'),
+                ))
+                ->implode(',');
+
+            $row[$index['recipe_components']] = $resolvedCell;
+            $rows[$rowIndex] = $row;
+            $synced++;
+            $this->line("Synced {$name}");
+        }
+
+        if ($errors !== []) {
+            foreach ($errors as $error) {
+                $this->warn($error);
+            }
+        }
+
+        $this->writeCsv($csvPath, $rows);
+        $this->info("Synced {$synced} base recipe(s) to the database and updated {$csvPath}.");
+
+        if ($errors !== []) {
+            $this->error(count($errors).' base recipe(s) could not be synced.');
+
+            return self::FAILURE;
         }
 
         return self::SUCCESS;

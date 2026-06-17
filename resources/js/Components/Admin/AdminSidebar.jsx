@@ -10,6 +10,7 @@ export const ADMIN_NAV_PATHS = {
     ingredientDb: 'ingredient-db',
     mealHub: 'meal-hub',
     mealPlans: 'meal-plans',
+    kitchenLogistics: 'kitchen-logistics',
     customerProfiles: 'customer-profiles',
     discoveryInsights: 'discovery-insights',
 };
@@ -20,6 +21,7 @@ export const ADMIN_NAV_HREFS = {
     [ADMIN_NAV_PATHS.ingredientDb]: '/admin/ingredient-library',
     [ADMIN_NAV_PATHS.mealHub]: '/admin/meal-library',
     [ADMIN_NAV_PATHS.mealPlans]: '/admin/meal-plan-library',
+    [ADMIN_NAV_PATHS.kitchenLogistics]: '/admin/kitchen-logistics',
     [ADMIN_NAV_PATHS.customerProfiles]: '/admin/customers',
 };
 
@@ -48,6 +50,12 @@ const GROUPS = [
                 label: 'Meal Plan Library',
                 Icon: IconCalendar,
                 href: ADMIN_NAV_HREFS[ADMIN_NAV_PATHS.mealPlans],
+            },
+            {
+                path: ADMIN_NAV_PATHS.kitchenLogistics,
+                label: 'Kitchen Production',
+                Icon: IconKitchen,
+                href: ADMIN_NAV_HREFS[ADMIN_NAV_PATHS.kitchenLogistics],
             },
         ],
     },
@@ -89,6 +97,20 @@ function IconCalendar({ className }) {
         <svg className={className} width={20} height={20} viewBox="0 0 24 24" fill="none" aria-hidden>
             <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="2" />
             <path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+        </svg>
+    );
+}
+
+function IconKitchen({ className }) {
+    return (
+        <svg className={className} width={20} height={20} viewBox="0 0 24 24" fill="none" aria-hidden>
+            <path
+                d="M4 10h16M6 6h12M8 14h8v8H8z"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+            />
         </svg>
     );
 }

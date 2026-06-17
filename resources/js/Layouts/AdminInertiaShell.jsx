@@ -49,6 +49,13 @@ const SHELL_BY_COMPONENT = {
         hidePageTitle: true,
         contentWrapperClassName: WIDE,
     },
+    'Admin/KitchenLogistics': {
+        pageTitle: 'Kitchen Production',
+        activePath: ADMIN_NAV_PATHS.kitchenLogistics,
+        showSearch: false,
+        hidePageTitle: true,
+        contentWrapperClassName: WIDE,
+    },
     'Admin/Settings/Profile': {
         pageTitle: 'Settings',
         activePath: '',

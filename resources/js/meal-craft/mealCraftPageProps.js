@@ -43,26 +43,16 @@ export function ingredientLibraryUrls(pageProps) {
  * @returns {string}
  */
 export function ingredientLibraryBaseUpdateUrl(pageProps, ingredientId) {
-    const template = ingredientLibraryUrls(pageProps).baseUpdate;
+    const template = ingredientLibraryUrls(pageProps).baseUpdate ?? '';
     if (typeof template === 'string' && template.includes('/0')) {
-        return template.replace(/\/0$/, `/${ingredientId}`);
+        return template.replace(/\/0$/, `/${String(ingredientId)}`);
+    }
+
+    if (template !== '') {
+        return template;
     }
 
     return `/admin/ingredient-library/base-ingredient/${ingredientId}`;
-}
-
-/**
- * @param {object} pageProps
- * @param {string | number} ingredientId
- * @returns {string}
- */
-export function ingredientLibraryBaseUpdateUrl(pageProps, ingredientId) {
-    const template = ingredientLibraryUrls(pageProps).baseUpdate ?? '';
-    if (template === '') {
-        return '';
-    }
-
-    return template.replace(/\/0$/, `/${String(ingredientId)}`);
 }
 
 /**

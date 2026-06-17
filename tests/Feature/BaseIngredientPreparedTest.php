@@ -67,6 +67,36 @@ test('admin can store a base recipe via unified ingredient library store route',
         ->and((float) $base->calories)->toBe(300.0);
 });
 
+test('admin can update a base recipe via base-ingredient update route', function () {
+    $user = User::factory()->create();
+    $child = verifiedIngredient('Salt');
+    $base = app(BaseIngredientService::class)->upsert(
+        null,
+        'Update Test Base',
+        [['ingredient_id' => $child->id, 'amount_grams' => 10]],
+        100,
+    );
+
+    $this->actingAs($user)
+        ->post(route('admin.ingredient-library.base-ingredient.update', $base), [
+            'name' => 'Update Test Base Renamed',
+            'finished_weight_grams' => 100,
+            'components' => [
+                ['ingredient_id' => $child->id, 'amount_grams' => 25],
+            ],
+            'description' => 'Updated description',
+            'instructions' => 'Step 1: Mix.',
+        ])
+        ->assertRedirect(route('admin.ingredient-library'))
+        ->assertSessionHas('success');
+
+    $base->refresh();
+
+    expect($base->name)->toBe('Update Test Base Renamed')
+        ->and($base->description)->toBe('Updated description')
+        ->and((float) $base->components->first()->pivot->amount_grams)->toBe(25.0);
+});
+
 test('admin can store a prepared base ingredient with component pivot and per-100g macros', function () {
     $user = User::factory()->create();
     $tomato = verifiedIngredient('Tomato Paste', ['calories' => 80, 'protein' => 4, 'carbs' => 16, 'fat' => 0]);
@@ -111,6 +141,26 @@ test('base ingredient service upsert uses sum of components when finished weight
 
     expect((float) $base->calories)->toBe(400.0)
         ->and($base->components)->toHaveCount(1);
+});
+
+test('ingredient library csv import classifies (Base) suffix rows as base ingredients even without recipe_components', function () {
+    $user = User::factory()->create();
+
+    $header = 'name,category,fdc_id,calories,protein,carbs,fat,b6,b9_folate,b12,iron,magnesium,fiber,sugar,calcium,potassium,sodium,zinc,vitamin_c,vitamin_a,vitamin_e,vitamin_d,vitamin_k,density,is_base_recipe,recipe_components,description,instructions,finished_weight_grams,g6pd_trigger';
+    $row = 'Spiced Aleppo Ground Beef (Base),Proteins,,248,21.4,4.2,16.5,0.28,12,1.9,2.4,25,1.1,1.8,24,312,285,4.8,2.1,38,0.6,0,2.4,0.96,0,,Warm description,Step 1: Cook.,,0';
+    $csv = $header."\n".$row."\n";
+
+    $this->actingAs($user)
+        ->post(route('admin.ingredient-library.import-csv'), [
+            'file' => UploadedFile::fake()->createWithContent('ingredients.csv', $csv),
+        ])
+        ->assertRedirect(route('admin.ingredient-library'))
+        ->assertSessionHas('success');
+
+    $base = Ingredient::query()->where('name', 'Spiced Aleppo Ground Beef (Base)')->firstOrFail();
+
+    expect($base->isPreparedBaseIngredient())->toBeTrue()
+        ->and($base->usda_food_category)->toBe(IngredientLibraryCategory::BaseIngredient);
 });
 
 test('ingredient library csv import resolves pipe-separated name weight recipe components', function () {

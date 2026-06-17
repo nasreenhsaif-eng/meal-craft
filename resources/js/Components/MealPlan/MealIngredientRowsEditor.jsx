@@ -175,11 +175,22 @@ export default function MealIngredientRowsEditor({
                                                                                         ...r,
                                                                                         selectedName: match.name,
                                                                                         nameQuery: match.name,
-                                                                                        ingredientId:
-                                                                                            typeof match.id === 'number' &&
-                                                                                            Number.isFinite(match.id)
-                                                                                                ? match.id
-                                                                                                : null,
+                                                                                        ingredientId: (() => {
+                                                                                            const rawId = match.id;
+                                                                                            if (
+                                                                                                typeof rawId ===
+                                                                                                    'number' &&
+                                                                                                Number.isFinite(rawId)
+                                                                                            ) {
+                                                                                                return rawId;
+                                                                                            }
+                                                                                            const parsed = Number(rawId);
+                                                                                            return Number.isFinite(
+                                                                                                parsed,
+                                                                                            ) && parsed > 0
+                                                                                                ? parsed
+                                                                                                : null;
+                                                                                        })(),
                                                                                     }
                                                                                   : r,
                                                                           ),

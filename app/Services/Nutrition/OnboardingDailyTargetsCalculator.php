@@ -38,6 +38,8 @@ final class OnboardingDailyTargetsCalculator
      *     weight_goal: string,
      *     diet_protocol: string,
      *     current_phase: ?string,
+     *     plan_tier: int,
+     *     plan_tiers: list<int>,
      * }
      */
     public static function calculate(CustomerProfile $profile): array
@@ -56,7 +58,7 @@ final class OnboardingDailyTargetsCalculator
         $weightGoal = self::resolveWeightGoal($profile, $weightKg, $targetWeight);
         $goal = self::resolveGoal($weightGoal);
         $calorieRange = self::calculateGoalCalorieRange((int) round($tdee), $weightGoal);
-        $dailyCalories = $calorieRange['midpoint'];
+        $dailyCalories = (int) UserPlanCalculator::snapToPlanTier((float) $calorieRange['midpoint']);
 
         $dietProtocol = DietProtocol::tryFromStored($profile->diet_protocol);
         $periodData = $profile->period_tracking_data ?? [];
@@ -83,6 +85,8 @@ final class OnboardingDailyTargetsCalculator
             'protein_grams' => $grams['protein_grams'],
             'carb_grams' => $grams['carb_grams'],
             'fat_grams' => $grams['fat_grams'],
+            'plan_tier' => $dailyCalories,
+            'plan_tiers' => UserPlanCalculator::planTiers(),
         ];
     }
 

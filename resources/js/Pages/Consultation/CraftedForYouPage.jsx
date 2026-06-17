@@ -1,10 +1,23 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Button from '../../Components/Atoms/Button.jsx';
 import PillButton from '../../Components/Atoms/Button/Button.jsx';
-import ChooseYourMeals, { DEFAULT_FULL_CRAFT_MAX_SELECTIONS, MealSlotCarousel } from '../../Components/Consultation/ChooseYourMeals.jsx';
+import ChooseYourMeals, {
+    DEFAULT_FULL_CRAFT_MAX_SELECTIONS,
+    MealSlotCarousel,
+    buildConsultationDeckCatalog,
+    consultationDeckOptionsForSlotKey,
+    soupOfTheDayMeals,
+} from '../../Components/Consultation/ChooseYourMeals.jsx';
 import SquareCheckbox from '../../Components/Atoms/Icons/SquareCheckbox.jsx';
 import { MealCraftLogoAnimatedIdentity } from '../../Components/Atoms/Logo/MealCraftLogoAnimated.jsx';
 import { AnimatePresence, motion } from 'framer-motion';
+import {
+    fetchAdaptedMenu,
+    mapAdaptedMenuPayloadToConsultationMeals,
+    scheduledSoupConsultationMealsForDay,
+} from '../../consultation/mapAdaptedMenuMeals.js';
+import { buildCraftPlanSubmissionPayload, submitCraftPlan } from '../../consultation/submitCraftPlan.js';
+import { craftDayCaloriesForKey } from '../../consultation/craftCalorieTargets.js';
 
 const PAGE_BG = 'bg-[#F8F9F6]';
 const WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -26,11 +39,13 @@ const CRAFTS = [
     {
         key: 'day',
         title: 'Day Craft',
-        description: 'Breakfast & 1 Meal + (Side Salad OR Dessert OR Soup)',
+        description: 'Breakfast, 1 Meal, Side Salad, Dessert & Soup (optional)',
         slots: [
             { id: 'breakfast', label: 'Breakfast', count: 1 },
             { id: 'meal', label: 'Meal', count: 1 },
-            { id: 'choice', label: 'Daily choice', count: 1, choice: ['sidesalad', 'dessert', 'soup'] },
+            { id: 'sidesalad', label: 'Side salad', count: 1 },
+            { id: 'dessert', label: 'Dessert', count: 1 },
+            { id: 'soup', label: 'Soup for this day', count: 1, optional: true },
         ],
     },
     {
@@ -207,21 +222,6 @@ const MOCK_MEALS = [
         caloriesNumber: 430,
     },
     {
-        id: 'meal-4b',
-        title: 'Roasted tomato bisque',
-        imageUrl: 'https://images.unsplash.com/photo-1476718406336-bb5a9690ee2a?auto=format&fit=crop&w=900&q=80',
-        mealType: 'Soup',
-        category: 'Soup',
-        prepMinutes: 14,
-        macros: { calories: 360, protein: '14g', carbs: '48g', fat: '12g' },
-        tags: [
-            { label: 'Soup', type: 'category' },
-            { label: 'Balanced', type: 'dietary' },
-        ],
-        nutrientHighlights: ['Lycopene'],
-        caloriesNumber: 360,
-    },
-    {
         id: 'meal-5',
         title: 'Dessert — yogurt berries',
         imageUrl: 'https://images.unsplash.com/photo-1499636136210-6f4ee915583e?auto=format&fit=crop&w=900&q=80',
@@ -269,9 +269,23 @@ function slotId(dayIdx, slotKey, index) {
 }
 
 /**
- * @param {{ closeHref?: string }} [props]
+ * @param {{
+ *   closeHref?: string;
+ *   homeHref?: string;
+ *   pageEyebrow?: string;
+ *   adaptedMenuUrl?: string;
+ *   initialPlanTier?: number | null;
+ *   disableAdaptedMenuFetch?: boolean;
+ * }} [props]
  */
-export default function CraftedForYouPage({ closeHref } = {}) {
+export default function CraftedForYouPage({
+    closeHref,
+    homeHref,
+    pageEyebrow = 'Admin / Consultation',
+    adaptedMenuUrl = '/api/menu/adapted',
+    initialPlanTier = null,
+    disableAdaptedMenuFetch = false,
+} = {}) {
     const [screen, setScreen] = useState(1);
     const [craftKey, setCraftKey] = useState(/** @type {string|null} */ (null));
     const craft = useMemo(() => (craftKey ? craftByKey(craftKey) : null), [craftKey]);
@@ -284,9 +298,10 @@ export default function CraftedForYouPage({ closeHref } = {}) {
 
     const [environmentYes, setEnvironmentYes] = useState(false);
     const [submitting, setSubmitting] = useState(false);
+    const [submitError, setSubmitError] = useState(/** @type {string | null} */ (null));
+    const [submitSuccess, setSubmitSuccess] = useState(false);
 
-    // Craft-specific choice selection
-    const [dayCraftChoice, setDayCraftChoice] = useState(/** @type {'sidesalad'|'dessert'|'soup'} */ ('sidesalad'));
+    // Craft-specific choice selection (per active curation day)
     const [businessCraftChoice, setBusinessCraftChoice] = useState(/** @type {'soup'|'sidesalad'|'dessert'} */ ('soup'));
     const [businessSideChoiceByDay, setBusinessSideChoiceByDay] = useState(
         /** @type {Record<number, 'soup'|'sidesalad'|'dessert'>} */ ({}),
@@ -296,6 +311,101 @@ export default function CraftedForYouPage({ closeHref } = {}) {
     const [selectedByDay, setSelectedByDay] = useState(
         /** @type {Record<number, { breakfasts: string[]; meals: string[]; sideSalads: string[]; desserts: string[]; soup: string[] }>} */ ({}),
     );
+
+    const [liveMeals, setLiveMeals] = useState(/** @type {typeof MOCK_MEALS | null} */ (null));
+    const [nutritionPlan, setNutritionPlan] = useState(/** @type {Record<string, unknown> | null} */ (null));
+    const [scheduledSoupsByWeekday, setScheduledSoupsByWeekday] = useState(
+        /** @type {Record<string | number, unknown>} */ ({}),
+    );
+    const [menuLoading, setMenuLoading] = useState(!disableAdaptedMenuFetch);
+    const [menuError, setMenuError] = useState(/** @type {string | null} */ (null));
+
+    const catalogMeals = useMemo(() => liveMeals ?? MOCK_MEALS, [liveMeals]);
+
+    /** Capped option sets only — mirrors pre–live-API MOCK_MEALS deck (2 / 4 / 2 / 2). */
+    const consultationDeckMeals = useMemo(
+        () => buildConsultationDeckCatalog(catalogMeals),
+        [catalogMeals],
+    );
+
+    const scheduledSoupForDay = useCallback(
+        (dayOfWeek) => {
+            const scheduled = scheduledSoupConsultationMealsForDay(scheduledSoupsByWeekday, dayOfWeek);
+            if (scheduled.length > 0) {
+                return scheduled;
+            }
+
+            return soupOfTheDayMeals(catalogMeals);
+        },
+        [scheduledSoupsByWeekday, catalogMeals],
+    );
+
+    const basePlanTier = useMemo(() => {
+        const fromPlan = nutritionPlan?.plan_tier ?? nutritionPlan?.core_day_calories;
+        if (typeof fromPlan === 'number' && fromPlan > 0) {
+            return Math.round(fromPlan);
+        }
+        if (typeof initialPlanTier === 'number' && initialPlanTier > 0) {
+            return initialPlanTier;
+        }
+
+        return 1200;
+    }, [nutritionPlan, initialPlanTier]);
+
+    const planTierCalories = useMemo(() => {
+        const fromCraft = nutritionPlan?.craft_day_calories;
+        if (typeof fromCraft === 'number' && fromCraft > 0) {
+            return Math.round(fromCraft);
+        }
+
+        if (craftKey) {
+            return craftDayCaloriesForKey(craftKey, basePlanTier);
+        }
+
+        return basePlanTier;
+    }, [nutritionPlan, craftKey, basePlanTier]);
+
+    useEffect(() => {
+        if (disableAdaptedMenuFetch || craftKey === null) {
+            return undefined;
+        }
+
+        let cancelled = false;
+
+        (async () => {
+            setMenuLoading(true);
+            setMenuError(null);
+            try {
+                const payload = await fetchAdaptedMenu(adaptedMenuUrl, { craftKey });
+                if (cancelled) {
+                    return;
+                }
+                setLiveMeals(mapAdaptedMenuPayloadToConsultationMeals(payload));
+                setNutritionPlan(
+                    payload.plan && typeof payload.plan === 'object'
+                        ? /** @type {Record<string, unknown>} */ (payload.plan)
+                        : null,
+                );
+                setScheduledSoupsByWeekday(
+                    payload.scheduled_soups_by_weekday && typeof payload.scheduled_soups_by_weekday === 'object'
+                        ? /** @type {Record<string | number, unknown>} */ (payload.scheduled_soups_by_weekday)
+                        : {},
+                );
+            } catch (error) {
+                if (!cancelled) {
+                    setMenuError(error instanceof Error ? error.message : 'Could not load meals.');
+                }
+            } finally {
+                if (!cancelled) {
+                    setMenuLoading(false);
+                }
+            }
+        })();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [adaptedMenuUrl, disableAdaptedMenuFetch, craftKey]);
 
     useEffect(() => {
         if (weekDuration === null) {
@@ -356,39 +466,16 @@ export default function CraftedForYouPage({ closeHref } = {}) {
         return () => mq.removeEventListener('change', fn);
     }, []);
 
-    function mealTypeForSlotKey(slotKey) {
-        switch (slotKey) {
-            case 'breakfast':
-                return 'Breakfast';
-            case 'meal':
-                return 'Meal';
-            case 'sidesalad':
-                return 'Side salad';
-            case 'dessert':
-                return 'Dessert';
-            case 'soup':
-                return 'Soup';
-            default:
-                return null;
-        }
-    }
+    const sortedSelectedDays = useMemo(
+        () => Array.from(new Set(selectedDays)).filter((d) => d >= 1 && d <= 7).sort((a, b) => a - b),
+        [selectedDays],
+    );
 
-    function topOptionsForCategory(slotKey) {
-        const desiredType = mealTypeForSlotKey(slotKey);
-        return MOCK_MEALS.filter((m) => (desiredType ? m.mealType === desiredType : true));
-    }
+    const effectiveActiveDay = activeDay ?? (sortedSelectedDays.length ? sortedSelectedDays[0] : null);
 
     const slotTemplate = useMemo(() => {
         if (!craft) {
             return [];
-        }
-        if (craft.key === 'day') {
-            // Day craft has a single choice; soup slot disappears unless chosen as the choice.
-            return [
-                { key: 'breakfast', label: 'Breakfast', count: 1 },
-                { key: 'meal', label: 'Meal', count: 1 },
-                { key: dayCraftChoice, label: 'Option', count: 1 },
-            ];
         }
         if (craft.key === 'business') {
             return [
@@ -397,14 +484,7 @@ export default function CraftedForYouPage({ closeHref } = {}) {
             ];
         }
         return craft.slots;
-    }, [craft, dayCraftChoice, businessCraftChoice]);
-
-    const sortedSelectedDays = useMemo(
-        () => Array.from(new Set(selectedDays)).filter((d) => d >= 1 && d <= 7).sort((a, b) => a - b),
-        [selectedDays],
-    );
-
-    const effectiveActiveDay = activeDay ?? (sortedSelectedDays.length ? sortedSelectedDays[0] : null);
+    }, [craft, businessCraftChoice]);
 
     function businessSideChoiceForDay(day) {
         return businessSideChoiceByDay[day] ?? 'soup';
@@ -459,9 +539,30 @@ export default function CraftedForYouPage({ closeHref } = {}) {
         });
     }
 
-    function submit() {
+    async function submit() {
+        if (!craftKey || weekDuration === null) {
+            return;
+        }
+
         setSubmitting(true);
-        window.setTimeout(() => setSubmitting(false), 5000);
+        setSubmitError(null);
+        setSubmitSuccess(false);
+
+        try {
+            const payload = buildCraftPlanSubmissionPayload({
+                craftKey,
+                weekDuration,
+                selectedDays: sortedSelectedDays,
+                selectedByDay,
+            });
+
+            await submitCraftPlan(payload);
+            setSubmitSuccess(true);
+        } catch (error) {
+            setSubmitError(error instanceof Error ? error.message : 'Could not save craft plan.');
+        } finally {
+            setSubmitting(false);
+        }
     }
 
     const usesManualDaySelection = weekDuration !== 7;
@@ -469,11 +570,44 @@ export default function CraftedForYouPage({ closeHref } = {}) {
     const totalCurationDays = sortedSelectedDays.length;
     const curationStartScreen = usesManualDaySelection ? 3 : 2; // skip manual-day screen for 7-day plans
     const finalScreen = curationStartScreen + totalCurationDays;
-    const totalScreens = finalScreen; // screens are 1..finalScreen
+    const totalScreens =
+        weekDuration !== null ? curationStartScreen + weekDuration : Math.max(finalScreen, screen);
 
     const isCurationScreen = screen >= curationStartScreen && screen <= curationStartScreen + totalCurationDays - 1;
     const curationIndex = isCurationScreen ? screen - curationStartScreen : -1; // 0..N-1
     const curationDay = isCurationScreen ? sortedSelectedDays[curationIndex] ?? null : null;
+
+    const progressHeaderLabel = useMemo(() => {
+        if (isCurationScreen && curationDay !== null) {
+            return WEEKDAY_LONG[curationDay - 1] ?? '';
+        }
+        if (screen === 1) {
+            return 'Plan setup';
+        }
+        if (screen === 2 && usesManualDaySelection) {
+            return 'Choose your days';
+        }
+        if (screen === finalScreen) {
+            return 'Submit';
+        }
+
+        return `Step ${screen} of ${totalScreens}`;
+    }, [
+        isCurationScreen,
+        curationDay,
+        screen,
+        usesManualDaySelection,
+        finalScreen,
+        totalScreens,
+    ]);
+
+    const progressSubLabel = useMemo(() => {
+        if (!isCurationScreen || totalCurationDays <= 0) {
+            return null;
+        }
+
+        return `${curationIndex + 1} of ${totalCurationDays}`;
+    }, [isCurationScreen, totalCurationDays, curationIndex]);
 
     const calorieDay = curationDay ?? effectiveActiveDay;
 
@@ -481,7 +615,7 @@ export default function CraftedForYouPage({ closeHref } = {}) {
         if (!calorieDay) {
             return [];
         }
-        const byId = new Map(MOCK_MEALS.map((m) => [m.id, m]));
+        const byId = new Map(catalogMeals.map((m) => [m.id, m]));
         const s = selectedByDay[calorieDay] ?? {
             breakfasts: [],
             meals: [],
@@ -491,7 +625,7 @@ export default function CraftedForYouPage({ closeHref } = {}) {
         };
         const ids = [...s.breakfasts, ...s.meals, ...s.sideSalads, ...s.desserts, ...s.soup];
         return ids.map((id) => byId.get(id)).filter(Boolean);
-    }, [calorieDay, selectedByDay]);
+    }, [calorieDay, selectedByDay, catalogMeals]);
 
     const dayCaloriesTotal = useMemo(() => {
         const sum = selectedMealCardsForDay.reduce((acc, m) => acc + (m?.caloriesNumber ?? 0), 0);
@@ -507,13 +641,6 @@ export default function CraftedForYouPage({ closeHref } = {}) {
     const requiredSlotsByCraft = useMemo(() => {
         if (!craft) {
             return [];
-        }
-        if (craft.key === 'day') {
-            return [
-                { key: 'breakfast', label: 'Breakfasts', count: 1, selectionKey: 'breakfasts' },
-                { key: 'meal', label: 'Meal options', count: 2, selectionKey: 'meals' },
-                { key: dayCraftChoice, label: 'Daily choice', count: 1, selectionKey: dayCraftChoice === 'sidesalad' ? 'sideSalads' : dayCraftChoice === 'dessert' ? 'desserts' : 'soup' },
-            ];
         }
         if (craft.key === 'business') {
             return [
@@ -541,7 +668,7 @@ export default function CraftedForYouPage({ closeHref } = {}) {
             selectionKey: s.id === 'breakfast' ? 'breakfasts' : s.id === 'meal' ? 'meals' : s.id === 'sidesalad' ? 'sideSalads' : s.id === 'dessert' ? 'desserts' : 'soup',
             optional: Boolean(s.optional),
         }));
-    }, [craft, dayCraftChoice, businessCraftChoice]);
+    }, [craft, businessCraftChoice]);
 
     const isCurationDayComplete = useMemo(() => {
         if (!craft || curationDay === null) {
@@ -567,6 +694,47 @@ export default function CraftedForYouPage({ closeHref } = {}) {
             .every((slot) => (s[slot.selectionKey]?.length ?? 0) === slot.count);
     }, [craft, curationDay, requiredSlotsByCraft, selectedByDay, businessSideChoiceByDay]);
 
+    const curationIncompleteMessage = useMemo(() => {
+        if (!craft || curationDay === null) {
+            return 'Select all required meals before continuing.';
+        }
+
+        const s = selectedByDay[curationDay] ?? { breakfasts: [], meals: [], sideSalads: [], desserts: [], soup: [] };
+
+        if (craft.key === 'business') {
+            const missing = [];
+            if ((s.meals?.length ?? 0) < 1) {
+                missing.push('main meal');
+            }
+            const side = businessSideChoiceByDay[curationDay] ?? 'soup';
+            const sideLabel = side === 'soup' ? 'soup' : side === 'dessert' ? 'dessert' : 'side salad';
+            const sideKey = side === 'soup' ? 'soup' : side === 'dessert' ? 'desserts' : 'sideSalads';
+            if ((s[sideKey]?.length ?? 0) < 1) {
+                missing.push(sideLabel);
+            }
+            if (missing.length === 0) {
+                return 'Select all required meals before continuing.';
+            }
+            if (missing.length === 1) {
+                return `Please select a ${missing[0]} before continuing.`;
+            }
+            return `Please select: ${missing.join(', ')}.`;
+        }
+
+        const missing = requiredSlotsByCraft
+            .filter((slot) => !slot.optional && (s[slot.selectionKey]?.length ?? 0) < slot.count)
+            .map((slot) => slot.label.toLowerCase());
+
+        if (missing.length === 0) {
+            return 'Select all required meals before continuing.';
+        }
+        if (missing.length === 1) {
+            return `Please select a ${missing[0]} before continuing.`;
+        }
+
+        return `Please select: ${missing.join(', ')}.`;
+    }, [craft, curationDay, requiredSlotsByCraft, selectedByDay, businessSideChoiceByDay]);
+
     return (
         <div className={`min-h-screen ${PAGE_BG} px-4 py-4 font-sans md:px-4 pb-24 sm:pb-4`}>
             <style>{`
@@ -585,7 +753,7 @@ export default function CraftedForYouPage({ closeHref } = {}) {
                         <div className="flex items-center justify-between gap-3">
                             <div>
                                 <p className="mb-1 font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#555555]">
-                                    Admin / Consultation
+                                    {pageEyebrow}
                                 </p>
                                 <h1 className="font-montserrat text-[22px] font-bold tracking-tight text-[#262A22]">
                                     Crafted for YOU
@@ -607,14 +775,10 @@ export default function CraftedForYouPage({ closeHref } = {}) {
 
                         <div className="mt-3 sm:mt-4">
                             <div className="flex items-center justify-between gap-3 text-xs font-semibold tracking-tight text-[#555555]">
-                                <span>
-                                    {screen === 1 ? 'Plan setup' : screen === finalScreen ? 'Submit' : 'Daily curation'}
+                                <span className={isCurationScreen ? 'font-montserrat text-sm font-bold text-[#262A22]' : ''}>
+                                    {progressHeaderLabel}
                                 </span>
-                                {isCurationScreen ? (
-                                    <span className="hidden sm:inline">
-                                        Day {curationIndex + 1} of {totalCurationDays}
-                                    </span>
-                                ) : null}
+                                {progressSubLabel ? <span>{progressSubLabel}</span> : null}
                             </div>
                             <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-gray-200 sm:h-1.5">
                                 <div
@@ -625,6 +789,17 @@ export default function CraftedForYouPage({ closeHref } = {}) {
                         </div>
                     </div>
                 </div>
+
+                {!disableAdaptedMenuFetch && menuLoading ? (
+                    <p className="mb-4 rounded-[12px] border border-gray-200 bg-white px-4 py-3 font-body text-sm text-[#555555]">
+                        Loading your meal library with adapted portions…
+                    </p>
+                ) : null}
+                {!disableAdaptedMenuFetch && menuError ? (
+                    <p className="mb-4 rounded-[12px] border border-amber-200 bg-amber-50 px-4 py-3 font-body text-sm text-amber-900">
+                        {menuError} Showing sample meals until your plan is available.
+                    </p>
+                ) : null}
 
                 {/* Screen 1 — Craft & Duration */}
                 {screen === 1 ? (
@@ -816,16 +991,17 @@ export default function CraftedForYouPage({ closeHref } = {}) {
                             };
 
                             return (
-                            <div className="w-full max-md:-mx-4">
+                            <div className="w-full max-md:-mx-4 h-[calc(100dvh-8.5rem)] max-md:h-[calc(100dvh-7rem)] overflow-hidden">
                             <ChooseYourMeals
+                                panelClassName="h-full min-h-0"
+                                soupCatalogMeals={catalogMeals}
                                 dayName={WEEKDAY_LONG[curationDay - 1] ?? ''}
                                 totalKcal={dayCaloriesTotal}
                                 summaryLabel={`${WEEKDAY_LABELS[curationDay - 1]} selections`}
                                 craftTitle={craft ? craft.title : ''}
-                                targetCalories={1200}
-                                dayProgressLabel={`Day ${curationIndex + 1} of ${totalCurationDays}`}
+                                targetCalories={planTierCalories}
                                 layout={craft?.key === 'full' ? 'categories' : 'custom'}
-                                meals={craft?.key === 'full' ? MOCK_MEALS : []}
+                                meals={craft?.key === 'full' ? consultationDeckMeals : []}
                                 categorySelections={craft?.key === 'full' ? daySelections : undefined}
                                 onToggleCategory={
                                     craft?.key === 'full'
@@ -862,6 +1038,8 @@ export default function CraftedForYouPage({ closeHref } = {}) {
                                     setScreen(screen + 1);
                                 }}
                                 footerNextDisabled={!isCurationDayComplete}
+                                footerIncompleteMessage={curationIncompleteMessage}
+                                scheduledSoupMeals={scheduledSoupForDay(curationDay)}
                             >
                                 {craft?.key === 'full' ? null : (
                                 <AnimatePresence mode="wait" initial={false}>
@@ -877,11 +1055,11 @@ export default function CraftedForYouPage({ closeHref } = {}) {
                                             const selections = daySelections;
 
                                             const pickCards = (slotKey) => {
-                                                if (slotKey === 'breakfast') return topOptionsForCategory('breakfast').slice(0, 2);
-                                                if (slotKey === 'meal') return topOptionsForCategory('meal').slice(0, 4);
-                                                if (slotKey === 'sidesalad') return topOptionsForCategory('sidesalad').slice(0, 2);
-                                                if (slotKey === 'dessert') return topOptionsForCategory('dessert').slice(0, 2);
-                                                return topOptionsForCategory('soup').slice(0, 2);
+                                                if (slotKey === 'soup') {
+                                                    return scheduledSoupForDay(day).map((meal) => meal);
+                                                }
+
+                                                return consultationDeckOptionsForSlotKey(catalogMeals, slotKey);
                                             };
 
                                             if (craft?.key === 'business') {
@@ -1045,6 +1223,33 @@ export default function CraftedForYouPage({ closeHref } = {}) {
                             </p>
                             <p className="mt-2 font-body text-sm text-[#555555]">Please wait a moment.</p>
                         </div>
+                    </div>
+                </div>
+            ) : null}
+
+            {submitSuccess ? (
+                <div className="fixed bottom-6 left-1/2 z-[110] w-full max-w-[640px] -translate-x-1/2 px-4">
+                    <div className="rounded-[12px] border border-[#5A6B44]/30 bg-white px-4 py-3 shadow-lg">
+                        <p className="font-body text-sm font-semibold text-[#262A22]">
+                            Your craft plan was saved. The kitchen can now produce your selections.
+                        </p>
+                        {homeHref ? (
+                            <button
+                                type="button"
+                                className="mt-3 font-montserrat text-sm font-bold text-[#5A6B44] underline-offset-2 hover:underline"
+                                onClick={() => window.location.assign(homeHref)}
+                            >
+                                Back to your plan
+                            </button>
+                        ) : null}
+                    </div>
+                </div>
+            ) : null}
+
+            {submitError ? (
+                <div className="fixed bottom-6 left-1/2 z-[110] w-full max-w-[640px] -translate-x-1/2 px-4">
+                    <div className="rounded-[12px] border border-red-200 bg-red-50 px-4 py-3 shadow-lg">
+                        <p className="font-body text-sm text-red-800">{submitError}</p>
                     </div>
                 </div>
             ) : null}

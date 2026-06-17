@@ -138,6 +138,62 @@ function dietTagDropdownOptions(items) {
     return ['', ...items.map((item) => item.label)];
 }
 
+/** @param {Record<string, unknown>} errors */
+function validationErrorMessages(errors) {
+    /** @type {string[]} */
+    const messages = [];
+    const walk = (value) => {
+        if (typeof value === 'string' && value.trim() !== '') {
+            messages.push(value.trim());
+            return;
+        }
+        if (Array.isArray(value)) {
+            value.forEach(walk);
+            return;
+        }
+        if (value && typeof value === 'object') {
+            Object.values(value).forEach(walk);
+        }
+    };
+    walk(errors);
+    return messages;
+}
+
+/**
+ * @param {string} url
+ * @param {Record<string, unknown>} payload
+ * @param {string} csrfToken
+ * @param {{
+ *   onSuccess?: () => void;
+ *   onError?: (message: string) => void;
+ * }} callbacks
+ */
+function postIngredientLibraryForm(url, payload, csrfToken, { onSuccess, onError }) {
+    router.post(
+        url,
+        { ...payload, _token: resolveCsrfToken(csrfToken) },
+        {
+            preserveScroll: true,
+            preserveState: false,
+            onSuccess: (page) => {
+                if (page?.props?.flash?.error) {
+                    onError?.(String(page.props.flash.error));
+                    return;
+                }
+                onSuccess?.();
+            },
+            onError: (errors) => {
+                const messages = validationErrorMessages(errors);
+                onError?.(
+                    messages.length > 0
+                        ? messages.join(' ')
+                        : 'Could not save. Check the form and try again.',
+                );
+            },
+        },
+    );
+}
+
 /**
  * Presentational ingredients library (no Inertia). Use in Storybook; in the app, prefer {@link IngredientsLibraryPageContent}.
  *
@@ -149,6 +205,7 @@ function dietTagDropdownOptions(items) {
  *   csvImportUrl?: string;
  *   ingredientBulkDestroyUrl?: string;
  *   flashSuccess?: string | null;
+ *   flashError?: string | null;
  *   csrfToken?: string;
  * }} props
  */
@@ -168,6 +225,7 @@ export function IngredientsLibraryPageView({
     csvExportUrl = '#',
     csvImportUrl = '#',
     flashSuccess = null,
+    flashError = null,
     csrfToken = '',
 }) {
     const [query, setQuery] = useState('');
@@ -296,32 +354,52 @@ export function IngredientsLibraryPageView({
             }
 
             setCreateSaveError('');
-            router.post(ingredientStoreUrl, {
-                name: createName.trim(),
-                is_base_recipe: true,
-                finished_weight_grams: finishedWeight,
-                components,
-                description: createBaseDescription.trim(),
-                instructions: createBaseInstructions.trim(),
-            });
+            postIngredientLibraryForm(
+                ingredientStoreUrl,
+                {
+                    name: createName.trim(),
+                    is_base_recipe: true,
+                    finished_weight_grams: finishedWeight,
+                    components,
+                    description: createBaseDescription.trim(),
+                    instructions: createBaseInstructions.trim(),
+                },
+                csrfToken,
+                {
+                    onSuccess: () => setCreateOpen(false),
+                    onError: (message) => setCreateSaveError(message),
+                },
+            );
 
             return;
         }
 
         setCreateSaveError('');
-        router.post(ingredientStoreUrl, {
-            name: createName.trim(),
-            is_base_recipe: false,
-            category: createCategory.trim() === '' ? null : createCategory.trim(),
-            calories: createCalories.trim() === '' ? 0 : Number(createCalories.trim()),
-            protein: createProtein.trim() === '' ? 0 : Number(createProtein.trim()),
-            carbs: createCarbs.trim() === '' ? 0 : Number(createCarbs.trim()),
-            fat: createFat.trim() === '' ? 0 : Number(createFat.trim()),
-        });
+        postIngredientLibraryForm(
+            ingredientStoreUrl,
+            {
+                name: createName.trim(),
+                is_base_recipe: false,
+                category: createCategory.trim() === '' ? null : createCategory.trim(),
+                calories: createCalories.trim() === '' ? 0 : Number(createCalories.trim()),
+                protein: createProtein.trim() === '' ? 0 : Number(createProtein.trim()),
+                carbs: createCarbs.trim() === '' ? 0 : Number(createCarbs.trim()),
+                fat: createFat.trim() === '' ? 0 : Number(createFat.trim()),
+            },
+            csrfToken,
+            {
+                onSuccess: () => setCreateOpen(false),
+                onError: (message) => setCreateSaveError(message),
+            },
+        );
     }
 
     function openBaseRecipeEditor(row) {
-        const edit = row.baseRecipeEdit;
+        const fresh =
+            (Array.isArray(ingredients) ? ingredients : [])
+                .map((raw) => normalizeLibraryRow(raw))
+                .find((candidate) => String(candidate.id) === String(row.id)) ?? row;
+        const edit = fresh.baseRecipeEdit;
         const rows = Array.isArray(edit?.compositionRows) && edit.compositionRows.length > 0
             ? edit.compositionRows.map((r) => ({
                   nameQuery: String(r.nameQuery ?? r.selectedName ?? ''),
@@ -334,8 +412,8 @@ export function IngredientsLibraryPageView({
             : [{ ...EMPTY_COMPOSITION_ROW }];
 
         setDetailModal({
-            ingredientId: row.id,
-            name: row.name,
+            ingredientId: fresh.id,
+            name: fresh.name,
             rows,
             finishedWeightGrams: String(edit?.finishedWeightGrams ?? ''),
             description: String(edit?.description ?? ''),
@@ -383,13 +461,22 @@ export function IngredientsLibraryPageView({
         }
 
         setDetailModal((prev) => (prev ? { ...prev, saveError: '' } : prev));
-        router.post(updateUrl, {
-            name: detailModal.name.trim(),
-            finished_weight_grams: finishedWeight,
-            components,
-            description: detailModal.description.trim(),
-            instructions: detailModal.instructions.trim(),
-        });
+        postIngredientLibraryForm(
+            updateUrl,
+            {
+                name: detailModal.name.trim(),
+                finished_weight_grams: finishedWeight,
+                components,
+                description: detailModal.description.trim(),
+                instructions: detailModal.instructions.trim(),
+            },
+            csrfToken,
+            {
+                onSuccess: () => setDetailModal(null),
+                onError: (message) =>
+                    setDetailModal((prev) => (prev ? { ...prev, saveError: message } : prev)),
+            },
+        );
     }
 
     useEffect(() => {
@@ -573,6 +660,15 @@ export function IngredientsLibraryPageView({
                     >
                         {flashSuccess}
                     </div>
+                ) : null}
+
+                {flashError ? (
+                    <p
+                        role="alert"
+                        className="rounded-[12px] border border-[#C44F5D]/30 bg-[#FDF2F3] px-4 py-3 font-body text-sm text-[#8B2E38]"
+                    >
+                        {flashError}
+                    </p>
                 ) : null}
 
                 <section
@@ -1166,6 +1262,7 @@ export function IngredientsLibraryPageView({
 export function IngredientsLibraryPageContent(props) {
     const { props: pageProps } = usePage();
     const flashSuccess = typeof pageProps.flash?.success === 'string' ? pageProps.flash.success : null;
+    const flashError = typeof pageProps.flash?.error === 'string' ? pageProps.flash.error : null;
     const sharedIngredientUrls = ingredientLibraryUrls(pageProps);
 
     return (
@@ -1177,6 +1274,7 @@ export function IngredientsLibraryPageContent(props) {
                     : dietTagsFromPage(pageProps)
             }
             flashSuccess={flashSuccess}
+            flashError={flashError}
             ingredientStoreUrl={resolveUrl(props.ingredientStoreUrl, sharedIngredientUrls.store)}
             ingredientBaseUpdateUrl={ingredientLibraryBaseUpdateUrl(pageProps, 0)}
             ingredientBulkDestroyUrl={resolveUrl(

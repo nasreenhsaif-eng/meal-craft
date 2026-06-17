@@ -25,14 +25,14 @@ class OnboardingController extends Controller
         $percentages = $macroStyle->percentages();
 
         $dailyCalories = isset($validated['daily_calorie_target'])
-            ? (int) $validated['daily_calorie_target']
-            : OnboardingCalorieCalculator::estimateDailyCalories(
+            ? (int) UserPlanCalculator::snapToPlanTier((float) $validated['daily_calorie_target'])
+            : (int) UserPlanCalculator::snapToPlanTier((float) OnboardingCalorieCalculator::estimateDailyCalories(
                 (float) $validated['weight_kg'],
                 (float) $validated['height_cm'],
                 (int) $validated['age'],
                 $sex,
                 $activity,
-            );
+            ));
 
         $profile = CustomerProfile::query()->updateOrCreate(
             ['user_id' => $user->id],

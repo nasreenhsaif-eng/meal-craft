@@ -5,6 +5,7 @@ namespace App\Http\Requests\Api;
 use App\Enums\CustomerActivityLevel;
 use App\Enums\CustomerSex;
 use App\Enums\MacroSplitStyle;
+use App\Services\Nutrition\UserPlanCalculator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -27,7 +28,7 @@ class StoreOnboardingRequest extends FormRequest
             'sex' => ['required', Rule::enum(CustomerSex::class)],
             'activity_level' => ['required', Rule::enum(CustomerActivityLevel::class)],
             'macro_split_style' => ['required', Rule::enum(MacroSplitStyle::class)],
-            'daily_calorie_target' => ['nullable', 'integer', 'min:1200', 'max:6000'],
+            'daily_calorie_target' => ['nullable', 'integer', Rule::in(UserPlanCalculator::planTiers())],
         ];
     }
 }
