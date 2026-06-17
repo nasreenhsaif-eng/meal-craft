@@ -57,7 +57,6 @@ export const StackedDeckConsultationMeals = {
                                 <MealCardClientViewNano
                                     deck
                                     ribbon={deckLayout === 'ribbon'}
-                                    alignActionsBottom={deckLayout === 'staticPair'}
                                     deckStackRole={isFront ? 'front' : 'back'}
                                     title={m.title}
                                     imageUrl={m.imageUrl}

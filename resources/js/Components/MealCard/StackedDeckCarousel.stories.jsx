@@ -51,7 +51,6 @@ function DeckCard({ meal, ctx, selectedId, onToggle }) {
         <MealCardClientViewNano
             deck
             ribbon={deckLayout === 'ribbon'}
-            alignActionsBottom={deckLayout === 'staticPair'}
             deckStackRole={isFront ? 'front' : 'back'}
             title={meal.title}
             imageUrl={meal.imageUrl}
@@ -74,7 +73,7 @@ export default {
 };
 
 /**
- * Consultation “Meals of the Day” ribbon — 4 capped options, white panel (no tinted strip).
+ * Consultation “Meals of the Day” ribbon — 4 capped options.
  */
 export const ConsultationMealsRibbon = {
     render: () => {
@@ -105,9 +104,9 @@ export const ConsultationMealsRibbon = {
 };
 
 /**
- * Two-up static row (breakfast / side salad / dessert) — craft buttons align on one baseline.
+ * Two-option ribbon (breakfast / side salad / dessert) — same horizontal carousel as mains.
  */
-export const StaticPairDesserts = {
+export const TwoOptionRibbon = {
     render: () => {
         const [selectedId, setSelectedId] = useState(null);
 
@@ -117,7 +116,7 @@ export const StaticPairDesserts = {
                 <StackedDeckCarousel
                     title=""
                     meals={DESSERTS}
-                    deckScopeKey="storybook-static-pair-desserts"
+                    deckScopeKey="storybook-two-option-ribbon"
                     getKey={(m) => m.id}
                     renderCard={(m, idx, ctx) => (
                         <DeckCard
@@ -135,3 +134,6 @@ export const StaticPairDesserts = {
 
 /** @deprecated Use ConsultationMealsRibbon — kept as alias for existing Chromatic baselines. */
 export const Default = ConsultationMealsRibbon;
+
+/** @deprecated Use TwoOptionRibbon */
+export const StaticPairDesserts = TwoOptionRibbon;

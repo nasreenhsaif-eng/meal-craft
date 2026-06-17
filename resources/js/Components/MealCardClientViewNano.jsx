@@ -9,14 +9,13 @@ import SelectionCheckBadge from './Atoms/Icons/SelectionCheckBadge.jsx';
 /**
  * Single {@link MacroGrid} usage — deck vs fixed preview only change wrappers (no duplicate grid markup).
  *
- * @param {{ macros?: { calories: unknown; protein: unknown; carbs: unknown; fat: unknown }; variant: 'deck' | 'nano' }} props
+ * @param {{ macros?: { calories: unknown; protein: unknown; carbs: unknown; fat: unknown }; variant: 'deck' | 'nano'; macroAbbreviated?: boolean }} props
  */
-function MacroGridSection({ macros, variant }) {
+function MacroGridSection({ macros, variant, macroAbbreviated = false }) {
     if (!macros) {
         return null;
     }
 
-    /** Consultation deck (ribbon + 3D stack): full macro names + fluid typography — identical on all viewports. */
     const grid = (
         <MacroGrid
             calories={macros.calories}
@@ -25,7 +24,11 @@ function MacroGridSection({ macros, variant }) {
             fat={macros.fat}
             compact
             {...(variant === 'deck'
-                ? { fluid: true, abbreviated: false, className: '!w-full !max-w-full min-w-0' }
+                ? {
+                      fluid: true,
+                      abbreviated: macroAbbreviated,
+                      className: '!w-full !max-w-full min-w-0',
+                  }
                 : { narrow: true })}
         />
     );
@@ -63,6 +66,7 @@ function MacroGridSection({ macros, variant }) {
  * @param {'eager'|'lazy'} [props.imageLoading] Hero/front slides should use eager; stack backs use lazy.
  * @param {boolean} [props.ribbon] Desktop Netflix ribbon: fill slide cell width.
  * @param {boolean} [props.alignActionsBottom] Static two-up row: align craft buttons on the same baseline.
+ * @param {boolean} [props.macroAbbreviated] Narrow / two-up deck: CAL · P · C · F labels.
  * @param {string} [props.className] Extra classes on the outer article.
  * @param {boolean} [props.vibrantCraftWhenAtLimit] Deck only: when selection slots are full, keep cards/buttons full-opacity (no greyed deck).
  * @param {boolean} [props.hideCraftButton] Read-only decks: hide CRAFT THIS MEAL (detail view only).
@@ -82,6 +86,7 @@ export default function MealCardClientViewNano({
     deckStackRole,
     ribbon = false,
     alignActionsBottom = false,
+    macroAbbreviated = false,
     imageLoading = 'lazy',
     className = '',
     vibrantCraftWhenAtLimit = false,
@@ -115,7 +120,7 @@ export default function MealCardClientViewNano({
     const shell = deck
         ? ribbon
             ? 'h-full w-full min-h-0 min-w-0 max-w-full rounded-[12px] flex flex-col'
-            : 'mx-auto w-[270px] max-w-[min(270px,100%)] shrink-0 rounded-[12px] flex flex-col'
+            : 'mx-auto w-[280px] max-w-[min(280px,100%)] shrink-0 rounded-[12px] flex flex-col'
         : 'w-[240px] h-[320px] rounded-[12px]';
     /** Inner face radius — uniform; no gradient padding inset. */
     const innerR = deck ? 'rounded-[12px]' : 'rounded-[10px]';
@@ -204,7 +209,7 @@ export default function MealCardClientViewNano({
                             </h3>
                         </div>
 
-                        <MacroGridSection macros={macros} variant="deck" />
+                        <MacroGridSection macros={macros} variant="deck" macroAbbreviated={macroAbbreviated} />
 
                         <button
                             type="button"

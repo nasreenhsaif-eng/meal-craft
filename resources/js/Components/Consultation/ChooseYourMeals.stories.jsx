@@ -18,15 +18,17 @@ const emptyCategorySelections = () => ({
     soup: [],
 });
 
-/** Matches curation day shell on CraftedForYouPage (viewport-locked panel + inner scroll). */
+/** Matches curation day shell on CraftedForYouPage (full viewport flex column). */
 function CurationPanelShell({ children }) {
     return (
-        <div className="min-h-screen bg-[#F8F9F6] p-4 md:p-8">
-            <div className="mx-auto max-w-[1100px]">
-                <div className="h-[calc(100dvh-8.5rem)] max-md:h-[calc(100dvh-7rem)] overflow-hidden">
-                    {children}
-                </div>
+        <div className="flex h-[100dvh] min-h-0 flex-col overflow-hidden bg-[#F8F9F6]">
+            <div className="shrink-0 border-b border-gray-200/70 px-4 py-3">
+                <p className="font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#555555]">
+                    Story shell
+                </p>
+                <p className="font-montserrat text-lg font-bold text-[#262A22]">Crafted for YOU</p>
             </div>
+            <div className="flex min-h-0 flex-1 flex-col">{children}</div>
         </div>
     );
 }

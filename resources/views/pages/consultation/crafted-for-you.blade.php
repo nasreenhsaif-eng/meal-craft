@@ -7,16 +7,16 @@
     ];
 @endphp
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="light">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="light h-full">
 <head>
     @include('partials.head', [
         'viteEntries' => ['resources/css/app.css', 'resources/js/consultation-crafted-for-you.jsx'],
         'title' => __('Crafted for YOU — Consultation'),
     ])
 </head>
-<body class="min-h-screen bg-[#F8F9F6] antialiased">
+<body class="h-full min-h-[100dvh] bg-[#F8F9F6] antialiased">
     <script id="mc-consultation-crafted-config" type="application/json">@json($consultationConfig)</script>
-    <div id="mc-consultation-crafted-root"></div>
+    <div id="mc-consultation-crafted-root" class="h-full min-h-0"></div>
     @fluxScripts
 </body>
 </html>

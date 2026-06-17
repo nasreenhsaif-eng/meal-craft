@@ -20,6 +20,8 @@ if (configEl) {
 }
 
 if (rootEl) {
+    rootEl.classList.add('h-full', 'min-h-0');
+
     createRoot(rootEl).render(
         <StrictMode>
             <CraftedForYouPage
