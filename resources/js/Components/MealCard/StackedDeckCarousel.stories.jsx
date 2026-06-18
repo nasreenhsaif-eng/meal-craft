@@ -104,7 +104,7 @@ export const ConsultationMealsRibbon = {
 };
 
 /**
- * Two-option ribbon (breakfast / side salad / dessert) — same horizontal carousel as mains.
+ * Two-option deck — mobile ribbon; desktop static side-by-side pair.
  */
 export const TwoOptionRibbon = {
     render: () => {

@@ -52,11 +52,22 @@ test('authenticated user can complete onboarding and receive a plan', function (
 });
 
 test('adapted menu requires a calorie target on the customer profile', function () {
-    $user = User::factory()->create();
+    $user = User::factory()->customer()->create();
 
     $this->actingAs($user)
         ->getJson('/api/menu/adapted')
         ->assertUnprocessable();
+});
+
+test('adapted menu auto provisions a preview profile for admin staff without one', function () {
+    $admin = User::factory()->create();
+
+    $this->actingAs($admin)
+        ->getJson('/api/menu/adapted')
+        ->assertSuccessful()
+        ->assertJsonPath('daily_calorie_target', 2000);
+
+    expect($admin->fresh()->customerProfile?->daily_calorie_target)->toBe(2000);
 });
 
 test('adapted menu is available during onboarding when daily calorie target is set', function () {

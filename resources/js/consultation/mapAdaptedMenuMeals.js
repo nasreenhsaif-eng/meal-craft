@@ -119,6 +119,9 @@ export async function fetchAdaptedMenu(url, options = {}) {
 
     if (!response.ok) {
         const body = await response.json().catch(() => ({}));
+        if (response.status === 401) {
+            throw new Error('Your session expired. Refresh the page and log in again to load your meals.');
+        }
         const message =
             typeof body.message === 'string'
                 ? body.message

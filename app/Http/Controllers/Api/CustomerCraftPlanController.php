@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\StoreCustomerCraftPlanRequest;
-use App\Models\CustomerProfile;
 use App\Services\CustomerCraftPlanService;
+use App\Support\AdminConsultationPreviewProfile;
 use Illuminate\Http\JsonResponse;
 
 class CustomerCraftPlanController extends Controller
@@ -13,7 +13,7 @@ class CustomerCraftPlanController extends Controller
     public function store(StoreCustomerCraftPlanRequest $request): JsonResponse
     {
         $user = $request->user();
-        $profile = CustomerProfile::query()->where('user_id', $user->id)->first();
+        $profile = AdminConsultationPreviewProfile::resolve($user);
 
         if ($profile === null || $profile->daily_calorie_target === null) {
             return response()->json([
@@ -25,6 +25,7 @@ class CustomerCraftPlanController extends Controller
 
         return response()->json([
             'message' => 'Craft plan saved.',
+            'summary_url' => route('app.meal-plan', absolute: false),
             'plan' => [
                 'id' => $plan->id,
                 'craft_key' => $plan->craft_key,

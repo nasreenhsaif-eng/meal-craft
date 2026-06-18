@@ -65,7 +65,8 @@ test('customer can submit a craft plan with per-day soup flag', function () {
 
     $response->assertCreated()
         ->assertJsonPath('plan.craft_key', 'full')
-        ->assertJsonPath('plan.days.0.include_soup', true);
+        ->assertJsonPath('plan.days.0.include_soup', true)
+        ->assertJsonPath('summary_url', route('app.meal-plan', absolute: false));
 
     $this->assertDatabaseHas('customer_craft_plans', [
         'customer_profile_id' => $profile->id,
@@ -75,6 +76,43 @@ test('customer can submit a craft plan with per-day soup flag', function () {
     $this->assertDatabaseHas('customer_craft_plan_day_meals', [
         'meal_id' => $soup->id,
         'slot' => CustomerCraftMealSlot::Soup->value,
+    ]);
+});
+
+test('admin staff can submit a craft plan with an auto provisioned preview profile', function () {
+    $admin = User::factory()->create(['role' => UserRole::Admin]);
+
+    $main = Meal::factory()->create([
+        'meal_type' => MealType::Main,
+        'category' => RecipeCategory::Meal,
+        'total_calories' => 350,
+    ]);
+
+    $response = $this->actingAs($admin)->postJson('/api/customer/craft-plan', [
+        'craft_key' => 'day',
+        'week_duration' => 1,
+        'selected_days' => [1],
+        'days' => [
+            [
+                'day_of_week' => 1,
+                'include_soup' => false,
+                'selections' => [
+                    'meals' => [$main->id],
+                ],
+            ],
+        ],
+    ]);
+
+    $response->assertCreated()
+        ->assertJsonPath('summary_url', route('app.meal-plan', absolute: false));
+
+    $profile = $admin->fresh()->customerProfile;
+    expect($profile)->not->toBeNull()
+        ->and($profile->daily_calorie_target)->toBe(2000);
+
+    $this->assertDatabaseHas('customer_craft_plans', [
+        'customer_profile_id' => $profile->id,
+        'craft_key' => 'day',
     ]);
 });
 
@@ -133,6 +171,147 @@ test('kitchen daily sheet returns adapted ingredient lines for scalable meals', 
 
 test('guests cannot submit craft plans', function () {
     $this->postJson('/api/customer/craft-plan', [])->assertUnauthorized();
+});
+
+test('customer can view meal plan summary after submitting selections', function () {
+    $user = User::factory()->create(['role' => UserRole::Customer]);
+    CustomerProfile::factory()->for($user)->create([
+        'daily_calorie_target' => 2000,
+    ]);
+
+    $breakfast = Meal::factory()->create([
+        'name' => 'Sunday Oats',
+        'meal_type' => MealType::Breakfast,
+        'category' => RecipeCategory::Breakfast,
+        'total_calories' => 250,
+        'total_protein' => 20,
+        'total_carbs' => 30,
+        'total_fat' => 8,
+    ]);
+    $main = Meal::factory()->create([
+        'name' => 'Grilled Chicken Bowl',
+        'meal_type' => MealType::Main,
+        'category' => RecipeCategory::Meal,
+        'total_calories' => 450,
+        'total_protein' => 40,
+        'total_carbs' => 35,
+        'total_fat' => 12,
+    ]);
+    $salad = Meal::factory()->create([
+        'meal_type' => MealType::Salad,
+        'category' => RecipeCategory::SideSalad,
+        'total_calories' => 180,
+    ]);
+    $dessert = Meal::factory()->create([
+        'meal_type' => MealType::Dessert,
+        'category' => RecipeCategory::Dessert,
+        'total_calories' => 170,
+    ]);
+
+    $this->actingAs($user)->postJson('/api/customer/craft-plan', [
+        'craft_key' => 'full',
+        'week_duration' => 7,
+        'selected_days' => [1, 2],
+        'days' => [
+            [
+                'day_of_week' => 1,
+                'include_soup' => false,
+                'selections' => [
+                    'breakfasts' => [$breakfast->id],
+                    'meals' => [$main->id],
+                    'sideSalads' => [$salad->id],
+                    'desserts' => [$dessert->id],
+                ],
+            ],
+            [
+                'day_of_week' => 2,
+                'include_soup' => false,
+                'selections' => [
+                    'breakfasts' => [$breakfast->id],
+                    'meals' => [$main->id],
+                    'sideSalads' => [$salad->id],
+                    'desserts' => [$dessert->id],
+                ],
+            ],
+        ],
+    ])->assertCreated();
+
+    $this->actingAs($user)
+        ->get(route('app.meal-plan'))
+        ->assertSuccessful()
+        ->assertInertia(fn ($page) => $page
+            ->component('App/MealPlanSummary')
+            ->where('craftPlan.craftTitle', 'Full Craft')
+            ->where('craftPlan.planTierCalories', 2000)
+            ->has('craftPlan.days', 2)
+            ->where('craftPlan.days.0.label', 'Sunday')
+            ->where('craftPlan.days.0.categories.breakfasts.0.title', 'Sunday Oats'));
+});
+
+test('meal plan summary redirects to consultation when no plan exists', function () {
+    $user = User::factory()->create(['role' => UserRole::Customer]);
+    CustomerProfile::factory()->for($user)->create([
+        'daily_calorie_target' => 1500,
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('app.meal-plan'))
+        ->assertRedirect(route('consultation.crafted-for-you'));
+});
+
+test('customer can view meal plan summary before onboarding is marked complete', function () {
+    $user = User::factory()->create(['role' => UserRole::Customer]);
+    $profile = CustomerProfile::factory()->for($user)->withoutOnboarding()->create([
+        'daily_calorie_target' => 2000,
+    ]);
+
+    $breakfast = Meal::factory()->create([
+        'meal_type' => MealType::Breakfast,
+        'category' => RecipeCategory::Breakfast,
+        'total_calories' => 250,
+    ]);
+    $main = Meal::factory()->create([
+        'meal_type' => MealType::Main,
+        'category' => RecipeCategory::Meal,
+        'total_calories' => 450,
+    ]);
+    $salad = Meal::factory()->create([
+        'meal_type' => MealType::Salad,
+        'category' => RecipeCategory::SideSalad,
+        'total_calories' => 180,
+    ]);
+    $dessert = Meal::factory()->create([
+        'meal_type' => MealType::Dessert,
+        'category' => RecipeCategory::Dessert,
+        'total_calories' => 170,
+    ]);
+
+    $this->actingAs($user)->postJson('/api/customer/craft-plan', [
+        'craft_key' => 'full',
+        'week_duration' => 1,
+        'selected_days' => [1],
+        'days' => [
+            [
+                'day_of_week' => 1,
+                'include_soup' => false,
+                'selections' => [
+                    'breakfasts' => [$breakfast->id],
+                    'meals' => [$main->id],
+                    'sideSalads' => [$salad->id],
+                    'desserts' => [$dessert->id],
+                ],
+            ],
+        ],
+    ])->assertCreated();
+
+    $this->actingAs($user)
+        ->get(route('app.meal-plan'))
+        ->assertSuccessful()
+        ->assertInertia(fn ($page) => $page
+            ->component('App/MealPlanSummary')
+            ->has('craftPlan.days', 1));
+
+    expect($profile->fresh()?->onboarding_completed_at)->toBeNull();
 });
 
 test('non-admin cannot access kitchen daily sheet', function () {

@@ -65,7 +65,7 @@ final class CraftCaloriePlanner
             default => round($tier, 2),
         };
 
-        $soupCountsAsAddOn = $craftKey === self::CRAFT_FULL;
+        $soupCountsAsAddOn = in_array($craftKey, [self::CRAFT_FULL, self::CRAFT_AFTERNOON], true);
 
         if ($craftKey === self::CRAFT_INTERMITTENT) {
             $mainTarget = max(0.0, round($craftDayCalories - $sideSalad - $dessert - $soupMid, 2));

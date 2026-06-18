@@ -14,6 +14,7 @@ use Illuminate\Http\Exceptions\PostTooLargeException;
 use Illuminate\Http\Request;
 use Illuminate\Session\TokenMismatchException;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -26,6 +27,14 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             HandleInertiaRequests::class,
         ]);
+
+        $middleware->redirectUsersTo(function (Request $request): string {
+            if ($request->routeIs('login', 'join', 'register')) {
+                return route('sign-out');
+            }
+
+            return $request->user()?->homePath() ?? route('login');
+        });
 
         $middleware->alias([
             'admin' => EnsureUserIsAdmin::class,
@@ -43,6 +52,24 @@ return Application::configure(basePath: dirname(__DIR__))
                     'error',
                     'Your session expired. Refresh the page (Cmd+Shift+R), then try again.',
                 );
+            }
+
+            if ($request->is('login') || $request->routeIs('login', 'login.store')) {
+                return redirect()
+                    ->route('login')
+                    ->withInput($request->only('email', 'remember'))
+                    ->with('error', 'Your session expired. Please sign in again.');
+            }
+
+            return null;
+        });
+
+        $exceptions->render(function (TooManyRequestsHttpException $exception, Request $request): ?Response {
+            if ($request->is('login') || $request->routeIs('login', 'login.store')) {
+                return redirect()
+                    ->route('login')
+                    ->withInput($request->only('email', 'remember'))
+                    ->with('error', 'Too many login attempts. Please wait a minute, then try again.');
             }
 
             return null;

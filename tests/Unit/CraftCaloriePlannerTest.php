@@ -30,6 +30,7 @@ test('craft calorie budgets match consultation craft rules at 1500 kcal tier', f
     expect($full['craft_day_calories'])->toBe(1500.0)
         ->and($full['craft_soup_counts_as_add_on'])->toBeTrue()
         ->and($afternoon['craft_day_calories'])->toBe(round(1500.0 - $breakfast, 2))
+        ->and($afternoon['craft_soup_counts_as_add_on'])->toBeTrue()
         ->and($day['craft_day_calories'])->toBe(round(1500.0 - $mainEach, 2))
         ->and($intermittent['craft_day_calories'])->toBe(round(1500.0 - $breakfast - $mainEach, 2))
         ->and($business['craft_day_calories'])->toBe(500.0)

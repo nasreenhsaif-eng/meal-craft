@@ -573,7 +573,7 @@ export function MealSlotCarousel({
             ) : null}
 
             <div
-                className={`relative mx-auto flex w-full max-w-full flex-col items-center justify-center overflow-x-clip overflow-y-visible px-4 [-webkit-overflow-scrolling:touch] md:px-0 ${deckOnly ? 'mt-0 min-h-[calc(min(90vw,280px)+5.5rem)] py-1.5' : 'mt-0.5 min-h-[calc(min(90vw,280px)+5.5rem)] py-1'}`}
+                className={`relative mx-auto flex w-full max-w-full flex-col items-center justify-center overflow-y-visible px-4 [-webkit-overflow-scrolling:touch] max-md:overflow-x-clip md:overflow-x-visible md:px-0 ${deckOnly ? 'mt-0 min-h-[calc(min(90vw,280px)+5.5rem)] py-1.5' : 'mt-0.5 min-h-[calc(min(90vw,280px)+5.5rem)] py-1'}`}
                 data-consultation-deck=""
             >
                 {cards.length === 0 ? (
@@ -581,8 +581,15 @@ export function MealSlotCarousel({
                         {readOnly ? 'No meal assigned for this slot yet.' : 'No options match this slot yet.'}
                     </p>
                 ) : (
-                    <div className="flex w-full max-w-full justify-center">
-                        <div className="relative z-0 w-full min-w-0 max-w-full">
+                    <div
+                        className={[
+                            'w-full',
+                            cards.length === 2 ? 'md:mx-auto md:max-w-[680px]' : '',
+                        ]
+                            .filter(Boolean)
+                            .join(' ')}
+                    >
+                        <div className="relative z-0 w-full min-w-0">
                             <StackedDeckCarousel
                                 title=""
                                 meals={cards}
@@ -597,6 +604,7 @@ export function MealSlotCarousel({
                                         <MealCardClientViewNano
                                             deck
                                             ribbon={deckLayout === 'ribbon'}
+                                            alignActionsBottom={deckLayout === 'staticPair'}
                                             deckStackRole={isFront ? 'front' : 'back'}
                                             title={meal.title ?? ''}
                                             imageUrl={meal.imageUrl}
@@ -673,6 +681,15 @@ export default function ChooseYourMeals({
     const [incompleteWarning, setIncompleteWarning] = useState(/** @type {string | null} */ (null));
 
     const scrollContainerRef = useRef(/** @type {HTMLDivElement | null} */ (null));
+
+    useLayoutEffect(() => {
+        const scroller = scrollContainerRef.current;
+        if (scroller) {
+            scroller.scrollTop = 0;
+        }
+
+        window.scrollTo(0, 0);
+    }, [dayName, dayProgressLabel, deckScopePrefix]);
 
     const wheelDeltaY = useCallback((event, element) => {
         if (event.deltaMode === 1) {

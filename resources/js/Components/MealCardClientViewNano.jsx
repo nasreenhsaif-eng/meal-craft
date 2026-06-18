@@ -120,7 +120,9 @@ export default function MealCardClientViewNano({
     const shell = deck
         ? ribbon
             ? 'h-full w-full min-h-0 min-w-0 max-w-full rounded-[12px] flex flex-col'
-            : 'mx-auto w-[280px] max-w-[min(280px,100%)] shrink-0 rounded-[12px] flex flex-col'
+            : alignActionsBottom
+              ? 'flex h-full w-full min-h-0 min-w-0 max-w-full flex-col rounded-[12px]'
+              : 'mx-auto w-[280px] max-w-[min(280px,100%)] shrink-0 rounded-[12px] flex flex-col'
         : 'w-[240px] h-[320px] rounded-[12px]';
     /** Inner face radius — uniform; no gradient padding inset. */
     const innerR = deck ? 'rounded-[12px]' : 'rounded-[10px]';
@@ -138,7 +140,7 @@ export default function MealCardClientViewNano({
 
     return (
         <article
-            className={`relative font-montserrat ${shell} ${selectedShellClass} ${articleShadowDeck} ${articleDeckStackShadow} ${deckBackRimClass} ${selectedDeckRaise} ${deck ? 'bg-[#FFFFFF]' : ''} ${className}`.trim()}
+            className={`relative font-montserrat ${shell} ${alignActionsBottom && deck ? 'h-full' : ''} ${selectedShellClass} ${articleShadowDeck} ${articleDeckStackShadow} ${deckBackRimClass} ${selectedDeckRaise} ${deck ? 'bg-[#FFFFFF]' : ''} ${className}`.trim()}
         >
             {deck ? (
                 <div

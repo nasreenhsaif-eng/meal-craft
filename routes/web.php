@@ -12,6 +12,8 @@ use App\Http\Controllers\Admin\MealController;
 use App\Http\Controllers\Admin\MealLibraryController;
 use App\Http\Controllers\Admin\MealLibraryCsvImportController;
 use App\Http\Controllers\Admin\MealPlanLibraryController;
+use App\Http\Controllers\Api\AdaptedMenuController;
+use App\Http\Controllers\Api\CustomerCraftPlanController;
 use App\Http\Controllers\Auth\PortalChoiceController;
 use App\Http\Controllers\Auth\WelcomeController;
 use App\Http\Controllers\Customer\ConsultationCraftedForYouController;
@@ -133,10 +135,20 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
 
         Route::prefix('app')
             ->name('app.')
-            ->middleware('onboarding.complete')
             ->group(function (): void {
-                Route::get('/', [CustomerAppController::class, 'home'])->name('home');
+                Route::get('/meal-plan', [CustomerAppController::class, 'mealPlan'])
+                    ->name('meal-plan');
+
+                Route::middleware('onboarding.complete')->group(function (): void {
+                    Route::get('/', [CustomerAppController::class, 'home'])->name('home');
+                });
             });
+
+        Route::prefix('api')->group(function (): void {
+            Route::get('/menu/adapted', AdaptedMenuController::class)->name('api.menu.adapted');
+            Route::post('/customer/craft-plan', [CustomerCraftPlanController::class, 'store'])
+                ->name('api.customer.craft-plan.store');
+        });
 
         Route::get('consultation/crafted-for-you', ConsultationCraftedForYouController::class)
             ->name('consultation.crafted-for-you');

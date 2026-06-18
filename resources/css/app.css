@@ -139,7 +139,7 @@
 
   .mc-auth-password-label-row { @apply flex flex-wrap items-center justify-between gap-x-4 gap-y-3; }
   .mc-auth-remember-row { @apply mt-3 flex items-center gap-2; }
-  .mc-auth-checkbox { @apply size-5 rounded-sm border border-neutral-300 text-[#556C37] focus:ring-[#556C37]; }
+  .mc-auth-checkbox { @apply size-5 rounded-sm border border-neutral-300 accent-[#556C37] focus:ring-[#556C37]; }
 
   .mc-auth-submit-wrap { @apply mt-4; }
   .mc-auth-login-submit { @apply w-full; }

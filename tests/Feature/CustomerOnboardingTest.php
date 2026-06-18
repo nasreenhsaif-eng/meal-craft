@@ -471,7 +471,7 @@ test('onboarding pages receive shared meal craft onboarding props', function () 
             ->where('mealCraft.onboarding.currentStep', OnboardingStep::Activity->value));
 });
 
-test('completed onboarding unlocks the customer app home', function () {
+test('completed onboarding redirects to meal selection', function () {
     $customer = User::factory()->customer()->create();
     CustomerProfile::factory()->for($customer)->withoutOnboarding()->create([
         'onboarding_step' => OnboardingStep::FoodFilters,
@@ -481,7 +481,7 @@ test('completed onboarding unlocks the customer app home', function () {
         ->post(route('onboarding.food-filters.store'), [
             'allergies' => ['gluten', 'dairy'],
         ])
-        ->assertRedirect(route('app.home'));
+        ->assertRedirect(route('consultation.crafted-for-you'));
 
     $profile = $customer->fresh()->customerProfile;
 

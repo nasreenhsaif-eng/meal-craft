@@ -258,7 +258,12 @@ class OnboardingController extends Controller
             'onboarding_step' => OnboardingStep::FoodFilters,
         ]);
 
-        return redirect()->route('app.home');
+        return $this->redirectAfterOnboardingComplete();
+    }
+
+    private function redirectAfterOnboardingComplete(): RedirectResponse
+    {
+        return redirect()->route('consultation.crafted-for-you');
     }
 
     private function advanceStep(Request $request, OnboardingStep $completedStep): RedirectResponse
@@ -275,7 +280,7 @@ class OnboardingController extends Controller
         $nextStep = $completedStep->next($user->customerProfile);
 
         if ($nextStep === null) {
-            return redirect()->route('app.home');
+            return $this->redirectAfterOnboardingComplete();
         }
 
         $savedStep = OnboardingStep::normalizeStoredStep($user->currentOnboardingStep());

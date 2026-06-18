@@ -46,6 +46,51 @@ const RIBBON_CARD_SHELL =
 const STATIC_CARD_SHELL_SINGLE =
     'flex min-h-[232px] w-full max-w-[302px] shrink-0 flex-col items-stretch sm:min-h-[248px] sm:w-[286px] lg:min-h-[264px] lg:w-[302px] transform-gpu';
 
+/** Desktop side-by-side pair — fixed equal width; stretch to matched height. */
+const STATIC_PAIR_CARD_SHELL =
+    'flex h-full w-full min-w-0 max-w-[302px] flex-1 flex-col md:w-[302px] md:flex-none transform-gpu';
+
+const DESKTOP_MIN_WIDTH_PX = 768;
+
+/**
+ * @param {number} minWidthPx
+ */
+function useMinWidth(minWidthPx) {
+    const [matches, setMatches] = useState(() => {
+        if (typeof window === 'undefined') {
+            return false;
+        }
+
+        return window.matchMedia(`(min-width: ${minWidthPx}px)`).matches;
+    });
+
+    useEffect(() => {
+        const mq = window.matchMedia(`(min-width: ${minWidthPx}px)`);
+        const onChange = () => setMatches(mq.matches);
+        onChange();
+        mq.addEventListener('change', onChange);
+
+        return () => mq.removeEventListener('change', onChange);
+    }, [minWidthPx]);
+
+    return matches;
+}
+
+/**
+ * @param {number} itemCount
+ */
+function ribbonStageMaxWidthClass(itemCount) {
+    if (itemCount >= 4) {
+        return 'w-full max-w-[960px]';
+    }
+
+    if (itemCount === 3) {
+        return 'w-full max-w-[820px]';
+    }
+
+    return 'w-full max-w-full';
+}
+
 /**
  * Two-option decks use a single track (no duplicate peeks). Three+ meals triplicate for infinite wrap.
  *
@@ -119,7 +164,7 @@ function trackXForCenteredLogical(logicalIdx, container, track, cards, itemCount
 }
 
 /**
- * Horizontal ribbon carousel — same interaction on mobile and desktop (arrows, dots, focus + peek).
+ * Horizontal ribbon carousel — mobile peek ribbon; desktop uses a static pair for two-option decks.
  *
  * Selection state is owned by the parent: pass `selected` / `onToggleSelected` from `renderCard`.
  *
@@ -144,6 +189,8 @@ export default function StackedDeckCarousel({ title: _title, items: itemsProp, m
     const [ribbonActiveIndex, setRibbonActiveIndex] = useState(0);
 
     const copies = ribbonCopyCount(itemCount);
+    const isDesktop = useMinWidth(DESKTOP_MIN_WIDTH_PX);
+    const useDesktopStaticPair = itemCount === 2 && isDesktop;
 
     const galleryRef = useRef(/** @type {HTMLDivElement|null} */ (null));
     const trackRef = useRef(/** @type {HTMLDivElement|null} */ (null));
@@ -419,7 +466,7 @@ export default function StackedDeckCarousel({ title: _title, items: itemsProp, m
     }, [itemCount]);
 
     useLayoutEffect(() => {
-        if (itemCount === 0) {
+        if (itemCount === 0 || useDesktopStaticPair) {
             return;
         }
         let innerId = 0;
@@ -436,7 +483,7 @@ export default function StackedDeckCarousel({ title: _title, items: itemsProp, m
             cancelAnimationFrame(outerId);
             cancelAnimationFrame(innerId);
         };
-    }, [alignTrackToLogical, galleryResizeSeq, itemCount, copies, trackX]);
+    }, [alignTrackToLogical, galleryResizeSeq, itemCount, copies, trackX, useDesktopStaticPair]);
 
     if (itemCount === 1) {
         return (
@@ -454,90 +501,153 @@ export default function StackedDeckCarousel({ title: _title, items: itemsProp, m
         );
     }
 
+    if (useDesktopStaticPair) {
+        return (
+            <div className="w-full px-4 py-4">
+                <div className="mx-auto flex w-full max-w-[680px] items-stretch justify-center gap-4 md:gap-6">
+                    {items.map((item, idx) => (
+                        <div key={`static-pair-${getKey(item, idx)}`} className={STATIC_PAIR_CARD_SHELL}>
+                            {renderMealCard(item, idx, {
+                                isFront: true,
+                                stackPos: null,
+                                deckLayout: 'staticPair',
+                            })}
+                        </div>
+                    ))}
+                </div>
+            </div>
+        );
+    }
+
+    const stageMaxW = ribbonStageMaxWidthClass(itemCount);
+
+    const ribbonArrowButtonClass =
+        'pointer-events-auto flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-0 bg-white/90 text-[#262A22] shadow-sm shadow-[#262A22]/10 outline-none ring-0 backdrop-blur-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5A6B44]/35 focus-visible:ring-offset-0 disabled:pointer-events-none disabled:opacity-30';
+
     return (
-        <div className="group relative w-full md:px-16 lg:px-20">
-            <div className="relative w-full overflow-x-clip overflow-y-visible pb-2 pt-4 outline-none ring-0">
-                <div
-                    ref={galleryRef}
-                    className="relative min-h-[10rem] w-full min-w-0 px-2 py-4 outline-none ring-0 md:px-16 md:py-6 lg:px-20"
-                >
-                    <div className="relative overflow-x-clip">
-                        <motion.div
-                            ref={trackRef}
-                            style={{ x: trackX }}
-                            className="relative z-0 flex w-max shrink-0 flex-nowrap items-stretch gap-3 will-change-transform transform-gpu md:gap-6"
+        <div className="group relative w-full">
+            <div className="relative w-full overflow-y-visible pb-2 pt-4 outline-none ring-0">
+                <div className="flex w-full items-center justify-center gap-1 md:gap-2">
+                    <div className="hidden w-10 shrink-0 items-center justify-center md:flex lg:w-11">
+                        <button
+                            type="button"
+                            aria-label="Previous meal"
+                            onClick={() => void prevRibbon()}
+                            disabled={itemCount <= 1}
+                            className={ribbonArrowButtonClass}
                         >
-                            {Array.from({ length: copies }, (_, copy) =>
-                                items.map((item, idx) => {
-                                    const physicalIdx = copy * itemCount + idx;
-                                    const isRibbonFocus =
-                                        physicalIdx === focusedPhysicalIndex(ribbonActiveIndex, itemCount, copies);
-
-                                    return (
-                                        <div
-                                            key={`ribbon-${copy}-${getKey(item, idx)}`}
-                                            ref={(el) => {
-                                                cardRefs.current[physicalIdx] = el;
-                                            }}
-                                            data-ribbon-card=""
-                                            className={`${RIBBON_CARD_SHELL} ${isRibbonFocus ? 'z-[5]' : 'z-0'}`}
-                                        >
-                                            <motion.div
-                                                className={`flex min-h-0 flex-1 flex-col rounded-[12px] ${isRibbonFocus ? 'shadow-md shadow-[#262A22]/10' : ''}`}
-                                                style={{ transformOrigin: 'center center' }}
-                                                animate={{
-                                                    scale: isRibbonFocus ? RIBBON_FOCUS_SCALE : RIBBON_NEIGHBOR_SCALE,
-                                                    opacity: isRibbonFocus ? RIBBON_FOCUS_OPACITY : RIBBON_NEIGHBOR_OPACITY,
-                                                }}
-                                                transition={netflixSlideTransition()}
-                                                whileHover={
-                                                    isRibbonFocus
-                                                        ? {
-                                                              scale: 1.03,
-                                                              transition: { duration: 0.2, ease: [0.22, 1, 0.36, 1] },
-                                                          }
-                                                        : { scale: RIBBON_NEIGHBOR_SCALE }
-                                                }
-                                            >
-                                                {renderMealCard(item, idx, {
-                                                    isFront: true,
-                                                    stackPos: null,
-                                                    deckLayout: 'ribbon',
-                                                })}
-                                            </motion.div>
-                                        </div>
-                                    );
-                                }),
-                            ).flat()}
-                        </motion.div>
+                            <svg className="h-8 w-8 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.25} d="M15 18l-6-6 6-6" />
+                            </svg>
+                        </button>
                     </div>
-                </div>
 
-                <div className="pointer-events-none absolute inset-y-0 left-0 z-[110] w-11 border-none bg-transparent shadow-none outline-none ring-0 md:w-14">
-                    <button
-                        type="button"
-                        aria-label="Previous meal"
-                        onClick={() => void prevRibbon()}
-                        disabled={itemCount <= 1}
-                        className="pointer-events-auto flex h-full min-h-[3rem] w-full items-center justify-center rounded-none border-0 bg-transparent text-[#262A22] shadow-none outline-none ring-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5A6B44]/35 focus-visible:ring-offset-0 disabled:pointer-events-none disabled:opacity-30"
-                    >
-                        <svg className="h-8 w-8 shrink-0 md:h-9 md:w-9" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.25} d="M15 18l-6-6 6-6" />
-                        </svg>
-                    </button>
-                </div>
-                <div className="pointer-events-none absolute inset-y-0 right-0 z-[110] w-11 border-none bg-transparent shadow-none outline-none ring-0 md:w-14">
-                    <button
-                        type="button"
-                        aria-label="Next meal"
-                        onClick={() => void nextRibbon()}
-                        disabled={itemCount <= 1}
-                        className="pointer-events-auto flex h-full min-h-[3rem] w-full items-center justify-center rounded-none border-0 bg-transparent text-[#262A22] shadow-none outline-none ring-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5A6B44]/35 focus-visible:ring-offset-0 disabled:pointer-events-none disabled:opacity-30"
-                    >
-                        <svg className="h-8 w-8 shrink-0 md:h-9 md:w-9" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.25} d="M9 18l6-6-6-6" />
-                        </svg>
-                    </button>
+                    <div className={`relative mx-auto min-w-0 flex-1 ${stageMaxW}`}>
+                        <div
+                            ref={galleryRef}
+                            className="relative min-h-[10rem] w-full min-w-0 px-1 py-4 outline-none ring-0 md:px-2 md:py-5"
+                        >
+                            <div className="relative overflow-x-clip">
+                                <motion.div
+                                    ref={trackRef}
+                                    style={{ x: trackX }}
+                                    className="relative z-0 flex w-max shrink-0 flex-nowrap items-stretch gap-3 will-change-transform transform-gpu md:gap-6"
+                                >
+                                    {Array.from({ length: copies }, (_, copy) =>
+                                        items.map((item, idx) => {
+                                            const physicalIdx = copy * itemCount + idx;
+                                            const isRibbonFocus =
+                                                physicalIdx ===
+                                                focusedPhysicalIndex(ribbonActiveIndex, itemCount, copies);
+
+                                            return (
+                                                <div
+                                                    key={`ribbon-${copy}-${getKey(item, idx)}`}
+                                                    ref={(el) => {
+                                                        cardRefs.current[physicalIdx] = el;
+                                                    }}
+                                                    data-ribbon-card=""
+                                                    className={`${RIBBON_CARD_SHELL} ${isRibbonFocus ? 'z-[5]' : 'z-0'}`}
+                                                >
+                                                    <motion.div
+                                                        className={`flex min-h-0 flex-1 flex-col rounded-[12px] ${isRibbonFocus ? 'shadow-md shadow-[#262A22]/10' : ''}`}
+                                                        style={{ transformOrigin: 'center center' }}
+                                                        animate={{
+                                                            scale: isRibbonFocus
+                                                                ? RIBBON_FOCUS_SCALE
+                                                                : RIBBON_NEIGHBOR_SCALE,
+                                                            opacity: isRibbonFocus
+                                                                ? RIBBON_FOCUS_OPACITY
+                                                                : RIBBON_NEIGHBOR_OPACITY,
+                                                        }}
+                                                        transition={netflixSlideTransition()}
+                                                        whileHover={
+                                                            isRibbonFocus
+                                                                ? {
+                                                                      scale: 1.03,
+                                                                      transition: {
+                                                                          duration: 0.2,
+                                                                          ease: [0.22, 1, 0.36, 1],
+                                                                      },
+                                                                  }
+                                                                : { scale: RIBBON_NEIGHBOR_SCALE }
+                                                        }
+                                                    >
+                                                        {renderMealCard(item, idx, {
+                                                            isFront: true,
+                                                            stackPos: null,
+                                                            deckLayout: 'ribbon',
+                                                        })}
+                                                    </motion.div>
+                                                </div>
+                                            );
+                                        }),
+                                    ).flat()}
+                                </motion.div>
+                            </div>
+                        </div>
+
+                        <div className="pointer-events-none absolute inset-y-0 left-0 z-[110] flex w-10 items-center justify-center md:hidden">
+                            <button
+                                type="button"
+                                aria-label="Previous meal"
+                                onClick={() => void prevRibbon()}
+                                disabled={itemCount <= 1}
+                                className={ribbonArrowButtonClass}
+                            >
+                                <svg className="h-7 w-7 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.25} d="M15 18l-6-6 6-6" />
+                                </svg>
+                            </button>
+                        </div>
+                        <div className="pointer-events-none absolute inset-y-0 right-0 z-[110] flex w-10 items-center justify-center md:hidden">
+                            <button
+                                type="button"
+                                aria-label="Next meal"
+                                onClick={() => void nextRibbon()}
+                                disabled={itemCount <= 1}
+                                className={ribbonArrowButtonClass}
+                            >
+                                <svg className="h-7 w-7 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.25} d="M9 18l6-6-6-6" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="hidden w-10 shrink-0 items-center justify-center md:flex lg:w-11">
+                        <button
+                            type="button"
+                            aria-label="Next meal"
+                            onClick={() => void nextRibbon()}
+                            disabled={itemCount <= 1}
+                            className={ribbonArrowButtonClass}
+                        >
+                            <svg className="h-8 w-8 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.25} d="M9 18l6-6-6-6" />
+                            </svg>
+                        </button>
+                    </div>
                 </div>
             </div>
 

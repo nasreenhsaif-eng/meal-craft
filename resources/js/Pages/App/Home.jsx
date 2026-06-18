@@ -6,9 +6,16 @@ import { resolveInertiaLayoutChild } from '../../lib/resolveInertiaLayoutChild.j
 /**
  * @param {object} props
  * @param {string} [props.consultationUrl]
+ * @param {string} [props.mealPlanSummaryUrl]
  * @param {{ craftKey?: string; weekDuration?: number; submittedAt?: string } | null} [props.craftPlan]
  */
-export default function Home({ customerName, profile, consultationUrl = '/consultation/crafted-for-you', craftPlan = null }) {
+export default function Home({
+    customerName,
+    profile,
+    consultationUrl = '/consultation/crafted-for-you',
+    mealPlanSummaryUrl = '/app/meal-plan',
+    craftPlan = null,
+}) {
     const hasSubmittedPlan = Boolean(craftPlan?.submittedAt);
 
     return (
@@ -46,7 +53,16 @@ export default function Home({ customerName, profile, consultationUrl = '/consul
                     <p className="mt-2 text-sm text-[#555555]">
                         Browse breakfasts, mains, salads, desserts, and optional soup — portioned to your {profile?.dailyCalorieTarget ?? 'plan'} kcal target.
                     </p>
-                    <div className="mt-5">
+                    <div className="mt-5 flex flex-wrap gap-3">
+                        {hasSubmittedPlan ? (
+                            <Button
+                                type="button"
+                                variant="secondary"
+                                label="View meal plan summary"
+                                onClick={() => window.location.assign(mealPlanSummaryUrl)}
+                                className="min-w-[200px]"
+                            />
+                        ) : null}
                         <Button
                             type="button"
                             label={hasSubmittedPlan ? 'Edit meal plan' : 'Start meal selection'}

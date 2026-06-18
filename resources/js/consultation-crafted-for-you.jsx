@@ -5,7 +5,7 @@ import CraftedForYouPage from './Pages/Consultation/CraftedForYouPage.jsx';
 const rootEl = document.getElementById('mc-consultation-crafted-root');
 const configEl = document.getElementById('mc-consultation-crafted-config');
 
-/** @type {{ closeHref?: string; homeHref?: string; pageEyebrow?: string; adaptedMenuUrl?: string; planTier?: number | null; planTiers?: number[] }} */
+/** @type {{ closeHref?: string; homeHref?: string; summaryHref?: string; loginUrl?: string; signOutUrl?: string; isCustomerAccount?: boolean; isAdminPreview?: boolean; pageEyebrow?: string; adaptedMenuUrl?: string; planTier?: number | null; planTiers?: number[] }} */
 let config = {};
 
 if (configEl) {
@@ -27,6 +27,11 @@ if (rootEl) {
             <CraftedForYouPage
                 closeHref={typeof config.closeHref === 'string' ? config.closeHref : undefined}
                 homeHref={typeof config.homeHref === 'string' ? config.homeHref : undefined}
+                summaryHref={typeof config.summaryHref === 'string' ? config.summaryHref : undefined}
+                loginUrl={typeof config.loginUrl === 'string' ? config.loginUrl : undefined}
+                signOutUrl={typeof config.signOutUrl === 'string' ? config.signOutUrl : undefined}
+                isCustomerAccount={config.isCustomerAccount === true}
+                isAdminPreview={config.isAdminPreview === true}
                 pageEyebrow={typeof config.pageEyebrow === 'string' ? config.pageEyebrow : undefined}
                 adaptedMenuUrl={
                     typeof config.adaptedMenuUrl === 'string' ? config.adaptedMenuUrl : '/api/menu/adapted'

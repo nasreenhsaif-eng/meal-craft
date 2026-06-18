@@ -1,7 +1,7 @@
 @php
     $consultationConfig = $consultationConfig ?? [
         'closeHref' => route('admin.dashboard'),
-        'adaptedMenuUrl' => url('/api/menu/adapted'),
+        'adaptedMenuUrl' => route('api.menu.adapted', absolute: false),
         'planTiers' => \App\Services\Nutrition\UserPlanCalculator::planTiers(),
         'planTier' => null,
     ];

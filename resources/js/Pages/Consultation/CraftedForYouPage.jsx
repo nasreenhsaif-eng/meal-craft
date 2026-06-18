@@ -4,6 +4,7 @@ import PillButton from '../../Components/Atoms/Button/Button.jsx';
 import ChooseYourMeals, {
     DEFAULT_FULL_CRAFT_MAX_SELECTIONS,
     MealSlotCarousel,
+    SoupOfTheDayOptIn,
     buildConsultationDeckCatalog,
     consultationDeckOptionsForSlotKey,
     soupOfTheDayMeals,
@@ -39,19 +40,18 @@ const CRAFTS = [
     {
         key: 'day',
         title: 'Day Craft',
-        description: 'Breakfast, 1 Meal, Side Salad, Dessert & Soup (optional)',
+        description: 'Breakfast, 1 Meal, Side Salad & Dessert',
         slots: [
             { id: 'breakfast', label: 'Breakfast', count: 1 },
             { id: 'meal', label: 'Meal', count: 1 },
             { id: 'sidesalad', label: 'Side salad', count: 1 },
             { id: 'dessert', label: 'Dessert', count: 1 },
-            { id: 'soup', label: 'Soup for this day', count: 1, optional: true },
         ],
     },
     {
         key: 'afternoon',
         title: 'Afternoon Craft',
-        description: '2 Meals, Side Salad, Dessert',
+        description: '2 Meals, Side Salad, Dessert & Soup for this day (optional)',
         slots: [
             { id: 'meal', label: 'Meals', count: 2 },
             { id: 'sidesalad', label: 'Side salad', count: 1 },
@@ -272,6 +272,11 @@ function slotId(dayIdx, slotKey, index) {
  * @param {{
  *   closeHref?: string;
  *   homeHref?: string;
+ *   summaryHref?: string;
+ *   loginUrl?: string;
+ *   signOutUrl?: string;
+ *   isCustomerAccount?: boolean;
+ *   isAdminPreview?: boolean;
  *   pageEyebrow?: string;
  *   adaptedMenuUrl?: string;
  *   initialPlanTier?: number | null;
@@ -281,6 +286,10 @@ function slotId(dayIdx, slotKey, index) {
 export default function CraftedForYouPage({
     closeHref,
     homeHref,
+    summaryHref,
+    loginUrl,
+    signOutUrl,
+    isAdminPreview = false,
     pageEyebrow = 'Admin / Consultation',
     adaptedMenuUrl = '/api/menu/adapted',
     initialPlanTier = null,
@@ -306,6 +315,7 @@ export default function CraftedForYouPage({
     const [businessSideChoiceByDay, setBusinessSideChoiceByDay] = useState(
         /** @type {Record<number, 'soup'|'sidesalad'|'dessert'>} */ ({}),
     );
+    const [afternoonSoupOptInByDay, setAfternoonSoupOptInByDay] = useState(/** @type {Record<number, boolean>} */ ({}));
 
     // Slot selection state (chosen meal ids per category, per day)
     const [selectedByDay, setSelectedByDay] = useState(
@@ -511,6 +521,32 @@ export default function CraftedForYouPage({
         });
     }
 
+    function afternoonSoupOptInForDay(day) {
+        if (afternoonSoupOptInByDay[day] === true) {
+            return true;
+        }
+
+        return (selectedByDay[day]?.soup?.length ?? 0) > 0;
+    }
+
+    function setAfternoonSoupOptIn(day, enabled) {
+        setAfternoonSoupOptInByDay((prev) => ({ ...prev, [day]: enabled }));
+
+        if (!enabled) {
+            setSelectedByDay((prev) => {
+                const current = prev[day] ?? {
+                    breakfasts: [],
+                    meals: [],
+                    sideSalads: [],
+                    desserts: [],
+                    soup: [],
+                };
+
+                return { ...prev, [day]: { ...current, soup: [] } };
+            });
+        }
+    }
+
     function toggleDay(dayIdx) {
         setSelectedDays((prev) => {
             const set = new Set(prev);
@@ -556,7 +592,18 @@ export default function CraftedForYouPage({
                 selectedByDay,
             });
 
-            await submitCraftPlan(payload);
+            const result = await submitCraftPlan(payload);
+
+            const redirectUrl =
+                (typeof result.summary_url === 'string' && result.summary_url) ||
+                summaryHref ||
+                null;
+
+            if (redirectUrl) {
+                window.location.assign(redirectUrl);
+                return;
+            }
+
             setSubmitSuccess(true);
         } catch (error) {
             setSubmitError(error instanceof Error ? error.message : 'Could not save craft plan.');
@@ -816,6 +863,21 @@ export default function CraftedForYouPage({
                 {!disableAdaptedMenuFetch && menuError ? (
                     <p className="mb-4 rounded-[12px] border border-amber-200 bg-amber-50 px-4 py-3 font-body text-sm text-amber-900">
                         {menuError} Showing sample meals until your plan is available.
+                        {loginUrl && /log in again/i.test(menuError) ? (
+                            <>
+                                {' '}
+                                <a href={loginUrl} className="font-semibold underline underline-offset-2">
+                                    Log in
+                                </a>
+                            </>
+                        ) : null}
+                    </p>
+                ) : null}
+
+                {isAdminPreview ? (
+                    <p className="mb-4 rounded-[12px] border border-[#5A6B44]/25 bg-[#5A6B44]/10 px-4 py-3 font-body text-sm text-[#262A22]">
+                        Admin preview — you can run the full flow including Submit. Plans save to your staff preview
+                        profile (2000 kcal defaults) for UI testing.
                     </p>
                 ) : null}
 
@@ -1154,17 +1216,57 @@ export default function CraftedForYouPage({
                                                 );
                                             }
 
-                                            return requiredSlotsByCraft.map((slot) => (
-                                                <MealSlotCarousel
-                                                    key={slotId(day, slot.key, 1)}
-                                                    title={slot.label}
-                                                    deckScopeKey={`${day}-${slot.key}`}
-                                                    cards={pickCards(slot.key)}
-                                                    selectedIds={selections[slot.selectionKey]}
-                                                    maxSelected={slot.count}
-                                                    onSelect={toggle(slot.selectionKey, slot.count)}
-                                                />
-                                            ));
+                                            return (
+                                                <>
+                                                    {requiredSlotsByCraft.map((slot) => (
+                                                        <MealSlotCarousel
+                                                            key={slotId(day, slot.key, 1)}
+                                                            title={slot.label}
+                                                            deckScopeKey={`${day}-${slot.key}`}
+                                                            cards={pickCards(slot.key)}
+                                                            selectedIds={selections[slot.selectionKey]}
+                                                            maxSelected={slot.count}
+                                                            onSelect={toggle(slot.selectionKey, slot.count)}
+                                                        />
+                                                    ))}
+
+                                                    {craft?.key === 'afternoon' ? (
+                                                        <div className="relative isolate w-full overflow-x-clip overflow-y-visible py-0.5">
+                                                            <SoupOfTheDayOptIn
+                                                                checked={afternoonSoupOptInForDay(day)}
+                                                                onChange={(next) => setAfternoonSoupOptIn(day, next)}
+                                                            />
+
+                                                            <AnimatePresence initial={false}>
+                                                                {afternoonSoupOptInForDay(day) ? (
+                                                                    <motion.div
+                                                                        key={`${day}-soup-deck`}
+                                                                        initial={{ opacity: 0, y: 12, scale: 0.97 }}
+                                                                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                                                                        exit={{ opacity: 0, y: 8, scale: 0.98 }}
+                                                                        transition={{
+                                                                            type: 'spring',
+                                                                            stiffness: 320,
+                                                                            damping: 34,
+                                                                        }}
+                                                                        className="overflow-hidden"
+                                                                    >
+                                                                        <MealSlotCarousel
+                                                                            deckOnly
+                                                                            title=""
+                                                                            deckScopeKey={`${day}-soup`}
+                                                                            cards={pickCards('soup')}
+                                                                            selectedIds={selections.soup}
+                                                                            maxSelected={1}
+                                                                            onSelect={toggle('soup', 1)}
+                                                                        />
+                                                                    </motion.div>
+                                                                ) : null}
+                                                            </AnimatePresence>
+                                                        </div>
+                                                    ) : null}
+                                                </>
+                                            );
                                         })()}
                                     </motion.div>
                                 </AnimatePresence>
@@ -1221,6 +1323,7 @@ export default function CraftedForYouPage({
                                 label="SUBMIT"
                                 variant="primary"
                                 onClick={submit}
+                                disabled={submitting}
                                 className="px-12 py-3 text-base"
                             />
                         </div>
@@ -1255,9 +1358,11 @@ export default function CraftedForYouPage({
                             <button
                                 type="button"
                                 className="mt-3 font-montserrat text-sm font-bold text-[#5A6B44] underline-offset-2 hover:underline"
-                                onClick={() => window.location.assign(homeHref)}
+                                onClick={() =>
+                                    window.location.assign(summaryHref || homeHref)
+                                }
                             >
-                                Back to your plan
+                                {summaryHref ? 'View your meal plan summary' : 'Back to your plan'}
                             </button>
                         ) : null}
                     </div>
@@ -1267,7 +1372,17 @@ export default function CraftedForYouPage({
             {submitError ? (
                 <div className="fixed bottom-6 left-1/2 z-[110] w-full max-w-[640px] -translate-x-1/2 px-4">
                     <div className="rounded-[12px] border border-red-200 bg-red-50 px-4 py-3 shadow-lg">
-                        <p className="font-body text-sm text-red-800">{submitError}</p>
+                        <p className="font-body text-sm text-red-800">
+                            {submitError}
+                            {loginUrl && /log in again/i.test(submitError) ? (
+                                <>
+                                    {' '}
+                                    <a href={loginUrl} className="font-semibold underline underline-offset-2">
+                                        Log in
+                                    </a>
+                                </>
+                            ) : null}
+                        </p>
                     </div>
                 </div>
             ) : null}

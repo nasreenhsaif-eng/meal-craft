@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\CustomerProfile;
 use App\Services\Nutrition\AdaptedMenuBuilder;
 use App\Services\Nutrition\CraftCaloriePlanner;
+use App\Support\AdminConsultationPreviewProfile;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -16,9 +16,7 @@ class AdaptedMenuController extends Controller
     {
         $user = $request->user();
 
-        $profile = CustomerProfile::query()
-            ->where('user_id', $user->id)
-            ->first();
+        $profile = AdminConsultationPreviewProfile::resolve($user);
 
         if ($profile === null || $profile->daily_calorie_target === null) {
             return response()->json([

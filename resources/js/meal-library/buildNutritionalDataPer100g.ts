@@ -1,6 +1,6 @@
 import type { MealNutritionalData } from '../Components/Molecules/MealDetailView/MealDetailView.tsx';
 
-function formatTrimmedDecimal(value: number, decimals: number): string {
+export function formatTrimmedDecimal(value: number, decimals: number): string {
     if (!Number.isFinite(value)) {
         return '0';
     }

@@ -46,6 +46,7 @@ export function buildCraftPlanSubmissionPayload(input) {
 /**
  * @param {Record<string, unknown>} payload
  * @param {string} [url]
+ * @returns {Promise<{ message?: string; summary_url?: string; plan?: Record<string, unknown> }>}
  */
 export async function submitCraftPlan(payload, url = '/api/customer/craft-plan') {
     const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
@@ -64,6 +65,9 @@ export async function submitCraftPlan(payload, url = '/api/customer/craft-plan')
     const body = await response.json().catch(() => ({}));
 
     if (!response.ok) {
+        if (response.status === 401) {
+            throw new Error('Your session expired. Refresh the page and log in again to save your plan.');
+        }
         const message = typeof body.message === 'string' ? body.message : 'Could not save craft plan.';
         throw new Error(message);
     }
