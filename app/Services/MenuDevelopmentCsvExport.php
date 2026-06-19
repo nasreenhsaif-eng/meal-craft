@@ -116,7 +116,7 @@ final class MenuDevelopmentCsvExport
             $micronutrients['vitamin_a'] ?? 0,
             $micronutrients['vitamin_e'] ?? 0,
             $micronutrients['vitamin_d'] ?? 0,
-            $micronutrients['vitamin_k'] ?? 0,
+            $micronutrients['vitamin_k2'] ?? 0,
             $ingredient->density ?? 1,
             $isBaseRecipe ? 1 : 0,
             $recipeComponents,

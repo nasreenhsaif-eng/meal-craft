@@ -47,10 +47,10 @@ final class RecipeNutritionCalculator
             'vitamin_a' => 0.0,
             'vitamin_e' => 0.0,
             'vitamin_d' => 0.0,
-            'vitamin_k' => 0.0,
+            'vitamin_k2' => 0.0,
         ];
 
-        $jsonKeys = ['fiber', 'sugar', 'calcium', 'potassium', 'sodium', 'zinc', 'vitamin_c', 'vitamin_a', 'vitamin_e', 'vitamin_d', 'vitamin_k'];
+        $jsonKeys = ['fiber', 'sugar', 'calcium', 'potassium', 'sodium', 'zinc', 'vitamin_c', 'vitamin_a', 'vitamin_e', 'vitamin_d', 'vitamin_k2'];
 
         foreach ($rows as $row) {
             $ingredientId = isset($row['ingredient_id']) && is_numeric($row['ingredient_id']) ? (int) $row['ingredient_id'] : null;
@@ -183,7 +183,7 @@ final class RecipeNutritionCalculator
             'vitamin_a' => self::micronutrientPer100g($micros, 'vitamin_a'),
             'vitamin_e' => self::micronutrientPer100g($micros, 'vitamin_e'),
             'vitamin_d' => self::micronutrientPer100g($micros, 'vitamin_d'),
-            'vitamin_k' => self::micronutrientPer100g($micros, 'vitamin_k'),
+            'vitamin_k2' => self::micronutrientPer100g($micros, 'vitamin_k2'),
         ];
 
         foreach ($nutrition as $key => $value) {

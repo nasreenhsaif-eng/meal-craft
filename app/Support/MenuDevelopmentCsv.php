@@ -41,7 +41,7 @@ final class MenuDevelopmentCsv
         'vitamin_a',
         'vitamin_e',
         'vitamin_d',
-        'vitamin_k',
+        'vitamin_k2',
         'density',
         'is_base_recipe',
         'recipe_components',

@@ -425,7 +425,7 @@ function emptyNutritionSidebarShape() {
         vitamin_a: 0,
         vitamin_e: 0,
         vitamin_d: 0,
-        vitamin_k: 0,
+        vitamin_k2: 0,
     };
 }
 
@@ -1583,7 +1583,7 @@ export function MealLibraryPageContent({
                     { label: 'Vitamin A', value: fmt(n.vitamin_a, 1) },
                     { label: 'Vitamin D', value: fmt(n.vitamin_d, 1) },
                     { label: 'Vitamin E', value: fmt(n.vitamin_e, 1) },
-                    { label: 'Vitamin K', value: fmt(n.vitamin_k, 1) },
+                    { label: 'Vitamin K2', value: fmt(n.vitamin_k2, 1) },
                 ],
             },
         ];

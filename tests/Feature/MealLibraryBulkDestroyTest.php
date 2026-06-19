@@ -28,7 +28,7 @@ test('guest cannot bulk destroy meals from meal library', function () {
         'total_vitamin_a' => 0,
         'total_vitamin_e' => 0,
         'total_vitamin_d' => 0,
-        'total_vitamin_k' => 0,
+        'total_vitamin_k2' => 0,
     ]);
 
     $this->post(route('admin.meal-library.bulk-destroy'), ['ids' => [$meal->id]])
@@ -62,7 +62,7 @@ test('authenticated user can permanently delete meals from meal library', functi
         'total_vitamin_a' => 0,
         'total_vitamin_e' => 0,
         'total_vitamin_d' => 0,
-        'total_vitamin_k' => 0,
+        'total_vitamin_k2' => 0,
     ]);
 
     $remove = Meal::query()->create([
@@ -87,7 +87,7 @@ test('authenticated user can permanently delete meals from meal library', functi
         'total_vitamin_a' => 0,
         'total_vitamin_e' => 0,
         'total_vitamin_d' => 0,
-        'total_vitamin_k' => 0,
+        'total_vitamin_k2' => 0,
     ]);
 
     $this->actingAs($user)
@@ -127,7 +127,7 @@ test('bulk destroy removes duplicate soft deleted meals with the same name', fun
         'total_vitamin_a' => 0,
         'total_vitamin_e' => 0,
         'total_vitamin_d' => 0,
-        'total_vitamin_k' => 0,
+        'total_vitamin_k2' => 0,
     ]);
     $older->delete();
 
@@ -153,7 +153,7 @@ test('bulk destroy removes duplicate soft deleted meals with the same name', fun
         'total_vitamin_a' => 0,
         'total_vitamin_e' => 0,
         'total_vitamin_d' => 0,
-        'total_vitamin_k' => 0,
+        'total_vitamin_k2' => 0,
     ]);
 
     $this->actingAs($user)
@@ -192,7 +192,7 @@ test('bulk destroy excludes base recipes from deletion even when id is submitted
         'total_vitamin_a' => 0,
         'total_vitamin_e' => 0,
         'total_vitamin_d' => 0,
-        'total_vitamin_k' => 0,
+        'total_vitamin_k2' => 0,
     ]);
 
     $this->actingAs($user)
@@ -229,7 +229,7 @@ test('meal library index inertia payload excludes meals removed via bulk destroy
         'total_vitamin_a' => 0,
         'total_vitamin_e' => 0,
         'total_vitamin_d' => 0,
-        'total_vitamin_k' => 0,
+        'total_vitamin_k2' => 0,
     ]);
 
     $this->actingAs($user)
@@ -270,7 +270,7 @@ test('meal library export excludes meals removed via bulk destroy', function () 
         'total_vitamin_a' => 0,
         'total_vitamin_e' => 0,
         'total_vitamin_d' => 0,
-        'total_vitamin_k' => 0,
+        'total_vitamin_k2' => 0,
     ]);
 
     $this->actingAs($user)

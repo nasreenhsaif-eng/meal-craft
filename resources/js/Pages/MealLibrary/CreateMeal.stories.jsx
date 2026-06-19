@@ -4,7 +4,7 @@
 import { MealLibraryPageContent } from './MealLibraryPage.jsx';
 import { MealLibraryStoryShell } from './MealLibraryPage.stories.jsx';
 
-const micro = { zinc: 0, fiber: 0, sugar: 0, calcium: 0, potassium: 0, sodium: 0, vitamin_c: 0, vitamin_a: 0, vitamin_e: 0, vitamin_d: 0, vitamin_k: 0 };
+const micro = { zinc: 0, fiber: 0, sugar: 0, calcium: 0, potassium: 0, sodium: 0, vitamin_c: 0, vitamin_a: 0, vitamin_e: 0, vitamin_d: 0, vitamin_k2: 0 };
 
 /** Minimal row shape for `MealLibraryPageContent` edit mode (matches server `editForm` + grid id/title). */
 const editableMealFixture = {

@@ -57,7 +57,7 @@ class Meal extends Model
         'total_vitamin_a',
         'total_vitamin_e',
         'total_vitamin_d',
-        'total_vitamin_k',
+        'total_vitamin_k2',
         'cycle_phase_tags',
         'cycle_phase_tags_manual',
         'cycle_phase_compatibility_tooltips',
@@ -106,7 +106,7 @@ class Meal extends Model
             'total_vitamin_a' => 'float',
             'total_vitamin_e' => 'float',
             'total_vitamin_d' => 'float',
-            'total_vitamin_k' => 'float',
+            'total_vitamin_k2' => 'float',
             'cycle_phase_tags' => 'array',
             'cycle_phase_tags_manual' => 'boolean',
             'cycle_phase_compatibility_tooltips' => 'array',
@@ -247,7 +247,7 @@ class Meal extends Model
             'total_vitamin_a' => round((float) ($nutrition['vitamin_a'] ?? 0), 4),
             'total_vitamin_e' => round((float) ($nutrition['vitamin_e'] ?? 0), 4),
             'total_vitamin_d' => round((float) ($nutrition['vitamin_d'] ?? 0), 4),
-            'total_vitamin_k' => round((float) ($nutrition['vitamin_k'] ?? 0), 4),
+            'total_vitamin_k2' => round((float) ($nutrition['vitamin_k2'] ?? 0), 4),
         ];
     }
 
@@ -276,7 +276,7 @@ class Meal extends Model
             'vitamin_a' => (float) $this->total_vitamin_a,
             'vitamin_e' => (float) $this->total_vitamin_e,
             'vitamin_d' => (float) $this->total_vitamin_d,
-            'vitamin_k' => (float) $this->total_vitamin_k,
+            'vitamin_k2' => (float) $this->total_vitamin_k2,
         ];
     }
 

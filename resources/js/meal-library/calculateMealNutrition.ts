@@ -73,7 +73,7 @@ const MICRO_KEYS = [
     'vitamin_a',
     'vitamin_e',
     'vitamin_d',
-    'vitamin_k',
+    'vitamin_k2',
 ] as const;
 
 function normalizeName(name: string): string {
@@ -232,7 +232,7 @@ export function calculateMealNutrition(
         vitamin_a: 0,
         vitamin_e: 0,
         vitamin_d: 0,
-        vitamin_k: 0,
+        vitamin_k2: 0,
     };
 
     for (const [norm, grams] of gramsByNorm) {

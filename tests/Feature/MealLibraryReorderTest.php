@@ -28,7 +28,7 @@ test('guest cannot reorder meals in meal library', function () {
         'total_vitamin_a' => 0,
         'total_vitamin_e' => 0,
         'total_vitamin_d' => 0,
-        'total_vitamin_k' => 0,
+        'total_vitamin_k2' => 0,
     ]);
 
     $this->post(route('admin.meal-library.reorder'), ['ids' => [$meal->id]])
@@ -63,7 +63,7 @@ test('authenticated user can persist meal library sort order', function () {
         'total_vitamin_a' => 0,
         'total_vitamin_e' => 0,
         'total_vitamin_d' => 0,
-        'total_vitamin_k' => 0,
+        'total_vitamin_k2' => 0,
     ]);
 
     $second = Meal::query()->create([
@@ -89,7 +89,7 @@ test('authenticated user can persist meal library sort order', function () {
         'total_vitamin_a' => 0,
         'total_vitamin_e' => 0,
         'total_vitamin_d' => 0,
-        'total_vitamin_k' => 0,
+        'total_vitamin_k2' => 0,
     ]);
 
     $this->actingAs($user)

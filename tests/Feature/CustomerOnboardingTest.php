@@ -497,6 +497,22 @@ test('completed onboarding redirects to meal selection', function () {
             ->where('craftPlan', null));
 });
 
+test('inertia food filter completion uses external location redirect to meal selection', function () {
+    $customer = User::factory()->customer()->create();
+    CustomerProfile::factory()->for($customer)->withoutOnboarding()->create([
+        'onboarding_step' => OnboardingStep::FoodFilters,
+    ]);
+
+    $this->actingAs($customer)
+        ->post(route('onboarding.food-filters.store'), [
+            'allergies' => [],
+        ], [
+            'X-Inertia' => 'true',
+        ])
+        ->assertStatus(409)
+        ->assertHeader('X-Inertia-Location', route('consultation.crafted-for-you'));
+});
+
 test('completed customers can reset onboarding for testing', function () {
     $customer = User::factory()->customer()->create();
     CustomerProfile::factory()->for($customer)->create([

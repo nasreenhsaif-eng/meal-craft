@@ -17,7 +17,7 @@ const MICRO_KEYS = [
     'vitamin_a',
     'vitamin_e',
     'vitamin_d',
-    'vitamin_k',
+    'vitamin_k2',
 ] as const;
 
 function microFromJson(m: Record<string, number> | undefined, key: string): number {
@@ -136,7 +136,7 @@ export function aggregateNutritionFromIngredientRows(
         vitamin_a: 0,
         vitamin_e: 0,
         vitamin_d: 0,
-        vitamin_k: 0,
+        vitamin_k2: 0,
     };
 
     let resolvedLineCount = 0;

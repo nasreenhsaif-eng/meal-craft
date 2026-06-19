@@ -38,7 +38,7 @@ test('meal craft csv row uses target_carbs for net carb target when target_net_c
         'total_vitamin_a' => 0,
         'total_vitamin_e' => 0,
         'total_vitamin_d' => 0,
-        'total_vitamin_k' => 0,
+        'total_vitamin_k2' => 0,
         'target_carbs' => 50,
     ]);
 

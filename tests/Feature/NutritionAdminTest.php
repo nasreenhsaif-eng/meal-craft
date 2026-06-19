@@ -620,7 +620,7 @@ test('ingredients can be imported from csv', function () {
     $this->actingAs(User::factory()->create());
 
     $csv = <<<'CSV'
-name,category,fdc_id,calories,protein,carbs,fat,b6,b9_folate,b12,iron,magnesium,fiber,sugar,calcium,potassium,sodium,zinc,vitamin_c,vitamin_a,vitamin_e,vitamin_d,vitamin_k
+name,category,fdc_id,calories,protein,carbs,fat,b6,b9_folate,b12,iron,magnesium,fiber,sugar,calcium,potassium,sodium,zinc,vitamin_c,vitamin_a,vitamin_e,vitamin_d,vitamin_k2
 Lentils,Legumes,123,116,9,20,0.4,0.178,181,0,3.3,36,7.9,1.8,19,369,6,1.3,1.5,0.001,0.11,0,0
 CSV;
 

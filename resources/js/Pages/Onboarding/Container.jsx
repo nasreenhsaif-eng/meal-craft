@@ -125,11 +125,17 @@ export default function Container() {
 
         setProcessing(true);
 
+        const isFinalStep = activeStep === 'food_filters';
+
         router.post(postUrl, payload, {
-            preserveState: true,
-            preserveScroll: true,
+            preserveState: !isFinalStep,
+            preserveScroll: !isFinalStep,
             onFinish: () => setProcessing(false),
             onSuccess: () => {
+                if (isFinalStep) {
+                    return;
+                }
+
                 const next = getNextTabStep(activeStep, visibleSteps);
 
                 if (next) {
@@ -357,7 +363,7 @@ export default function Container() {
             onBack={handleBack}
         >
             <div className="relative min-h-[200px] w-full">
-                {visibleSteps.map((step) => (
+                {steps.map((step) => (
                     <div
                         key={step.value}
                         hidden={step.value !== activeStep}

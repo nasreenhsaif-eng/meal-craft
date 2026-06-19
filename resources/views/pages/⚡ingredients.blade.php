@@ -823,7 +823,7 @@ new #[Title('Ingredients')] class extends Component {
                 'vitamin_a',
                 'vitamin_e',
                 'vitamin_d',
-                'vitamin_k',
+                'vitamin_k2',
             ], ',', '"', '\\');
             fputcsv($handle, [
                 'Banana',
@@ -1630,7 +1630,7 @@ new #[Title('Ingredients')] class extends Component {
                         <th class="bg-[#F8F9F6] px-3 py-2.5 text-right font-montserrat text-sm font-bold text-[#5A6B44] transition-colors duration-150 hover:bg-[#F0F1ED] hover:text-[#4F5F3D]">{{ __('Zinc (mg)') }}</th>
                         <th class="bg-[#F8F9F6] px-3 py-2.5 text-right font-montserrat text-sm font-bold text-[#5A6B44] transition-colors duration-150 hover:bg-[#F0F1ED] hover:text-[#4F5F3D]">{{ __('Sodium (mg)') }}</th>
                         <th class="bg-[#F8F9F6] px-3 py-2.5 text-right font-montserrat text-sm font-bold text-[#5A6B44] transition-colors duration-150 hover:bg-[#F0F1ED] hover:text-[#4F5F3D]">{{ __('Sugar (g)') }}</th>
-                        <th class="bg-[#F8F9F6] px-3 py-2.5 text-right font-montserrat text-sm font-bold text-[#5A6B44] transition-colors duration-150 hover:bg-[#F0F1ED] hover:text-[#4F5F3D]">{{ __('Vitamin K (mcg)') }}</th>
+                        <th class="bg-[#F8F9F6] px-3 py-2.5 text-right font-montserrat text-sm font-bold text-[#5A6B44] transition-colors duration-150 hover:bg-[#F0F1ED] hover:text-[#4F5F3D]">{{ __('Vitamin K2 (mcg)') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -1711,7 +1711,7 @@ new #[Title('Ingredients')] class extends Component {
                             <td class="px-3 py-2 text-right tabular-nums">{{ number_format((float) ($ingredient->micronutrients['zinc'] ?? 0), 1) }}</td>
                             <td class="px-3 py-2 text-right tabular-nums">{{ number_format((float) ($ingredient->micronutrients['sodium'] ?? 0), 1) }}</td>
                             <td class="px-3 py-2 text-right tabular-nums">{{ number_format((float) ($ingredient->micronutrients['sugar'] ?? 0), 1) }}</td>
-                            <td class="px-3 py-2 text-right tabular-nums">{{ number_format((float) ($ingredient->micronutrients['vitamin_k'] ?? 0), 1) }}</td>
+                            <td class="px-3 py-2 text-right tabular-nums">{{ number_format((float) ($ingredient->micronutrients['vitamin_k2'] ?? 0), 1) }}</td>
                         </tr>
                     @empty
                         <tr>

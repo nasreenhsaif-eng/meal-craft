@@ -41,7 +41,7 @@ final class MealPlanSlotBasedDayNutrition
             'calories', 'protein', 'carbs', 'fat',
             'b6', 'b9_folate', 'b12', 'iron', 'magnesium', 'fiber', 'sugar',
             'calcium', 'potassium', 'sodium', 'zinc',
-            'vitamin_c', 'vitamin_a', 'vitamin_e', 'vitamin_d', 'vitamin_k',
+            'vitamin_c', 'vitamin_a', 'vitamin_e', 'vitamin_d', 'vitamin_k2',
         ];
     }
 

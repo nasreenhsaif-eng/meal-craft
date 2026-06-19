@@ -125,8 +125,8 @@
                 <td class="{{ $s['tdR'] }}">{{ $fv((float) ($n['vitamin_e'] ?? 0)) }}</td>
             </tr>
             <tr>
-                <td class="{{ $s['td'] }}">{{ __('Vitamin K') }}</td>
-                <td class="{{ $s['tdR'] }}">{{ $fv((float) ($n['vitamin_k'] ?? 0)) }}</td>
+                <td class="{{ $s['td'] }}">{{ __('Vitamin K2') }}</td>
+                <td class="{{ $s['tdR'] }}">{{ $fv((float) ($n['vitamin_k2'] ?? 0)) }}</td>
             </tr>
             <tr>
                 <td class="{{ $s['td'] }}">{{ __('Potassium (mg)') }}</td>

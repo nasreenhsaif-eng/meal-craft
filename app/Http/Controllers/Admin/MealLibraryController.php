@@ -995,7 +995,7 @@ class MealLibraryController extends Controller
             ['label' => __('Vitamin C (mg)'), 'value' => $this->formatTrimmedDecimal((float) ($nutrition['vitamin_c'] ?? 0), 1)],
             ['label' => __('Vitamin D (mcg)'), 'value' => $this->formatTrimmedDecimal((float) ($nutrition['vitamin_d'] ?? 0), 1)],
             ['label' => __('Vitamin E (mg)'), 'value' => $this->formatTrimmedDecimal((float) ($nutrition['vitamin_e'] ?? 0), 1)],
-            ['label' => __('Vitamin K (mcg)'), 'value' => $this->formatTrimmedDecimal((float) ($nutrition['vitamin_k'] ?? 0), 1)],
+            ['label' => __('Vitamin K2 (mcg)'), 'value' => $this->formatTrimmedDecimal((float) ($nutrition['vitamin_k2'] ?? 0), 1)],
             ['label' => __('Folate B9 (mcg)'), 'value' => $this->formatTrimmedDecimal((float) ($nutrition['b9_folate'] ?? 0), 1)],
             ['label' => __('Vitamin B12 (mcg)'), 'value' => $this->formatTrimmedDecimal((float) ($nutrition['b12'] ?? 0), 1)],
             ['label' => __('Vitamin B6 (mg)'), 'value' => $this->formatTrimmedDecimal((float) ($nutrition['b6'] ?? 0), 1)],
@@ -1085,7 +1085,7 @@ class MealLibraryController extends Controller
             'vitamin_a' => (float) ($meal->total_vitamin_a ?? 0),
             'vitamin_e' => (float) ($meal->total_vitamin_e ?? 0),
             'vitamin_d' => (float) ($meal->total_vitamin_d ?? 0),
-            'vitamin_k' => (float) ($meal->total_vitamin_k ?? 0),
+            'vitamin_k2' => (float) ($meal->total_vitamin_k2 ?? 0),
         ];
     }
 
@@ -1170,7 +1170,7 @@ class MealLibraryController extends Controller
                 'vitamin_a' => (float) ($per100['vitamin_a'] ?? $micros['vitamin_a'] ?? 0),
                 'vitamin_e' => (float) ($per100['vitamin_e'] ?? $micros['vitamin_e'] ?? 0),
                 'vitamin_d' => (float) ($per100['vitamin_d'] ?? $micros['vitamin_d'] ?? 0),
-                'vitamin_k' => (float) ($per100['vitamin_k'] ?? $micros['vitamin_k'] ?? 0),
+                'vitamin_k2' => (float) ($per100['vitamin_k2'] ?? $micros['vitamin_k2'] ?? 0),
             ]),
             'density' => (float) ($ingredient->density ?? 0) > 0 ? (float) $ingredient->density : 1.0,
             'common_allergens' => array_values(array_filter(

@@ -319,7 +319,7 @@ test('ingredient library csv import finishes pending meal rows queued from meal 
     expect(MealCsvImportPendingRow::query()->where('user_id', $user->id)->exists())->toBeTrue()
         ->and(Meal::query()->where('name', 'Bad Bowl')->exists())->toBeFalse();
 
-    $csvIng = "name,category,fdc_id,calories,protein,carbs,fat,b6,b9_folate,b12,iron,magnesium,fiber,sugar,calcium,potassium,sodium,zinc,vitamin_c,vitamin_a,vitamin_e,vitamin_d,vitamin_k,density\n";
+    $csvIng = "name,category,fdc_id,calories,protein,carbs,fat,b6,b9_folate,b12,iron,magnesium,fiber,sugar,calcium,potassium,sodium,zinc,vitamin_c,vitamin_a,vitamin_e,vitamin_d,vitamin_k2,density\n";
     $csvIng .= "Tuna,Fish,,200,20,0,10,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1\n";
 
     $this->actingAs($user)
@@ -370,7 +370,7 @@ test('meal library csv import restores soft deleted meal instead of creating dup
         'total_vitamin_a' => 0,
         'total_vitamin_e' => 0,
         'total_vitamin_d' => 0,
-        'total_vitamin_k' => 0,
+        'total_vitamin_k2' => 0,
     ]);
     $meal->delete();
 

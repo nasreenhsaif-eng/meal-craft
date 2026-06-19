@@ -32,7 +32,7 @@ export const mealDetailViewFixture: MealDetailModel = {
                     { label: 'Vitamin C (mg)', value: '38.2' },
                     { label: 'Vitamin D (mcg)', value: '12.4' },
                     { label: 'Vitamin E (mg)', value: '4.2' },
-                    { label: 'Vitamin K (mcg)', value: '210' },
+                    { label: 'Vitamin K2 (mcg)', value: '210' },
                     { label: 'Folate B9 (mcg)', value: '186' },
                     { label: 'Vitamin B12 (mcg)', value: '4.8' },
                     { label: 'Vitamin B6 (mg)', value: '1.1' },

@@ -36,6 +36,7 @@ const CROSSFADE_MS = 700;
  * @param {string} [props.emailError]
  * @param {string} [props.passwordError]
  * @param {string} [props.statusMessage] Session flash (e.g. reset link sent).
+ * @param {string} [props.errorMessage] Session flash error (e.g. CSRF expired).
  * @param {(event: import('react').FormEvent<HTMLFormElement>) => void} [props.onSubmit]
  * @param {number} [props.splashDurationMs] Hold splash before crossfade; `0` skips splash (e.g. Storybook). Default 5000.
  */
@@ -51,6 +52,7 @@ export default function LoginPage({
     emailError = '',
     passwordError = '',
     statusMessage = '',
+    errorMessage = '',
     onSubmit,
     splashDurationMs = DEFAULT_SPLASH_MS,
 }) {
@@ -148,6 +150,17 @@ export default function LoginPage({
                             Welcome to Meal Craft
                         </h1>
                     </header>
+
+                    {errorMessage ? (
+                        <div className={`mt-6 w-full ${contentWidthClass}`}>
+                            <p
+                                className="rounded-[12px] border border-red-200 bg-red-50 px-4 py-3 text-center text-sm font-medium text-red-800"
+                                role="alert"
+                            >
+                                {errorMessage}
+                            </p>
+                        </div>
+                    ) : null}
 
                     {statusMessage ? (
                         <div className={`mt-6 w-full ${contentWidthClass}`}>

@@ -17,7 +17,7 @@ const Z = () => ({
     vitC: 0,
     vitD: 0,
     vitE: 0,
-    vitK: 0,
+    vitK2: 0,
     calcium: 0,
     iron: 0,
     magnesium: 0,

@@ -24,6 +24,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\Response as HttpFoundationResponse;
 
 class OnboardingController extends Controller
 {
@@ -238,7 +239,7 @@ class OnboardingController extends Controller
         return $this->advanceStep($request, OnboardingStep::DailyTargets);
     }
 
-    public function storeFoodFilters(StoreOnboardingFoodFiltersRequest $request): RedirectResponse
+    public function storeFoodFilters(StoreOnboardingFoodFiltersRequest $request): RedirectResponse|HttpFoundationResponse
     {
         $user = $request->user();
         $profile = $user?->customerProfile;
@@ -261,9 +262,15 @@ class OnboardingController extends Controller
         return $this->redirectAfterOnboardingComplete();
     }
 
-    private function redirectAfterOnboardingComplete(): RedirectResponse
+    private function redirectAfterOnboardingComplete(): RedirectResponse|HttpFoundationResponse
     {
-        return redirect()->route('consultation.crafted-for-you');
+        $url = route('consultation.crafted-for-you');
+
+        if (request()->header('X-Inertia')) {
+            return Inertia::location($url);
+        }
+
+        return redirect($url);
     }
 
     private function advanceStep(Request $request, OnboardingStep $completedStep): RedirectResponse

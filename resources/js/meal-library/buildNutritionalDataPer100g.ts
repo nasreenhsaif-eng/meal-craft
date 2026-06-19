@@ -65,7 +65,7 @@ export function buildNutritionalDataPer100gSidebar(nutrition: Record<string, num
                     { label: 'Vitamin C (mg)', value: formatTrimmedDecimal(nutrition.vitamin_c ?? 0, 1) },
                     { label: 'Vitamin D (mcg)', value: formatTrimmedDecimal(nutrition.vitamin_d ?? 0, 1) },
                     { label: 'Vitamin E (mg)', value: formatTrimmedDecimal(nutrition.vitamin_e ?? 0, 1) },
-                    { label: 'Vitamin K (mcg)', value: formatTrimmedDecimal(nutrition.vitamin_k ?? 0, 1) },
+                    { label: 'Vitamin K2 (mcg)', value: formatTrimmedDecimal(nutrition.vitamin_k2 ?? 0, 1) },
                     { label: 'Folate B9 (mcg)', value: formatTrimmedDecimal(nutrition.b9_folate ?? 0, 1) },
                     { label: 'Vitamin B12 (mcg)', value: formatTrimmedDecimal(nutrition.b12 ?? 0, 1) },
                     { label: 'Vitamin B6 (mg)', value: formatTrimmedDecimal(nutrition.b6 ?? 0, 1) },

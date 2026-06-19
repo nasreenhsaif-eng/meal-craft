@@ -1,5 +1,6 @@
 import type { MealNutritionalData, MealNutritionRow } from '../Components/Molecules/MealDetailView/MealDetailView.tsx';
 import { formatTrimmedDecimal } from './buildNutritionalDataPer100g.ts';
+import { nutrientRdiPercent } from './nutrientDailyRdi.ts';
 
 type MealWithNutrition = {
     detailView?: {
@@ -7,7 +8,7 @@ type MealWithNutrition = {
     };
 };
 
-type AggregatedRow = {
+export type AggregatedNutrientRow = {
     sectionTitle: string;
     label: string;
     total: number;
@@ -38,7 +39,7 @@ function normalizedSectionKey(sectionTitle: string): string {
  * @param {string} sectionTitle
  * @param {string} label
  */
-function shouldIncludeRow(sectionTitle: string, label: string): boolean {
+function shouldIncludeMicronutrientRow(sectionTitle: string, label: string): boolean {
     const section = normalizedSectionKey(sectionTitle);
 
     if (section.includes('vitamin') || section.includes('mineral')) {
@@ -65,18 +66,16 @@ function formatAggregatedValue(total: number, label: string): string {
 }
 
 /**
- * Sum vitamins, minerals, fiber, and sugar from each meal's detail view for one delivery day.
- *
  * @param {Partial<Record<string, MealWithNutrition[]>> | null | undefined} categories
  */
-export function aggregateDayNutritionalData(
+export function aggregateDayNutrientTotals(
     categories: Partial<Record<string, MealWithNutrition[]>> | null | undefined,
-): MealNutritionalData | null {
+): AggregatedNutrientRow[] {
     if (!categories) {
-        return null;
+        return [];
     }
 
-    /** @type {Map<string, AggregatedRow>} */
+    /** @type {Map<string, AggregatedNutrientRow>} */
     const rowsByKey = new Map();
     /** @type {Map<string, number>} */
     const sectionOrderByTitle = new Map();
@@ -98,10 +97,6 @@ export function aggregateDayNutritionalData(
                 const sectionOrder = sectionOrderByTitle.get(sectionTitle) ?? 0;
 
                 for (const row of section.rows ?? []) {
-                    if (!shouldIncludeRow(sectionTitle, row.label)) {
-                        continue;
-                    }
-
                     const parsed = parseNutritionRowValue(row.value);
                     if (parsed === null) {
                         continue;
@@ -131,20 +126,58 @@ export function aggregateDayNutritionalData(
         }
     }
 
-    if (rowsByKey.size === 0) {
-        return null;
-    }
-
-    /** @type {Map<string, { title: string; order: number; rows: MealNutritionRow[] }>} */
-    const sectionsByTitle = new Map();
-
-    for (const row of [...rowsByKey.values()].sort((a, b) => {
+    return [...rowsByKey.values()].sort((a, b) => {
         if (a.sectionOrder !== b.sectionOrder) {
             return a.sectionOrder - b.sectionOrder;
         }
 
         return a.rowOrder - b.rowOrder;
-    })) {
+    });
+}
+
+export type DayMicronutrientRow = AggregatedNutrientRow & {
+    formattedTotal: string;
+    rdiPercent: number | null;
+    formattedRdiPercent: string | null;
+};
+
+/**
+ * @param {Partial<Record<string, MealWithNutrition[]>> | null | undefined} categories
+ */
+export function aggregateDayMicronutrientRows(
+    categories: Partial<Record<string, MealWithNutrition[]>> | null | undefined,
+): DayMicronutrientRow[] {
+    return aggregateDayNutrientTotals(categories)
+        .filter((row) => shouldIncludeMicronutrientRow(row.sectionTitle, row.label))
+        .map((row) => {
+            const rdiPercent = nutrientRdiPercent(row.label, row.total);
+
+            return {
+                ...row,
+                formattedTotal: formatAggregatedValue(row.total, row.label),
+                rdiPercent,
+                formattedRdiPercent:
+                    rdiPercent === null ? null : `${Math.round(rdiPercent)}%`,
+            };
+        });
+}
+
+/**
+ * @param {AggregatedNutrientRow[]} rows
+ * @param {(sectionTitle: string, label: string) => boolean} includeRow
+ */
+function buildMealNutritionalDataFromRows(
+    rows: AggregatedNutrientRow[],
+    includeRow: (sectionTitle: string, label: string) => boolean,
+): MealNutritionalData | null {
+    /** @type {Map<string, { title: string; order: number; rows: MealNutritionRow[] }>} */
+    const sectionsByTitle = new Map();
+
+    for (const row of rows) {
+        if (!includeRow(row.sectionTitle, row.label)) {
+            continue;
+        }
+
         const section = sectionsByTitle.get(row.sectionTitle) ?? {
             title: row.sectionTitle,
             order: row.sectionOrder,
@@ -160,6 +193,10 @@ export function aggregateDayNutritionalData(
         sectionsByTitle.set(row.sectionTitle, section);
     }
 
+    if (sectionsByTitle.size === 0) {
+        return null;
+    }
+
     const sections = [...sectionsByTitle.values()]
         .sort((a, b) => a.order - b.order)
         .map((section) => ({
@@ -171,4 +208,34 @@ export function aggregateDayNutritionalData(
         valueColumnLabel: 'Full day',
         sections,
     };
+}
+
+/**
+ * Sum vitamins, minerals, fiber, and sugar from each meal's detail view for one delivery day.
+ *
+ * @param {Partial<Record<string, MealWithNutrition[]>> | null | undefined} categories
+ */
+export function aggregateDayNutritionalData(
+    categories: Partial<Record<string, MealWithNutrition[]>> | null | undefined,
+): MealNutritionalData | null {
+    return buildMealNutritionalDataFromRows(aggregateDayNutrientTotals(categories), shouldIncludeMicronutrientRow);
+}
+
+export type MicronutrientRdiTableRow = {
+    label: string;
+    fullDay: string;
+    rdiPercent: string;
+    rdiPercentValue: number | null;
+};
+
+/**
+ * @param {DayMicronutrientRow[]} rows
+ */
+export function micronutrientRowsForRdiTable(rows: DayMicronutrientRow[]): MicronutrientRdiTableRow[] {
+    return rows.map((row) => ({
+        label: row.label,
+        fullDay: row.formattedTotal,
+        rdiPercent: row.formattedRdiPercent ?? '—',
+        rdiPercentValue: row.rdiPercent,
+    }));
 }

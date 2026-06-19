@@ -27,7 +27,8 @@ if (rootEl && configEl) {
                 emailError={config.emailError ?? ''}
                 passwordError={config.passwordError ?? ''}
                 statusMessage={config.statusMessage ?? ''}
-                splashDurationMs={typeof config.splashDurationMs === 'number' ? config.splashDurationMs : undefined}
+                errorMessage={config.errorMessage ?? ''}
+                splashDurationMs={typeof config.splashDurationMs === 'number' ? config.splashDurationMs : 0}
             />
         </StrictMode>,
     );

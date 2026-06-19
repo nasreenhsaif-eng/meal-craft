@@ -40,7 +40,7 @@ final class IngredientsImport
      *
      * micronutrients JSON (everything else):
      * - fiber, sugar, calcium, potassium, sodium, zinc
-     * - vitamin_a, vitamin_c, vitamin_d, vitamin_e, vitamin_k
+     * - vitamin_a, vitamin_c, vitamin_d, vitamin_e, vitamin_k2
      *
      * Physical (optional):
      * - density — g/ml for converting volume units to mass in recipes (default 1.0 when omitted)
@@ -281,7 +281,7 @@ final class IngredientsImport
             'vitamin_a' => $this->floatOrZero($record['vitamin_a'] ?? $record['vitamin_a_rae_mcg'] ?? $legacyJsonMicros['vitamin_a'] ?? null),
             'vitamin_e' => $this->floatOrZero($record['vitamin_e'] ?? $record['vitamin_e_mg'] ?? $legacyJsonMicros['vitamin_e'] ?? null),
             'vitamin_d' => $this->floatOrZero($record['vitamin_d'] ?? $record['vitamin_d_mcg'] ?? $legacyJsonMicros['vitamin_d'] ?? null),
-            'vitamin_k' => $this->floatOrZero($record['vitamin_k'] ?? $record['vitamin_k_mcg'] ?? $legacyJsonMicros['vitamin_k'] ?? null),
+            'vitamin_k2' => $this->floatOrZero($record['vitamin_k2'] ?? $record['vitamin_k2_mcg'] ?? $legacyJsonMicros['vitamin_k2'] ?? null),
         ];
 
         $attrs = [

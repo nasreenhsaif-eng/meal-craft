@@ -81,7 +81,7 @@ function normalizeLibraryRow(raw) {
         vitC: pick('vitC', 'vitamin_c'),
         vitD: pick('vitD', 'vitamin_d'),
         vitE: pick('vitE', 'vitamin_e'),
-        vitK: pick('vitK', 'vitamin_k'),
+        vitK2: pick('vitK2', 'vitamin_k2'),
         calcium: pick('calcium', 'calcium'),
         iron: pick('iron', 'iron'),
         magnesium: pick('magnesium', 'magnesium'),
@@ -105,7 +105,7 @@ const VITAMIN_COLS = [
     { key: 'vitC', label: 'Vit C' },
     { key: 'vitD', label: 'Vit D' },
     { key: 'vitE', label: 'Vit E' },
-    { key: 'vitK', label: 'Vit K' },
+    { key: 'vitK2', label: 'Vit K2' },
 ];
 
 const MINERAL_MACRO_COLS = [
@@ -210,7 +210,7 @@ function postIngredientLibraryForm(url, payload, csrfToken, { onSuccess, onError
  * }} props
  */
 
-/** @typedef {{ id: string; name: string; category: string; fdc: string; highlights: string[]; calories: number; protein: number; carbs: number; fat: number; vitA: number; vitB6: number; vitB9: number; vitB12: number; vitC: number; vitD: number; vitE: number; vitK: number; calcium: number; iron: number; magnesium: number; potassium: number; zinc: number; sodium: number; sugar: number; fiber: number }} LibraryIngredientRow — `category` is the USDA food category string from the API. */
+/** @typedef {{ id: string; name: string; category: string; fdc: string; highlights: string[]; calories: number; protein: number; carbs: number; fat: number; vitA: number; vitB6: number; vitB9: number; vitB12: number; vitC: number; vitD: number; vitE: number; vitK2: number; calcium: number; iron: number; magnesium: number; potassium: number; zinc: number; sodium: number; sugar: number; fiber: number }} LibraryIngredientRow — `category` is the USDA food category string from the API. */
 
 const EMPTY_COMPOSITION_ROW = { nameQuery: '', selectedName: '', ingredientId: null, amount: '100', unit: 'g' };
 

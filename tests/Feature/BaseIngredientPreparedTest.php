@@ -146,7 +146,7 @@ test('base ingredient service upsert uses sum of components when finished weight
 test('ingredient library csv import classifies (Base) suffix rows as base ingredients even without recipe_components', function () {
     $user = User::factory()->create();
 
-    $header = 'name,category,fdc_id,calories,protein,carbs,fat,b6,b9_folate,b12,iron,magnesium,fiber,sugar,calcium,potassium,sodium,zinc,vitamin_c,vitamin_a,vitamin_e,vitamin_d,vitamin_k,density,is_base_recipe,recipe_components,description,instructions,finished_weight_grams,g6pd_trigger';
+    $header = 'name,category,fdc_id,calories,protein,carbs,fat,b6,b9_folate,b12,iron,magnesium,fiber,sugar,calcium,potassium,sodium,zinc,vitamin_c,vitamin_a,vitamin_e,vitamin_d,vitamin_k2,density,is_base_recipe,recipe_components,description,instructions,finished_weight_grams,g6pd_trigger';
     $row = 'Spiced Aleppo Ground Beef (Base),Proteins,,248,21.4,4.2,16.5,0.28,12,1.9,2.4,25,1.1,1.8,24,312,285,4.8,2.1,38,0.6,0,2.4,0.96,0,,Warm description,Step 1: Cook.,,0';
     $csv = $header."\n".$row."\n";
 
@@ -167,7 +167,7 @@ test('ingredient library csv import resolves pipe-separated name weight recipe c
     $user = User::factory()->create();
     $carrots = verifiedIngredient('Carrots, raw', ['calories' => 40, 'protein' => 1, 'carbs' => 9, 'fat' => 0]);
 
-    $header = 'name,category,fdc_id,calories,protein,carbs,fat,b6,b9_folate,b12,iron,magnesium,fiber,sugar,calcium,potassium,sodium,zinc,vitamin_c,vitamin_a,vitamin_e,vitamin_d,vitamin_k,density,is_base_recipe,recipe_components,description,instructions,finished_weight_grams,g6pd_trigger';
+    $header = 'name,category,fdc_id,calories,protein,carbs,fat,b6,b9_folate,b12,iron,magnesium,fiber,sugar,calcium,potassium,sodium,zinc,vitamin_c,vitamin_a,vitamin_e,vitamin_d,vitamin_k2,density,is_base_recipe,recipe_components,description,instructions,finished_weight_grams,g6pd_trigger';
     $row = 'Carrot Paste,,,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,"Carrots, raw (150g)",,,200,';
     $csv = $header."\n".$row."\n";
 
@@ -189,7 +189,7 @@ test('ingredient library csv import normalizes base recipe instructions into Ste
     $user = User::factory()->create();
     $child = verifiedIngredient('Coriander', ['calories' => 20, 'protein' => 2, 'carbs' => 3, 'fat' => 0]);
 
-    $header = 'name,category,fdc_id,calories,protein,carbs,fat,b6,b9_folate,b12,iron,magnesium,fiber,sugar,calcium,potassium,sodium,zinc,vitamin_c,vitamin_a,vitamin_e,vitamin_d,vitamin_k,density,is_base_recipe,recipe_components,description,instructions,finished_weight_grams,g6pd_trigger,image_url';
+    $header = 'name,category,fdc_id,calories,protein,carbs,fat,b6,b9_folate,b12,iron,magnesium,fiber,sugar,calcium,potassium,sodium,zinc,vitamin_c,vitamin_a,vitamin_e,vitamin_d,vitamin_k2,density,is_base_recipe,recipe_components,description,instructions,finished_weight_grams,g6pd_trigger,image_url';
     $instructions = 'Chop coriander. Mince garlic. Whisk oil and lime.';
     $row = "Dressing Base,,,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,{$child->id}:50,,{$instructions},100,0,http://example.com/photo.jpg";
     $csv = $header."\n".$row."\n";
@@ -212,7 +212,7 @@ test('ingredient library csv import creates base recipe from is_base_recipe and 
     $user = User::factory()->create();
     $child = verifiedIngredient('Tomato', ['calories' => 80, 'protein' => 4, 'carbs' => 16, 'fat' => 0]);
 
-    $header = 'name,category,fdc_id,calories,protein,carbs,fat,b6,b9_folate,b12,iron,magnesium,fiber,sugar,calcium,potassium,sodium,zinc,vitamin_c,vitamin_a,vitamin_e,vitamin_d,vitamin_k,density,is_base_recipe,recipe_components,description,instructions,finished_weight_grams,g6pd_trigger';
+    $header = 'name,category,fdc_id,calories,protein,carbs,fat,b6,b9_folate,b12,iron,magnesium,fiber,sugar,calcium,potassium,sodium,zinc,vitamin_c,vitamin_a,vitamin_e,vitamin_d,vitamin_k2,density,is_base_recipe,recipe_components,description,instructions,finished_weight_grams,g6pd_trigger';
     $row = "Paste Base,,,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,{$child->id}:150,,,200,";
     $csv = $header."\n".$row."\n";
 
@@ -233,7 +233,7 @@ test('ingredient library csv import explains when nested base recipe component i
     $user = User::factory()->create();
     verifiedIngredient('Chicken Breast', ['calories' => 165, 'protein' => 31, 'carbs' => 0, 'fat' => 3.6]);
 
-    $header = 'name,category,fdc_id,calories,protein,carbs,fat,b6,b9_folate,b12,iron,magnesium,fiber,sugar,calcium,potassium,sodium,zinc,vitamin_c,vitamin_a,vitamin_e,vitamin_d,vitamin_k,density,is_base_recipe,recipe_components,description,instructions,finished_weight_grams,g6pd_trigger';
+    $header = 'name,category,fdc_id,calories,protein,carbs,fat,b6,b9_folate,b12,iron,magnesium,fiber,sugar,calcium,potassium,sodium,zinc,vitamin_c,vitamin_a,vitamin_e,vitamin_d,vitamin_k2,density,is_base_recipe,recipe_components,description,instructions,finished_weight_grams,g6pd_trigger';
     $row = 'Tandoori Chicken (Base),Base Ingredient,,150,28,1.5,3.2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,"Chicken Breast (500g) | Tandoori Spice Mix (Base) (45g)",,,400,';
     $csv = $header."\n".$row."\n";
 
@@ -258,7 +258,7 @@ test('ingredient library csv import allows nested base recipe components', funct
     ]);
     verifiedIngredient('Chicken Breast', ['calories' => 165, 'protein' => 31, 'carbs' => 0, 'fat' => 3.6]);
 
-    $header = 'name,category,fdc_id,calories,protein,carbs,fat,b6,b9_folate,b12,iron,magnesium,fiber,sugar,calcium,potassium,sodium,zinc,vitamin_c,vitamin_a,vitamin_e,vitamin_d,vitamin_k,density,is_base_recipe,recipe_components,description,instructions,finished_weight_grams,g6pd_trigger';
+    $header = 'name,category,fdc_id,calories,protein,carbs,fat,b6,b9_folate,b12,iron,magnesium,fiber,sugar,calcium,potassium,sodium,zinc,vitamin_c,vitamin_a,vitamin_e,vitamin_d,vitamin_k2,density,is_base_recipe,recipe_components,description,instructions,finished_weight_grams,g6pd_trigger';
     $row = 'Tandoori Chicken (Base),Base Ingredient,,150,28,1.5,3.2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,"Chicken Breast (500g) | Tandoori Spice Mix (Base) (45g)",,,400,';
     $csv = $header."\n".$row."\n";
 
@@ -280,7 +280,7 @@ test('ingredient library csv import accepts meal_name header and pipe-separated 
     verifiedIngredient('Eggplant', ['calories' => 25, 'protein' => 1, 'carbs' => 6, 'fat' => 0]);
     verifiedIngredient('Olive Oil (Extra Virgin)', ['calories' => 884, 'protein' => 0, 'carbs' => 0, 'fat' => 100]);
 
-    $header = 'Meal_Name,category,fdc_id,calories,protein,carbs,fat,b6,b9_folate,b12,iron,magnesium,fiber,sugar,calcium,potassium,sodium,zinc,vitamin_c,vitamin_a,vitamin_e,vitamin_d,vitamin_k,density,is_base_recipe,recipe_components,description,instructions,finished_weight_grams,g6pd_trigger';
+    $header = 'Meal_Name,category,fdc_id,calories,protein,carbs,fat,b6,b9_folate,b12,iron,magnesium,fiber,sugar,calcium,potassium,sodium,zinc,vitamin_c,vitamin_a,vitamin_e,vitamin_d,vitamin_k2,density,is_base_recipe,recipe_components,description,instructions,finished_weight_grams,g6pd_trigger';
     $row = 'Roasted Vegetables (Base),Base Ingredient,,62,1.3,6.4,3.8,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,"Eggplant (200g) | Olive Oil (Extra Virgin) (14g)",Short desc.,Step 1: Roast.,400,';
     $csv = $header."\n".$row."\n";
 

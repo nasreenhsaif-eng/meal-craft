@@ -61,7 +61,7 @@ test('meal library export csv uses meal craft master headers and maps meals', fu
         'total_vitamin_a' => 0,
         'total_vitamin_e' => 0,
         'total_vitamin_d' => 0,
-        'total_vitamin_k' => 0,
+        'total_vitamin_k2' => 0,
     ]);
 
     $meal->ingredients()->attach($rice->id, [
@@ -142,7 +142,7 @@ test('meal library synchronized export maps main salad category to meal for bulk
         'total_vitamin_a' => 0,
         'total_vitamin_e' => 0,
         'total_vitamin_d' => 0,
-        'total_vitamin_k' => 0,
+        'total_vitamin_k2' => 0,
     ]);
 
     $handle = fopen('php://memory', 'w+');
@@ -183,7 +183,7 @@ test('meal library export excludes soft deleted meals and base recipes', functio
         'total_vitamin_a' => 0,
         'total_vitamin_e' => 0,
         'total_vitamin_d' => 0,
-        'total_vitamin_k' => 0,
+        'total_vitamin_k2' => 0,
     ]);
 
     $trashed = Meal::query()->create([
@@ -208,7 +208,7 @@ test('meal library export excludes soft deleted meals and base recipes', functio
         'total_vitamin_a' => 0,
         'total_vitamin_e' => 0,
         'total_vitamin_d' => 0,
-        'total_vitamin_k' => 0,
+        'total_vitamin_k2' => 0,
     ]);
     $trashed->delete();
 
@@ -235,7 +235,7 @@ test('meal library export excludes soft deleted meals and base recipes', functio
         'total_vitamin_a' => 0,
         'total_vitamin_e' => 0,
         'total_vitamin_d' => 0,
-        'total_vitamin_k' => 0,
+        'total_vitamin_k2' => 0,
     ]);
 
     $response = $this->actingAs($user)->get(route('meals.library.export-csv'));
@@ -288,7 +288,7 @@ test('bulk import library csv round-trips from synchronized export stream', func
         'total_vitamin_a' => 0,
         'total_vitamin_e' => 0,
         'total_vitamin_d' => 0,
-        'total_vitamin_k' => 0,
+        'total_vitamin_k2' => 0,
     ]);
     $meal->ingredients()->attach($rice->id, [
         'amount_grams' => 200,

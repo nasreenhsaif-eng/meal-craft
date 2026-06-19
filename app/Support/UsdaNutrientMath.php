@@ -41,6 +41,21 @@ final class UsdaNutrientMath
     /** FDC nutrient.id — Vitamin E (alpha-tocopherol) (mg) */
     public const FDC_VITAMIN_E = '1109';
 
+    /** FDC nutrient.id — Vitamin K (phylloquinone / K1) (µg) */
+    public const FDC_PHYLLOQUINONE = '1185';
+
+    /** NDB nutrient.number — Vitamin K (phylloquinone) */
+    public const NDB_PHYLLOQUINONE = '430';
+
+    /** FDC nutrient.id — Vitamin K (menaquinone-4 / K2) (µg) */
+    public const FDC_MENAQUINONE_4 = '1183';
+
+    /** NDB nutrient.number — Vitamin K (menaquinone-4) */
+    public const NDB_MENAQUINONE_4 = '428';
+
+    /** Clinical daily reference for vitamin K2 (menaquinone) — µg. */
+    public const VITAMIN_K2_RDI_MCG = 120.0;
+
     /** Meal Craft Analysis / library: per 100 g — folate above this supports sickle-cell planning labeling. */
     public const SICKLE_CELL_PLANNING_FOLATE_PER_100G_MIN_UG = 40.0;
 
@@ -202,13 +217,24 @@ final class UsdaNutrientMath
             'magnesium_mg' => self::valueForNutrientKeys($byNumber, self::FDC_MAGNESIUM, '304'),
             'zinc_mg' => self::valueForNutrientKeys($byNumber, self::FDC_ZINC, '309'),
             'vitamin_e_mg' => self::valueForNutrientKeys($byNumber, self::FDC_VITAMIN_E, '323'),
+            'vitamin_k2_mcg' => self::vitaminK2McgPer100gFromMap($byNumber),
         ];
+    }
+
+    /**
+     * Menaquinone-4 (vitamin K2) per 100 g from a mapped FDC nutrient payload.
+     *
+     * @param  array<string, float>  $byNumber
+     */
+    public static function vitaminK2McgPer100gFromMap(array $byNumber): float
+    {
+        return self::valueForNutrientKeys($byNumber, self::FDC_MENAQUINONE_4, self::NDB_MENAQUINONE_4);
     }
 
     /**
      * True when full-format foodNutrients lack usable B6 or B12 (FDC 1175 / 1178 or NDB 415 / 418).
      *
-     * @param  array<string, mixed>  $foodDetail Full /foods payload item
+     * @param  array<string, mixed>  $foodDetail  Full /foods payload item
      */
     public static function fullFoodDetailLacksB6OrB12(array $foodDetail): bool
     {
@@ -228,7 +254,7 @@ final class UsdaNutrientMath
     /**
      * True when vitamin B12 or total folate is missing or zero (FDC 1178 / 1177 or NDB 418 / 417).
      *
-     * @param  array<string, mixed>  $foodDetail Full /foods payload item
+     * @param  array<string, mixed>  $foodDetail  Full /foods payload item
      */
     public static function fullFoodDetailLacksB12OrFolate(array $foodDetail): bool
     {
@@ -248,7 +274,7 @@ final class UsdaNutrientMath
     /**
      * True when B6, B12, or total folate is missing or zero (FDC 1175 / 1178 / 1177 or NDB 415 / 418 / 417).
      *
-     * @param  array<string, mixed>  $foodDetail Full /foods payload item
+     * @param  array<string, mixed>  $foodDetail  Full /foods payload item
      */
     public static function fullFoodDetailLacksPositiveB6B12AndFolate(array $foodDetail): bool
     {
@@ -269,7 +295,7 @@ final class UsdaNutrientMath
     /**
      * Foundation foods sometimes report 0 for B-vitamins / folate while SR Legacy has authoritative values — trigger SR fallback.
      *
-     * @param  array<string, mixed>  $foodDetail Full /foods payload item
+     * @param  array<string, mixed>  $foodDetail  Full /foods payload item
      */
     public static function foundationDetailNeedsSrLegacyMicronutrientFallback(array $foodDetail): bool
     {

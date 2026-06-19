@@ -604,7 +604,7 @@ export function MealSlotCarousel({
                                         <MealCardClientViewNano
                                             deck
                                             ribbon={deckLayout === 'ribbon'}
-                                            alignActionsBottom={deckLayout === 'staticPair'}
+                                            alignActionsBottom={deckLayout === 'staticPair' || deckLayout === 'ribbon'}
                                             deckStackRole={isFront ? 'front' : 'back'}
                                             title={meal.title ?? ''}
                                             imageUrl={meal.imageUrl}

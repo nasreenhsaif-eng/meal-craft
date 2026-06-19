@@ -4,9 +4,9 @@ import { animate, motion, useMotionValue } from 'framer-motion';
 /** Triplicate ribbon for seamless wrap in both directions. */
 const RIBBON_COPIES = 3;
 
-/** Focus vs neighbor scale — subtle so the row feels even. */
-const RIBBON_FOCUS_SCALE = 1.02;
-const RIBBON_NEIGHBOR_SCALE = 0.98;
+/** Focus vs neighbor scale — keep 1:1 so side cards match height; opacity carries focus. */
+const RIBBON_FOCUS_SCALE = 1;
+const RIBBON_NEIGHBOR_SCALE = 1;
 const RIBBON_FOCUS_OPACITY = 1;
 const RIBBON_NEIGHBOR_OPACITY = 0.88;
 
@@ -584,13 +584,13 @@ export default function StackedDeckCarousel({ title: _title, items: itemsProp, m
                                                         whileHover={
                                                             isRibbonFocus
                                                                 ? {
-                                                                      scale: 1.03,
+                                                                      scale: 1.02,
                                                                       transition: {
                                                                           duration: 0.2,
                                                                           ease: [0.22, 1, 0.36, 1],
                                                                       },
                                                                   }
-                                                                : { scale: RIBBON_NEIGHBOR_SCALE }
+                                                                : undefined
                                                         }
                                                     >
                                                         {renderMealCard(item, idx, {

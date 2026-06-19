@@ -95,6 +95,9 @@ export default function MealCardClientViewNano({
     const [mediaFailed, setMediaFailed] = useState(false);
     const showImage = Boolean(imageUrl) && !mediaFailed;
 
+    /** Ribbon + static pair: stretch card body so craft buttons share one baseline. */
+    const pinActionsBottom = deck && (ribbon || alignActionsBottom);
+
     const showCheckmark = assigned || selected;
 
     /** Selected: subtle dark ring only — no light-green gradient rim or glow (keeps check badge clean). */
@@ -120,7 +123,7 @@ export default function MealCardClientViewNano({
     const shell = deck
         ? ribbon
             ? 'h-full w-full min-h-0 min-w-0 max-w-full rounded-[12px] flex flex-col'
-            : alignActionsBottom
+            : pinActionsBottom
               ? 'flex h-full w-full min-h-0 min-w-0 max-w-full flex-col rounded-[12px]'
               : 'mx-auto w-[280px] max-w-[min(280px,100%)] shrink-0 rounded-[12px] flex flex-col'
         : 'w-[240px] h-[320px] rounded-[12px]';
@@ -140,7 +143,7 @@ export default function MealCardClientViewNano({
 
     return (
         <article
-            className={`relative font-montserrat ${shell} ${alignActionsBottom && deck ? 'h-full' : ''} ${selectedShellClass} ${articleShadowDeck} ${articleDeckStackShadow} ${deckBackRimClass} ${selectedDeckRaise} ${deck ? 'bg-[#FFFFFF]' : ''} ${className}`.trim()}
+            className={`relative font-montserrat ${shell} ${pinActionsBottom && deck ? 'h-full' : ''} ${selectedShellClass} ${articleShadowDeck} ${articleDeckStackShadow} ${deckBackRimClass} ${selectedDeckRaise} ${deck ? 'bg-[#FFFFFF]' : ''} ${className}`.trim()}
         >
             {deck ? (
                 <div
@@ -189,11 +192,11 @@ export default function MealCardClientViewNano({
                     </div>
 
                     <div
-                        className={`relative flex flex-col gap-0 px-3 pb-2 pt-0 ${alignActionsBottom ? 'min-h-0 flex-1' : ''}`.trim()}
+                        className={`relative flex flex-col gap-0 px-3 pb-2 pt-0 ${pinActionsBottom ? 'min-h-0 flex-1' : ''}`.trim()}
                     >
                         <div
                             className={
-                                alignActionsBottom
+                                pinActionsBottom
                                     ? 'flex h-[3rem] shrink-0 items-start justify-center'
                                     : 'min-h-[2.5rem] shrink-0'
                             }
@@ -227,7 +230,7 @@ export default function MealCardClientViewNano({
 
                         {hideCraftButton ? null : (
                             <div
-                                className={`w-full shrink-0 pb-0.5 ${alignActionsBottom ? 'mt-auto pt-1' : 'mt-1'}`.trim()}
+                                className={`w-full shrink-0 pb-0.5 ${pinActionsBottom ? 'mt-auto pt-1' : 'mt-1'}`.trim()}
                             >
                                 <Button
                                     type="button"

@@ -4,7 +4,9 @@ import { Link } from '@inertiajs/react';
 import { AnimatePresence, motion } from 'framer-motion';
 import PillButton from '../../Components/Atoms/Button/Button.jsx';
 import Button from '../../Components/Atoms/Button.jsx';
-import DayNutritionalSummaryPanel from '../../Components/Consultation/DayNutritionalSummaryPanel.jsx';
+import DayNutritionalSummaryPanel, {
+    DAY_SUMMARY_TABS,
+} from '../../Components/Consultation/DayNutritionalSummaryPanel.jsx';
 import CustomerAppHeaderActions from '../../Components/Molecules/Customer/CustomerAppHeaderActions.jsx';
 import {
     PLAN_MACRO_CATEGORY_ROWS,
@@ -54,7 +56,7 @@ export default function MealPlanSummary({
 }) {
     const days = craftPlan.days ?? [];
     const [activeDay, setActiveDay] = useState(() => days[0]?.dayNumber ?? 1);
-    const [contentTab, setContentTab] = useState(/** @type {'meals' | 'nutrition'} */ ('meals'));
+    const [contentTab, setContentTab] = useState(/** @type {'meals' | 'macronutrients' | 'micronutrients' | 'allergies' | 'sickle'} */ ('meals'));
     const [mealDetailModal, setMealDetailModal] = useState(
         /** @type {{ title: string; detailView: object } | null} */ (null),
     );
@@ -109,25 +111,6 @@ export default function MealPlanSummary({
             }),
         [days],
     );
-
-    const mealListSections = useMemo(() => {
-        if (!activeDayData?.categories) {
-            return [];
-        }
-
-        return PLAN_MACRO_CATEGORY_ROWS.map((row) => {
-            const meals = activeDayData.categories?.[row.key] ?? [];
-            if (meals.length === 0) {
-                return null;
-            }
-
-            return {
-                key: row.key,
-                label: row.label,
-                meals,
-            };
-        }).filter(Boolean);
-    }, [activeDayData]);
 
     const planCategoryLabel = `${craftPlan.craftTitle ?? 'Craft'} · ${craftPlan.planTierCalories ?? ''} kcal`.trim();
 
@@ -202,26 +185,19 @@ export default function MealPlanSummary({
                             role="tablist"
                             aria-label="Day content"
                         >
-                            <PillButton
-                                type="button"
-                                role="tab"
-                                aria-selected={contentTab === 'meals'}
-                                label="Meals"
-                                variant={contentTab === 'meals' ? 'primary' : 'tab'}
-                                size="sm"
-                                onClick={() => setContentTab('meals')}
-                                className="shrink-0"
-                            />
-                            <PillButton
-                                type="button"
-                                role="tab"
-                                aria-selected={contentTab === 'nutrition'}
-                                label="Nutritional summary"
-                                variant={contentTab === 'nutrition' ? 'primary' : 'tab'}
-                                size="sm"
-                                onClick={() => setContentTab('nutrition')}
-                                className="shrink-0"
-                            />
+                            {DAY_SUMMARY_TABS.map((tab) => (
+                                <PillButton
+                                    key={tab.id}
+                                    type="button"
+                                    role="tab"
+                                    aria-selected={contentTab === tab.id}
+                                    label={tab.label}
+                                    variant={contentTab === tab.id ? 'primary' : 'tab'}
+                                    size="sm"
+                                    onClick={() => setContentTab(tab.id)}
+                                    className="shrink-0"
+                                />
+                            ))}
                         </div>
                     </div>
 
@@ -234,45 +210,13 @@ export default function MealPlanSummary({
                             transition={{ type: 'spring', stiffness: 260, damping: 30, mass: 0.85 }}
                             className="space-y-8 pb-12"
                         >
-                            {contentTab === 'nutrition' ? (
-                                <DayNutritionalSummaryPanel
-                                    categories={activeDayCategories}
-                                    dayLabel={activeDayData?.label ?? 'Day'}
-                                    planCategoryLabel={planCategoryLabel}
-                                />
-                            ) : (
-                                <>
-                                    {mealListSections.map((section) => (
-                                        <section
-                                            key={section.key}
-                                            className="rounded-[12px] border border-gray-200 bg-white px-4 py-4 sm:px-5"
-                                        >
-                                            <h2 className="font-montserrat text-sm font-bold uppercase tracking-[0.12em] text-[#5A6B44]">
-                                                {section.label}
-                                            </h2>
-                                            <ul className="mt-3 space-y-2">
-                                                {section.meals.map((meal) => (
-                                                    <li key={meal.id}>
-                                                        {meal.detailView ? (
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => openMealDetail(meal)}
-                                                                className="w-full rounded-[8px] px-2 py-2 text-left font-body text-sm text-[#262A22] hover:bg-[#F8F9F6]"
-                                                            >
-                                                                {meal.title}
-                                                            </button>
-                                                        ) : (
-                                                            <p className="px-2 py-2 font-body text-sm text-[#262A22]">
-                                                                {meal.title}
-                                                            </p>
-                                                        )}
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        </section>
-                                    ))}
-                                </>
-                            )}
+                            <DayNutritionalSummaryPanel
+                                tab={contentTab}
+                                categories={activeDayCategories}
+                                dayLabel={activeDayData?.label ?? 'Day'}
+                                planCategoryLabel={planCategoryLabel}
+                                onOpenMeal={openMealDetail}
+                            />
                         </motion.div>
                     </AnimatePresence>
 

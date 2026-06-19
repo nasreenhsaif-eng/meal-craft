@@ -129,7 +129,7 @@ final class BaseIngredientService
             'vitamin_a',
             'vitamin_e',
             'vitamin_d',
-            'vitamin_k',
+            'vitamin_k2',
         ];
 
         $micros = [];
