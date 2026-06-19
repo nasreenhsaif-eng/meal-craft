@@ -139,16 +139,25 @@ final class MealPlanSlotBasedDayNutrition
     }
 
     /**
-     * Optional soup slot only (not part of the 1,200 kcal core).
+     * Optional soup slots (both included when assigned; placeholders when empty).
      *
      * @param  callable(string, int): (?Meal)  $resolveMeal
      * @return array<string, float>
      */
     public static function soupSlotNutrition(callable $resolveMeal): array
     {
-        $meal = $resolveMeal(MealPlanSlotType::Soup->value, 1);
+        $sum = self::zeroShape();
 
-        return self::nutritionForMealOrPlaceholderForSlot($meal, MealPlanSlotType::Soup->value);
+        foreach ([1, 2] as $slotIndex) {
+            $meal = $resolveMeal(MealPlanSlotType::Soup->value, $slotIndex);
+            $vec = self::nutritionForMealOrPlaceholderForSlot($meal, MealPlanSlotType::Soup->value);
+
+            foreach (self::nutritionKeys() as $key) {
+                $sum[$key] += $vec[$key];
+            }
+        }
+
+        return $sum;
     }
 
     /**

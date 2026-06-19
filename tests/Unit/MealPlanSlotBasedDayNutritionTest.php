@@ -4,7 +4,7 @@ use App\Enums\RecipeCategory;
 use App\Models\Meal;
 use App\Support\MealPlanSlotBasedDayNutrition;
 
-test('all empty slots yield 1,200 kcal core plus 150 kcal soup', function () {
+test('all empty slots yield 1,200 kcal core plus two optional soup placeholders', function () {
     $resolve = fn (string $type, int $index): ?Meal => null;
 
     $core = MealPlanSlotBasedDayNutrition::coreBudgetNutrition($resolve);
@@ -12,8 +12,8 @@ test('all empty slots yield 1,200 kcal core plus 150 kcal soup', function () {
     $full = MealPlanSlotBasedDayNutrition::fullDayNutrition($resolve);
 
     expect((float) $core['calories'])->toBe(1200.0)
-        ->and((float) $soup['calories'])->toBe(150.0)
-        ->and((float) $full['calories'])->toBe(1350.0);
+        ->and((float) $soup['calories'])->toBe(300.0)
+        ->and((float) $full['calories'])->toBe(1500.0);
 });
 
 test('core uses average breakfast and salad groups and doubles average main calories', function () {

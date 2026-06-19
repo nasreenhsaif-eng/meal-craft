@@ -41,7 +41,7 @@ export const SCHEDULER_SLOT_SECTIONS: readonly SchedulerSlotSection[] = [
     { key: 'meal', slotType: 'main', label: 'Meal choices', count: 4, categories: SCHEDULER_MAIN_MEAL_CATEGORIES },
     { key: 'sidesalad', slotType: 'salad', label: 'Side salads', count: 2, categories: SCHEDULER_SIDE_SALAD_CATEGORIES },
     { key: 'dessert', slotType: 'dessert', label: 'Desserts', count: 2, categories: SCHEDULER_DESSERT_CATEGORIES },
-    { key: 'soup', slotType: 'soup', label: 'Soup', count: 1, categories: SCHEDULER_SOUP_CATEGORIES },
+    { key: 'soup', slotType: 'soup', label: 'Soup', count: 2, categories: SCHEDULER_SOUP_CATEGORIES },
 ];
 
 export type SchedulerCategoryFilter =

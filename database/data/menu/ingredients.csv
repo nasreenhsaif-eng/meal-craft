@@ -1,17 +1,18 @@
 name,category,fdc_id,calories,protein,carbs,fat,b6,b9_folate,b12,iron,magnesium,fiber,sugar,calcium,potassium,sodium,zinc,vitamin_c,vitamin_a,vitamin_e,vitamin_d,vitamin_k2,density,is_base_recipe,recipe_components,description,instructions,finished_weight_grams,g6pd_trigger
 "Aleppo Pepper",Spices,171329,306,12,49.7,13,2.1,0,0,7.8,152,27.2,10.3,148,2014,30,2.5,76.4,1492,28,0,0,1,0,,,,,0
 Allspice,Spices,171316,263,6.1,72.1,8.7,0.2,36,0,7.1,135,21.6,0,661,1044,77,1,39.2,27,0,0,0,1,0,,,,,0
-"Almond Butter",Fats/Nuts,2262072,614,21,18.8,55.5,0.1,51,0,3.5,279,10.3,4.8,347,748,0,3.3,0,0,24.2,0,0,1,0,,,,,0
+"Almond Butter",Fats/Nuts,2262072,614,21,18.8,55.5,0.1,51,0,3.5,279,10.3,4.8,347,748,0,3.3,0,0,24.2,0,0,1,0,,"Pure ground almonds only — no added sugar, oils, or preservatives.",,,0
 "Almond Flour",Grains/Nuts,168191,579,21.2,21.7,50,0.1,44,0,3.7,270,12.5,4.4,269,733,1,3.1,0,0,25.6,0,0,1,0,,,,,0
+"Almond Flour (Base)","Base Ingredient",,579,21.2,21.7,50,0.1,44,0,3.7,270,12.5,4.4,269,733,1,3.1,0,0,25.6,0,0,1,1,,"Fine house-milled almond flour from whole raw almonds","Step 1: Blitz whole raw almonds in a high-speed blender until a fine, fluffy flour forms.\nStep 2: Sift once to remove any larger pieces; use immediately or store chilled.",,0
 "Almond Milk (Unsweetened)",Beverages,,15,0.5,0.3,1.1,0.01,1,0,0.3,7,0.3,0,184,67,142,0.1,0,0,0.5,0,0,1,0,,"Clean unsweetened almond milk","Dairy-free liquid base.",,0
 "Almond whole",Fats/Nuts,170567,579,21.2,21.7,49.9,0.1,44,0,3.7,270,12.5,4.4,269,733,1,3.1,0,0,25.6,0,8,1,0,,,,,0
 "Anchovies canned",Proteins,175154,210,28.9,0,9.7,0.2,0,0.6,4.6,101,0,0,232,397,3668,1.7,0,15,0,1.7,1.5,1,0,,,,,0
-"Apple Cider Vinegar",Pantry,172230,21,0,0.9,0,0,0,0,0.2,5,0,0.4,7,73,5,0,0,0,0,0,0,1,0,,,,,0
+"Apple Cider Vinegar",Pantry,173469,21,0,0.9,0,0,0,0,0.2,5,0,0.4,7,73,5,0,0,0,0,0,0,1,0,,,,,0
 "Apple Green",Fruits,168195,52,0.3,13.8,0.2,0,3,0,0.1,5,2.4,10.4,6,107,1,0,4.6,3,0.2,0,0,1,0,,,,,0
 "Apple Juice",Liquids,168198,46,0.1,11.3,0.1,0,0,0,0.1,5,0.2,9.6,8,101,4,0,0.9,0,0,0,0,1,0,,,,,0
 "Apple Red",Fruits,171688,52,0.3,13.8,0.2,0,3,0,0.1,5,2.4,10.4,6,107,1,0,4.6,3,0.2,0,0,1,0,,,,,0
 "Apricots (Dried)",Fruits,173941,241,3.4,62.6,0.5,0.14,10,0,2.7,32,7.3,53.4,55,1162,10,0.4,1,180,4.3,0,0,1,0,,,,,0
-"Arborio Rice",Grains,168871,358,6.5,79.1,0.5,0.16,231,0,4.3,25,1.3,0.1,3,115,1,1.1,0,0,0,0,0,1,0,,,,,0
+"Arborio Rice",Grains,169756,358,6.5,79.1,0.5,0.16,231,0,4.3,25,1.3,0.1,3,115,1,1.1,0,0,0,0,0,1,0,,,,,0
 Artichokes,Vegetables,168386,47,3.3,10.5,0.2,0.12,68,0,1.3,60,5.4,1,44,370,94,0.5,11.7,1,0.2,0,0,1,0,,,,,0
 Arugula,Vegetables,169387,25,2.6,3.7,0.7,0.07,97,0,1.5,47,1.6,2.1,160,369,27,0.5,15,119,0.4,0,0,1,0,,,,,0
 Asparagus,Vegetables,168389,20,2.2,3.9,0.1,0.09,52,0,2.1,14,2.1,1.9,24,202,2,0.5,5.6,38,1.1,0,0,1,0,,,,,0
@@ -23,7 +24,6 @@ Avocado,Fats,171705,160,2,8.5,14.7,0.26,81,0,0.6,29,6.7,0.7,12,485,7,0.6,10,7,2.
 "Balsamic Vinegar",Pantry,172235,88,0.5,17,0,0.02,0,0,0.7,12,0,15,27,112,23,0.1,0,0,0,0,0,1,0,,,,,0
 Banana,Fruits,173944,89,1.1,22.8,0.3,0.37,20,0,0.3,27,2.6,12.2,5,358,1,0.1,8.7,3,0.1,0,0,1,0,,,,,0
 Barberries,Spices,168153,316,3.8,63.9,0,0,0,0,20,20,7.4,27,40,120,15,0.5,24,10,0,0,0,1,0,,,,,0
-"Base Soup",Fats,9874,187.98,26.88,30.44,37.65,7.45,495,5.82,10.45,192.92,0,0,0,0,0,0,0,0,0,0,8,0.23,0,,"Line1 Line2, comma","Step 1\nStep 2",,0
 Basil,Herbs,172232,23,3.15,2.65,0.64,0.15,68,0,3.17,64,1.6,0.3,177,295,4,0.81,18,264,0.8,0,0,1,0,,,,,0
 "Basil Pesto (House)","Base Ingredient",,388.07,1.98,3.1,42.03,0.1458,35.5729,0,1.9896,34.6458,0.9479,0.2083,102.2813,174.9688,407.5313,0.4896,11,137.5,6.4271,0,3.33,1,1,"80:40,129:50,193:5,244:1","Clean nut-free herbaceous basil pesto fluid","Step 1: Place fresh basil leaves, raw garlic, and sea salt into a food processor.\nStep 2: Pulse while slowly streaming in extra virgin olive oil until a vibrant, smooth green emulsion forms.",,0
 "Basmati Brown",Grains,169704,362,7.5,76.2,2.7,0.51,20,0,1.5,143,3.4,0.8,23,268,7,2,0,0,0.1,0,0,1,0,,,,,0
@@ -59,7 +59,6 @@ Burrata,Dairy,170438,250,14,3.6,21,0.04,7,0.7,0.2,11,0,3.6,400,100,600,2.1,0,198
 "Butternut Squash",Vegetables,169225,45,1,11.7,0.1,0.15,27,0,0.7,34,2,2.2,48,352,4,0.2,21,532,1.4,0,0,1,0,,,,,0
 "Cabbage (Purple)",Vegetables,169977,31,1.4,7.4,0.2,0.21,18,0,0.8,16,2.1,3.8,45,243,27,0.2,57,56,0.1,0,0,1,0,,,,,0
 "Cacao Nibs",Pantry,170154,600,13,28,50,0.1,32,0,13.9,499,33,0,73,1524,21,6.8,0,5,0.1,0,0,1,0,,,,,0
-"Cacao Powder",Pantry,,228,19.6,57.9,13.7,0.12,32,0,13.9,499,33.2,1.8,128,1524,21,6.8,0,0,0.1,0,0,1,0,,,,,0
 "Cajun Powder",Spices,,282,11,45,12,1.8,30,0,15,140,25,8,130,1800,3000,3,30,1200,22,0,0,1,0,,,,,0
 "Cannellini Beans",Legumes,173757,139,9.7,25.1,0.4,0.1,102,0,3.7,63,6.3,0.3,90,452,1,1.4,0,0,0,0,0,1,0,,,,,1
 Capers,Pantry,172236,23,2.4,4.9,0.9,0.02,23,0,1.7,33,3.2,0.4,40,40,2348,0.3,4.3,7,0.9,0,0,1,0,,,,,0
@@ -75,7 +74,6 @@ Cauliflower,Vegetables,169986,25,1.9,5,0.3,0.18,57,0,0.4,15,2,1.9,22,299,30,0.3,
 "Cayenne Pepper",Spices,,318,12,56.6,17.3,2.45,106,0,7.8,152,27.2,10.3,148,2014,30,2.5,76.4,2080,29.8,0,0,1,0,,,,,0
 Celery,Vegetables,169988,14,0.7,3,0.2,0.07,36,0,0.2,11,1.6,1.3,40,260,80,0.1,3.1,22,0.3,0,0,1,0,,,,,0
 "Cheddar Cheese",Dairy,173414,403,24.9,1.3,33.1,0.07,18,0.8,0.7,28,0,0.5,721,98,621,3.1,0,265,0.3,0.6,8.6,1,0,,,,,0
-"Cherry Tomato",Vegetable,,18,0.9,3.9,0.2,0.1,15,0,0.3,11,1.2,2.6,10,237,5,0.2,13.7,42,0.5,0,0,1,0,,,,,0
 "Cherry Tomatoes",Vegetable,,18,0.9,3.9,0.2,0.1,15,0,0.3,11,1.2,2.6,10,237,5,0.2,13.7,42,0.5,0,0,1,0,,,,,0
 "Chia Pudding","Base Ingredient",,257.58,4.1,15.3,21.83,0.0229,18.9375,0,3.5542,75.9583,6.6208,7.5375,104.0625,254.375,13.5208,1.1938,2.3063,0.4375,0.2188,0,1.24,1,1,"167:70,174:350,218:30",,,,0
 "Chia Seeds",Fats/Nuts,170554,486,16.5,42.1,30.7,0,49,0,7.7,335,34.4,0,631,407,16,4.6,1.6,3,0.5,0,8,1,0,,,,,0
@@ -87,14 +85,12 @@ Chickpeas,Legumes,173752,164,8.9,27.4,2.6,0.1,172,0,2.9,48,7.6,4.8,49,291,7,1.5,
 "Chili Dried","Spices / Pantry",,324,11.2,57.1,5.8,2.2,40,0,8.2,152,28.7,10.4,45,1870,88,2.1,1.1,1020,0,0,0,1,0,,"Whole dried red chili pods used for sputtering.",,,0
 "Chili Flakes",Spices,,324,12,50,17,2.1,0,0,7.8,152,27,10,148,2014,30,2.5,76,1492,28,0,0,1,0,,,,,0
 "Chili Powder",Spices,,282,13.5,49.7,14.3,2.1,0,0,17.3,149,34.8,7.2,330,1950,286,4.3,0,2700,0,0,0,0.4,0,,"Ground dried chili pepper blend","Warm spice seasoning element.",,0
-"Chilli Powder","Spices / Pantry",,282,13.5,49.7,14.3,2.1,51,0,17.3,149,34.8,7.2,330,1950,1640,4.3,7.2,1480,28.7,0,0,1,0,,"Vibrant ground red chili powder spice blend.",,,0
 "Cilantro Lime Dressing (Base)","Base Ingredient",,510.61,2.76,4.38,55.11,0.0749,4.1444,0.1444,1.6684,11.8449,0.5882,0.5989,27.6791,111.385,1045.7647,0.492,10.0856,1.6364,7.8449,0.0107,4.4,1,1,"80:100,136:15,143:2,184:3,193:2,212:60,244:5","A bright, zesty, and herbaceous dressing blending rich extra virgin olive oil with freshly squeezed lime juice, garlic, cumin, and finely chopped fresh coriander.","Step 1: Finely chop the fresh coriander and mince the raw garlic clove.\nStep 2: In a small bowl or jar, combine the extra virgin olive oil, freshly squeezed lime juice, minced garlic, sea salt, black pepper, and ground cumin.\nStep 3: Add the chopped coriander into the mixture and whisk vigorously or shake well until the oil and citrus fuse into a clean, smooth emulsion.",,0
 Cinnamon,Spices,172231,247,4,80.6,1.2,0.16,6,0,8.3,60,53.1,2.2,1002,431,10,1.8,3.8,15,2.3,0,0,1,0,,,,,0
 Clove,Spices,,274,6,65.5,13,0.39,0,0,11.8,259,33.9,2.4,632,1020,27,2.3,0.2,0,8.8,0,0,0.42,0,,"Ground aromatic dried clove buds","Pungent warm Levantine baking spice.",,0
 "Cocoa Powder",Pantry,169593,228,19.6,57.9,13.7,0.12,32,0,13.9,499,33.2,1.8,128,1524,21,6.8,0,0,0.1,0,0,1,0,,,,,0
 "Coconut Butter",Fats,,660,6,18,65,0.05,15,0,2.5,90,12,6,25,500,30,1.5,1,0,0.3,0,0,1,0,,,,,0
 "Coconut Chia Pudding (Base)","Base Ingredient",,264.8,3.9,14.63,23.09,0.0244,19.1057,0,3.6463,71.061,5.9837,7.6911,90.4228,266.6341,171.9431,1.1423,2.5,0.3659,0.2236,0,0.98,1,1,"167:30,174:200,218:15,244:1","A creamy, mineral-rich base made with healthy fats and fiber, designed for easy meal prep and gut health.","Step 1: In a glass jar, whisk the chia seeds, honey, and salt into the coconut milk.\nStep 2: Cover and refrigerate for at least 4 hours or overnight.\nStep 3: Stir once before serving.",,1
-"Coconut Chicken Curry",,,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,,,"Rich red curry with coconut milk and tender chicken; serve over jasmine rice with fresh Thai basil.",,0
 "Coconut Cream",Fats,170174,330,3.6,6.6,34.7,0.06,16,0,3.3,100,2.2,3.3,18,540,35,1,2.8,0,0.2,0,8,1,0,,,,,0
 "Coconut Flour",Grains,1105001,429,17.9,57.1,14.3,0.05,0,0,9,90,39.3,7.1,0,1928,143,2,0,0,0.3,0,0,1,0,,,,,0
 "Coconut Meat",Fruits,170169,354,3.3,15.2,33.5,0.05,26,0,2.4,32,9,6.2,14,356,20,1.1,3.3,0,0.24,0,0,0.6,0,,"Fresh raw coconut meat, rich in medium-chain triglycerides and fiber.",N/A,,0
@@ -148,7 +144,6 @@ Ghee,Fats,1104847,876,0.3,0,99.5,0,0,0,0,0,0,0,4,5,2,0,0,840,2.8,1.4,8,1,0,,,,,0
 Ginger,Vegetable,,80,1.8,17.8,0.8,0.2,11,0,0.6,43,2,1.7,16,415,13,0.3,5,0,0.3,0,0,1,0,,,,,0
 "Ginger (Raw)",Spices,169231,80,1.8,17.8,0.8,0.16,11,0,0.6,43,2,1.7,16,415,13,0.3,5,0,0.3,0,0,1,0,,,,,0
 Gochugaru,Spices,170932,282,14,50,13,2.1,100,0,15,150,25,10,150,1800,30,2.5,70,1500,10,0,0,1,0,,,,,0
-"Gochugaru (Chili)",Spices,,282,14,50,13,2.1,100,0,15,150,25,10,150,1800,30,2.5,70,1500,10,0,0,1,0,,,,,0
 Gochujang,Spices,1104884,214,3.6,46.4,1.8,0.1,10,0,2.5,35,3.6,25,40,280,2500,0.6,5,120,0.5,0,0,1,0,,,,,0
 "Grape Leaves",Vegetables,170415,93,5.6,17.3,2.1,0.4,83,0,2.6,95,11,6.3,363,252,9,0.7,11.1,1376,2,0,0,1,0,,,,,0
 "Grapefruit Sections",Fruits,,32,0.6,8.1,0.1,0.04,10,0,0.1,9,1.1,7,12,135,0,0.1,31.2,46,0.1,0,0,0.85,0,,"Fresh pink grapefruit segments, peeled with no pith","Tart juicy citrus segments.",,0
@@ -255,7 +250,6 @@ Raisins,Fruits,,299,3.1,79.2,0.5,0.17,5,0,1.9,32,3.7,59.2,50,749,11,0.2,2.3,0,0.
 "Red Pepper Dressing (Base)","Base Ingredient",,239.83,0.83,5.3,24.2,0.1922,24.5285,0,0.4685,8.8408,1.3514,2.6006,14.1141,143.976,236.8348,0.2042,63.1832,75.5195,4.2342,0,1.92,1,1,"39:20,80:40,113:20,140:80,143:0.5,193:5,244:1","A vibrant, emulsified sweet red pepper dressing balanced with zesty apple cider vinegar and clean extra virgin olive oil.","Step 1: Roughly chop the bell pepper, white onion, and garlic.\nStep 2: Place them into a high-speed blender along with the apple cider vinegar, sea salt, and black pepper.\nStep 3: Blend on high until completely smooth.\nStep 4: Lower the blender speed and slowly stream in the extra virgin olive oil until the dressing is fully emulsified.",,0
 "Red Thai Chillies",Vegetables,168574,40,1.9,8.8,0.4,0.5,23,0,1,23,1.5,5.3,14,322,9,0.3,143.7,48,0.7,0,0,1,0,,,,,0
 "Red Wine Vinegar",Pantry,172242,6,0,0.3,0,0,0,0,0.5,4,0,0,6,39,8,0,0,0,0,0,0,1,0,,,,,0
-Rice,,,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,,,,,0
 "Rice Flour","Grains & Flours",,366,6,80,1.4,0.43,4,0,0.4,11,2.4,0.1,10,76,0,0.8,0,0,0,0,0,0.55,0,,"Finely milled gluten-free white rice flour","Used as a non-toxic binding matrix for fritters and bakes.",,0
 "Rice Vinegar",Pantry,172241,0,0,0,0,0,0,0,0,0,0,0,0,2,1,0,0,0,0,0,0,1,0,,,,,0
 "Ricotta (Goat)",Dairy,171279,150,9,4,11,0.04,12,0.4,0.4,11,0,3.5,200,120,100,1.1,0,110,0.2,0.2,2,1,0,,,,,0
@@ -311,7 +305,6 @@ Tamari,Condiment,174276,60,10,2,0,0.4,0,0,0.4,4,0,1,20,212,5600,0,0,0,0,0,0,1.2,
 Tarragon,Spices,172240,295,22.8,50.2,7.2,2.41,274,0,32.3,347,7.1,0,1139,3020,62,3.9,50,210,0,0,0,1,0,,,,,0
 "Tea (Green/Black)",Liquids,171917,1,0.2,0,0,0.01,5,0,0,2,0,0,0,21,3,0,0,0,0,0,0,1,0,,,,,0
 Tempeh,Proteins,174272,192,20.3,7.6,10.8,0.3,52,0.1,2.7,81,0,0,111,412,9,1.1,0,0,0,0,0,1,0,,,,,0
-"Test Export",Proteins,,345.71,43.53,106.43,53.55,3.39,132.52,3,17.37,64.15,0,0,0,0,0,0,0,0,0,0,1.5,0.7,0,,,,,0
 "Thai basil",Herbs,,23,3.2,2.7,0.6,0.2,68,0,3.2,64,1.6,0.3,177,295,4,0.8,18,264,0.8,0,0,1,0,,,,,0
 "Thyme (Fresh)","Vegetables / Herbs",170940,101,5.6,24.5,1.7,0.3,45,0,17.5,160,14,0,405,609,9,1.8,160,238,0,0,0,1,0,,"Fresh sprigs of thyme, deeply aromatic and wood-sy.",,,0
 "Tofu (Firm)",Proteins,172448,83,10,2.3,4.8,0.08,15,0,1.6,58,1,0.6,350,148,9,1.1,0,9,0.1,0,1.5,1,0,,,,,0
@@ -343,7 +336,6 @@ Worcestershire,Pantry,173468,78,0,19,0,0.05,4,0,5.3,13,0,10,80,800,980,0.1,13,10
 Za'atar,Spices,,280,8,45,12,0.4,60,0,18,180,22,1,650,550,800,3,40,180,5,0,0,1,0,,,,,0
 "Zesty Lime Chili Salad Dressing (Base)","Base Ingredient",,541.33,0.23,3.33,60.07,0.01,3.17,0,0.46,3.63,0.38,0.71,8.37,46.55,777.24,0.01,9.02,0.57,8.71,0,0,1,1,"58:60,115:2,143:1,212:30,244:2","A vibrant, punchy vinaigrette matching rich extra virgin olive oil with fresh tart lime juice, crushed red pepper flakes, and a hint of cider vinegar.","Step 1: Combine the extra virgin olive oil, freshly squeezed lime juice, apple cider vinegar, crushed red pepper flakes, sea salt, and black pepper in a small bowl or sealable jar.\nStep 2: Whisk or shake vigorously until the dynamic acid and oil layers emulsify into a smooth dressing paste.",,0
 Zucchini,Vegetables,169252,17,1.2,3.1,0.3,0.22,24,0,0.4,18,1,2.5,16,261,8,0.3,17.9,10,0.1,0,0,1,0,,,,,0
-"coriander powder","Spices / Pantry",,298,12.4,55,17.8,0.6,0,0,16.3,330,41.9,0,709,1267,35,4.7,21,0,0,0,0,1,0,,"Fine ground coriander seed powder, warm and mildly citrusy.",,,0
 "cumin powder","Spices / Pantry",172233,375,17.8,44.2,22.3,0.4,10,0,66.4,366,10.5,2.3,931,1788,168,4.8,7.7,64,3.3,0,0,1,0,,"Fine ground cumin seed powder, deeply aromatic and earthy.",,,0
 curry,"Base Ingredient",,97.05,3.43,21.23,1.04,0.4775,48.165,0,15.3825,65.25,6.5675,1.0075,83.185,661.0775,9742.6075,1.525,33.425,105.25,1.3,0,0,1,1,"13:100,244:100,286:100,338:100",,,,0
 "mustard seeds","Spices / Pantry",,508,26.1,28.1,36.2,0.4,10,0,9.2,370,12.2,6.8,266,738,13,6.1,7.1,3,5.1,0,0,1,0,,"Whole mustard seeds used for tempering and sputtering in hot oil.",,,0

@@ -1257,22 +1257,24 @@ new #[Title('Meal Plans')] class extends Component {
                         </div>
                     </div>
 
-                    {{-- Soup --}}
+                    {{-- Soups (vegan + bone broth) --}}
                     <div>
-                        <flux:heading size="md" class="mb-3">{{ __('Soup of the day') }}</flux:heading>
-                        @php
-                            $soupRow = $slot(\App\Enums\MealPlanSlotType::Soup, 1);
-                        @endphp
+                        <flux:heading size="md" class="mb-3">{{ __('Soups') }}</flux:heading>
                         <div class="rounded-xl border border-neutral-200 bg-neutral-50/40 p-3 dark:border-neutral-700 dark:bg-neutral-900/30">
                             <div
                                 class="flex flex-nowrap gap-4 overflow-x-auto overscroll-x-contain snap-x snap-mandatory pb-2 [-ms-overflow-style:none] [scrollbar-width:thin]"
                             >
-                                <div
-                                    class="min-w-[min(280px,85vw)] max-w-[320px] shrink-0 snap-start snap-always pt-1"
-                                    wire:key="mp-soup-{{ $detailsPlanId }}-{{ $detailsDay }}-{{ $soupRow instanceof \App\Models\MealPlanDayMeal ? $soupRow->id : 'e' }}-{{ $soupRow instanceof \App\Models\MealPlanDayMeal && $soupRow->meal ? $soupRow->meal_id : '0' }}"
-                                >
-                                    <x-meal-plan-slot-shell kind="soup" :row="$soupRow" />
-                                </div>
+                                @foreach ([1, 2] as $soupSlotIndex)
+                                    @php
+                                        $soupRow = $slot(\App\Enums\MealPlanSlotType::Soup, $soupSlotIndex);
+                                    @endphp
+                                    <div
+                                        class="min-w-[min(280px,85vw)] max-w-[320px] shrink-0 snap-start snap-always pt-1"
+                                        wire:key="mp-soup-{{ $detailsPlanId }}-{{ $detailsDay }}-{{ $soupSlotIndex }}-{{ $soupRow instanceof \App\Models\MealPlanDayMeal ? $soupRow->id : 'e' }}-{{ $soupRow instanceof \App\Models\MealPlanDayMeal && $soupRow->meal ? $soupRow->meal_id : '0' }}"
+                                    >
+                                        <x-meal-plan-slot-shell kind="soup" :row="$soupRow" />
+                                    </div>
+                                @endforeach
                             </div>
                         </div>
                     </div>

@@ -83,7 +83,7 @@ export function mapAdaptedMenuPayloadToConsultationMeals(payload) {
 }
 
 /**
- * Admin-assigned soup for a weekday (1=Sun … 7=Sat) from the production weekly plan.
+ * Admin-assigned soups for a weekday (1=Sun … 7=Sat) from the production weekly plan.
  *
  * @param {Record<string | number, unknown>} scheduledSoupsByWeekday
  * @param {number} dayOfWeek
@@ -92,11 +92,86 @@ export function scheduledSoupConsultationMealsForDay(scheduledSoupsByWeekday, da
     const raw =
         scheduledSoupsByWeekday?.[dayOfWeek] ?? scheduledSoupsByWeekday?.[String(dayOfWeek)] ?? null;
 
-    if (!raw || typeof raw !== 'object') {
+    if (!raw) {
         return [];
     }
 
-    return [mapAdaptedApiMealToConsultationMeal(/** @type {Record<string, unknown>} */ (raw))];
+    if (Array.isArray(raw)) {
+        return raw
+            .filter((entry) => entry && typeof entry === 'object')
+            .map((entry) => mapAdaptedApiMealToConsultationMeal(/** @type {Record<string, unknown>} */ (entry)));
+    }
+
+    if (typeof raw === 'object') {
+        return [mapAdaptedApiMealToConsultationMeal(/** @type {Record<string, unknown>} */ (raw))];
+    }
+
+    return [];
+}
+
+/** @typedef {'breakfasts' | 'meals' | 'sideSalads' | 'desserts' | 'soup'} FullCraftCategoryKey */
+
+/**
+ * @param {Record<string | number, unknown>} schedule
+ * @param {number} dayOfWeek
+ */
+export function scheduledFullCraftDayPayload(schedule, dayOfWeek) {
+    const raw = schedule?.[dayOfWeek] ?? schedule?.[String(dayOfWeek)] ?? null;
+
+    return raw && typeof raw === 'object' ? /** @type {Record<string, unknown>} */ (raw) : null;
+}
+
+/**
+ * @param {Record<string | number, unknown>} schedule
+ * @param {number} dayOfWeek
+ */
+export function scheduledFullCraftSelectionsForDay(schedule, dayOfWeek) {
+    const day = scheduledFullCraftDayPayload(schedule, dayOfWeek);
+
+    if (!day) {
+        return null;
+    }
+
+    /** @param {unknown} list */
+    const ids = (list) =>
+        (Array.isArray(list) ? list : [])
+            .filter((entry) => entry && typeof entry === 'object' && 'id' in entry)
+            .map((entry) => String(/** @type {{ id: unknown }} */ (entry).id));
+
+    return {
+        breakfasts: ids(day.breakfasts),
+        meals: ids(day.meals),
+        sideSalads: ids(day.sideSalads),
+        desserts: ids(day.desserts),
+        soup: ids(day.soup),
+    };
+}
+
+/**
+ * @param {Record<string | number, unknown>} schedule
+ * @param {number} dayOfWeek
+ * @returns {Partial<Record<FullCraftCategoryKey, ReturnType<typeof mapAdaptedApiMealToConsultationMeal>[]>> | null}
+ */
+export function scheduledFullCraftCategoryMealsForDay(schedule, dayOfWeek) {
+    const day = scheduledFullCraftDayPayload(schedule, dayOfWeek);
+
+    if (!day) {
+        return null;
+    }
+
+    /** @param {unknown} list */
+    const mapList = (list) =>
+        (Array.isArray(list) ? list : [])
+            .filter((entry) => entry && typeof entry === 'object')
+            .map((entry) => mapAdaptedApiMealToConsultationMeal(/** @type {Record<string, unknown>} */ (entry)));
+
+    return {
+        breakfasts: mapList(day.breakfasts),
+        meals: mapList(day.meals),
+        sideSalads: mapList(day.sideSalads),
+        desserts: mapList(day.desserts),
+        soup: mapList(day.soup),
+    };
 }
 
 /**

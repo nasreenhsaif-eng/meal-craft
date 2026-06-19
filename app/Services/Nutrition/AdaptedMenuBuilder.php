@@ -81,13 +81,17 @@ final class AdaptedMenuBuilder
             }
         }
 
+        $craftKey = isset($options['craft_key']) ? (string) $options['craft_key'] : '';
+        $scheduleOptions = $craftKey !== '' ? ['craft_key' => $craftKey] : [];
+
         return [
             'plan' => $plan,
             'fixed_portion_meals' => $fixedPortionMeals,
             'optional_add_on_meals' => $optionalAddOnMeals,
             'scalable_meals' => $scalableMeals,
             'fixed_meals' => $fixedPortionMeals,
-            'scheduled_soups_by_weekday' => ProductionWeeklyMenuSchedule::scheduledSoupsByWeekday($profile),
+            'scheduled_soups_by_weekday' => ProductionWeeklyMenuSchedule::scheduledSoupsByWeekday($profile, null, $scheduleOptions),
+            'scheduled_full_craft_by_weekday' => ProductionWeeklyMenuSchedule::scheduledFullCraftByWeekday($profile, null, $scheduleOptions),
             'production_meal_plan_id' => ProductionWeeklyMenuSchedule::resolveProductionMealPlan()?->id,
         ];
     }

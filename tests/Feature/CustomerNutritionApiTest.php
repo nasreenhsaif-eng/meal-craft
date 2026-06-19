@@ -223,15 +223,22 @@ test('adapted menu exposes admin-scheduled soups per weekday from production mea
         'daily_calorie_target' => 1500,
     ]);
 
-    $mondaySoup = Meal::factory()->create([
-        'name' => 'Monday Lentil Soup',
+    $veganSoup = Meal::factory()->create([
+        'name' => 'Monday Vegan Soup',
         'meal_type' => MealType::Soup,
         'category' => RecipeCategory::Soup,
         'total_calories' => 150,
     ]);
 
-    $tuesdaySoup = Meal::factory()->create([
-        'name' => 'Tuesday Tomato Soup',
+    $boneBroth = Meal::factory()->create([
+        'name' => 'Monday Bone Broth',
+        'meal_type' => MealType::Soup,
+        'category' => RecipeCategory::Soup,
+        'total_calories' => 120,
+    ]);
+
+    $tuesdayVeganSoup = Meal::factory()->create([
+        'name' => 'Tuesday Vegan Soup',
         'meal_type' => MealType::Soup,
         'category' => RecipeCategory::Soup,
         'total_calories' => 145,
@@ -244,15 +251,17 @@ test('adapted menu exposes admin-scheduled soups per weekday from production mea
         'plan_category' => 'balanced',
     ]);
 
-    foreach ([1 => $mondaySoup, 2 => $tuesdaySoup] as $dayNumber => $meal) {
-        MealPlanDayMeal::query()->create([
-            'meal_plan_id' => $plan->id,
-            'meal_id' => $meal->id,
-            'day_number' => $dayNumber,
-            'slot_type' => MealPlanSlotType::Soup->value,
-            'slot_index' => 1,
-            'is_option_b' => false,
-        ]);
+    foreach ([1 => [$veganSoup, $boneBroth], 2 => [$tuesdayVeganSoup, $boneBroth]] as $dayNumber => $meals) {
+        foreach ($meals as $slotIndex => $meal) {
+            MealPlanDayMeal::query()->create([
+                'meal_plan_id' => $plan->id,
+                'meal_id' => $meal->id,
+                'day_number' => $dayNumber,
+                'slot_type' => MealPlanSlotType::Soup->value,
+                'slot_index' => $slotIndex + 1,
+                'is_option_b' => false,
+            ]);
+        }
     }
 
     config(['customer_nutrition.production_meal_plan_id' => $plan->id]);
@@ -261,8 +270,10 @@ test('adapted menu exposes admin-scheduled soups per weekday from production mea
 
     $response->assertSuccessful()
         ->assertJsonPath('production_meal_plan_id', $plan->id)
-        ->assertJsonPath('scheduled_soups_by_weekday.1.name', 'Monday Lentil Soup')
-        ->assertJsonPath('scheduled_soups_by_weekday.2.name', 'Tuesday Tomato Soup');
+        ->assertJsonPath('scheduled_soups_by_weekday.1.0.name', 'Monday Vegan Soup')
+        ->assertJsonPath('scheduled_soups_by_weekday.1.1.name', 'Monday Bone Broth')
+        ->assertJsonPath('scheduled_soups_by_weekday.2.0.name', 'Tuesday Vegan Soup')
+        ->assertJsonPath('scheduled_soups_by_weekday.2.1.name', 'Monday Bone Broth');
 
     expect($response->json('scheduled_soups_by_weekday.3'))->toBeNull();
 });

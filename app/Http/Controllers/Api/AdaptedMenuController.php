@@ -50,6 +50,7 @@ class AdaptedMenuController extends Controller
             'scalable_meals' => $menu['scalable_meals'],
             'fixed_meals' => $menu['fixed_meals'],
             'scheduled_soups_by_weekday' => $menu['scheduled_soups_by_weekday'],
+            'scheduled_full_craft_by_weekday' => $menu['scheduled_full_craft_by_weekday'],
             'production_meal_plan_id' => $menu['production_meal_plan_id'],
         ]);
     }

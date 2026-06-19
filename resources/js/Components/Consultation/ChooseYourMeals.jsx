@@ -53,7 +53,16 @@ export function filterMealsByCategory(source, mealTypeLabel) {
 export function soupOfTheDayMeals(source) {
     const soups = filterMealsByCategory(source, 'Soup');
 
-    return soups.length > 0 ? [soups[0]] : [];
+    const preferredNames = ['Vegan Mushroom Soup', 'Bone Broth Cup'];
+    const preferred = preferredNames
+        .map((name) => soups.find((meal) => meal.title === name))
+        .filter(Boolean);
+
+    if (preferred.length > 0) {
+        return preferred;
+    }
+
+    return soups.length > 0 ? soups.slice(0, 2) : [];
 }
 
 /** Max cards shown per category deck in consultation (matches fixture / product caps). */
@@ -62,6 +71,7 @@ export const CONSULTATION_DECK_OPTION_LIMITS = Object.freeze({
     meal: 4,
     sidesalad: 2,
     dessert: 2,
+    soup: 2,
 });
 
 const CONSULTATION_SLOT_MEAL_TYPE_LABELS = Object.freeze({
@@ -112,13 +122,13 @@ export function buildConsultationDeckCatalog(source) {
     return catalog;
 }
 
-/** Default slot caps for Full Craft (soup optional: max 1 when opted in). */
+/** Default slot caps for Full Craft (soups optional: up to 2 when opted in). */
 export const DEFAULT_FULL_CRAFT_MAX_SELECTIONS = Object.freeze({
     breakfasts: 1,
     meals: 2,
     sideSalads: 1,
     desserts: 1,
-    soup: 1,
+    soup: 2,
 });
 
 export const FULL_CRAFT_CATEGORY_SECTIONS = Object.freeze([
@@ -153,9 +163,9 @@ export const FULL_CRAFT_CATEGORY_SECTIONS = Object.freeze([
     {
         selectionKey: 'soup',
         deckSuffix: 'soup',
-        header: 'Soup for this day',
+        header: 'Soups for this day',
         mealTypeLabel: 'Soup',
-        defaultMax: 1,
+        defaultMax: 2,
         soupOptional: true,
     },
 ]);
@@ -399,7 +409,7 @@ export function PlanDayMacroBreakdown({ categories, dayLabel }) {
  * @param {(next: boolean) => void} props.onChange
  * @param {string} [props.header]
  */
-export function SoupOfTheDayOptIn({ checked, onChange, header = 'Soup for this day' }) {
+export function SoupOfTheDayOptIn({ checked, onChange, header = 'Soups for this day' }) {
     return (
         <div className="relative isolate w-full overflow-x-clip overflow-y-visible py-0.5">
             <p className="px-4 font-montserrat text-[15px] font-bold leading-snug tracking-tight text-[#262A22] sm:text-base md:px-0">
@@ -413,7 +423,7 @@ export function SoupOfTheDayOptIn({ checked, onChange, header = 'Soup for this d
             >
                 <SquareCheckbox checked={checked} presentational className="shrink-0" />
                 <span className="min-w-0 truncate whitespace-nowrap font-body text-xs font-normal leading-none tracking-tight text-[#262A22] sm:text-sm">
-                    I would like to add soup for this day (optional)
+                    Add soup for this day — vegan and bone broth available (optional)
                 </span>
             </button>
         </div>
@@ -640,6 +650,8 @@ export function MealSlotCarousel({
  * @param {string} [props.footerIncompleteMessage]
  * @param {ConsultationMeal[]} [props.scheduledSoupMeals]
  * @param {ConsultationMeal[]} [props.soupCatalogMeals] Full menu catalog for soup fallback (deck meals omit soup).
+ * @param {Partial<Record<SelectionCategoryKey, ConsultationMeal[]>>} [props.assignedMealsByCategory]
+ * @param {boolean} [props.categoriesReadOnly]
  * @param {(enabled: boolean) => void} [props.onSoupOptInChange]
  * @param {string} [props.panelClassName] Height class for the viewport-locked panel shell.
  */
@@ -670,12 +682,16 @@ export default function ChooseYourMeals({
     footerIncompleteMessage = 'Select all required meals before continuing.',
     scheduledSoupMeals = [],
     soupCatalogMeals = [],
+    assignedMealsByCategory = null,
+    categoriesReadOnly = false,
     onSoupOptInChange,
     panelClassName = 'h-[100dvh] min-h-screen',
 }) {
     const craftingSubtitle = `CRAFTING YOUR ${String(dayName).trim().toUpperCase()}`;
 
-    const [soupOptIn, setSoupOptIn] = useState(() => (categorySelections?.soup?.length ?? 0) > 0);
+    const [soupOptIn, setSoupOptIn] = useState(
+        () => categoriesReadOnly || (categorySelections?.soup?.length ?? 0) > 0,
+    );
 
     const [validationFlashKeys, setValidationFlashKeys] = useState(/** @type {SelectionCategoryKey[]} */ ([]));
     const [incompleteWarning, setIncompleteWarning] = useState(/** @type {string | null} */ (null));
@@ -752,8 +768,13 @@ export default function ChooseYourMeals({
     }, [forwardWheelToMealScroller]);
 
     useEffect(() => {
+        if (categoriesReadOnly) {
+            setSoupOptIn(true);
+            return;
+        }
+
         setSoupOptIn((categorySelections?.soup?.length ?? 0) > 0);
-    }, [deckScopePrefix]);
+    }, [deckScopePrefix, categoriesReadOnly]);
 
     useEffect(() => {
         if ((categorySelections?.soup?.length ?? 0) > 0) {
@@ -814,14 +835,25 @@ export default function ChooseYourMeals({
     }, [craftFooterDisabled, onFooterNext, showIncompleteValidation]);
 
     const categorySections = useMemo(() => {
-        if (layout !== 'categories' || !meals?.length || !categorySelections || typeof onToggleCategory !== 'function') {
+        const hasAssigned = assignedMealsByCategory !== null && assignedMealsByCategory !== undefined;
+        const canRender =
+            layout === 'categories' &&
+            categorySelections &&
+            (categoriesReadOnly || typeof onToggleCategory === 'function') &&
+            (hasAssigned || (meals?.length ?? 0) > 0);
+
+        if (!canRender) {
             return null;
         }
 
         const nonSoup = FULL_CRAFT_CATEGORY_SECTIONS.filter((def) => def.selectionKey !== 'soup');
 
         return nonSoup.map((def, idx) => {
-            const cards = filterMealsByCategory(meals, def.mealTypeLabel);
+            const assignedCards = assignedMealsByCategory?.[def.selectionKey];
+            const cards =
+                assignedCards && assignedCards.length > 0
+                    ? assignedCards
+                    : filterMealsByCategory(meals ?? [], def.mealTypeLabel);
             const max =
                 maxSelectionsByCategory?.[def.selectionKey] !== undefined
                     ? /** @type {number} */ (maxSelectionsByCategory[def.selectionKey])
@@ -841,7 +873,8 @@ export default function ChooseYourMeals({
                     cards={cards}
                     selectedIds={selectedIds}
                     maxSelected={max}
-                    onSelect={(meal) => onToggleCategory(def.selectionKey, meal)}
+                    readOnly={categoriesReadOnly}
+                    onSelect={categoriesReadOnly ? () => {} : (meal) => onToggleCategory?.(def.selectionKey, meal)}
                 />
             );
         });
@@ -853,41 +886,56 @@ export default function ChooseYourMeals({
         maxSelectionsByCategory,
         deckScopePrefix,
         validationFlashKeys,
+        assignedMealsByCategory,
+        categoriesReadOnly,
     ]);
 
     const soupDeckMeals = useMemo(() => {
+        const assignedSoups = assignedMealsByCategory?.soup;
+        if (assignedSoups && assignedSoups.length > 0) {
+            return assignedSoups;
+        }
+
         if (scheduledSoupMeals.length > 0) {
             return scheduledSoupMeals;
         }
 
         const catalog = soupCatalogMeals.length > 0 ? soupCatalogMeals : meals;
 
-        return soupOfTheDayMeals(catalog);
-    }, [meals, scheduledSoupMeals, soupCatalogMeals]);
+        return soupOfTheDayMeals(catalog ?? []);
+    }, [meals, scheduledSoupMeals, soupCatalogMeals, assignedMealsByCategory]);
 
-    const soupBlock =
+    const showSoupBlock =
         layout === 'categories' &&
-        meals?.length &&
         categorySelections &&
         soupSectionDef &&
-        typeof onToggleCategory === 'function' ? (
+        (categoriesReadOnly || typeof onToggleCategory === 'function') &&
+        soupDeckMeals.length > 0;
+
+    const soupBlock = showSoupBlock ? (
             <div
                 className="relative isolate w-full overflow-x-clip overflow-y-visible py-0.5"
                 style={{ zIndex: 35 + FULL_CRAFT_CATEGORY_SECTIONS.length * 6 }}
             >
-                <SoupOfTheDayOptIn
-                    checked={soupOptIn}
-                    header={soupSectionDef.header}
-                    onChange={(next) => {
-                        setSoupOptIn(next);
-                        if (!next) {
-                            onSoupOptInChange?.(false);
-                        }
-                    }}
-                />
+                {!categoriesReadOnly ? (
+                    <SoupOfTheDayOptIn
+                        checked={soupOptIn}
+                        header={soupSectionDef.header}
+                        onChange={(next) => {
+                            setSoupOptIn(next);
+                            if (!next) {
+                                onSoupOptInChange?.(false);
+                            }
+                        }}
+                    />
+                ) : (
+                    <p className="px-4 font-montserrat text-[15px] font-bold leading-snug tracking-tight text-[#262A22] sm:text-base md:px-0">
+                        {soupSectionDef.header}
+                    </p>
+                )}
 
                 <AnimatePresence initial={false}>
-                    {soupOptIn ? (
+                    {categoriesReadOnly || soupOptIn ? (
                         <motion.div
                             key="soup-deck"
                             initial={{ opacity: 0, y: 12, scale: 0.97 }}
@@ -899,6 +947,7 @@ export default function ChooseYourMeals({
                             <MealSlotCarousel
                                 sectionStackOrder={FULL_CRAFT_CATEGORY_SECTIONS.length}
                                 deckOnly
+                                readOnly={categoriesReadOnly}
                                 title=""
                                 deckScopeKey={`${deckScopePrefix ? `${deckScopePrefix}-` : ''}${soupSectionDef.deckSuffix}`}
                                 cards={soupDeckMeals}
@@ -908,7 +957,11 @@ export default function ChooseYourMeals({
                                         ? /** @type {number} */ (maxSelectionsByCategory.soup)
                                         : soupSectionDef.defaultMax
                                 }
-                                onSelect={(meal) => onToggleCategory('soup', meal)}
+                                onSelect={
+                                    categoriesReadOnly
+                                        ? () => {}
+                                        : (meal) => onToggleCategory?.('soup', meal)
+                                }
                             />
                         </motion.div>
                     ) : null}
