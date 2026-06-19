@@ -23,6 +23,7 @@ class ConsultationCraftedForYouController extends Controller
             'summaryHref' => route('app.meal-plan', absolute: false),
             'loginUrl' => route('login'),
             'signOutUrl' => route('sign-out'),
+            'csrfToken' => csrf_token(),
             'isCustomerAccount' => $isCustomer,
             'isAdminPreview' => $isAdminPreview,
             'pageEyebrow' => $isCustomer ? 'Your plan' : 'Admin / Consultation',

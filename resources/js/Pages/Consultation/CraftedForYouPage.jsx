@@ -289,6 +289,7 @@ export default function CraftedForYouPage({
     summaryHref,
     loginUrl,
     signOutUrl,
+    csrfToken = '',
     isAdminPreview = false,
     pageEyebrow = 'Admin / Consultation',
     adaptedMenuUrl = '/api/menu/adapted',
@@ -592,7 +593,7 @@ export default function CraftedForYouPage({
                 selectedByDay,
             });
 
-            const result = await submitCraftPlan(payload);
+            const result = await submitCraftPlan(payload, undefined, csrfToken);
 
             const redirectUrl =
                 (typeof result.summary_url === 'string' && result.summary_url) ||

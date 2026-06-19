@@ -43,21 +43,36 @@ export function buildCraftPlanSubmissionPayload(input) {
     };
 }
 
+import { CSRF_SESSION_EXPIRED_MESSAGE, resolveCsrfToken, resolveXsrfHeaderToken } from '../lib/csrfToken.js';
+
 /**
  * @param {Record<string, unknown>} payload
  * @param {string} [url]
+ * @param {string} [csrfFallback]
  * @returns {Promise<{ message?: string; summary_url?: string; plan?: Record<string, unknown> }>}
  */
-export async function submitCraftPlan(payload, url = '/api/customer/craft-plan') {
-    const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
+export async function submitCraftPlan(payload, url = '/api/customer/craft-plan', csrfFallback = '') {
+    const plainToken = resolveCsrfToken(csrfFallback);
+    const xsrfToken = resolveXsrfHeaderToken();
+
+    /** @type {Record<string, string>} */
+    const headers = {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
+    };
+
+    if (plainToken !== '') {
+        headers['X-CSRF-TOKEN'] = plainToken;
+    }
+
+    if (xsrfToken !== '') {
+        headers['X-XSRF-TOKEN'] = xsrfToken;
+    }
 
     const response = await fetch(url, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            Accept: 'application/json',
-            'X-CSRF-TOKEN': csrf,
-        },
+        headers,
         credentials: 'same-origin',
         body: JSON.stringify(payload),
     });
@@ -65,9 +80,14 @@ export async function submitCraftPlan(payload, url = '/api/customer/craft-plan')
     const body = await response.json().catch(() => ({}));
 
     if (!response.ok) {
+        if (response.status === 419) {
+            throw new Error(CSRF_SESSION_EXPIRED_MESSAGE);
+        }
+
         if (response.status === 401) {
             throw new Error('Your session expired. Refresh the page and log in again to save your plan.');
         }
+
         const message = typeof body.message === 'string' ? body.message : 'Could not save craft plan.';
         throw new Error(message);
     }
