@@ -2180,7 +2180,7 @@ export function MealLibraryPageContent({
             ) : null}
 
             {mealDetailModal ? (
-                <div className="fixed inset-0 z-[102] flex items-center justify-center p-4">
+                <div className="fixed inset-0 z-[102] flex items-end justify-center sm:items-center sm:p-4">
                     <button
                         type="button"
                         className="absolute inset-0 bg-black/40"
@@ -2191,13 +2191,13 @@ export function MealLibraryPageContent({
                         role="dialog"
                         aria-modal="true"
                         aria-labelledby="meal-library-detail-title"
-                        className="relative w-full max-w-[960px] rounded-[12px] bg-[#F8F9F6] p-4 shadow-2xl md:p-6"
+                        className="relative flex max-h-[min(92dvh,calc(100dvh-2rem))] w-full max-w-[960px] flex-col overflow-hidden rounded-t-[12px] bg-[#F8F9F6] shadow-2xl sm:rounded-[12px]"
                     >
-                        <div className="mb-4 flex items-start justify-between gap-3">
+                        <div className="flex shrink-0 items-start justify-between gap-3 border-b border-gray-200 px-4 py-4 md:px-6">
                             <div className="min-w-0 flex-1">
                                 <h2
                                     id="meal-library-detail-title"
-                                    className="font-montserrat text-xl font-bold tracking-tight text-[#262A22] md:text-2xl"
+                                    className="break-words font-montserrat text-xl font-bold tracking-tight text-[#262A22] md:text-2xl"
                                 >
                                     {mealDetailModal.title}
                                 </h2>
@@ -2211,7 +2211,7 @@ export function MealLibraryPageContent({
                             </div>
                             <Button label="Close" variant="ghost" type="button" onClick={() => setMealDetailModal(null)} />
                         </div>
-                        <MealDetailView meal={mealDetailModal.detailView} className="max-h-[min(78vh,calc(100dvh-11rem))]" />
+                        <MealDetailView meal={mealDetailModal.detailView} embedded />
                     </div>
                 </div>
             ) : null}

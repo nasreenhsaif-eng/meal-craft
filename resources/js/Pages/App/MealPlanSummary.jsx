@@ -246,20 +246,20 @@ export default function MealPlanSummary({
                               aria-label="Close meal details"
                               onClick={() => setMealDetailModal(null)}
                           />
-                          <div className="relative max-h-[92dvh] w-full max-w-3xl overflow-y-auto rounded-t-[16px] bg-white p-5 shadow-2xl sm:rounded-[16px] sm:p-6">
-                              <div className="mb-4 flex items-start justify-between gap-3">
-                                  <h2 className="font-montserrat text-lg font-bold text-[#262A22]">
+                          <div className="relative flex max-h-[92dvh] w-full max-w-3xl flex-col overflow-hidden rounded-t-[16px] bg-white shadow-2xl sm:rounded-[16px]">
+                              <div className="flex shrink-0 items-start justify-between gap-3 border-b border-gray-100 px-5 py-4 sm:px-6">
+                                  <h2 className="min-w-0 flex-1 break-words font-montserrat text-lg font-bold text-[#262A22]">
                                       {mealDetailModal.title}
                                   </h2>
                                   <button
                                       type="button"
-                                      className="font-montserrat text-sm font-bold text-[#5A6B44]"
+                                      className="shrink-0 font-montserrat text-sm font-bold text-[#5A6B44]"
                                       onClick={() => setMealDetailModal(null)}
                                   >
                                       Close
                                   </button>
                               </div>
-                              <MealDetailView meal={mealDetailModal.detailView} hideImage={false} />
+                              <MealDetailView meal={mealDetailModal.detailView} hideImage={false} embedded />
                           </div>
                       </div>,
                       document.body,

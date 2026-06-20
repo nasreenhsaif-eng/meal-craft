@@ -32,6 +32,16 @@ export type MealSafetyAlert = {
     variant?: 'allergy' | 'g6pd';
 };
 
+export type MealIngredientSection = {
+    title: string;
+    items: string[];
+};
+
+export type MealInstructionSection = {
+    title: string;
+    steps: string[];
+};
+
 export type MealDetailModel = {
     shortDescription?: string;
     cyclePhases: CyclePhase[];
@@ -45,7 +55,9 @@ export type MealDetailModel = {
     sickleRdiFootnote?: string;
     nutritionalData: MealNutritionalData;
     ingredients: string[];
+    ingredientSections?: MealIngredientSection[];
     instructions: string[] | string;
+    instructionSections?: MealInstructionSection[];
     imageUrl?: string | null;
     imageAlt?: string | null;
     /** @deprecated Use shortDescription */
@@ -57,6 +69,8 @@ export type MealDetailViewProps = {
     className?: string;
     /** Hides the hero image block (used for base recipes without photos). */
     hideImage?: boolean;
+    /** When true, omit outer max-height so a parent modal owns scrolling (title stays visible). */
+    embedded?: boolean;
 };
 
 const G6PD_SAFETY_ALERT_BADGE = 'G6PD Safety Alert';
@@ -118,7 +132,7 @@ export function MealNutritionSummaryTable({ data }: { data: MealNutritionalData 
     );
 }
 
-export default function MealDetailView({ meal, className = '', hideImage = false }: MealDetailViewProps): ReactElement {
+export default function MealDetailView({ meal, className = '', hideImage = false, embedded = false }: MealDetailViewProps): ReactElement {
     const [mediaFailed, setMediaFailed] = useState(false);
     const {
         shortDescription,
@@ -129,7 +143,9 @@ export default function MealDetailView({ meal, className = '', hideImage = false
         sickleCellHighlights = [],
         nutritionalData,
         ingredients,
+        ingredientSections,
         instructions,
+        instructionSections,
         imageUrl,
         imageAlt,
         description,
@@ -145,13 +161,18 @@ export default function MealDetailView({ meal, className = '', hideImage = false
     const instructionSteps = mealInstructionStepsForDisplay(instructions);
     const scBadges = sickleCellHighlights.filter((b) => b !== G6PD_HIGHLIGHT_BADGE);
 
+    const hasIngredientSections = Array.isArray(ingredientSections) && ingredientSections.length > 0;
+    const hasInstructionSections = Array.isArray(instructionSections) && instructionSections.length > 0;
+
     return (
         <div
             role="region"
             aria-label="Meal details"
             tabIndex={0}
             className={[
-                'mx-auto max-w-5xl max-h-[min(90vh,calc(100dvh-2rem))] overflow-y-auto overscroll-y-contain rounded-[12px] outline-none',
+                embedded
+                    ? 'min-h-0 flex-1 overflow-y-auto overscroll-y-contain outline-none'
+                    : 'mx-auto max-w-5xl max-h-[min(90vh,calc(100dvh-2rem))] overflow-y-auto overscroll-y-contain rounded-[12px] outline-none',
                 'focus:outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5A6B44]/45 focus-visible:ring-offset-2 focus-visible:ring-offset-[#F8F9F6]',
                 className,
             ]
@@ -214,13 +235,35 @@ export default function MealDetailView({ meal, className = '', hideImage = false
                         >
                             Ingredients
                         </h2>
-                        <ul className="space-y-3 font-montserrat text-sm font-medium leading-relaxed text-[#374151] md:text-[15px]">
-                            {ingredients.map((line, idx) => (
-                                <li key={`${idx}-${line}`} className="border-b border-gray-100 pb-3 last:border-b-0 last:pb-0">
-                                    {line}
-                                </li>
-                            ))}
-                        </ul>
+                        {hasIngredientSections ? (
+                            <div className="space-y-6">
+                                {ingredientSections.map((section) => (
+                                    <div key={section.title} className="space-y-3">
+                                        <h3 className="font-montserrat text-sm font-bold uppercase tracking-[0.12em] text-[#5A6B44]">
+                                            {section.title}
+                                        </h3>
+                                        <ul className="space-y-3 font-montserrat text-sm font-medium leading-relaxed text-[#374151] md:text-[15px]">
+                                            {section.items.map((line, idx) => (
+                                                <li
+                                                    key={`${section.title}-${idx}-${line}`}
+                                                    className="border-b border-gray-100 pb-3 last:border-b-0 last:pb-0"
+                                                >
+                                                    {line}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <ul className="space-y-3 font-montserrat text-sm font-medium leading-relaxed text-[#374151] md:text-[15px]">
+                                {ingredients.map((line, idx) => (
+                                    <li key={`${idx}-${line}`} className="border-b border-gray-100 pb-3 last:border-b-0 last:pb-0">
+                                        {line}
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
                     </section>
 
                     <section className="space-y-4" aria-labelledby="meal-detail-instructions-heading">
@@ -230,13 +273,32 @@ export default function MealDetailView({ meal, className = '', hideImage = false
                         >
                             Instructions
                         </h2>
-                        <ol className="list-decimal space-y-4 pl-5 font-montserrat text-sm font-medium leading-relaxed text-[#374151] marker:font-bold md:text-[15px] md:pl-6">
-                            {instructionSteps.map((step, idx) => (
-                                <li key={idx} className="whitespace-pre-line pl-2">
-                                    {step}
-                                </li>
-                            ))}
-                        </ol>
+                        {hasInstructionSections ? (
+                            <div className="space-y-6">
+                                {instructionSections.map((section) => (
+                                    <div key={section.title} className="space-y-3">
+                                        <h3 className="font-montserrat text-sm font-bold uppercase tracking-[0.12em] text-[#5A6B44]">
+                                            {section.title}
+                                        </h3>
+                                        <ol className="list-decimal space-y-4 pl-5 font-montserrat text-sm font-medium leading-relaxed text-[#374151] marker:font-bold md:text-[15px] md:pl-6">
+                                            {section.steps.map((step, idx) => (
+                                                <li key={`${section.title}-${idx}`} className="whitespace-pre-line pl-2">
+                                                    {step}
+                                                </li>
+                                            ))}
+                                        </ol>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <ol className="list-decimal space-y-4 pl-5 font-montserrat text-sm font-medium leading-relaxed text-[#374151] marker:font-bold md:text-[15px] md:pl-6">
+                                {instructionSteps.map((step, idx) => (
+                                    <li key={idx} className="whitespace-pre-line pl-2">
+                                        {step}
+                                    </li>
+                                ))}
+                            </ol>
+                        )}
                     </section>
 
                     <section className="space-y-4 lg:hidden" aria-labelledby="meal-detail-nutrition-heading-mobile">

@@ -54,9 +54,9 @@ final class BalancedMealLibraryConfigurator
                 'diet_tags' => ['Dairy-free', 'Gluten-free'],
             ],
             [
-                'name' => 'Grilled Rosemary Garlic Chicken Salad w Rocca & Red Pepper Dressing',
+                'name' => BalancedCanonicalMealRecipeRefiner::ROSEMARY_GARLIC_CHICKEN_PLATE_NAME,
                 'sort' => 3,
-                'slot' => 'main_chicken_salad',
+                'slot' => 'main_chicken_plate',
                 'meal_plan_tags' => ['Balanced'],
                 'diet_tags' => ['Dairy-free', 'Gluten-free'],
             ],

@@ -9,13 +9,25 @@ use InvalidArgumentException;
  * Seven-day Balanced weekly plan: same slot roles every day, different meals per weekday.
  *
  * Breakfast 1 — vegan chia pudding (rotates). Breakfast 2 — egg-based savory (rotates).
- * Main 1 — chicken + carbs/veg. Main 2 — chicken salad. Main 3 — salmon (Sun–Tue) or beef (Wed–Sat).
- * Main 4 — vegan main. Salad 1 — vegan side salad (rotates). Salad 2 — Classic Garden Salad.
+ * Main 1 — chicken + carbs/veg. Main 2 — chicken salad. Main 3 — salmon and beef alternate daily.
+ * Main 4 — vegan main (includes former legume-heavy side salads). Salad 1 — legume-free vegan side (rotates). Salad 2 — Classic Garden Salad.
  * Dessert 1 — dessert (rotates). Dessert 2 — Fruit Salad Bowl.
- * Soup 1 — vegan soup (Vegan Mushroom Soup). Soup 2 — bone broth (Bone Broth Cup). Same both every day.
+ * Soup 1 — rotating soup. Soup 2 — Bone Broth Cup (fixed every day).
  */
 final class BalancedWeeklyRotationSchedule
 {
+    /** @var list<string> */
+    public const ROTATING_SOUPS = [
+        'Vegan Mushroom Soup',
+        'Butternut Squash Soup',
+        'Tomato Basil Soup',
+        'Red Lentil Turmeric Soup',
+        'Cauliflower Ginger Soup',
+        'Carrot Cumin Soup',
+        'Sweet Potato Fennel Soup',
+    ];
+
+    /** @deprecated Use {@see ROTATING_SOUPS} */
     public const VEGAN_SOUP = 'Vegan Mushroom Soup';
 
     /** @var array<string, array<int, string>> */
@@ -27,7 +39,6 @@ final class BalancedWeeklyRotationSchedule
             2 => 'Fruit Salad Bowl',
         ],
         MealPlanSlotType::Soup->value => [
-            1 => self::VEGAN_SOUP,
             2 => BalancedMealLibraryConfigurator::BONE_BROTH_MEAL_NAME,
         ],
     ];
@@ -57,28 +68,28 @@ final class BalancedWeeklyRotationSchedule
     /** @var list<string> */
     public const CHICKEN_PLATE_MAINS = [
         'Tamarind Honey & Sesame Chicken w Garlicky Green Beans',
+        BalancedCanonicalMealRecipeRefiner::ROSEMARY_GARLIC_CHICKEN_PLATE_NAME,
         'Grilled Chicken Chimichurri',
         'Spicy Harissa Grilled Chicken w Roasted Sweet Potato & Zucchini',
         'Pepper Chicken in Creamy Cajun Sauce w Roasted Potato',
         'Roasted Chicken in Pomegranate & Sumac Sauce w Turmeric Rice',
         'Crispy Chicken Tikka bowl w Quinoa & Mint Sauce',
-        'Cajun Chicken, Grilled Peppers & Onion Salad w Quinoa, Kale & Mustard Dressing',
     ];
 
     /** @var list<string> */
     public const CHICKEN_SALAD_MAINS = [
-        'Grilled Rosemary Garlic Chicken Salad w Rocca & Red Pepper Dressing',
         'Rosemary Chicken Rocca Salad',
         'Turmeric Chicken Kale Salad',
         'Chicken Thai Mango Salad',
         'Tandoori Coconut Mint Salad',
         'Mediterranean Crunch Salad',
         'Tandoori Chicken Salad',
+        'Cajun Chicken, Grilled Peppers & Onion Salad w Quinoa, Kale & Mustard Dressing',
     ];
 
     /** @var list<string> */
     public const SALMON_MAINS = [
-        'Baked Salmon with Fermented Chimichurri & Quinoa',
+        BalancedCanonicalMealRecipeRefiner::BAKED_SALMON_NAME,
         'Citrus Herb Salmon',
         'Grilled Salmon Mango Salsa',
     ];
@@ -91,25 +102,25 @@ final class BalancedWeeklyRotationSchedule
         'Chili Beef Stuffed Peppers',
     ];
 
-    /** @var list<string> */
+    /** @var list<string> Legume-free vegan side salads (slot 1). */
+    public const VEGAN_SIDE_SALADS = [
+        'Marinated Pineapple, Peppers, Red Onion & Cilantro Side Salad',
+        'Tomato Parsely Salad w Sumac Za’ater Dressing',
+        'Citrus Beet Arugula Salad',
+        'Shaved Fennel Rocca Salad',
+        'Roasted Eggplant Rocca Salad',
+        'Marinated Strawberry Beet Salad',
+        'Coconut Grapefruit Salad',
+    ];
+
+    /** @var list<string> Vegan mains — includes legume-forward dishes moved from side rotation. */
     public const VEGAN_MAINS = [
         'Vegan Butternut Squash, Lentil & Nut Stew w Brown Rice',
         'Vegan Smoky Cauliflower & Lentil Stew w Quinoa Bread & Tahini',
         'Vegan Sri Lankan Red Lentil Dal w Quinoa Bread',
         'Vegan Harissa Roasted Cauliflower & Chickpea Salad w Tahini Dressing',
-        'Vegan Mushroom Bowl',
-        'Baked Eggplant Lentils Hummus',
-        'Vegan Smoky Cauliflower & Lentil Stew w Quinoa Bread & Tahini',
-    ];
-
-    /** @var list<string> */
-    public const VEGAN_SIDE_SALADS = [
-        'Marinated Pineapple, Peppers, Red Onion & Cilantro Side Salad',
-        'Tomato Parsely Salad w Sumac Za’ater Dressing',
         'Vegan Curry Lentil Salad',
         'Spiced Cauliflower Chickpea Salad',
-        'Citrus Beet Arugula Salad',
-        'Shaved Fennel Rocca Salad',
         'Thai Rainbow Peanut Salad',
     ];
 
@@ -147,9 +158,7 @@ final class BalancedWeeklyRotationSchedule
             MealPlanSlotType::Main => match ($slotIndex) {
                 1 => self::CHICKEN_PLATE_MAINS[$index],
                 2 => self::CHICKEN_SALAD_MAINS[$index],
-                3 => $dayNumber <= 3
-                    ? self::SALMON_MAINS[$index]
-                    : self::BEEF_MAINS[$dayNumber - 4],
+                3 => self::alternatingFishOrBeefMainForDay($dayNumber),
                 4 => self::VEGAN_MAINS[$index],
                 default => throw new InvalidArgumentException("Invalid main slot index {$slotIndex}"),
             },
@@ -161,8 +170,25 @@ final class BalancedWeeklyRotationSchedule
                 1 => self::DESSERTS[$index],
                 default => throw new InvalidArgumentException("Invalid dessert slot index {$slotIndex}"),
             },
-            MealPlanSlotType::Soup => throw new InvalidArgumentException('Soup slots are fixed; use FIXED_SLOT_MEALS'),
+            MealPlanSlotType::Soup => match ($slotIndex) {
+                1 => self::ROTATING_SOUPS[$index],
+                default => throw new InvalidArgumentException("Invalid soup slot index {$slotIndex}; slot 2 is fixed in FIXED_SLOT_MEALS"),
+            },
         };
+    }
+
+    /**
+     * Odd days salmon, even days beef — alternating through the week.
+     */
+    public static function alternatingFishOrBeefMainForDay(int $dayNumber): string
+    {
+        $pairIndex = intdiv($dayNumber - 1, 2);
+
+        if ($dayNumber % 2 === 1) {
+            return self::SALMON_MAINS[$pairIndex % count(self::SALMON_MAINS)];
+        }
+
+        return self::BEEF_MAINS[$pairIndex % count(self::BEEF_MAINS)];
     }
 
     /**
@@ -179,6 +205,7 @@ final class BalancedWeeklyRotationSchedule
         }
 
         foreach ([
+            self::ROTATING_SOUPS,
             self::CHIA_BREAKFASTS,
             self::EGG_BREAKFASTS,
             self::CHICKEN_PLATE_MAINS,

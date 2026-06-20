@@ -278,6 +278,103 @@ test('adapted menu exposes admin-scheduled soups per weekday from production mea
     expect($response->json('scheduled_soups_by_weekday.3'))->toBeNull();
 });
 
+test('adapted menu exposes full craft day options with two breakfasts and four mains per weekday', function () {
+    $user = User::factory()->create();
+    CustomerProfile::factory()->for($user)->create([
+        'daily_calorie_target' => 1500,
+    ]);
+
+    $breakfastOne = Meal::factory()->create([
+        'name' => 'Chia Day One',
+        'meal_type' => MealType::Breakfast,
+        'category' => RecipeCategory::Breakfast,
+        'total_calories' => 300,
+    ]);
+    $breakfastTwo = Meal::factory()->create([
+        'name' => 'Egg Day One',
+        'meal_type' => MealType::Breakfast,
+        'category' => RecipeCategory::Breakfast,
+        'total_calories' => 320,
+    ]);
+
+    $mains = collect(range(1, 4))->map(fn (int $index) => Meal::factory()->create([
+        'name' => "Main {$index} Day One",
+        'meal_type' => MealType::Main,
+        'category' => RecipeCategory::Meal,
+        'total_calories' => 400 + $index,
+    ]));
+
+    $saladOne = Meal::factory()->create([
+        'name' => 'Rotating Salad',
+        'meal_type' => MealType::Salad,
+        'category' => RecipeCategory::SideSalad,
+        'total_calories' => 120,
+    ]);
+    $saladTwo = Meal::factory()->create([
+        'name' => 'Classic Garden Salad',
+        'meal_type' => MealType::Salad,
+        'category' => RecipeCategory::SideSalad,
+        'total_calories' => 90,
+    ]);
+
+    $dessertOne = Meal::factory()->create([
+        'name' => 'Rotating Dessert',
+        'meal_type' => MealType::Dessert,
+        'category' => RecipeCategory::Dessert,
+        'total_calories' => 200,
+    ]);
+    $dessertTwo = Meal::factory()->create([
+        'name' => 'Fruit Salad Bowl',
+        'meal_type' => MealType::Dessert,
+        'category' => RecipeCategory::Dessert,
+        'total_calories' => 150,
+    ]);
+
+    $plan = MealPlan::query()->create([
+        'name' => 'Production Weekly Full Craft',
+        'goal' => 'Customer production schedule',
+        'schema_type' => MealPlanSchemaType::WeeklyStructured,
+        'plan_category' => 'balanced',
+    ]);
+
+    $slots = [
+        [MealPlanSlotType::Breakfast, 1, $breakfastOne],
+        [MealPlanSlotType::Breakfast, 2, $breakfastTwo],
+        [MealPlanSlotType::Main, 1, $mains[0]],
+        [MealPlanSlotType::Main, 2, $mains[1]],
+        [MealPlanSlotType::Main, 3, $mains[2]],
+        [MealPlanSlotType::Main, 4, $mains[3]],
+        [MealPlanSlotType::Salad, 1, $saladOne],
+        [MealPlanSlotType::Salad, 2, $saladTwo],
+        [MealPlanSlotType::Dessert, 1, $dessertOne],
+        [MealPlanSlotType::Dessert, 2, $dessertTwo],
+    ];
+
+    foreach ($slots as [$slotType, $slotIndex, $meal]) {
+        MealPlanDayMeal::query()->create([
+            'meal_plan_id' => $plan->id,
+            'meal_id' => $meal->id,
+            'day_number' => 1,
+            'slot_type' => $slotType->value,
+            'slot_index' => $slotIndex,
+            'is_option_b' => false,
+        ]);
+    }
+
+    config(['customer_nutrition.production_meal_plan_id' => $plan->id]);
+
+    $response = $this->actingAs($user)->getJson('/api/menu/adapted?craft_key=full');
+
+    $response->assertSuccessful()
+        ->assertJsonCount(2, 'scheduled_full_craft_by_weekday.1.breakfasts')
+        ->assertJsonCount(4, 'scheduled_full_craft_by_weekday.1.meals')
+        ->assertJsonCount(2, 'scheduled_full_craft_by_weekday.1.sideSalads')
+        ->assertJsonCount(2, 'scheduled_full_craft_by_weekday.1.desserts')
+        ->assertJsonPath('scheduled_full_craft_by_weekday.1.breakfasts.0.name', 'Chia Day One')
+        ->assertJsonPath('scheduled_full_craft_by_weekday.1.breakfasts.1.name', 'Egg Day One')
+        ->assertJsonPath('scheduled_full_craft_by_weekday.1.sideSalads.1.name', 'Classic Garden Salad');
+});
+
 test('adapted menu applies craft-specific calorie budgets when craft_key is provided', function () {
     $user = User::factory()->create();
     CustomerProfile::factory()->for($user)->create([

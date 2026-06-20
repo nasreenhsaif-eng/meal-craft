@@ -9,11 +9,10 @@ use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
 /**
- * Swaps plain white rice for varied whole-food complex carbs on Balanced rotation mains,
- * following carb bases used elsewhere in the meal library (quinoa bowls, sweet potato plates,
- * wild rice, turmeric rice, brown rice, quinoa bread).
+ * Rewrites vegan side salads to be legume-free and fully plant-based, and promotes
+ * legume-forward former side salads into vegan main-slot recipes.
  */
-final class BalancedComplexCarbRecipeRefiner
+final class BalancedVeganSideSaladRecipeRefiner
 {
     /**
      * @return list<string>
@@ -101,103 +100,100 @@ final class BalancedComplexCarbRecipeRefiner
      */
     private function recipeDefinitions(): array
     {
-        $tags = WholeFoodDietPolicy::REQUIRED_MEAL_DIET_TAGS;
+        $veganTags = array_merge(WholeFoodDietPolicy::REQUIRED_MEAL_DIET_TAGS, ['Vegan']);
 
         return [
-            'Citrus Herb Salmon' => [
+            'Citrus Beet Arugula Salad' => [
                 'ingredients' => [
-                    'Salmon (Raw)' => 95,
-                    'Sweet Potato' => 90,
-                    'Asparagus' => 55,
-                    'Lemon Juice' => 10,
-                    'Orange Juice' => 8,
-                    'Dill (Fresh)' => 2,
-                ],
-                'diet_tags' => $tags,
-            ],
-            'Grilled Salmon Mango Salsa' => [
-                'ingredients' => [
-                    'Salmon (Raw)' => 110,
-                    'Wild Rice (Cooked)' => 90,
-                    'Mango' => 50,
-                    'Bell Pepper (Red)' => 30,
-                    'Cucumber' => 35,
-                    'Lime Juice' => 10,
-                    'Fresh Coriander' => 3,
-                ],
-                'diet_tags' => $tags,
-            ],
-            'Grilled Beef Steak Ratatouille & Saffron rice' => [
-                'ingredients' => [
-                    'Beef Sirloin' => 85,
-                    'Saffron Rice (Base)' => 75,
-                    'Zucchini' => 45,
-                    'Bell Pepper (Red)' => 40,
-                    'Tomato (Raw)' => 50,
-                    'Eggplant' => 40,
-                    'Garlic (Raw)' => 3,
-                    'Fresh Basil' => 5,
-                    'Parsley' => 5,
-                    'Lemon Juice' => 10,
-                    'Olive Oil (Extra Virgin)' => 4,
-                    'Black Pepper' => 1,
-                ],
-                'diet_tags' => $tags,
-            ],
-            'Beef Bibimbap' => [
-                'ingredients' => [
-                    'Beef Ground Lean' => 88,
-                    'Quinoa (White)' => 30,
-                    'Spinach (Fresh)' => 50,
-                    'Carrots' => 40,
-                    'Zucchini' => 40,
-                    'Egg' => 55,
-                    'Garlic (Raw)' => 3,
-                    'Sesame Seeds' => 2,
-                    'Spring Onion' => 18,
-                ],
-                'diet_tags' => $tags,
-            ],
-            'Persian Herb Beef Stew' => [
-                'ingredients' => [
-                    'Beef Chuck Roast' => 88,
-                    'Cannellini Beans' => 70,
-                    'Quinoa Bread (Base)' => 50,
-                    'Spinach (Fresh)' => 35,
-                    'Fresh Coriander' => 8,
-                    'Dill (Fresh)' => 4,
-                    'White Onion' => 28,
+                    'Arugula' => 45,
+                    'Beetroot' => 80,
+                    'Orange Sections' => 45,
+                    'Walnuts' => 8,
                     'Lemon Juice' => 8,
-                    'Olive Oil' => 2,
+                    'Olive Oil' => 4,
                 ],
-                'diet_tags' => $tags,
+                'diet_tags' => $veganTags,
             ],
-            'Chili Beef Stuffed Peppers' => [
+            'Shaved Fennel Rocca Salad' => [
                 'ingredients' => [
-                    'Beef Ground Lean' => 88,
-                    'Basmati Rice (Brown)' => 55,
-                    'Bell Pepper (Red)' => 105,
-                    'White Onion' => 28,
-                    'Tomato (Raw)' => 55,
-                    'Garlic (Raw)' => 4,
-                    'Chili Powder' => 2,
-                    'Olive Oil' => 2,
+                    'Fennel Bulb' => 70,
+                    'Rocca' => 45,
+                    'Orange Sections' => 40,
+                    'Lemon Juice' => 8,
+                    'Olive Oil' => 4,
                 ],
-                'diet_tags' => $tags,
+                'diet_tags' => $veganTags,
             ],
-            'Grilled Chicken Chimichurri' => [
+            'Roasted Eggplant Rocca Salad' => [
                 'ingredients' => [
-                    'Chicken Breast' => 120,
-                    'Sweet Potato' => 85,
-                    'Broccoli' => 60,
-                    'Parsley' => 8,
-                    'Fresh Coriander' => 8,
-                    'Garlic (Raw)' => 4,
-                    'Olive Oil (Extra Virgin)' => 7,
+                    'Eggplant' => 120,
+                    'Cherry Tomatoes' => 50,
+                    'Rocca' => 45,
+                    'Pomegranate Seeds' => 15,
+                    'Lemon Juice' => 8,
+                    'Olive Oil' => 4,
+                ],
+                'diet_tags' => $veganTags,
+            ],
+            'Marinated Strawberry Beet Salad' => [
+                'ingredients' => [
+                    'Strawberries' => 60,
+                    'Beetroot' => 70,
+                    'Romaine Lettuce' => 50,
+                    'White Onion' => 15,
+                    'Apple Cider Vinegar' => 10,
+                    'Olive Oil' => 4,
+                ],
+                'diet_tags' => $veganTags,
+            ],
+            'Coconut Grapefruit Salad' => [
+                'ingredients' => [
+                    'Romaine Lettuce' => 55,
+                    'Grapefruit Sections' => 70,
+                    'Cucumber' => 50,
+                    'Lime Juice' => 10,
+                    'Olive Oil' => 3,
+                    'Coconut Meat' => 10,
+                ],
+                'diet_tags' => $veganTags,
+            ],
+            'Vegan Curry Lentil Salad' => [
+                'ingredients' => [
+                    'French Lentils' => 60,
+                    'Spinach (Fresh)' => 40,
+                    'Carrots' => 40,
+                    'Bell Pepper (Red)' => 40,
+                    'Curry Powder' => 2,
                     'Lemon Juice' => 10,
-                    'Apple Cider Vinegar' => 4,
+                    'Olive Oil' => 5,
+                    'Wild Rice (Cooked)' => 80,
                 ],
-                'diet_tags' => $tags,
+                'diet_tags' => $veganTags,
+            ],
+            'Spiced Cauliflower Chickpea Salad' => [
+                'ingredients' => [
+                    'Cauliflower Florets' => 100,
+                    'Chickpeas' => 50,
+                    'Romaine Lettuce' => 40,
+                    'Cumin Seeds' => 2,
+                    'Smoked Paprika' => 1,
+                    'Lemon Juice' => 8,
+                    'Olive Oil' => 4,
+                ],
+                'diet_tags' => $veganTags,
+            ],
+            'Thai Rainbow Peanut Salad' => [
+                'ingredients' => [
+                    'Cabbage (Purple)' => 60,
+                    'Carrots' => 40,
+                    'Cucumber' => 40,
+                    'Bell Pepper (Red)' => 30,
+                    'Peanut Butter' => 10,
+                    'Lime Juice' => 10,
+                    'Water (Filtered)' => 10,
+                    'Fresh Coriander' => 4,
+                ],
+                'diet_tags' => $veganTags,
             ],
         ];
     }

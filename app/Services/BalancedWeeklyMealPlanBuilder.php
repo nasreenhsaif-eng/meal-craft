@@ -34,7 +34,15 @@ final class BalancedWeeklyMealPlanBuilder
 
             if ($refineRecipes) {
                 $refined = app(BalancedCanonicalMealRecipeRefiner::class)->refine();
+                $refined = array_merge($refined, app(BalancedChiaBreakfastRecipeRefiner::class)->refine());
                 $refined = array_merge($refined, app(BalancedComplexCarbRecipeRefiner::class)->refine());
+                $refined = array_merge($refined, app(BalancedEggBreakfastRecipeRefiner::class)->refine());
+                $refined = array_merge($refined, app(BalancedVeganSideSaladRecipeRefiner::class)->refine());
+                $refined = array_merge($refined, app(BalancedTandooriMealRecipeRefiner::class)->refine());
+                $refined = array_merge($refined, app(SaladDressingMealRefiner::class)->refine());
+                $refined = array_merge($refined, app(BalancedRotationMealRecipeRefiner::class)->refine());
+                $refined = array_merge($refined, app(BalancedSodiumRecipeRefiner::class)->refine());
+                $refined = array_merge($refined, app(BalancedMealInstructionRefiner::class)->refine());
             }
 
             app(BalancedMealLibraryConfigurator::class)->configure();

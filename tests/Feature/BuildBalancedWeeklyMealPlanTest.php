@@ -7,7 +7,7 @@ use App\Enums\RecipeCategory;
 use App\Models\Ingredient;
 use App\Models\Meal;
 use App\Models\MealPlan;
-use App\Services\BalancedCanonicalMealRecipeRefiner;
+use App\Services\BalancedChiaBreakfastRecipeRefiner;
 use App\Services\BalancedWeeklyMealPlanBuilder;
 use App\Services\BalancedWeeklyRotationSchedule;
 use App\Support\WholeFoodDietPolicy;
@@ -85,7 +85,7 @@ test('balanced weekly plan builder creates seven day rotating menus with twelve 
         ->and($dayTwoChia)->toBe('Mango Pumpkin Seed Chia Pudding');
 
     foreach (range(1, 7) as $day) {
-        $veganSoup = $plan->dayMeals()
+        $rotatingSoup = $plan->dayMeals()
             ->where('day_number', $day)
             ->where('slot_type', MealPlanSlotType::Soup->value)
             ->where('slot_index', 1)
@@ -101,51 +101,21 @@ test('balanced weekly plan builder creates seven day rotating menus with twelve 
             ->first()
             ?->meal?->name;
 
-        expect($veganSoup)->toBe(BalancedWeeklyRotationSchedule::VEGAN_SOUP)
+        expect($rotatingSoup)->toBe(BalancedWeeklyRotationSchedule::mealNameForDay($day, MealPlanSlotType::Soup, 1))
             ->and($boneBroth)->toBe('Bone Broth Cup');
     }
 });
 
-test('canonical meal refiner removes processed ingredients from deck meals', function (): void {
+test('chia breakfast refiner standardizes deck meals on coconut chia base', function (): void {
     seedBalancedWeeklyPlanDeck();
 
-    $chia = Ingredient::query()->create([
-        'name' => 'Chia Seeds',
-        'usda_food_category' => 'Fats/Nuts',
-        'calories' => 486,
-        'protein' => 16.5,
-        'carbs' => 42.1,
-        'fat' => 30.7,
-        'b6' => 0,
-        'b9_folate' => 0,
-        'b12' => 0,
-        'iron' => 0,
-        'magnesium' => 0,
-        'micronutrients' => [],
-    ]);
-
-    Ingredient::query()->create([
-        'name' => 'Coconut Water',
-        'usda_food_category' => 'Liquids',
-        'calories' => 19,
-        'protein' => 0.7,
-        'carbs' => 3.7,
-        'fat' => 0.2,
-        'b6' => 0,
-        'b9_folate' => 0,
-        'b12' => 0,
-        'iron' => 0,
-        'magnesium' => 0,
-        'micronutrients' => [],
-    ]);
-
-    Ingredient::query()->create([
-        'name' => 'Homemade Coconut Milk',
+    $base = Ingredient::query()->create([
+        'name' => 'Coconut Chia Pudding (Base)',
         'usda_food_category' => 'Base Ingredient',
-        'calories' => 70.8,
-        'protein' => 0.66,
-        'carbs' => 3.04,
-        'fat' => 6.7,
+        'calories' => 265,
+        'protein' => 3.9,
+        'carbs' => 14.6,
+        'fat' => 23,
         'b6' => 0,
         'b9_folate' => 0,
         'b12' => 0,
@@ -153,6 +123,7 @@ test('canonical meal refiner removes processed ingredients from deck meals', fun
         'magnesium' => 0,
         'micronutrients' => [],
         'is_verified' => true,
+        'is_base_recipe' => true,
     ]);
 
     Ingredient::query()->create([
@@ -232,18 +203,20 @@ test('canonical meal refiner removes processed ingredients from deck meals', fun
 
     $meal = Meal::query()->where('name', 'Blueberry Walnut Chia Pudding')->firstOrFail();
     $meal->ingredients()->sync([
-        $chia->id => ['amount_grams' => 25],
+        $base->id => ['amount_grams' => 25],
     ]);
 
-    app(BalancedCanonicalMealRecipeRefiner::class)->refine('Blueberry Walnut Chia Pudding');
+    app(BalancedChiaBreakfastRecipeRefiner::class)->refine('Blueberry Walnut Chia Pudding');
 
     $meal->refresh()->load('ingredients');
     $names = $meal->ingredients->pluck('name')->all();
 
     expect($names)->not->toContain('Protein Powder (Isolate)')
         ->and($names)->not->toContain('Almond Milk (Unsweetened)')
-        ->and($names)->toContain('Coconut Water')
-        ->and($names)->toContain('Pumpkin Seeds')
+        ->and($names)->toContain('Coconut Chia Pudding (Base)')
+        ->and($names)->toContain('Blueberries')
+        ->and($names)->toContain('Walnuts')
+        ->and($names)->not->toContain('Pumpkin Seeds')
         ->and($names)->toContain('Cinnamon');
 });
 

@@ -56,7 +56,7 @@ function seedBalancedDeckMealsForTest(): void
         'total_calories' => 276,
     ]);
     balancedDeckMeal('Tamarind Honey & Sesame Chicken w Garlicky Green Beans');
-    balancedDeckMeal('Grilled Rosemary Garlic Chicken Salad w Rocca & Red Pepper Dressing');
+    balancedDeckMeal(BalancedCanonicalMealRecipeRefiner::ROSEMARY_GARLIC_CHICKEN_PLATE_NAME);
     balancedDeckMeal(BalancedCanonicalMealRecipeRefiner::BAKED_SALMON_NAME);
     balancedDeckMeal('Vegan Butternut Squash, Lentil & Nut Stew w Brown Rice');
     balancedDeckMeal('Marinated Pineapple, Peppers, Red Onion & Cilantro Side Salad', [
@@ -155,7 +155,7 @@ test('adapted menu lists canonical breakfasts and mains before demoted library m
 
     expect($mainNames)->toBe([
         'Tamarind Honey & Sesame Chicken w Garlicky Green Beans',
-        'Grilled Rosemary Garlic Chicken Salad w Rocca & Red Pepper Dressing',
+        BalancedCanonicalMealRecipeRefiner::ROSEMARY_GARLIC_CHICKEN_PLATE_NAME,
         BalancedCanonicalMealRecipeRefiner::BAKED_SALMON_NAME,
         'Vegan Butternut Squash, Lentil & Nut Stew w Brown Rice',
     ]);

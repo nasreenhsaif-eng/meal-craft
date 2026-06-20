@@ -25,6 +25,7 @@ use App\Support\MealInstructionsText;
 use App\Support\MealLibraryBulkNutrition;
 use App\Support\MealLibraryTaxonomy;
 use App\Support\MenuDevelopmentCsv;
+use App\Support\SaladMealPresentation;
 use App\Support\SickleCellNutrientRdi;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -863,21 +864,21 @@ class MealLibraryController extends Controller
             ));
         }
 
-        $ingredientLines = [];
-        foreach ($meal->ingredients as $ingredient) {
-            $grams = (float) ($ingredient->pivot->amount_grams ?? 0);
+        $formatLine = function (Ingredient $ingredient, float $grams): string {
             if ($grams > 0) {
-                $g = $this->formatTrimmedDecimal($grams, 2);
-                $ingredientLines[] = "{$g}g {$ingredient->name}";
-            } else {
-                $ingredientLines[] = $ingredient->name;
+                return $this->formatTrimmedDecimal($grams, 2).'g '.$ingredient->name;
             }
-        }
+
+            return $ingredient->name;
+        };
+
+        $ingredientLines = SaladMealPresentation::orderedIngredientLinesForMeal($meal, $formatLine);
+
         if ($ingredientLines === []) {
             $ingredientLines = [__('No ingredients on file.')];
         }
 
-        return [
+        $payload = [
             'shortDescription' => $shortDescription,
             'cyclePhases' => $cyclePhases,
             'dietaryTags' => $dietaryTags,
@@ -890,6 +891,22 @@ class MealLibraryController extends Controller
             'imageUrl' => $this->mealImageUrl($meal),
             'imageAlt' => $meal->name,
         ];
+
+        if (SaladMealPresentation::isSaladMeal($meal)) {
+            $ingredientSections = SaladMealPresentation::ingredientSectionsForMeal($meal, $formatLine);
+
+            if ($ingredientSections !== []) {
+                $payload['ingredientSections'] = $ingredientSections;
+            }
+
+            $instructionSections = SaladMealPresentation::instructionSectionsForMeal($meal);
+
+            if ($instructionSections !== []) {
+                $payload['instructionSections'] = $instructionSections;
+            }
+        }
+
+        return $payload;
     }
 
     /**

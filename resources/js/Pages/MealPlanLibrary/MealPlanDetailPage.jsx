@@ -387,11 +387,11 @@ export default function MealPlanDetailPage({
                               aria-labelledby="meal-plan-detail-modal-title"
                               className="relative z-10 flex max-h-[min(92dvh,900px)] w-full max-w-2xl flex-col overflow-hidden rounded-t-[16px] bg-white shadow-2xl sm:rounded-[16px]"
                           >
-                              <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-5 py-4">
+                              <div className="flex shrink-0 items-start justify-between gap-4 border-b border-gray-100 px-5 py-4">
                                   <div className="min-w-0">
                                       <h2
                                           id="meal-plan-detail-modal-title"
-                                          className="font-montserrat text-lg font-bold text-[#262A22]"
+                                          className="break-words font-montserrat text-lg font-bold text-[#262A22]"
                                       >
                                           {mealDetailModal.title}
                                       </h2>
@@ -403,10 +403,7 @@ export default function MealPlanDetailPage({
                                       onClick={() => setMealDetailModal(null)}
                                   />
                               </div>
-                              <MealDetailView
-                                  meal={mealDetailModal.detailView}
-                                  className="max-h-[min(78vh,calc(100dvh-11rem))]"
-                              />
+                              <MealDetailView meal={mealDetailModal.detailView} embedded />
                           </div>
                       </div>,
                       document.body,

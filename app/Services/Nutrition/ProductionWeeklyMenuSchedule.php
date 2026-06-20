@@ -102,13 +102,13 @@ final class ProductionWeeklyMenuSchedule
                     : MealPlanSlotType::tryFrom((string) $row->slot_type);
                 $slotIndex = (int) $row->slot_index;
 
-                if ($slotType === MealPlanSlotType::Breakfast && $slotIndex === 1) {
+                if ($slotType === MealPlanSlotType::Breakfast && in_array($slotIndex, [1, 2], true)) {
                     $dayMenu['breakfasts'][] = $adapted;
-                } elseif ($slotType === MealPlanSlotType::Main && in_array($slotIndex, [1, 2], true)) {
+                } elseif ($slotType === MealPlanSlotType::Main && in_array($slotIndex, [1, 2, 3, 4], true)) {
                     $dayMenu['meals'][] = $adapted;
-                } elseif ($slotType === MealPlanSlotType::Salad && $slotIndex === 1) {
+                } elseif ($slotType === MealPlanSlotType::Salad && in_array($slotIndex, [1, 2], true)) {
                     $dayMenu['sideSalads'][] = $adapted;
-                } elseif ($slotType === MealPlanSlotType::Dessert && $slotIndex === 1) {
+                } elseif ($slotType === MealPlanSlotType::Dessert && in_array($slotIndex, [1, 2], true)) {
                     $dayMenu['desserts'][] = $adapted;
                 } elseif ($slotType === MealPlanSlotType::Soup) {
                     $dayMenu['soup'][] = $adapted;

@@ -53,13 +53,15 @@ export function filterMealsByCategory(source, mealTypeLabel) {
 export function soupOfTheDayMeals(source) {
     const soups = filterMealsByCategory(source, 'Soup');
 
-    const preferredNames = ['Vegan Mushroom Soup', 'Bone Broth Cup'];
+    const preferredNames = ['Bone Broth Cup'];
     const preferred = preferredNames
         .map((name) => soups.find((meal) => meal.title === name))
         .filter(Boolean);
 
-    if (preferred.length > 0) {
-        return preferred;
+    const rotating = soups.filter((meal) => meal.title !== 'Bone Broth Cup');
+
+    if (preferred.length > 0 && rotating.length > 0) {
+        return [rotating[0], ...preferred];
     }
 
     return soups.length > 0 ? soups.slice(0, 2) : [];
@@ -688,6 +690,8 @@ export default function ChooseYourMeals({
     panelClassName = 'h-[100dvh] min-h-screen',
 }) {
     const craftingSubtitle = `CRAFTING YOUR ${String(dayName).trim().toUpperCase()}`;
+    /** Daily option decks stay interactive whenever the parent wires selection (hides CRAFT THIS MEAL only in true read-only review). */
+    const categoryPickEnabled = typeof onToggleCategory === 'function' && !categoriesReadOnly;
 
     const [soupOptIn, setSoupOptIn] = useState(
         () => categoriesReadOnly || (categorySelections?.soup?.length ?? 0) > 0,
@@ -839,7 +843,7 @@ export default function ChooseYourMeals({
         const canRender =
             layout === 'categories' &&
             categorySelections &&
-            (categoriesReadOnly || typeof onToggleCategory === 'function') &&
+            (categoryPickEnabled || categoriesReadOnly) &&
             (hasAssigned || (meals?.length ?? 0) > 0);
 
         if (!canRender) {
@@ -873,8 +877,8 @@ export default function ChooseYourMeals({
                     cards={cards}
                     selectedIds={selectedIds}
                     maxSelected={max}
-                    readOnly={categoriesReadOnly}
-                    onSelect={categoriesReadOnly ? () => {} : (meal) => onToggleCategory?.(def.selectionKey, meal)}
+                    readOnly={!categoryPickEnabled}
+                    onSelect={categoryPickEnabled ? (meal) => onToggleCategory?.(def.selectionKey, meal) : () => {}}
                 />
             );
         });
@@ -888,6 +892,7 @@ export default function ChooseYourMeals({
         validationFlashKeys,
         assignedMealsByCategory,
         categoriesReadOnly,
+        categoryPickEnabled,
     ]);
 
     const soupDeckMeals = useMemo(() => {
@@ -909,7 +914,7 @@ export default function ChooseYourMeals({
         layout === 'categories' &&
         categorySelections &&
         soupSectionDef &&
-        (categoriesReadOnly || typeof onToggleCategory === 'function') &&
+        (categoryPickEnabled || categoriesReadOnly) &&
         soupDeckMeals.length > 0;
 
     const soupBlock = showSoupBlock ? (
@@ -917,7 +922,7 @@ export default function ChooseYourMeals({
                 className="relative isolate w-full overflow-x-clip overflow-y-visible py-0.5"
                 style={{ zIndex: 35 + FULL_CRAFT_CATEGORY_SECTIONS.length * 6 }}
             >
-                {!categoriesReadOnly ? (
+                {categoryPickEnabled ? (
                     <SoupOfTheDayOptIn
                         checked={soupOptIn}
                         header={soupSectionDef.header}
@@ -947,7 +952,7 @@ export default function ChooseYourMeals({
                             <MealSlotCarousel
                                 sectionStackOrder={FULL_CRAFT_CATEGORY_SECTIONS.length}
                                 deckOnly
-                                readOnly={categoriesReadOnly}
+                                readOnly={!categoryPickEnabled}
                                 title=""
                                 deckScopeKey={`${deckScopePrefix ? `${deckScopePrefix}-` : ''}${soupSectionDef.deckSuffix}`}
                                 cards={soupDeckMeals}
@@ -958,9 +963,9 @@ export default function ChooseYourMeals({
                                         : soupSectionDef.defaultMax
                                 }
                                 onSelect={
-                                    categoriesReadOnly
-                                        ? () => {}
-                                        : (meal) => onToggleCategory?.('soup', meal)
+                                    categoryPickEnabled
+                                        ? (meal) => onToggleCategory?.('soup', meal)
+                                        : () => {}
                                 }
                             />
                         </motion.div>

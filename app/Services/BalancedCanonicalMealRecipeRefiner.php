@@ -13,13 +13,17 @@ use InvalidArgumentException;
  */
 final class BalancedCanonicalMealRecipeRefiner
 {
-    public const BAKED_SALMON_LEGACY_NAME = 'Baked Salmon with Fermented Chimichurri & Steamed Basmati Rice';
+    public const BAKED_SALMON_NAME = 'Baked Salmon with Fermented Chimichurri & Steamed Basmati Rice';
 
-    public const BAKED_SALMON_NAME = 'Baked Salmon with Fermented Chimichurri & Quinoa';
+    public const BAKED_SALMON_QUINOA_LEGACY_NAME = 'Baked Salmon with Fermented Chimichurri & Quinoa';
 
     public const CARROT_DESSERT_LEGACY_NAME = 'Carrot Oatmeal Cake';
 
     public const CARROT_DESSERT_NAME = 'Carrot Walnut Spice Cake';
+
+    public const ROSEMARY_GARLIC_CHICKEN_PLATE_LEGACY_NAME = 'Grilled Rosemary Garlic Chicken Salad w Rocca & Red Pepper Dressing';
+
+    public const ROSEMARY_GARLIC_CHICKEN_PLATE_NAME = 'Rosemary Garlic Chicken w Mushroom, Spinach & Roasted Sweet Potato';
 
     /**
      * @return list<string> Meal names updated
@@ -35,15 +39,7 @@ final class BalancedCanonicalMealRecipeRefiner
                 }
 
                 /** @var Meal|null $meal */
-                $meal = Meal::queryForMealLibrary()
-                    ->when(
-                        $mealName === self::CARROT_DESSERT_NAME,
-                        fn ($query) => $query->whereIn('name', [self::CARROT_DESSERT_NAME, self::CARROT_DESSERT_LEGACY_NAME]),
-                        fn ($query) => $mealName === self::BAKED_SALMON_NAME
-                            ? $query->whereIn('name', [self::BAKED_SALMON_NAME, self::BAKED_SALMON_LEGACY_NAME])
-                            : $query->where('name', $mealName),
-                    )
-                    ->first();
+                $meal = $this->resolveMealForRefinement($mealName);
 
                 if ($meal === null) {
                     continue;
@@ -56,10 +52,17 @@ final class BalancedCanonicalMealRecipeRefiner
                     ]);
                 }
 
-                if ($mealName === self::BAKED_SALMON_NAME && $meal->name === self::BAKED_SALMON_LEGACY_NAME) {
+                if ($mealName === self::BAKED_SALMON_NAME && $meal->name === self::BAKED_SALMON_QUINOA_LEGACY_NAME) {
                     $meal->update([
                         'name' => self::BAKED_SALMON_NAME,
-                        'short_description' => 'Premium baked salmon with bright fermented chimichurri over fluffy quinoa and steamed broccoli.',
+                        'short_description' => 'Premium baked salmon with fermented chimichurri over fluffy steamed basmati rice and broccoli.',
+                    ]);
+                }
+
+                if ($mealName === self::ROSEMARY_GARLIC_CHICKEN_PLATE_NAME && $meal->name === self::ROSEMARY_GARLIC_CHICKEN_PLATE_LEGACY_NAME) {
+                    $meal->update([
+                        'name' => self::ROSEMARY_GARLIC_CHICKEN_PLATE_NAME,
+                        'short_description' => 'Grilled rosemary garlic chicken with sautéed mushrooms and spinach over roasted sweet potato wedges.',
                     ]);
                 }
 
@@ -69,6 +72,25 @@ final class BalancedCanonicalMealRecipeRefiner
 
             return $updated;
         });
+    }
+
+    private function resolveMealForRefinement(string $mealName): ?Meal
+    {
+        $query = Meal::queryForMealLibrary();
+
+        if ($mealName === self::CARROT_DESSERT_NAME) {
+            return $query->whereIn('name', [self::CARROT_DESSERT_NAME, self::CARROT_DESSERT_LEGACY_NAME])->first();
+        }
+
+        if ($mealName === self::BAKED_SALMON_NAME) {
+            return $query->whereIn('name', [self::BAKED_SALMON_NAME, self::BAKED_SALMON_QUINOA_LEGACY_NAME])->first();
+        }
+
+        if ($mealName === self::ROSEMARY_GARLIC_CHICKEN_PLATE_NAME) {
+            return $query->whereIn('name', [self::ROSEMARY_GARLIC_CHICKEN_PLATE_NAME, self::ROSEMARY_GARLIC_CHICKEN_PLATE_LEGACY_NAME])->first();
+        }
+
+        return $query->where('name', $mealName)->first();
     }
 
     /**
@@ -139,19 +161,6 @@ final class BalancedCanonicalMealRecipeRefiner
         $wholeFoodTags = WholeFoodDietPolicy::REQUIRED_MEAL_DIET_TAGS;
 
         return [
-            'Blueberry Walnut Chia Pudding' => [
-                'ingredients' => [
-                    'Chia Seeds' => 35,
-                    'Coconut Water' => 70,
-                    'Homemade Coconut Milk' => 50,
-                    'Blueberries' => 60,
-                    'Walnuts' => 8,
-                    'Pumpkin Seeds' => 12,
-                    'Fresh Mint' => 3,
-                    'Cinnamon' => 2,
-                ],
-                'diet_tags' => array_merge($wholeFoodTags, ['Vegan']),
-            ],
             'Mediterranean Omelet' => [
                 'ingredients' => [
                     'Egg' => 100,
@@ -163,9 +172,7 @@ final class BalancedCanonicalMealRecipeRefiner
                     'Basil' => 5,
                     'Parsley' => 5,
                     'Thyme (Fresh)' => 2,
-                    'Ghee' => 3,
-                    'Olive Oil (Extra Virgin)' => 3,
-                    'Sea Salt' => 1,
+                    'Olive Oil (Extra Virgin)' => 6,
                     'Black Pepper' => 1,
                 ],
                 'diet_tags' => array_merge($wholeFoodTags, ['Vegetarian']),
@@ -173,10 +180,10 @@ final class BalancedCanonicalMealRecipeRefiner
             'Tamarind Honey & Sesame Chicken w Garlicky Green Beans' => [
                 'ingredients' => [
                     'Chicken thigh' => 100,
-                    'Green Beans' => 80,
+                    'Garlicky Green Beans (Base)' => 85,
                     'Broccoli' => 60,
-                    'Cucumber Pickle (Base)' => 30,
-                    'Garlic (Raw)' => 6,
+                    'Cucumber' => 25,
+                    'Garlic (Raw)' => 2,
                     'Ginger (Raw)' => 3,
                     'Tamarind Paste' => 18,
                     'Rice Vinegar' => 4,
@@ -184,29 +191,26 @@ final class BalancedCanonicalMealRecipeRefiner
                     'Sesame Oil' => 2,
                     'Sesame Seeds' => 2,
                     'Spring Onion' => 20,
-                    'Sea Salt' => 1,
                 ],
                 'diet_tags' => $wholeFoodTags,
             ],
-            'Grilled Rosemary Garlic Chicken Salad w Rocca & Red Pepper Dressing' => [
+            self::ROSEMARY_GARLIC_CHICKEN_PLATE_NAME => [
                 'ingredients' => [
                     'Rosemary Garlic Chicken (Base)' => 95,
-                    'Rocca' => 40,
-                    'Roasted Cherry Tomato (Base)' => 40,
-                    'Red Pepper Dressing (Base)' => 20,
-                    'Walnuts' => 10,
-                    'Fresh Basil' => 4,
-                    'Parsley' => 4,
+                    'Sweet Potato' => 85,
+                    'Spinach (Fresh)' => 55,
+                    'Mushrooms' => 45,
+                    'Olive Oil (Extra Virgin)' => 4,
+                    'Black Pepper' => 0.5,
                 ],
                 'diet_tags' => $wholeFoodTags,
             ],
             self::BAKED_SALMON_NAME => [
                 'ingredients' => [
                     'Salmon' => 125,
-                    'Quinoa (Base)' => 80,
+                    'Steamed Basmati Rice (Base)' => 75,
                     'Broccoli' => 60,
-                    'Fermented Chimichurri (Base)' => 25,
-                    'Fresh Coriander' => 2,
+                    'Fermented Chimichurri (Base)' => 22,
                 ],
                 'diet_tags' => $wholeFoodTags,
             ],
@@ -221,6 +225,7 @@ final class BalancedCanonicalMealRecipeRefiner
                     'Zucchini' => 35,
                     'Spinach (Fresh)' => 20,
                     'Tomato (Raw)' => 60,
+                    'White Onion' => 25,
                     'Garlic (Raw)' => 9,
                     'Almond Butter' => 11,
                     'Walnuts' => 8,
@@ -229,8 +234,8 @@ final class BalancedCanonicalMealRecipeRefiner
                     'Turmeric Powder' => 1,
                     'Olive Oil' => 3,
                     'Lime Juice' => 10,
-                    'Vegetable Stock' => 150,
-                    'Sea Salt' => 1,
+                    'Water (Filtered)' => 120,
+                    'Vegetable Stock' => 30,
                     'Black Pepper' => 1,
                 ],
                 'diet_tags' => array_merge($wholeFoodTags, ['Vegan']),
@@ -261,7 +266,6 @@ final class BalancedCanonicalMealRecipeRefiner
                     'Fresh Mint' => 5,
                     'Olive Oil' => 4,
                     'Lemon Juice' => 8,
-                    'Sea Salt' => 0.5,
                 ],
                 'diet_tags' => array_merge($wholeFoodTags, ['Vegan']),
             ],
@@ -295,7 +299,8 @@ final class BalancedCanonicalMealRecipeRefiner
                     'Wild Rice (Cooked)' => 70,
                     'White Onion' => 30,
                     'Homemade Coconut Milk' => 25,
-                    'Vegetable Stock' => 180,
+                    'Water (Filtered)' => 140,
+                    'Vegetable Stock' => 40,
                     'Garlic' => 3,
                     'Olive Oil' => 3,
                     'Turmeric Powder' => 2,
@@ -303,9 +308,85 @@ final class BalancedCanonicalMealRecipeRefiner
                 ],
                 'diet_tags' => array_merge($wholeFoodTags, ['Vegan']),
             ],
+            'Tomato Basil Soup' => [
+                'ingredients' => [
+                    'Tomato (Raw)' => 250,
+                    'Fresh Basil' => 12,
+                    'Garlic' => 4,
+                    'Olive Oil' => 4,
+                    'Water (Filtered)' => 150,
+                    'Vegetable Broth (Base)' => 50,
+                    'White Onion' => 35,
+                    'Smoked Paprika' => 1,
+                ],
+                'diet_tags' => array_merge($wholeFoodTags, ['Vegan']),
+            ],
+            'Red Lentil Turmeric Soup' => [
+                'ingredients' => [
+                    'Lentils (Red)' => 80,
+                    'Carrots' => 80,
+                    'Spinach (Fresh)' => 40,
+                    'Turmeric Powder' => 2,
+                    'Ginger (Raw)' => 8,
+                    'Garlic' => 4,
+                    'Cumin Seeds' => 2,
+                    'Water (Filtered)' => 150,
+                    'Vegetable Broth (Base)' => 50,
+                    'Olive Oil' => 3,
+                    'Lemon Juice' => 8,
+                    'White Onion' => 30,
+                ],
+                'diet_tags' => array_merge($wholeFoodTags, ['Vegan']),
+            ],
+            'Cauliflower Ginger Soup' => [
+                'ingredients' => [
+                    'Cauliflower Florets' => 220,
+                    'Ginger (Raw)' => 12,
+                    'Homemade Coconut Milk' => 40,
+                    'Water (Filtered)' => 110,
+                    'Vegetable Stock' => 40,
+                    'White Onion' => 30,
+                    'Garlic' => 4,
+                    'Olive Oil' => 4,
+                    'Turmeric Powder' => 2,
+                    'Black Pepper' => 1,
+                ],
+                'diet_tags' => array_merge($wholeFoodTags, ['Vegan']),
+            ],
+            'Carrot Cumin Soup' => [
+                'ingredients' => [
+                    'Carrots' => 150,
+                    'French Lentils' => 70,
+                    'Cumin Seeds' => 3,
+                    'Coriander Seeds' => 2,
+                    'Water (Filtered)' => 130,
+                    'Vegetable Broth (Base)' => 50,
+                    'White Onion' => 35,
+                    'Garlic' => 4,
+                    'Olive Oil' => 4,
+                    'Fresh Parsley' => 5,
+                    'Lemon Juice' => 8,
+                ],
+                'diet_tags' => array_merge($wholeFoodTags, ['Vegan']),
+            ],
+            'Sweet Potato Fennel Soup' => [
+                'ingredients' => [
+                    'Sweet Potato' => 120,
+                    'Fennel Bulb' => 80,
+                    'Homemade Coconut Milk' => 35,
+                    'Water (Filtered)' => 130,
+                    'Vegetable Broth (Base)' => 50,
+                    'White Onion' => 30,
+                    'Ginger (Raw)' => 10,
+                    'Garlic' => 3,
+                    'Olive Oil' => 4,
+                    'Turmeric Powder' => 2,
+                ],
+                'diet_tags' => array_merge($wholeFoodTags, ['Vegan']),
+            ],
             BalancedMealLibraryConfigurator::BONE_BROTH_MEAL_NAME => [
                 'ingredients' => [
-                    'Bone Broth (Base)' => 240,
+                    'Bone Broth (Base)' => 120,
                 ],
                 'diet_tags' => $wholeFoodTags,
             ],
