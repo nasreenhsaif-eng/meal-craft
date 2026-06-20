@@ -22,7 +22,7 @@ test('authenticated user downloads meal craft csv template with canonical header
     $headerCells = str_getcsv($lines[0]);
     expect($headerCells)->toBe(MealCraftMasterCsvExport::MEAL_CRAFT_CSV_TEMPLATE_HEADERS);
 
-    expect($lines[1])->toContain('Coconut Chicken Curry')
-        ->and($lines[1])->toContain('Chicken thigh (500g)')
-        ->and($lines[1])->toContain('Coconut milk (400ml)');
+    expect($lines[1])->toContain('Thai Red Curry Chicken w Roasted Pumpkin')
+        ->and($lines[1])->toContain('Chicken Breast (100g)')
+        ->and($lines[1])->toContain('Red Thai Curry Paste (Base) (45g)');
 });

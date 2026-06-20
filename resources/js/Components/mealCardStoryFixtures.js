@@ -2,7 +2,7 @@
  * Rich mock meals for Storybook / demos. Maps cleanly onto {@link MealCard} via the optional `meal` prop.
  *
  * `mushroomOmeletteAdminMealFixture` was aligned with an older master CSV sample; see
- * `public/templates/meal-craft-master-template.csv` for the current admin CSV template (Coconut Chicken Curry sample row).
+ * `public/templates/meal-craft-master-template.csv` for the current admin CSV template (Thai Red Curry Chicken sample row).
  *
  * @typedef {object} MealCardStoryMeal
  * @property {string} title

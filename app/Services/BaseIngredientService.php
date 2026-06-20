@@ -21,6 +21,7 @@ final class BaseIngredientService
     /**
      * @param  array<int, array{ingredient_id: int, amount_grams: float}>  $componentRows
      * @param  array<string, string|null>|null  $libraryText  When set, may include {@code description}, {@code instructions}, and/or {@code image_path} keys to upsert (empty string → null).
+     * @param  array<string, float|int|string|null>|null  $storedPer100g  When set, use these per-100 g (or per-100 ml when density is 1) macros instead of rolling up from components.
      */
     public function upsert(
         ?Ingredient $existing,
@@ -28,6 +29,7 @@ final class BaseIngredientService
         array $componentRows,
         ?float $finishedWeightGrams = null,
         ?array $libraryText = null,
+        ?array $storedPer100g = null,
     ): Ingredient {
         $name = trim($name);
         if ($name === '') {
@@ -71,7 +73,9 @@ final class BaseIngredientService
             throw new InvalidArgumentException(__('Total component weight must be greater than zero.'));
         }
 
-        $attrs = $this->ingredientAttributesFromBatch($name, $batchNutrition, $divisorGrams);
+        $attrs = $storedPer100g !== null
+            ? $this->ingredientAttributesFromStoredPer100g($name, $storedPer100g)
+            : $this->ingredientAttributesFromBatch($name, $batchNutrition, $divisorGrams);
         if ($libraryText !== null) {
             foreach (['description', 'instructions', 'image_path'] as $key) {
                 if (array_key_exists($key, $libraryText)) {
@@ -108,6 +112,51 @@ final class BaseIngredientService
 
             return $ingredient->fresh(['components']);
         });
+    }
+
+    /**
+     * @param  array<string, float|int|string|null>  $storedPer100g
+     * @return array<string, mixed>
+     */
+    private function ingredientAttributesFromStoredPer100g(string $name, array $storedPer100g): array
+    {
+        $microKeys = [
+            'fiber',
+            'sugar',
+            'calcium',
+            'potassium',
+            'sodium',
+            'zinc',
+            'vitamin_c',
+            'vitamin_a',
+            'vitamin_e',
+            'vitamin_d',
+            'vitamin_k2',
+        ];
+
+        $micros = [];
+        foreach ($microKeys as $key) {
+            $micros[$key] = round((float) ($storedPer100g[$key] ?? 0), 4);
+        }
+
+        return [
+            'name' => $name,
+            'usda_food_category' => IngredientLibraryCategory::BaseIngredient,
+            'fdc_id' => null,
+            'calories' => round((float) ($storedPer100g['calories'] ?? 0), 2),
+            'protein' => round((float) ($storedPer100g['protein'] ?? 0), 2),
+            'carbs' => round((float) ($storedPer100g['carbs'] ?? 0), 2),
+            'fat' => round((float) ($storedPer100g['fat'] ?? 0), 2),
+            'b6' => round((float) ($storedPer100g['b6'] ?? 0), 4),
+            'b9_folate' => round((float) ($storedPer100g['b9_folate'] ?? 0), 4),
+            'b12' => round((float) ($storedPer100g['b12'] ?? 0), 4),
+            'iron' => round((float) ($storedPer100g['iron'] ?? 0), 4),
+            'magnesium' => round((float) ($storedPer100g['magnesium'] ?? 0), 4),
+            'density' => 1.0,
+            'is_verified' => true,
+            'micronutrients' => $micros,
+            'source_meal_id' => null,
+        ];
     }
 
     /**

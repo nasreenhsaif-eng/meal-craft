@@ -32,10 +32,10 @@ function seedBalancedDeckMealsForTest(): void
     Ingredient::query()->create([
         'name' => 'Bone Broth (Base)',
         'usda_food_category' => 'Base Ingredient',
-        'calories' => 63,
-        'protein' => 5.8,
-        'carbs' => 0.6,
-        'fat' => 4,
+        'calories' => 18,
+        'protein' => 3.2,
+        'carbs' => 0.4,
+        'fat' => 0.2,
         'b6' => 0,
         'b9_folate' => 0,
         'b12' => 0,
@@ -69,7 +69,7 @@ function seedBalancedDeckMealsForTest(): void
         'meal_type' => MealType::Salad,
         'total_calories' => 175,
     ]);
-    balancedDeckMeal('Carrot Walnut Spice Cake', [
+    balancedDeckMeal(BalancedCanonicalMealRecipeRefiner::CARROT_DESSERT_NAME, [
         'category' => RecipeCategory::Dessert,
         'meal_type' => MealType::Dessert,
         'total_calories' => 170,
@@ -112,12 +112,13 @@ test('balanced configurator creates bone broth cup soup meal', function (): void
 
     app(BalancedMealLibraryConfigurator::class)->configure();
 
-    $meal = Meal::queryForMealLibrary()->where('name', BalancedMealLibraryConfigurator::BONE_BROTH_MEAL_NAME)->first();
+    $meal = Meal::queryForMealLibrary()->where('name', BalancedMealLibraryConfigurator::BONE_BROTH_MEAL_NAME)->with('ingredients')->first();
 
     expect($meal)->not->toBeNull()
         ->and($meal->meal_type)->toBe(MealType::Soup)
-        ->and((float) $meal->total_calories)->toBeGreaterThan(100.0)
-        ->and((float) $meal->total_calories)->toBeLessThan(200.0);
+        ->and((float) $meal->ingredients->first()->pivot->amount_grams)->toBe(BalancedMealLibraryConfigurator::BONE_BROTH_SERVING_GRAMS)
+        ->and((float) $meal->total_calories)->toBeGreaterThan(70.0)
+        ->and((float) $meal->total_calories)->toBeLessThan(120.0);
 });
 
 test('adapted menu lists canonical breakfasts and mains before demoted library meals', function (): void {

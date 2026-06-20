@@ -147,6 +147,12 @@ final class RecipeNutritionCalculator
         $ingredient->loadMissing('components');
 
         if ($ingredient->isPreparedBaseIngredient() && $ingredient->components->isNotEmpty()) {
+            $stored = self::per100gFromStoredColumns($ingredient);
+
+            if (self::per100gHasMeaningfulCalories($stored)) {
+                return $stored;
+            }
+
             $fromFormulation = self::per100gFromComponentFormulation($ingredient);
             if (self::per100gHasMeaningfulCalories($fromFormulation)) {
                 return $fromFormulation;

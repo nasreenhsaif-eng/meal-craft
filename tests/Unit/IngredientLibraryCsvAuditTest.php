@@ -36,7 +36,7 @@ test('master ingredients csv excludes junk and duplicate rows', function (): voi
     expect($names)->not->toContain('Test Export')
         ->and($names)->not->toContain('Base Soup')
         ->and($names)->not->toContain('Rice')
-        ->and($names)->not->toContain('Coconut Chicken Curry')
+        ->and($names)->not->toContain('Thai Red Curry Chicken w Roasted Pumpkin')
         ->and($names)->not->toContain('Gochugaru (Chili)')
         ->and($names)->not->toContain('coriander powder')
         ->and($names)->not->toContain('Cacao Powder')

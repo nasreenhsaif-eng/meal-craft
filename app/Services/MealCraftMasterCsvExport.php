@@ -366,25 +366,25 @@ final class MealCraftMasterCsvExport
 
         fputcsv($handle, self::MEAL_CRAFT_CSV_TEMPLATE_HEADERS, ',', '"', '\\');
         fputcsv($handle, [
-            'Coconut Chicken Curry',
+            'Thai Red Curry Chicken w Roasted Pumpkin',
             'Meal',
-            'Chicken thigh (500g) | Coconut milk (400ml) | Red curry paste (45g) | Fish sauce (15ml) | Palm sugar (8g) | Jasmine rice (200g) | Thai basil (10g)',
-            '620',
-            '48',
-            '42',
-            '22',
+            'Chicken Breast (100g) | Coconut Milk (35g) | Fresh Coriander (5g) | Palm sugar (2g) | Pumpkin (90g) | Red Thai Curry Paste (Base) (45g)',
+            '350',
+            '32',
+            '28',
+            '12',
             '',
             '',
             '',
             '',
             'false',
-            '4',
+            '5',
             'Balanced',
             'Follicular',
             '',
             '/images/meals/coconut-chicken-curry.jpg',
-            'Rich red curry with coconut milk and tender chicken; serve over jasmine rice with fresh Thai basil.',
-            'Brown chicken | Simmer curry with coconut milk | Finish with basil; serve hot over jasmine rice.',
+            'Red Thai curry with seared chicken breast, roasted pumpkin, and fresh coriander.',
+            'Roast pumpkin | Sear chicken | Simmer with red Thai curry paste and coconut milk | Finish with palm sugar and coriander.',
         ], ',', '"', '\\');
         rewind($handle);
         $csv = stream_get_contents($handle) ?: '';

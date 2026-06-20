@@ -16,6 +16,9 @@ final class BalancedMealLibraryConfigurator
 {
     public const BONE_BROTH_MEAL_NAME = 'Bone Broth Cup';
 
+    /** One customer serving = 500 ml (≈ 500 g) of finished defatted broth. */
+    public const BONE_BROTH_SERVING_GRAMS = 500.0;
+
     public const NON_CANONICAL_SORT_BASE = 100;
 
     /**
@@ -200,13 +203,13 @@ final class BalancedMealLibraryConfigurator
             return false;
         }
 
-        $portionGrams = 240.0;
+        $portionGrams = self::BONE_BROTH_SERVING_GRAMS;
 
         $meal = Meal::query()->create([
             'name' => self::BONE_BROTH_MEAL_NAME,
             'category' => RecipeCategory::Soup,
             'meal_type' => MealType::Soup,
-            'short_description' => 'Long-simmered gelatin-rich bone broth — warming protein-rich add-on.',
+            'short_description' => '500 ml cup of defatted house bone broth — long-simmered and gelatin-rich.',
             'instructions' => 'Heat gently and serve in a mug or bowl.',
             'meal_plan_tags' => ['Balanced'],
             'meal_plan_tag' => 'Balanced',

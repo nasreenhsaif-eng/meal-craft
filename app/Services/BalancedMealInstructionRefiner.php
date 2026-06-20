@@ -141,10 +141,10 @@ final class BalancedMealInstructionRefiner
                 'Serve fritters with sauce and eggs.',
             ]),
             'Smashed Beans & Eggs' => $this->steps([
-                'Warm beans in a pan with a splash of water until soft.',
-                'Mash lightly with a fork, leaving some texture.',
-                'Fry or poach eggs separately.',
-                'Spoon beans onto plates, top with eggs and fresh herbs.',
+                'Prepare Smashed White Beans (Base) per base recipe instructions.',
+                'Dice tomato and chop fresh coriander.',
+                'Fry or poach eggs until whites are set and yolks are runny.',
+                'Spoon warm smashed beans onto plates, top with eggs, tomato, and coriander.',
                 'Serve immediately.',
             ]),
 
@@ -293,9 +293,9 @@ final class BalancedMealInstructionRefiner
             // Vegan mains
             'Vegan Butternut Squash, Lentil & Nut Stew w Brown Rice' => $this->steps([
                 'Cook brown rice. Keep warm.',
-                'Sauté onion, garlic, and squash cubes for 5 minutes.',
+                'Sauté garlic, squash, bell pepper, and mushrooms for 5 minutes.',
                 'Add lentils, tomato, stock, and spices. Simmer 25–30 minutes until lentils are soft.',
-                'Stir in spinach and almond butter until creamy.',
+                'Stir in spinach, peanut butter, and crushed peanuts until creamy.',
                 'Serve stew over rice with lime juice on top.',
             ]),
             'Vegan Smoky Cauliflower & Lentil Stew w Quinoa Bread & Tahini' => $this->steps([
@@ -341,7 +341,7 @@ final class BalancedMealInstructionRefiner
                 'Dice pineapple, pepper, cucumber, and red onion.',
                 'Toss with thinly sliced cabbage and dressing.',
                 'Refrigerate 15–30 minutes to meld flavours.',
-                'Add avocado and coriander before serving.',
+                'Add coriander and chilli before serving.',
             ]),
             'Tomato Parsely Salad w Sumac Za’ater Dressing' => $this->steps([
                 'Halve or wedge tomatoes. Thinly slice red onion.',
@@ -383,10 +383,11 @@ final class BalancedMealInstructionRefiner
 
             // Desserts
             BalancedCanonicalMealRecipeRefiner::CARROT_DESSERT_NAME => $this->steps([
-                'Heat oven to 175°C (350°F). Grease a small baking dish.',
-                'Grate carrots. Mix with eggs, walnuts, honey, cinnamon, and coconut.',
-                'Pour into dish. Bake 25–30 minutes until set.',
-                'Cool slightly before serving.',
+                'Heat oven to 175°C (350°F). Grease a baking pan with ghee.',
+                'Whisk eggs, date syrup, melted ghee, and coconut cream until smooth.',
+                'Fold in grated carrots, almond flour, tapioca starch, coconut flour, cinnamon, nutmeg, walnuts, and raisins.',
+                'Pour into the pan. Bake 30–35 minutes until set and golden.',
+                'Cool, then cut into '.BalancedCanonicalMealRecipeRefiner::CARROT_DESSERT_SERVINGS_COUNT.' equal slices. One slice is one serving.',
             ]),
             'Chocolate Orange Brownie (N)' => $this->steps([
                 'Heat oven to 175°C. Line a small tin.',
@@ -433,7 +434,7 @@ final class BalancedMealInstructionRefiner
                 'Add garlic, thyme, and turmeric. Cook 1 minute.',
                 'Pour in stock and coconut milk. Simmer 15 minutes.',
                 'Blend partially for a creamy texture, or leave chunky.',
-                'Stir in cooked wild rice. Serve hot.',
+                'Serve hot.',
             ]),
             'Butternut Squash Soup' => $this->steps([
                 'Sauté onion in oil until soft.',
@@ -472,7 +473,8 @@ final class BalancedMealInstructionRefiner
                 'Reheat and serve.',
             ]),
             BalancedMealLibraryConfigurator::BONE_BROTH_MEAL_NAME => $this->steps([
-                'Pour bone broth into a small pot.',
+                'Measure 500 ml (one serving) of defatted Bone Broth (Base).',
+                'Pour into a small pot.',
                 'Heat gently on the stove until steaming (do not boil hard).',
                 'Pour into a mug or bowl and serve hot.',
             ]),

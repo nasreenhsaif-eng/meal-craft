@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Ingredient;
 use App\Models\Meal;
+use App\Support\MealLibraryBulkNutrition;
 use App\Support\WholeFoodDietPolicy;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -19,7 +20,15 @@ final class BalancedCanonicalMealRecipeRefiner
 
     public const CARROT_DESSERT_LEGACY_NAME = 'Carrot Oatmeal Cake';
 
-    public const CARROT_DESSERT_NAME = 'Carrot Walnut Spice Cake';
+    /** @var list<string> */
+    public const CARROT_DESSERT_PREVIOUS_NAMES = [
+        'Carrot Oatmeal Cake',
+        'Carrot Walnut Spice Cake',
+    ];
+
+    public const CARROT_DESSERT_NAME = 'Carrot Walnut Raisin Spice Cake';
+
+    public const CARROT_DESSERT_SERVINGS_COUNT = 8;
 
     public const ROSEMARY_GARLIC_CHICKEN_PLATE_LEGACY_NAME = 'Grilled Rosemary Garlic Chicken Salad w Rocca & Red Pepper Dressing';
 
@@ -45,10 +54,10 @@ final class BalancedCanonicalMealRecipeRefiner
                     continue;
                 }
 
-                if ($mealName === self::CARROT_DESSERT_NAME && $meal->name === self::CARROT_DESSERT_LEGACY_NAME) {
+                if ($mealName === self::CARROT_DESSERT_NAME && in_array($meal->name, self::CARROT_DESSERT_PREVIOUS_NAMES, true)) {
                     $meal->update([
                         'name' => self::CARROT_DESSERT_NAME,
-                        'short_description' => 'Moist whole-food carrot bake with walnuts, warm cinnamon, and raw honey.',
+                        'short_description' => 'Moist gluten-free carrot cake with almond and coconut flours, walnuts, raisins, warm spices, date syrup, and ghee.',
                     ]);
                 }
 
@@ -66,7 +75,14 @@ final class BalancedCanonicalMealRecipeRefiner
                     ]);
                 }
 
-                $this->syncMealIngredients($meal, $definition['ingredients'], $definition['diet_tags'] ?? null);
+                $this->syncMealIngredients(
+                    $meal,
+                    $definition['ingredients'],
+                    $definition['diet_tags'] ?? null,
+                    $definition['short_description'] ?? null,
+                    ($definition['is_bulk'] ?? false) ? true : null,
+                    isset($definition['servings_count']) ? (float) $definition['servings_count'] : null,
+                );
                 $updated[] = $meal->fresh()->name;
             }
 
@@ -79,7 +95,7 @@ final class BalancedCanonicalMealRecipeRefiner
         $query = Meal::queryForMealLibrary();
 
         if ($mealName === self::CARROT_DESSERT_NAME) {
-            return $query->whereIn('name', [self::CARROT_DESSERT_NAME, self::CARROT_DESSERT_LEGACY_NAME])->first();
+            return $query->whereIn('name', [self::CARROT_DESSERT_NAME, ...self::CARROT_DESSERT_PREVIOUS_NAMES])->first();
         }
 
         if ($mealName === self::BAKED_SALMON_NAME) {
@@ -97,8 +113,14 @@ final class BalancedCanonicalMealRecipeRefiner
      * @param  array<string, float>  $ingredientGrams
      * @param  list<string>|null  $dietTags
      */
-    private function syncMealIngredients(Meal $meal, array $ingredientGrams, ?array $dietTags = null): void
-    {
+    private function syncMealIngredients(
+        Meal $meal,
+        array $ingredientGrams,
+        ?array $dietTags = null,
+        ?string $shortDescription = null,
+        ?bool $isBulk = null,
+        ?float $servingsCount = null,
+    ): void {
         $sync = [];
 
         foreach ($ingredientGrams as $ingredientName => $grams) {
@@ -131,15 +153,39 @@ final class BalancedCanonicalMealRecipeRefiner
         $meal->ingredients()->sync($sync);
 
         $fresh = $meal->fresh(['ingredients']);
-        $nutrition = RecipeNutritionCalculator::fromMeal($fresh);
+        $batchNutrition = RecipeNutritionCalculator::fromMeal($fresh);
 
-        $update = array_merge(
-            Meal::nutritionSummaryToPersistedAttributes($nutrition),
-            ['nutrition_aggregates_synced' => true],
-        );
+        if ($isBulk === true && $servingsCount !== null && $servingsCount > 0) {
+            $nutritionResolution = MealLibraryBulkNutrition::resolvePersistedNutrition(
+                $batchNutrition,
+                true,
+                $servingsCount,
+                null,
+                true,
+            );
+
+            $update = array_merge(
+                $nutritionResolution['attributes'],
+                [
+                    'nutrition_aggregates_synced' => $nutritionResolution['nutrition_aggregates_synced'],
+                    'sickle_cell_program_highlight' => $nutritionResolution['sickle_cell_program_highlight'],
+                    'is_bulk' => true,
+                    'servings_count' => $servingsCount,
+                ],
+            );
+        } else {
+            $update = array_merge(
+                Meal::nutritionSummaryToPersistedAttributes($batchNutrition),
+                ['nutrition_aggregates_synced' => true],
+            );
+        }
 
         if ($dietTags !== null) {
             $update['diet_tags'] = $dietTags;
+        }
+
+        if ($shortDescription !== null) {
+            $update['short_description'] = $shortDescription;
         }
 
         $meal->update($update);
@@ -222,13 +268,11 @@ final class BalancedCanonicalMealRecipeRefiner
                     'Bell Pepper (Red)' => 40,
                     'Cabbage (Purple)' => 15,
                     'Mushrooms' => 35,
-                    'Zucchini' => 35,
                     'Spinach (Fresh)' => 20,
                     'Tomato (Raw)' => 60,
-                    'White Onion' => 25,
                     'Garlic (Raw)' => 9,
-                    'Almond Butter' => 11,
-                    'Walnuts' => 8,
+                    'Peanut Butter' => 11,
+                    'Peanuts (Crushed)' => 8,
                     'Coriander Seeds' => 2,
                     'Chili Flakes' => 1,
                     'Turmeric Powder' => 1,
@@ -239,6 +283,7 @@ final class BalancedCanonicalMealRecipeRefiner
                     'Black Pepper' => 1,
                 ],
                 'diet_tags' => array_merge($wholeFoodTags, ['Vegan']),
+                'short_description' => 'A rich plant-based stew with red lentils, peanut butter, and crushed peanuts over brown rice.',
             ],
             'Marinated Pineapple, Peppers, Red Onion & Cilantro Side Salad' => [
                 'ingredients' => [
@@ -247,7 +292,6 @@ final class BalancedCanonicalMealRecipeRefiner
                     'Cabbage (Purple)' => 45,
                     'Cucumber' => 35,
                     'Red Onion' => 12,
-                    'Avocado' => 20,
                     'Fresh Coriander' => 4,
                     'Red Thai Chillies' => 2,
                     'Zesty Lime Chili Salad Dressing (Base)' => 12,
@@ -270,15 +314,11 @@ final class BalancedCanonicalMealRecipeRefiner
                 'diet_tags' => array_merge($wholeFoodTags, ['Vegan']),
             ],
             self::CARROT_DESSERT_NAME => [
-                'ingredients' => [
-                    'Carrots' => 70,
-                    'Egg' => 55,
-                    'Walnuts' => 18,
-                    'Cinnamon' => 2,
-                    'Honey (Raw)' => 6,
-                    'Coconut Meat' => 15,
-                ],
+                'ingredients' => $this->carrotDessertBatchIngredients(),
+                'is_bulk' => true,
+                'servings_count' => self::CARROT_DESSERT_SERVINGS_COUNT,
                 'diet_tags' => array_merge($wholeFoodTags, ['Vegetarian']),
+                'short_description' => 'Moist gluten-free carrot cake batch (8 slices) with almond and coconut flours, walnuts, raisins, warm spices, date syrup, and ghee.',
             ],
             'Fruit Salad Bowl' => [
                 'ingredients' => [
@@ -296,7 +336,6 @@ final class BalancedCanonicalMealRecipeRefiner
             'Vegan Mushroom Soup' => [
                 'ingredients' => [
                     'Mushrooms' => 200,
-                    'Wild Rice (Cooked)' => 70,
                     'White Onion' => 30,
                     'Homemade Coconut Milk' => 25,
                     'Water (Filtered)' => 140,
@@ -386,10 +425,46 @@ final class BalancedCanonicalMealRecipeRefiner
             ],
             BalancedMealLibraryConfigurator::BONE_BROTH_MEAL_NAME => [
                 'ingredients' => [
-                    'Bone Broth (Base)' => 120,
+                    'Bone Broth (Base)' => BalancedMealLibraryConfigurator::BONE_BROTH_SERVING_GRAMS,
                 ],
                 'diet_tags' => $wholeFoodTags,
+                'short_description' => '500 ml cup of defatted house bone broth — long-simmered and gelatin-rich.',
             ],
         ];
+    }
+
+    /**
+     * @return array<string, float>
+     */
+    private function carrotDessertPerServingIngredients(): array
+    {
+        return [
+            'Carrots' => 75,
+            'Egg' => 100,
+            'Almond Flour (Base)' => 40,
+            'Tapioca Starch' => 12,
+            'Coconut Flour' => 8,
+            'Walnuts' => 12,
+            'Raisins' => 12,
+            'Cinnamon' => 2,
+            'Nutmeg' => 0.5,
+            'Date Syrup' => 18,
+            'Coconut Cream' => 20,
+            'Ghee' => 12,
+        ];
+    }
+
+    /**
+     * @return array<string, float>
+     */
+    private function carrotDessertBatchIngredients(): array
+    {
+        $batch = [];
+
+        foreach ($this->carrotDessertPerServingIngredients() as $ingredientName => $grams) {
+            $batch[$ingredientName] = round($grams * self::CARROT_DESSERT_SERVINGS_COUNT, 4);
+        }
+
+        return $batch;
     }
 }

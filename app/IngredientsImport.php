@@ -441,6 +441,7 @@ final class IngredientsImport
             $componentRows,
             $finished !== null && $finished > 0 ? $finished : null,
             $libraryText,
+            $this->explicitStoredPer100gFromBaseRecipeRecord($record),
         );
 
         $explicitG6pd = $this->recordIsTruthy($record['g6pd_trigger'] ?? null);
@@ -462,6 +463,45 @@ final class IngredientsImport
         } elseif (array_key_exists('g6pd_trigger', $record)) {
             $ingredient->update(['is_g6pd_trigger' => false]);
         }
+    }
+
+    /**
+     * When a base-recipe CSV row includes explicit per-100 g macros, prefer them over component rollup.
+     *
+     * @param  array<string, mixed>  $record
+     * @return array<string, float>|null
+     */
+    private function explicitStoredPer100gFromBaseRecipeRecord(array $record): ?array
+    {
+        $calories = $this->toFloat($record['calories'] ?? null);
+        if ($calories === null || $calories <= 0) {
+            return null;
+        }
+
+        $attrs = $this->mapRecordToIngredientAttributes($record);
+
+        return [
+            'calories' => (float) $attrs['calories'],
+            'protein' => (float) $attrs['protein'],
+            'carbs' => (float) $attrs['carbs'],
+            'fat' => (float) $attrs['fat'],
+            'b6' => (float) $attrs['b6'],
+            'b9_folate' => (float) $attrs['b9_folate'],
+            'b12' => (float) $attrs['b12'],
+            'iron' => (float) $attrs['iron'],
+            'magnesium' => (float) $attrs['magnesium'],
+            'fiber' => (float) ($attrs['micronutrients']['fiber'] ?? 0),
+            'sugar' => (float) ($attrs['micronutrients']['sugar'] ?? 0),
+            'calcium' => (float) ($attrs['micronutrients']['calcium'] ?? 0),
+            'potassium' => (float) ($attrs['micronutrients']['potassium'] ?? 0),
+            'sodium' => (float) ($attrs['micronutrients']['sodium'] ?? 0),
+            'zinc' => (float) ($attrs['micronutrients']['zinc'] ?? 0),
+            'vitamin_c' => (float) ($attrs['micronutrients']['vitamin_c'] ?? 0),
+            'vitamin_a' => (float) ($attrs['micronutrients']['vitamin_a'] ?? 0),
+            'vitamin_e' => (float) ($attrs['micronutrients']['vitamin_e'] ?? 0),
+            'vitamin_d' => (float) ($attrs['micronutrients']['vitamin_d'] ?? 0),
+            'vitamin_k2' => (float) ($attrs['micronutrients']['vitamin_k2'] ?? 0),
+        ];
     }
 
     /**

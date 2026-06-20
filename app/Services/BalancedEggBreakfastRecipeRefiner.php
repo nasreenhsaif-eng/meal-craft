@@ -153,11 +153,9 @@ final class BalancedEggBreakfastRecipeRefiner
             ],
             'Smashed Beans & Eggs' => [
                 'ingredients' => [
+                    'Smashed White Beans (Base)' => 80,
                     'Egg' => 100,
-                    'Cannellini Beans' => 70,
                     'Tomato (Raw)' => 50,
-                    'Garlic (Raw)' => 3,
-                    'Olive Oil' => 4,
                     'Fresh Coriander' => 4,
                 ],
                 'diet_tags' => $tags,

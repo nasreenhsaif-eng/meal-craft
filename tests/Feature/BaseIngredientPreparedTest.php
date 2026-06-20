@@ -208,6 +208,29 @@ test('ingredient library csv import normalizes base recipe instructions into Ste
     );
 });
 
+test('ingredient library csv import uses explicit per-100g macros for base recipes when calories are set', function () {
+    $user = User::factory()->create();
+    $child = verifiedIngredient('Tomato', ['calories' => 80, 'protein' => 4, 'carbs' => 16, 'fat' => 0]);
+
+    $header = 'name,category,fdc_id,calories,protein,carbs,fat,b6,b9_folate,b12,iron,magnesium,fiber,sugar,calcium,potassium,sodium,zinc,vitamin_c,vitamin_a,vitamin_e,vitamin_d,vitamin_k2,density,is_base_recipe,recipe_components,description,instructions,finished_weight_grams,g6pd_trigger';
+    $row = "Defatted Broth Base,,,18,3.2,0.4,0.2,0,0,0,0,0,0,0,0,0,20,0,0,0,0,0,0,1,1,{$child->id}:150,,,3000,";
+    $csv = $header."\n".$row."\n";
+
+    $this->actingAs($user)
+        ->post(route('admin.ingredient-library.import-csv'), [
+            'file' => UploadedFile::fake()->createWithContent('ingredients.csv', $csv),
+        ])
+        ->assertRedirect(route('admin.ingredient-library'))
+        ->assertSessionHas('success');
+
+    $base = Ingredient::query()->where('name', 'Defatted Broth Base')->firstOrFail();
+
+    expect((float) $base->calories)->toBe(18.0)
+        ->and((float) $base->protein)->toBe(3.2)
+        ->and((float) $base->fat)->toBe(0.2)
+        ->and((float) ($base->micronutrients['sodium'] ?? 0))->toBe(20.0);
+});
+
 test('ingredient library csv import creates base recipe from is_base_recipe and recipe_components', function () {
     $user = User::factory()->create();
     $child = verifiedIngredient('Tomato', ['calories' => 80, 'protein' => 4, 'carbs' => 16, 'fat' => 0]);

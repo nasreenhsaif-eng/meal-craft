@@ -182,4 +182,22 @@ final class MealLibraryBulkNutrition
 
         return is_finite($calories) && $calories > 0;
     }
+
+    /**
+     * Ingredient pivot grams on bulk meals are batch totals; customer-facing views show one serving.
+     */
+    public static function perServingGramsForMealDisplay(Meal $meal, float $batchGrams): float
+    {
+        if (! ($meal->is_bulk ?? false)) {
+            return $batchGrams;
+        }
+
+        $servings = (float) ($meal->servings_count ?? 0);
+
+        if ($servings <= 0) {
+            return $batchGrams;
+        }
+
+        return round($batchGrams / $servings, 4);
+    }
 }

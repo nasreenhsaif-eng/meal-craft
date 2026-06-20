@@ -864,7 +864,9 @@ class MealLibraryController extends Controller
             ));
         }
 
-        $formatLine = function (Ingredient $ingredient, float $grams): string {
+        $formatLine = function (Ingredient $ingredient, float $grams) use ($meal): string {
+            $grams = MealLibraryBulkNutrition::perServingGramsForMealDisplay($meal, $grams);
+
             if ($grams > 0) {
                 return $this->formatTrimmedDecimal($grams, 2).'g '.$ingredient->name;
             }

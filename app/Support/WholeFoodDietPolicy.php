@@ -26,6 +26,8 @@ final class WholeFoodDietPolicy
         'Tamarind Paste',
         'Rice Vinegar',
         'Almond Butter',
+        'Date Syrup',
+        'Coconut Cream',
     ];
 
     /** @var list<string> */
@@ -39,7 +41,6 @@ final class WholeFoodDietPolicy
         'Heavy Cream',
         'Milk',
         'Almond Milk (Unsweetened)',
-        'Coconut Cream',
         'Coconut Milk',
         'Coconut Milk (Full Fat)',
         'Soy Sauce',
@@ -58,7 +59,6 @@ final class WholeFoodDietPolicy
         'Sardines (Canned)',
         'Tuna (Canned)',
         'Vanilla Extract',
-        'Date Syrup',
         'Dark Chocolate Chips',
         'Baking Powder',
         'Chicken Broth',

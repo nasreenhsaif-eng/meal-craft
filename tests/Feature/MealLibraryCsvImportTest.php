@@ -396,7 +396,7 @@ test('meal library master csv import auto discovers image when photo_url is NO_P
     mealImportIngredient('Chicken', ['calories' => 200, 'protein' => 25, 'carbs' => 0, 'fat' => 12]);
 
     $csv = 'name,description,meal_tags,cycle_phase,dietary_tags,safety_alerts,ingredients,instructions,photo_url,target_cal,target_pro,target_fat,target_carbs,calc_cal,calc_pro,calc_fat,calc_carbs,variance_notes'."\n"
-        .'Coconut Chicken Curry,Spicy curry.,,,,,Chicken (100g),Simmer.,NO_PHOTO_URL,,,,,,,,,'."\n";
+        .'Thai Red Curry Chicken w Roasted Pumpkin,Spicy curry.,,,,,Chicken (100g),Simmer.,NO_PHOTO_URL,,,,,,,,,'."\n";
     $file = UploadedFile::fake()->createWithContent('meals-photo-discover.csv', $csv);
 
     $this->actingAs(User::factory()->create())
@@ -404,7 +404,7 @@ test('meal library master csv import auto discovers image when photo_url is NO_P
         ->assertOk()
         ->assertJsonPath('summary.imported', 1);
 
-    expect(Meal::query()->where('name', 'Coconut Chicken Curry')->firstOrFail()->image_path)
+    expect(Meal::query()->where('name', 'Thai Red Curry Chicken w Roasted Pumpkin')->firstOrFail()->image_path)
         ->toBe('images/meals/coconut-chicken-curry.png');
 });
 

@@ -13,10 +13,11 @@ final class BalancedSodiumRecipeRefiner
 {
     private const DAILY_SODIUM_RDI_MG = 2300.0;
 
-    /** Meals that keep high-sodium signature bases (chimichurri, steamed rice, pomegranate sauce) as authored. */
+    /** Meals that keep signature bases (chimichurri, steamed rice, pomegranate sauce, bone broth cup) as authored. */
     private const MEALS_SKIP_SODIUM_ADJUSTMENT = [
         BalancedCanonicalMealRecipeRefiner::BAKED_SALMON_NAME,
         BalancedRotationMealRecipeRefiner::ROASTED_POMEGRANATE_CHICKEN_NAME,
+        BalancedMealLibraryConfigurator::BONE_BROTH_MEAL_NAME,
     ];
 
     /** @var list<string> Ingredients removed entirely from rotation meals. */
