@@ -124,13 +124,53 @@ export function buildConsultationDeckCatalog(source) {
     return catalog;
 }
 
-/** Default slot caps for Full Craft (soups optional: up to 2 when opted in). */
+/**
+ * Apply add/remove/swap rules for a deck category selection.
+ *
+ * @param {string[]} existingIds
+ * @param {string} mealId
+ * @param {number} max
+ * @returns {string[]}
+ */
+export function applyDeckSelectionToggle(existingIds, mealId, max) {
+    const existing = existingIds ?? [];
+    const isOn = existing.includes(mealId);
+
+    if (isOn) {
+        return existing.filter((id) => id !== mealId);
+    }
+
+    if (existing.length < max) {
+        return [...existing, mealId];
+    }
+
+    if (max === 1) {
+        return [mealId];
+    }
+
+    return existing;
+}
+
+/**
+ * @param {number} maxSelected
+ */
+export function selectionLimitWarningMessage(maxSelected) {
+    if (maxSelected <= 1) {
+        return '';
+    }
+
+    const slotLabel = maxSelected === 2 ? '2 meals' : `${maxSelected} options`;
+
+    return `You can only select ${slotLabel}. Deselect one to choose a different meal.`;
+}
+
+/** Default slot caps for Full Craft (optional soup: pick 1 from the deck). */
 export const DEFAULT_FULL_CRAFT_MAX_SELECTIONS = Object.freeze({
     breakfasts: 1,
     meals: 2,
     sideSalads: 1,
     desserts: 1,
-    soup: 2,
+    soup: 1,
 });
 
 export const FULL_CRAFT_CATEGORY_SECTIONS = Object.freeze([
@@ -167,7 +207,7 @@ export const FULL_CRAFT_CATEGORY_SECTIONS = Object.freeze([
         deckSuffix: 'soup',
         header: 'Soups for this day',
         mealTypeLabel: 'Soup',
-        defaultMax: 2,
+        defaultMax: 1,
         soupOptional: true,
     },
 ]);
@@ -425,7 +465,7 @@ export function SoupOfTheDayOptIn({ checked, onChange, header = 'Soups for this 
             >
                 <SquareCheckbox checked={checked} presentational className="shrink-0" />
                 <span className="min-w-0 truncate whitespace-nowrap font-body text-xs font-normal leading-none tracking-tight text-[#262A22] sm:text-sm">
-                    Add soup for this day — vegan and bone broth available (optional)
+                    Add soup for this day — pick one: vegan or bone broth (optional)
                 </span>
             </button>
         </div>
@@ -525,6 +565,7 @@ export function incompleteSelectionWarningMessage(missingKeys) {
  * @param {string} [props.deckScopeKey]
  * @param {number} [props.sectionStackOrder]
  * @param {boolean} [props.deckOnly]
+ * @param {boolean} [props.showSelectionSubheader] Show "Select 1 • 0/1" hint without section title (soup deck).
  * @param {SelectionCategoryKey} [props.sectionKey]
  * @param {boolean} [props.validationFlash]
  * @param {boolean} [props.readOnly]
@@ -540,6 +581,7 @@ export function MealSlotCarousel({
     deckScopeKey,
     sectionStackOrder = 0,
     deckOnly = false,
+    showSelectionSubheader = false,
     sectionKey,
     validationFlash = false,
     readOnly = false,
@@ -550,6 +592,45 @@ export function MealSlotCarousel({
     const atLimit = selectedIds.length >= maxSelected;
     const stackZ = 35 + sectionStackOrder * 6;
     const showSwipeHint = cards.length > 2;
+    const [limitWarning, setLimitWarning] = useState(/** @type {string | null} */ (null));
+    const limitWarningTimerRef = useRef(0);
+
+    useEffect(() => {
+        setLimitWarning(null);
+    }, [selectedIds]);
+
+    useEffect(
+        () => () => {
+            window.clearTimeout(limitWarningTimerRef.current);
+        },
+        [],
+    );
+
+    const showSelectionLimitWarning = useCallback(() => {
+        const message = selectionLimitWarningMessage(maxSelected);
+        if (message === '') {
+            return;
+        }
+
+        setLimitWarning(message);
+        window.clearTimeout(limitWarningTimerRef.current);
+        limitWarningTimerRef.current = window.setTimeout(() => setLimitWarning(null), 3200);
+    }, [maxSelected]);
+
+    const handleSelect = useCallback(
+        (meal) => {
+            const mealId = /** @type {ConsultationMeal} */ (meal).id;
+            const isSelected = selectedIds.includes(mealId);
+
+            if (!readOnly && !isSelected && atLimit && maxSelected > 1) {
+                showSelectionLimitWarning();
+                return;
+            }
+
+            onSelect?.(/** @type {ConsultationMeal} */ (meal));
+        },
+        [atLimit, maxSelected, onSelect, readOnly, selectedIds, showSelectionLimitWarning],
+    );
 
     const deckSubheader = (() => {
         if (readOnly) {
@@ -567,19 +648,37 @@ export function MealSlotCarousel({
             data-mc-section={sectionKey ?? ''}
             className={[
                 'relative isolate w-full overflow-x-clip overflow-y-visible rounded-xl py-0 transition-[box-shadow] duration-300',
-                validationFlash ? 'ring-2 ring-[#C44F5D] ring-offset-2 ring-offset-white' : '',
+                validationFlash || limitWarning ? 'ring-2 ring-[#C44F5D] ring-offset-2 ring-offset-white' : '',
             ]
                 .join(' ')
                 .trim()}
             style={{ zIndex: stackZ }}
         >
-            {!deckOnly ? (
+            {!deckOnly || showSelectionSubheader ? (
                 <div className="mx-auto min-w-0 max-w-full px-4 text-center md:px-0">
-                    <p className="font-montserrat text-[15px] font-bold leading-snug tracking-tight text-[#262A22] sm:text-base">
-                        {title}
-                    </p>
-                    <p className="mt-0.5 font-body text-xs leading-snug text-[#555555] sm:mt-1 sm:text-sm">
-                        {deckSubheader}
+                    {!deckOnly && title ? (
+                        <p className="font-montserrat text-[15px] font-bold leading-snug tracking-tight text-[#262A22] sm:text-base">
+                            {title}
+                        </p>
+                    ) : null}
+                    {!readOnly ? (
+                        <p
+                            className={`font-body text-xs leading-snug text-[#555555] sm:text-sm ${!deckOnly && title ? 'mt-0.5 sm:mt-1' : 'mt-0'}`}
+                        >
+                            {deckSubheader}
+                        </p>
+                    ) : null}
+                </div>
+            ) : null}
+
+            {limitWarning ? (
+                <div
+                    className="mx-auto mt-1 max-w-full px-4 md:px-0"
+                    role="alert"
+                    aria-live="polite"
+                >
+                    <p className="rounded-[10px] border border-red-200 bg-red-50 px-3 py-2 text-center font-body text-xs font-semibold text-red-800 sm:text-sm">
+                        {limitWarning}
                     </p>
                 </div>
             ) : null}
@@ -610,7 +709,8 @@ export function MealSlotCarousel({
                                 renderCard={(m, _idx, { isFront, deckLayout }) => {
                                     const meal = /** @type {ConsultationMeal} */ (m);
                                     const isSelected = selectedSet.has(meal.id);
-                                    const isDisabled = !readOnly && !isSelected && atLimit;
+                                    const atSelectionLimit =
+                                        !readOnly && !isSelected && atLimit && maxSelected > 1;
 
                                     return (
                                         <MealCardClientViewNano
@@ -623,14 +723,14 @@ export function MealSlotCarousel({
                                             macros={meal.macros}
                                             selected={!readOnly && isSelected}
                                             assigned={readOnly && isSelected}
-                                            disabled={isDisabled}
+                                            disabled={false}
                                             hideCraftButton={readOnly}
                                             imageLoading={isFront ? 'eager' : 'lazy'}
                                             imageAlt={meal.title ?? ''}
-                                            onToggleSelected={readOnly ? undefined : () => onSelect(meal)}
+                                            onToggleSelected={readOnly ? undefined : () => handleSelect(meal)}
                                             onViewDetails={() => onViewDetails?.(meal)}
                                             onEdit={onEditMeal ? () => onEditMeal(meal) : undefined}
-                                            vibrantCraftWhenAtLimit={!readOnly && isDisabled}
+                                            vibrantCraftWhenAtLimit={atSelectionLimit}
                                         />
                                     );
                                 }}
@@ -952,16 +1052,13 @@ export default function ChooseYourMeals({
                             <MealSlotCarousel
                                 sectionStackOrder={FULL_CRAFT_CATEGORY_SECTIONS.length}
                                 deckOnly
+                                showSelectionSubheader
                                 readOnly={!categoryPickEnabled}
                                 title=""
                                 deckScopeKey={`${deckScopePrefix ? `${deckScopePrefix}-` : ''}${soupSectionDef.deckSuffix}`}
                                 cards={soupDeckMeals}
                                 selectedIds={categorySelections.soup ?? []}
-                                maxSelected={
-                                    maxSelectionsByCategory?.soup !== undefined
-                                        ? /** @type {number} */ (maxSelectionsByCategory.soup)
-                                        : soupSectionDef.defaultMax
-                                }
+                                maxSelected={1}
                                 onSelect={
                                     categoryPickEnabled
                                         ? (meal) => onToggleCategory?.('soup', meal)

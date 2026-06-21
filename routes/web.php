@@ -17,6 +17,7 @@ use App\Http\Controllers\Api\CustomerCraftPlanController;
 use App\Http\Controllers\Auth\PortalChoiceController;
 use App\Http\Controllers\Auth\WelcomeController;
 use App\Http\Controllers\Customer\ConsultationCraftedForYouController;
+use App\Http\Controllers\Customer\ConsultationCraftedForYouEditController;
 use App\Http\Controllers\Customer\CustomerAppController;
 use App\Http\Controllers\Customer\OnboardingController;
 use App\Http\Controllers\MealLibraryCsvExportController;
@@ -152,6 +153,8 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
 
         Route::get('consultation/crafted-for-you', ConsultationCraftedForYouController::class)
             ->name('consultation.crafted-for-you');
+        Route::get('consultation/crafted-for-you/edit', ConsultationCraftedForYouEditController::class)
+            ->name('consultation.crafted-for-you.edit');
     });
 });
 

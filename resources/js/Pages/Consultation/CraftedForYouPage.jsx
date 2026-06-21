@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import Button from '../../Components/Atoms/Button.jsx';
 import PillButton from '../../Components/Atoms/Button/Button.jsx';
 import ChooseYourMeals, {
+    applyDeckSelectionToggle,
     DEFAULT_FULL_CRAFT_MAX_SELECTIONS,
     MealSlotCarousel,
     SoupOfTheDayOptIn,
@@ -20,6 +21,10 @@ import {
 } from '../../consultation/mapAdaptedMenuMeals.js';
 import { buildCraftPlanSubmissionPayload, submitCraftPlan } from '../../consultation/submitCraftPlan.js';
 import { craftDayCaloriesForKey } from '../../consultation/craftCalorieTargets.js';
+import {
+    resolveInitialConsultationRestoreDraft,
+    saveConsultationDraft,
+} from '../../consultation/consultationDraft.js';
 
 const PAGE_BG = 'bg-[#F8F9F6]';
 const WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -29,13 +34,13 @@ const CRAFTS = [
     {
         key: 'full',
         title: 'Full Craft',
-        description: '1 Breakfast, 2 Main Meals, 1 Side Salad, 1 Dessert, Soups (vegan + bone broth, optional)',
+        description: '1 Breakfast, 2 Main Meals, 1 Side Salad, 1 Dessert, optional soup (vegan or bone broth)',
         slots: [
             { id: 'breakfast', label: 'Breakfast', count: 1 },
             { id: 'meal', label: 'Meals', count: 2 },
             { id: 'sidesalad', label: 'Side salad', count: 1 },
             { id: 'dessert', label: 'Dessert', count: 1 },
-            { id: 'soup', label: 'Soups', count: 2, optional: true },
+            { id: 'soup', label: 'Soups', count: 1, optional: true },
         ],
     },
     {
@@ -257,6 +262,29 @@ const MOCK_MEALS = [
 /** Consultation mock library: shared with Storybook deck stories (`consultationMeals`). */
 export const consultationMeals = MOCK_MEALS;
 
+/** @typedef {import('../../consultation/consultationDraft.js').ConsultationDraft} ConsultationDraft */
+
+/**
+ * @param {{
+ *   craftKey?: string;
+ *   weekDuration?: number;
+ *   selectedWeekdays?: number[];
+ *   days?: Array<{
+ *     dayNumber: number;
+ *     includeSoup?: boolean;
+ *     categories?: Record<string, unknown[]>;
+ *   }>;
+ * } | null | undefined} initialEditDraft
+ * @returns {ConsultationDraft | null}
+ */
+function readInitialConsultationRestoreDraft(initialEditDraft) {
+    try {
+        return resolveInitialConsultationRestoreDraft(initialEditDraft);
+    } catch {
+        return null;
+    }
+}
+
 function mealTitleById(/** @type {string} */ id) {
     return MOCK_MEALS.find((m) => m.id === id)?.title ?? id;
 }
@@ -282,6 +310,16 @@ function slotId(dayIdx, slotKey, index) {
  *   adaptedMenuUrl?: string;
  *   initialPlanTier?: number | null;
  *   disableAdaptedMenuFetch?: boolean;
+ *   initialEditDraft?: {
+ *     craftKey?: string;
+ *     weekDuration?: number;
+ *     selectedWeekdays?: number[];
+ *     days?: Array<{
+ *       dayNumber: number;
+ *       includeSoup?: boolean;
+ *       categories?: Record<string, unknown[]>;
+ *     }>;
+ *   } | null;
  * }} [props]
  */
 export default function CraftedForYouPage({
@@ -296,18 +334,35 @@ export default function CraftedForYouPage({
     adaptedMenuUrl = '/api/menu/adapted',
     initialPlanTier = null,
     disableAdaptedMenuFetch = false,
+    initialEditDraft = null,
 } = {}) {
+    const initialRestoreDraft = useMemo(
+        () => readInitialConsultationRestoreDraft(initialEditDraft),
+        [initialEditDraft],
+    );
+
     const [screen, setScreen] = useState(1);
-    const [craftKey, setCraftKey] = useState(/** @type {string|null} */ (null));
+    const [craftKey, setCraftKey] = useState(
+        () => initialRestoreDraft?.craftKey ?? null,
+    );
     const craft = useMemo(() => (craftKey ? craftByKey(craftKey) : null), [craftKey]);
 
-    const [weekDuration, setWeekDuration] = useState(/** @type {number|null} */ (null));
-    const [selectedDays, setSelectedDays] = useState(/** @type {number[]} */ ([]));
-    const [activeDay, setActiveDay] = useState(/** @type {number|null} */ (null));
+    const [weekDuration, setWeekDuration] = useState(
+        () => initialRestoreDraft?.weekDuration ?? null,
+    );
+    const [selectedDays, setSelectedDays] = useState(
+        () => initialRestoreDraft?.selectedDays ?? [],
+    );
+    const [activeDay, setActiveDay] = useState(() => {
+        const restoredDays = initialRestoreDraft?.selectedDays ?? [];
+        return restoredDays.length > 0 ? restoredDays[0] : null;
+    });
     const [toast, setToast] = useState(/** @type {{ message: string; visible: boolean }} */ ({ message: '', visible: false }));
     const [shakeOn, setShakeOn] = useState(false);
 
-    const [environmentYes, setEnvironmentYes] = useState(false);
+    const [environmentYes, setEnvironmentYes] = useState(
+        () => initialRestoreDraft?.environmentYes ?? false,
+    );
     const [submitting, setSubmitting] = useState(false);
     const [submitError, setSubmitError] = useState(/** @type {string | null} */ (null));
     const [submitSuccess, setSubmitSuccess] = useState(false);
@@ -315,13 +370,15 @@ export default function CraftedForYouPage({
     // Craft-specific choice selection (per active curation day)
     const [businessCraftChoice, setBusinessCraftChoice] = useState(/** @type {'soup'|'sidesalad'|'dessert'} */ ('soup'));
     const [businessSideChoiceByDay, setBusinessSideChoiceByDay] = useState(
-        /** @type {Record<number, 'soup'|'sidesalad'|'dessert'>} */ ({}),
+        () => initialRestoreDraft?.businessSideChoiceByDay ?? {},
     );
-    const [afternoonSoupOptInByDay, setAfternoonSoupOptInByDay] = useState(/** @type {Record<number, boolean>} */ ({}));
+    const [afternoonSoupOptInByDay, setAfternoonSoupOptInByDay] = useState(
+        () => initialRestoreDraft?.afternoonSoupOptInByDay ?? {},
+    );
 
     // Slot selection state (chosen meal ids per category, per day)
     const [selectedByDay, setSelectedByDay] = useState(
-        /** @type {Record<number, { breakfasts: string[]; meals: string[]; sideSalads: string[]; desserts: string[]; soup: string[] }>} */ ({}),
+        () => initialRestoreDraft?.selectedByDay ?? {},
     );
 
     const [liveMeals, setLiveMeals] = useState(/** @type {typeof MOCK_MEALS | null} */ (null));
@@ -333,8 +390,59 @@ export default function CraftedForYouPage({
         /** @type {Record<string | number, unknown>} */ ({}),
     );
     const [productionMealPlanId, setProductionMealPlanId] = useState(/** @type {number | null} */ (null));
-    const [menuLoading, setMenuLoading] = useState(!disableAdaptedMenuFetch);
+    const [menuLoading, setMenuLoading] = useState(false);
     const [menuError, setMenuError] = useState(/** @type {string | null} */ (null));
+    const [isLgViewport, setIsLgViewport] = useState(/** @type {boolean | null} */ (null));
+
+    useLayoutEffect(() => {
+        if (!initialRestoreDraft) {
+            return;
+        }
+
+        try {
+            saveConsultationDraft(initialRestoreDraft);
+        } catch {
+            // Ignore quota / storage errors — in-memory state is enough for this session.
+        }
+
+        const url = new URL(window.location.href);
+        if (!url.searchParams.has('edit')) {
+            return;
+        }
+
+        url.searchParams.delete('edit');
+        const next = `${url.pathname}${url.search}${url.hash}`;
+        window.history.replaceState({}, '', next);
+
+        setToast({
+            visible: true,
+            message: 'Your previous selections are loaded. Walk through each step to review or change them.',
+        });
+    }, [initialRestoreDraft]);
+
+    useEffect(() => {
+        if (craftKey === null || weekDuration === null) {
+            return;
+        }
+
+        saveConsultationDraft({
+            craftKey,
+            weekDuration,
+            selectedDays,
+            selectedByDay,
+            businessSideChoiceByDay,
+            afternoonSoupOptInByDay,
+            environmentYes,
+        });
+    }, [
+        craftKey,
+        weekDuration,
+        selectedDays,
+        selectedByDay,
+        businessSideChoiceByDay,
+        afternoonSoupOptInByDay,
+        environmentYes,
+    ]);
 
     const catalogMeals = useMemo(() => liveMeals ?? MOCK_MEALS, [liveMeals]);
 
@@ -456,17 +564,16 @@ export default function CraftedForYouPage({
         // If the user is currently on the manual day selection screen, leap into Day 1 (Sunday).
         if (screen === 2) {
             const all = [1, 2, 3, 4, 5, 6, 7];
-            const alreadyAllDays =
-                selectedDays.length === 7 && all.every((d) => selectedDays.includes(d));
+            setSelectedDays((prev) => {
+                if (prev.length > 0) {
+                    return prev;
+                }
 
-            if (!alreadyAllDays) {
-                setSelectedDays(all);
-            }
-            if (activeDay !== 1) {
-                setActiveDay(1);
-            }
+                return all;
+            });
+            setActiveDay((prev) => prev ?? 1);
         }
-    }, [weekDuration, screen, selectedDays, activeDay]);
+    }, [weekDuration, screen]);
 
     useEffect(() => {
         // Keep active day valid.
@@ -486,8 +593,6 @@ export default function CraftedForYouPage({
         return () => window.clearTimeout(t);
     }, [toast.visible]);
 
-    /** `lg` breakpoint: week duration lives on plan setup. Below `lg`, duration is on manual day selection — NEXT only needs a craft. */
-    const [isLgViewport, setIsLgViewport] = useState(/** @type {boolean | null} */ (null));
     useEffect(() => {
         const mq = window.matchMedia('(min-width: 1024px)');
         const fn = () => setIsLgViewport(mq.matches);
@@ -1094,16 +1199,8 @@ export default function CraftedForYouPage({
                                         desserts: [],
                                         soup: [],
                                     };
-                                    const existing = current[key] ?? [];
-                                    const isOn = existing.includes(meal.id);
-                                    let next = existing;
-                                    if (isOn) {
-                                        next = existing.filter((id) => id !== meal.id);
-                                    } else if (existing.length < max) {
-                                        next = [...existing, meal.id];
-                                    } else {
-                                        next = existing;
-                                    }
+                                    const next = applyDeckSelectionToggle(current[key], meal.id, max);
+
                                     return { ...prev, [day]: { ...current, [key]: next } };
                                 });
                             };
@@ -1233,11 +1330,12 @@ export default function CraftedForYouPage({
                                                         {side === 'soup' ? (
                                                             <MealSlotCarousel
                                                                 title="Soup"
+                                                                showSelectionSubheader
                                                                 deckScopeKey={`${day}-soup`}
                                                                 cards={pickCards('soup')}
                                                                 selectedIds={selections.soup}
-                                                                maxSelected={2}
-                                                                onSelect={toggle('soup', 2)}
+                                                                maxSelected={1}
+                                                                onSelect={toggle('soup', 1)}
                                                             />
                                                         ) : side === 'dessert' ? (
                                                             <MealSlotCarousel
@@ -1299,12 +1397,13 @@ export default function CraftedForYouPage({
                                                                     >
                                                                         <MealSlotCarousel
                                                                             deckOnly
+                                                                            showSelectionSubheader
                                                                             title=""
                                                                             deckScopeKey={`${day}-soup`}
                                                                             cards={pickCards('soup')}
                                                                             selectedIds={selections.soup}
-                                                                            maxSelected={2}
-                                                                            onSelect={toggle('soup', 2)}
+                                                                            maxSelected={1}
+                                                                            onSelect={toggle('soup', 1)}
                                                                         />
                                                                     </motion.div>
                                                                 ) : null}

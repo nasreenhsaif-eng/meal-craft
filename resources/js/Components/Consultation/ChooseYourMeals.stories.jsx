@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import ChooseYourMeals, {
+    applyDeckSelectionToggle,
     DEFAULT_FULL_CRAFT_MAX_SELECTIONS,
     buildConsultationDeckCatalog,
     soupOfTheDayMeals,
@@ -100,17 +101,10 @@ export const VerticalFullCraftCategories = {
         const onToggleCategory = (categoryKey, meal) => {
             const id = /** @type {{ id: string }} */ (meal).id;
             const max = DEFAULT_FULL_CRAFT_MAX_SELECTIONS[categoryKey];
-            setCategorySelections((prev) => {
-                const existing = prev[categoryKey] ?? [];
-                const isOn = existing.includes(id);
-                let next = existing;
-                if (isOn) {
-                    next = existing.filter((x) => x !== id);
-                } else if (existing.length < max) {
-                    next = [...existing, id];
-                }
-                return { ...prev, [categoryKey]: next };
-            });
+            setCategorySelections((prev) => ({
+                ...prev,
+                [categoryKey]: applyDeckSelectionToggle(prev[categoryKey], id, max),
+            }));
         };
 
         const totalKcal = useMemo(() => {

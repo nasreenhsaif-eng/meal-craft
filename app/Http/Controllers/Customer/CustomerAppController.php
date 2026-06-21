@@ -59,6 +59,7 @@ class CustomerAppController extends Controller
             'customerName' => $user?->name ?? '',
             'craftPlan' => $presentation->presentSummary($plan, $planTierCalories),
             'consultationUrl' => route('consultation.crafted-for-you'),
+            'consultationEditUrl' => route('consultation.crafted-for-you.edit'),
             'homeUrl' => route('app.home'),
         ]);
     }

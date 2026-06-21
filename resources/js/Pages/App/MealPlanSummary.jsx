@@ -14,6 +14,7 @@ import {
 } from '../../Components/Consultation/ChooseYourMeals.jsx';
 import MealDetailView from '../../Components/Molecules/MealDetailView/MealDetailView';
 import CustomerInertiaShell from '../../Layouts/CustomerInertiaShell.jsx';
+import { saveSummaryCraftPlanAndNavigateToEdit } from '../../consultation/consultationDraft.js';
 import { resolveInertiaLayoutChild } from '../../lib/resolveInertiaLayoutChild.js';
 
 const PAGE_BG = 'bg-[#F8F9F6]';
@@ -46,12 +47,14 @@ function formatMacroValue(value) {
  *   }>;
  * }} props.craftPlan
  * @param {string} [props.consultationUrl]
+ * @param {string} [props.consultationEditUrl]
  * @param {string} [props.homeUrl]
  */
 export default function MealPlanSummary({
     customerName = '',
     craftPlan = {},
     consultationUrl = '/consultation/crafted-for-you',
+    consultationEditUrl = '',
     homeUrl = '/app',
 }) {
     const days = craftPlan.days ?? [];
@@ -113,6 +116,20 @@ export default function MealPlanSummary({
     );
 
     const planCategoryLabel = `${craftPlan.craftTitle ?? 'Craft'} · ${craftPlan.planTierCalories ?? ''} kcal`.trim();
+
+    const handleEditSelections = useCallback(() => {
+        const editUrl =
+            typeof consultationEditUrl === 'string' && consultationEditUrl.trim() !== ''
+                ? consultationEditUrl
+                : null;
+
+        if (editUrl) {
+            window.location.assign(editUrl);
+            return;
+        }
+
+        saveSummaryCraftPlanAndNavigateToEdit(consultationUrl, craftPlan);
+    }, [consultationEditUrl, consultationUrl, craftPlan]);
 
     const openMealDetail = useCallback((meal) => {
         if (!meal?.detailView) {
@@ -224,7 +241,7 @@ export default function MealPlanSummary({
                         <Button
                             label="Edit selections"
                             variant="outline"
-                            onClick={() => window.location.assign(consultationUrl)}
+                            onClick={handleEditSelections}
                             className="px-8"
                         />
                         <Button

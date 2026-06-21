@@ -314,6 +314,128 @@ test('customer can view meal plan summary before onboarding is marked complete',
     expect($profile->fresh()?->onboarding_completed_at)->toBeNull();
 });
 
+test('customer can open consultation edit with saved selections in session', function () {
+    $user = User::factory()->create(['role' => UserRole::Customer]);
+    CustomerProfile::factory()->for($user)->create([
+        'daily_calorie_target' => 2000,
+    ]);
+
+    $breakfast = Meal::factory()->create([
+        'meal_type' => MealType::Breakfast,
+        'category' => RecipeCategory::Breakfast,
+        'total_calories' => 250,
+    ]);
+    $main = Meal::factory()->create([
+        'meal_type' => MealType::Main,
+        'category' => RecipeCategory::Meal,
+        'total_calories' => 450,
+    ]);
+    $salad = Meal::factory()->create([
+        'meal_type' => MealType::Salad,
+        'category' => RecipeCategory::SideSalad,
+        'total_calories' => 180,
+    ]);
+    $dessert = Meal::factory()->create([
+        'meal_type' => MealType::Dessert,
+        'category' => RecipeCategory::Dessert,
+        'total_calories' => 170,
+    ]);
+
+    $this->actingAs($user)->postJson('/api/customer/craft-plan', [
+        'craft_key' => 'full',
+        'week_duration' => 5,
+        'selected_days' => [1, 2],
+        'days' => [
+            [
+                'day_of_week' => 1,
+                'include_soup' => false,
+                'selections' => [
+                    'breakfasts' => [$breakfast->id],
+                    'meals' => [$main->id],
+                    'sideSalads' => [$salad->id],
+                    'desserts' => [$dessert->id],
+                ],
+            ],
+            [
+                'day_of_week' => 2,
+                'include_soup' => false,
+                'selections' => [
+                    'breakfasts' => [$breakfast->id],
+                    'meals' => [$main->id],
+                    'sideSalads' => [$salad->id],
+                    'desserts' => [$dessert->id],
+                ],
+            ],
+        ],
+    ])->assertCreated();
+
+    $this->actingAs($user)
+        ->get(route('consultation.crafted-for-you.edit'))
+        ->assertRedirect(route('consultation.crafted-for-you', ['edit' => 1], absolute: false));
+
+    $response = $this->actingAs($user)
+        ->get(route('consultation.crafted-for-you', ['edit' => 1]))
+        ->assertSuccessful();
+
+    $response->assertSee('mc-consultation-crafted-config', false);
+    $response->assertSee('editDraft', false);
+    $response->assertSee('full', false);
+    $response->assertSee((string) $breakfast->id, false);
+});
+
+test('meal plan summary exposes consultation edit url', function () {
+    $user = User::factory()->create(['role' => UserRole::Customer]);
+    CustomerProfile::factory()->for($user)->create([
+        'daily_calorie_target' => 2000,
+    ]);
+
+    $breakfast = Meal::factory()->create([
+        'meal_type' => MealType::Breakfast,
+        'category' => RecipeCategory::Breakfast,
+        'total_calories' => 250,
+    ]);
+    $main = Meal::factory()->create([
+        'meal_type' => MealType::Main,
+        'category' => RecipeCategory::Meal,
+        'total_calories' => 450,
+    ]);
+    $salad = Meal::factory()->create([
+        'meal_type' => MealType::Salad,
+        'category' => RecipeCategory::SideSalad,
+        'total_calories' => 180,
+    ]);
+    $dessert = Meal::factory()->create([
+        'meal_type' => MealType::Dessert,
+        'category' => RecipeCategory::Dessert,
+        'total_calories' => 170,
+    ]);
+
+    $this->actingAs($user)->postJson('/api/customer/craft-plan', [
+        'craft_key' => 'full',
+        'week_duration' => 1,
+        'selected_days' => [1],
+        'days' => [
+            [
+                'day_of_week' => 1,
+                'include_soup' => false,
+                'selections' => [
+                    'breakfasts' => [$breakfast->id],
+                    'meals' => [$main->id],
+                    'sideSalads' => [$salad->id],
+                    'desserts' => [$dessert->id],
+                ],
+            ],
+        ],
+    ])->assertCreated();
+
+    $this->actingAs($user)
+        ->get(route('app.meal-plan'))
+        ->assertSuccessful()
+        ->assertInertia(fn ($page) => $page
+            ->component('App/MealPlanSummary')
+            ->where('consultationEditUrl', route('consultation.crafted-for-you.edit')));
+});
+
 test('non-admin cannot access kitchen daily sheet', function () {
     $user = User::factory()->create(['role' => UserRole::Customer]);
 

@@ -7,6 +7,7 @@ import { resolveUrl } from '../../meal-craft/mealCraftPageProps.js';
 import PillButton from '../../Components/Atoms/Button/Button.jsx';
 import Button from '../../Components/Atoms/Button.jsx';
 import {
+    applyDeckSelectionToggle,
     DEFAULT_FULL_CRAFT_MAX_SELECTIONS,
     MealSlotCarousel,
     PlanMacroSummaryPanel,
@@ -179,14 +180,7 @@ export default function MealPlanDetailPage({
         setDaySelections((prev) => {
             const day = prev[activeDay] ?? {};
             const current = day[categoryKey] ?? [];
-            const isOn = current.includes(mealId);
-            let next = current;
-
-            if (isOn) {
-                next = current.filter((id) => id !== mealId);
-            } else if (current.length < maxSelected) {
-                next = [...current, mealId];
-            }
+            const next = applyDeckSelectionToggle(current, mealId, maxSelected);
 
             return {
                 ...prev,
@@ -339,6 +333,7 @@ export default function MealPlanDetailPage({
                                                     <MealSlotCarousel
                                                         title=""
                                                         deckOnly
+                                                        showSelectionSubheader
                                                         deckScopeKey={`plan-${mealPlan?.id ?? 'x'}-day-${activeDayData.dayNumber}-${SOUP_SECTION.deckSuffix}`}
                                                         sectionKey={SOUP_SECTION.categoryKey}
                                                         sectionStackOrder={nonSoupSections.length}

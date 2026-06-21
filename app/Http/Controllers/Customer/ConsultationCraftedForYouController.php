@@ -17,6 +17,13 @@ class ConsultationCraftedForYouController extends Controller
         $isCustomer = $user?->isCustomer() === true;
         $isAdminPreview = $user?->isAdmin() === true && ! $isCustomer;
 
+        $editDraft = null;
+
+        if ($request->query('edit') === '1' && $request->session()->has('consultation_edit_draft')) {
+            /** @var array<string, mixed> $editDraft */
+            $editDraft = $request->session()->pull('consultation_edit_draft');
+        }
+
         $consultationConfig = [
             'closeHref' => $isCustomer ? route('app.home') : route('admin.dashboard'),
             'homeHref' => $isCustomer ? route('app.home') : route('admin.dashboard'),
@@ -32,6 +39,7 @@ class ConsultationCraftedForYouController extends Controller
             'planTier' => $profile?->daily_calorie_target !== null
                 ? (int) UserPlanCalculator::snapToPlanTier((float) $profile->daily_calorie_target)
                 : null,
+            'editDraft' => $editDraft,
         ];
 
         return view('pages.consultation.crafted-for-you', [

@@ -47,6 +47,7 @@ final class CustomerCraftPlanPresentationService
      *     craftKey: string,
      *     craftTitle: string,
      *     weekDuration: int,
+     *     selectedWeekdays: list<int>,
      *     planTierCalories: int,
      *     submittedAt: string|null,
      *     days: list<array{
@@ -111,6 +112,7 @@ final class CustomerCraftPlanPresentationService
             'craftKey' => $plan->craft_key,
             'craftTitle' => self::CRAFT_TITLES[$plan->craft_key] ?? ucfirst($plan->craft_key),
             'weekDuration' => (int) $plan->week_duration,
+            'selectedWeekdays' => array_values($plan->selected_weekdays ?? []),
             'planTierCalories' => $planTierCalories,
             'submittedAt' => $plan->submitted_at?->toIso8601String(),
             'days' => $presentedDays,
