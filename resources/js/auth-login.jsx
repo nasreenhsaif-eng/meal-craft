@@ -28,7 +28,6 @@ if (rootEl && configEl) {
                 passwordError={config.passwordError ?? ''}
                 statusMessage={config.statusMessage ?? ''}
                 errorMessage={config.errorMessage ?? ''}
-                splashDurationMs={typeof config.splashDurationMs === 'number' ? config.splashDurationMs : 0}
             />
         </StrictMode>,
     );

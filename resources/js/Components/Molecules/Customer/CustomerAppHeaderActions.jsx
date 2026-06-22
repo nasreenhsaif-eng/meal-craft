@@ -1,6 +1,20 @@
-import { Link, router, usePage } from '@inertiajs/react';
+import { router, usePage } from '@inertiajs/react';
+import { CONSULTATION_DRAFT_STORAGE_KEY } from '../../../consultation/consultationDraft.js';
 import { ONBOARDING_STORAGE_KEY } from '../../../meal-craft/onboarding/onboardingConstants.js';
 import { onboardingUrls } from '../../../meal-craft/mealCraftPageProps.js';
+
+function clearCustomerBrowserDrafts() {
+    if (typeof window === 'undefined') {
+        return;
+    }
+
+    try {
+        sessionStorage.removeItem(ONBOARDING_STORAGE_KEY);
+        sessionStorage.removeItem(CONSULTATION_DRAFT_STORAGE_KEY);
+    } catch {
+        // ignore quota errors
+    }
+}
 
 /**
  * Temporary customer app header utilities for QA (reset onboarding + sign out).
@@ -8,19 +22,17 @@ import { onboardingUrls } from '../../../meal-craft/mealCraftPageProps.js';
  * @param {{ resetUrl?: string }} props
  */
 export default function CustomerAppHeaderActions({ resetUrl: resetUrlProp }) {
+    const { csrfToken } = usePage().props;
     const urls = onboardingUrls(usePage().props);
     const resetUrl = resetUrlProp ?? urls.reset ?? '/onboarding/reset';
 
     const handleResetOnboarding = () => {
-        if (typeof window !== 'undefined') {
-            try {
-                sessionStorage.removeItem(ONBOARDING_STORAGE_KEY);
-            } catch {
-                // ignore quota errors
-            }
-        }
-
+        clearCustomerBrowserDrafts();
         router.post(resetUrl, {}, { preserveScroll: false });
+    };
+
+    const handleSignOut = () => {
+        clearCustomerBrowserDrafts();
     };
 
     return (
@@ -32,14 +44,15 @@ export default function CustomerAppHeaderActions({ resetUrl: resetUrlProp }) {
             >
                 🔧 Edit Profile / Reset
             </button>
-            <Link
-                href="/logout"
-                method="post"
-                as="button"
-                className="font-montserrat text-sm font-medium text-[#6B7280] transition-colors hover:text-[#B42318] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#B42318]/25 focus-visible:ring-offset-2"
-            >
-                Sign Out
-            </Link>
+            <form method="POST" action="/logout" onSubmit={handleSignOut} className="inline">
+                <input type="hidden" name="_token" value={typeof csrfToken === 'string' ? csrfToken : ''} />
+                <button
+                    type="submit"
+                    className="font-montserrat text-sm font-medium text-[#6B7280] transition-colors hover:text-[#B42318] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#B42318]/25 focus-visible:ring-offset-2"
+                >
+                    Sign Out
+                </button>
+            </form>
         </div>
     );
 }

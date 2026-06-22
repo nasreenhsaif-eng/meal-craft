@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from 'react';
+import { useCallback, useEffect, useId, useState } from 'react';
 import MealCraftLogo from '../../Components/Atoms/Logo/MealCraftLogo.jsx';
 import TextInput from '../../Components/Atoms/TextInput/TextInput';
 import Button from '../../Components/Atoms/Button/Button';
@@ -13,14 +13,11 @@ const contentWidthClass = `${contentWidthLayout} text-center`;
 /** Form fields: left-aligned labels + inputs; keeps inputs visually dominant vs. headings. */
 const fieldStackClass = `${contentWidthLayout} space-y-8 text-left [&_input]:text-left`;
 
-/** Time to hold splash before crossfade (~5s lets marketing-animated tagline reveal finish). */
-const DEFAULT_SPLASH_MS = 5000;
-
-/** Splash fade-out + login fade-in duration */
-const CROSSFADE_MS = 700;
+/** Success seal fade-in duration */
+const SUCCESS_SEAL_FADE_MS = 700;
 
 /**
- * Full-viewport sign-in — Phase 1: white splash with `marketing-animated` lockup; Phase 2: form.
+ * Full-viewport sign-in — static form first; after successful auth, plays the seal animation then redirects.
  *
  * Laravel: pass `formAction` + `csrfToken` + validation props from `auth/login.blade.php`.
  *
@@ -38,7 +35,6 @@ const CROSSFADE_MS = 700;
  * @param {string} [props.statusMessage] Session flash (e.g. reset link sent).
  * @param {string} [props.errorMessage] Session flash error (e.g. CSRF expired).
  * @param {(event: import('react').FormEvent<HTMLFormElement>) => void} [props.onSubmit]
- * @param {number} [props.splashDurationMs] Hold splash before crossfade; `0` skips splash (e.g. Storybook). Default 5000.
  */
 export default function LoginPage({
     formAction,
@@ -49,54 +45,101 @@ export default function LoginPage({
     showSignUp = true,
     initialEmail = '',
     initialRemember = false,
-    emailError = '',
-    passwordError = '',
+    emailError: initialEmailError = '',
+    passwordError: initialPasswordError = '',
     statusMessage = '',
-    errorMessage = '',
+    errorMessage: initialErrorMessage = '',
     onSubmit,
-    splashDurationMs = DEFAULT_SPLASH_MS,
 }) {
     const isServerForm = Boolean(formAction);
     const rememberInputId = useId();
 
-    const skipSplash = splashDurationMs <= 0;
-
     const [email, setEmail] = useState(initialEmail);
     const [password, setPassword] = useState('');
     const [rememberMe, setRememberMe] = useState(initialRemember);
-
-    /** Splash overlay mounted (removed after fade-out completes). */
-    const [splashMounted, setSplashMounted] = useState(!skipSplash);
-    /** Splash layer opacity: fades out when crossfade starts. */
-    const [splashOpaque, setSplashOpaque] = useState(!skipSplash);
-    /** Login column visible + interactive after crossfade begins. */
-    const [formRevealed, setFormRevealed] = useState(skipSplash);
+    const [emailError, setEmailError] = useState(initialEmailError);
+    const [passwordError, setPasswordError] = useState(initialPasswordError);
+    const [errorMessage, setErrorMessage] = useState(initialErrorMessage);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [successSealVisible, setSuccessSealVisible] = useState(false);
+    const [redirectAfterSeal, setRedirectAfterSeal] = useState('');
 
     useEffect(() => {
-        if (skipSplash) {
-            return undefined;
-        }
-        const holdMs = splashDurationMs;
-        const t = window.setTimeout(() => {
-            setSplashOpaque(false);
-            setFormRevealed(true);
-        }, holdMs);
-        return () => window.clearTimeout(t);
-    }, [skipSplash, splashDurationMs]);
+        setEmail(initialEmail);
+        setRememberMe(initialRemember);
+        setEmailError(initialEmailError);
+        setPasswordError(initialPasswordError);
+        setErrorMessage(initialErrorMessage);
+    }, [initialEmail, initialRemember, initialEmailError, initialPasswordError, initialErrorMessage]);
 
-    /** Unmount splash layer after CSS opacity transition (and as a fallback if `transitionend` is skipped). */
-    useEffect(() => {
-        if (skipSplash || splashOpaque) {
-            return undefined;
+    const handleSealAnimationComplete = useCallback(() => {
+        if (redirectAfterSeal) {
+            window.location.assign(redirectAfterSeal);
         }
-        const t = window.setTimeout(() => setSplashMounted(false), CROSSFADE_MS);
-        return () => window.clearTimeout(t);
-    }, [skipSplash, splashOpaque]);
+    }, [redirectAfterSeal]);
+
+    const handleServerSubmit = async (event) => {
+        event.preventDefault();
+        setEmailError('');
+        setPasswordError('');
+        setErrorMessage('');
+        setIsSubmitting(true);
+
+        try {
+            const formData = new FormData(event.currentTarget);
+            const response = await fetch(formAction, {
+                method: 'POST',
+                headers: {
+                    Accept: 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                body: formData,
+                credentials: 'same-origin',
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+
+                if (data.two_factor) {
+                    window.location.assign(data.redirect ?? '/two-factor-challenge');
+                    return;
+                }
+
+                if (typeof data.redirect === 'string' && data.redirect.length > 0) {
+                    setRedirectAfterSeal(data.redirect);
+                    setSuccessSealVisible(true);
+                    return;
+                }
+            }
+
+            if (response.status === 422) {
+                const data = await response.json();
+                const errors = data.errors ?? {};
+
+                setEmailError(errors.email?.[0] ?? '');
+                setPasswordError(errors.password?.[0] ?? '');
+                return;
+            }
+
+            if (response.status === 419) {
+                setErrorMessage('Your session expired. Please refresh the page and try again.');
+                return;
+            }
+
+            setErrorMessage('Sign in failed. Please try again.');
+        } catch {
+            setErrorMessage('Sign in failed. Please try again.');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
 
     const handleSubmit = (event) => {
         if (isServerForm) {
+            void handleServerSubmit(event);
             return;
         }
+
         event.preventDefault();
         onSubmit?.(event);
     };
@@ -129,17 +172,7 @@ export default function LoginPage({
 
     return (
         <div className="relative min-h-screen w-screen bg-[#FFFFFF]">
-            <main
-                className={`relative z-0 flex min-h-screen w-screen flex-col items-center justify-center bg-[#FFFFFF] px-2 sm:px-4 md:px-6 motion-reduce:transition-none ${
-                    formRevealed ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'
-                }`}
-                style={{
-                    transitionProperty: 'opacity',
-                    transitionDuration: `${CROSSFADE_MS}ms`,
-                    transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)',
-                }}
-                aria-hidden={!formRevealed}
-            >
+            <main className="relative z-0 flex min-h-screen w-screen flex-col items-center justify-center bg-[#FFFFFF] px-2 sm:px-4 md:px-6">
                 <div className="flex w-full max-w-full flex-col items-center md:px-12">
                     <div className="flex justify-center">
                         <MealCraftLogo variant="seal-md" width={168} className="h-auto shrink-0" alt="Meal Craft" />
@@ -191,6 +224,7 @@ export default function LoginPage({
                                 error={emailError || undefined}
                                 className="!max-w-none"
                                 required={isServerForm}
+                                disabled={isSubmitting || successSealVisible}
                             />
                             <TextInput
                                 label="Password"
@@ -203,6 +237,7 @@ export default function LoginPage({
                                 error={passwordError || undefined}
                                 className="!max-w-none"
                                 required={isServerForm}
+                                disabled={isSubmitting || successSealVisible}
                             />
 
                             <div className="flex w-full flex-wrap items-center justify-between gap-x-4 gap-y-3 text-left">
@@ -214,7 +249,13 @@ export default function LoginPage({
                                 ) : null}
                             </div>
 
-                            <Button label="Sign In" variant="primary" type="submit" className="w-full" />
+                            <Button
+                                label={isSubmitting ? 'Signing in…' : 'Sign In'}
+                                variant="primary"
+                                type="submit"
+                                className="w-full"
+                                disabled={isSubmitting || successSealVisible}
+                            />
                         </div>
 
                         {showSignUp ? (
@@ -229,25 +270,33 @@ export default function LoginPage({
                 </div>
             </main>
 
-            {splashMounted ? (
+            {successSealVisible ? (
                 <div
-                    className={`fixed inset-0 z-50 flex items-center justify-center bg-[#FFFFFF] px-4 motion-reduce:transition-none ${
-                        splashOpaque ? 'opacity-100' : 'pointer-events-none opacity-0'
-                    }`}
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-[#FFFFFF] px-4 motion-reduce:transition-none"
                     style={{
-                        transitionProperty: 'opacity',
-                        transitionDuration: `${CROSSFADE_MS}ms`,
-                        transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)',
+                        animation: `loginSuccessSealFadeIn ${SUCCESS_SEAL_FADE_MS}ms cubic-bezier(0.4, 0, 0.2, 1) forwards`,
                     }}
-                    aria-busy={splashOpaque}
-                    aria-label="Meal Craft"
-                    aria-hidden={!splashOpaque}
+                    aria-busy="true"
+                    aria-label="Signing you in"
                 >
                     <div className="flex w-full max-w-[min(430px,100%)] flex-col items-center justify-center">
-                        <MealCraftLogo variant="marketing-animated" width={320} className="w-full" alt="Meal Craft" />
+                        <MealCraftLogo
+                            variant="marketing-animated"
+                            width={320}
+                            className="w-full"
+                            alt="Meal Craft"
+                            onAnimationComplete={handleSealAnimationComplete}
+                        />
                     </div>
                 </div>
             ) : null}
+
+            <style>{`
+                @keyframes loginSuccessSealFadeIn {
+                    from { opacity: 0; }
+                    to { opacity: 1; }
+                }
+            `}</style>
         </div>
     );
 }

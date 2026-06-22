@@ -12,7 +12,6 @@
         'passwordError' => $errors->first('password'),
         'statusMessage' => session('status') ?? '',
         'errorMessage' => session('error') ?? '',
-        'splashDurationMs' => 0,
     ];
 @endphp
 <!DOCTYPE html>

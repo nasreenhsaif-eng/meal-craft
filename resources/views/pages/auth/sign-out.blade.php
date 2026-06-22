@@ -1,6 +1,6 @@
 <x-layouts::auth :title="__('Sign out')">
     <div class="flex w-full max-w-[492px] flex-col items-center gap-8 text-center font-['Montserrat']">
-        <a href="{{ route('home') }}" class="flex w-full flex-col items-center rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-[#556C37] focus-visible:ring-offset-2">
+        <a href="{{ auth()->check() ? route('sign-out') : route('login') }}" class="flex w-full flex-col items-center rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-[#556C37] focus-visible:ring-offset-2">
             <span class="sr-only">{{ config('app.name', 'Meal Craft') }}</span>
             <x-application-logo mode="vertical" />
         </a>

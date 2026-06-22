@@ -35,6 +35,7 @@ class ConsultationCraftedForYouController extends Controller
             'isAdminPreview' => $isAdminPreview,
             'pageEyebrow' => $isCustomer ? 'Your plan' : 'Admin / Consultation',
             'adaptedMenuUrl' => route('api.menu.adapted', absolute: false),
+            'mealDetailViewUrlTemplate' => '/api/meals/{id}/detail-view',
             'planTiers' => UserPlanCalculator::planTiers(),
             'planTier' => $profile?->daily_calorie_target !== null
                 ? (int) UserPlanCalculator::snapToPlanTier((float) $profile->daily_calorie_target)

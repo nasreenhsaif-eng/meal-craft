@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Ingredient;
 use App\Models\Meal;
+use App\Support\MealLibraryBulkNutrition;
 use App\Support\WholeFoodDietPolicy;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -15,6 +16,14 @@ use InvalidArgumentException;
 final class BalancedRotationMealRecipeRefiner
 {
     public const ROASTED_POMEGRANATE_CHICKEN_NAME = 'Roasted Chicken in Pomegranate & Sumac Sauce w Turmeric Rice';
+
+    public const CHOCOLATE_ORANGE_BROWNIE_NAME = 'Chocolate Orange Brownie';
+
+    public const CHOCOLATE_ORANGE_BROWNIE_SERVINGS_COUNT = 24;
+
+    public const SALTED_TAHINI_CARAMEL_CHOCOLATE_BAR_NAME = 'Salted Tahini Caramel Chocolate Bar';
+
+    public const SALTED_CARAMEL_CHOCOLATE_BAR_SERVINGS_COUNT = 16;
 
     /**
      * @return list<string>
@@ -38,7 +47,7 @@ final class BalancedRotationMealRecipeRefiner
                 }
 
                 /** @var Meal|null $meal */
-                $meal = Meal::queryForMealLibrary()->where('name', $mealName)->first();
+                $meal = $this->resolveMealForRefinement($mealName);
 
                 if ($meal === null) {
                     continue;
@@ -49,6 +58,9 @@ final class BalancedRotationMealRecipeRefiner
                     $definition['ingredients'],
                     $definition['diet_tags'] ?? WholeFoodDietPolicy::REQUIRED_MEAL_DIET_TAGS,
                     $definition['short_description'] ?? null,
+                    $definition['is_bulk'] ?? null,
+                    $definition['servings_count'] ?? null,
+                    $mealName,
                 );
 
                 $updated[] = $mealName;
@@ -62,8 +74,15 @@ final class BalancedRotationMealRecipeRefiner
      * @param  array<string, float>  $ingredientGrams
      * @param  list<string>  $dietTags
      */
-    private function syncMeal(Meal $meal, array $ingredientGrams, array $dietTags, ?string $shortDescription = null): void
-    {
+    private function syncMeal(
+        Meal $meal,
+        array $ingredientGrams,
+        array $dietTags,
+        ?string $shortDescription = null,
+        ?bool $isBulk = null,
+        ?float $servingsCount = null,
+        ?string $canonicalMealName = null,
+    ): void {
         $sync = [];
 
         foreach ($ingredientGrams as $ingredientName => $grams) {
@@ -96,18 +115,43 @@ final class BalancedRotationMealRecipeRefiner
         $meal->ingredients()->sync($sync);
 
         $fresh = $meal->fresh(['ingredients']);
-        $nutrition = RecipeNutritionCalculator::fromMeal($fresh);
+        $batchNutrition = RecipeNutritionCalculator::fromMeal($fresh);
 
-        $update = array_merge(
-            Meal::nutritionSummaryToPersistedAttributes($nutrition),
-            [
-                'nutrition_aggregates_synced' => true,
-                'diet_tags' => $dietTags,
-            ],
-        );
+        if ($isBulk === true && $servingsCount !== null && $servingsCount > 0) {
+            $nutritionResolution = MealLibraryBulkNutrition::resolvePersistedNutrition(
+                $batchNutrition,
+                true,
+                $servingsCount,
+                null,
+                true,
+            );
+
+            $update = array_merge(
+                $nutritionResolution['attributes'],
+                [
+                    'nutrition_aggregates_synced' => $nutritionResolution['nutrition_aggregates_synced'],
+                    'sickle_cell_program_highlight' => $nutritionResolution['sickle_cell_program_highlight'],
+                    'is_bulk' => true,
+                    'servings_count' => $servingsCount,
+                    'diet_tags' => $dietTags,
+                ],
+            );
+        } else {
+            $update = array_merge(
+                Meal::nutritionSummaryToPersistedAttributes($batchNutrition),
+                [
+                    'nutrition_aggregates_synced' => true,
+                    'diet_tags' => $dietTags,
+                ],
+            );
+        }
 
         if ($shortDescription !== null) {
             $update['short_description'] = $shortDescription;
+        }
+
+        if ($canonicalMealName !== null && $meal->name !== $canonicalMealName) {
+            $update['name'] = $canonicalMealName;
         }
 
         $meal->update($update);
@@ -121,8 +165,106 @@ final class BalancedRotationMealRecipeRefiner
         }
     }
 
+    private function resolveMealForRefinement(string $mealName): ?Meal
+    {
+        if ($mealName === self::CHOCOLATE_ORANGE_BROWNIE_NAME) {
+            return Meal::queryForMealLibrary()
+                ->whereIn('name', [self::CHOCOLATE_ORANGE_BROWNIE_NAME, self::CHOCOLATE_ORANGE_BROWNIE_NAME.' (N)'])
+                ->first();
+        }
+
+        if ($mealName === self::SALTED_TAHINI_CARAMEL_CHOCOLATE_BAR_NAME) {
+            return Meal::queryForMealLibrary()
+                ->whereIn('name', [
+                    self::SALTED_TAHINI_CARAMEL_CHOCOLATE_BAR_NAME,
+                    'Salted Caramel Chocolate Bar',
+                ])
+                ->first();
+        }
+
+        return Meal::queryForMealLibrary()->where('name', $mealName)->first();
+    }
+
     /**
-     * @return array<string, array{ingredients: array<string, float>, diet_tags?: list<string>, short_description?: string}>
+     * @return array<string, float>
+     */
+    private function chocolateOrangeBrowniePerServingIngredients(): array
+    {
+        return [
+            'Almond Flour (Base)' => 18.5,
+            'Egg' => 23,
+            'Cocoa Powder' => 7.5,
+            'Honey (Raw)' => 5,
+            'Orange Juice' => 10.5,
+            'Orange Zest' => 1.25,
+            'Olive Oil' => 3.5,
+            'Walnuts' => 5,
+        ];
+    }
+
+    /**
+     * @return array<string, float>
+     */
+    private function chocolateOrangeBrownieBatchIngredients(): array
+    {
+        return $this->scaleIngredientGrams(
+            $this->chocolateOrangeBrowniePerServingIngredients(),
+            self::CHOCOLATE_ORANGE_BROWNIE_SERVINGS_COUNT,
+        );
+    }
+
+    /**
+     * Per-serving grams for a 16-square 8x8 batch (see {@see saltedTahiniCaramelChocolateBarBatchIngredients()}).
+     *
+     * @return array<string, float>
+     */
+    private function saltedTahiniCaramelChocolateBarPerServingIngredients(): array
+    {
+        return [
+            'Almond Flour (Base)' => 9,
+            'Coconut Oil' => 6.8,
+            'Date Syrup' => 9,
+            'Tahini' => 7.5,
+            'Cocoa Powder' => 3.8,
+            'Sea Salt' => 0.6,
+            'Vanilla Pods' => 0.1,
+        ];
+    }
+
+    /**
+     * @return array<string, float>
+     */
+    private function saltedTahiniCaramelChocolateBarBatchIngredients(): array
+    {
+        return $this->scaleIngredientGrams(
+            $this->saltedTahiniCaramelChocolateBarPerServingIngredients(),
+            self::SALTED_CARAMEL_CHOCOLATE_BAR_SERVINGS_COUNT,
+        );
+    }
+
+    /**
+     * @param  array<string, float>  $ingredientGrams
+     * @return array<string, float>
+     */
+    private function scaleIngredientGrams(array $ingredientGrams, float $factor): array
+    {
+        $scaled = [];
+
+        foreach ($ingredientGrams as $ingredientName => $grams) {
+            $scaled[$ingredientName] = round((float) $grams * $factor, 4);
+        }
+
+        return $scaled;
+    }
+
+    /**
+     * @return array<string, array{
+     *     ingredients: array<string, float>,
+     *     diet_tags?: list<string>,
+     *     short_description?: string,
+     *     is_bulk?: bool,
+     *     servings_count?: float
+     * }>
      */
     private function recipeDefinitions(): array
     {
@@ -258,29 +400,19 @@ final class BalancedRotationMealRecipeRefiner
                 ],
                 'diet_tags' => $vegetarianTags,
             ],
-            'Chocolate Orange Brownie (N)' => [
-                'ingredients' => [
-                    'Almond Flour (Base)' => 45,
-                    'Egg' => 55,
-                    'Cocoa Powder' => 18,
-                    'Honey (Raw)' => 12,
-                    'Orange Juice' => 25,
-                    'Orange Zest' => 3,
-                    'Olive Oil' => 8,
-                    'Walnuts' => 12,
-                ],
+            self::CHOCOLATE_ORANGE_BROWNIE_NAME => [
+                'ingredients' => $this->chocolateOrangeBrownieBatchIngredients(),
+                'is_bulk' => true,
+                'servings_count' => self::CHOCOLATE_ORANGE_BROWNIE_SERVINGS_COUNT,
                 'diet_tags' => $vegetarianTags,
+                'short_description' => 'Rich flourless cocoa-orange brownie batch (24 small squares) with house almond flour, eggs, honey, olive oil, and walnuts.',
             ],
-            'Salted Caramel Chocolate Bar' => [
-                'ingredients' => [
-                    'Almond Flour (Base)' => 35,
-                    'Cocoa Powder' => 15,
-                    'Tahini' => 20,
-                    'Honey (Raw)' => 15,
-                    'Coconut Meat' => 12,
-                    'Walnuts' => 10,
-                ],
+            self::SALTED_TAHINI_CARAMEL_CHOCOLATE_BAR_NAME => [
+                'ingredients' => $this->saltedTahiniCaramelChocolateBarBatchIngredients(),
+                'is_bulk' => true,
+                'servings_count' => self::SALTED_CARAMEL_CHOCOLATE_BAR_SERVINGS_COUNT,
                 'diet_tags' => $vegetarianTags,
+                'short_description' => 'Three-layer 8x8 no-bake bar (16 squares): almond shortbread, salted tahini-date caramel, and dark cocoa topping.',
             ],
         ];
     }

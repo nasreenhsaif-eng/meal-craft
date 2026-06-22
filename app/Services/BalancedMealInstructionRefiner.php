@@ -389,16 +389,21 @@ final class BalancedMealInstructionRefiner
                 'Pour into the pan. Bake 30–35 minutes until set and golden.',
                 'Cool, then cut into '.BalancedCanonicalMealRecipeRefiner::CARROT_DESSERT_SERVINGS_COUNT.' equal slices. One slice is one serving.',
             ]),
-            'Chocolate Orange Brownie (N)' => $this->steps([
+            BalancedRotationMealRecipeRefiner::CHOCOLATE_ORANGE_BROWNIE_NAME => $this->steps([
                 'Heat oven to 175°C. Line a small tin.',
-                'Mix wet and dry ingredients per recipe until combined.',
+                'Whisk eggs with orange juice, zest, honey, and olive oil.',
+                'Fold in almond flour, cocoa powder, and chopped walnuts until combined.',
                 'Pour into tin. Bake until a skewer comes out mostly clean.',
-                'Cool before cutting.',
+                'Cool, then cut into '.BalancedRotationMealRecipeRefiner::CHOCOLATE_ORANGE_BROWNIE_SERVINGS_COUNT.' equal small squares. One square is one serving.',
             ]),
-            'Salted Caramel Chocolate Bar' => $this->steps([
-                'Melt chocolate gently over a double boiler or in short microwave bursts.',
-                'Spread into a lined mould or dish.',
-                'Chill until firm. Cut into portions.',
+            BalancedRotationMealRecipeRefiner::SALTED_TAHINI_CARAMEL_CHOCOLATE_BAR_NAME => $this->steps([
+                'Heat oven to 175°C. Line an 8x8 inch pan with parchment paper.',
+                'Mix almond flour, 3 tablespoons coconut oil, 2 tablespoons date syrup, vanilla, and salt into a crumb. Press evenly into the pan and bake 10 minutes. Cool 10 minutes.',
+                'Warm tahini, date syrup, coconut oil, vanilla, and sea salt in a saucepan over medium-low heat for about 2 minutes, stirring often. Pour over the crust.',
+                'Refrigerate 30 to 60 minutes until the caramel layer sets.',
+                'Whisk cocoa powder, remaining coconut oil, and a little date syrup until smooth and glossy.',
+                'Pour the chocolate layer over the caramel, tilt the pan to coat evenly, and chill 1 hour until firm. Sprinkle with flaky sea salt.',
+                'Lift from the pan and cut into '.BalancedRotationMealRecipeRefiner::SALTED_CARAMEL_CHOCOLATE_BAR_SERVINGS_COUNT.' squares. One square is one serving.',
             ]),
             'Apple Pie Balls' => $this->steps([
                 'Mix chopped apple, nuts, and spices with binder from recipe.',

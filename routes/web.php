@@ -14,6 +14,7 @@ use App\Http\Controllers\Admin\MealLibraryCsvImportController;
 use App\Http\Controllers\Admin\MealPlanLibraryController;
 use App\Http\Controllers\Api\AdaptedMenuController;
 use App\Http\Controllers\Api\CustomerCraftPlanController;
+use App\Http\Controllers\Api\MealDetailViewController;
 use App\Http\Controllers\Auth\PortalChoiceController;
 use App\Http\Controllers\Auth\WelcomeController;
 use App\Http\Controllers\Customer\ConsultationCraftedForYouController;
@@ -147,6 +148,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
 
         Route::prefix('api')->group(function (): void {
             Route::get('/menu/adapted', AdaptedMenuController::class)->name('api.menu.adapted');
+            Route::get('/meals/{meal}/detail-view', MealDetailViewController::class)->name('api.meals.detail-view');
             Route::post('/customer/craft-plan', [CustomerCraftPlanController::class, 'store'])
                 ->name('api.customer.craft-plan.store');
         });

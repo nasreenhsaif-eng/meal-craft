@@ -127,8 +127,8 @@ final class BalancedWeeklyRotationSchedule
     /** @var list<string> */
     public const DESSERTS = [
         BalancedCanonicalMealRecipeRefiner::CARROT_DESSERT_NAME,
-        'Chocolate Orange Brownie (N)',
-        'Salted Caramel Chocolate Bar',
+        'Chocolate Orange Brownie',
+        BalancedRotationMealRecipeRefiner::SALTED_TAHINI_CARAMEL_CHOCOLATE_BAR_NAME,
         'Apple Pie Balls',
         'Cinnamon Raisin Balls',
         'Saffron Pumpkin Muffin',

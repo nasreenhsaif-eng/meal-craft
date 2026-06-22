@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\CustomerProfile;
 use App\Models\User;
 use Laravel\Fortify\Features;
 
@@ -21,6 +22,22 @@ test('users can authenticate using the login screen', function () {
     $response
         ->assertSessionHasNoErrors()
         ->assertRedirect(route('login.portal-choice', absolute: false));
+
+    $this->assertAuthenticated();
+});
+
+test('json login returns redirect url for post-success seal animation', function () {
+    $user = User::factory()->create();
+
+    $response = $this->postJson(route('login.store'), [
+        'email' => $user->email,
+        'password' => 'password',
+    ]);
+
+    $response
+        ->assertOk()
+        ->assertJsonPath('two_factor', false)
+        ->assertJsonPath('redirect', route('login.portal-choice', absolute: false));
 
     $this->assertAuthenticated();
 });
@@ -62,7 +79,29 @@ test('users can logout', function () {
 
     $response = $this->actingAs($user)->post(route('logout'));
 
-    $response->assertRedirect(route('home'));
+    $response->assertRedirect(route('login'));
 
+    $this->assertGuest();
+});
+
+test('inertia logout performs a full-page redirect to login', function () {
+    $user = User::factory()->customer()->create();
+
+    $response = $this->actingAs($user)
+        ->withHeaders(['X-Inertia' => 'true'])
+        ->post(route('logout'));
+
+    $response->assertStatus(409);
+    $response->assertHeader('X-Inertia-Location', route('login'));
+    $this->assertGuest();
+});
+
+test('customer with incomplete onboarding is sent to login after logout', function () {
+    $user = User::factory()->customer()->create();
+    CustomerProfile::factory()->for($user)->withoutOnboarding()->create();
+
+    $response = $this->actingAs($user)->post(route('logout'));
+
+    $response->assertRedirect(route('login'));
     $this->assertGuest();
 });

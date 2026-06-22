@@ -25,6 +25,8 @@ import {
     resolveInitialConsultationRestoreDraft,
     saveConsultationDraft,
 } from '../../consultation/consultationDraft.js';
+import MealDetailModalPortal from '../../Components/Molecules/MealDetailModalPortal.jsx';
+import { useMealDetailModal } from '../../meal-library/useMealDetailModal.js';
 
 const PAGE_BG = 'bg-[#F8F9F6]';
 const WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -308,6 +310,7 @@ function slotId(dayIdx, slotKey, index) {
  *   isAdminPreview?: boolean;
  *   pageEyebrow?: string;
  *   adaptedMenuUrl?: string;
+ *   mealDetailViewUrlTemplate?: string;
  *   initialPlanTier?: number | null;
  *   disableAdaptedMenuFetch?: boolean;
  *   initialEditDraft?: {
@@ -332,6 +335,7 @@ export default function CraftedForYouPage({
     isAdminPreview = false,
     pageEyebrow = 'Admin / Consultation',
     adaptedMenuUrl = '/api/menu/adapted',
+    mealDetailViewUrlTemplate = '/api/meals/{id}/detail-view',
     initialPlanTier = null,
     disableAdaptedMenuFetch = false,
     initialEditDraft = null,
@@ -366,6 +370,10 @@ export default function CraftedForYouPage({
     const [submitting, setSubmitting] = useState(false);
     const [submitError, setSubmitError] = useState(/** @type {string | null} */ (null));
     const [submitSuccess, setSubmitSuccess] = useState(false);
+
+    const { mealDetailModal, detailLoading, openMealDetail, closeMealDetail } = useMealDetailModal(
+        mealDetailViewUrlTemplate,
+    );
 
     // Craft-specific choice selection (per active curation day)
     const [businessCraftChoice, setBusinessCraftChoice] = useState(/** @type {'soup'|'sidesalad'|'dessert'} */ ('soup'));
@@ -1263,6 +1271,7 @@ export default function CraftedForYouPage({
                                         ? "Today's options rotate each weekday — pick your breakfast, meals, and sides."
                                         : undefined
                                 }
+                                onViewDetails={openMealDetail}
                             >
                                 {craft?.key === 'full' ? null : (
                                 <AnimatePresence mode="wait" initial={false}>
@@ -1297,6 +1306,7 @@ export default function CraftedForYouPage({
                                                             selectedIds={selections.meals}
                                                             maxSelected={1}
                                                             onSelect={toggle('meals', 1)}
+                                                            onViewDetails={openMealDetail}
                                                         />
 
                                                         <div className="rounded-[12px] border border-gray-200 bg-white p-4">
@@ -1336,6 +1346,7 @@ export default function CraftedForYouPage({
                                                                 selectedIds={selections.soup}
                                                                 maxSelected={1}
                                                                 onSelect={toggle('soup', 1)}
+                                                                onViewDetails={openMealDetail}
                                                             />
                                                         ) : side === 'dessert' ? (
                                                             <MealSlotCarousel
@@ -1345,6 +1356,7 @@ export default function CraftedForYouPage({
                                                                 selectedIds={selections.desserts}
                                                                 maxSelected={1}
                                                                 onSelect={toggle('desserts', 1)}
+                                                                onViewDetails={openMealDetail}
                                                             />
                                                         ) : (
                                                             <MealSlotCarousel
@@ -1354,6 +1366,7 @@ export default function CraftedForYouPage({
                                                                 selectedIds={selections.sideSalads}
                                                                 maxSelected={1}
                                                                 onSelect={toggle('sideSalads', 1)}
+                                                                onViewDetails={openMealDetail}
                                                             />
                                                         )}
                                                     </>
@@ -1371,6 +1384,7 @@ export default function CraftedForYouPage({
                                                             selectedIds={selections[slot.selectionKey]}
                                                             maxSelected={slot.count}
                                                             onSelect={toggle(slot.selectionKey, slot.count)}
+                                                            onViewDetails={openMealDetail}
                                                         />
                                                     ))}
 
@@ -1404,6 +1418,7 @@ export default function CraftedForYouPage({
                                                                             selectedIds={selections.soup}
                                                                             maxSelected={1}
                                                                             onSelect={toggle('soup', 1)}
+                                                                            onViewDetails={openMealDetail}
                                                                         />
                                                                     </motion.div>
                                                                 ) : null}
@@ -1539,6 +1554,12 @@ export default function CraftedForYouPage({
                     </div>
                 </div>
             ) : null}
+
+            <MealDetailModalPortal
+                mealDetailModal={mealDetailModal}
+                loading={detailLoading}
+                onClose={closeMealDetail}
+            />
         </div>
     );
 }

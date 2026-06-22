@@ -755,6 +755,7 @@ export function MealSlotCarousel({
  * @param {Partial<Record<SelectionCategoryKey, ConsultationMeal[]>>} [props.assignedMealsByCategory]
  * @param {boolean} [props.categoriesReadOnly]
  * @param {(enabled: boolean) => void} [props.onSoupOptInChange]
+ * @param {(meal: ConsultationMeal) => void} [props.onViewDetails]
  * @param {string} [props.panelClassName] Height class for the viewport-locked panel shell.
  */
 export default function ChooseYourMeals({
@@ -787,6 +788,7 @@ export default function ChooseYourMeals({
     assignedMealsByCategory = null,
     categoriesReadOnly = false,
     onSoupOptInChange,
+    onViewDetails,
     panelClassName = 'h-[100dvh] min-h-screen',
 }) {
     const craftingSubtitle = `CRAFTING YOUR ${String(dayName).trim().toUpperCase()}`;
@@ -979,6 +981,7 @@ export default function ChooseYourMeals({
                     maxSelected={max}
                     readOnly={!categoryPickEnabled}
                     onSelect={categoryPickEnabled ? (meal) => onToggleCategory?.(def.selectionKey, meal) : () => {}}
+                    onViewDetails={onViewDetails}
                 />
             );
         });
@@ -993,6 +996,7 @@ export default function ChooseYourMeals({
         assignedMealsByCategory,
         categoriesReadOnly,
         categoryPickEnabled,
+        onViewDetails,
     ]);
 
     const soupDeckMeals = useMemo(() => {
@@ -1064,6 +1068,7 @@ export default function ChooseYourMeals({
                                         ? (meal) => onToggleCategory?.('soup', meal)
                                         : () => {}
                                 }
+                                onViewDetails={onViewDetails}
                             />
                         </motion.div>
                     ) : null}
@@ -1095,6 +1100,7 @@ export default function ChooseYourMeals({
                 maxSelected={maxSelected}
                 onSelect={onSelectMeal}
                 deckScopeKey={deckScopeKey}
+                onViewDetails={onViewDetails}
             />
         ) : null;
 

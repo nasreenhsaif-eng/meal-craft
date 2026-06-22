@@ -144,7 +144,7 @@ export function DayMealsTabPanel({ meals, onOpenMeal }) {
 
                             return (
                                 <li key={meal.id} className="border-t border-gray-100 pt-4 first:border-t-0 first:pt-0">
-                                    {meal.detailView && onOpenMeal ? (
+                                    {onOpenMeal ? (
                                         <button
                                             type="button"
                                             onClick={() => onOpenMeal(meal)}
