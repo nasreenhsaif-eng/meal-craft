@@ -217,7 +217,8 @@ test('chia breakfast refiner standardizes deck meals on coconut chia base', func
         ->and($names)->toContain('Blueberries')
         ->and($names)->toContain('Walnuts')
         ->and($names)->not->toContain('Pumpkin Seeds')
-        ->and($names)->toContain('Cinnamon');
+        ->and($names)->toContain('Cinnamon')
+        ->and($meal->total_calories)->toBeLessThanOrEqual(BalancedChiaBreakfastRecipeRefiner::MAX_CALORIES);
 });
 
 test('whole food policy flags meals with banned ingredients or missing tags', function (): void {

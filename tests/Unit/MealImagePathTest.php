@@ -99,6 +99,17 @@ test('resolve url uses asset for public images directory', function () {
     expect($url)->toContain('images/meals/placeholder.svg');
 });
 
+test('resolve url appends filemtime cache buster for existing public meal images', function () {
+    $path = 'images/meals/placeholder.svg';
+    if (! is_file(public_path($path))) {
+        $this->markTestSkipped('Placeholder meal image not present.');
+    }
+
+    $url = MealImagePath::resolveUrl($path);
+
+    expect($url)->toMatch('/[?&]v=\d+$/');
+});
+
 test('resolve url percent encodes ampersands in filenames', function () {
     $path = 'images/meals/Vegan-Smoky-Cauliflower-&-Lentil-Stew-w-Quinoa-Bread-&-Tahini.png';
     if (! is_file(public_path($path))) {

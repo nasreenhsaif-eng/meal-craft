@@ -6,6 +6,7 @@ use App\Enums\RecipeCategory;
 use App\Models\Ingredient;
 use App\Models\Meal;
 use App\Models\User;
+use App\Support\MealImagePath;
 use Inertia\Testing\AssertableInertia;
 
 test('meal library index includes detailView on each meal for the detail modal', function () {
@@ -54,7 +55,7 @@ test('meal library index includes detailView on each meal for the detail modal',
             ->has('meals.0.detailView.sickleCellHighlights')
             ->where('meals.0.detailView.hasG6pdTrigger', false)
             ->where('meals.0.detailView.imageAlt', 'Detail Payload Meal')
-            ->where('meals.0.detailView.imageUrl', asset('images/meals/placeholder.svg'))
+            ->where('meals.0.detailView.imageUrl', MealImagePath::resolveUrl('images/meals/placeholder.svg'))
             ->where('meals.0.detailView.cyclePhases', ['Follicular', 'Ovulatory'])
             ->where('meals.0.detailView.dietaryTags', ['Balanced', 'Ketogenic', 'Vegan'])
             ->has('meals.0.detailView.ingredients', 1)

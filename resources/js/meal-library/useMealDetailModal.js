@@ -19,14 +19,6 @@ export function useMealDetailModal(detailViewUrlTemplate = '/api/meals/{id}/deta
                 return;
             }
 
-            if (meal.detailView) {
-                setMealDetailModal({
-                    title: meal.title ?? 'Meal details',
-                    detailView: meal.detailView,
-                });
-                return;
-            }
-
             const mealId = meal.id;
             if (!mealId) {
                 return;

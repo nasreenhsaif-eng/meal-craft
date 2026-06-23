@@ -12,8 +12,11 @@ class MealDetailViewController extends Controller
 {
     public function __invoke(Request $request, Meal $meal, MealLibraryController $mealLibrary): JsonResponse
     {
+        $row = $mealLibrary->presentMealRowForUi($meal);
+
         return response()->json([
-            'detailView' => $mealLibrary->presentMealRowForUi($meal)['detailView'],
+            'detailView' => $row['detailView'],
+            'editForm' => $row['editForm'],
         ]);
     }
 }

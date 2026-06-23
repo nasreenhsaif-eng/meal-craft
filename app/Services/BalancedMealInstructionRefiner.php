@@ -42,7 +42,10 @@ final class BalancedMealInstructionRefiner
                     continue;
                 }
 
-                $meal->update(['instructions' => $instructions]);
+                $meal->update([
+                    'instructions' => $instructions,
+                    'description' => $instructions,
+                ]);
                 $updated[] = $mealName;
             }
 
@@ -115,30 +118,34 @@ final class BalancedMealInstructionRefiner
                 'Serve straight from the pan.',
             ]),
             'Hummus Egg Stack' => $this->steps([
-                'Warm hummus and spread on a plate.',
-                'Fry or poach eggs to your liking.',
-                'Stack eggs on hummus. Add cucumber, herbs, or salad veg from the recipe.',
-                'Drizzle with olive oil and lemon. Serve immediately.',
+                'Prepare Creamy Cumin Hummus (Base) per base recipe instructions. Warm and spread a generous layer in a shallow bowl.',
+                'Halve the cherry tomatoes. Sauté spinach and tomatoes in olive oil over medium heat until the spinach is wilted and the tomatoes are softened (3–4 min).',
+                'Spoon the spinach and tomato layer over the hummus.',
+                'Soft-boil eggs until the whites are set and yolks are jammy (6–7 min). Halve and place on top.',
+                'Add cucumber slices and finish with cracked black pepper. Serve immediately.',
             ]),
             'Kuku Sabzi Egg Muffins' => $this->steps([
-                'Heat oven to 180°C (350°F). Grease a muffin tin.',
-                'Whisk eggs with chopped herbs and vegetables from the recipe.',
-                'Pour into muffin cups, filling about three-quarters full.',
-                'Bake 18–22 minutes until set in the centre.',
+                'Heat oven to 180°C (350°F). Brush a muffin tin with olive oil.',
+                'Finely mince spinach, fresh coriander, dill, and spring onion.',
+                'Whisk eggs with sea salt and black pepper until frothy.',
+                'Fold in the minced herbs, spring onion, chopped walnuts, and barberries (zereshk).',
+                'Divide between muffin cups, filling about three-quarters full. Bake 18–22 minutes until set in the centre.',
                 'Cool 5 minutes before removing. Serve warm or at room temperature.',
             ]),
             'Sweet Potato Egg Hash' => $this->steps([
-                'Dice sweet potato into small cubes.',
-                'Sauté in olive oil over medium heat, stirring often, until tender and lightly browned (12–15 min).',
-                'Push potato to one side. Scramble or fry eggs in the same pan.',
-                'Combine on the plate. Season with herbs and serve hot.',
+                'Preheat oven to 200°C. Toss diced sweet potato with olive oil, rosemary, thyme, sea salt, and black pepper. Spread on a tray and roast until tender (25–30 min).',
+                'Sauté diced white onion and red bell pepper in a frying pan with olive oil until softened (5–6 min).',
+                'Add roasted sweet potato to the pan and toss to combine. Season with a pinch of salt and pepper.',
+                'Beat eggs, pour into the pan, and scramble gently over medium-low heat until just set.',
+                'Finish with fresh coriander and serve hot.',
             ]),
-            'Butternut Squash Fritters Eggs Marinara' => $this->steps([
-                'Grate or mash cooked butternut squash. Mix with egg and any binder from the recipe.',
-                'Form small patties. Pan-fry in olive oil until golden on both sides.',
-                'Warm marinara or tomato sauce in a small pan.',
-                'Fry or poach remaining eggs.',
-                'Serve fritters with sauce and eggs.',
+            'Butternut Squash Fritters & Eggs' => $this->steps([
+                'Preheat the oven to 200°C.',
+                'Cut the butternut squash into 2–3 cm chunks. Place in a roasting tin, drizzle with olive oil, and season with sea salt, chili flakes, and fennel seeds. Roast for about 20 minutes, then leave to cool.',
+                'When cool, place the butternut squash in a blender with any roasting juices. Add eggs, garlic, fresh coriander, lemon juice, cumin seeds, and coriander seeds. Blend to a rough paste and season to taste.',
+                'Transfer the mixture to a bowl and stir in enough quinoa flour to make a smooth mix. Refrigerate for 1 hour to firm up. The mix should be sticky rather than wet — add a little more flour if needed.',
+                'With wet hands, shape into ping-pong-ball-sized fritters. Bake at 200°C until golden and set through, or pan-fry in olive oil until crisp.',
+                'Prepare Marinara Sauce (Base) per base recipe instructions. Warm and serve on the side.',
             ]),
             'Smashed Beans & Eggs' => $this->steps([
                 'Prepare Smashed White Beans (Base) per base recipe instructions.',
@@ -150,11 +157,11 @@ final class BalancedMealInstructionRefiner
 
             // Chicken plate mains
             'Tamarind Honey & Sesame Chicken w Garlicky Green Beans' => $this->steps([
-                'Mix tamarind paste, honey, rice vinegar, ginger, and garlic for the glaze.',
-                'Season chicken thighs. Pan-sear or bake at 200°C until nearly cooked through.',
-                'Brush with glaze. Finish cooking until sticky and golden.',
-                'Prepare Garlicky Green Beans (Base) and steam or roast broccoli.',
-                'Slice chicken. Serve with garlicky green beans, broccoli, cucumber, and spring onion.',
+                'Combine tamarind paste, honey, rice vinegar, sesame oil, crushed garlic, grated ginger, salt, and spring onion pieces in a jug.',
+                'Marinate chicken breast in the sauce overnight.',
+                'Preheat oven. Bake 25 minutes until cooked through (74°C internal).',
+                'Sprinkle chicken with finely sliced spring onion. Combine tray juices with leftover marinade and drizzle over liberally.',
+                'Serve with steamed broccoli, cucumber pickle, and Garlicky Green Beans (Base) sprinkled with sesame seeds and spring onion.',
             ]),
             'Grilled Chicken Chimichurri' => $this->steps([
                 'Finely chop parsley, coriander, and garlic. Mix with olive oil, lemon, and vinegar.',
@@ -291,12 +298,13 @@ final class BalancedMealInstructionRefiner
             ]),
 
             // Vegan mains
-            'Vegan Butternut Squash, Lentil & Nut Stew w Brown Rice' => $this->steps([
+            BalancedCanonicalMealRecipeRefiner::VEGAN_BUTTERNUT_PEANUT_STEW_NAME => $this->steps([
                 'Cook brown rice. Keep warm.',
-                'Sauté garlic, squash, bell pepper, and mushrooms for 5 minutes.',
-                'Add lentils, tomato, stock, and spices. Simmer 25–30 minutes until lentils are soft.',
-                'Stir in spinach, peanut butter, and crushed peanuts until creamy.',
-                'Serve stew over rice with lime juice on top.',
+                'Fry finely chopped onion in olive oil for 5 minutes until soft. Grate in garlic and stir.',
+                'Add chopped tomatoes and cook for a couple of minutes. Add water, rinsed red lentils, chopped red pepper, and butternut squash cubes. Bring to the boil, then reduce to a simmer.',
+                'Stir in vegetable stock and peanut butter until combined. Add zucchini and simmer for 20 minutes.',
+                'Add mushrooms and spinach–cabbage greens. Simmer a couple of minutes until wilted. Season with sea salt, black pepper, and chilli flakes.',
+                'Serve stew over brown rice. Top with fresh coriander, cherry tomatoes, crushed peanuts, and lime juice.',
             ]),
             'Vegan Smoky Cauliflower & Lentil Stew w Quinoa Bread & Tahini' => $this->steps([
                 'Roast cauliflower florets at 200°C for 20 minutes until golden.',

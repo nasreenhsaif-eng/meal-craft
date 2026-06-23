@@ -54,6 +54,28 @@ const PAGE_BG = 'bg-[#F8F9F6]';
 const PAGE_SIZE = 12;
 
 /**
+ * @param {string|number} mealId
+ * @returns {Promise<{ detailView?: object; editForm?: object } | null>}
+ */
+async function fetchFreshMealLibraryPayload(mealId) {
+    const response = await fetch(`/api/meals/${encodeURIComponent(String(mealId))}/detail-view`, {
+        headers: {
+            Accept: 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+        },
+        credentials: 'same-origin',
+    });
+
+    if (!response.ok) {
+        return null;
+    }
+
+    const data = await response.json();
+
+    return data && typeof data === 'object' ? data : null;
+}
+
+/**
  * @param {unknown} data
  * @returns {object[]}
  */
@@ -670,11 +692,20 @@ export function MealLibraryPageContent({
     const [mealDetailModal, setMealDetailModal] = useState(
         /** @type {null | { title: string; detailView: object }} */ (null),
     );
+    const [detailLoading, setDetailLoading] = useState(false);
     const [viewMode, setViewMode] = useState(() => initialViewMode ?? 'grid');
 
     useEffect(() => {
         setMealRows(meals);
     }, [meals]);
+
+    useEffect(() => {
+        void router.reload({
+            only: ['meals'],
+            preserveScroll: true,
+            preserveState: true,
+        });
+    }, []);
 
     useEffect(() => {
         if (initialViewMode !== undefined) {
@@ -754,6 +785,59 @@ export function MealLibraryPageContent({
         setCreateOpen(false);
         setMealToEdit(null);
     }, []);
+
+    const openMealDetailForLibrary = useCallback(async (meal) => {
+        if (!meal?.id) {
+            return;
+        }
+
+        setDetailLoading(true);
+        setMealDetailModal({
+            title: String(meal.title ?? '').trim() || 'Meal',
+            detailView: {},
+        });
+
+        try {
+            const fresh = await fetchFreshMealLibraryPayload(meal.id);
+
+            if (fresh?.detailView) {
+                setMealDetailModal({
+                    title: String(meal.title ?? '').trim() || 'Meal',
+                    detailView: fresh.detailView,
+                });
+            } else {
+                setMealDetailModal(null);
+            }
+        } catch {
+            setMealDetailModal(null);
+        } finally {
+            setDetailLoading(false);
+        }
+    }, []);
+
+    const openMealEditorForLibrary = useCallback(
+        async (meal) => {
+            resetCreateForm();
+
+            let mealPayload = meal;
+
+            if (meal?.id) {
+                try {
+                    const fresh = await fetchFreshMealLibraryPayload(meal.id);
+
+                    if (fresh?.editForm) {
+                        mealPayload = { ...meal, editForm: fresh.editForm, detailView: fresh.detailView };
+                    }
+                } catch {
+                    // Fall back to the row already on the page.
+                }
+            }
+
+            setMealToEdit(mealPayload);
+            setCreateOpen(true);
+        },
+        [resetCreateForm],
+    );
 
     useEffect(() => {
         if (!createOpen || !mealToEdit?.editForm) {
@@ -1857,19 +1941,10 @@ export function MealLibraryPageContent({
                                                 selected={selectedSet.has(meal.id)}
                                                 onToggleSelected={() => toggleRow(meal.id)}
                                                 meal={meal}
-                                                onViewDetails={(m) => {
-                                                    if (m?.detailView) {
-                                                        setMealDetailModal({
-                                                            title: String(m.title ?? '').trim() || 'Meal',
-                                                            detailView: m.detailView,
-                                                        });
-                                                    }
-                                                }}
+                                                onViewDetails={openMealDetailForLibrary}
                                                 onPrimaryAction={() => {}}
                                                 onEdit={() => {
-                                                    resetCreateForm();
-                                                    setMealToEdit(meal);
-                                                    setCreateOpen(true);
+                                                    void openMealEditorForLibrary(meal);
                                                 }}
                                                 className="transition-all duration-200 ease-out hover:-translate-y-0.5 hover:scale-[1.02] hover:shadow-xl active:translate-y-0 active:scale-[0.98] active:shadow-md"
                                             />
@@ -2211,7 +2286,11 @@ export function MealLibraryPageContent({
                             </div>
                             <Button label="Close" variant="ghost" type="button" onClick={() => setMealDetailModal(null)} />
                         </div>
-                        <MealDetailView meal={mealDetailModal.detailView} embedded />
+                        {detailLoading ? (
+                            <p className="px-4 py-8 text-center font-body text-sm text-[#555555] md:px-6">Loading meal details…</p>
+                        ) : (
+                            <MealDetailView meal={mealDetailModal.detailView} embedded />
+                        )}
                     </div>
                 </div>
             ) : null}

@@ -29,7 +29,12 @@ final class BalancedEggBreakfastRecipeRefiner
                     continue;
                 }
 
-                $this->syncMeal($meal, $definition['ingredients'], $definition['diet_tags'] ?? WholeFoodDietPolicy::REQUIRED_MEAL_DIET_TAGS);
+                $this->syncMeal(
+                    $meal,
+                    $definition['ingredients'],
+                    $definition['diet_tags'] ?? WholeFoodDietPolicy::REQUIRED_MEAL_DIET_TAGS,
+                    $definition['highlight'] ?? null,
+                );
                 $updated[] = $mealName;
             }
 
@@ -41,7 +46,7 @@ final class BalancedEggBreakfastRecipeRefiner
      * @param  array<string, float>  $ingredientGrams
      * @param  list<string>  $dietTags
      */
-    private function syncMeal(Meal $meal, array $ingredientGrams, array $dietTags): void
+    private function syncMeal(Meal $meal, array $ingredientGrams, array $dietTags, ?string $highlight = null): void
     {
         $sync = [];
 
@@ -79,6 +84,10 @@ final class BalancedEggBreakfastRecipeRefiner
                 'nutrition_aggregates_synced' => true,
                 'diet_tags' => $dietTags,
             ],
+            $highlight !== null && trim($highlight) !== '' ? [
+                'short_description' => trim($highlight),
+                'highlight' => trim($highlight),
+            ] : [],
         ));
 
         MealRecipeAsIngredientSyncService::syncFromPersistedMeal($fresh->fresh(['ingredients']), false);
@@ -107,14 +116,15 @@ final class BalancedEggBreakfastRecipeRefiner
             ],
             'Hummus Egg Stack' => [
                 'ingredients' => [
+                    'Creamy Cumin Hummus (Base)' => 100,
                     'Egg' => 100,
-                    'Chickpeas' => 60,
-                    'Tahini' => 12,
-                    'Lemon Juice' => 8,
+                    'Spinach (Fresh)' => 45,
+                    'Cherry Tomatoes' => 45,
                     'Cucumber' => 40,
                     'Olive Oil' => 3,
-                    'Garlic (Raw)' => 2,
+                    'Black Pepper' => 1,
                 ],
+                'highlight' => 'Soft-boiled eggs stacked over sautéed spinach and cherry tomatoes on a bed of creamy house cumin hummus.',
                 'diet_tags' => $tags,
             ],
             'Kuku Sabzi Egg Muffins' => [
@@ -125,8 +135,12 @@ final class BalancedEggBreakfastRecipeRefiner
                     'Dill (Fresh)' => 4,
                     'Spring Onion' => 15,
                     'Walnuts' => 8,
+                    'Barberries' => 5,
                     'Olive Oil' => 4,
+                    'Sea Salt' => 1,
+                    'Black Pepper' => 1,
                 ],
+                'highlight' => 'Traditional Persian-style baked egg muffins packed with minced fresh herbs, walnuts, barberries (zereshk), and seasoning.',
                 'diet_tags' => $tags,
             ],
             'Sweet Potato Egg Hash' => [
@@ -136,20 +150,33 @@ final class BalancedEggBreakfastRecipeRefiner
                     'Bell Pepper (Red)' => 30,
                     'White Onion' => 25,
                     'Olive Oil' => 4,
+                    'Rosemary (Fresh)' => 2,
+                    'Thyme (Fresh)' => 2,
+                    'Sea Salt' => 1,
+                    'Black Pepper' => 1,
                     'Fresh Coriander' => 3,
                 ],
+                'highlight' => 'Rosemary-thyme roasted sweet potato hash with sautéed onion and pepper, finished with softly scrambled eggs.',
                 'diet_tags' => $tags,
             ],
-            'Butternut Squash Fritters Eggs Marinara' => [
+            'Butternut Squash Fritters & Eggs' => [
                 'ingredients' => [
+                    'Butternut Squash' => 200,
                     'Egg' => 100,
-                    'Butternut Squash' => 80,
-                    'Tomato (Raw)' => 100,
-                    'Garlic (Raw)' => 3,
+                    'Quinoa Flour' => 10,
+                    'Fresh Coriander' => 10,
+                    'Lemon Juice' => 30,
+                    'Garlic (Raw)' => 1.5,
                     'Olive Oil' => 4,
-                    'Fresh Basil' => 4,
+                    'Sea Salt' => 1,
+                    'Chili Flakes' => 0.5,
+                    'Fennel Seeds' => 0.5,
+                    'Cumin Seeds' => 0.5,
+                    'Coriander Seeds' => 0.5,
+                    'Marinara Sauce (Base)' => 80,
                 ],
-                'diet_tags' => $tags,
+                'highlight' => 'Spiced roasted butternut squash fritters bound with eggs, fresh coriander, and lemon — served with warm marinara on the side.',
+                'diet_tags' => array_merge(WholeFoodDietPolicy::REQUIRED_MEAL_DIET_TAGS, ['Vegetarian', 'Gluten-Free']),
             ],
             'Smashed Beans & Eggs' => [
                 'ingredients' => [

@@ -12,6 +12,7 @@ use App\Support\IngredientAllergenCatalog;
 use App\Support\IngredientG6pdSafety;
 use App\Support\IngredientLibraryCategory;
 use App\Support\MealImagePath;
+use App\Support\MealIngredientDisplayOrder;
 use App\Support\SickleCellNutrientRdi;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -359,7 +360,7 @@ class IngredientLibraryController extends Controller
 
         $childIds = [];
         $ingredientLines = [];
-        foreach ($ingredient->components as $child) {
+        foreach (MealIngredientDisplayOrder::sortedIngredients($ingredient->components) as $child) {
             $childIds[] = (int) $child->id;
             $grams = (float) ($child->pivot->amount_grams ?? 0);
             if ($grams > 0.0) {

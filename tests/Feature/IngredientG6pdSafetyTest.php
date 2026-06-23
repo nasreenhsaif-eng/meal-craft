@@ -51,6 +51,17 @@ test('meal contains g6pd trigger when base ingredient includes canonical-trigger
     expect(IngredientG6pdSafety::mealContainsG6pdTrigger([$base->id]))->toBeTrue();
 });
 
+test('meal contains g6pd trigger when ingredient name matches green beans without db flag', function () {
+    $greenBeans = Ingredient::factory()->create([
+        'name' => 'Green Beans',
+        'is_verified' => true,
+        'is_g6pd_trigger' => false,
+    ]);
+
+    expect(IngredientG6pdSafety::mealContainsG6pdTrigger([$greenBeans->id]))->toBeTrue()
+        ->and(IngredientG6pdSafety::canonicalNameIndicatesG6pdTrigger('Garlicky Green Beans (Base)'))->toBeTrue();
+});
+
 test('merge trigger into safety labels adds g6pd trigger once', function () {
     $labels = IngredientG6pdSafety::mergeTriggerIntoSafetyLabels(['Contains: Peanuts'], true);
 

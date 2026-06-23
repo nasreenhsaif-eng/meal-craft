@@ -11,13 +11,15 @@ use InvalidArgumentException;
 
 /**
  * Standardizes Balanced rotation chia breakfasts on {@see Coconut Chia Pudding (Base)}
- * with date-syrup-sweetened coconut chia and per-meal toppings only.
+ * with date-syrup-sweetened coconut chia and per-meal toppings only (max 250 kcal each).
  */
 final class BalancedChiaBreakfastRecipeRefiner
 {
     public const COCONUT_CHIA_BASE_NAME = 'Coconut Chia Pudding (Base)';
 
-    public const COCONUT_CHIA_BASE_GRAMS = 100.0;
+    public const COCONUT_CHIA_BASE_GRAMS = 75.0;
+
+    public const MAX_CALORIES = 250.0;
 
     /**
      * @return list<string>
@@ -52,6 +54,7 @@ final class BalancedChiaBreakfastRecipeRefiner
                     $definition['ingredients'],
                     $definition['instructions'],
                     $definition['diet_tags'] ?? WholeFoodDietPolicy::REQUIRED_MEAL_DIET_TAGS,
+                    $definition['short_description'] ?? null,
                 );
                 $updated[] = $mealName;
             }
@@ -65,8 +68,13 @@ final class BalancedChiaBreakfastRecipeRefiner
      * @param  list<string>  $instructionSteps
      * @param  list<string>  $dietTags
      */
-    private function syncMeal(Meal $meal, array $ingredientGrams, array $instructionSteps, array $dietTags): void
-    {
+    private function syncMeal(
+        Meal $meal,
+        array $ingredientGrams,
+        array $instructionSteps,
+        array $dietTags,
+        ?string $shortDescription = null,
+    ): void {
         $sync = [];
 
         foreach ($ingredientGrams as $ingredientName => $grams) {
@@ -101,20 +109,35 @@ final class BalancedChiaBreakfastRecipeRefiner
         $fresh = $meal->fresh(['ingredients']);
         $nutrition = RecipeNutritionCalculator::fromMeal($fresh);
 
+        if ((float) ($nutrition['calories'] ?? 0) > self::MAX_CALORIES + 0.5) {
+            throw new InvalidArgumentException(sprintf(
+                '%s exceeds %gkcal cap (%.1f kcal).',
+                $meal->name,
+                self::MAX_CALORIES,
+                (float) $nutrition['calories'],
+            ));
+        }
+
         $instructionLines = [];
 
         foreach ($instructionSteps as $index => $step) {
             $instructionLines[] = ($index + 1).'. '.$step;
         }
 
-        $meal->update(array_merge(
+        $updates = array_merge(
             Meal::nutritionSummaryToPersistedAttributes($nutrition),
             [
                 'nutrition_aggregates_synced' => true,
                 'diet_tags' => array_merge($dietTags, ['Vegan']),
                 'instructions' => MealInstructionsText::normalizeForStorage(implode("\n", $instructionLines)),
             ],
-        ));
+        );
+
+        if ($shortDescription !== null) {
+            $updates['short_description'] = $shortDescription;
+        }
+
+        $meal->update($updates);
 
         MealRecipeAsIngredientSyncService::syncFromPersistedMeal($fresh->fresh(['ingredients']), false);
 
@@ -126,12 +149,12 @@ final class BalancedChiaBreakfastRecipeRefiner
     }
 
     /**
-     * @return array<string, array{ingredients: array<string, float>, instructions: list<string>, diet_tags?: list<string>}>
+     * @return array<string, array{ingredients: array<string, float>, instructions: list<string>, diet_tags?: list<string>, short_description?: string}>
      */
     private function recipeDefinitions(): array
     {
-        $base = self::COCONUT_CHIA_BASE_GRAMS;
         $tags = WholeFoodDietPolicy::REQUIRED_MEAL_DIET_TAGS;
+        $base = self::COCONUT_CHIA_BASE_GRAMS;
 
         $basePrep = [
             'Prepare Coconut Chia Pudding (Base) ahead (chia, coconut milk, and date syrup) and chill until thick.',
@@ -142,94 +165,119 @@ final class BalancedChiaBreakfastRecipeRefiner
             'Blueberry Walnut Chia Pudding' => [
                 'ingredients' => [
                     self::COCONUT_CHIA_BASE_NAME => $base,
-                    'Blueberries' => 60,
-                    'Walnuts' => 12,
-                    'Fresh Mint' => 3,
-                    'Cinnamon' => 2,
+                    'Blueberries' => 20,
+                    'Walnuts' => 5,
+                    'Fresh Mint' => 1,
+                    'Cinnamon' => 1,
                 ],
                 'instructions' => array_merge($basePrep, [
                     'Fold in blueberries, walnuts, cinnamon, and mint.',
                     'Serve chilled.',
                 ]),
                 'diet_tags' => $tags,
+                'short_description' => 'Creamy coconut chia pudding with blueberries, walnuts, cinnamon, and mint.',
             ],
             'Mango Pumpkin Seed Chia Pudding' => [
                 'ingredients' => [
                     self::COCONUT_CHIA_BASE_NAME => $base,
-                    'Mango' => 50,
-                    'Pumpkin Seeds' => 10,
+                    'Mango' => 35,
+                    'Pumpkin Seeds' => 5,
                 ],
                 'instructions' => array_merge($basePrep, [
                     'Top with diced mango and pumpkin seeds.',
                     'Serve chilled.',
                 ]),
                 'diet_tags' => $tags,
+                'short_description' => 'Tropical coconut chia pudding topped with fresh mango and pumpkin seeds.',
             ],
             'Spiced Crunch Chia Pudding' => [
                 'ingredients' => [
                     self::COCONUT_CHIA_BASE_NAME => $base,
-                    'Almond whole' => 8,
-                    'Cinnamon' => 2,
+                    'Almond whole' => 3,
+                    'Black Seeds' => 2,
+                    'Sesame Seeds' => 3,
+                    'Cinnamon' => 1.5,
                     'Clove' => 0.5,
                     'Ground Ginger' => 1,
                 ],
                 'instructions' => array_merge($basePrep, [
-                    'Stir in cinnamon, clove, ginger, and chopped almonds.',
+                    'Stir cinnamon, clove, and ginger through the pudding.',
+                    'Top with chopped almonds, black seeds, and sesame seeds.',
                     'Serve chilled.',
                 ]),
                 'diet_tags' => $tags,
+                'short_description' => 'Warming spiced coconut chia pudding topped with almonds, black seeds, and sesame.',
             ],
             'Strawberry Almond Chia Pudding' => [
                 'ingredients' => [
-                    self::COCONUT_CHIA_BASE_NAME => $base,
-                    'Strawberries' => 70,
-                    'Almond whole' => 8,
+                    self::COCONUT_CHIA_BASE_NAME => 75,
+                    'Strawberries' => 50,
+                    'Almond whole' => 5,
                 ],
                 'instructions' => array_merge($basePrep, [
                     'Fold in sliced strawberries and almonds.',
                     'Serve chilled.',
                 ]),
                 'diet_tags' => $tags,
+                'short_description' => 'Coconut chia pudding with fresh strawberries and almonds.',
             ],
             'Peach Pecan Chia Pudding' => [
                 'ingredients' => [
                     self::COCONUT_CHIA_BASE_NAME => $base,
-                    'Peach' => 60,
-                    'Pecans' => 8,
-                    'Cinnamon' => 1,
-                    'Fresh Mint' => 3,
+                    'Peach' => 35,
+                    'Pecans' => 5,
+                    'Cinnamon' => 0.5,
+                    'Fresh Mint' => 2,
                 ],
                 'instructions' => array_merge($basePrep, [
                     'Top with sliced peach, pecans, cinnamon, and mint.',
                     'Serve chilled.',
                 ]),
                 'diet_tags' => $tags,
+                'short_description' => 'Coconut chia pudding with sweet peach, pecans, cinnamon, and mint.',
             ],
             'Raspberry Cacao Chia Pudding' => [
                 'ingredients' => [
                     self::COCONUT_CHIA_BASE_NAME => $base,
-                    'Raspberries' => 70,
-                    'Cacao Nibs' => 8,
-                    'Cocoa Powder' => 5,
+                    'Raspberries' => 35,
+                    'Cacao Nibs' => 4,
+                    'Cocoa Powder' => 2,
                 ],
                 'instructions' => array_merge($basePrep, [
                     'Fold in raspberries, cacao nibs, and cocoa powder.',
                     'Serve chilled.',
                 ]),
                 'diet_tags' => $tags,
+                'short_description' => 'Dark cacao coconut chia pudding with raspberries and cacao nibs.',
             ],
             'Cacao & Almond Chia' => [
                 'ingredients' => [
                     self::COCONUT_CHIA_BASE_NAME => $base,
-                    'Almond Butter' => 10,
-                    'Almond whole' => 8,
-                    'Cocoa Powder' => 5,
+                    'Almond Butter' => 2,
+                    'Almond whole' => 5,
+                    'Cocoa Powder' => 2,
                 ],
                 'instructions' => array_merge($basePrep, [
                     'Swirl in almond butter and cocoa powder. Top with chopped almonds.',
                     'Serve chilled.',
                 ]),
                 'diet_tags' => $tags,
+                'short_description' => 'Rich cacao coconut chia pudding swirled with almond butter and almonds.',
+            ],
+            'Chia Pudding Smoothie' => [
+                'ingredients' => [
+                    self::COCONUT_CHIA_BASE_NAME => 75,
+                    'Strawberries' => 40,
+                    'Banana' => 30,
+                ],
+                'instructions' => [
+                    'Prepare Coconut Chia Pudding (Base) ahead and chill until thick.',
+                    'Spoon the set pudding into the bottom of a glass or jar.',
+                    'Blend strawberries and banana until smooth.',
+                    'Pour the fruit smoothie over the chia layer. Serve chilled.',
+                ],
+                'diet_tags' => $tags,
+                'short_description' => 'Layered coconut chia pudding with a strawberry-banana smoothie top.',
             ],
         ];
     }

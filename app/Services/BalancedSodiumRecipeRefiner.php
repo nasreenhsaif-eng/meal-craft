@@ -28,7 +28,6 @@ final class BalancedSodiumRecipeRefiner
         'Miso Paste',
         'Miso',
         'Cucumber Pickle (Base)',
-        'Tomato Sauce (Sub-Base)',
     ];
 
     /**
@@ -72,11 +71,6 @@ final class BalancedSodiumRecipeRefiner
             'Tomato (Raw)' => 45.0,
             'Eggplant' => 35.0,
             'Fresh Basil' => 4.0,
-        ],
-        'Tomato Sauce (Sub-Base)' => [
-            'Tomato (Raw)' => 180.0,
-            'Garlic (Raw)' => 4.0,
-            'Olive Oil' => 4.0,
         ],
         'Pickled Red Onion (Base)' => [
             'Red Onion' => 15.0,

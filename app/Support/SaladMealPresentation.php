@@ -51,7 +51,7 @@ final class SaladMealPresentation
         $saladItems = [];
         $dressingItems = [];
 
-        foreach ($meal->ingredients as $ingredient) {
+        foreach (MealIngredientDisplayOrder::sortedIngredients($meal->ingredients) as $ingredient) {
             $grams = (float) ($ingredient->pivot->amount_grams ?? 0);
             $line = $formatLine($ingredient, $grams);
 
@@ -94,7 +94,7 @@ final class SaladMealPresentation
         if (! self::isSaladMeal($meal)) {
             $lines = [];
 
-            foreach ($meal->ingredients as $ingredient) {
+            foreach (MealIngredientDisplayOrder::sortedIngredients($meal->ingredients) as $ingredient) {
                 $grams = (float) ($ingredient->pivot->amount_grams ?? 0);
                 $lines[] = $formatLine($ingredient, $grams);
             }

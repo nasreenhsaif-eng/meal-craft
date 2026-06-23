@@ -61,7 +61,7 @@ final class BalancedWeeklyRotationSchedule
         'Hummus Egg Stack',
         'Kuku Sabzi Egg Muffins',
         'Sweet Potato Egg Hash',
-        'Butternut Squash Fritters Eggs Marinara',
+        'Butternut Squash Fritters & Eggs',
         'Smashed Beans & Eggs',
     ];
 
@@ -115,7 +115,7 @@ final class BalancedWeeklyRotationSchedule
 
     /** @var list<string> Vegan mains — includes legume-forward dishes moved from side rotation. */
     public const VEGAN_MAINS = [
-        'Vegan Butternut Squash, Lentil & Nut Stew w Brown Rice',
+        BalancedCanonicalMealRecipeRefiner::VEGAN_BUTTERNUT_PEANUT_STEW_NAME,
         'Vegan Smoky Cauliflower & Lentil Stew w Quinoa Bread & Tahini',
         'Vegan Sri Lankan Red Lentil Dal w Quinoa Bread',
         'Vegan Harissa Roasted Cauliflower & Chickpea Salad w Tahini Dressing',

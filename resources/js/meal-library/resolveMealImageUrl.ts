@@ -115,12 +115,20 @@ export function resolveMealImageUrl(raw?: string | null): string {
     }
 
     if (/^https?:\/\//i.test(value)) {
+        const parsed = new URL(value);
         const relative = relativePathFromAbsoluteImageUrl(value);
         if (relative) {
             value = ensurePrefixedRelativePath(relative);
-        } else {
-            return encodeAbsoluteUrlPath(value);
+            const originUrl = value.startsWith('images/')
+                ? buildOriginUrl(value)
+                : value.startsWith('meals/')
+                  ? buildOriginUrl(`storage/${value}`)
+                  : buildOriginUrl(value);
+
+            return `${originUrl}${parsed.search}`;
         }
+
+        return encodeAbsoluteUrlPath(value);
     }
 
     if (value.startsWith('//')) {

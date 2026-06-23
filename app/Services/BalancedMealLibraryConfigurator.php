@@ -71,7 +71,7 @@ final class BalancedMealLibraryConfigurator
                 'diet_tags' => ['Dairy-free', 'Gluten-free'],
             ],
             [
-                'name' => 'Vegan Butternut Squash, Lentil & Nut Stew w Brown Rice',
+                'name' => BalancedCanonicalMealRecipeRefiner::VEGAN_BUTTERNUT_PEANUT_STEW_NAME,
                 'sort' => 5,
                 'slot' => 'main_vegan',
                 'meal_plan_tags' => ['Balanced'],

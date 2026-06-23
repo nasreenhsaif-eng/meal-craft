@@ -34,6 +34,10 @@ final class BalancedCanonicalMealRecipeRefiner
 
     public const ROSEMARY_GARLIC_CHICKEN_PLATE_NAME = 'Rosemary Garlic Chicken w Mushroom, Spinach & Roasted Sweet Potato';
 
+    public const VEGAN_BUTTERNUT_PEANUT_STEW_NAME = 'Vegan Butternut Squash, Lentil & Peanut Stew w Brown Rice';
+
+    public const VEGAN_BUTTERNUT_PEANUT_STEW_LEGACY_NAME = 'Vegan Butternut Squash, Lentil & Nut Stew w Brown Rice';
+
     /**
      * @return list<string> Meal names updated
      */
@@ -75,6 +79,13 @@ final class BalancedCanonicalMealRecipeRefiner
                     ]);
                 }
 
+                if ($mealName === self::VEGAN_BUTTERNUT_PEANUT_STEW_NAME && $meal->name === self::VEGAN_BUTTERNUT_PEANUT_STEW_LEGACY_NAME) {
+                    $meal->update([
+                        'name' => self::VEGAN_BUTTERNUT_PEANUT_STEW_NAME,
+                        'short_description' => 'A rich plant-based stew with red lentils, peanut butter, and crushed peanuts over brown rice.',
+                    ]);
+                }
+
                 $this->syncMealIngredients(
                     $meal,
                     $definition['ingredients'],
@@ -104,6 +115,10 @@ final class BalancedCanonicalMealRecipeRefiner
 
         if ($mealName === self::ROSEMARY_GARLIC_CHICKEN_PLATE_NAME) {
             return $query->whereIn('name', [self::ROSEMARY_GARLIC_CHICKEN_PLATE_NAME, self::ROSEMARY_GARLIC_CHICKEN_PLATE_LEGACY_NAME])->first();
+        }
+
+        if ($mealName === self::VEGAN_BUTTERNUT_PEANUT_STEW_NAME) {
+            return $query->whereIn('name', [self::VEGAN_BUTTERNUT_PEANUT_STEW_NAME, self::VEGAN_BUTTERNUT_PEANUT_STEW_LEGACY_NAME])->first();
         }
 
         return $query->where('name', $mealName)->first();
@@ -225,18 +240,19 @@ final class BalancedCanonicalMealRecipeRefiner
             ],
             'Tamarind Honey & Sesame Chicken w Garlicky Green Beans' => [
                 'ingredients' => [
-                    'Chicken thigh' => 100,
+                    'Chicken Breast' => 110,
+                    'Tamarind Paste' => 30,
+                    'Honey (Raw)' => 5,
+                    'Ginger (Raw)' => 2,
+                    'Sesame Oil' => 7,
+                    'Rice Vinegar' => 4,
+                    'Garlic (Raw)' => 3,
+                    'Sea Salt' => 1,
+                    'Spring Onion' => 20,
                     'Garlicky Green Beans (Base)' => 85,
                     'Broccoli' => 60,
-                    'Cucumber' => 25,
-                    'Garlic (Raw)' => 2,
-                    'Ginger (Raw)' => 3,
-                    'Tamarind Paste' => 18,
-                    'Rice Vinegar' => 4,
-                    'Honey (Raw)' => 5,
-                    'Sesame Oil' => 2,
+                    'Cucumber Pickle (Base)' => 25,
                     'Sesame Seeds' => 2,
-                    'Spring Onion' => 20,
                 ],
                 'diet_tags' => $wholeFoodTags,
             ],
@@ -260,27 +276,30 @@ final class BalancedCanonicalMealRecipeRefiner
                 ],
                 'diet_tags' => $wholeFoodTags,
             ],
-            'Vegan Butternut Squash, Lentil & Nut Stew w Brown Rice' => [
+            self::VEGAN_BUTTERNUT_PEANUT_STEW_NAME => [
                 'ingredients' => [
-                    'Butternut Squash' => 70,
-                    'Lentils (Red)' => 22,
                     'Basmati Rice (Brown)' => 45,
-                    'Bell Pepper (Red)' => 40,
-                    'Cabbage (Purple)' => 15,
-                    'Mushrooms' => 35,
-                    'Spinach (Fresh)' => 20,
-                    'Tomato (Raw)' => 60,
-                    'Garlic (Raw)' => 9,
-                    'Peanut Butter' => 11,
-                    'Peanuts (Crushed)' => 8,
-                    'Coriander Seeds' => 2,
-                    'Chili Flakes' => 1,
-                    'Turmeric Powder' => 1,
+                    'Red Onion' => 30,
                     'Olive Oil' => 3,
-                    'Lime Juice' => 10,
-                    'Water (Filtered)' => 120,
-                    'Vegetable Stock' => 30,
-                    'Black Pepper' => 1,
+                    'Garlic (Raw)' => 2,
+                    'Tomato (Raw)' => 80,
+                    'Bell Pepper (Red)' => 30,
+                    'Lentils (Red)' => 40,
+                    'Butternut Squash' => 60,
+                    'Water (Filtered)' => 144,
+                    'Peanut Butter' => 10,
+                    'Vegetable Stock' => 48,
+                    'Chili Flakes' => 0.5,
+                    'Mushrooms' => 30,
+                    'Zucchini' => 30,
+                    'Spinach (Fresh)' => 16,
+                    'Cabbage (Purple)' => 16,
+                    'Fresh Coriander' => 4,
+                    'Peanuts (Crushed)' => 15,
+                    'Lime Juice' => 3,
+                    'Sea Salt' => 0.5,
+                    'Black Pepper' => 0.5,
+                    'Cherry Tomatoes' => 10,
                 ],
                 'diet_tags' => array_merge($wholeFoodTags, ['Vegan']),
                 'short_description' => 'A rich plant-based stew with red lentils, peanut butter, and crushed peanuts over brown rice.',

@@ -419,10 +419,25 @@ final class MealImagePath
     private static function publicUrlForRelativePath(string $relative): string
     {
         if (str_starts_with($relative, 'images/') || str_starts_with($relative, 'storage/')) {
-            return self::assetUrlForRelativePath($relative);
+            $url = self::assetUrlForRelativePath($relative);
+        } else {
+            $url = self::encodeAbsoluteUrlPath(Storage::disk('public')->url($relative));
         }
 
-        return self::encodeAbsoluteUrlPath(Storage::disk('public')->url($relative));
+        return self::appendFileVersionQuery($url, $relative);
+    }
+
+    private static function appendFileVersionQuery(string $url, string $relative): string
+    {
+        $absolute = self::absolutePathForRelative($relative);
+        if ($absolute === null || ! is_file($absolute)) {
+            return $url;
+        }
+
+        $version = (string) filemtime($absolute);
+        $separator = str_contains($url, '?') ? '&' : '?';
+
+        return $url.$separator.'v='.$version;
     }
 
     private static function assetUrlForRelativePath(string $relative): string

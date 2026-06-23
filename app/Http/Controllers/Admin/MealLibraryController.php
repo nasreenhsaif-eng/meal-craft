@@ -17,6 +17,7 @@ use App\Services\BaseIngredientService;
 use App\Services\MealCraftMasterCsvExport;
 use App\Services\MenuDevelopmentCsvExport;
 use App\Services\RecipeNutritionCalculator;
+use App\Support\EggIngredientPresentation;
 use App\Support\IngredientAllergenCatalog;
 use App\Support\IngredientG6pdSafety;
 use App\Support\IngredientLibraryNameMatcher;
@@ -866,9 +867,14 @@ class MealLibraryController extends Controller
 
         $formatLine = function (Ingredient $ingredient, float $grams) use ($meal): string {
             $grams = MealLibraryBulkNutrition::perServingGramsForMealDisplay($meal, $grams);
+            $formattedGrams = $this->formatTrimmedDecimal($grams, 2);
+
+            if (EggIngredientPresentation::isEggIngredient($ingredient)) {
+                return EggIngredientPresentation::formatLine($grams, $formattedGrams);
+            }
 
             if ($grams > 0) {
-                return $this->formatTrimmedDecimal($grams, 2).'g '.$ingredient->name;
+                return $formattedGrams.'g '.$ingredient->name;
             }
 
             return $ingredient->name;

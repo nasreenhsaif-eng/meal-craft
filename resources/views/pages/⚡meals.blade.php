@@ -119,7 +119,9 @@ new #[Title('Meals')] class extends Component {
         $this->mealType = $meal->meal_type instanceof MealType
             ? $meal->meal_type->value
             : MealType::fromRecipeCategory($meal->category ?? RecipeCategory::Meal)->value;
-        $this->instructions = $meal->description ?? '';
+        $this->instructions = trim((string) ($meal->instructions ?? '')) !== ''
+            ? (string) $meal->instructions
+            : ($meal->description ?? '');
         $derivedIngredientId = Ingredient::query()->where('source_meal_id', $meal->id)->value('id');
 
         $this->recipeIngredients = $meal->ingredients
@@ -1556,8 +1558,13 @@ new #[Title('Meals')] class extends Component {
                         <h3 class="mb-2 border-b border-mc-gold-border/20 pb-1.5 font-sans text-sm font-semibold uppercase tracking-wide text-mc-gold dark:border-mc-gold/25 dark:text-amber-200/90">
                             {{ __('Instructions') }}
                         </h3>
-                        @if (filled($this->detailsMeal->description))
-                            <p class="whitespace-pre-wrap text-sm leading-relaxed text-stone-700 dark:text-stone-300">{{ $this->detailsMeal->description }}</p>
+                        @php
+                            $instructionText = filled($this->detailsMeal->instructions)
+                                ? $this->detailsMeal->instructions
+                                : $this->detailsMeal->description;
+                        @endphp
+                        @if (filled($instructionText))
+                            <p class="whitespace-pre-wrap text-sm leading-relaxed text-stone-700 dark:text-stone-300">{{ $instructionText }}</p>
                         @else
                             <p class="text-sm text-stone-500 dark:text-stone-400">{{ __('No instructions provided.') }}</p>
                         @endif

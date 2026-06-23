@@ -24,6 +24,7 @@ final class IngredientG6pdSafety
      */
     private const CANONICAL_NAME_FRAGMENTS = [
         'cannellini',
+        'green beans',
     ];
 
     /**
