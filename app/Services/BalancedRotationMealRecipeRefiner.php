@@ -25,6 +25,8 @@ final class BalancedRotationMealRecipeRefiner
 
     public const SALTED_CARAMEL_CHOCOLATE_BAR_SERVINGS_COUNT = 16;
 
+    public const APPLE_PIE_BALLS_PER_SERVING_COUNT = 3;
+
     /**
      * @return list<string>
      */
@@ -358,14 +360,15 @@ final class BalancedRotationMealRecipeRefiner
             ],
             'Apple Pie Balls' => [
                 'ingredients' => [
-                    'Medjool Dates' => 35,
-                    'Apple Green' => 25,
-                    'Almond Butter' => 15,
-                    'Walnuts' => 12,
-                    'Cinnamon' => 2,
-                    'Honey (Raw)' => 5,
+                    'Dates (Khelas)' => 16,
+                    'Almond Flour' => 7,
+                    'Apple Green' => 10,
+                    'Almond Butter' => 5,
+                    'Walnuts' => 4,
+                    'Cinnamon' => 1,
                 ],
                 'diet_tags' => $vegetarianTags,
+                'short_description' => 'No-bake apple-cinnamon balls with khelas dates, almond flour, walnuts, and almond butter — '.self::APPLE_PIE_BALLS_PER_SERVING_COUNT.' small bites per serving (~150 kcal).',
             ],
             'Cinnamon Raisin Balls' => [
                 'ingredients' => [

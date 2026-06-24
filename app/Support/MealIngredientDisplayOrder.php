@@ -28,6 +28,10 @@ final class MealIngredientDisplayOrder
         $name = strtolower($ingredient->name);
         $category = strtolower(trim((string) $ingredient->usda_food_category));
 
+        if (str_contains($name, 'roasted mixed vegetables')) {
+            return self::GROUP_VEGETABLES;
+        }
+
         if (self::nameIndicatesSauce($name)) {
             return self::GROUP_SAUCES;
         }

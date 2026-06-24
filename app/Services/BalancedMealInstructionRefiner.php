@@ -414,8 +414,8 @@ final class BalancedMealInstructionRefiner
                 'Lift from the pan and cut into '.BalancedRotationMealRecipeRefiner::SALTED_CARAMEL_CHOCOLATE_BAR_SERVINGS_COUNT.' squares. One square is one serving.',
             ]),
             'Apple Pie Balls' => $this->steps([
-                'Mix chopped apple, nuts, and spices with binder from recipe.',
-                'Roll into bite-size balls.',
+                'Pulse khelas dates, almond flour, chopped apple, walnuts, cinnamon, and almond butter in a food processor until the mixture holds together.',
+                'Roll into '.BalancedRotationMealRecipeRefiner::APPLE_PIE_BALLS_PER_SERVING_COUNT.' small bite-size balls (~14g each). One serving is all '.BalancedRotationMealRecipeRefiner::APPLE_PIE_BALLS_PER_SERVING_COUNT.' balls.',
                 'Chill 30 minutes until firm. Serve cold.',
             ]),
             'Cinnamon Raisin Balls' => $this->steps([
