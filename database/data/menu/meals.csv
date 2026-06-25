@@ -3,156 +3,154 @@ meal_name,meal_type,ingredients_string,target_calories,target_protein,target_car
 Spoon the set pudding into a bowl or jar.
 Fold in blueberries, walnuts, cinnamon, and mint.
 Serve chilled."
-"Mediterranean Omelet",Breakfast,"Avocado:20 | Basil:5 | Bell Pepper (Red):30 | Black Pepper:1 | Egg:100 | Kalamata Olives:12 | Olive Oil (Extra Virgin):6 | Parsley:5 | Shallots:20 | Thyme (Fresh):2 | Tomato (Raw):30",350,24,12,23,,,,,false,,Balanced,,,images/meals/mediterranean_omelet.png,"Earthy and rich in B-vitamins for morning mental clarity.","Beat eggs in a bowl.
-Sauté diced pepper, tomato, and shallot in olive oil for 3 minutes.
-Pour in eggs. Cook over medium heat until almost set.
-Add olives and avocado on one half. Fold omelet in half.
-Finish with fresh herbs. Serve warm."
-"Tamarind Honey & Sesame Chicken w Garlicky Green Beans",Meal,"Broccoli:60 | Chicken Breast:110 | Cucumber Pickle (Base):25 | Garlic (Raw):3 | Garlicky Green Beans (Base):85 | Ginger (Raw):2 | Honey (Raw):5 | Rice Vinegar:4 | Sea Salt:1 | Sesame Oil:7 | Sesame Seeds:2 | Spring Onion:20 | Tamarind Paste:30",350,28,34,10,,,,,false,1,Balanced,Luteal,"G6PD Trigger",images/meals/tamarind_honey_sesame_chicken_green_beans.png,"Baked chicken thighs glazed in tamarind honey sauce, with garlicky green beans and broccoli.","Combine tamarind paste, honey, rice vinegar, sesame oil, crushed garlic, grated ginger, salt, and spring onion pieces in a jug.
-Marinate chicken breast in the sauce overnight.
-Preheat oven. Bake 25 minutes until cooked through (74°C internal).
-Sprinkle chicken with finely sliced spring onion. Combine tray juices with leftover marinade and drizzle over liberally.
-Serve with steamed broccoli, cucumber pickle, and Garlicky Green Beans (Base) sprinkled with sesame seeds and spring onion."
-"Rosemary Garlic Chicken w Mushroom, Spinach & Roasted Sweet Potato",Meal,"Black Pepper:0.5 | Mushrooms:45 | Olive Oil (Extra Virgin):4 | Rosemary Garlic Chicken (Base):95 | Spinach (Fresh):55 | Sweet Potato:85",350,33,15,17,,,,,false,1,Balanced,,,images/meals/rosemary_garlic_chicken.png,"Grilled rosemary garlic chicken with sautéed mushrooms and spinach over roasted sweet potato wedges.","Toss sweet potato wedges with half the olive oil, salt, and pepper. Roast at 200°C for 22–25 minutes until golden.
-Grill or pan-sear Rosemary Garlic Chicken (Base) until 74°C internal. Rest and slice.
-Sauté mushrooms in remaining olive oil until golden. Wilt spinach briefly in the same pan.
-Plate roasted sweet potato, spinach, and mushrooms. Top with sliced chicken and serve warm."
-"Baked Salmon with Fermented Chimichurri & Steamed Basmati Rice",Meal,"Broccoli:60 | Fermented Chimichurri (Base):22 | Salmon:125 | Steamed Basmati Rice (Base):75",350,35,35,7.7,,,,,false,1,Balanced,,Fish,images/meals/salmon_fermented_chimichurri.png,"Premium baked salmon with fermented chimichurri over fluffy steamed basmati rice and broccoli.","Prepare Steamed Basmati Rice (Base) and keep warm.
-Coat salmon generously with Fermented Chimichurri (Base).
-Bake at 190°C for 12–15 minutes until flaky.
-Steam or roast broccoli until bright green and tender.
-Plate basmati rice and broccoli. Top with salmon and extra chimichurri if desired."
-"Vegan Butternut Squash, Lentil & Peanut Stew w Brown Rice",Meal,"Basmati Rice (Brown):45 | Bell Pepper (Red):30 | Black Pepper:0.5 | Butternut Squash:60 | Cabbage (Purple):16 | Cherry Tomatoes:10 | Chili Flakes:0.5 | Fresh Coriander:4 | Garlic (Raw):2 | Lentils (Red):40 | Lime Juice:3 | Mushrooms:30 | Olive Oil:3 | Peanut Butter:10 | Peanuts (Crushed):15 | Red Onion:30 | Sea Salt:0.5 | Spinach (Fresh):16 | Tomato (Raw):80 | Vegetable Stock:48 | Water (Filtered):144 | Zucchini:30",350,13.5,46.2,12.3,,,,,false,,Balanced,,"G6PD Trigger",images/meals/vegan_butternut_squash_lentil_peanut_stew_brown_rice.png,"A rich plant-based stew with red lentils, peanut butter, and crushed peanuts over brown rice.","Cook brown rice. Keep warm.
-Fry finely chopped onion in olive oil for 5 minutes until soft. Grate in garlic and stir.
-Add chopped tomatoes and cook for a couple of minutes. Add water, rinsed red lentils, chopped red pepper, and butternut squash cubes. Bring to the boil, then reduce to a simmer.
-Stir in vegetable stock and peanut butter until combined. Add zucchini and simmer for 20 minutes.
-Add mushrooms and spinach–cabbage greens. Simmer a couple of minutes until wilted. Season with sea salt, black pepper, and chilli flakes.
-Serve stew over brown rice. Top with fresh coriander, cherry tomatoes, crushed peanuts, and lime juice."
-"Marinated Pineapple, Peppers, Red Onion & Cilantro Side Salad","Side Salad","Bell Pepper (Red):25 | Cabbage (Purple):45 | Cucumber:35 | Fresh Coriander:4 | Pineapple:111 | Red Onion:12 | Red Thai Chillies:2 | Zesty Lime Chili Salad Dressing (Base):10",150,1.8,19.5,8.2,,,,,false,,Balanced,,,images/meals/marinated_pineapple_peppers_salad.png,"A tropical side salad combining pineapple chunks","Dice pineapple, pepper, cucumber, and red onion.
+"Mediterranean Omelet",Breakfast,"Avocado:20 | Basil:5 | Bell Pepper (Red):30 | Black Pepper:1 | Egg:100 | Kalamata Olives:12 | Olive Oil (Extra Virgin):6 | Parsley:5 | Shallots:20 | Thyme (Fresh):2 | Tomato (Raw):30",350,24,12,23,,,,,false,,Balanced,,,images/meals/mediterranean_omelet.png,"Earthy and rich in B-vitamins for morning mental clarity.","1. Beat eggs in a bowl.
+2. Sauté diced pepper, tomato, and shallot in olive oil for 3 minutes.
+3. Pour in eggs. Cook over medium heat until almost set.
+4. Add olives and avocado on one half. Fold omelet in half.
+5. Finish with fresh herbs. Serve warm."
+"Tamarind Honey & Sesame Chicken w Garlicky Green Beans",Meal,"Broccoli:60 | Chicken Breast:110 | Cucumber Pickle (Base):25 | Garlic (Raw):3 | Garlicky Green Beans (Base):85 | Ginger (Raw):2 | Honey (Raw):5 | Rice Vinegar:4 | Sea Salt:1 | Sesame Oil:7 | Sesame Seeds:2 | Spring Onion:20 | Tamarind Paste:30",350,28,34,10,,,,,false,1,Balanced,Luteal,"G6PD Trigger",images/meals/tamarind_honey_sesame_chicken_green_beans.png,"Baked chicken thighs glazed in tamarind honey sauce, with garlicky green beans and broccoli.","1. Combine tamarind paste, honey, rice vinegar, sesame oil, crushed garlic, grated ginger, salt, and spring onion pieces in a jug.
+2. Marinate chicken breast in the sauce overnight.
+3. Preheat oven. Bake 25 minutes until cooked through (74°C internal).
+4. Sprinkle chicken with finely sliced spring onion. Combine tray juices with leftover marinade and drizzle over liberally.
+5. Serve with steamed broccoli, cucumber pickle, and Garlicky Green Beans (Base) sprinkled with sesame seeds and spring onion."
+"Baked Salmon with Fermented Chimichurri & Steamed Basmati Rice",Meal,"Broccoli:60 | Fermented Chimichurri (Base):22 | Salmon:125 | Steamed Basmati Rice (Base):75",350,35,35,7.7,,,,,false,1,Balanced,,Fish,images/meals/salmon_fermented_chimichurri.png,"Premium baked salmon with fermented chimichurri over fluffy steamed basmati rice and broccoli.","1. Prepare Steamed Basmati Rice (Base) and keep warm.
+2. Coat salmon generously with Fermented Chimichurri (Base).
+3. Bake at 190°C for 12–15 minutes until flaky.
+4. Steam or roast broccoli until bright green and tender.
+5. Plate basmati rice and broccoli. Top with salmon and extra chimichurri if desired."
+"Vegan Butternut Squash, Lentil & Peanut Stew w Brown Rice",Meal,"Basmati Rice (Brown):45 | Bell Pepper (Red):30 | Black Pepper:0.5 | Butternut Squash:60 | Cabbage (Purple):16 | Cherry Tomatoes:10 | Chili Flakes:0.5 | Fresh Coriander:4 | Garlic (Raw):2 | Lentils (Red):40 | Lime Juice:3 | Mushrooms:30 | Olive Oil:3 | Peanut Butter:10 | Peanuts (Crushed):15 | Red Onion:30 | Sea Salt:0.5 | Spinach (Fresh):16 | Tomato (Raw):80 | Vegetable Stock:48 | Water (Filtered):144 | Zucchini:30",350,13.5,46.2,12.3,,,,,false,,Balanced,,"G6PD Trigger",images/meals/vegan_butternut_squash_lentil_peanut_stew_brown_rice.png,"A rich plant-based stew with red lentils, peanut butter, and crushed peanuts over brown rice.","1. Cook brown rice. Keep warm.
+2. Fry finely chopped onion in olive oil for 5 minutes until soft. Grate in garlic and stir.
+3. Add chopped tomatoes and cook for a couple of minutes. Add water, rinsed red lentils, chopped red pepper, and butternut squash cubes. Bring to the boil, then reduce to a simmer.
+4. Stir in vegetable stock and peanut butter until combined. Add zucchini and simmer for 20 minutes.
+5. Add mushrooms and spinach–cabbage greens. Simmer a couple of minutes until wilted. Season with sea salt, black pepper, and chilli flakes.
+6. Serve stew over brown rice. Top with fresh coriander, cherry tomatoes, crushed peanuts, and lime juice."
+"Marinated Pineapple, Peppers, Red Onion & Cilantro Side Salad","Side Salad","Bell Pepper (Red):25 | Cabbage (Purple):45 | Cucumber:35 | Fresh Coriander:4 | Pineapple:40 | Red Onion:12 | Red Thai Chillies:2 | Zesty Lime Chili Salad Dressing (Base):12",150,1.8,19.5,8.2,,,,,false,,Balanced,,,images/meals/marinated_pineapple_peppers_salad.png,"A tropical side salad combining pineapple chunks","Dice pineapple, pepper, cucumber, and red onion.
 Toss with thinly sliced cabbage and fresh coriander.
 Refrigerate 15–30 minutes so the vegetables soften slightly.
 Add chilli just before serving.
-Drizzle with dressing and toss gently."
-"Classic Garden Salad","Side Salad","Carrots:50 | Classic Lemon Garlic Dressing (Base):15 | Cucumber:60 | Romaine Lettuce:50 | Tomato (Raw):60",350,35,35,7.8,,,,,false,,Balanced,,,images/meals/classic_garden_salad.png,"A crisp","Wash and chop the lettuce, tomato, cucumber, pepper, cabbage, and onion.
+Serve dressing on the side."
+"Classic Garden Salad","Side Salad","Bell Pepper (Red):40 | Cabbage (Purple):30 | Classic Lemon Garlic Dressing (Base):15 | Cucumber:60 | Red Onion:25 | Romaine Lettuce:50 | Tomato (Raw):60",350,35,35,7.8,,,,,false,,Balanced,,,images/meals/classic_garden_salad.png,"A crisp","Wash and chop the lettuce, tomato, cucumber, pepper, cabbage, and onion.
 Toss the vegetables together in a large bowl.
-Drizzle with dressing and toss until evenly coated.
-Serve immediately."
-"Carrot Walnut Raisin Spice Cake",Dessert,"Almond Flour (Base):500 | Carrots:200 | Cinnamon:16 | Coconut Cream:160 | Coconut Flour:64 | Date Syrup:60 | Egg:298 | Nutmeg:4 | Olive Oil (Extra Virgin):90 | Raisins:50 | Walnuts:50",350,35,35,7.8,5754.08,173.19,284.4,471.21,true,24,Balanced,,,images/meals/carrot_oatmeal_cake.png,"Moist gluten-free carrot cake batch (8 slices) with almond and coconut flours, walnuts, raisins, warm spices, date syrup, and ghee.","Heat oven to 175°C (350°F). Grease a baking pan with ghee.
-Whisk eggs, date syrup, melted ghee, and coconut cream until smooth.
-Fold in grated carrots, almond flour, tapioca starch, coconut flour, cinnamon, nutmeg, walnuts, and raisins.
-Pour into the pan. Bake 30–35 minutes until set and golden.
-Cool, then cut into 8 equal slices. One slice is one serving."
-"Fruit Salad Bowl",Dessert,"Apple Green:40 | Blueberries:40 | Fresh Mint:3 | Honey (Raw):1 | Lemon Juice:5 | Pineapple:40 | Pomegranate Seeds:30 | Strawberries:50",350,35,35,7.8,,,,,false,,Balanced,,,images/meals/fruit_salad_bowl.png,"A clean refreshing side array of sliced strawberries","Wash and chop all fruit into bite-size pieces.
-Toss gently with lemon juice and honey if using.
-Chill 15 minutes. Serve cold."
-"Vegan Mushroom Soup",Soup,"Garlic:3 | Homemade Coconut Milk:25 | Mushrooms:200 | Olive Oil:3 | Thyme (Fresh):3 | Turmeric Powder:2 | Vegetable Stock:2.5 | Water (Filtered):147.5 | White Onion:30",350,35,35,7.8,,,,,false,1,Balanced,,,images/meals/vegan_mushroom_soup.png,"A rich creamy plant-based umami soup combining sautéed wild mushrooms and garlic blended with coconut cream","Sauté onion and mushrooms in oil until browned (8 min).
-Add garlic, thyme, and turmeric. Cook 1 minute.
-Pour in stock and coconut milk. Simmer 15 minutes.
-Blend partially for a creamy texture, or leave chunky.
-Serve hot."
-"Bone Broth Cup",Soup,"Bone Broth (Base):500",,,,,,,,,false,,Balanced,,,images/meals/bone_broth_cup.png,"500 ml cup of defatted house bone broth — long-simmered and gelatin-rich.","Measure 500 ml (one serving) of defatted Bone Broth (Base).
-Pour into a small pot.
-Heat gently on the stove until steaming (do not boil hard).
-Pour into a mug or bowl and serve hot."
+Serve immediately.
+Serve dressing on the side."
+"Carrot Walnut Raisin Spice Cake",Dessert,"Almond Flour (Base):500 | Carrots:200 | Cinnamon:16 | Coconut Cream:160 | Coconut Flour:64 | Date Syrup:60 | Egg:298 | Nutmeg:4 | Olive Oil (Extra Virgin):90 | Raisins:50 | Walnuts:50",350,35,35,7.8,5754.08,173.19,284.4,471.21,true,24,Balanced,,,images/meals/carrot_oatmeal_cake.png,"Moist gluten-free carrot cake batch (8 slices) with almond and coconut flours, walnuts, raisins, warm spices, date syrup, and ghee.","1. Heat oven to 175°C (350°F). Grease a baking pan with ghee.
+2. Whisk eggs, date syrup, melted ghee, and coconut cream until smooth.
+3. Fold in grated carrots, almond flour, tapioca starch, coconut flour, cinnamon, nutmeg, walnuts, and raisins.
+4. Pour into the pan. Bake 30–35 minutes until set and golden.
+5. Cool, then cut into 8 equal slices. One slice is one serving."
+"Fruit Salad Bowl",Dessert,"Apple Green:40 | Blueberries:40 | Fresh Mint:3 | Honey (Raw):1 | Lemon Juice:5 | Pineapple:40 | Pomegranate Seeds:30 | Strawberries:50",350,35,35,7.8,,,,,false,,Balanced,,,images/meals/fruit_salad_bowl.png,"A clean refreshing side array of sliced strawberries","1. Wash and chop all fruit into bite-size pieces.
+2. Toss gently with lemon juice and honey if using.
+3. Chill 15 minutes. Serve cold."
+"Vegan Mushroom Soup",Soup,"Garlic:3 | Homemade Coconut Milk:25 | Mushrooms:200 | Olive Oil:3 | Thyme (Fresh):3 | Turmeric Powder:2 | Vegetable Stock:2.5 | Water (Filtered):147.5 | White Onion:30",350,35,35,7.8,,,,,false,1,Balanced,,,images/meals/vegan_mushroom_soup.png,"A rich creamy plant-based umami soup combining sautéed wild mushrooms and garlic blended with coconut cream","1. Sauté onion and mushrooms in oil until browned (8 min).
+2. Add garlic, thyme, and turmeric. Cook 1 minute.
+3. Pour in stock and coconut milk. Simmer 15 minutes.
+4. Blend partially for a creamy texture, or leave chunky.
+5. Serve hot."
+"Bone Broth Cup",Soup,"Bone Broth (Base):500",,,,,,,,,false,,Balanced,,,images/meals/bone_broth_cup.png,"500 ml cup of defatted house bone broth — long-simmered and gelatin-rich.","1. Measure 500 ml (one serving) of defatted Bone Broth (Base).
+2. Pour into a small pot.
+3. Heat gently on the stove until steaming (do not boil hard).
+4. Pour into a mug or bowl and serve hot."
 "Cacao & Almond Chia",Breakfast,"Almond Butter:10 | Almond whole:5 | Cocoa Powder:2 | Coconut Chia Pudding (Base):75",150,4,15,9,,,,,false,,,,,images/meals/cacao_almond_chia.png,"Rich cacao coconut chia pudding swirled with almond butter and almonds.","Prepare Coconut Chia Pudding (Base) ahead (chia, coconut milk, and date syrup) and chill until thick.
 Spoon the set pudding into a bowl or jar.
 Swirl in almond butter and cocoa powder. Top with chopped almonds.
 Serve chilled."
-"Smashed Beans & Eggs",Breakfast,"Egg:100 | Fresh Coriander:4 | Smashed White Beans (Base):80 | Tomato (Raw):50",350,18,36,14,,,,,false,,,,"G6PD Trigger",images/meals/smashed_beans_eggs.png,"Creamy white beans topped with a perfectly crispy fried egg.","Prepare Smashed White Beans (Base) per base recipe instructions.
-Dice tomato and chop fresh coriander.
-Fry or poach eggs until whites are set and yolks are runny.
-Spoon warm smashed beans onto plates, top with eggs, tomato, and coriander.
-Serve immediately."
-"Coconut Chicken Curry",Meal,"Chicken thigh:500 | Coconut Milk:400 | Fish Sauce:15 | Jasmine Rice:200 | Palm sugar:8 | Thai basil:10",620,48,42,22,2289.19,146.28,92.67,149.76,true,5,Balanced,Follicular,,meals/Fj33c9tCkIbeVk14KhtGFQXoZkxBFDPM55atUwdX.png,"Rich red curry with coconut milk and tender chicken over jasmine rice.","Sear cubed chicken thighs in a large heavy pot until completely golden on all sides.
-Pour rich coconut milk and house red curry paste over the chicken elements.
-Season with fish sauce and palm sugar; bring to a rolling simmer over medium heat for 15 minutes.
-Toss fresh Thai basil leaves into the hot curry base 60 seconds before removing from heat source.
-Portion jasmine rice into bulk catering containers and ladle chicken curry matrix evenly over the top."
-"Crispy Chicken Tikka bowl w Quinoa & Mint Sauce",Meal,"Apple Cider Vinegar:5 | Cabbage (Purple):30 | Carrots:20 | Cashew Cream (Base):15 | Cashew Nuts:10 | Cucumber:30 | Fresh Coriander:5 | Fresh Mint:5 | Lime Juice:5 | Quinoa (White):30 | Red Onion:15 | Tandoori Chicken (Base):95 | Tomato (Raw):60 | White Onion:40",350,32,28,12,,,,,false,1,Balanced,,,images/meals/Crispy-Chicken-Tikka-bowl-w-Quinoa-&-Mint-Sauce.png,"Crispy chicken tikka over clean white quinoa with cashew mint sauce.","Cook quinoa: rinse, simmer 15 minutes, fluff.
-Grill or crisp Tandoori Chicken (Base) until golden; slice.
+"Smashed Beans & Eggs",Breakfast,"Egg:100 | Fresh Coriander:4 | Smashed White Beans (Base):80 | Tomato (Raw):50",350,18,36,14,,,,,false,,,,"G6PD Trigger",images/meals/smashed_beans_eggs.png,"Creamy white beans topped with a perfectly crispy fried egg.","1. Prepare Smashed White Beans (Base) per base recipe instructions.
+2. Dice tomato and chop fresh coriander.
+3. Fry or poach eggs until whites are set and yolks are runny.
+4. Spoon warm smashed beans onto plates, top with eggs, tomato, and coriander.
+5. Serve immediately."
+"Grilled Chicken Tikka Salad w Quinoa & Cilantro Lime Dressing",Meal,"Apple Cider Vinegar:5 | Cabbage (Purple):30 | Carrots:20 | Cashew Nuts:10 | Cilantro Lime Dressing (Base):15 | Cucumber:30 | Fresh Coriander:5 | Fresh Mint:5 | Lime Juice:5 | Quinoa (White):30 | Red Onion:15 | Tandoori Chicken (Base):95 | Tomato (Raw):60 | White Onion:40",350,32,28,12,,,,,false,,Balanced,,,images/meals/crispy_chicken_tikka_quinoa_mint_sauce.png,"Grilled chicken tikka over white quinoa with fresh vegetables and cilantro lime dressing.","Cook quinoa: rinse, simmer 15 minutes, fluff.
+Grill or pan-sear Tandoori Chicken (Base) until golden then in the oven for 20 minutes exactly, then Rest and slice.
 Shred cabbage; julienne carrots and cucumber.
-Layer quinoa, vegetables, and chicken. Drizzle cashew mint sauce and lime."
+Layer quinoa, vegetables, and chicken.
+Serve dressing on the side."
 "Leek & Salmon in Capers, Lemon & Dill Sauce w Roasted Potato",Meal,"Black Pepper:2 | Capers:10 | Dill (Fresh):8 | Garlic (Raw):6 | Leeks:100 | Lemon Juice:20 | Olive Oil (Extra Virgin):5 | Potato:80 | Preserved Lemon:12 | Rosemary (Fresh):2 | Salmon:116 | Sea Salt:2 | Vegetable Broth (Base):40",350,27,16,19,,,,,false,,Balanced,Luteal,,images/meals/leek_salmon_capers_lemon_dill_roasted_potato.png,"Tender parchment-baked salmon fillets over sautéed leeks, with herb-roasted potato cubes.","Preheat oven to 200°C. Toss potato cubes with olive oil, minced garlic, fresh rosemary, and sea salt; roast for 25 minutes.
 Sauté julienned leeks in olive oil over medium heat for 6 to 8 minutes until sweet and golden.
 Prepare a large greaseproof paper parchment square and layer the sautéed leeks down in the center core.
 Lay the clean salmon fillet over the leek bed; season with black pepper, capers, preserved lemon, and fresh dill.
 Spoon house vegetable broth base and lemon juice over the salmon, wrap paper tightly to trap steam, and bake for 15 minutes."
-"Harissa Chicken Balls w Couscous Cucumber Herb Salad & Eggplant Dip",Meal,"Black Pepper:1 | Chicken Breast:150 | Couscous:30 | Cucumber:60 | Dill (Fresh):3 | Eggplant Dip (Mutabal) (Base):40 | Fresh Mint:3 | Garlic (Raw):6 | Harissa Paste:15 | Lemon Juice:15 | Olive Oil (Extra Virgin):4 | Parsley:5 | Red Onion:8 | Sea Salt:1 | White Onion:15",350,24.2,33.8,13.1,,,,,false,,Balanced,,,images/meals/harissa_chicken_balls_couscous.png,"Harissa chicken meatballs with a cucumber-herb salad, fluffy couscous, and mutabal eggplant dip.","Mix ground chicken meat with harissa paste, garlic, white onion, parsley, dill, mint, and sea salt; roll into uniform meatballs.
+"Harissa Chicken Balls w Couscous Cucumber Herb Salad & Eggplant Dip",Meal,"Black Pepper:1 | Chicken Breast:150 | Couscous:30 | Cucumber:60 | Dill (Fresh):3 | Eggplant Dip (Mutabal) (Base):40 | Fresh Mint:3 | Garlic (Raw):6 | Harissa Paste (Base):15 | Lemon Juice:15 | Olive Oil (Extra Virgin):4 | Parsley:5 | Red Onion:8 | Sea Salt:1 | White Onion:15",350,24.2,33.8,13.1,,,,,false,,Balanced,,,images/meals/harissa_chicken_balls_couscous.png,"Harissa chicken meatballs with a cucumber-herb salad, fluffy couscous, and mutabal eggplant dip.","Mix ground chicken meat with Harissa Paste (Base), garlic, white onion, parsley, dill, mint, and sea salt; roll into uniform meatballs.
 Sear meatballs in a hot cast-iron skillet with olive oil until golden, then bake at 200°C for 12 minutes until cooked through.
 Toss diced cucumber, fresh lemon juice, chopped red onion, and fresh mint together to assemble the salad.
 Prepare couscous according to package guidelines until light and fluffy.
 Layer couscous into container base, arrange meatballs and cucumber salad neatly adjacent, and accompany with a side of house mutabal dip."
-"Vegan Smoky Cauliflower & Lentil Stew w Quinoa Bread & Tahini",Meal,"Carrots:30 | Cauliflower:100 | Cherry Tomatoes:38 | Chili Flakes:1 | Coriander Seeds:1 | Cumin Seeds:2 | Garlic (Raw):3 | Lemon Juice:10 | Lentils (Red):80 | Olive Oil (Extra Virgin):4 | Quinoa Bread (Base):29.25 | Smoked Paprika:2 | Tahini:12 | Vegetable Stock:1.875 | Water (Filtered):125.625 | White Onion:28",350,14,42,13,,,,,false,1,,,"G6PD Trigger",images/meals/Vegan-Smoky-Cauliflower-&-Lentil-Stew-w-Quinoa-Bread-&-Tahini.png,"Smoky red lentil and cauliflower stew with a rich lemon-tahini drizzle.","Roast cauliflower florets at 200°C for 20 minutes until golden.
-Simmer lentils with aromatics and stock until tender.
-Combine roasted cauliflower with lentils. Season with smoked paprika.
-Warm quinoa bread. Drizzle tahini over stew.
-Serve hot."
-"Salted Tahini Caramel Chocolate Bar",Dessert,"Almond Flour (Base):144 | Cocoa Powder:60.8 | Coconut Oil:108.8 | Date Syrup:144 | Sea Salt:9.6 | Tahini:120 | Vanilla Pods:1.6",300,6,32,16,3060.85,64.29,200.09,253.83,true,16,Balanced,"Ovulatory | Luteal",,meals/U0uHuLR58OAn2jSfxBkKq39aDXVbMafkUnLcvp1z.png,"Three-layer 8x8 no-bake bar (16 squares): almond shortbread, salted tahini-date caramel, and dark cocoa topping.","Heat oven to 175°C. Line an 8x8 inch pan with parchment paper.
-Mix almond flour, 3 tablespoons coconut oil, 2 tablespoons date syrup, vanilla, and salt into a crumb. Press evenly into the pan and bake 10 minutes. Cool 10 minutes.
-Warm tahini, date syrup, coconut oil, vanilla, and sea salt in a saucepan over medium-low heat for about 2 minutes, stirring often. Pour over the crust.
-Refrigerate 30 to 60 minutes until the caramel layer sets.
-Whisk cocoa powder, remaining coconut oil, and a little date syrup until smooth and glossy.
-Pour the chocolate layer over the caramel, tilt the pan to coat evenly, and chill 1 hour until firm. Sprinkle with flaky sea salt.
-Lift from the pan and cut into 16 squares. One square is one serving."
-"Chocolate Orange Brownie",Dessert,"Almond Flour (Base):444 | Cocoa Powder:180 | Egg:552 | Honey (Raw):120 | Olive Oil:84 | Orange Juice:252 | Orange Zest:30 | Walnuts:120",485,12.2,42.1,28.4,5871.42,219.77,355.67,467.98,true,24,Balanced,Luteal,,images/meals/Chocolate-Orange-Brownie-(N).png,"Rich flourless cocoa-orange brownie batch (24 small squares) with house almond flour, eggs, honey, olive oil, and walnuts.","Heat oven to 175°C. Line a small tin.
-Whisk eggs with orange juice, zest, honey, and olive oil.
-Fold in almond flour, cocoa powder, and chopped walnuts until combined.
-Pour into tin. Bake until a skewer comes out mostly clean.
-Cool, then cut into 24 equal small squares. One square is one serving."
-"Vegan Harissa Roasted Cauliflower & Chickpea Salad w Tahini Dressing",Meal,"Cauliflower:150 | Chickpeas:75 | Dill (Fresh):2 | Fresh Mint:3 | Harissa Paste (Base):1.75 | Lemon-Tahini Dressing (Base):35 | Olive Oil (Extra Virgin):5 | Shallots:20",350,12.1,42.1,14.8,,,,,false,1,,,"G6PD Trigger",images/meals/harissa_cauliflower_chickpea_salad.png,"Smoky harissa-roasted cauliflower and crispy chickpeas with velvety lemon-tahini dressing.","Toss cauliflower and chickpeas with harissa and oil.
+"Vegan Smoky Cauliflower & Lentil Stew w Quinoa Bread & Tahini",Meal,"Carrots:30 | Cauliflower:100 | Cherry Tomatoes:38 | Chili Flakes:1 | Coriander Seeds:1 | Cumin Seeds:2 | Garlic (Raw):3 | Lemon Juice:10 | Lentils (Red):80 | Olive Oil (Extra Virgin):4 | Quinoa Bread (Base):29.25 | Smoked Paprika:2 | Tahini:12 | Vegetable Stock:1.875 | Water (Filtered):125.625 | White Onion:28",350,14,42,13,,,,,false,1,,,"G6PD Trigger",images/meals/Vegan-Smoky-Cauliflower-&-Lentil-Stew-w-Quinoa-Bread-&-Tahini.png,"Smoky red lentil and cauliflower stew with a rich lemon-tahini drizzle.","1. Roast cauliflower florets at 200°C for 20 minutes until golden.
+2. Simmer lentils with aromatics and stock until tender.
+3. Combine roasted cauliflower with lentils. Season with smoked paprika.
+4. Warm quinoa bread. Drizzle tahini over stew.
+5. Serve hot."
+"Salted Tahini Caramel Chocolate Bar",Dessert,"Almond Flour (Base):144 | Cocoa Powder:60.8 | Coconut Oil:108.8 | Date Syrup:144 | Sea Salt:9.6 | Tahini:120 | Vanilla Pods:1.6",300,6,32,16,3060.85,64.29,200.09,253.83,true,16,Balanced,"Ovulatory | Luteal",,meals/U0uHuLR58OAn2jSfxBkKq39aDXVbMafkUnLcvp1z.png,"Three-layer 8x8 no-bake bar (16 squares): almond shortbread, salted tahini-date caramel, and dark cocoa topping.","1. Heat oven to 175°C. Line an 8x8 inch pan with parchment paper.
+2. Mix almond flour, 3 tablespoons coconut oil, 2 tablespoons date syrup, vanilla, and salt into a crumb. Press evenly into the pan and bake 10 minutes. Cool 10 minutes.
+3. Warm tahini, date syrup, coconut oil, vanilla, and sea salt in a saucepan over medium-low heat for about 2 minutes, stirring often. Pour over the crust.
+4. Refrigerate 30 to 60 minutes until the caramel layer sets.
+5. Whisk cocoa powder, remaining coconut oil, and a little date syrup until smooth and glossy.
+6. Pour the chocolate layer over the caramel, tilt the pan to coat evenly, and chill 1 hour until firm. Sprinkle with flaky sea salt.
+7. Lift from the pan and cut into 16 squares. One square is one serving."
+"Chocolate Orange Brownie",Dessert,"Almond Flour (Base):444 | Cocoa Powder:180 | Egg:552 | Honey (Raw):120 | Olive Oil:84 | Orange Juice:252 | Orange Zest:30 | Walnuts:120",485,12.2,42.1,28.4,5871.42,219.77,355.67,467.98,true,24,Balanced,Luteal,,images/meals/Chocolate-Orange-Brownie-(N).png,"Rich flourless cocoa-orange brownie batch (24 small squares) with house almond flour, eggs, honey, olive oil, and walnuts.","1. Heat oven to 175°C. Line a small tin.
+2. Whisk eggs with orange juice, zest, honey, and olive oil.
+3. Fold in almond flour, cocoa powder, and chopped walnuts until combined.
+4. Pour into tin. Bake until a skewer comes out mostly clean.
+5. Cool, then cut into 24 equal small squares. One square is one serving."
+"Vegan Harissa Roasted Cauliflower & Chickpea Salad w Tahini Dressing",Meal,"Cauliflower:150 | Chickpeas:75 | Dill (Fresh):2 | Fresh Mint:3 | Harissa Paste (Base):5 | Lemon-Tahini Dressing (Base):35 | Olive Oil (Extra Virgin):5 | Shallots:20",350,12.1,42.1,14.8,,,,,false,1,,,"G6PD Trigger",images/meals/harissa_cauliflower_chickpea_salad.png,"Smoky harissa-roasted cauliflower and crispy chickpeas with velvety lemon-tahini dressing.","Toss cauliflower and chickpeas with Harissa Paste (Base) and oil.
 Roast at 200°C for 25 minutes until crisp.
-Toss roasted vegetables with herbs and dressing.
-Serve warm or at room temperature."
+Toss roasted vegetables with herbs.
+Serve warm or at room temperature.
+Serve dressing on the side."
 "Eggplant & Ground Beef Stew w Quinoa Bread",Meal,"Avocado Oil:4 | Beef Ground:80 | Black Pepper:1 | Chili Flakes:1 | Eggplant:90 | Garlic (Raw):5 | Ginger (Raw):3 | Parsley:2 | Quinoa Bread (Base):45 | Sea Salt:1 | Sesame Oil:3 | Soy Sauce:8 | White Onion:20",350,24.1,30.5,14.6,,,,,false,1,Balanced,,"G6PD Trigger",meals/ysBLJrzn9J3eeev06wo4StVN3PisSXF5eyz9o94w.png,"Comforting skillet stir-fry of tender eggplant cubes and lean ground beef with a slice of rustic quinoa bread.","Heat avocado oil in a heavy stainless steel skillet. Add eggplant cubes and stir-fry for 7 minutes until soft and golden; remove.
 Add remaining oil to the skillet and input ground beef; cook for 8 minutes until entirely browned and crumbly.
 Stir in chopped white onion, minced raw garlic, and grated ginger; sauté over medium-high heat for 3 minutes until highly fragrant.
 Return browned eggplant cubes to the skillet, pour in soy sauce and sesame oil, and sprinkle with chili flakes.
 Sauté for 3 minutes to emulsify layout; serve hot with fresh parsley garnish and a toasted slice of house quinoa bread base."
 "Vegan Mushroom Bowl",Meal,"Bell Pepper (Red):45 | Broccoli:50 | Cherry Tomato:40 | Cilantro Lime Dressing (Base):22 | Fresh Coriander:3 | Garlic (Raw):3 | Mushrooms:110 | Quinoa:35 | Spinach (Fresh):25 | White Onion:20",350,11.8,45.3,13.5,,,,,false,1,,,,images/meals/vegan_mushroom_bowl.png,"Vibrant plant bowl featuring sautéed Portobello mushrooms","fluffy quinoa"
-"Spicy Harissa Grilled Chicken w Roasted Sweet Potato & Zucchini",Meal,"Black Pepper:0.5 | Chicken Breast:110 | Garlic (Raw):3 | Harissa Paste (Base):6.3 | Lemon Juice:10 | Olive Oil (Extra Virgin):4 | Sweet Potato:90 | Zucchini:80",350,26.4,35.9,11.2,,,,,false,1,,,,images/meals/harissa_grilled_chicken_sweet_potato.png,"Lean chicken breast marinated in house harissa paste","Coat chicken with harissa and a little olive oil. Rest 15 minutes.
+"Spicy Harissa Grilled Chicken w Roasted Sweet Potato & Zucchini",Meal,"Black Pepper:0.5 | Chicken Breast:110 | Fresh Mint:5 | Garlic (Raw):3 | Harissa Paste (Base):6.3 | Lemon Juice:10 | Olive Oil (Extra Virgin):4 | Sweet Potato:90 | Zucchini:80",350,26.4,35.9,11.2,,,,,false,,,,,images/meals/harissa_grilled_chicken_sweet_potato.png,"Lean chicken breast marinated in house harissa paste","Coat chicken with Harissa Paste (Base) and a little olive oil. Rest 15 minutes.
 Cube sweet potato and zucchini. Toss with oil. Roast at 200°C for 25 minutes.
-Grill or pan-sear chicken until cooked through.
-Rest, slice, and serve over roasted vegetables."
-"Grilled Beef Steak Ratatouille & Saffron rice",Meal,"Beef Sirloin:85 | Bell Pepper (Red):40 | Black Pepper:1 | Eggplant:40 | Fresh Basil:5 | Garlic (Raw):3 | Lemon Juice:10 | Olive Oil (Extra Virgin):4 | Parsley:5 | Saffron Rice (Base):75 | Tomato (Raw):50 | Zucchini:45",350,25.1,33.6,12.8,,,,,false,1,Balanced,,,images/meals/grilled_beef_steak_ratatouille.png,"Seared lean sirloin steak over rich","Warm Saffron Rice (Base) per base recipe instructions.
-Sauté diced eggplant, zucchini, pepper, and tomato until soft (12–15 min). Stir in basil.
-Season steak. Sear in a hot pan 3–4 minutes per side for medium-rare (adjust to taste).
-Rest steak 5 minutes. Slice against the grain.
-Serve steak with vegetable medley and rice."
+Grill or pan-sear chicken until golden then in the oven for 20 minutes exactly, then Rest and slice.
+Rest, slice, and serve over roasted vegetables.
+Garnish with fresh chopped mint"
+"Grilled Beef Steak Ratatouille & Saffron rice",Meal,"Beef Sirloin:85 | Bell Pepper (Red):40 | Black Pepper:1 | Eggplant:40 | Fresh Basil:5 | Garlic (Raw):3 | Lemon Juice:10 | Olive Oil (Extra Virgin):4 | Parsley:5 | Saffron Rice (Base):75 | Tomato (Raw):50 | Zucchini:45",350,25.1,33.6,12.8,,,,,false,1,Balanced,,,images/meals/grilled_beef_steak_ratatouille.png,"Seared lean sirloin steak over rich","1. Warm Saffron Rice (Base) per base recipe instructions.
+2. Sauté diced eggplant, zucchini, pepper, and tomato until soft (12–15 min). Stir in basil.
+3. Season steak. Sear in a hot pan 3–4 minutes per side for medium-rare (adjust to taste).
+4. Rest steak 5 minutes. Slice against the grain.
+5. Serve steak with vegetable medley and rice."
 "Smashed white Beans",Meal,"Black Pepper:5 | Cannellini Beans:1000 | Garlic (Raw):10 | Lemon Juice:80 | Olive Oil (Extra Virgin):100 | Sea Salt:15 | Water (Filtered):3000",350,16,42,11,,,,,false,1,,,"G6PD Trigger",meals/qs4brZk5U5C4aedfnjoFmlX2GfdJxKvOFhuv3NAm.jpg,"Silky white beans slowly simmered and infused with garlic and olive oil emulsion.","Soak dry cannellini beans in 4 liters of filtered water for 12 hours; drain and rinse thoroughly under clean lines.
 Place soaked beans in a large pot with 3 liters of fresh water; bring to a boil, then reduce heat to a very low simmer for 60 minutes.
 Once bean bodies are perfectly tender, remove from heat source and drain out excess liquid layers.
 Stir in sautéed garlic, sea salt, black pepper, and fresh lemon juice while the bean matrix is completely hot.
 Stream extra virgin olive oil slowly into the pot while folding gently; smash 20% of the bean base with a wooden mallet to finish."
-"Roasted Chicken in Pomegranate & Sumac Sauce w Turmeric Rice",Meal,"Chicken Breast:110 | Parsley:5 | Pomegranate Seeds:12 | Pomegranate Sumac Sauce (Base):28 | Red Onion:25 | Turmeric Rice (Base):75",350,27.2,37.1,9.8,,,,,false,1,,,,images/meals/roasted_chicken_pomegranate_sumac.png,"Oven-roasted chicken breast in a tart pomegranate-sumac reduction over golden turmeric basmati rice.","Warm Turmeric Rice (Base) per base recipe instructions.
-Season chicken. Roast or pan-sear until cooked through.
-Warm Pomegranate Sumac Sauce (Base) in a small pan (do not boil).
-Slice chicken. Serve over rice with sauce spooned on top."
-"Vegan Sri Lankan Red Lentil Dal w Quinoa Bread",Meal,"Chili Flakes:1 | Chili Powder:1 | Coriander Seeds:1 | Garlic (Raw):4 | Ginger (Raw):6 | Homemade Coconut Milk:35 | Lentils (Red):70 | Olive Oil (Extra Virgin):4 | Quinoa Bread (Base):29.25 | Tomato (Raw):35 | Turmeric Powder:1 | Water (Filtered):150 | White Onion:25 | cumin powder:1 | mustard seeds:1",350,14.8,50.3,9.9,,,,,false,1,,,"G6PD Trigger",images/meals/vegan_sri_lankan_lentil_dal.png,"Rich red lentil dal with creamy coconut milk and traditional spices","Rinse red lentils. Simmer with water, turmeric, and ginger until soft (20 min).
-Sauté onion, garlic, and spices in oil. Stir into lentils.
-Simmer 5 more minutes until creamy.
-Warm quinoa bread. Serve dal with bread and fresh coriander."
-"Tomato Parsely Salad w Sumac Za’ater Dressing","Side Salad","Cucumber:40 | Fresh Mint:3 | Parsley:10 | Pomegranate Seeds:12 | Red Onion:13 | Sumac Za'atar Dressing (Base):10.85 | Tomato (Raw):150",150,2.1,14.4,9.3,,,,,false,,Balanced,,,images/meals/tomato_parsley_salad.png,"A vibrant side salad featuring halved plum tomatoes and sliced red onions tossed with fresh parsley in a zesty za'atar dressing.","Halve or wedge the tomatoes; slice cucumber and red onion.
+"Grilled Sumac Chicken Skewers w Zereshk & Turmeric Rice & Roasted Mixed Vegetables",Meal,"Barberries:5 | Chicken Breast:110 | Parsley:5 | Pomegranate Sumac Sauce (Base):40 | Red Onion:30 | Roasted Mixed Vegetables (Base):85 | Turmeric Rice (Base):70",350,27.2,37.1,9.8,,,,,false,1,,,,images/meals/grilled_sumac_chicken_skewers_zereshk_turmeric_rice.png,"Grilled sumac-marinated chicken skewers roasted over red onion with zereshk turmeric rice and house roasted mixed vegetables.","1. Prepare Turmeric Rice (Base) per base recipe instructions; fold through barberries (zereshk) and keep warm.
+2. Prepare Roasted Mixed Vegetables (Base) per base recipe instructions.
+3. Marinate chicken in Pomegranate Sumac Sauce (Base) for at least 2 hours or overnight.
+4. Preheat oven to 190°C. Arrange thinly sliced red onion in a roasting dish. Thread chicken onto skewers, place over the onion with the marinade, and season with salt and pepper.
+5. Roast 45–60 minutes until richly golden and cooked through, basting with pan juices several times.
+6. Serve skewers with zereshk turmeric rice, roasted vegetables on the side, and fresh parsley."
+"Vegan Sri Lankan Red Lentil Dal w Quinoa Bread",Meal,"Chili Flakes:1 | Chili Powder:1 | Coriander Seeds:1 | Garlic (Raw):4 | Ginger (Raw):6 | Homemade Coconut Milk:35 | Lentils (Red):70 | Olive Oil (Extra Virgin):4 | Quinoa Bread (Base):29.25 | Tomato (Raw):35 | Turmeric Powder:1 | Water (Filtered):150 | White Onion:25 | cumin powder:1 | mustard seeds:1",350,14.8,50.3,9.9,,,,,false,1,,,"G6PD Trigger",images/meals/vegan_sri_lankan_lentil_dal.png,"Rich red lentil dal with creamy coconut milk and traditional spices","1. Rinse red lentils. Simmer with water, turmeric, and ginger until soft (20 min).
+2. Sauté onion, garlic, and spices in oil. Stir into lentils.
+3. Simmer 5 more minutes until creamy.
+4. Warm quinoa bread. Serve dal with bread and fresh coriander."
+"Tomato Parsely Salad w Sumac Za’ater Dressing","Side Salad","Cucumber:40 | Fresh Mint:3 | Parsley:10 | Pomegranate Seeds:12 | Red Onion:13 | Sumac Za'atar Dressing (Base):31 | Tomato (Raw):150",150,2.1,14.4,9.3,,,,,false,,Balanced,,,images/meals/tomato_parsley_salad.png,"A vibrant side salad featuring halved plum tomatoes and sliced red onions tossed with fresh parsley in a zesty za'atar dressing.","Halve or wedge the tomatoes; slice cucumber and red onion.
 Chop the parsley and mint.
 Combine tomatoes, cucumber, onion, herbs, and pomegranate in a bowl.
-Add dressing and toss gently. Serve at room temperature."
-"Apple Pie Balls",Dessert,"Almond Butter:5 | Almond Flour:7 | Apple Green:10 | Cinnamon:1 | Dates (Khelas):16 | Walnuts:4",150,3.6,17.2,9,,,,,false,,Balanced,,,images/meals/apple_pie_balls.png,"No-bake apple-cinnamon balls with khelas dates, almond flour, walnuts, and almond butter — 3 small bites per serving (~150 kcal).","Pulse khelas dates, almond flour, chopped apple, walnuts, cinnamon, and almond butter in a food processor until the mixture holds together.
-Roll into 3 small bite-size balls (~14g each). One serving is all 3 balls.
-Chill 30 minutes until firm. Serve cold."
+Serve at room temperature.
+Serve dressing on the side."
+"Apple Pie Balls",Dessert,"Almond Butter:5 | Almond Flour:7 | Apple Green:10 | Cinnamon:1 | Dates (Khelas):16 | Walnuts:4",150,3.6,17.2,9,,,,,false,,Balanced,,,images/meals/apple_pie_balls.png,"No-bake apple-cinnamon balls with khelas dates, almond flour, walnuts, and almond butter — 3 small bites per serving (~150 kcal).","1. Pulse khelas dates, almond flour, chopped apple, walnuts, cinnamon, and almond butter in a food processor until the mixture holds together.
+2. Roll into 3 small bite-size balls (~14g each). One serving is all 3 balls.
+3. Chill 30 minutes until firm. Serve cold."
 "Garlic Lemon Salmon, Dill Tarragon Rice & Spicy Green Chilli Sauce",Meal,"Basmati Rice (White):35 | Black Pepper:1 | Dill (Fresh):15 | Fresh Parsley:3 | Garlic (Raw):20 | Lemon Juice:25 | Lemon Zest:4 | Olive Oil (Extra Virgin):12 | Oregano:2 | Paprika:2 | Salmon (Raw):130 | Spicy Green Chilli Sauce (Base):20 | Tarragon:2",350,35,35,7.7,,,,,false,1,Balanced,,Fish,images/meals/garlic_lemon_salmon_dill_tarragon_rice.png,"Tender garlic-lemon salmon over fluffy dill-tarragon basmati rice with spicy green chilli sauce on the side.","Cook white basmati rice according to package directions; fluff with a fork and fold in a generous handful of chopped fresh dill and 1 tbsp dried tarragon.
 Whisk 3 tbsp extra virgin olive oil, juice of 2 lemons, zest of 1 large lemon, 5 chopped garlic cloves, 2 tsp dried oregano, 1 tsp sweet paprika, and ½ tsp black pepper into a smooth garlic-lemon marinade.
 Lay salmon fillet in a baking dish, coat thoroughly with the marinade, and top with rounds from ½ lemon.
 Bake at 200°C for 14 minutes until the salmon flakes easily.
 Plate salmon over dill-tarragon rice. Garnish with lemon slices and chopped parsley. Serve spicy green chilli sauce on the side."
-"Pepper Chicken in Creamy Cajun Sauce w Roasted Potato",Meal,"Bell Pepper (Red):40 | Black Pepper:1 | Cajun Powder:2 | Cherry Tomatoes:30 | Chicken Breast:115 | Garlic (Raw):4 | Homemade Coconut Milk:25 | Lime Juice:8 | Olive Oil (Extra Virgin):5 | Potato:90 | Red Onion:15 | Smoked Paprika:1",350,35,35,7.7,,,,,false,1,Balanced,,,images/meals/cajun_pepper_chicken.png,"Skillet-seared Cajun chicken breast in a rich coconut cream sauce with roasted cherry tomatoes and crisp potato cubes.","Cube potatoes. Toss with oil and roast at 200°C until crisp (25–30 min).
-Sear chicken strips in a hot pan until browned.
-Add sliced peppers and Cajun spice. Cook 2 minutes.
-Stir in homemade coconut milk. Simmer until sauce thickens.
-Serve chicken and sauce over roasted potatoes."
-"Cajun Chicken, Grilled Peppers & Onion Salad w Quinoa, Kale & Mustard Dressing",Meal,"Bell Pepper (Red):40 | Cajun Powder:1 | Chicken Breast:120 | Honey Mustard Dressing (Base):6.75 | Kale:40 | Quinoa (White):30 | Red Onion:20 | Smoked Paprika:1",350,35,35,7.7,,,,,false,1,Balanced,,,images/meals/cajun_chicken_quinoa_salad.png.jpg,"Warm salad featuring sliced blackened Cajun chicken","Cook quinoa and let cool slightly.
-Rub chicken with Cajun spice. Grill or pan-sear until done. Rest and slice.
+"Pepper Chicken in Creamy Cajun Sauce w Roasted Potato",Meal,"Bell Pepper (Red):40 | Black Pepper:1 | Cajun Powder:2 | Cherry Tomatoes:30 | Chicken Breast:115 | Garlic (Raw):4 | Homemade Coconut Milk:25 | Lime Juice:8 | Olive Oil (Extra Virgin):5 | Potato:90 | Red Onion:15 | Smoked Paprika:1",350,35,35,7.7,,,,,false,1,Balanced,,,images/meals/cajun_pepper_chicken.png,"Skillet-seared Cajun chicken breast in a rich coconut cream sauce with roasted cherry tomatoes and crisp potato cubes.","1. Cube potatoes. Toss with oil and roast at 200°C until crisp (25–30 min).
+2. Sear chicken strips in a hot pan until browned.
+3. Add sliced peppers and Cajun spice. Cook 2 minutes.
+4. Stir in homemade coconut milk. Simmer until sauce thickens.
+5. Serve chicken and sauce over roasted potatoes."
+"Cajun Chicken, Grilled Peppers & Onion Salad w Quinoa, Kale & Mustard Dressing",Meal,"Bell Pepper (Red):40 | Cajun Powder:1 | Chicken Breast:120 | Honey Mustard Dressing (Base):15 | Kale:40 | Quinoa (White):30 | Red Onion:20 | Smoked Paprika:1",350,35,35,7.7,,,,,false,1,Balanced,,,images/meals/cajun_chicken_quinoa_salad.png.jpg,"Warm salad featuring sliced blackened Cajun chicken","Cook quinoa and let cool slightly.
+Rub chicken with Cajun spice. Grill or pan-sear chicken until golden then in the oven for 20 minutes exactly, then Rest and slice.
 Grill pepper strips and onion until charred and soft.
-Massage kale with a little dressing until tender.
-Toss quinoa, kale, and vegetables with dressing. Top with chicken."
+Massage kale until tender.
+Toss quinoa, kale, and vegetables. Top with chicken.
+Serve dressing on the side."
 "Mango Pumpkin Seed Chia Pudding",Breakfast,"Coconut Chia Pudding (Base):75 | Mango:35 | Pumpkin Seeds:5",350,35,35,7.8,,,,,false,,Balanced,,,images/meals/mango_pumpkin_seed_chia_pudding.png,"Tropical coconut chia pudding topped with fresh mango and pumpkin seeds.","Prepare Coconut Chia Pudding (Base) ahead (chia, coconut milk, and date syrup) and chill until thick.
 Spoon the set pudding into a bowl or jar.
 Top with diced mango and pumpkin seeds.
@@ -162,121 +160,122 @@ Season salmon with herbs, lemon, and orange juice.
 Pan-sear or bake salmon 4–5 minutes per side until cooked.
 Steam or roast asparagus for 4–5 minutes.
 Serve salmon with sweet potato and asparagus."
-"Grilled Chicken Chimichurri",Meal,"Apple Cider Vinegar:4 | Broccoli:60 | Chicken Breast:120 | Fresh Coriander:8 | Garlic (Raw):4 | Lemon Juice:10 | Olive Oil (Extra Virgin):7 | Parsley:8 | Sweet Potato:85",350,35,35,7.8,,,,,false,1,Balanced,,,images/meals/grilled_chicken_chimichurri.png,"Juicy grilled chicken breast topped with our bright","Finely chop parsley, coriander, and garlic. Mix with olive oil, lemon, and vinegar.
-Season chicken breast. Grill or pan-sear 6–7 minutes per side until 74°C internal.
-Rest chicken 5 minutes, then slice.
-Roast or steam sweet potato and broccoli until tender.
-Plate chicken over veg. Spoon fresh herb sauce on top."
-"Grilled Salmon Mango Salsa",Meal,"Bell Pepper (Red):30 | Cucumber:35 | Fresh Coriander:3 | Lime Juice:10 | Mango:50 | Salmon (Raw):110 | Wild Rice (Cooked):90",350,35,35,7.8,,,,,false,1,Balanced,,,images/meals/grilled_salmon_mango_salsa.png,"A rich","Cook wild rice according to package. Keep warm.
-Dice mango, pepper, and cucumber. Mix with lime and coriander for salsa.
-Grill or pan-sear salmon until cooked through.
-Serve salmon over rice with mango salsa on top."
-"Herb Coated Salmon & Roasted Potato",Meal,"Dill (Fresh):2 | Olive Oil:2 | Parsley:3 | Roasted Mixed Vegetables (Base):95 | Salmon (Raw):130 | Steamed Basmati Rice (Base):70",350,35,35,7.8,,,,,false,,Balanced,,,images/meals/herb_coated_salmon.png,"Golden herb-crusted salmon with steamed basmati rice and house roasted mixed vegetables.","Prepare Roasted Mixed Vegetables (Base) per base recipe instructions.
-Prepare Steamed Basmati Rice (Base) per base recipe instructions.
-Coat salmon with chopped parsley, dill, olive oil, salt, and pepper. Bake or pan-sear until cooked through.
-Serve salmon over rice with roasted mixed vegetables on the side."
+"Grilled Chicken Chimichurri",Meal,"Apple Cider Vinegar:4 | Broccoli:60 | Chicken Breast:120 | Fresh Coriander:8 | Garlic (Raw):4 | Lemon Juice:10 | Olive Oil (Extra Virgin):7 | Parsley:8 | Sweet Potato:85",350,35,35,7.8,,,,,false,1,Balanced,,,images/meals/grilled_chicken_chimichurri.png,"Juicy grilled chicken breast topped with our bright","1. Finely chop parsley, coriander, and garlic. Mix with olive oil, lemon, and vinegar.
+2. Season chicken breast. Grill or pan-sear chicken until golden then in the oven for 20 minutes exactly, then Rest and slice.
+3. Roast or steam sweet potato and broccoli until tender.
+4. Plate chicken over veg. Spoon fresh herb sauce on top."
+"Grilled Salmon Mango Salsa",Meal,"Bell Pepper (Red):30 | Cucumber:35 | Fresh Coriander:3 | Lime Juice:10 | Mango:50 | Salmon (Raw):110 | Wild Rice (Cooked):90",350,35,35,7.8,,,,,false,1,Balanced,,,images/meals/grilled_salmon_mango_salsa.png,"A rich","1. Cook wild rice according to package. Keep warm.
+2. Dice mango, pepper, and cucumber. Mix with lime and coriander for salsa.
+3. Grill or pan-sear salmon until cooked through.
+4. Serve salmon over rice with mango salsa on top."
+"Herb Coated Salmon & Roasted Potato",Meal,"Garlic & Herb Marinade (Base):41 | Garlic (Raw):2 | Olive Oil:2 | Potato:80 | Roasted Mixed Vegetables (Base):90 | Rosemary (Fresh):1 | Salmon (Raw):125 | Sea Salt:1",502,29.5,27,31.4,,,,,false,1,Balanced,,,images/meals/herb_coated_salmon.png,"Herb-crusted salmon in garlic-herb lime marinade with roasted potato cubes and house roasted mixed vegetables.","Prepare Roasted Mixed Vegetables (Base) and Garlic & Herb Marinade (Base) per base recipe instructions.
+Preheat oven to 200°C. Toss potato cubes with olive oil, minced garlic, fresh rosemary, and sea salt; roast for 25 minutes until golden.
+Coat salmon thoroughly with Garlic & Herb Marinade (Base) and rest 15 minutes. Bake or pan-sear until cooked through.
+Serve salmon with herb-roasted potato cubes and roasted mixed vegetables."
 "High Protein Miso Crunch Salad","Side Salad","Cabbage (Purple):80 | Carrots:30 | Chicken Breast:110 | Edamame:40 | Miso Paste:5 | Rice Vinegar:5 | Tahini:8 | Water (Filtered):5",350,35,35,7.8,,,,,false,1,,,"G6PD Trigger",images/meals/high_protein_miso_crunch_salad.png,"A deeply savory umami crunch bowl of shredded cabbage and matchstick carrots tossed with edamame","chicken breast strips"
 "Marinated Strawberry Beet Salad","Side Salad","Apple Cider Beet Marinade (Base):14 | Beetroot:65 | Fresh Mint:3 | Romaine Lettuce:45 | Strawberries:55 | Walnuts:8 | White Onion:15",350,35,35,7.8,,,,,false,1,,,,images/meals/marinated_strawberry_beet_salad.png,"Juicy strawberries and tender cubed beets marinated in raw apple cider vinegar","Cook beetroot until tender. Cool and dice.
 Slice strawberries and onion.
-Toss beets, strawberries, onion, walnuts, and mint with dressing. Marinate 20 minutes.
-Serve over romaine."
+Toss beets, strawberries, onion, walnuts, and mint. Marinate 20 minutes.
+Serve over romaine.
+Serve dressing on the side."
 "Mediterranean Crunch Salad","Side Salad","Bell Pepper (Red):35 | Cherry Tomatoes:45 | Chicken Breast:110 | Classic Lemon Garlic Dressing (Base):12 | Cucumber:55 | Fresh Mint:3 | Kalamata Olives:15 | Red Onion:15 | Romaine Lettuce:45",350,35,35,7.8,,,,,false,1,,,,images/meals/mediterranean_crunch_salad.png,"A highly hydrating salad of diced cucumbers","Dice cucumber, tomatoes, pepper, and red onion.
-Grill or pan-sear seasoned chicken until done. Slice.
+Grill or pan-sear chicken until golden then in the oven for 20 minutes exactly, then Rest and slice.
 Toss romaine, vegetables, mint, and olives. Top with chicken.
-Drizzle with dressing and serve."
+Serve dressing on the side."
 "Pan Seared Hamour",Meal,"Cumin Seeds:1 | Garlic (Raw):3 | Hamour Fillet:140 | Lemon Juice:10 | Olive Oil:3 | Roasted Mixed Vegetables (Base):95 | Steamed Basmati Rice (Base):70",350,35,35,7.8,,,,,false,1,Balanced,,,images/meals/pan_seared_hamour.png,"Pan-seared hamour with cumin and garlic, served over steamed basmati rice and roasted mixed vegetables.","Prepare Roasted Mixed Vegetables (Base) and Steamed Basmati Rice (Base) per base recipe instructions.
 Season hamour with cumin, garlic, lemon juice, and olive oil. Pan-sear until golden and cooked through.
 Serve hamour over rice with roasted mixed vegetables on the side."
-"Persian Herb Beef Stew",Meal,"Beef Chuck Roast:88 | Cannellini Beans:70 | Dill (Fresh):4 | Fresh Coriander:8 | Lemon Juice:8 | Olive Oil:2 | Quinoa Bread (Base):32.5 | Spinach (Fresh):35 | White Onion:28",350,35,35,7.8,,,,,false,1,,,"G6PD Trigger",images/meals/persian_herb_beef_stew.png,"A fragrant traditional stew of slow-simmered beef chuck packed with minced cilantro","Brown beef cubes in olive oil. Set aside.
-Sauté onion until golden. Return beef with water to cover.
-Simmer low 60–90 minutes until beef is tender.
-Add beans, herbs, and spinach in the last 10 minutes.
-Warm quinoa bread separately. Serve stew with bread and lemon."
-"Butternut Squash Soup",Soup,"Black Pepper:2 | Butternut Squash:1000 | Garlic:10 | Homemade Coconut Milk:100 | Nutmeg:1 | Olive Oil:20 | Pumpkin Seeds:30 | Water (Filtered):150.0002 | White Onion:80",350,35,35,7.8,922.47,21.51,135.8,42.99,true,10,,,,images/meals/pumpkin_soup.png,"A silky velvet roasted pumpkin soup blended with light coconut cream and spices","Sauté onion in oil until soft.
-Add cubed squash and stock. Simmer until squash is very tender (20 min).
-Blend until smooth. Season with spices from recipe.
-Reheat gently and serve."
+"Persian Herb Beef Stew",Meal,"Beef Chuck Roast:88 | Cannellini Beans:70 | Dill (Fresh):4 | Fresh Coriander:8 | Lemon Juice:8 | Olive Oil:2 | Quinoa Bread (Base):32.5 | Spinach (Fresh):35 | White Onion:28",350,35,35,7.8,,,,,false,1,,,"G6PD Trigger",images/meals/persian_herb_beef_stew.png,"A fragrant traditional stew of slow-simmered beef chuck packed with minced cilantro","1. Brown beef cubes in olive oil. Set aside.
+2. Sauté onion until golden. Return beef with water to cover.
+3. Simmer low 60–90 minutes until beef is tender.
+4. Add beans, herbs, and spinach in the last 10 minutes.
+5. Warm quinoa bread separately. Serve stew with bread and lemon."
+"Butternut Squash Soup",Soup,"Black Pepper:2 | Butternut Squash:1000 | Garlic:10 | Homemade Coconut Milk:100 | Nutmeg:1 | Olive Oil:20 | Pumpkin Seeds:30 | Water (Filtered):150.0002 | White Onion:80",350,35,35,7.8,922.47,21.51,135.8,42.99,true,10,,,,images/meals/pumpkin_soup.png,"A silky velvet roasted pumpkin soup blended with light coconut cream and spices","1. Sauté onion in oil until soft.
+2. Add cubed squash and stock. Simmer until squash is very tender (20 min).
+3. Blend until smooth. Season with spices from recipe.
+4. Reheat gently and serve."
 "Roasted Eggplant Rocca Salad","Side Salad","Cherry Tomatoes:50 | Classic Lemon Garlic Dressing (Base):12 | Eggplant:120 | Pomegranate Seeds:15 | Rocca:45",350,35,35,7.8,,,,,false,1,,,,images/meals/roasted_eggplant_rocca_salad.png,"Oven-roasted globe eggplant cubes and blistering cherry tomatoes tossed with peppery rocca leaves","Cube eggplant and roast at 200°C with a little oil until soft and golden (25 min).
 Halve cherry tomatoes and toss with rocca.
 Combine with warm eggplant and pomegranate seeds.
-Drizzle with dressing and serve."
-"Rosemary Chicken Rocca Salad","Side Salad","Cherry Tomatoes:45 | Chicken Breast:110 | Cucumber:55 | Garlic (Raw):3 | Red Pepper Dressing (Base):9 | Rocca:50 | Rosemary (Fresh):2 | Walnuts:6",350,35,35,7.8,,,,,false,1,,,Nuts,images/meals/rosemary_chicken_rocca_salad.png,"Juicy chicken breast grilled with fresh rosemary and garlic","Cook chicken with rosemary and garlic until done. Cool slightly and slice.
+Serve dressing on the side."
+"Rosemary Chicken Rocca Salad","Side Salad","Cherry Tomatoes:45 | Chicken Breast:110 | Cucumber:55 | Garlic (Raw):3 | Red Pepper Dressing (Base):20 | Rocca:50 | Rosemary (Fresh):2 | Walnuts:6",350,35,35,7.8,,,,,false,1,,,Nuts,images/meals/rosemary_chicken_rocca_salad.png,"Juicy chicken breast grilled with fresh rosemary and garlic","Grill or pan-sear chicken with rosemary and garlic until golden then in the oven for 20 minutes exactly, then Rest and slice.
 Toss rocca, cucumber, and cherry tomatoes in a bowl.
-Top with chicken and walnuts. Drizzle with dressing."
-"Salmon Cashew Cream & Roasted Mixed Vegetables",Meal,"Cashew Cream (Base):20 | Garlic (Raw):2 | Lemon Juice:5 | Roasted Mixed Vegetables (Base):90 | Salmon (Raw):125",360,28.1,9.6,23.3,,,,,false,1,Balanced,,Nuts,images/meals/salmon_cashew_cream.png,"Pan-roasted salmon smothered in dairy-free garlic cashew cream with house roasted mixed vegetables.","Prepare Roasted Mixed Vegetables (Base) per base recipe instructions.
-Pan-roast salmon fillet until cooked through, 4–5 minutes per side.
-Warm Cashew Cream (Base) with minced garlic and lemon juice until silky; spoon over salmon.
-Serve salmon with cashew cream and roasted mixed vegetables."
-"Turmeric Chicken Kale Salad","Side Salad","Carrots:40 | Cherry Tomatoes:35 | Chicken Breast:110 | Cucumber:40 | Garlic (Raw):2 | Kale:50 | Pomegranate Seeds:12 | Red Onion:15 | Turmeric Lemon Dressing (Base):14",350,35,35,7.8,,,,,false,1,,,,images/meals/turmeric_chicken_kale_salad.png,"Lean chicken breast seasoned with golden turmeric and garlic","Rub chicken with half the turmeric dressing as a marinade. Grill until cooked. Slice.
-Massage kale with a little dressing until tender.
-Add cucumber, carrots, tomatoes, onion, and pomegranate. Top with warm chicken and remaining dressing."
+Top with chicken and walnuts.
+Serve dressing on the side."
+"Salmon Cashew Cream & Roasted Vegetabls",Meal,"Garlic:2 | Lemon Juice:5 | Roasted Mixed Vegetables (Base):100 | Salmon (Raw):130",350,35,35,7.8,,,,,false,,Balanced,,,images/meals/salmon_cashew_cream.png,"A premium pan-roasted salmon fillet smothered in a rich","dairy-free garlic cashew cream reduction"
+"Turmeric Chicken Kale Salad","Side Salad","Carrots:40 | Cherry Tomatoes:35 | Chicken Breast:110 | Cucumber:40 | Garlic (Raw):2 | Kale:50 | Pomegranate Seeds:12 | Red Onion:15 | Turmeric Lemon Dressing (Base):14",350,35,35,7.8,,,,,false,1,,,,images/meals/turmeric_chicken_kale_salad.png,"Lean chicken breast seasoned with golden turmeric and garlic","Rub chicken with half the turmeric dressing as a marinade. Grill or pan-sear chicken until golden then in the oven for 20 minutes exactly, then Rest and slice.
+Massage kale until tender.
+Add cucumber, carrots, tomatoes, onion, and pomegranate. Top with warm chicken.
+Serve remaining dressing on the side."
 "Baked Eggplant Lentils Hummus",Meal,"Creamy Cumin Hummus (Base):100 | Eggplant:150 | Olive Oil:5 | Sea Salt:1 | Wild Rice (Cooked):120",350,35,35,7.8,,,,,false,1,,,"G6PD Trigger",images/meals/baked_eggplant_lentils_hummus.png,"Tender baked globe eggplant slices paired with seasoned fiber-rich brown lentils over a bed of silky house hummus.","Preheat oven to 200°C and line a tray with parchment paper.
 Slice eggplant into uniform rounds, brush with olive oil, season with salt, and bake for 20-25 minutes until tender.
 Warm the pre-cooked brown lentils with a touch of cumin and sea salt.
 Spread the Creamy Cumin Hummus base evenly across the bottom of the container shell.
 Top neatly with the baked eggplant rounds and layer the seasoned lentils over the center."
-"Beef Bibimbap",Meal,"Beef Ground Lean:88 | Carrots:40 | Egg:55 | Garlic (Raw):3 | Quinoa (White):30 | Sesame Seeds:2 | Spinach (Fresh):50 | Spring Onion:18 | Zucchini:40",350,35,35,7.8,,,,,false,1,Balanced,,,images/meals/beef_bibimbap.png,"A clean macronutrient-balanced Korean-style bowl with seasoned lean ground beef","Cook quinoa and keep warm.
-Brown ground beef with garlic in a pan. Season lightly.
-Sauté spinach, carrots, and zucchini separately until tender.
-Fry eggs sunny-side up.
-Layer quinoa, vegetables, and beef in a bowl. Top with egg and sesame seeds."
+"Beef Bibimbap",Meal,"Beef Ground Lean:88 | Carrots:40 | Egg:55 | Garlic (Raw):3 | Quinoa (White):30 | Sesame Seeds:2 | Spinach (Fresh):50 | Spring Onion:18 | Zucchini:40",350,35,35,7.8,,,,,false,1,Balanced,,,images/meals/beef_bibimbap.png,"A clean macronutrient-balanced Korean-style bowl with seasoned lean ground beef","1. Cook quinoa and keep warm.
+2. Brown ground beef with garlic in a pan. Season lightly.
+3. Sauté spinach, carrots, and zucchini separately until tender.
+4. Fry eggs sunny-side up.
+5. Layer quinoa, vegetables, and beef in a bowl. Top with egg and sesame seeds."
 "Beef Shawarma Platter",Meal,"Beef Chuck Roast:120 | Cucumber:50 | Lemon Juice:5 | Shawarma Spice Blend:3 | Tahini:10 | Tomato (Raw):50 | White Onion:40",350,35,35,7.8,,,,,false,1,,,,images/meals/beef_shawarma_platter.png,"Shredded slow-cooked beef chuck infused with traditional shawarma aromatics","served alongside a crisp cucumber-tomato salad and tahini drizzle."
 "Beef White Bean Stew",Meal,"Beef Chuck Roast:100 | Cannellini Beans:110 | Carrots:30 | Celery:20 | Garlic:2 | Marinara Sauce (Base):80 | Olive Oil:2",350,35,35,7.8,,,,,false,1,,,"G6PD Trigger",images/meals/beef_white_bean_stew.png,"A rich","thick slow-simmered stew combining tender lean beef chuck blocks with fiber-dense white beans and aromatics."
 "Crispy Scallion Ginger Salmon",Meal,"Garlicky Green Beans (Base):85 | Ginger (Raw):8 | Salmon (Raw):125 | Sesame Oil:2 | Spring Onion:20 | Tamari Sauce:6",358,28.3,10,22.9,,,,,false,1,Balanced,,,images/meals/crispy_scallion_ginger_salmon.png,"Pan-roasted salmon topped with sizzled ginger and scallion matchsticks, served with garlicky green beans.","Prepare Garlicky Green Beans (Base) per base recipe instructions.
 Pat salmon dry. Pan-sear salmon 4 minutes per side until crisp.
 In a small pan, sizzle sesame oil with ginger and spring onion matchsticks; spoon over salmon.
 Drizzle with tamari. Serve with garlicky green beans."
-"Deconstructed Shakshuka Skillet",Breakfast,"Bell Pepper (Red):40 | Egg:110 | Fresh Coriander:4 | Garlic (Raw):4 | Olive Oil:4 | Smoked Paprika:1 | Tomato (Raw):150 | White Onion:30",350,35,35,7.8,,,,,false,1,Balanced,,,images/meals/deconstructed_shakshuka_skillet.png,"Two soft-cooked eggs nestled within a rich","Sauté onion and pepper in olive oil until soft (5 min).
-Add crushed tomato and spices. Simmer 8–10 minutes.
-Make small wells in the sauce. Crack eggs into the wells.
-Cover and cook on low until whites are set (5–7 min).
-Serve straight from the pan."
+"Deconstructed Shakshuka Skillet",Breakfast,"Bell Pepper (Red):40 | Egg:110 | Fresh Coriander:4 | Garlic (Raw):4 | Olive Oil:4 | Smoked Paprika:1 | Tomato (Raw):150 | White Onion:30",350,35,35,7.8,,,,,false,1,Balanced,,,images/meals/deconstructed_shakshuka_skillet.png,"Two soft-cooked eggs nestled within a rich","1. Sauté onion and pepper in olive oil until soft (5 min).
+2. Add crushed tomato and spices. Simmer 8–10 minutes.
+3. Make small wells in the sauce. Crack eggs into the wells.
+4. Cover and cook on low until whites are set (5–7 min).
+5. Serve straight from the pan."
 "Eggplant Beef Stew Quinoa Bread",Meal,"Beef Chuck Roast:110 | Eggplant:120 | Garlic:2 | Marinara Sauce (Base):80 | Olive Oil:2 | Quinoa Bread (Base):45 | White Onion:30",350,35,35,7.8,,,,,false,1,,,,images/meals/eggplant_beef_stew_quinoa_bread.png,"A rustic slow-cooked stew of tender cubed beef chuck and melting globe eggplants in a savory tomato reduction","served with a dense slice of quinoa bread."
-"Hummus Egg Stack",Breakfast,"Black Pepper:1 | Cherry Tomatoes:45 | Creamy Cumin Hummus (Base):100 | Cucumber:40 | Egg:100 | Olive Oil:3 | Spinach (Fresh):45",350,35,35,7.8,,,,,false,,Balanced,,"G6PD Trigger",images/meals/hummus_egg_stack.png,"Soft-boiled eggs stacked over sautéed spinach and cherry tomatoes on a bed of creamy house cumin hummus.","Prepare Creamy Cumin Hummus (Base) per base recipe instructions. Warm and spread a generous layer in a shallow bowl.
-Halve the cherry tomatoes. Sauté spinach and tomatoes in olive oil over medium heat until the spinach is wilted and the tomatoes are softened (3–4 min).
-Spoon the spinach and tomato layer over the hummus.
-Soft-boil eggs until the whites are set and yolks are jammy (6–7 min). Halve and place on top.
-Add cucumber slices and finish with cracked black pepper. Serve immediately."
+"Hummus Egg Stack",Breakfast,"Black Pepper:1 | Cherry Tomatoes:45 | Creamy Cumin Hummus (Base):100 | Cucumber:40 | Egg:100 | Olive Oil:3 | Spinach (Fresh):45",350,35,35,7.8,,,,,false,,Balanced,,"G6PD Trigger",images/meals/hummus_egg_stack.png,"Soft-boiled eggs stacked over sautéed spinach and cherry tomatoes on a bed of creamy house cumin hummus.","1. Prepare Creamy Cumin Hummus (Base) per base recipe instructions. Warm and spread a generous layer in a shallow bowl.
+2. Halve the cherry tomatoes. Sauté spinach and tomatoes in olive oil over medium heat until the spinach is wilted and the tomatoes are softened (3–4 min).
+3. Spoon the spinach and tomato layer over the hummus.
+4. Soft-boil eggs until the whites are set and yolks are jammy (6–7 min). Halve and place on top.
+5. Add cucumber slices and finish with cracked black pepper. Serve immediately."
 "Sumac Beef Baba Ghanoush",Meal,"Beef Ground Lean:115 | Eggplant:150 | Garlic:2 | Lemon Juice:10 | Olive Oil:3 | Sumac:3 | Tahini:10 | White Onion:20",350,35,35,7.8,,,,,false,1,,,,images/meals/sumac_beef_baba_ghanoush.png,"Pan-seared ground beef seasoned with tart sumac over a bed of smoky","roasted globe eggplant dip mixed with creamy tahini and garlic."
 "Thai Rainbow Peanut Salad","Side Salad","Bell Pepper (Red):30 | Cabbage (Purple):55 | Carrots:40 | Cucumber:40 | Fresh Coriander:5 | Peanut Butter Dressing (Base):25 | Peanuts (Crushed):8 | Red Onion:12",350,35,35,7.8,,,,,false,1,,,Peanuts,images/meals/thai_rainbow_peanut_salad.png,"A colorful crunchy crunch bowl of shredded purple cabbage","Shred cabbage and julienne carrots, cucumber, and red onion.
-Toss vegetables with peanut dressing, coriander, and crushed peanuts.
-Serve chilled."
-"Butternut Squash Fritters & Eggs",Breakfast,"Butternut Squash:200 | Chili Flakes:0.5 | Coriander Seeds:0.5 | Cumin Seeds:0.5 | Egg:100 | Fennel Seeds:0.5 | Fresh Coriander:10 | Garlic (Raw):1.5 | Lemon Juice:30 | Marinara Sauce (Base):80 | Olive Oil:4 | Quinoa Flour:10 | Sea Salt:1",350,35,35,7.8,,,,,false,1,Balanced,,,images/meals/butternut_squash_fritters_eggs_marinara.png,"Spiced roasted butternut squash fritters bound with eggs, fresh coriander, and lemon — served with warm marinara on the side.","Preheat the oven to 200°C.
-Cut the butternut squash into 2–3 cm chunks. Place in a roasting tin, drizzle with olive oil, and season with sea salt, chili flakes, and fennel seeds. Roast for about 20 minutes, then leave to cool.
-When cool, place the butternut squash in a blender with any roasting juices. Add eggs, garlic, fresh coriander, lemon juice, cumin seeds, and coriander seeds. Blend to a rough paste and season to taste.
-Transfer the mixture to a bowl and stir in enough quinoa flour to make a smooth mix. Refrigerate for 1 hour to firm up. The mix should be sticky rather than wet — add a little more flour if needed.
-With wet hands, shape into ping-pong-ball-sized fritters. Bake at 200°C until golden and set through, or pan-fry in olive oil until crisp.
-Prepare Marinara Sauce (Base) per base recipe instructions. Warm and serve on the side."
+Toss vegetables with coriander and crushed peanuts.
+Serve chilled.
+Serve dressing on the side."
+"Butternut Squash Fritters & Eggs",Breakfast,"Butternut Squash:200 | Chili Flakes:0.5 | Coriander Seeds:0.5 | Cumin Seeds:0.5 | Egg:100 | Fennel Seeds:0.5 | Fresh Coriander:10 | Garlic (Raw):1.5 | Lemon Juice:30 | Marinara Sauce (Base):80 | Olive Oil:4 | Quinoa Flour:10 | Sea Salt:1",350,35,35,7.8,,,,,false,1,Balanced,,,images/meals/butternut_squash_fritters_eggs_marinara.png,"Spiced roasted butternut squash fritters bound with eggs, fresh coriander, and lemon — served with warm marinara on the side.","1. Preheat the oven to 200°C.
+2. Cut the butternut squash into 2–3 cm chunks. Place in a roasting tin, drizzle with olive oil, and season with sea salt, chili flakes, and fennel seeds. Roast for about 20 minutes, then leave to cool.
+3. When cool, place the butternut squash in a blender with any roasting juices. Add eggs, garlic, fresh coriander, lemon juice, cumin seeds, and coriander seeds. Blend to a rough paste and season to taste.
+4. Transfer the mixture to a bowl and stir in enough quinoa flour to make a smooth mix. Refrigerate for 1 hour to firm up. The mix should be sticky rather than wet — add a little more flour if needed.
+5. With wet hands, shape into ping-pong-ball-sized fritters. Bake at 200°C until golden and set through, or pan-fry in olive oil until crisp.
+6. Prepare Marinara Sauce (Base) per base recipe instructions. Warm and serve on the side."
 "Chia Pudding Smoothie",Breakfast,"Banana:30 | Coconut Chia Pudding (Base):75 | Strawberries:40",350,35,35,7.8,,,,,false,1,,,,images/meals/chia_pudding_smoothie.png,"Layered coconut chia pudding with a strawberry-banana smoothie top.","Prepare Coconut Chia Pudding (Base) ahead and chill until thick.
 Spoon the set pudding into the bottom of a glass or jar.
 Blend strawberries and banana until smooth.
 Pour the fruit smoothie over the chia layer. Serve chilled."
-"Chicken Thai Mango Salad","Side Salad","Cabbage (Purple):75 | Cherry Tomatoes:40 | Chicken Breast:110 | Cucumber:45 | Fresh Coriander:5 | Mango:55 | Peanut Butter Dressing (Base):25 | Peanuts (Crushed):8 | Red Onion:15",350,35,35,7.8,,,,,false,1,,,Peanuts,images/meals/chicken_thai_mango_salad.png,"Juicy sliced grilled chicken breast tossed with shredded red and white cabbage","Grill or pan-sear chicken until done. Rest and slice thinly.
+"Chicken Thai Mango Salad","Side Salad","Cabbage (Purple):75 | Cherry Tomatoes:40 | Chicken Breast:110 | Cucumber:45 | Fresh Coriander:5 | Mango:55 | Peanut Butter Dressing (Base):25 | Peanuts (Crushed):8 | Red Onion:15",350,35,35,7.8,,,,,false,1,,,Peanuts,images/meals/chicken_thai_mango_salad.png,"Juicy sliced grilled chicken breast tossed with shredded red and white cabbage","Grill or pan-sear chicken until golden then in the oven for 20 minutes exactly, then Rest and slice thinly.
 Shred cabbage; slice mango, cucumber, tomatoes, and red onion.
-Toss vegetables with peanut dressing and coriander.
-Top with chicken and crushed peanuts."
-"Chili Beef Stuffed Peppers",Meal,"Basmati Rice (Brown):55 | Beef Ground Lean:88 | Bell Pepper (Red):105 | Chili Powder:2 | Garlic (Raw):4 | Olive Oil:2 | Tomato (Raw):55 | White Onion:28",350,35,35,7.8,,,,,false,1,Balanced,,,images/meals/chili_beef_stuffed_peppers.png,"Sweet bell peppers stuffed with a savory","Cook brown rice until tender.
-Brown ground beef with onion and garlic. Stir in chili powder and diced tomato.
-Mix beef with cooked rice.
-Halve peppers, remove seeds. Fill with beef mixture.
-Bake at 190°C for 25–30 minutes until peppers are soft."
-"Chocolate PB Banana Muffin",Dessert,"Almond Flour (Base):22 | Banana:60 | Cocoa Powder:12 | Egg:55 | Honey (Raw):6 | Peanut Butter:18",350,35,35,7.8,,,,,false,1,Balanced,,Peanuts,images/meals/choc_pb_banana_muffin.png,"A moist grain-free single muffin infusing deep cacao and ripe banana flavors","Heat oven to 180°C. Line a muffin tin.
-Mash banana. Mix with peanut butter, egg, and dry ingredients.
-Fill muffin cups. Bake until set (18–22 min).
-Cool on a rack."
-"Cinnamon Raisin Balls",Dessert,"Almond Butter:15 | Cinnamon:3 | Honey (Raw):4 | Medjool Dates:40 | Raisins:15 | Walnuts:10",350,35,35,7.8,,,,,false,1,Balanced,,Nuts,images/meals/cinnamon_raisin_balls.png,"No-bake snack bites blending soft Medjool dates","Combine dates or binder, raisins, nuts, and cinnamon in a food processor.
-Pulse until mixture holds together.
-Roll into balls. Refrigerate until firm."
+Toss vegetables with coriander.
+Top with chicken and crushed peanuts.
+Serve dressing on the side."
+"Chili Beef Stuffed Peppers",Meal,"Basmati Rice (Brown):55 | Beef Ground Lean:88 | Bell Pepper (Red):105 | Chili Powder:2 | Garlic (Raw):4 | Olive Oil:2 | Tomato (Raw):55 | White Onion:28",350,35,35,7.8,,,,,false,1,Balanced,,,images/meals/chili_beef_stuffed_peppers.png,"Sweet bell peppers stuffed with a savory","1. Cook brown rice until tender.
+2. Brown ground beef with onion and garlic. Stir in chili powder and diced tomato.
+3. Mix beef with cooked rice.
+4. Halve peppers, remove seeds. Fill with beef mixture.
+5. Bake at 190°C for 25–30 minutes until peppers are soft."
+"Chocolate PB Banana Muffin",Dessert,"Almond Flour (Base):22 | Banana:60 | Cocoa Powder:12 | Egg:55 | Honey (Raw):6 | Peanut Butter:18",350,35,35,7.8,,,,,false,1,Balanced,,Peanuts,images/meals/choc_pb_banana_muffin.png,"A moist grain-free single muffin infusing deep cacao and ripe banana flavors","1. Heat oven to 180°C. Line a muffin tin.
+2. Mash banana. Mix with peanut butter, egg, and dry ingredients.
+3. Fill muffin cups. Bake until set (18–22 min).
+4. Cool on a rack."
+"Cinnamon Raisin Balls",Dessert,"Almond Butter:15 | Cinnamon:3 | Honey (Raw):4 | Medjool Dates:40 | Raisins:15 | Walnuts:10",350,35,35,7.8,,,,,false,1,Balanced,,Nuts,images/meals/cinnamon_raisin_balls.png,"No-bake snack bites blending soft Medjool dates","1. Combine dates or binder, raisins, nuts, and cinnamon in a food processor.
+2. Pulse until mixture holds together.
+3. Roll into balls. Refrigerate until firm."
 "Citrus Beet Arugula Salad","Side Salad","Arugula:45 | Beetroot:75 | Classic Lemon Garlic Dressing (Base):12 | Cucumber:30 | Fresh Mint:3 | Orange Sections:45 | Walnuts:8",350,35,35,7.8,,,,,false,1,,,Nuts,images/meals/citrus_beet_arugula_salad.png,"Roasted beet and citrus salad with arugula, walnuts, and lemon-garlic dressing.","Roast or boil beetroot until tender. Cool, peel, and slice.
 Arrange arugula on plates.
 Top with beets, orange segments, cucumber, walnuts, and mint.
-Drizzle with dressing and serve."
-"Kuku Sabzi Egg Muffins",Breakfast,"Barberries:5 | Black Pepper:1 | Dill (Fresh):4 | Egg:110 | Fresh Coriander:8 | Olive Oil:4 | Sea Salt:1 | Spinach (Fresh):30 | Spring Onion:15 | Walnuts:8",350,35,35,7.8,,,,,false,1,Balanced,,Nuts,images/meals/kuku_sabzi_egg_muffins.png,"Traditional Persian-style baked egg muffins packed with minced fresh herbs, walnuts, barberries (zereshk), and seasoning.","Heat oven to 180°C (350°F). Brush a muffin tin with olive oil.
-Finely mince spinach, fresh coriander, dill, and spring onion.
-Whisk eggs with sea salt and black pepper until frothy.
-Fold in the minced herbs, spring onion, chopped walnuts, and barberries (zereshk).
-Divide between muffin cups, filling about three-quarters full. Bake 18–22 minutes until set in the centre.
-Cool 5 minutes before removing. Serve warm or at room temperature."
+Serve dressing on the side."
+"Kuku Sabzi Egg Muffins",Breakfast,"Barberries:5 | Black Pepper:1 | Dill (Fresh):4 | Egg:110 | Fresh Coriander:8 | Olive Oil:4 | Sea Salt:1 | Spinach (Fresh):30 | Spring Onion:15 | Walnuts:8",350,35,35,7.8,,,,,false,1,Balanced,,Nuts,images/meals/kuku_sabzi_egg_muffins.png,"Traditional Persian-style baked egg muffins packed with minced fresh herbs, walnuts, barberries (zereshk), and seasoning.","1. Heat oven to 180°C (350°F). Brush a muffin tin with olive oil.
+2. Finely mince spinach, fresh coriander, dill, and spring onion.
+3. Whisk eggs with sea salt and black pepper until frothy.
+4. Fold in the minced herbs, spring onion, chopped walnuts, and barberries (zereshk).
+5. Divide between muffin cups, filling about three-quarters full. Bake 18–22 minutes until set in the centre.
+6. Cool 5 minutes before removing. Serve warm or at room temperature."
 "Strawberry Almond Chia Pudding",Breakfast,"Almond whole:5 | Coconut Chia Pudding (Base):75 | Strawberries:50",350,35,35,7.8,,,,,false,1,,,Nuts,images/meals/strawberry_almond_chia_pudding.png,"Coconut chia pudding with fresh strawberries and almonds.","Prepare Coconut Chia Pudding (Base) ahead (chia, coconut milk, and date syrup) and chill until thick.
 Spoon the set pudding into a bowl or jar.
 Fold in sliced strawberries and almonds.
@@ -291,10 +290,12 @@ Fold in raspberries, cacao nibs, and cocoa powder.
 Serve chilled."
 "Shaved Fennel Rocca Salad","Side Salad","Classic Lemon Garlic Dressing (Base):12 | Fennel Bulb:65 | Orange Sections:40 | Pomegranate Seeds:12 | Rocca:45 | Walnuts:6",350,35,35,7.8,,,,,false,1,,,,images/meals/shaved_fennel_rocca_salad.png,"An ultra-crisp refreshing salad combining paper-thin shaved fennel bulb","Shave fennel very thin with a mandoline or sharp knife.
 Toss fennel, rocca, orange segments, pomegranate, and walnuts together.
-Drizzle with dressing and serve immediately."
+Serve immediately.
+Serve dressing on the side."
 "Coconut Grapefruit Salad","Side Salad","Coconut Meat:12 | Cucumber:45 | Fresh Mint:4 | Grapefruit Lime Dressing (Base):13 | Grapefruit Sections:65 | Pomegranate Seeds:12 | Red Onion:10 | Romaine Lettuce:50",350,35,35,7.8,,,,,false,1,,,,images/meals/coconut_grapefruit_salad.png,"Crisp romaine with juicy grapefruit, coconut, mint, and pomegranate over a citrus-lime dressing","Segment grapefruit and slice cucumber and red onion.
 Toss romaine with grapefruit, cucumber, onion, mint, and pomegranate.
-Top with coconut, drizzle with dressing, and serve."
+Top with coconut and serve.
+Serve dressing on the side."
 "Craft Shrimp Avocado Bowl",Meal,"Avocado:30 | Cherry Tomatoes:50 | Lime Juice:10 | Olive Oil:2 | Quinoa (Base):80 | Shrimp (Raw):130 | Spinach (Fresh):30",350,35,35,7.8,,,,,false,1,,,,images/meals/craft_shrimp_avocado_bowl.png,"Sautéed herbed shrimp paired with fresh avocado slices","blistered cherry tomatoes"
 "Hummus Belaham",Meal,"Almond whole:5 | Creamy Cumin Hummus (Base):140 | Quinoa Bread (Base):45 | Spiced Aleppo Ground Beef (Base):115",350,35,35,7.8,,,,,false,1,,,"G6PD Trigger, Nuts",images/meals/hummus_belaham.png,"A smooth cumin-infused chickpea hummus base topped with warm","aromatic Aleppo-spiced ground beef"
 "Lemon Chicken Eggplant",Meal,"Chicken Breast:110 | Chicken Broth:30 | Eggplant:130 | Fresh Oregano:2 | Garlic (Raw):4 | Lemon Juice:15 | Olive Oil:4",350,35,35,7.8,,,,,false,1,,,,images/meals/lemon_chicken_eggplant.png,"Pan-roasted chicken breast strips tossed with tender grilled eggplant cubes in a bright","garlicky lemon juice reduction and fresh oregano."
@@ -305,10 +306,10 @@ Add your house tomato sauce base and a splash of water; cover and cook on low fo
 Gently fold in clean, trimmed whole okra pods during the final 45 minutes of cooking to ensure they soften without bursting.
 Carefully ladle the balanced beef and okra curry combo into your service container matrix."
 "Pesto Chicken Koosa Noodles",Meal,"Basil Pesto (House):15 | Cherry Tomatoes:40 | Chicken Breast:120 | Olive Oil:1 | Zucchini:180",350,35,35,7.8,,,,,false,1,,,,images/meals/pesto_chicken_koosa_noodles.png,"Tender chicken breast strips tossed with fresh spiralized zucchini koosa strands in a clean","nut-free basil pesto"
-"Saffron Pumpkin Muffin",Dessert,"Almond Flour (Base):25 | Butternut Squash:80 | Cinnamon:1 | Egg:55 | Honey (Raw):8 | Saffron Threads:0.2",350,35,35,7.8,,,,,false,1,Balanced,,,images/meals/saffron_pumpkin_muffin.png,"A moist artisan breakfast muffin infusing pure local saffron water with organic pumpkin purée","Heat oven to 180°C. Line a muffin tin.
-Mix pumpkin, eggs, saffron, and dry ingredients.
-Divide into cups. Bake 18–22 minutes until springy.
-Cool before serving."
+"Saffron Pumpkin Muffin",Dessert,"Almond Flour (Base):25 | Butternut Squash:80 | Cinnamon:1 | Egg:55 | Honey (Raw):8 | Saffron Threads:0.2",350,35,35,7.8,,,,,false,1,Balanced,,,images/meals/saffron_pumpkin_muffin.png,"A moist artisan breakfast muffin infusing pure local saffron water with organic pumpkin purée","1. Heat oven to 180°C. Line a muffin tin.
+2. Mix pumpkin, eggs, saffron, and dry ingredients.
+3. Divide into cups. Bake 18–22 minutes until springy.
+4. Cool before serving."
 "Salmon Turmeric Rice",Meal,"Fresh Parsley:2 | Garlic (Raw):3 | Lemon Juice:5 | Mushrooms:45 | Olive Oil (Extra Virgin):4 | Salmon (Raw):125 | Sun-dried Tomato:12 | Turmeric Rice (Base):110",360,29.3,14.4,21.3,,,,,false,1,Balanced,,,images/meals/salmon_turmeric_rice.png,"Pan-seared salmon over golden turmeric rice with sautéed mushrooms and sun-dried tomatoes.","Prepare Turmeric Rice (Base) per base recipe instructions.
 Sauté sliced mushrooms, chopped sun-dried tomatoes, and garlic in olive oil until golden and aromatic.
 Season salmon with lemon juice, parsley, and olive oil. Pan-sear until cooked through.
@@ -321,52 +322,56 @@ Plate the shredded braised beef directly adjacent to the vegetable layer, pourin
 "Spiced Cauliflower Chickpea Salad","Side Salad","Cauliflower Florets:95 | Cherry Tomatoes:35 | Chickpeas:50 | Cumin Seeds:2 | Red Onion:15 | Romaine Lettuce:40 | Smoked Paprika:1 | Spiced Lemon Dressing (Base):12",350,35,35,7.8,,,,,false,1,,,"G6PD Trigger",images/meals/spiced_cauliflower_chickpea_salad.png,"Oven-roasted cauliflower florets and crispy chickpeas dusted with cumin and paprika","Toss cauliflower with cumin, paprika, and half the dressing.
 Roast at 200°C for 22 minutes. Add chickpeas for the last 10 minutes.
 Toss roasted vegetables with tomatoes and red onion.
-Serve over romaine with remaining dressing."
+Serve over romaine.
+Serve remaining dressing on the side."
 "Spiced Crunch Chia Pudding",Breakfast,"Almond whole:3 | Black Seeds:2 | Cinnamon:1.5 | Clove:0.5 | Coconut Chia Pudding (Base):75 | Ground Ginger:1 | Sesame Seeds:3",350,35,35,7.8,,,,,false,1,,,Nuts,images/meals/spiced_crunch_chia_pudding.png,"Warming spiced coconut chia pudding topped with almonds, black seeds, and sesame.","Prepare Coconut Chia Pudding (Base) ahead (chia, coconut milk, and date syrup) and chill until thick.
 Spoon the set pudding into a bowl or jar.
 Stir cinnamon, clove, and ginger through the pudding.
 Top with chopped almonds, black seeds, and sesame seeds.
 Serve chilled."
-"Sweet Potato Egg Hash",Breakfast,"Bell Pepper (Red):30 | Black Pepper:1 | Egg:100 | Fresh Coriander:3 | Olive Oil:4 | Rosemary (Fresh):2 | Sea Salt:1 | Sweet Potato:90 | Thyme (Fresh):2 | White Onion:25",350,35,35,7.8,,,,,false,1,Balanced,,,images/meals/sweet_potato_egg_hash.png,"Rosemary-thyme roasted sweet potato hash with sautéed onion and pepper, finished with softly scrambled eggs.","Preheat oven to 200°C. Toss diced sweet potato with olive oil, rosemary, thyme, sea salt, and black pepper. Spread on a tray and roast until tender (25–30 min).
-Sauté diced white onion and red bell pepper in a frying pan with olive oil until softened (5–6 min).
-Add roasted sweet potato to the pan and toss to combine. Season with a pinch of salt and pepper.
-Beat eggs, pour into the pan, and scramble gently over medium-low heat until just set.
-Finish with fresh coriander and serve hot."
-"Tandoori Chicken Salad","Side Salad","Cashew Nuts:10 | Celery:20 | Cherry Tomatoes:45 | Cucumber:45 | Fresh Coriander:4 | Fresh Mint:4 | Mint Coconut Chutney Dressing (Base):16 | Pomegranate Seeds:12 | Red Onion:12 | Romaine Lettuce:55 | Tandoori Chicken (Base):115",350,35,35,7.8,,,,,false,1,,,,images/meals/tandoori_chicken_salad.png,"Lean chicken breast strips marinated in bold tandoori spices and grilled","Slice prepared Tandoori Chicken (Base) — marinated with Tandoori Spice Mix (Base).
+"Sweet Potato Egg Hash",Breakfast,"Bell Pepper (Red):30 | Black Pepper:1 | Egg:100 | Fresh Coriander:3 | Olive Oil:4 | Rosemary (Fresh):2 | Sea Salt:1 | Sweet Potato:90 | Thyme (Fresh):2 | White Onion:25",350,35,35,7.8,,,,,false,1,Balanced,,,images/meals/sweet_potato_egg_hash.png,"Rosemary-thyme roasted sweet potato hash with sautéed onion and pepper, finished with softly scrambled eggs.","1. Preheat oven to 200°C. Toss diced sweet potato with olive oil, rosemary, thyme, sea salt, and black pepper. Spread on a tray and roast until tender (25–30 min).
+2. Sauté diced white onion and red bell pepper in a frying pan with olive oil until softened (5–6 min).
+3. Add roasted sweet potato to the pan and toss to combine. Season with a pinch of salt and pepper.
+4. Beat eggs, pour into the pan, and scramble gently over medium-low heat until just set.
+5. Finish with fresh coriander and serve hot."
+"Tandoori Chicken Salad","Side Salad","Cashew Nuts:10 | Celery:20 | Cherry Tomatoes:45 | Cucumber:45 | Fresh Coriander:4 | Fresh Mint:4 | Mint Coconut Chutney Dressing (Base):16 | Pomegranate Seeds:12 | Red Onion:12 | Romaine Lettuce:55 | Tandoori Chicken (Base):115",350,35,35,7.8,,,,,false,1,,,,images/meals/tandoori_chicken_salad.png,"Lean chicken breast strips marinated in bold tandoori spices and grilled","Grill or pan-sear Tandoori Chicken (Base) until golden then in the oven for 20 minutes exactly, then Rest and slice.
 Toss romaine, cucumber, celery, tomatoes, onion, herbs, and pomegranate.
-Top with chicken, cashews, and mint coconut chutney dressing."
-"Tandoori Coconut Mint Salad","Side Salad","Black Seeds:1 | Cashew Nuts:12 | Celery:25 | Cherry Tomatoes:45 | Cucumber:45 | Fresh Coriander:5 | Fresh Mint:8 | Mint Coconut Chutney Dressing (Base):18 | Pomegranate Seeds:15 | Red Onion:12 | Romaine Lettuce:50 | Tandoori Chicken (Base):115",350,35,35,7.8,,,,,false,1,,,,images/meals/tandoori_coconut_mint_salad.png,"Grilled tandoori chicken breast slices tossed over romaine lettuce and mint leaves","Slice prepared Tandoori Chicken (Base) — marinated with Tandoori Spice Mix (Base).
+Top with chicken and cashews.
+Serve dressing on the side."
+"Tandoori Coconut Mint Salad","Side Salad","Black Seeds:1 | Cashew Nuts:12 | Celery:25 | Cherry Tomatoes:45 | Cucumber:45 | Fresh Coriander:5 | Fresh Mint:8 | Mint Coconut Chutney Dressing (Base):18 | Pomegranate Seeds:15 | Red Onion:12 | Romaine Lettuce:50 | Tandoori Chicken (Base):115",350,35,35,7.8,,,,,false,1,,,,images/meals/tandoori_coconut_mint_salad.png,"Grilled tandoori chicken breast slices tossed over romaine lettuce and mint leaves","Grill or pan-sear Tandoori Chicken (Base) until golden then in the oven for 20 minutes exactly, then Rest and slice.
 Toss romaine, cucumber, celery, tomatoes, onion, mint, and coriander.
-Top with chicken, cashews, and pomegranate. Finish with chutney dressing and a pinch of black seeds."
-"Tomato Basil Soup",Soup,"Fresh Basil:12 | Garlic:4 | Olive Oil:4 | Smoked Paprika:1 | Tomato (Raw):250 | Vegetable Broth (Base):3.125 | Water (Filtered):159.375 | White Onion:35",350,35,35,7.8,,,,,false,1,,,,images/meals/tomato_basil_soup.png,"A thick traditional slow-simmered soup of crushed red plum tomatoes and fresh basil leaves","Sauté onion and garlic in olive oil for 3 minutes.
-Add chopped tomatoes and broth. Simmer 20 minutes.
-Blend with fresh basil until smooth.
-Reheat and serve with extra basil on top."
+Top with chicken, cashews, and pomegranate. Finish with a pinch of black seeds.
+Serve dressing on the side."
+"Tomato Basil Soup",Soup,"Fresh Basil:12 | Garlic:4 | Olive Oil:4 | Smoked Paprika:1 | Tomato (Raw):250 | Vegetable Broth (Base):3.125 | Water (Filtered):159.375 | White Onion:35",350,35,35,7.8,,,,,false,1,,,,images/meals/tomato_basil_soup.png,"A thick traditional slow-simmered soup of crushed red plum tomatoes and fresh basil leaves","1. Sauté onion and garlic in olive oil for 3 minutes.
+2. Add chopped tomatoes and broth. Simmer 20 minutes.
+3. Blend with fresh basil until smooth.
+4. Reheat and serve with extra basil on top."
 "Vegan Curry Lentil Salad","Side Salad","Bell Pepper (Red):35 | Carrots:40 | Cucumber:35 | Curry Vinaigrette (Base):15 | French Lentils:60 | Fresh Coriander:4 | Red Onion:15 | Spinach (Fresh):40 | Wild Rice (Cooked):75",350,35,35,7.8,,,,,false,1,Balanced,,,images/meals/vegan_curry_lentil_salad.png,"A nutrient-dense fiber bowl combining earthy brown lentils tossed in a light curry vinaigrette with raw baby spinach","Cook lentils until tender but not mushy. Drain and cool.
 Cook wild rice if needed. Cool slightly.
-Toss lentils, rice, spinach, carrots, pepper, cucumber, onion, and coriander with dressing.
-Serve at room temperature or chilled."
-"Red Lentil Turmeric Soup",Soup,"Carrots:80 | Cumin Seeds:2 | Garlic:4 | Ginger (Raw):8 | Lemon Juice:8 | Lentils (Red):80 | Olive Oil:3 | Spinach (Fresh):40 | Turmeric Powder:2 | Vegetable Broth (Base):3.125 | Water (Filtered):159.375 | White Onion:30",350,35,35,7.8,,,,,false,1,Balanced,,"G6PD Trigger",images/meals/red_lentil_turmeric_soup.png,"Warming red lentil soup with carrots, turmeric, and fresh spinach.","Rinse red lentils.
-Sauté onion, garlic, ginger, and spices for 2 minutes.
-Add lentils, carrots, broth, and water. Simmer 25 minutes.
-Stir in spinach until wilted. Finish with lemon juice."
-"Cauliflower Ginger Soup",Soup,"Black Pepper:1 | Cauliflower Florets:220 | Garlic:4 | Ginger (Raw):12 | Homemade Coconut Milk:40 | Olive Oil:4 | Turmeric Powder:2 | Vegetable Stock:2.5 | Water (Filtered):117.5 | White Onion:30",350,35,35,7.8,,,,,false,1,Balanced,,,images/meals/cauliflower_ginger_soup.png,"Silky cauliflower soup brightened with ginger and turmeric.","Sauté onion and ginger in oil for 3 minutes.
-Add cauliflower and stock. Simmer until very soft (18 min).
-Blend with coconut milk until smooth.
-Reheat and serve."
-"Carrot Cumin Soup",Soup,"Carrots:150 | Coriander Seeds:2 | Cumin Seeds:3 | French Lentils:70 | Fresh Parsley:5 | Garlic:4 | Lemon Juice:8 | Olive Oil:4 | Vegetable Broth (Base):3.125 | Water (Filtered):139.375 | White Onion:35",350,35,35,7.8,,,,,false,1,Balanced,,,images/meals/carrot_cumin_soup.png,"Earthy carrot and French lentil soup with cumin and coriander.","Toast cumin seeds in a dry pan for 30 seconds.
-Sauté onion, garlic, and carrots in oil for 5 minutes.
-Add lentils, stock, and spices. Simmer until carrots and lentils are soft.
-Blend partially or fully. Finish with parsley and lemon."
-"Sweet Potato Fennel Soup",Soup,"Fennel Bulb:80 | Garlic:3 | Ginger (Raw):10 | Homemade Coconut Milk:35 | Olive Oil:4 | Sweet Potato:120 | Turmeric Powder:2 | Vegetable Broth (Base):3.125 | Water (Filtered):139.375 | White Onion:30",350,35,35,7.8,,,,,false,1,Balanced,,,images/meals/sweet_potato_fennel_soup.png,"Golden sweet potato and fennel soup with ginger and coconut.","Sauté fennel and onion in oil until softened.
-Add sweet potato, ginger, and broth. Simmer 20 minutes.
-Blend with coconut milk until smooth.
-Reheat and serve."
-"Rosemary Garlic Chicken w Mushroom, Spinach & Roasted Sweet Potato",Meal,"Black Pepper:0.5 | Mushrooms:45 | Olive Oil (Extra Virgin):4 | Rosemary Garlic Chicken (Base):95 | Spinach (Fresh):55 | Sweet Potato:85",350,33,15,17,,,,,false,1,Balanced,,,images/meals/rosemary_garlic_chicken.png,"Grilled rosemary garlic chicken with sautéed mushrooms and spinach over roasted sweet potato wedges.","Toss sweet potato wedges with half the olive oil, salt, and pepper. Roast at 200°C for 22–25 minutes until golden.
-Grill or pan-sear Rosemary Garlic Chicken (Base) until 74°C internal. Rest and slice.
-Sauté mushrooms in remaining olive oil until golden. Wilt spinach briefly in the same pan.
-Plate roasted sweet potato, spinach, and mushrooms. Top with sliced chicken and serve warm."
-"Thai Red Curry Chicken w Roasted Pumpkin",Meal,"Chicken Breast:100 | Coconut Milk:35 | Fresh Coriander:5 | Palm sugar:2 | Pumpkin:90 | Red Thai Curry Paste (Base):45",350,32,28,12,,,,,false,5,Balanced,Follicular,,meals/Fj33c9tCkIbeVk14KhtGFQXoZkxBFDPM55atUwdX.png,"Red Thai curry with seared chicken breast, roasted pumpkin, and fresh coriander.","Cube pumpkin and roast at 200°C until tender and lightly caramelized at the edges."
+Toss lentils, rice, spinach, carrots, pepper, cucumber, onion, and coriander.
+Serve at room temperature or chilled.
+Serve dressing on the side."
+"Red Lentil Turmeric Soup",Soup,"Carrots:80 | Cumin Seeds:2 | Garlic:4 | Ginger (Raw):8 | Lemon Juice:8 | Lentils (Red):80 | Olive Oil:3 | Spinach (Fresh):40 | Turmeric Powder:2 | Vegetable Broth (Base):3.125 | Water (Filtered):159.375 | White Onion:30",350,35,35,7.8,,,,,false,1,Balanced,,"G6PD Trigger",images/meals/red_lentil_turmeric_soup.png,"Warming red lentil soup with carrots, turmeric, and fresh spinach.","1. Rinse red lentils.
+2. Sauté onion, garlic, ginger, and spices for 2 minutes.
+3. Add lentils, carrots, broth, and water. Simmer 25 minutes.
+4. Stir in spinach until wilted. Finish with lemon juice."
+"Cauliflower Ginger Soup",Soup,"Black Pepper:1 | Cauliflower Florets:220 | Garlic:4 | Ginger (Raw):12 | Homemade Coconut Milk:40 | Olive Oil:4 | Turmeric Powder:2 | Vegetable Stock:2.5 | Water (Filtered):117.5 | White Onion:30",350,35,35,7.8,,,,,false,1,Balanced,,,images/meals/cauliflower_ginger_soup.png,"Silky cauliflower soup brightened with ginger and turmeric.","1. Sauté onion and ginger in oil for 3 minutes.
+2. Add cauliflower and stock. Simmer until very soft (18 min).
+3. Blend with coconut milk until smooth.
+4. Reheat and serve."
+"Carrot Cumin Soup",Soup,"Carrots:150 | Coriander Seeds:2 | Cumin Seeds:3 | French Lentils:70 | Fresh Parsley:5 | Garlic:4 | Lemon Juice:8 | Olive Oil:4 | Vegetable Broth (Base):3.125 | Water (Filtered):139.375 | White Onion:35",350,35,35,7.8,,,,,false,1,Balanced,,,images/meals/carrot_cumin_soup.png,"Earthy carrot and French lentil soup with cumin and coriander.","1. Toast cumin seeds in a dry pan for 30 seconds.
+2. Sauté onion, garlic, and carrots in oil for 5 minutes.
+3. Add lentils, stock, and spices. Simmer until carrots and lentils are soft.
+4. Blend partially or fully. Finish with parsley and lemon."
+"Sweet Potato Fennel Soup",Soup,"Fennel Bulb:80 | Garlic:3 | Ginger (Raw):10 | Homemade Coconut Milk:35 | Olive Oil:4 | Sweet Potato:120 | Turmeric Powder:2 | Vegetable Broth (Base):3.125 | Water (Filtered):139.375 | White Onion:30",350,35,35,7.8,,,,,false,1,Balanced,,,images/meals/sweet_potato_fennel_soup.png,"Golden sweet potato and fennel soup with ginger and coconut.","1. Sauté fennel and onion in oil until softened.
+2. Add sweet potato, ginger, and broth. Simmer 20 minutes.
+3. Blend with coconut milk until smooth.
+4. Reheat and serve."
+"Thai Red Curry Chicken w Roasted Pumpkin",Meal,"Chicken Breast:100 | Coconut Milk:35 | Fresh Coriander:5 | Palm sugar:2 | Pumpkin:90 | Red Thai Curry Paste (Base):45",350,32,28,12,,,,,false,5,Balanced,Follicular,,images/meals/thai_red_curry_chicken_roasted_pumpkin.png,"Red Thai curry with seared chicken breast, roasted pumpkin, and fresh coriander.","Cube pumpkin and roast at 200°C until tender and lightly caramelized at the edges.
+Season chicken breast with salt and pepper. Sear in a hot pan until golden and cooked through (74°C internal). Rest and slice.
+Warm Red Thai Curry Paste (Base) with a splash of coconut milk, then whisk in the remaining coconut milk and simmer until smooth.
+Add roasted pumpkin and palm sugar; simmer 2–3 minutes until fragrant.
+Fold in sliced chicken and warm through. Garnish with fresh coriander and serve."
 "aut unde consectetur",Meal,,,,,,,,,,false,,,,,,,
 "consequatur saepe dolore",Dessert,,,,,,,,,,false,,,,,,,
 "veniam est occaecati","Side Salad",,,,,,,,,,false,,,,,,,
@@ -376,8 +381,12 @@ Brown meatballs in olive oil in a large pan until golden all over. Set aside.
 Cook buckwheat spaghetti in boiling salted water until al dente. Drain, reserving a splash of pasta water.
 Prepare Marinara Sauce (Base) per base recipe instructions. Return meatballs to the sauce and simmer 10–15 minutes until cooked through.
 Toss spaghetti with a little sauce and olive oil. Serve topped with meatballs and extra marinara."
-"Blackened Salmon in Creamy Cajun Sauce w Brown Herbal Rice",Meal,"Blackened Seasoning (Base):6 | Brown Herbal Rice (Base):75 | Creamy Cajun Sauce (Base):50 | Fresh Parsley:3 | Lime Juice:5 | Olive Oil (Extra Virgin):6 | Salmon (Raw):95",350,22.3,15.9,22.2,,,,,false,1,Balanced,,Fish,images/meals/blackened_salmon_cajun_herbal_rice.png,"Blackened salmon fillet in a rich coconut-cream Cajun sauce with fire-roasted tomatoes, served over brown herbal rice with dill and parsley.","Prepare Brown Herbal Rice (Base) per base recipe instructions.
+"Blackened Salmon in Creamy Cajun Sauce w Brown Herbal Rice",Meal,"Blackened Seasoning (Base):6 | Brown Herbal Rice (Base):75 | Creamy Cajun Sauce (Base):50 | Fresh Parsley:3 | Lime Juice:5 | Olive Oil (Extra Virgin):6 | Salmon (Raw):120",350,22.3,15.9,22.2,,,,,false,,Balanced,,,images/meals/blackened_salmon_cajun_herbal_rice.png,"Blackened salmon fillet in a rich coconut-cream Cajun sauce with fire-roasted tomatoes, served over brown herbal rice with dill and parsley.","Prepare Brown Herbal Rice (Base) per base recipe instructions.
 Prepare Blackened Seasoning (Base) in a medium bowl. Lightly brush salmon all over with olive oil. Remove 2 tablespoons of the spice mix and rub evenly over the salmon; reserve the remaining seasoning for the sauce.
 Heat 1 tablespoon olive oil in a large heavy-bottom skillet over medium-high heat (medium if your stove runs hot). Once hot, add salmon, turn heat to medium, and cook about 4 minutes until crispy and blackened. Flip and cook 3–6 minutes more to your liking. If browning too quickly, lower the heat. Transfer salmon to a plate and tent with foil.
 In the same skillet, prepare Creamy Cajun Sauce (Base) using the reserved blackened seasoning per base recipe instructions (sauté onion, peppers, and garlic with the spice mix, then simmer with broth, tapioca, fire-roasted tomatoes, coconut cream, smoked paprika, and lime juice until thickened).
 Return salmon to the skillet and cook briefly to heat through. Taste and adjust salt, pepper, and/or cayenne. Garnish with fresh parsley and extra lime juice if desired. Serve salmon and sauce over brown herbal rice."
+"Salmon Cashew Cream & Roasted Mixed Vegetables",Meal,"Cashew Cream (Base):20 | Garlic (Raw):2 | Lemon Juice:5 | Roasted Mixed Vegetables (Base):90 | Salmon (Raw):125",360,28.1,9.6,23.3,,,,,false,1,Balanced,,Nuts,images/meals/salmon_cashew_cream.png,"Pan-roasted salmon smothered in dairy-free garlic cashew cream with house roasted mixed vegetables.","Prepare Roasted Mixed Vegetables (Base) per base recipe instructions.
+Pan-roast salmon fillet until cooked through, 4–5 minutes per side.
+Warm Cashew Cream (Base) with minced garlic and lemon juice until silky; spoon over salmon.
+Serve salmon with cashew cream and roasted mixed vegetables."

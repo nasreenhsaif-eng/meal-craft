@@ -4,6 +4,14 @@ use App\Enums\MealType;
 use App\Enums\RecipeCategory;
 use App\Models\Meal;
 use App\Models\User;
+use App\Support\MenuDevelopmentCsv;
+use Tests\Support\IsolatesMenuDevelopmentCsv;
+
+uses(IsolatesMenuDevelopmentCsv::class);
+
+beforeEach(function (): void {
+    $this->setUpIsolatedMenuDevelopmentCsvPaths();
+});
 
 test('guest cannot bulk destroy meals from meal library', function () {
     $meal = Meal::query()->create([
@@ -276,6 +284,10 @@ test('meal library export excludes meals removed via bulk destroy', function () 
     $this->actingAs($user)
         ->postJson(route('admin.meal-library.bulk-destroy'), ['ids' => [$meal->id]])
         ->assertOk();
+
+    $csvOnDisk = file_get_contents(MenuDevelopmentCsv::mealsPath()) ?: '';
+
+    expect($csvOnDisk)->not->toContain('Export After Delete Meal');
 
     $response = $this->actingAs($user)->get(route('meals.library.export-csv'));
 

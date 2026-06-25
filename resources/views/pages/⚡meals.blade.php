@@ -8,6 +8,7 @@ use App\Models\Meal;
 use App\Services\MealCsvLibraryImportService;
 use App\Services\MealCyclePhaseTaggingService;
 use App\Services\MealRecipeAsIngredientSyncService;
+use App\Services\MenuDevelopmentCsvSync;
 use App\Services\RecipeIngredientUnitConverter;
 use App\Services\RecipeNutritionCalculator;
 use App\Support\MealImagePath;
@@ -386,6 +387,7 @@ new #[Title('Meals')] class extends Component {
         $this->selectedMeals = [];
 
         if ($count > 0) {
+            app(MenuDevelopmentCsvSync::class)->syncMealsFromDatabase();
             $this->status = __(':count meal(s) deleted.', ['count' => $count]);
             $this->resetPage();
         }
@@ -671,6 +673,8 @@ new #[Title('Meals')] class extends Component {
 
         app(MealCyclePhaseTaggingService::class)->refreshAutoTagsForEntireLibrary();
 
+        app(MenuDevelopmentCsvSync::class)->syncMealsFromDatabase();
+
         if (request()->routeIs('meals.edit')) {
             $this->redirect(route('meals.index'), navigate: true);
         }
@@ -691,6 +695,8 @@ new #[Title('Meals')] class extends Component {
         }
 
         $result = $mealCsvLibraryImportService->processUploadedFile($file, auth()->user());
+
+        app(MenuDevelopmentCsvSync::class)->syncMealsFromDatabase();
 
         $this->mealLibraryImportCsv = null;
         $this->resetPage();
@@ -794,6 +800,7 @@ new #[Title('Meals')] class extends Component {
     public function deleteMeal(int $mealId): void
     {
         if ($this->performMealDeletion($mealId)) {
+            app(MenuDevelopmentCsvSync::class)->syncMealsFromDatabase();
             $this->selectedMeals = array_values(array_filter(
                 $this->selectedMeals,
                 fn ($id): bool => (int) $id !== $mealId

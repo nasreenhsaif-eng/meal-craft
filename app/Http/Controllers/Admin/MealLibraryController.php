@@ -16,6 +16,7 @@ use App\Models\User;
 use App\Services\BaseIngredientService;
 use App\Services\MealCraftMasterCsvExport;
 use App\Services\MenuDevelopmentCsvExport;
+use App\Services\MenuDevelopmentCsvSync;
 use App\Services\RecipeNutritionCalculator;
 use App\Support\EggIngredientPresentation;
 use App\Support\IngredientAllergenCatalog;
@@ -25,7 +26,6 @@ use App\Support\MealImagePath;
 use App\Support\MealInstructionsText;
 use App\Support\MealLibraryBulkNutrition;
 use App\Support\MealLibraryTaxonomy;
-use App\Support\MenuDevelopmentCsv;
 use App\Support\SaladMealPresentation;
 use App\Support\SickleCellNutrientRdi;
 use Illuminate\Http\JsonResponse;
@@ -40,7 +40,10 @@ use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
 class MealLibraryController extends Controller
 {
-    public function __construct(private MenuDevelopmentCsvExport $menuDevelopmentCsvExport) {}
+    public function __construct(
+        private MenuDevelopmentCsvExport $menuDevelopmentCsvExport,
+        private MenuDevelopmentCsvSync $menuDevelopmentCsvSync,
+    ) {}
 
     public function downloadMealCraftCsvTemplate(): SymfonyResponse
     {
@@ -169,6 +172,8 @@ class MealLibraryController extends Controller
                     ->update(['library_sort_order' => (int) $position]);
             }
         });
+
+        $this->syncMealMasterCsvFromDatabase();
 
         if ($request->expectsJson()) {
             return response()->json(['message' => __('Meal order saved.')]);
@@ -342,7 +347,7 @@ class MealLibraryController extends Controller
 
     private function syncMealMasterCsvFromDatabase(): void
     {
-        $this->menuDevelopmentCsvExport->exportMealsToPath(MenuDevelopmentCsv::mealsPath());
+        $this->menuDevelopmentCsvSync->syncMealsFromDatabase();
     }
 
     /**

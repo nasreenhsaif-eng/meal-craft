@@ -51,7 +51,6 @@ final class BalancedSodiumRecipeRefiner
         'Vegetable Stock' => 0.25,
         'Vegetable Broth (Base)' => 0.25,
         'Harissa Paste (Base)' => 0.35,
-        'Harissa Paste' => 0.5,
         'Pickled Red Onion (Base)' => 0.0,
         'Slaw (Base)' => 0.0,
     ];

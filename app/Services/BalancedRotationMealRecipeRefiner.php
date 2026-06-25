@@ -15,7 +15,7 @@ use InvalidArgumentException;
  */
 final class BalancedRotationMealRecipeRefiner
 {
-    public const ROASTED_POMEGRANATE_CHICKEN_NAME = 'Roasted Chicken in Pomegranate & Sumac Sauce w Turmeric Rice';
+    public const ROASTED_POMEGRANATE_CHICKEN_NAME = 'Grilled Sumac Chicken Skewers w Zereshk & Turmeric Rice & Roasted Mixed Vegetables';
 
     public const CHOCOLATE_ORANGE_BROWNIE_NAME = 'Chocolate Orange Brownie';
 
@@ -184,6 +184,15 @@ final class BalancedRotationMealRecipeRefiner
                 ->first();
         }
 
+        if ($mealName === self::ROASTED_POMEGRANATE_CHICKEN_NAME) {
+            return Meal::queryForMealLibrary()
+                ->whereIn('name', [
+                    self::ROASTED_POMEGRANATE_CHICKEN_NAME,
+                    'Roasted Chicken in Pomegranate & Sumac Sauce w Turmeric Rice',
+                ])
+                ->first();
+        }
+
         return Meal::queryForMealLibrary()->where('name', $mealName)->first();
     }
 
@@ -279,10 +288,11 @@ final class BalancedRotationMealRecipeRefiner
             'Spicy Harissa Grilled Chicken w Roasted Sweet Potato & Zucchini' => [
                 'ingredients' => [
                     'Chicken Breast' => 110,
-                    'Harissa Paste (Base)' => 18,
+                    'Harissa Paste (Base)' => 6.3,
                     'Sweet Potato' => 90,
                     'Zucchini' => 80,
                     'Garlic (Raw)' => 3,
+                    'Fresh Mint' => 5,
                     'Olive Oil (Extra Virgin)' => 4,
                     'Lemon Juice' => 10,
                     'Black Pepper' => 0.5,
@@ -292,13 +302,15 @@ final class BalancedRotationMealRecipeRefiner
             self::ROASTED_POMEGRANATE_CHICKEN_NAME => [
                 'ingredients' => [
                     'Chicken Breast' => 110,
-                    'Turmeric Rice (Base)' => 75,
-                    'Pomegranate Sumac Sauce (Base)' => 28,
-                    'Red Onion' => 25,
-                    'Pomegranate Seeds' => 12,
+                    'Pomegranate Sumac Sauce (Base)' => 40,
+                    'Red Onion' => 30,
+                    'Turmeric Rice (Base)' => 70,
+                    'Barberries' => 5,
+                    'Roasted Mixed Vegetables (Base)' => 85,
                     'Parsley' => 5,
                 ],
                 'diet_tags' => $tags,
+                'short_description' => 'Grilled sumac-marinated chicken skewers roasted over red onion with zereshk turmeric rice and house roasted mixed vegetables.',
             ],
             'Pepper Chicken in Creamy Cajun Sauce w Roasted Potato' => [
                 'ingredients' => [

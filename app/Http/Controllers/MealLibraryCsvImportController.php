@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\MealCsvLibraryImportService;
+use App\Services\MenuDevelopmentCsvSync;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -22,7 +23,7 @@ use Throwable;
  */
 class MealLibraryCsvImportController extends Controller
 {
-    public function __invoke(Request $request, MealCsvLibraryImportService $mealCsvLibraryImportService): JsonResponse
+    public function __invoke(Request $request, MealCsvLibraryImportService $mealCsvLibraryImportService, MenuDevelopmentCsvSync $menuDevelopmentCsvSync): JsonResponse
     {
         try {
             $validated = $request->validate([
@@ -73,6 +74,8 @@ class MealLibraryCsvImportController extends Controller
         }
 
         $result['import_error_lines'] = $this->importErrorLinesForJsonResponse($result['rows'] ?? []);
+
+        $menuDevelopmentCsvSync->syncMealsFromDatabase();
 
         return response()->json($result);
     }

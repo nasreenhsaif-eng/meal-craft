@@ -6,8 +6,13 @@ use App\Models\Meal;
 use App\Support\MenuDevelopmentCsv;
 use Database\Seeders\MenuDevelopmentSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Support\IsolatesMenuDevelopmentCsv;
 
-uses(RefreshDatabase::class);
+uses(RefreshDatabase::class, IsolatesMenuDevelopmentCsv::class);
+
+beforeEach(function (): void {
+    $this->setUpIsolatedMenuDevelopmentCsvPaths();
+});
 
 test('menu export csv command writes production schema master files from live database', function (): void {
     $ingredient = Ingredient::factory()->create([

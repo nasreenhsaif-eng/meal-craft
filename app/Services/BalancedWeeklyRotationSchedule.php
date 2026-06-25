@@ -72,8 +72,8 @@ final class BalancedWeeklyRotationSchedule
         'Grilled Chicken Chimichurri',
         'Spicy Harissa Grilled Chicken w Roasted Sweet Potato & Zucchini',
         'Pepper Chicken in Creamy Cajun Sauce w Roasted Potato',
-        'Roasted Chicken in Pomegranate & Sumac Sauce w Turmeric Rice',
-        'Crispy Chicken Tikka bowl w Quinoa & Mint Sauce',
+        'Grilled Sumac Chicken Skewers w Zereshk & Turmeric Rice & Roasted Mixed Vegetables',
+        'Grilled Chicken Tikka bowl w Quinoa & Mint Sauce',
     ];
 
     /** @var list<string> */

@@ -54,7 +54,6 @@ final class WholeFoodDietPolicy
         'Wheat Flour',
         'Nutritional Yeast',
         'Tomato Paste',
-        'Harissa Paste',
         'Wasabi (Paste)',
         'Sardines (Canned)',
         'Tuna (Canned)',

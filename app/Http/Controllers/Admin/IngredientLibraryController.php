@@ -7,6 +7,7 @@ use App\Http\Requests\BulkDestroyIngredientsFromLibraryRequest;
 use App\Http\Requests\StoreIngredientLibraryRequest;
 use App\Models\Ingredient;
 use App\Services\BaseIngredientService;
+use App\Services\MenuDevelopmentCsvSync;
 use App\Support\BaseRecipeInstructionsText;
 use App\Support\IngredientAllergenCatalog;
 use App\Support\IngredientG6pdSafety;
@@ -27,6 +28,8 @@ use InvalidArgumentException;
  */
 class IngredientLibraryController extends Controller
 {
+    public function __construct(private MenuDevelopmentCsvSync $menuDevelopmentCsvSync) {}
+
     public function index(): Response
     {
         $ingredients = Ingredient::query()
@@ -102,6 +105,8 @@ class IngredientLibraryController extends Controller
             ? __('1 ingredient removed from the library.')
             : __(':count ingredients removed from the library.', ['count' => $deletedCount]);
 
+        $this->menuDevelopmentCsvSync->syncAllFromDatabase();
+
         if ($request->expectsJson()) {
             return response()->json([
                 'message' => $message,
@@ -140,6 +145,8 @@ class IngredientLibraryController extends Controller
             'is_verified' => true,
             'micronutrients' => [],
         ]);
+
+        $this->menuDevelopmentCsvSync->syncAllFromDatabase();
 
         return redirect()
             ->route('admin.ingredient-library')
@@ -180,6 +187,8 @@ class IngredientLibraryController extends Controller
             'is_verified' => true,
         ]);
 
+        $this->menuDevelopmentCsvSync->syncAllFromDatabase();
+
         return redirect()
             ->route('admin.ingredient-library')
             ->with('success', __('Ingredient updated.'));
@@ -219,6 +228,8 @@ class IngredientLibraryController extends Controller
                 ->route('admin.ingredient-library')
                 ->with('error', $e->getMessage());
         }
+
+        $this->menuDevelopmentCsvSync->syncAllFromDatabase();
 
         return redirect()
             ->route('admin.ingredient-library')

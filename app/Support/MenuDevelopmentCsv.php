@@ -87,12 +87,33 @@ final class MenuDevelopmentCsv
 
     public static function ingredientsPath(): string
     {
+        $configured = config('menu-development.ingredients_csv_path');
+
+        if (is_string($configured) && $configured !== '') {
+            return self::resolveCsvPath($configured);
+        }
+
         return database_path(self::INGREDIENTS_RELATIVE_PATH);
     }
 
     public static function mealsPath(): string
     {
+        $configured = config('menu-development.meals_csv_path');
+
+        if (is_string($configured) && $configured !== '') {
+            return self::resolveCsvPath($configured);
+        }
+
         return database_path(self::MEALS_RELATIVE_PATH);
+    }
+
+    private static function resolveCsvPath(string $path): string
+    {
+        if ($path[0] === DIRECTORY_SEPARATOR) {
+            return $path;
+        }
+
+        return base_path($path);
     }
 
     public static function hasDataRows(string $path): bool

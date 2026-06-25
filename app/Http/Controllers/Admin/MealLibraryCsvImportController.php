@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Services\MealCsvLibraryImportService;
+use App\Services\MenuDevelopmentCsvSync;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -16,7 +17,7 @@ use Throwable;
  */
 class MealLibraryCsvImportController extends Controller
 {
-    public function __invoke(Request $request, MealCsvLibraryImportService $mealCsvLibraryImportService): RedirectResponse
+    public function __invoke(Request $request, MealCsvLibraryImportService $mealCsvLibraryImportService, MenuDevelopmentCsvSync $menuDevelopmentCsvSync): RedirectResponse
     {
         try {
             $validated = $request->validate([
@@ -72,6 +73,8 @@ class MealLibraryCsvImportController extends Controller
                     'import_error_lines' => [],
                 ]);
         }
+
+        $menuDevelopmentCsvSync->syncMealsFromDatabase();
 
         return redirect()
             ->route('admin.meal-library')

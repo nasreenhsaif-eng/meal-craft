@@ -3,6 +3,7 @@
 use App\IngredientsImport;
 use App\Models\Ingredient;
 use App\Services\MealCsvLibraryImportService;
+use App\Services\MenuDevelopmentCsvSync;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -106,6 +107,8 @@ new #[Title('Ingredients')] class extends Component {
 
         $this->js('Livewire.dispatch("ingredientsImported")');
 
+        app(MenuDevelopmentCsvSync::class)->syncAllFromDatabase();
+
         $this->resetForm();
     }
 
@@ -137,6 +140,8 @@ new #[Title('Ingredients')] class extends Component {
 
         $this->js('Livewire.dispatch("ingredientsImported")');
 
+        app(MenuDevelopmentCsvSync::class)->syncAllFromDatabase();
+
         $this->status = 'Ingredient deleted.';
     }
 
@@ -165,6 +170,8 @@ new #[Title('Ingredients')] class extends Component {
         $this->error = null;
 
         $this->js('Livewire.dispatch("ingredientsImported")');
+
+        app(MenuDevelopmentCsvSync::class)->syncAllFromDatabase();
     }
 
     public function clearSelection(): void

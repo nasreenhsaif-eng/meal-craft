@@ -12,6 +12,7 @@ use App\Models\Meal;
 use App\Models\MealPlan;
 use App\Models\MealPlanDayMeal;
 use App\Services\MealCyclePhaseTaggingService;
+use App\Services\MenuDevelopmentCsvSync;
 use App\Services\MealPlanService;
 use App\Services\RecipeIngredientUnitConverter;
 use App\Services\RecipeNutritionCalculator;
@@ -451,6 +452,7 @@ new #[Title('Meal Plans')] class extends Component {
         }
 
         app(MealCyclePhaseTaggingService::class)->refreshAutoTagsForEntireLibrary();
+        app(MenuDevelopmentCsvSync::class)->syncMealsFromDatabase();
         $this->status = __('Meal updated.');
         $this->closeInlineIngredientEditor();
     }
@@ -525,6 +527,7 @@ new #[Title('Meal Plans')] class extends Component {
         $row->update(['meal_id' => $newMeal->id]);
 
         app(MealCyclePhaseTaggingService::class)->refreshAutoTagsForEntireLibrary();
+        app(MenuDevelopmentCsvSync::class)->syncMealsFromDatabase();
         $this->showCreateNewMealModal = false;
         $this->createNewMealName = '';
         $this->status = __('New meal added to your library and assigned to this slot.');
