@@ -11,7 +11,7 @@ use App\Models\Meal;
  * Derives per-slot calorie targets from the customer's plan tier.
  *
  * Core day (tier): breakfast + 2× main (scaled) + side salad + dessert (fixed standard portions).
- * Optional soup adds calories on top without rescaling other meals.
+ * When soup is included it uses a fixed standard portion counted within the tier, shrinking scalable slots.
  */
 final class UserPlanCalculator
 {
@@ -124,15 +124,22 @@ final class UserPlanCalculator
      *     soup_calories?: float,
      *     side_salad_calories?: float,
      *     dessert_calories?: float,
-     *     snap_to_tier?: bool
+     *     snap_to_tier?: bool,
+     *     plan_tier?: float,
      * }  $options
      * @return array<string, mixed>
      */
     public static function calculateUserPlan(CustomerProfile $profile, array $options = []): array
     {
         $snapToTier = (bool) ($options['snap_to_tier'] ?? false);
-        $rawTarget = (float) $profile->daily_calorie_target;
-        $planTier = $snapToTier ? self::snapToPlanTier($rawTarget) : $rawTarget;
+
+        if (isset($options['plan_tier'])) {
+            $planTier = (float) $options['plan_tier'];
+            $rawTarget = $planTier;
+        } else {
+            $rawTarget = (float) $profile->daily_calorie_target;
+            $planTier = $snapToTier ? self::snapToPlanTier($rawTarget) : $rawTarget;
+        }
 
         $includeSoup = (bool) ($options['include_soup'] ?? false);
 
@@ -154,7 +161,7 @@ final class UserPlanCalculator
 
         $dailyMacros = self::macroGramsFromCaloriesAndPercentages($planTier, $proteinPct, $carbPct, $fatPct);
 
-        $fixedPortionTotal = round($sideSaladCalories + $dessertCalories, 2);
+        $fixedPortionTotal = round($sideSaladCalories + $dessertCalories + $soupCalories, 2);
         $fixedPortionMacros = self::macroGramsFromCaloriesAndPercentages(
             $fixedPortionTotal,
             $proteinPct,
@@ -180,7 +187,7 @@ final class UserPlanCalculator
             $fixedPortionTotal + $breakfastTargetCalories + ($mainTargetCaloriesEach * 2),
             2,
         );
-        $dayTotalCalories = round($coreDayCalories + $soupCalories, 2);
+        $dayTotalCalories = round($coreDayCalories, 2);
 
         $soupMacros = $includeSoup
             ? self::macroGramsFromCaloriesAndPercentages($soupCalories, $proteinPct, $carbPct, $fatPct)
@@ -199,6 +206,10 @@ final class UserPlanCalculator
             'side_salad' => $sideSaladCalories,
             'dessert' => $dessertCalories,
         ];
+
+        if ($includeSoup) {
+            $perSlotFixed['soup'] = $soupCalories;
+        }
 
         return [
             'profile_id' => (int) $profile->id,

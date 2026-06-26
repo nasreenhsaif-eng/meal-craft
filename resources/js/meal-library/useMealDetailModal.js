@@ -2,8 +2,9 @@ import { useCallback, useState } from 'react';
 
 /**
  * @param {string} [detailViewUrlTemplate] e.g. `/api/meals/{id}/detail-view`
+ * @param {string} [detailQueryString] Adapted-menu query string (craft, tier, soup, etc.)
  */
-export function useMealDetailModal(detailViewUrlTemplate = '/api/meals/{id}/detail-view') {
+export function useMealDetailModal(detailViewUrlTemplate = '/api/meals/{id}/detail-view', detailQueryString = '') {
     const [mealDetailModal, setMealDetailModal] = useState(
         /** @type {{ title: string; detailView: object } | null} */ (null),
     );
@@ -24,7 +25,8 @@ export function useMealDetailModal(detailViewUrlTemplate = '/api/meals/{id}/deta
                 return;
             }
 
-            const url = detailViewUrlTemplate.replace('{id}', encodeURIComponent(String(mealId)));
+            const baseUrl = detailViewUrlTemplate.replace('{id}', encodeURIComponent(String(mealId)));
+            const url = detailQueryString ? `${baseUrl}?${detailQueryString}` : baseUrl;
             setDetailLoading(true);
 
             try {
@@ -54,7 +56,7 @@ export function useMealDetailModal(detailViewUrlTemplate = '/api/meals/{id}/deta
                 setDetailLoading(false);
             }
         },
-        [detailViewUrlTemplate],
+        [detailViewUrlTemplate, detailQueryString],
     );
 
     return {

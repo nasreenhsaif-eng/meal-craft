@@ -70,6 +70,54 @@ test('adapted menu auto provisions a preview profile for admin staff without one
     expect($admin->fresh()->customerProfile?->daily_calorie_target)->toBe(2000);
 });
 
+test('admin staff can preview adapted menu at a chosen plan tier', function () {
+    $admin = User::factory()->create();
+
+    $this->actingAs($admin)
+        ->getJson('/api/menu/adapted?plan_tier=1500')
+        ->assertSuccessful()
+        ->assertJsonPath('plan.plan_tier', 1500)
+        ->assertJsonPath('daily_calorie_target', 1500);
+
+    expect($admin->fresh()->customerProfile?->daily_calorie_target)->toBe(1500);
+});
+
+test('customers cannot override plan tier via adapted menu query', function () {
+    $user = User::factory()->customer()->create();
+    CustomerProfile::factory()->for($user)->create([
+        'daily_calorie_target' => 2000,
+    ]);
+
+    $this->actingAs($user)
+        ->getJson('/api/menu/adapted?plan_tier=1000')
+        ->assertSuccessful()
+        ->assertJsonPath('plan.plan_tier', 2000);
+
+    expect($user->fresh()->customerProfile?->daily_calorie_target)->toBe(2000);
+});
+
+test('actual fixed portion calories shrink scalable slot targets while day total stays at tier', function () {
+    $user = User::factory()->create();
+    CustomerProfile::factory()->for($user)->create([
+        'daily_calorie_target' => 1200,
+        'protein_percentage' => 40,
+        'carb_percentage' => 30,
+        'fat_percentage' => 30,
+    ]);
+
+    $withMidpoints = UserPlanCalculator::calculateUserPlan($profile = $user->customerProfile);
+    $withActualFixed = UserPlanCalculator::calculateUserPlan($profile, [
+        'side_salad_calories' => 220,
+        'dessert_calories' => 210,
+        'include_soup' => true,
+        'soup_calories' => 107,
+    ]);
+
+    expect($withActualFixed['day_total_calories'])->toBe(1200.0)
+        ->and($withActualFixed['scalable_slot_targets']['breakfast']['calories'])
+        ->toBeLessThan($withMidpoints['scalable_slot_targets']['breakfast']['calories']);
+});
+
 test('adapted menu is available during onboarding when daily calorie target is set', function () {
     $user = User::factory()->create();
     CustomerProfile::factory()->for($user)->create([
@@ -178,7 +226,7 @@ test('adapted menu returns fixed portion meals with unscaled recipe nutrition', 
         ->and((float) $sideSalad['adapted_nutrition']['calories'])->toBe(180.0);
 });
 
-test('adapted menu lists soups as optional add-ons and include_soup raises day total', function () {
+test('adapted menu lists soups as optional add-ons and include_soup keeps day total at tier', function () {
     $user = User::factory()->create();
     CustomerProfile::factory()->for($user)->create([
         'daily_calorie_target' => 1500,
@@ -205,14 +253,15 @@ test('adapted menu lists soups as optional add-ons and include_soup raises day t
     $withSoup->assertSuccessful()
         ->assertJsonPath('include_soup', true)
         ->assertJsonPath('plan.include_soup', true)
-        ->assertJsonPath('plan.day_total_calories', 1650);
+        ->assertJsonPath('plan.day_total_calories', 1500)
+        ->assertJsonPath('plan.scalable_slot_targets.breakfast.calories', 201);
 
     $soups = collect($withSoup->json('optional_add_on_meals'));
     $soup = $soups->firstWhere('name', 'Test Soup');
 
     expect($soup)->not->toBeNull()
         ->and($soup['portion_behavior'])->toBe('optional_add_on')
-        ->and($soup['counts_toward_core_tier'])->toBeFalse()
+        ->and($soup['counts_toward_core_tier'])->toBeTrue()
         ->and((float) $soup['adapted_nutrition']['calories'])->toBe(140.0)
         ->and((float) $withoutSoup->json('plan.day_total_calories'))->toEqual(1500.0);
 });

@@ -4,6 +4,7 @@ namespace App\Services\Nutrition;
 
 use App\Enums\MealType;
 use App\Enums\RecipeCategory;
+use App\Http\Controllers\Admin\MealLibraryController;
 use App\Models\CustomerProfile;
 use App\Models\Ingredient;
 use App\Models\Meal;
@@ -71,7 +72,13 @@ final class AdaptedMenuBuilder
             }
 
             if ($behavior === 'optional_add_on') {
-                $optionalAddOnMeals[] = self::serializeStandardPortionMeal($meal, $slot, $profile, isOptionalAddOn: true);
+                $includeSoupInTier = (bool) ($plan['include_soup'] ?? false);
+                $optionalAddOnMeals[] = self::serializeStandardPortionMeal(
+                    $meal,
+                    $slot,
+                    $profile,
+                    isOptionalAddOn: ! $includeSoupInTier,
+                );
 
                 continue;
             }
@@ -82,7 +89,11 @@ final class AdaptedMenuBuilder
         }
 
         $craftKey = isset($options['craft_key']) ? (string) $options['craft_key'] : '';
-        $scheduleOptions = $craftKey !== '' ? ['craft_key' => $craftKey] : [];
+        $scheduleOptions = array_filter([
+            'craft_key' => $craftKey !== '' ? $craftKey : null,
+            'include_soup' => ($options['include_soup'] ?? false) ? true : null,
+            'soup_calories' => isset($options['soup_calories']) ? (float) $options['soup_calories'] : null,
+        ], static fn ($value): bool => $value !== null && $value !== '');
 
         return [
             'plan' => $plan,
@@ -133,8 +144,143 @@ final class AdaptedMenuBuilder
             $meal,
             $slot,
             $profile,
-            isOptionalAddOn: $behavior === 'optional_add_on',
+            isOptionalAddOn: $behavior === 'optional_add_on' && ! (bool) ($plan['include_soup'] ?? false),
         );
+    }
+
+    /**
+     * Calorie-scale each main, then boost non-vegan mains when a vegan choice lowers combined protein.
+     *
+     * @param  list<Meal>  $meals
+     * @param  array{
+     *     include_soup?: bool,
+     *     soup_calories?: float,
+     *     side_salad_calories?: float,
+     *     dessert_calories?: float,
+     *     snap_to_tier?: bool,
+     *     craft_key?: string
+     * }  $options
+     * @return list<array<string, mixed>>
+     */
+    public static function adaptMainMealsForProfile(CustomerProfile $profile, array $meals, array $options = []): array
+    {
+        if ($meals === []) {
+            return [];
+        }
+
+        $plan = UserPlanCalculator::calculateUserPlan($profile, $options);
+
+        $craftKey = isset($options['craft_key']) ? (string) $options['craft_key'] : '';
+
+        if ($craftKey !== '' && in_array($craftKey, CraftCaloriePlanner::keys(), true)) {
+            $plan = CraftCaloriePlanner::applyCraftToPlan($plan, $craftKey);
+        }
+
+        $adapted = [];
+
+        foreach ($meals as $meal) {
+            $meal->loadMissing('ingredients');
+            $adapted[] = self::serializeScaledMeal($meal, 'main', $plan);
+        }
+
+        return self::balanceMainMealProtein($adapted, $plan, $meals);
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $adaptedMains
+     * @param  list<Meal>  $meals
+     * @return list<array<string, mixed>>
+     */
+    public static function balanceMainMealProtein(array $adaptedMains, array $plan, array $meals): array
+    {
+        if ($adaptedMains === [] || count($adaptedMains) !== count($meals)) {
+            return $adaptedMains;
+        }
+
+        $mainCount = count($adaptedMains);
+        $proteinTargetEach = (float) ($plan['scalable_slot_targets']['main_each']['macros']['protein_g'] ?? 0);
+        $slotTargetCaloriesEach = (float) ($plan['scalable_slot_targets']['main_each']['calories'] ?? 0);
+
+        if ($proteinTargetEach <= 0) {
+            return $adaptedMains;
+        }
+
+        $proteinTargetTotal = round($proteinTargetEach * $mainCount, 2);
+        $currentProteinTotal = 0.0;
+
+        foreach ($adaptedMains as $adapted) {
+            $currentProteinTotal += (float) ($adapted['adapted_nutrition']['protein'] ?? 0);
+        }
+
+        $shortfall = round($proteinTargetTotal - $currentProteinTotal, 2);
+
+        if ($shortfall <= 0.25) {
+            return $adaptedMains;
+        }
+
+        $compensatorIndexes = [];
+
+        foreach ($meals as $index => $meal) {
+            if (! $meal->isVegan()) {
+                $compensatorIndexes[] = $index;
+            }
+        }
+
+        if ($compensatorIndexes === []) {
+            return $adaptedMains;
+        }
+
+        $compensatingProtein = 0.0;
+
+        foreach ($compensatorIndexes as $index) {
+            $compensatingProtein += (float) ($adaptedMains[$index]['adapted_nutrition']['protein'] ?? 0);
+        }
+
+        if ($compensatingProtein <= 0) {
+            return $adaptedMains;
+        }
+
+        $balanced = $adaptedMains;
+
+        foreach ($compensatorIndexes as $index) {
+            $meal = $meals[$index];
+            $adapted = $balanced[$index];
+            $currentProtein = (float) ($adapted['adapted_nutrition']['protein'] ?? 0);
+
+            if ($currentProtein <= 0) {
+                continue;
+            }
+
+            $proteinShare = $currentProtein / $compensatingProtein;
+            $addedProtein = round($shortfall * $proteinShare, 2);
+            $targetProtein = $currentProtein + $addedProtein;
+            $boostMultiplier = $targetProtein / $currentProtein;
+            $currentScale = (float) ($adapted['scaling_multiplier'] ?? 1.0);
+            $currentCalories = (float) ($adapted['adapted_nutrition']['calories'] ?? 0);
+
+            if ($currentCalories <= 0) {
+                continue;
+            }
+
+            $maxBoostFromCalories = $slotTargetCaloriesEach > 0
+                ? $slotTargetCaloriesEach / $currentCalories
+                : $boostMultiplier;
+            $effectiveBoost = min($boostMultiplier, $maxBoostFromCalories);
+
+            if ($effectiveBoost <= 1.0001) {
+                continue;
+            }
+
+            $balanced[$index] = self::serializeScaledMeal(
+                $meal,
+                'main',
+                $plan,
+                round($currentScale * $effectiveBoost, 4),
+                proteinBalanced: true,
+            );
+        }
+
+        return $balanced;
     }
 
     public static function mealScalingMultiplier(Meal $meal, string $slot, array $plan): float
@@ -218,9 +364,14 @@ final class AdaptedMenuBuilder
      * @param  array<string, mixed>  $plan
      * @return array<string, mixed>
      */
-    private static function serializeScaledMeal(Meal $meal, string $slot, array $plan): array
-    {
-        $multiplier = self::mealScalingMultiplier($meal, $slot, $plan);
+    private static function serializeScaledMeal(
+        Meal $meal,
+        string $slot,
+        array $plan,
+        ?float $overrideMultiplier = null,
+        bool $proteinBalanced = false,
+    ): array {
+        $multiplier = $overrideMultiplier ?? self::mealScalingMultiplier($meal, $slot, $plan);
         $baseline = $meal->nutritionForDisplay();
         $scaledRows = self::scaledIngredientRows($meal, $multiplier);
         $adaptedNutrition = RecipeNutritionCalculator::fromRows($scaledRows);
@@ -232,6 +383,8 @@ final class AdaptedMenuBuilder
             'portion_behavior' => UserPlanCalculator::slotBehavior($slot),
             'is_scaled' => $multiplier !== 1.0,
             'scaling_multiplier' => $multiplier,
+            'protein_balanced' => $proteinBalanced,
+            'is_vegan' => $meal->isVegan(),
             'counts_toward_core_tier' => true,
             'image_url' => $meal->imageUrl(),
             'instructions' => $meal->instructions,
@@ -319,6 +472,42 @@ final class AdaptedMenuBuilder
         }
 
         return $out;
+    }
+
+    /**
+     * Overlay profile-adapted nutrition onto a meal library UI row (consultation / plan summary).
+     *
+     * @param  array<string, mixed>  $baseRow  from {@see MealLibraryController::presentMealRowForUi()}
+     * @param  array<string, mixed>  $adapted  from {@see serializeScaledMeal()}
+     * @return array<string, mixed>
+     */
+    public static function overlayAdaptedNutritionOnMealRow(array $baseRow, array $adapted): array
+    {
+        /** @var array<string, float|int|string> $nutrition */
+        $nutrition = is_array($adapted['adapted_nutrition'] ?? null) ? $adapted['adapted_nutrition'] : [];
+
+        $macros = [
+            'calories' => (int) round((float) ($nutrition['calories'] ?? 0)),
+            'protein' => round((float) ($nutrition['protein'] ?? 0), 1),
+            'carbs' => round((float) ($nutrition['carbs'] ?? 0), 1),
+            'fat' => round((float) ($nutrition['fat'] ?? 0), 1),
+        ];
+
+        $baseRow['macros'] = $macros;
+        $baseRow['caloriesNumber'] = $macros['calories'];
+        $baseRow['isScaled'] = (bool) ($adapted['is_scaled'] ?? false);
+        $baseRow['scalingMultiplier'] = (float) ($adapted['scaling_multiplier'] ?? 1);
+        $baseRow['proteinBalanced'] = (bool) ($adapted['protein_balanced'] ?? false);
+        $baseRow['isVegan'] = (bool) ($adapted['is_vegan'] ?? false);
+        $baseRow['slot'] = (string) ($adapted['slot'] ?? '');
+
+        if (isset($baseRow['detailView']) && is_array($baseRow['detailView'])) {
+            $detailView = $baseRow['detailView'];
+            $detailView['macros'] = $macros;
+            $baseRow['detailView'] = $detailView;
+        }
+
+        return $baseRow;
     }
 
     private static function baselineGramsForPivot(

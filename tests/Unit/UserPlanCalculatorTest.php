@@ -29,7 +29,7 @@ test('calculateUserPlan allocates core tier across fixed portions and scalable s
         ->and($plan['include_soup'])->toBeFalse();
 });
 
-test('optional soup adds calories on top without changing scalable slot targets', function () {
+test('included soup counts within tier and shrinks scalable slot targets', function () {
     $profile = new CustomerProfile([
         'id' => 1,
         'daily_calorie_target' => 1500,
@@ -46,12 +46,16 @@ test('optional soup adds calories on top without changing scalable slot targets'
 
     expect($withSoup['include_soup'])->toBeTrue()
         ->and($withSoup['optional_add_on']['soup']['calories'])->toBe(150.0)
+        ->and($withSoup['fixed_portion']['calories'])->toBe(495.0)
+        ->and($withSoup['scalable_budget']['calories'])->toBe(1005.0)
+        ->and($withSoup['scalable_slot_targets']['breakfast']['calories'])->toBe(201.0)
+        ->and($withSoup['scalable_slot_targets']['main_each']['calories'])->toBe(402.0)
         ->and($withSoup['scalable_slot_targets']['breakfast']['calories'])
-        ->toBe($corePlan['scalable_slot_targets']['breakfast']['calories'])
+        ->toBeLessThan($corePlan['scalable_slot_targets']['breakfast']['calories'])
         ->and($withSoup['scalable_slot_targets']['main_each']['calories'])
-        ->toBe($corePlan['scalable_slot_targets']['main_each']['calories'])
+        ->toBeLessThan($corePlan['scalable_slot_targets']['main_each']['calories'])
         ->and($withSoup['core_day_calories'])->toBe(1500.0)
-        ->and($withSoup['day_total_calories'])->toBe(1650.0);
+        ->and($withSoup['day_total_calories'])->toBe(1500.0);
 });
 
 test('calculateUserPlan derives scaling multiplier from scalable budget and library baseline', function () {

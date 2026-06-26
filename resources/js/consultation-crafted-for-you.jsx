@@ -86,6 +86,7 @@ if (rootEl) {
                         typeof config.adaptedMenuUrl === 'string' ? config.adaptedMenuUrl : '/api/menu/adapted'
                     }
                     initialPlanTier={typeof config.planTier === 'number' ? config.planTier : null}
+                    initialPlanTiers={Array.isArray(config.planTiers) ? config.planTiers : undefined}
                     initialEditDraft={
                         config.editDraft && typeof config.editDraft === 'object' ? config.editDraft : null
                     }

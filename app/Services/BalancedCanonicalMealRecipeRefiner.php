@@ -283,7 +283,7 @@ final class BalancedCanonicalMealRecipeRefiner
             ],
             self::VEGAN_BUTTERNUT_PEANUT_STEW_NAME => [
                 'ingredients' => [
-                    'Basmati Rice (Brown)' => 45,
+                    'Cooked Brown Basmati Rice (Base)' => 113,
                     'Red Onion' => 30,
                     'Olive Oil' => 3,
                     'Garlic (Raw)' => 2,

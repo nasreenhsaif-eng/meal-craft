@@ -17,6 +17,7 @@ use App\Services\BaseIngredientService;
 use App\Services\MealCraftMasterCsvExport;
 use App\Services\MenuDevelopmentCsvExport;
 use App\Services\MenuDevelopmentCsvSync;
+use App\Services\Nutrition\AdaptedMenuBuilder;
 use App\Services\RecipeNutritionCalculator;
 use App\Support\EggIngredientPresentation;
 use App\Support\IngredientAllergenCatalog;
@@ -755,6 +756,128 @@ class MealLibraryController extends Controller
     public function presentMealRowForUi(Meal $meal): array
     {
         return $this->toMealRow($meal);
+    }
+
+    /**
+     * Merge profile-adapted nutrition and scaled ingredient amounts onto a UI meal row.
+     *
+     * @param  array<string, mixed>  $baseRow
+     * @param  array<string, mixed>  $adapted
+     * @return array<string, mixed>
+     */
+    public function applyAdaptedToMealRow(array $baseRow, array $adapted, Meal $meal): array
+    {
+        $row = AdaptedMenuBuilder::overlayAdaptedNutritionOnMealRow($baseRow, $adapted);
+
+        if (isset($row['detailView']) && is_array($row['detailView'])) {
+            $row['detailView'] = $this->overlayAdaptedDetailView($row['detailView'], $adapted, $meal);
+        }
+
+        return $row;
+    }
+
+    /**
+     * @param  array<string, mixed>  $detailView
+     * @param  array<string, mixed>  $adapted
+     * @return array<string, mixed>
+     */
+    public function overlayAdaptedDetailView(array $detailView, array $adapted, Meal $meal): array
+    {
+        /** @var array<string, float|int|string> $nutrition */
+        $nutrition = is_array($adapted['adapted_nutrition'] ?? null) ? $adapted['adapted_nutrition'] : [];
+
+        $macros = [
+            'calories' => (int) round((float) ($nutrition['calories'] ?? 0)),
+            'protein' => round((float) ($nutrition['protein'] ?? 0), 1),
+            'carbs' => round((float) ($nutrition['carbs'] ?? 0), 1),
+            'fat' => round((float) ($nutrition['fat'] ?? 0), 1),
+        ];
+
+        $detailView['macros'] = $macros;
+        $detailView['nutrition'] = array_map(
+            static fn ($value): float => (float) $value,
+            $nutrition,
+        );
+        $detailView['nutritionalData'] = $this->nutritionalDataForDetailView($detailView['nutrition']);
+        $detailView['nutritionSubheading'] = __('Adapted for your plan');
+
+        $adaptedIngredients = is_array($adapted['ingredients'] ?? null) ? $adapted['ingredients'] : [];
+        $detailView['ingredients'] = $this->adaptedIngredientLinesForDetailView($meal, $adaptedIngredients);
+
+        if (SaladMealPresentation::isSaladMeal($meal)) {
+            $ingredientSections = SaladMealPresentation::ingredientSectionsForMeal(
+                $meal,
+                $this->adaptedIngredientLineFormatter($meal, $adaptedIngredients),
+            );
+
+            if ($ingredientSections !== []) {
+                $detailView['ingredientSections'] = $ingredientSections;
+            }
+        }
+
+        return $detailView;
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $adaptedIngredients
+     * @return list<string>
+     */
+    private function adaptedIngredientLinesForDetailView(Meal $meal, array $adaptedIngredients): array
+    {
+        $meal->loadMissing('ingredients');
+        $formatter = $this->adaptedIngredientLineFormatter($meal, $adaptedIngredients);
+        $lines = SaladMealPresentation::orderedIngredientLinesForMeal($meal, $formatter);
+
+        if ($lines !== []) {
+            return $lines;
+        }
+
+        return [__('No ingredients on file.')];
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $adaptedIngredients
+     * @return callable(Ingredient $ingredient, float $grams): string
+     */
+    private function adaptedIngredientLineFormatter(Meal $meal, array $adaptedIngredients): callable
+    {
+        $rowsByIngredientId = [];
+
+        foreach ($adaptedIngredients as $row) {
+            $ingredientId = (int) ($row['id'] ?? 0);
+
+            if ($ingredientId <= 0) {
+                continue;
+            }
+
+            $rowsByIngredientId[$ingredientId] = $row;
+        }
+
+        return function (Ingredient $ingredient, float $baselineGrams) use ($meal, $rowsByIngredientId): string {
+            $adaptedRow = $rowsByIngredientId[(int) $ingredient->id] ?? null;
+            $grams = (float) ($adaptedRow['adapted_amount_grams'] ?? $baselineGrams);
+            $grams = MealLibraryBulkNutrition::perServingGramsForMealDisplay($meal, $grams);
+            $formattedGrams = $this->formatTrimmedDecimal($grams, 2);
+
+            if (EggIngredientPresentation::isEggIngredient($ingredient)) {
+                return EggIngredientPresentation::formatLine($grams, $formattedGrams);
+            }
+
+            if (is_array($adaptedRow)) {
+                $unit = (string) ($adaptedRow['unit'] ?? 'g');
+                $adaptedAmount = $adaptedRow['adapted_amount'] ?? null;
+
+                if ($adaptedAmount !== null && $unit !== '' && $unit !== 'g') {
+                    return round((float) $adaptedAmount, 2).$unit.' '.$ingredient->name;
+                }
+            }
+
+            if ($grams > 0) {
+                return $formattedGrams.'g '.$ingredient->name;
+            }
+
+            return $ingredient->name;
+        };
     }
 
     /**

@@ -5,6 +5,7 @@ import PillButton from '../Atoms/Button/Button.jsx';
 import TextInput from '../Atoms/TextInput/TextInput.jsx';
 import DropdownTextInput from '../Atoms/TextInput/DropdownTextInput.jsx';
 import { filterIngredientsForCombobox } from '../../meal-library/ingredientSearch.ts';
+import { CHICKEN_BREAST_RAW_NAME, chickenBreastYieldHint } from '../../meal-library/chickenBreastYield.ts';
 
 const UNIT_OPTIONS = ['g', 'kg', 'ml', 'ltr'];
 
@@ -248,6 +249,12 @@ export default function MealIngredientRowsEditor({
                                     />
                                 </div>
                             </div>
+                            {row.selectedName === CHICKEN_BREAST_RAW_NAME && row.unit === 'g' ? (
+                                <p className="font-body text-xs text-[#555555]">
+                                    {chickenBreastYieldHint(Number(String(row.amount ?? '').trim())) ??
+                                        'Raw prep weight before cooking.'}
+                                </p>
+                            ) : null}
                         </div>
                     );
                 })}

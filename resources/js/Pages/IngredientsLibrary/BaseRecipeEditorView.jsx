@@ -9,6 +9,11 @@ import {
     scaleNutritionToPer100g,
 } from '../../meal-library/buildNutritionalDataPer100g.ts';
 import { sickleCellHighlightBadgeLabels } from '../../meal-library/sickleCellNutrientRdi.ts';
+import {
+    CHICKEN_BREAST_RAW_NAME,
+    CHICKEN_RAW_TO_COOKED_RATIO,
+    cookedGramsFromRawChicken,
+} from '../../meal-library/chickenBreastYield.ts';
 
 /**
  * Base recipe editor — Meal Library ingredient rows + yield-based per-100 g nutrition sidebar.
@@ -65,6 +70,32 @@ export default function BaseRecipeEditorView({
         finishedWeightGrams.trim() !== '' &&
         (!Number.isFinite(Number(finishedWeightGrams.trim())) || Number(finishedWeightGrams.trim()) <= 0);
 
+    const rawChickenBatchGrams = useMemo(() => {
+        return rows.reduce((sum, row) => {
+            if (row.selectedName !== CHICKEN_BREAST_RAW_NAME || row.unit !== 'g') {
+                return sum;
+            }
+
+            const grams = Number(String(row.amount ?? '').trim());
+            return Number.isFinite(grams) && grams > 0 ? sum + grams : sum;
+        }, 0);
+    }, [rows]);
+
+    const chickenBatchYieldHint = useMemo(() => {
+        if (rawChickenBatchGrams <= 0) {
+            return null;
+        }
+
+        const cookedChickenOnly = cookedGramsFromRawChicken(rawChickenBatchGrams);
+        const finished = Number(String(finishedWeightGrams ?? '').trim());
+
+        if (Number.isFinite(finished) && finished > 0) {
+            return `${rawChickenBatchGrams} g raw chicken → ~${cookedChickenOnly} g cooked breast (${Math.round(CHICKEN_RAW_TO_COOKED_RATIO * 100)}% yield). Finished batch weight ${finished} g includes marinade solids; per-100 g nutrition uses that total cooked yield.`;
+        }
+
+        return `${rawChickenBatchGrams} g raw chicken → ~${cookedChickenOnly} g cooked breast (${Math.round(CHICKEN_RAW_TO_COOKED_RATIO * 100)}% yield). Add retained marinade weight for finished cooked batch weight.`;
+    }, [finishedWeightGrams, rawChickenBatchGrams]);
+
     const nutritionPanel = nutritionalData ? (
         <MealNutritionSummaryTable data={nutritionalData} />
     ) : (
@@ -104,6 +135,9 @@ export default function BaseRecipeEditorView({
                         by this yield.
                     </p>
                 )}
+                {chickenBatchYieldHint ? (
+                    <p className="font-body text-xs text-[#555555]">{chickenBatchYieldHint}</p>
+                ) : null}
 
                 <label className="block space-y-1">
                     <span className="font-montserrat text-[13px] font-bold tracking-wide text-[#374151]">

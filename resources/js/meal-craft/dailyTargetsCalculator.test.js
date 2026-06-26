@@ -57,22 +57,22 @@ describe('kcalToKj', () => {
 });
 
 describe('DIET_PROTOCOL_MACRO_PRESETS', () => {
-    it('uses a 40/40/20 balanced macro split', () => {
+    it('uses a 40/30/30 balanced macro split', () => {
         expect(DIET_PROTOCOL_MACRO_PRESETS.balanced).toEqual({
             proteinPercentage: 40,
-            carbPercentage: 40,
-            fatPercentage: 20,
+            carbPercentage: 30,
+            fatPercentage: 30,
         });
     });
 });
 
 describe('calculateMacroGrams', () => {
     it('converts balanced calorie splits to grams using 4/4/9 kcal constants', () => {
-        const grams = calculateMacroGrams(2000, 40, 40, 20);
+        const grams = calculateMacroGrams(2000, 40, 30, 30);
 
         expect(grams.proteinGrams).toBe(200);
-        expect(grams.carbGrams).toBe(200);
-        expect(grams.fatGrams).toBe(44);
+        expect(grams.carbGrams).toBe(150);
+        expect(grams.fatGrams).toBe(67);
     });
 });
 
@@ -91,9 +91,9 @@ describe('calculateDailyTargets', () => {
         expect(targets.dailyCaloriesMin).toBeLessThanOrEqual(targets.dailyCaloriesMax);
         expect(targets.dailyKjMin).toBe(kcalToKj(targets.dailyCaloriesMin));
         expect(targets.dailyKjMax).toBe(kcalToKj(targets.dailyCaloriesMax));
-        expect(targets.carbPercentage).toBe(40);
+        expect(targets.carbPercentage).toBe(30);
         expect(targets.proteinPercentage).toBe(40);
-        expect(targets.fatPercentage).toBe(20);
+        expect(targets.fatPercentage).toBe(30);
         expect(targets.proteinGrams).toBe(
             calculateMacroGrams(
                 targets.dailyCalories,

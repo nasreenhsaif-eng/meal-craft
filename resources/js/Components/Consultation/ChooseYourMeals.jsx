@@ -214,6 +214,21 @@ export const FULL_CRAFT_CATEGORY_SECTIONS = Object.freeze([
 
 /** @typedef {{ calories: number; protein: number; carbs: number; fat: number }} MacroTotals */
 
+/** @param {number | string | null | undefined} raw */
+export function parseConsultationMacroValue(raw) {
+    if (typeof raw === 'number') {
+        return Number.isFinite(raw) ? raw : 0;
+    }
+
+    if (typeof raw === 'string') {
+        const parsed = Number.parseFloat(raw.replace(/[^\d.-]/g, ''));
+
+        return Number.isFinite(parsed) ? parsed : 0;
+    }
+
+    return 0;
+}
+
 /** Category rows for plan / admin day macro breakdown (soup omitted when empty). */
 export const PLAN_MACRO_CATEGORY_ROWS = Object.freeze([
     { key: 'breakfasts', label: 'Breakfast', optional: false },
@@ -235,10 +250,10 @@ export function sumMealCardMacros(meals) {
             const macros = meal?.macros ?? {};
 
             return {
-                calories: acc.calories + Number(macros.calories ?? 0),
-                protein: acc.protein + Number(macros.protein ?? 0),
-                carbs: acc.carbs + Number(macros.carbs ?? 0),
-                fat: acc.fat + Number(macros.fat ?? 0),
+                calories: acc.calories + parseConsultationMacroValue(macros.calories),
+                protein: acc.protein + parseConsultationMacroValue(macros.protein),
+                carbs: acc.carbs + parseConsultationMacroValue(macros.carbs),
+                fat: acc.fat + parseConsultationMacroValue(macros.fat),
             };
         },
         { calories: 0, protein: 0, carbs: 0, fat: 0 },
@@ -761,6 +776,7 @@ export function MealSlotCarousel({
 export default function ChooseYourMeals({
     dayName = '',
     totalKcal = 0,
+    dayMacroTotals = null,
     summaryLabel,
     targetCalories = 1200,
     layout = 'custom',
@@ -1159,6 +1175,14 @@ export default function ChooseYourMeals({
                             Total: {Math.round(totalKcal)} kcal
                         </p>
                     </div>
+                    {dayMacroTotals && dayMacroTotals.calories > 0 ? (
+                        <div className="mt-2">
+                            <PlanMacroSummaryRow
+                                macros={dayMacroTotals}
+                                ariaLabel="Selected day macros"
+                            />
+                        </div>
+                    ) : null}
                     {hintText ? <p className="mt-1.5 font-body text-xs text-[#555555]">{hintText}</p> : null}
 
                     {showStickyFooterNav ? (

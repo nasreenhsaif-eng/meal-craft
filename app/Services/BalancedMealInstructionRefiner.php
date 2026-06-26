@@ -307,21 +307,21 @@ final class BalancedMealInstructionRefiner
                 'Warm quinoa bread separately. Serve stew with bread and lemon.',
             ]),
             'Chili Beef Stuffed Peppers' => $this->steps([
-                'Cook brown rice until tender.',
+                'Prepare Cooked Brown Basmati Rice (Base) per base recipe instructions.',
                 'Brown ground beef with onion and garlic. Stir in chili powder and diced tomato.',
-                'Mix beef with cooked rice.',
+                'Mix beef with cooked brown basmati rice.',
                 'Halve peppers, remove seeds. Fill with beef mixture.',
                 'Bake at 190°C for 25–30 minutes until peppers are soft.',
             ]),
 
             // Vegan mains
             BalancedCanonicalMealRecipeRefiner::VEGAN_BUTTERNUT_PEANUT_STEW_NAME => $this->steps([
-                'Cook brown rice. Keep warm.',
+                'Prepare Cooked Brown Basmati Rice (Base) per base recipe instructions; keep warm.',
                 'Fry finely chopped onion in olive oil for 5 minutes until soft. Grate in garlic and stir.',
                 'Add chopped tomatoes and cook for a couple of minutes. Add water, rinsed red lentils, chopped red pepper, and butternut squash cubes. Bring to the boil, then reduce to a simmer.',
                 'Stir in vegetable stock and peanut butter until combined. Add zucchini and simmer for 20 minutes.',
                 'Add mushrooms and spinach–cabbage greens. Simmer a couple of minutes until wilted. Season with sea salt, black pepper, and chilli flakes.',
-                'Serve stew over brown rice. Top with fresh coriander, cherry tomatoes, crushed peanuts, and lime juice.',
+                'Serve stew over cooked brown basmati rice. Top with fresh coriander, cherry tomatoes, crushed peanuts, and lime juice.',
             ]),
             'Vegan Smoky Cauliflower & Lentil Stew w Quinoa Bread & Tahini' => $this->steps([
                 'Roast cauliflower florets at 200°C for 20 minutes until golden.',

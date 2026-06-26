@@ -13,7 +13,7 @@ use InvalidArgumentException;
 /**
  * Builds the production 7-day Balanced weekly structured meal plan with rotating daily menus.
  *
- * Daily macro split (40% protein / 40% carbs / 20% fat) is applied at the plan tier via
+ * Daily macro split (40% protein / 30% carbs / 30% fat) is applied at the plan tier via
  * {@see referenceDailyMacros()} and customer onboarding — not enforced per individual meal.
  */
 final class BalancedWeeklyMealPlanBuilder
@@ -113,8 +113,8 @@ final class BalancedWeeklyMealPlanBuilder
         $preset = config('customer_nutrition.diet_protocol_macro_presets.balanced', []);
         $cal = self::REFERENCE_DAILY_CALORIES;
         $proteinPct = (float) ($preset['protein_percentage'] ?? 40.0);
-        $carbPct = (float) ($preset['carb_percentage'] ?? 40.0);
-        $fatPct = (float) ($preset['fat_percentage'] ?? 20.0);
+        $carbPct = (float) ($preset['carb_percentage'] ?? 30.0);
+        $fatPct = (float) ($preset['fat_percentage'] ?? 30.0);
 
         return [
             round($cal * $proteinPct / 100.0 / 4.0, 2),

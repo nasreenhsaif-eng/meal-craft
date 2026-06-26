@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import Button from '../../Components/Atoms/Button.jsx';
 import PillButton from '../../Components/Atoms/Button/Button.jsx';
 import ChooseYourMeals, {
@@ -9,18 +9,22 @@ import ChooseYourMeals, {
     buildConsultationDeckCatalog,
     consultationDeckOptionsForSlotKey,
     soupOfTheDayMeals,
+    sumActiveDayMacros,
 } from '../../Components/Consultation/ChooseYourMeals.jsx';
 import SquareCheckbox from '../../Components/Atoms/Icons/SquareCheckbox.jsx';
 import { MealCraftLogoAnimatedIdentity } from '../../Components/Atoms/Logo/MealCraftLogoAnimated.jsx';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
     fetchAdaptedMenu,
+    buildAdaptedMenuQueryString,
+    groupConsultationMealsByCategory,
     mapAdaptedMenuPayloadToConsultationMeals,
     scheduledFullCraftCategoryMealsForDay,
     scheduledSoupConsultationMealsForDay,
 } from '../../consultation/mapAdaptedMenuMeals.js';
 import { buildCraftPlanSubmissionPayload, submitCraftPlan } from '../../consultation/submitCraftPlan.js';
-import { craftDayCaloriesForKey } from '../../consultation/craftCalorieTargets.js';
+import { craftDayCaloriesForKey, fixedPortionCaloriesForAdapt, mainProteinTargetPerMeal, mainSlotTargetCaloriesFromPlan } from '../../consultation/craftCalorieTargets.js';
+import { balanceSelectedMainMealCards } from '../../consultation/balanceMainMealProtein.ts';
 import {
     resolveInitialConsultationRestoreDraft,
     saveConsultationDraft,
@@ -31,6 +35,27 @@ import { useMealDetailModal } from '../../meal-library/useMealDetailModal.js';
 const PAGE_BG = 'bg-[#F8F9F6]';
 const WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const WEEKDAY_LONG = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const DEFAULT_PLAN_TIERS = [1000, 1200, 1500, 1800, 2000];
+const PREVIEW_PLAN_TIER_STORAGE_KEY = 'mc-admin-preview-plan-tier';
+
+/**
+ * @param {number[]} planTiers
+ * @param {number} fallback
+ */
+function readStoredPreviewPlanTier(planTiers, fallback) {
+    try {
+        const raw = sessionStorage.getItem(PREVIEW_PLAN_TIER_STORAGE_KEY);
+        const value = Number(raw);
+
+        if (Number.isFinite(value) && planTiers.includes(value)) {
+            return value;
+        }
+    } catch {
+        // sessionStorage may be unavailable
+    }
+
+    return fallback;
+}
 
 const CRAFTS = [
     {
@@ -312,6 +337,7 @@ function slotId(dayIdx, slotKey, index) {
  *   adaptedMenuUrl?: string;
  *   mealDetailViewUrlTemplate?: string;
  *   initialPlanTier?: number | null;
+ *   initialPlanTiers?: number[];
  *   disableAdaptedMenuFetch?: boolean;
  *   initialEditDraft?: {
  *     craftKey?: string;
@@ -337,6 +363,7 @@ export default function CraftedForYouPage({
     adaptedMenuUrl = '/api/menu/adapted',
     mealDetailViewUrlTemplate = '/api/meals/{id}/detail-view',
     initialPlanTier = null,
+    initialPlanTiers = DEFAULT_PLAN_TIERS,
     disableAdaptedMenuFetch = false,
     initialEditDraft = null,
 } = {}) {
@@ -371,10 +398,6 @@ export default function CraftedForYouPage({
     const [submitError, setSubmitError] = useState(/** @type {string | null} */ (null));
     const [submitSuccess, setSubmitSuccess] = useState(false);
 
-    const { mealDetailModal, detailLoading, openMealDetail, closeMealDetail } = useMealDetailModal(
-        mealDetailViewUrlTemplate,
-    );
-
     // Craft-specific choice selection (per active curation day)
     const [businessCraftChoice, setBusinessCraftChoice] = useState(/** @type {'soup'|'sidesalad'|'dessert'} */ ('soup'));
     const [businessSideChoiceByDay, setBusinessSideChoiceByDay] = useState(
@@ -383,6 +406,21 @@ export default function CraftedForYouPage({
     const [afternoonSoupOptInByDay, setAfternoonSoupOptInByDay] = useState(
         () => initialRestoreDraft?.afternoonSoupOptInByDay ?? {},
     );
+    const [fullCraftSoupOptInByDay, setFullCraftSoupOptInByDay] = useState(
+        () => initialRestoreDraft?.fullCraftSoupOptInByDay ?? {},
+    );
+    const availablePlanTiers = useMemo(
+        () => (initialPlanTiers.length > 0 ? initialPlanTiers : DEFAULT_PLAN_TIERS),
+        [initialPlanTiers],
+    );
+    const [previewPlanTier, setPreviewPlanTier] = useState(() => {
+        const fallback =
+            typeof initialPlanTier === 'number' && initialPlanTier > 0
+                ? initialPlanTier
+                : availablePlanTiers[availablePlanTiers.length - 1] ?? 2000;
+
+        return isAdminPreview ? readStoredPreviewPlanTier(availablePlanTiers, fallback) : fallback;
+    });
 
     // Slot selection state (chosen meal ids per category, per day)
     const [selectedByDay, setSelectedByDay] = useState(
@@ -400,6 +438,7 @@ export default function CraftedForYouPage({
     const [productionMealPlanId, setProductionMealPlanId] = useState(/** @type {number | null} */ (null));
     const [menuLoading, setMenuLoading] = useState(false);
     const [menuError, setMenuError] = useState(/** @type {string | null} */ (null));
+    const hasLoadedAdaptedMenuRef = useRef(false);
     const [isLgViewport, setIsLgViewport] = useState(/** @type {boolean | null} */ (null));
 
     useLayoutEffect(() => {
@@ -440,6 +479,7 @@ export default function CraftedForYouPage({
             selectedByDay,
             businessSideChoiceByDay,
             afternoonSoupOptInByDay,
+            fullCraftSoupOptInByDay,
             environmentYes,
         });
     }, [
@@ -449,16 +489,11 @@ export default function CraftedForYouPage({
         selectedByDay,
         businessSideChoiceByDay,
         afternoonSoupOptInByDay,
+        fullCraftSoupOptInByDay,
         environmentYes,
     ]);
 
     const catalogMeals = useMemo(() => liveMeals ?? MOCK_MEALS, [liveMeals]);
-
-    /** Capped option sets only — mirrors pre–live-API MOCK_MEALS deck (2 / 4 / 2 / 2). */
-    const consultationDeckMeals = useMemo(
-        () => buildConsultationDeckCatalog(catalogMeals),
-        [catalogMeals],
-    );
 
     const scheduledSoupForDay = useCallback(
         (dayOfWeek) => {
@@ -477,12 +512,27 @@ export default function CraftedForYouPage({
         if (typeof fromPlan === 'number' && fromPlan > 0) {
             return Math.round(fromPlan);
         }
+        if (isAdminPreview && typeof previewPlanTier === 'number' && previewPlanTier > 0) {
+            return previewPlanTier;
+        }
         if (typeof initialPlanTier === 'number' && initialPlanTier > 0) {
             return initialPlanTier;
         }
 
         return 1200;
-    }, [nutritionPlan, initialPlanTier]);
+    }, [nutritionPlan, initialPlanTier, isAdminPreview, previewPlanTier]);
+
+    useEffect(() => {
+        if (!isAdminPreview) {
+            return;
+        }
+
+        try {
+            sessionStorage.setItem(PREVIEW_PLAN_TIER_STORAGE_KEY, String(previewPlanTier));
+        } catch {
+            // sessionStorage may be unavailable
+        }
+    }, [isAdminPreview, previewPlanTier]);
 
     const planTierCalories = useMemo(() => {
         const fromCraft = nutritionPlan?.craft_day_calories;
@@ -497,56 +547,15 @@ export default function CraftedForYouPage({
         return basePlanTier;
     }, [nutritionPlan, craftKey, basePlanTier]);
 
-    useEffect(() => {
-        if (disableAdaptedMenuFetch || craftKey === null) {
-            return undefined;
-        }
+    const mainProteinTarget = useMemo(
+        () => mainProteinTargetPerMeal(craftKey, basePlanTier, nutritionPlan),
+        [craftKey, basePlanTier, nutritionPlan],
+    );
 
-        let cancelled = false;
-
-        (async () => {
-            setMenuLoading(true);
-            setMenuError(null);
-            try {
-                const payload = await fetchAdaptedMenu(adaptedMenuUrl, { craftKey });
-                if (cancelled) {
-                    return;
-                }
-                setLiveMeals(mapAdaptedMenuPayloadToConsultationMeals(payload));
-                setNutritionPlan(
-                    payload.plan && typeof payload.plan === 'object'
-                        ? /** @type {Record<string, unknown>} */ (payload.plan)
-                        : null,
-                );
-                setScheduledSoupsByWeekday(
-                    payload.scheduled_soups_by_weekday && typeof payload.scheduled_soups_by_weekday === 'object'
-                        ? /** @type {Record<string | number, unknown>} */ (payload.scheduled_soups_by_weekday)
-                        : {},
-                );
-                setScheduledFullCraftByWeekday(
-                    payload.scheduled_full_craft_by_weekday &&
-                        typeof payload.scheduled_full_craft_by_weekday === 'object'
-                        ? /** @type {Record<string | number, unknown>} */ (payload.scheduled_full_craft_by_weekday)
-                        : {},
-                );
-                setProductionMealPlanId(
-                    typeof payload.production_meal_plan_id === 'number' ? payload.production_meal_plan_id : null,
-                );
-            } catch (error) {
-                if (!cancelled) {
-                    setMenuError(error instanceof Error ? error.message : 'Could not load meals.');
-                }
-            } finally {
-                if (!cancelled) {
-                    setMenuLoading(false);
-                }
-            }
-        })();
-
-        return () => {
-            cancelled = true;
-        };
-    }, [adaptedMenuUrl, disableAdaptedMenuFetch, craftKey]);
+    const mainSlotTargetCalories = useMemo(
+        () => mainSlotTargetCaloriesFromPlan(nutritionPlan),
+        [nutritionPlan],
+    );
 
     const usesWeeklyScheduledMenu = useMemo(
         () => craftKey === 'full' && Object.keys(scheduledFullCraftByWeekday).length > 0,
@@ -708,6 +717,18 @@ export default function CraftedForYouPage({
         });
     }
 
+    function exitConsultation() {
+        const href = homeHref ?? closeHref;
+
+        if (href) {
+            window.location.assign(href);
+
+            return;
+        }
+
+        window.history.back();
+    }
+
     async function submit() {
         if (!craftKey || weekDuration === null) {
             return;
@@ -791,11 +812,326 @@ export default function CraftedForYouPage({
 
     const calorieDay = curationDay ?? effectiveActiveDay;
 
+    const includeSoupForAdaptedMenu = useMemo(() => {
+        if (!calorieDay) {
+            return false;
+        }
+
+        const selections = selectedByDay[calorieDay];
+
+        if ((selections?.soup?.length ?? 0) > 0) {
+            return true;
+        }
+
+        if (craftKey === 'full' && fullCraftSoupOptInByDay[calorieDay] === true) {
+            return true;
+        }
+
+        if (craftKey === 'afternoon' && afternoonSoupOptInByDay[calorieDay] === true) {
+            return true;
+        }
+
+        return false;
+    }, [calorieDay, selectedByDay, craftKey, fullCraftSoupOptInByDay, afternoonSoupOptInByDay]);
+
+    const soupCaloriesForAdaptedMenu = useMemo(() => {
+        if (!includeSoupForAdaptedMenu || !calorieDay) {
+            return undefined;
+        }
+
+        const soupId = selectedByDay[calorieDay]?.soup?.[0];
+
+        if (soupId) {
+            const fromLive = liveMeals?.find((meal) => meal.id === soupId);
+            if (typeof fromLive?.baselineCalories === 'number' && fromLive.baselineCalories > 0) {
+                return fromLive.baselineCalories;
+            }
+            if (typeof fromLive?.caloriesNumber === 'number' && fromLive.caloriesNumber > 0) {
+                return fromLive.caloriesNumber;
+            }
+
+            const fromSchedule = scheduledSoupConsultationMealsForDay(scheduledSoupsByWeekday, calorieDay).find(
+                (meal) => meal.id === soupId,
+            );
+
+            if (typeof fromSchedule?.baselineCalories === 'number' && fromSchedule.baselineCalories > 0) {
+                return fromSchedule.baselineCalories;
+            }
+
+            if (typeof fromSchedule?.caloriesNumber === 'number' && fromSchedule.caloriesNumber > 0) {
+                return fromSchedule.caloriesNumber;
+            }
+        }
+
+        return 150;
+    }, [includeSoupForAdaptedMenu, calorieDay, selectedByDay, liveMeals, scheduledSoupsByWeekday]);
+
+    const dayFixedSelectionIds = useMemo(() => {
+        if (!calorieDay) {
+            return null;
+        }
+
+        const selections = selectedByDay[calorieDay];
+
+        return {
+            sideSaladId: selections?.sideSalads?.[0] ?? null,
+            dessertId: selections?.desserts?.[0] ?? null,
+            soupId: selections?.soup?.[0] ?? null,
+        };
+    }, [calorieDay, selectedByDay]);
+
+    const selectedFixedBaselines = useMemo(() => {
+        const lookup = (id) => {
+            if (!id || !liveMeals) {
+                return null;
+            }
+
+            const meal = liveMeals.find((entry) => entry.id === id);
+
+            if (!meal) {
+                return null;
+            }
+
+            return meal.baselineCalories ?? meal.caloriesNumber ?? null;
+        };
+
+        return {
+            sideSalad: lookup(dayFixedSelectionIds?.sideSaladId),
+            dessert: lookup(dayFixedSelectionIds?.dessertId),
+            soup: lookup(dayFixedSelectionIds?.soupId),
+        };
+    }, [
+        dayFixedSelectionIds?.sideSaladId,
+        dayFixedSelectionIds?.dessertId,
+        dayFixedSelectionIds?.soupId,
+        liveMeals,
+    ]);
+
+    const adaptedMenuFetchKey = useMemo(() => {
+        const scheduledDay = calorieDay
+            ? scheduledFullCraftCategoryMealsForDay(scheduledFullCraftByWeekday, calorieDay)
+            : null;
+        const scheduledSideBaseline = scheduledDay?.sideSalads?.[0]?.baselineCalories
+            ?? scheduledDay?.sideSalads?.[0]?.caloriesNumber
+            ?? null;
+        const scheduledDessertBaseline = scheduledDay?.desserts?.[0]?.baselineCalories
+            ?? scheduledDay?.desserts?.[0]?.caloriesNumber
+            ?? null;
+        const scheduledSoupBaseline = scheduledDay?.soup?.[0]?.baselineCalories
+            ?? scheduledDay?.soup?.[0]?.caloriesNumber
+            ?? scheduledSoupConsultationMealsForDay(scheduledSoupsByWeekday, calorieDay ?? 0)[0]
+                ?.baselineCalories
+            ?? null;
+
+        return JSON.stringify({
+            craftKey,
+            includeSoup: includeSoupForAdaptedMenu,
+            soupCalories: soupCaloriesForAdaptedMenu ?? null,
+            sideSaladId: dayFixedSelectionIds?.sideSaladId ?? null,
+            dessertId: dayFixedSelectionIds?.dessertId ?? null,
+            soupId: dayFixedSelectionIds?.soupId ?? null,
+            selectedSideBaseline: selectedFixedBaselines.sideSalad,
+            selectedDessertBaseline: selectedFixedBaselines.dessert,
+            selectedSoupBaseline: selectedFixedBaselines.soup,
+            scheduledSideBaseline,
+            scheduledDessertBaseline,
+            scheduledSoupBaseline,
+            dayOfWeek: calorieDay ?? null,
+            planTier: isAdminPreview ? previewPlanTier : null,
+        });
+    }, [
+        craftKey,
+        includeSoupForAdaptedMenu,
+        soupCaloriesForAdaptedMenu,
+        dayFixedSelectionIds,
+        selectedFixedBaselines,
+        calorieDay,
+        scheduledFullCraftByWeekday,
+        scheduledSoupsByWeekday,
+        isAdminPreview,
+        previewPlanTier,
+    ]);
+
+    const adaptedMenuFetchParams = useMemo(() => {
+        if (!calorieDay || !craftKey) {
+            return null;
+        }
+
+        const scheduledDay = scheduledFullCraftCategoryMealsForDay(scheduledFullCraftByWeekday, calorieDay);
+        const scheduledSoups = scheduledSoupConsultationMealsForDay(scheduledSoupsByWeekday, calorieDay);
+        const findScheduledMeal = (id, list) => list.find((meal) => meal.id === id);
+
+        const mealFromBaseline = (id, baseline) => {
+            if (!id || baseline === null) {
+                return undefined;
+            }
+
+            return { id, baselineCalories: baseline, caloriesNumber: baseline };
+        };
+
+        const sideSaladMeal =
+            mealFromBaseline(dayFixedSelectionIds?.sideSaladId, selectedFixedBaselines.sideSalad)
+            ?? (dayFixedSelectionIds?.sideSaladId
+                ? findScheduledMeal(dayFixedSelectionIds.sideSaladId, scheduledDay?.sideSalads ?? [])
+                : scheduledDay?.sideSalads?.[0]);
+        const dessertMeal =
+            mealFromBaseline(dayFixedSelectionIds?.dessertId, selectedFixedBaselines.dessert)
+            ?? (dayFixedSelectionIds?.dessertId
+                ? findScheduledMeal(dayFixedSelectionIds.dessertId, scheduledDay?.desserts ?? [])
+                : scheduledDay?.desserts?.[0]);
+        const soupMeal =
+            mealFromBaseline(dayFixedSelectionIds?.soupId, selectedFixedBaselines.soup)
+            ?? (dayFixedSelectionIds?.soupId
+                ? findScheduledMeal(dayFixedSelectionIds.soupId, [
+                      ...(scheduledDay?.soup ?? []),
+                      ...scheduledSoups,
+                  ])
+                : scheduledDay?.soup?.[0] ?? scheduledSoups[0]);
+
+        const fixedPortion = fixedPortionCaloriesForAdapt(
+            {
+                sideSalads: sideSaladMeal ? [sideSaladMeal] : scheduledDay?.sideSalads,
+                desserts: dessertMeal ? [dessertMeal] : scheduledDay?.desserts,
+                soup:
+                    includeSoupForAdaptedMenu && soupMeal
+                        ? [soupMeal]
+                        : includeSoupForAdaptedMenu
+                          ? scheduledDay?.soup ?? scheduledSoups
+                          : [],
+            },
+            { includeSoup: includeSoupForAdaptedMenu },
+        );
+
+        return {
+            craftKey,
+            includeSoup: includeSoupForAdaptedMenu,
+            soupCalories: fixedPortion.soupCalories || soupCaloriesForAdaptedMenu,
+            sideSaladCalories: fixedPortion.sideSaladCalories,
+            dessertCalories: fixedPortion.dessertCalories,
+            dayOfWeek: calorieDay,
+            planTier: isAdminPreview ? previewPlanTier : undefined,
+        };
+    }, [adaptedMenuFetchKey, craftKey]);
+
+    const { mealDetailModal, detailLoading, openMealDetail, closeMealDetail } = useMealDetailModal(
+        mealDetailViewUrlTemplate,
+        buildAdaptedMenuQueryString(adaptedMenuFetchParams ?? {}),
+    );
+
+    useEffect(() => {
+        if (disableAdaptedMenuFetch || craftKey === null || adaptedMenuFetchParams === null) {
+            return undefined;
+        }
+
+        let cancelled = false;
+        const showInitialLoading = !hasLoadedAdaptedMenuRef.current;
+
+        const timeoutId = window.setTimeout(() => {
+            if (showInitialLoading) {
+                setMenuLoading(true);
+            }
+            setMenuError(null);
+
+            (async () => {
+                try {
+                    const payload = await fetchAdaptedMenu(adaptedMenuUrl, adaptedMenuFetchParams);
+                    if (cancelled) {
+                        return;
+                    }
+                    setLiveMeals(mapAdaptedMenuPayloadToConsultationMeals(payload));
+                    setNutritionPlan(
+                        payload.plan && typeof payload.plan === 'object'
+                            ? /** @type {Record<string, unknown>} */ (payload.plan)
+                            : null,
+                    );
+                    setScheduledSoupsByWeekday(
+                        payload.scheduled_soups_by_weekday && typeof payload.scheduled_soups_by_weekday === 'object'
+                            ? /** @type {Record<string | number, unknown>} */ (payload.scheduled_soups_by_weekday)
+                            : {},
+                    );
+                    setScheduledFullCraftByWeekday(
+                        payload.scheduled_full_craft_by_weekday &&
+                            typeof payload.scheduled_full_craft_by_weekday === 'object'
+                            ? /** @type {Record<string | number, unknown>} */ (payload.scheduled_full_craft_by_weekday)
+                            : {},
+                    );
+                    setProductionMealPlanId(
+                        typeof payload.production_meal_plan_id === 'number' ? payload.production_meal_plan_id : null,
+                    );
+                    hasLoadedAdaptedMenuRef.current = true;
+                } catch (error) {
+                    if (!cancelled) {
+                        setMenuError(error instanceof Error ? error.message : 'Could not load meals.');
+                    }
+                } finally {
+                    if (!cancelled) {
+                        setMenuLoading(false);
+                    }
+                }
+            })();
+        }, 200);
+
+        return () => {
+            cancelled = true;
+            window.clearTimeout(timeoutId);
+        };
+    }, [adaptedMenuFetchKey, adaptedMenuUrl, disableAdaptedMenuFetch, craftKey, adaptedMenuFetchParams]);
+
+    const catalogMealsWithBalancedMains = useMemo(() => {
+        if (!calorieDay) {
+            return catalogMeals;
+        }
+
+        const selectedMainIds = selectedByDay[calorieDay]?.meals ?? [];
+
+        if (selectedMainIds.length === 0) {
+            return catalogMeals;
+        }
+
+        return balanceSelectedMainMealCards(catalogMeals, selectedMainIds, mainProteinTarget, mainSlotTargetCalories);
+    }, [calorieDay, selectedByDay, catalogMeals, mainProteinTarget, mainSlotTargetCalories]);
+
+    /** Capped option sets only — mirrors pre–live-API MOCK_MEALS deck (2 / 4 / 2 / 2). */
+    const consultationDeckMeals = useMemo(
+        () => buildConsultationDeckCatalog(catalogMealsWithBalancedMains),
+        [catalogMealsWithBalancedMains],
+    );
+
+    const assignedMealsForCalorieDay = useMemo(() => {
+        if (!calorieDay || !usesWeeklyScheduledMenu) {
+            return null;
+        }
+
+        const assigned = scheduledFullCraftCategoryMealsForDay(scheduledFullCraftByWeekday, calorieDay);
+
+        if (!assigned) {
+            return null;
+        }
+
+        const selectedMainIds = selectedByDay[calorieDay]?.meals ?? [];
+
+        if (selectedMainIds.length === 0) {
+            return assigned;
+        }
+
+        return {
+            ...assigned,
+            meals: balanceSelectedMainMealCards(assigned.meals ?? [], selectedMainIds, mainProteinTarget, mainSlotTargetCalories),
+        };
+    }, [
+        calorieDay,
+        usesWeeklyScheduledMenu,
+        scheduledFullCraftByWeekday,
+        selectedByDay,
+        mainProteinTarget,
+        mainSlotTargetCalories,
+    ]);
+
     const selectedMealCardsForDay = useMemo(() => {
         if (!calorieDay) {
             return [];
         }
-        const byId = new Map(catalogMeals.map((m) => [m.id, m]));
+        const byId = new Map(catalogMealsWithBalancedMains.map((m) => [m.id, m]));
         const s = selectedByDay[calorieDay] ?? {
             breakfasts: [],
             meals: [],
@@ -805,24 +1141,25 @@ export default function CraftedForYouPage({
         };
         const ids = [...s.breakfasts, ...s.meals, ...s.sideSalads, ...s.desserts, ...s.soup];
 
-        if (usesWeeklyScheduledMenu) {
-            const assigned = scheduledFullCraftCategoryMealsForDay(scheduledFullCraftByWeekday, calorieDay);
-            if (assigned) {
-                for (const meals of Object.values(assigned)) {
-                    for (const meal of meals ?? []) {
-                        byId.set(meal.id, meal);
-                    }
+        if (assignedMealsForCalorieDay) {
+            for (const meals of Object.values(assignedMealsForCalorieDay)) {
+                for (const meal of meals ?? []) {
+                    byId.set(meal.id, meal);
                 }
             }
         }
 
         return ids.map((id) => byId.get(id)).filter(Boolean);
-    }, [calorieDay, selectedByDay, catalogMeals, usesWeeklyScheduledMenu, scheduledFullCraftByWeekday]);
+    }, [calorieDay, selectedByDay, catalogMealsWithBalancedMains, assignedMealsForCalorieDay]);
 
     const dayCaloriesTotal = useMemo(() => {
-        const sum = selectedMealCardsForDay.reduce((acc, m) => acc + (m?.caloriesNumber ?? 0), 0);
-        return sum;
+        return selectedMealCardsForDay.reduce((acc, m) => acc + (m?.caloriesNumber ?? 0), 0);
     }, [selectedMealCardsForDay]);
+
+    const dayMacroTotals = useMemo(
+        () => sumActiveDayMacros(groupConsultationMealsByCategory(selectedMealCardsForDay)),
+        [selectedMealCardsForDay],
+    );
 
     const progressPercent = totalScreens <= 1 ? 0 : ((screen - 1) / (totalScreens - 1)) * 100;
 
@@ -972,14 +1309,7 @@ export default function CraftedForYouPage({
                             <Button
                                 label="Close"
                                 variant="ghost"
-                                onClick={() => {
-                                    if (closeHref) {
-                                        window.location.assign(closeHref);
-
-                                        return;
-                                    }
-                                    window.history.back();
-                                }}
+                                onClick={exitConsultation}
                             />
                         </div>
 
@@ -1000,7 +1330,7 @@ export default function CraftedForYouPage({
                     </div>
                 </div>
 
-                {!disableAdaptedMenuFetch && menuLoading ? (
+                {!disableAdaptedMenuFetch && menuLoading && liveMeals === null ? (
                     <p className="mb-4 rounded-[12px] border border-gray-200 bg-white px-4 py-3 font-body text-sm text-[#555555]">
                         Loading your meal library with adapted portions…
                     </p>
@@ -1020,10 +1350,31 @@ export default function CraftedForYouPage({
                 ) : null}
 
                 {isAdminPreview ? (
-                    <p className="mb-4 rounded-[12px] border border-[#5A6B44]/25 bg-[#5A6B44]/10 px-4 py-3 font-body text-sm text-[#262A22]">
-                        Admin preview — you can run the full flow including Submit. Plans save to your staff preview
-                        profile (2000 kcal defaults) for UI testing.
-                    </p>
+                    <div className="mb-4 rounded-[12px] border border-[#5A6B44]/25 bg-[#5A6B44]/10 px-4 py-3 font-body text-sm text-[#262A22]">
+                        <p>
+                            Admin preview — you can run the full flow including Submit. Plans save to your staff
+                            preview profile for UI testing.
+                        </p>
+                        <p className="mt-3 font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#555555]">
+                            Preview calorie tier
+                        </p>
+                        <div className="mt-2 flex flex-wrap gap-2">
+                            {availablePlanTiers.map((tier) => (
+                                <PillButton
+                                    key={tier}
+                                    label={`${tier} kcal`}
+                                    variant={previewPlanTier === tier ? 'primary' : 'outline'}
+                                    size="sm"
+                                    onClick={() => setPreviewPlanTier(tier)}
+                                    className={previewPlanTier === tier ? '' : 'ring-1 ring-[#E5E7EB]'}
+                                />
+                            ))}
+                        </div>
+                        <p className="mt-2 font-body text-xs text-[#555555]">
+                            Meal portions scale to the tier you pick. Your choice is remembered for this browser
+                            session.
+                        </p>
+                    </div>
                 ) : null}
 
                 {/* Screen 1 — Craft & Duration */}
@@ -1085,7 +1436,8 @@ export default function CraftedForYouPage({
                             </div>
                         </div>
 
-                        <div className="mt-6 flex justify-end">
+                        <div className="mt-8 flex items-center justify-between gap-3 fixed bottom-0 left-0 right-0 z-40 border-t border-gray-200/70 bg-[#F8F9F6]/95 p-3 backdrop-blur sm:static sm:mt-6 sm:border-t-0 sm:bg-transparent sm:p-0">
+                            <Button label="BACK" variant="outline" onClick={exitConsultation} className="px-10" />
                             <Button
                                 label="NEXT"
                                 variant="primary"
@@ -1194,9 +1546,7 @@ export default function CraftedForYouPage({
 
                             const daySelections = selectedByDay[day] ?? emptyDaySelections;
 
-                            const dayAssignedMeals = usesWeeklyScheduledMenu
-                                ? scheduledFullCraftCategoryMealsForDay(scheduledFullCraftByWeekday, day)
-                                : null;
+                            const dayAssignedMeals = assignedMealsForCalorieDay;
 
                             const toggle = (key, max) => (meal) => {
                                 setSelectedByDay((prev) => {
@@ -1220,6 +1570,7 @@ export default function CraftedForYouPage({
                                 soupCatalogMeals={catalogMeals}
                                 dayName={WEEKDAY_LONG[curationDay - 1] ?? ''}
                                 totalKcal={dayCaloriesTotal}
+                                dayMacroTotals={dayMacroTotals}
                                 summaryLabel={`${WEEKDAY_LABELS[curationDay - 1]} selections`}
                                 craftTitle={craft ? craft.title : ''}
                                 targetCalories={planTierCalories}
@@ -1240,6 +1591,7 @@ export default function CraftedForYouPage({
                                 }
                                 deckScopePrefix={craft?.key === 'full' ? String(curationDay) : ''}
                                 onSoupOptInChange={(enabled) => {
+                                    setFullCraftSoupOptInByDay((prev) => ({ ...prev, [day]: enabled }));
                                     if (!enabled) {
                                         setSelectedByDay((prev) => {
                                             const current = prev[day] ?? {

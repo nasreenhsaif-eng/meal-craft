@@ -46,6 +46,8 @@ final class BalancedSodiumRecipeRefiner
         'Turmeric Rice (Base)' => 0.0,
         'Steamed Basmati Rice (Base)' => 0.0,
         'Cooked Quinoa (Base)' => 0.0,
+        'Cooked Brown Basmati Rice (Base)' => 0.0,
+        'Cooked White Basmati Rice (Base)' => 0.0,
         'Cooked Couscous (Base)' => 0.0,
         'Cooked Chickpeas (Base)' => 0.0,
         'Quinoa Bread (Base)' => 0.65,
@@ -65,6 +67,8 @@ final class BalancedSodiumRecipeRefiner
      */
     private const REPLACEMENTS = [
         'Cooked Quinoa (Base)' => ['Quinoa (White)' => 30.0],
+        'Cooked Brown Basmati Rice (Base)' => ['Basmati Rice (Brown)' => 45.0],
+        'Cooked White Basmati Rice (Base)' => ['Basmati Rice (White)' => 45.0],
         'Cooked Couscous (Base)' => ['Couscous' => 30.0],
         'Cooked Chickpeas (Base)' => ['Chickpeas' => 75.0],
         'Turmeric Rice (Base)' => ['Basmati Rice (Brown)' => 45.0, 'Turmeric Powder' => 1.0],

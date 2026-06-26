@@ -198,8 +198,8 @@ final class OnboardingDailyTargetsCalculator
         if (! isset($presets[$protocol->value])) {
             return $presets['balanced'] ?? [
                 'protein_percentage' => 40.0,
-                'carb_percentage' => 40.0,
-                'fat_percentage' => 20.0,
+                'carb_percentage' => 30.0,
+                'fat_percentage' => 30.0,
             ];
         }
 
@@ -219,8 +219,8 @@ final class OnboardingDailyTargetsCalculator
 
         $balanced = config('customer_nutrition.diet_protocol_macro_presets.balanced', [
             'protein_percentage' => 40.0,
-            'carb_percentage' => 40.0,
-            'fat_percentage' => 20.0,
+            'carb_percentage' => 30.0,
+            'fat_percentage' => 30.0,
         ]);
 
         if ($currentPhase === CyclePhase::Menstrual || $currentPhase === CyclePhase::Follicular) {

@@ -129,8 +129,8 @@ test('adapted menu lists canonical breakfasts and mains before demoted library m
         'diet_protocol' => DietProtocol::Balanced->value,
         'daily_calorie_target' => 1500,
         'protein_percentage' => 40,
-        'carb_percentage' => 40,
-        'fat_percentage' => 20,
+        'carb_percentage' => 30,
+        'fat_percentage' => 30,
     ]);
 
     $menu = AdaptedMenuBuilder::build($profile, ['snap_to_tier' => true]);

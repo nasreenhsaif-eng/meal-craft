@@ -287,7 +287,7 @@ test('rebuilding balanced weekly plan replaces existing plan with same name', fu
         ->and($second['plan']->id)->not->toBe($first['plan']->id);
 });
 
-test('balanced weekly plan stores day-level 40/40/20 macro targets from diet protocol preset', function (): void {
+test('balanced weekly plan stores day-level 40/30/30 macro targets from diet protocol preset', function (): void {
     seedBalancedWeeklyPlanDeck();
 
     $builder = app(BalancedWeeklyMealPlanBuilder::class);
@@ -297,8 +297,8 @@ test('balanced weekly plan stores day-level 40/40/20 macro targets from diet pro
     $plan = $result['plan'];
 
     expect($dailyProtein)->toBe(150.0)
-        ->and($dailyCarbs)->toBe(150.0)
-        ->and($dailyFat)->toBe(33.33)
+        ->and($dailyCarbs)->toBe(112.5)
+        ->and($dailyFat)->toBe(50.0)
         ->and((float) $plan->target_total_calories / 7)->toBe(BalancedWeeklyMealPlanBuilder::REFERENCE_DAILY_CALORIES)
         ->and((float) $plan->target_total_protein_g / 7)->toBe($dailyProtein)
         ->and((float) $plan->target_total_carbs_g / 7)->toBe($dailyCarbs)

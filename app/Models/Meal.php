@@ -204,6 +204,23 @@ class Meal extends Model
         return $url === '' ? null : $url;
     }
 
+    public function isVegan(): bool
+    {
+        $tags = $this->diet_tags ?? [];
+
+        if (! is_array($tags)) {
+            return false;
+        }
+
+        foreach ($tags as $tag) {
+            if (is_string($tag) && strcasecmp(trim($tag), 'Vegan') === 0) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public function ingredients(): BelongsToMany
     {
         return $this->belongsToMany(Ingredient::class)

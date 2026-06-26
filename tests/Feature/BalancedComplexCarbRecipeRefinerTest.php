@@ -35,8 +35,8 @@ function seedComplexCarbRefinerFixtures(): void
         'Wild Rice (Cooked)' => ['calories' => 101, 'protein' => 4, 'carbs' => 21.3, 'fat' => 0.3],
         'Turmeric Rice (Base)' => ['calories' => 15.62, 'protein' => 0.39, 'carbs' => 4.32, 'fat' => 0.03],
         'Cooked Quinoa (Base)' => ['calories' => 42.86, 'protein' => 1.57, 'carbs' => 7.61, 'fat' => 0.68],
+        'Cooked Brown Basmati Rice (Base)' => ['calories' => 64.8, 'protein' => 1.64, 'carbs' => 13.4, 'fat' => 0.44],
         'Quinoa Bread (Base)' => ['calories' => 227.43, 'protein' => 7.9, 'carbs' => 35.98, 'fat' => 5.82],
-        'Basmati Rice (Brown)' => ['calories' => 162, 'protein' => 4.1, 'carbs' => 33.5, 'fat' => 1.1],
         'Beef Sirloin' => ['calories' => 244, 'protein' => 27, 'carbs' => 0, 'fat' => 15],
         'Beef Ground Lean' => ['calories' => 182, 'protein' => 26, 'carbs' => 0, 'fat' => 8],
         'Beef Chuck Roast' => ['calories' => 176, 'protein' => 20, 'carbs' => 0, 'fat' => 10.1],
@@ -107,7 +107,7 @@ test('balanced rotation mains use varied complex carbs instead of steamed white 
         'Grilled Beef Steak Ratatouille & Saffron rice' => 'Turmeric Rice (Base)',
         'Beef Bibimbap' => 'Cooked Quinoa (Base)',
         'Persian Herb Beef Stew' => 'Quinoa Bread (Base)',
-        'Chili Beef Stuffed Peppers' => 'Basmati Rice (Brown)',
+        'Chili Beef Stuffed Peppers' => 'Cooked Brown Basmati Rice (Base)',
         'Grilled Chicken Chimichurri' => 'Sweet Potato',
     ];
 

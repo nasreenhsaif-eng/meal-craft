@@ -78,6 +78,10 @@ final class ProductionWeeklyMenuSchedule
                 continue;
             }
 
+            $dayAdaptOptions = AdaptedMenuFixedPortionResolver::mergeIntoBuildOptions(
+                array_merge($adaptOptions, ['day_of_week' => $dayNumber]),
+            );
+
             $dayMenu = [
                 'breakfasts' => [],
                 'meals' => [],
@@ -91,7 +95,7 @@ final class ProductionWeeklyMenuSchedule
                     continue;
                 }
 
-                $adapted = AdaptedMenuBuilder::adaptMealForProfile($profile, $row->meal, $adaptOptions);
+                $adapted = AdaptedMenuBuilder::adaptMealForProfile($profile, $row->meal, $dayAdaptOptions);
 
                 if ($adapted === null) {
                     continue;
@@ -155,6 +159,10 @@ final class ProductionWeeklyMenuSchedule
             /** @var Collection<int, MealPlanDayMeal> $dayRows */
             $dayRows = $rows->get($dayNumber, collect());
 
+            $dayAdaptOptions = AdaptedMenuFixedPortionResolver::mergeIntoBuildOptions(
+                array_merge($adaptOptions, ['day_of_week' => $dayNumber]),
+            );
+
             $adaptedMeals = [];
 
             foreach ($dayRows as $row) {
@@ -162,7 +170,7 @@ final class ProductionWeeklyMenuSchedule
                     continue;
                 }
 
-                $adapted = AdaptedMenuBuilder::adaptMealForProfile($profile, $row->meal, $adaptOptions);
+                $adapted = AdaptedMenuBuilder::adaptMealForProfile($profile, $row->meal, $dayAdaptOptions);
 
                 if ($adapted !== null) {
                     $adaptedMeals[] = $adapted;

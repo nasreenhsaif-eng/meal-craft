@@ -63,10 +63,53 @@ export function mapAdaptedApiMealToConsultationMeal(apiMeal) {
         isScaled: Boolean(apiMeal.is_scaled),
         scalingMultiplier:
             typeof apiMeal.scaling_multiplier === 'number' ? apiMeal.scaling_multiplier : 1,
+        proteinBalanced: Boolean(apiMeal.protein_balanced),
+        isVegan: Boolean(apiMeal.is_vegan),
         baselineCalories: Number(
             /** @type {Record<string, number>} */ (apiMeal.baseline_nutrition ?? {}).calories ?? 0,
         ),
     };
+}
+
+/** @typedef {'breakfasts' | 'meals' | 'sideSalads' | 'desserts' | 'soup'} ConsultationCategoryKey */
+
+/**
+ * @param {Array<{ slot?: string }>} meals
+ * @returns {Partial<Record<ConsultationCategoryKey, typeof meals>>}
+ */
+export function groupConsultationMealsByCategory(meals) {
+    /** @type {Partial<Record<ConsultationCategoryKey, typeof meals>>} */
+    const grouped = {
+        breakfasts: [],
+        meals: [],
+        sideSalads: [],
+        desserts: [],
+        soup: [],
+    };
+
+    for (const meal of meals ?? []) {
+        switch (meal?.slot) {
+            case 'breakfast':
+                grouped.breakfasts?.push(meal);
+                break;
+            case 'main':
+                grouped.meals?.push(meal);
+                break;
+            case 'side_salad':
+                grouped.sideSalads?.push(meal);
+                break;
+            case 'dessert':
+                grouped.desserts?.push(meal);
+                break;
+            case 'soup':
+                grouped.soup?.push(meal);
+                break;
+            default:
+                break;
+        }
+    }
+
+    return grouped;
 }
 
 /**
@@ -175,19 +218,44 @@ export function scheduledFullCraftCategoryMealsForDay(schedule, dayOfWeek) {
 }
 
 /**
- * @param {string} url
- * @param {{ includeSoup?: boolean; craftKey?: string }} [options]
+ * @param {{ includeSoup?: boolean; craftKey?: string; soupCalories?: number; sideSaladCalories?: number; dessertCalories?: number; dayOfWeek?: number; planTier?: number }} [options]
  */
-export async function fetchAdaptedMenu(url, options = {}) {
+export function buildAdaptedMenuQueryString(options = {}) {
     const params = new URLSearchParams();
+
     if (options.includeSoup) {
         params.set('include_soup', '1');
+    }
+    if (typeof options.soupCalories === 'number' && options.soupCalories > 0) {
+        params.set('soup_calories', String(Math.round(options.soupCalories)));
+    }
+    if (typeof options.sideSaladCalories === 'number' && options.sideSaladCalories > 0) {
+        params.set('side_salad_calories', String(Math.round(options.sideSaladCalories)));
+    }
+    if (typeof options.dessertCalories === 'number' && options.dessertCalories > 0) {
+        params.set('dessert_calories', String(Math.round(options.dessertCalories)));
+    }
+    if (typeof options.dayOfWeek === 'number' && options.dayOfWeek >= 1 && options.dayOfWeek <= 7) {
+        params.set('day_of_week', String(Math.round(options.dayOfWeek)));
     }
     if (options.craftKey) {
         params.set('craft_key', options.craftKey);
     }
-    const query = params.toString() ? `?${params.toString()}` : '';
-    const response = await fetch(`${url}${query}`, {
+    if (typeof options.planTier === 'number' && options.planTier > 0) {
+        params.set('plan_tier', String(Math.round(options.planTier)));
+    }
+
+    return params.toString();
+}
+
+/**
+ * @param {string} url
+ * @param {{ includeSoup?: boolean; craftKey?: string; soupCalories?: number; sideSaladCalories?: number; dessertCalories?: number; dayOfWeek?: number; planTier?: number }} [options]
+ */
+export async function fetchAdaptedMenu(url, options = {}) {
+    const query = buildAdaptedMenuQueryString(options);
+    const suffix = query ? `?${query}` : '';
+    const response = await fetch(`${url}${suffix}`, {
         headers: { Accept: 'application/json' },
         credentials: 'same-origin',
     });

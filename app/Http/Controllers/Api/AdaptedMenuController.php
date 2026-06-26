@@ -4,11 +4,10 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Services\Nutrition\AdaptedMenuBuilder;
-use App\Services\Nutrition\CraftCaloriePlanner;
+use App\Services\Nutrition\AdaptedMenuBuildOptionsFromRequest;
 use App\Support\AdminConsultationPreviewProfile;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 
 class AdaptedMenuController extends Controller
 {
@@ -25,17 +24,18 @@ class AdaptedMenuController extends Controller
         }
 
         $includeSoup = $request->boolean('include_soup');
+        $buildOptions = AdaptedMenuBuildOptionsFromRequest::resolve($request, $user);
 
-        $validated = $request->validate([
-            'craft_key' => ['sometimes', 'string', Rule::in(CraftCaloriePlanner::keys())],
-        ]);
+        $isAdminPreview = $user->isAdmin() && $user->isCustomer() !== true;
 
-        $buildOptions = [
-            'include_soup' => $includeSoup,
-        ];
+        if (isset($buildOptions['plan_tier']) && $isAdminPreview) {
+            $planTier = (int) $buildOptions['plan_tier'];
 
-        if (isset($validated['craft_key'])) {
-            $buildOptions['craft_key'] = $validated['craft_key'];
+            if ((int) $profile->daily_calorie_target !== $planTier) {
+                $profile->daily_calorie_target = $planTier;
+                $profile->save();
+                $profile->refresh();
+            }
         }
 
         $menu = AdaptedMenuBuilder::build($profile, $buildOptions);

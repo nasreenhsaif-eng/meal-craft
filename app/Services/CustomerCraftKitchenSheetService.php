@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\CustomerCraftMealSlot;
 use App\Models\CustomerCraftPlanDay;
+use App\Models\CustomerCraftPlanDayMeal;
 use App\Services\Nutrition\AdaptedMenuBuilder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -66,16 +67,89 @@ final class CustomerCraftKitchenSheetService
                 'dessert' => '',
             ];
 
+            $adaptOptions = [
+                'include_soup' => $planDay->include_soup,
+                'craft_key' => $planDay->craftPlan->craft_key,
+            ];
+
+            if ($planDay->include_soup) {
+                $soupMeal = $planDay->meals
+                    ->first(fn (CustomerCraftPlanDayMeal $row): bool => $row->slot === CustomerCraftMealSlot::Soup)?->meal;
+
+                if ($soupMeal !== null) {
+                    $soupCalories = (float) $soupMeal->nutritionForDisplay()['calories'];
+
+                    if ($soupCalories > 0) {
+                        $adaptOptions['soup_calories'] = $soupCalories;
+                    }
+                }
+            }
+
+            $sideMeal = $planDay->meals
+                ->first(fn (CustomerCraftPlanDayMeal $row): bool => $row->slot === CustomerCraftMealSlot::SideSalad)?->meal;
+
+            if ($sideMeal !== null) {
+                $sideCalories = (float) $sideMeal->nutritionForDisplay()['calories'];
+
+                if ($sideCalories > 0) {
+                    $adaptOptions['side_salad_calories'] = $sideCalories;
+                }
+            }
+
+            $dessertMeal = $planDay->meals
+                ->first(fn (CustomerCraftPlanDayMeal $row): bool => $row->slot === CustomerCraftMealSlot::Dessert)?->meal;
+
+            if ($dessertMeal !== null) {
+                $dessertCalories = (float) $dessertMeal->nutritionForDisplay()['calories'];
+
+                if ($dessertCalories > 0) {
+                    $adaptOptions['dessert_calories'] = $dessertCalories;
+                }
+            }
+
+            /** @var list<Meal> $mainMeals */
+            $mainMeals = [];
+            /** @var list<int> $mainPositions */
+            $mainPositions = [];
+            /** @var list<CustomerCraftPlanDayMeal> $nonMainDayMeals */
+            $nonMainDayMeals = [];
+
             foreach ($planDay->meals->sortBy('position') as $dayMeal) {
+                if ($dayMeal->meal === null) {
+                    continue;
+                }
+
+                if ($dayMeal->slot === CustomerCraftMealSlot::Main) {
+                    $mainMeals[] = $dayMeal->meal;
+                    $mainPositions[] = (int) $dayMeal->position;
+
+                    continue;
+                }
+
+                $nonMainDayMeals[] = $dayMeal;
+            }
+
+            $balancedMains = AdaptedMenuBuilder::adaptMainMealsForProfile($profile, $mainMeals, $adaptOptions);
+
+            foreach ($balancedMains as $index => $adapted) {
+                $adaptedMeals[] = $adapted;
+                $label = self::mealLabelWithPortion($adapted);
+                $position = $mainPositions[$index] ?? ($index + 1);
+
+                if ($position === 1) {
+                    $slotLabels['m1'] = $label;
+                } else {
+                    $slotLabels['m2'] = $label;
+                }
+            }
+
+            foreach ($nonMainDayMeals as $dayMeal) {
                 $meal = $dayMeal->meal;
                 if ($meal === null) {
                     continue;
                 }
 
-                $adapted = AdaptedMenuBuilder::adaptMealForProfile($profile, $meal, [
-                    'include_soup' => $planDay->include_soup,
-                    'craft_key' => $planDay->craftPlan->craft_key,
-                ]);
+                $adapted = AdaptedMenuBuilder::adaptMealForProfile($profile, $meal, $adaptOptions);
 
                 if ($adapted === null) {
                     continue;
@@ -86,12 +160,10 @@ final class CustomerCraftKitchenSheetService
 
                 match ($dayMeal->slot) {
                     CustomerCraftMealSlot::Breakfast => $slotLabels['breakfast'] = $label,
-                    CustomerCraftMealSlot::Main => $dayMeal->position === 1
-                        ? $slotLabels['m1'] = $label
-                        : $slotLabels['m2'] = $label,
                     CustomerCraftMealSlot::Soup => $slotLabels['soup'] = $label,
                     CustomerCraftMealSlot::SideSalad => $slotLabels['sideSalad'] = $label,
                     CustomerCraftMealSlot::Dessert => $slotLabels['dessert'] = $label,
+                    default => null,
                 };
             }
 
@@ -135,8 +207,10 @@ final class CustomerCraftKitchenSheetService
 
         if ($scaled) {
             $multiplier = (float) ($adaptedMeal['scaling_multiplier'] ?? 1);
+            $proteinBalanced = (bool) ($adaptedMeal['protein_balanced'] ?? false);
+            $suffix = $proteinBalanced ? ', protein-balanced' : '';
 
-            return "{$name} ({$kcal} kcal, ×{$multiplier})";
+            return "{$name} ({$kcal} kcal, ×{$multiplier}{$suffix})";
         }
 
         return "{$name} ({$kcal} kcal)";

@@ -73,7 +73,7 @@ final class BalancedWeeklyRotationSchedule
         'Spicy Harissa Grilled Chicken w Roasted Sweet Potato & Zucchini',
         'Pepper Chicken in Creamy Cajun Sauce w Roasted Potato',
         'Grilled Sumac Chicken Skewers w Zereshk & Turmeric Rice & Roasted Mixed Vegetables',
-        'Grilled Chicken Tikka bowl w Quinoa & Mint Sauce',
+        'Grilled Chicken Tikka Salad w Quinoa & Cilantro Lime Dressing',
     ];
 
     /** @var list<string> */
@@ -90,7 +90,7 @@ final class BalancedWeeklyRotationSchedule
     /** @var list<string> */
     public const SALMON_MAINS = [
         BalancedCanonicalMealRecipeRefiner::BAKED_SALMON_NAME,
-        'Citrus Herb Salmon',
+        'Citrus Herb Salmon with Asparagus & Sweet Potato',
         'Grilled Salmon Mango Salsa',
     ];
 

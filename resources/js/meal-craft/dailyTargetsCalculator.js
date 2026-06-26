@@ -83,8 +83,8 @@ export const ACTIVITY_MULTIPLIERS = {
 export const DIET_PROTOCOL_MACRO_PRESETS = {
     balanced: {
         proteinPercentage: 40,
-        carbPercentage: 40,
-        fatPercentage: 20,
+        carbPercentage: 30,
+        fatPercentage: 30,
     },
     ketobiotic: {
         proteinPercentage: 20,

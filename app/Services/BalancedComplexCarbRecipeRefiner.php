@@ -180,7 +180,7 @@ final class BalancedComplexCarbRecipeRefiner
             'Chili Beef Stuffed Peppers' => [
                 'ingredients' => [
                     'Beef Ground Lean' => 88,
-                    'Basmati Rice (Brown)' => 55,
+                    'Cooked Brown Basmati Rice (Base)' => 138,
                     'Bell Pepper (Red)' => 105,
                     'White Onion' => 28,
                     'Tomato (Raw)' => 55,

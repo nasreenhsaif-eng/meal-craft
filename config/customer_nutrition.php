@@ -35,7 +35,7 @@ return [
     |
     | scalable         — portion scales to hit slot target within the plan tier
     | fixed_portion    — standard kitchen portion; calories count toward tier
-    | optional_add_on  — standard portion; calories added on top (does not rescale others)
+    | optional_add_on  — optional slot; when included, fixed standard portion counts within tier
     |
     */
     'slot_behaviors' => [
@@ -48,7 +48,7 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Slots that count toward the core plan tier (soup excluded — additive)
+    | Slots that count toward the core plan tier when included (soup only when opted in)
     |--------------------------------------------------------------------------
     */
     'core_fixed_portion_slots' => ['side_salad', 'dessert'],
@@ -107,8 +107,8 @@ return [
     'macro_presets' => [
         'balanced' => [
             'protein_percentage' => 40.0,
-            'carb_percentage' => 40.0,
-            'fat_percentage' => 20.0,
+            'carb_percentage' => 30.0,
+            'fat_percentage' => 30.0,
         ],
         'high_protein' => [
             'protein_percentage' => 45.0,
@@ -125,8 +125,8 @@ return [
     'diet_protocol_macro_presets' => [
         'balanced' => [
             'protein_percentage' => 40.0,
-            'carb_percentage' => 40.0,
-            'fat_percentage' => 20.0,
+            'carb_percentage' => 30.0,
+            'fat_percentage' => 30.0,
         ],
         'ketobiotic' => [
             'protein_percentage' => 20.0,

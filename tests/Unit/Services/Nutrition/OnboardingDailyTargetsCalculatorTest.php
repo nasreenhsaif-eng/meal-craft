@@ -98,8 +98,8 @@ it('uses balanced macro split by default', function () {
     $percentages = OnboardingDailyTargetsCalculator::macroPercentagesForDietProtocol(DietProtocol::Balanced);
 
     expect($percentages['protein_percentage'])->toBe(40.0)
-        ->and($percentages['carb_percentage'])->toBe(40.0)
-        ->and($percentages['fat_percentage'])->toBe(20.0);
+        ->and($percentages['carb_percentage'])->toBe(30.0)
+        ->and($percentages['fat_percentage'])->toBe(30.0);
 });
 
 it('uses ketobiotic macros for cycle sync during menstrual phase', function () {
@@ -118,7 +118,7 @@ it('uses balanced macros for cycle sync during luteal phase', function () {
         CyclePhase::Luteal,
     );
 
-    expect($percentages['carb_percentage'])->toBe(40.0)
+    expect($percentages['carb_percentage'])->toBe(30.0)
         ->and($percentages['protein_percentage'])->toBe(40.0);
 });
 

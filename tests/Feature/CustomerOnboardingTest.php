@@ -384,8 +384,8 @@ test('customer can save activity and advance to daily targets', function () {
 
     expect($profile?->activity_level?->value)->toBe('lightly_active')
         ->and($profile?->protein_percentage)->toBe(40.0)
-        ->and($profile?->carb_percentage)->toBe(40.0)
-        ->and($profile?->fat_percentage)->toBe(20.0)
+        ->and($profile?->carb_percentage)->toBe(30.0)
+        ->and($profile?->fat_percentage)->toBe(30.0)
         ->and($customer->fresh()->currentOnboardingStep())->toBe(OnboardingStep::DailyTargets);
 });
 
