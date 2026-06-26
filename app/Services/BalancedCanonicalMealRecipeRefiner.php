@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Ingredient;
 use App\Models\Meal;
 use App\Support\MealLibraryBulkNutrition;
+use App\Support\MealLibraryEditGuard;
 use App\Support\WholeFoodDietPolicy;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -55,6 +56,10 @@ final class BalancedCanonicalMealRecipeRefiner
                 $meal = $this->resolveMealForRefinement($mealName);
 
                 if ($meal === null) {
+                    continue;
+                }
+
+                if (MealLibraryEditGuard::shouldSkipMealRefinement($meal)) {
                     continue;
                 }
 

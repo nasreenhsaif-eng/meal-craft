@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Ingredient;
 use App\Models\Meal;
 use App\Support\MealLibraryBulkNutrition;
+use App\Support\MealLibraryEditGuard;
 use App\Support\WholeFoodDietPolicy;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -52,6 +53,10 @@ final class BalancedRotationMealRecipeRefiner
                 $meal = $this->resolveMealForRefinement($mealName);
 
                 if ($meal === null) {
+                    continue;
+                }
+
+                if (MealLibraryEditGuard::shouldSkipMealRefinement($meal)) {
                     continue;
                 }
 
@@ -321,8 +326,7 @@ final class BalancedRotationMealRecipeRefiner
                     'Red Onion' => 15,
                     'Garlic (Raw)' => 4,
                     'Homemade Coconut Milk' => 25,
-                    'Cajun Powder' => 2,
-                    'Smoked Paprika' => 1,
+                    'Cajun Spice (Base)' => 3,
                     'Olive Oil (Extra Virgin)' => 5,
                     'Lime Juice' => 8,
                     'Black Pepper' => 1,
@@ -346,7 +350,7 @@ final class BalancedRotationMealRecipeRefiner
                     'Olive Oil (Extra Virgin)' => 4,
                     'Water (Filtered)' => 120,
                     'Vegetable Stock' => 30,
-                    'Quinoa Bread (Base)' => 45,
+                    'Quinoa Flatbread (Base)' => 45,
                 ],
                 'diet_tags' => $veganTags,
             ],

@@ -18,6 +18,7 @@ use App\Support\MealImagePath;
 use App\Support\MealInstructionsText;
 use App\Support\MealLibraryBulkNutrition;
 use App\Support\MealLibraryDelimitedCellParser;
+use App\Support\MealLibraryEditGuard;
 use App\Support\MealLibraryTaxonomy;
 use App\Support\MenuDevelopmentCsv;
 use Illuminate\Http\UploadedFile;
@@ -302,6 +303,7 @@ final class MealCsvLibraryImportService
                 'ingredient_updated' => $ingredientLibraryUpdated++,
                 'pending' => $pending++,
                 'error' => $errors++,
+                'skipped_locked' => null,
             };
         }
 
@@ -1390,6 +1392,19 @@ final class MealCsvLibraryImportService
             $mealCategoryValue = $mealCategory->value;
             $normKey = self::normalizeMealNameKey($mealName);
             $existingMeal = $mealsByNormalizedName[$normKey] ?? null;
+
+            if ($existingMeal !== null && MealLibraryEditGuard::shouldSkipMealRefinement($existingMeal)) {
+                return [
+                    'row' => [
+                        'line' => $lineNumber,
+                        'meal_name' => $mealName,
+                        'category' => $mealCategory->value,
+                        'status' => 'skipped_locked',
+                        'message' => (string) __('Skipped — this meal was edited in the library UI and is protected from CSV overwrite.'),
+                    ],
+                    'outcome' => 'skipped_locked',
+                ];
+            }
 
             $isBulk = (bool) ($optionalMealAttrs['is_bulk'] ?? false);
             $servingsCount = isset($optionalMealAttrs['servings_count'])

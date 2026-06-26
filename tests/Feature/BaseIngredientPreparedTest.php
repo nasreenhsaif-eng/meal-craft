@@ -126,7 +126,8 @@ test('admin can store a prepared base ingredient with component pivot and per-10
         ->toEqualCanonicalizing([$tomato->id, $oil->id]);
 
     // Batch: 150g tomato (80 kcal/100g) + 50g oil (884 kcal/100g) => 562 kcal / 200g finished => 281 kcal/100g
-    expect((float) $base->calories)->toBe(281.0);
+    expect((float) $base->calories)->toBe(281.0)
+        ->and((float) $base->finished_weight_grams)->toBe(200.0);
 });
 
 test('base ingredient service upsert uses sum of components when finished weight is omitted', function () {

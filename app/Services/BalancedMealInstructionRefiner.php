@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Meal;
+use App\Support\MealLibraryEditGuard;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -39,6 +40,10 @@ final class BalancedMealInstructionRefiner
                 $meal = Meal::queryForMealLibrary()->where('name', $mealName)->first();
 
                 if ($meal === null) {
+                    continue;
+                }
+
+                if (MealLibraryEditGuard::shouldSkipMealRefinement($meal)) {
                     continue;
                 }
 
@@ -178,10 +183,11 @@ final class BalancedMealInstructionRefiner
             ]),
             'Pepper Chicken in Creamy Cajun Sauce w Roasted Potato' => $this->steps([
                 'Cube potatoes. Toss with oil and roast at 200°C until crisp (25–30 min).',
-                'Sear chicken strips in a hot pan until browned.',
-                'Add sliced peppers and Cajun spice. Cook 2 minutes.',
-                'Stir in homemade coconut milk. Simmer until sauce thickens.',
-                'Serve chicken and sauce over roasted potatoes.',
+                'Rub chicken with Cajun Spice (Base). Grill or pan-sear chicken until golden then in the oven for 20 minutes exactly, then Rest and slice.',
+                'Sauté sliced bell pepper, red onion, and garlic in olive oil until softened.',
+                'Add Cajun Spice (Base) and cherry tomatoes. Cook 2 minutes.',
+                'Stir in homemade coconut milk and lime juice. Simmer until the sauce thickens.',
+                'Serve sliced chicken and creamy Cajun sauce over roasted potatoes.',
             ]),
             'Grilled Sumac Chicken Skewers w Zereshk & Turmeric Rice & Roasted Mixed Vegetables' => $this->steps([
                 'Prepare Turmeric Rice (Base) per base recipe instructions; fold through barberries (zereshk) and keep warm.',
@@ -192,15 +198,22 @@ final class BalancedMealInstructionRefiner
                 'Serve skewers with zereshk turmeric rice, roasted vegetables on the side, and fresh parsley.',
             ]),
             'Grilled Chicken Tikka bowl w Quinoa & Mint Sauce' => $this->steps([
-                'Cook quinoa: rinse, simmer 15 minutes, fluff.',
+                'Prepare Cooked Quinoa (Base) per base recipe instructions.',
                 'Grill or pan-sear Tandoori Chicken (Base) until golden then in the oven for 20 minutes exactly, then Rest and slice.',
                 'Shred cabbage; julienne carrots and cucumber.',
                 'Layer quinoa, vegetables, and chicken.',
                 SaladDressingMealRefiner::SERVE_DRESSING_ON_THE_SIDE,
             ]),
-            'Cajun Chicken, Grilled Peppers & Onion Salad w Quinoa, Kale & Mustard Dressing' => $this->steps([
-                'Cook quinoa and let cool slightly.',
-                'Rub chicken with Cajun spice. Grill or pan-sear chicken until golden then in the oven for 20 minutes exactly, then Rest and slice.',
+            'Grilled Chicken Tikka Salad w Quinoa & Cilantro Lime Dressing' => $this->steps([
+                'Prepare Cooked Quinoa (Base) per base recipe instructions.',
+                'Grill or pan-sear Tandoori Chicken (Base) until golden then in the oven for 20 minutes exactly, then Rest and slice.',
+                'Shred cabbage; julienne carrots and cucumber.',
+                'Layer quinoa, vegetables, and chicken.',
+                SaladDressingMealRefiner::SERVE_DRESSING_ON_THE_SIDE,
+            ]),
+            'Blackened Chicken, Grilled Peppers & Onion Salad w Quinoa, Kale & Mustard Dressing' => $this->steps([
+                'Prepare Cooked Quinoa (Base) per base recipe instructions; let cool slightly.',
+                'Rub chicken with Blackened Seasoning (Base). Grill or pan-sear chicken until golden then in the oven for 20 minutes exactly, then Rest and slice.',
                 'Grill pepper strips and onion until charred and soft.',
                 'Massage kale with a little lemon and oil until tender.',
                 'Toss quinoa, kale, and vegetables with mustard dressing. Top with chicken.',
@@ -280,7 +293,7 @@ final class BalancedMealInstructionRefiner
                 'Serve steak with vegetable medley and rice.',
             ]),
             'Beef Bibimbap' => $this->steps([
-                'Cook quinoa and keep warm.',
+                'Prepare Cooked Quinoa (Base) per base recipe instructions; keep warm.',
                 'Brown ground beef with garlic in a pan. Season lightly.',
                 'Sauté spinach, carrots, and zucchini separately until tender.',
                 'Fry eggs sunny-side up.',
@@ -314,7 +327,7 @@ final class BalancedMealInstructionRefiner
                 'Roast cauliflower florets at 200°C for 20 minutes until golden.',
                 'Simmer lentils with aromatics and stock until tender.',
                 'Combine roasted cauliflower with lentils. Season with smoked paprika.',
-                'Warm quinoa bread. Drizzle tahini over stew.',
+                'Warm quinoa flatbread. Drizzle tahini over stew.',
                 'Serve hot.',
             ]),
             'Vegan Sri Lankan Red Lentil Dal w Quinoa Bread' => $this->steps([
@@ -324,7 +337,8 @@ final class BalancedMealInstructionRefiner
                 'Warm quinoa bread. Serve dal with bread and fresh coriander.',
             ]),
             'Vegan Harissa Roasted Cauliflower & Chickpea Salad w Tahini Dressing' => $this->steps([
-                'Toss cauliflower and chickpeas with Harissa Paste (Base) and oil.',
+                'Prepare Cooked Chickpeas (Base) per base recipe instructions.',
+                'Toss cauliflower and cooked chickpeas with Harissa Paste (Base) and oil.',
                 'Roast at 200°C for 25 minutes until crisp.',
                 'Whisk tahini with lemon and water for dressing.',
                 'Toss roasted mix with greens and dressing. Serve warm or at room temperature.',
@@ -337,8 +351,9 @@ final class BalancedMealInstructionRefiner
                 'Serve at room temperature or chilled.',
             ]),
             'Spiced Cauliflower Chickpea Salad' => $this->steps([
+                'Prepare Cooked Chickpeas (Base) per base recipe instructions.',
                 'Toss cauliflower with cumin, paprika, and oil.',
-                'Roast at 200°C for 22 minutes. Add chickpeas for the last 10 minutes.',
+                'Roast at 200°C for 22 minutes. Add cooked chickpeas for the last 10 minutes.',
                 'Cool slightly. Serve over romaine with lemon and olive oil.',
             ]),
             'Thai Rainbow Peanut Salad' => $this->steps([

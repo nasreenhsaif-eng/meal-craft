@@ -43,6 +43,8 @@ final class BalancedWeeklyMealPlanBuilder
                 $refined = array_merge($refined, app(BalancedRotationMealRecipeRefiner::class)->refine());
                 $refined = array_merge($refined, app(BalancedSodiumRecipeRefiner::class)->refine());
                 $refined = array_merge($refined, app(BalancedMealInstructionRefiner::class)->refine());
+
+                app(MenuDevelopmentCsvSync::class)->syncMealsFromDatabase();
             }
 
             app(BalancedMealLibraryConfigurator::class)->configure();

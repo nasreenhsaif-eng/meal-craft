@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Ingredient;
 use App\Models\Meal;
+use App\Support\MealLibraryEditGuard;
 use App\Support\WholeFoodDietPolicy;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -28,6 +29,10 @@ final class BalancedComplexCarbRecipeRefiner
                 $meal = Meal::queryForMealLibrary()->where('name', $mealName)->first();
 
                 if ($meal === null) {
+                    continue;
+                }
+
+                if (MealLibraryEditGuard::shouldSkipMealRefinement($meal)) {
                     continue;
                 }
 
@@ -147,7 +152,7 @@ final class BalancedComplexCarbRecipeRefiner
             'Beef Bibimbap' => [
                 'ingredients' => [
                     'Beef Ground Lean' => 88,
-                    'Quinoa (White)' => 30,
+                    'Cooked Quinoa (Base)' => 84,
                     'Spinach (Fresh)' => 50,
                     'Carrots' => 40,
                     'Zucchini' => 40,

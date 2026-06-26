@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Ingredient;
 use App\Models\Meal;
 use App\Support\MealInstructionsText;
+use App\Support\MealLibraryEditGuard;
 use App\Support\SaladMealPresentation;
 use App\Support\WholeFoodDietPolicy;
 use Illuminate\Support\Facades\DB;
@@ -51,6 +52,10 @@ final class SaladDressingMealRefiner
                 $meal = Meal::queryForMealLibrary()->where('name', $mealName)->first();
 
                 if ($meal === null) {
+                    continue;
+                }
+
+                if (MealLibraryEditGuard::shouldSkipMealRefinement($meal)) {
                     continue;
                 }
 
@@ -419,22 +424,21 @@ final class SaladDressingMealRefiner
                 ],
                 'diet_tags' => $wholeFoodTags,
             ],
-            'Cajun Chicken, Grilled Peppers & Onion Salad w Quinoa, Kale & Mustard Dressing' => [
+            'Blackened Chicken, Grilled Peppers & Onion Salad w Quinoa, Kale & Mustard Dressing' => [
                 'salad_ingredients' => [
                     'Chicken Breast' => 120,
-                    'Quinoa (White)' => 30,
+                    'Cooked Quinoa (Base)' => 84,
                     'Kale' => 40,
                     'Bell Pepper (Red)' => 40,
                     'Red Onion' => 20,
-                    'Cajun Powder' => 1,
-                    'Smoked Paprika' => 1,
+                    'Blackened Seasoning (Base)' => 5,
                 ],
                 'dressing_ingredients' => [
                     self::HONEY_MUSTARD_DRESSING => 15,
                 ],
                 'salad_instructions' => [
-                    'Cook quinoa and let cool slightly.',
-                    'Rub chicken with Cajun spice. Grill or pan-sear chicken until golden then in the oven for 20 minutes exactly, then Rest and slice.',
+                    'Prepare Cooked Quinoa (Base) per base recipe instructions; let cool slightly.',
+                    'Rub chicken with Blackened Seasoning (Base). Grill or pan-sear chicken until golden then in the oven for 20 minutes exactly, then Rest and slice.',
                     'Grill pepper strips and onion until charred and soft.',
                     'Massage kale until tender.',
                     'Toss quinoa, kale, and vegetables. Top with chicken.',
@@ -468,7 +472,7 @@ final class SaladDressingMealRefiner
             'Spiced Cauliflower Chickpea Salad' => [
                 'salad_ingredients' => [
                     'Cauliflower Florets' => 95,
-                    'Chickpeas' => 50,
+                    'Cooked Chickpeas (Base)' => 50,
                     'Romaine Lettuce' => 40,
                     'Cherry Tomatoes' => 35,
                     'Red Onion' => 15,
@@ -479,8 +483,9 @@ final class SaladDressingMealRefiner
                     'Spiced Lemon Dressing (Base)' => 12,
                 ],
                 'salad_instructions' => [
+                    'Prepare Cooked Chickpeas (Base) per base recipe instructions.',
                     'Toss cauliflower with cumin, paprika, and half the dressing.',
-                    'Roast at 200°C for 22 minutes. Add chickpeas for the last 10 minutes.',
+                    'Roast at 200°C for 22 minutes. Add cooked chickpeas for the last 10 minutes.',
                     'Toss roasted vegetables with tomatoes and red onion.',
                     'Serve over romaine.',
                     'Serve remaining dressing on the side.',
@@ -511,7 +516,7 @@ final class SaladDressingMealRefiner
             'Vegan Harissa Roasted Cauliflower & Chickpea Salad w Tahini Dressing' => [
                 'salad_ingredients' => [
                     'Cauliflower' => 150,
-                    'Chickpeas' => 75,
+                    'Cooked Chickpeas (Base)' => 75,
                     'Shallots' => 20,
                     'Harissa Paste (Base)' => 5,
                     'Olive Oil (Extra Virgin)' => 5,
@@ -522,7 +527,8 @@ final class SaladDressingMealRefiner
                     'Lemon-Tahini Dressing (Base)' => 35,
                 ],
                 'salad_instructions' => [
-                    'Toss cauliflower and chickpeas with Harissa Paste (Base) and oil.',
+                    'Prepare Cooked Chickpeas (Base) per base recipe instructions.',
+                    'Toss cauliflower and cooked chickpeas with Harissa Paste (Base) and oil.',
                     'Roast at 200°C for 25 minutes until crisp.',
                     'Toss roasted vegetables with herbs.',
                     'Serve warm or at room temperature.',

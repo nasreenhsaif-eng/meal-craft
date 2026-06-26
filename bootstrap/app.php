@@ -7,6 +7,7 @@ use App\Http\Middleware\EnsurePortalChoiceAccess;
 use App\Http\Middleware\EnsureUserIsAdmin;
 use App\Http\Middleware\EnsureUserIsCustomer;
 use App\Http\Middleware\HandleInertiaRequests;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -105,4 +106,11 @@ return Application::configure(basePath: dirname(__DIR__))
 
             return $request->expectsJson();
         });
-    })->create();
+    })
+    ->withSchedule(function (Schedule $schedule): void {
+        $schedule->command('menu:backup-git')
+            ->dailyAt('18:00')
+            ->timezone(config('app.timezone'))
+            ->withoutOverlapping();
+    })
+    ->create();

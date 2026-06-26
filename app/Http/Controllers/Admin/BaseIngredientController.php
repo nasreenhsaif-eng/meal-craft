@@ -6,17 +6,21 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreBaseIngredientRequest;
 use App\Models\Ingredient;
 use App\Services\BaseIngredientService;
+use App\Services\MenuDevelopmentCsvSync;
+use App\Support\MealLibraryEditGuard;
 use Illuminate\Http\RedirectResponse;
 use InvalidArgumentException;
 
 class BaseIngredientController extends Controller
 {
+    public function __construct(private MenuDevelopmentCsvSync $menuDevelopmentCsvSync) {}
+
     public function store(StoreBaseIngredientRequest $request, BaseIngredientService $service): RedirectResponse
     {
         $data = $request->validated();
 
         try {
-            $service->upsert(
+            $ingredient = $service->upsert(
                 null,
                 $data['name'],
                 $this->componentRowsFromValidated($data['components']),
@@ -27,6 +31,9 @@ class BaseIngredientController extends Controller
                 ->route('admin.ingredient-library')
                 ->with('error', $e->getMessage());
         }
+
+        MealLibraryEditGuard::markIngredientEditedFromLibrary($ingredient);
+        $this->menuDevelopmentCsvSync->syncAllFromDatabase();
 
         return redirect()
             ->route('admin.ingredient-library')
@@ -47,7 +54,7 @@ class BaseIngredientController extends Controller
         $data = $request->validated();
 
         try {
-            $service->upsert(
+            $ingredient = $service->upsert(
                 $ingredient,
                 $data['name'],
                 $this->componentRowsFromValidated($data['components']),
@@ -58,6 +65,9 @@ class BaseIngredientController extends Controller
                 ->route('admin.ingredient-library')
                 ->with('error', $e->getMessage());
         }
+
+        MealLibraryEditGuard::markIngredientEditedFromLibrary($ingredient);
+        $this->menuDevelopmentCsvSync->syncAllFromDatabase();
 
         return redirect()
             ->route('admin.ingredient-library')

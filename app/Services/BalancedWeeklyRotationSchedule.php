@@ -84,7 +84,7 @@ final class BalancedWeeklyRotationSchedule
         'Tandoori Coconut Mint Salad',
         'Mediterranean Crunch Salad',
         'Tandoori Chicken Salad',
-        'Cajun Chicken, Grilled Peppers & Onion Salad w Quinoa, Kale & Mustard Dressing',
+        'Blackened Chicken, Grilled Peppers & Onion Salad w Quinoa, Kale & Mustard Dressing',
     ];
 
     /** @var list<string> */

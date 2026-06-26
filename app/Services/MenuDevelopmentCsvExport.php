@@ -122,7 +122,9 @@ final class MenuDevelopmentCsvExport
             $recipeComponents,
             CsvSpreadsheetCellText::exportSingleLine($ingredient->description),
             CsvSpreadsheetCellText::exportMultilineAsEscapedNewlines($ingredient->instructions),
-            '',
+            $ingredient->finished_weight_grams !== null && (float) $ingredient->finished_weight_grams > 0
+                ? rtrim(rtrim(number_format((float) $ingredient->finished_weight_grams, 4, '.', ''), '0'), '.')
+                : '',
             $ingredient->is_g6pd_trigger || IngredientG6pdSafety::canonicalNameIndicatesG6pdTrigger($ingredient->name) ? 1 : 0,
         ];
     }

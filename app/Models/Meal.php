@@ -72,6 +72,7 @@ class Meal extends Model
         'sickle_cell_program_highlight',
         'nutrition_aggregates_synced',
         'library_sort_order',
+        'library_edited_at',
     ];
 
     protected function casts(): array
@@ -118,6 +119,7 @@ class Meal extends Model
             'safety_alert_tags' => 'array',
             'sickle_cell_program_highlight' => 'boolean',
             'nutrition_aggregates_synced' => 'boolean',
+            'library_edited_at' => 'datetime',
         ];
     }
 

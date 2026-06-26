@@ -643,6 +643,7 @@ new #[Title('Meals')] class extends Component {
                 'finished_weight_grams' => $finishedForStorage,
                 'description' => filled($validated['instructions'] ?? null) ? $validated['instructions'] : null,
                 'image_path' => $imagePath,
+                'library_edited_at' => now(),
             ], $nutritionPayload));
 
             $meal->ingredients()->sync($sync);
@@ -657,6 +658,7 @@ new #[Title('Meals')] class extends Component {
                 'finished_weight_grams' => $finishedForStorage,
                 'description' => filled($validated['instructions'] ?? null) ? $validated['instructions'] : null,
                 'image_path' => $imagePath,
+                'library_edited_at' => now(),
             ], $nutritionPayload));
 
             $meal->ingredients()->sync($sync);

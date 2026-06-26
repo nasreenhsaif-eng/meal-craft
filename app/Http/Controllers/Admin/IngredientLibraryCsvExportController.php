@@ -109,7 +109,9 @@ class IngredientLibraryCsvExportController extends Controller
                         $recipeComponents,
                         $description,
                         $instructions,
-                        '',
+                        $ingredient->finished_weight_grams !== null && (float) $ingredient->finished_weight_grams > 0
+                            ? $ingredient->finished_weight_grams
+                            : '',
                         $ingredient->is_g6pd_trigger || IngredientG6pdSafety::canonicalNameIndicatesG6pdTrigger($ingredient->name) ? 1 : 0,
                     ], ',', '"', '\\', "\r\n");
                 });

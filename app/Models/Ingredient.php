@@ -34,6 +34,7 @@ class Ingredient extends Model
         'name',
         'description',
         'instructions',
+        'finished_weight_grams',
         'image_path',
         'usda_food_category',
         'fdc_id',
@@ -52,12 +53,14 @@ class Ingredient extends Model
         'diet_tags',
         'common_allergens',
         'is_g6pd_trigger',
+        'library_edited_at',
     ];
 
     protected function casts(): array
     {
         return [
             'source_meal_id' => 'integer',
+            'finished_weight_grams' => 'float',
             'fdc_id' => 'integer',
             'calories' => 'float',
             'protein' => 'float',
@@ -74,6 +77,7 @@ class Ingredient extends Model
             'diet_tags' => 'array',
             'common_allergens' => 'array',
             'is_g6pd_trigger' => 'boolean',
+            'library_edited_at' => 'datetime',
         ];
     }
 

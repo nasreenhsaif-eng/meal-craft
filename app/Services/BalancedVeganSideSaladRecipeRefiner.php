@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Ingredient;
 use App\Models\Meal;
+use App\Support\MealLibraryEditGuard;
 use App\Support\WholeFoodDietPolicy;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -27,6 +28,10 @@ final class BalancedVeganSideSaladRecipeRefiner
                 $meal = Meal::queryForMealLibrary()->where('name', $mealName)->first();
 
                 if ($meal === null) {
+                    continue;
+                }
+
+                if (MealLibraryEditGuard::shouldSkipMealRefinement($meal)) {
                     continue;
                 }
 
@@ -173,7 +178,7 @@ final class BalancedVeganSideSaladRecipeRefiner
             'Spiced Cauliflower Chickpea Salad' => [
                 'ingredients' => [
                     'Cauliflower Florets' => 100,
-                    'Chickpeas' => 50,
+                    'Cooked Chickpeas (Base)' => 50,
                     'Romaine Lettuce' => 40,
                     'Cumin Seeds' => 2,
                     'Smoked Paprika' => 1,

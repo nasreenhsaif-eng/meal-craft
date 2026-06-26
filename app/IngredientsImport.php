@@ -8,6 +8,7 @@ use App\Support\BaseRecipeInstructionsText;
 use App\Support\IngredientG6pdSafety;
 use App\Support\IngredientLibraryCategory;
 use App\Support\IngredientLibraryNameMatcher;
+use App\Support\MealLibraryEditGuard;
 use App\Support\RecipeComponentsCsvParser;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Str;
@@ -123,16 +124,18 @@ final class IngredientsImport
 
             if ($this->recordIsBaseRecipe($record)) {
                 try {
-                    $this->importBaseRecipeRow($name, $record, $csvRowNumber);
-                    $imported++;
+                    if ($this->importBaseRecipeRow($name, $record, $csvRowNumber)) {
+                        $imported++;
+                    }
                 } catch (InvalidArgumentException $e) {
                     if ($lenientBaseRecipes) {
                         // The menu CSV backup may reference legacy ingredient ids inside `recipe_components`.
                         // In that case, fall back to importing the base recipe as a standalone verified ingredient row
                         // (nutrition values are already present in the CSV), and skip the component graph.
                         $attrs = $this->mapRecordToIngredientAttributes($record);
-                        $this->upsertByNameSafely($name, $attrs);
-                        $imported++;
+                        if ($this->upsertByNameSafely($name, $attrs)) {
+                            $imported++;
+                        }
                     } else {
                         $importErrors[] = $e->getMessage();
                     }
@@ -143,8 +146,9 @@ final class IngredientsImport
 
             $attrs = $this->mapRecordToIngredientAttributes($record);
 
-            $this->upsertByNameSafely($name, $attrs);
-            $imported++;
+            if ($this->upsertByNameSafely($name, $attrs)) {
+                $imported++;
+            }
         }
 
         if ($importErrors !== []) {
@@ -165,10 +169,14 @@ final class IngredientsImport
      *
      * @param  array<string, mixed>  $attrs
      */
-    private function upsertByNameSafely(string $name, array $attrs): void
+    private function upsertByNameSafely(string $name, array $attrs): bool
     {
         /** @var Ingredient|null $existingByName */
         $existingByName = Ingredient::query()->where('name', $name)->first();
+
+        if (MealLibraryEditGuard::shouldSkipIngredientCsvImport($existingByName)) {
+            return false;
+        }
 
         $incomingFdcId = $this->toFdcIdOrNull($attrs['fdc_id'] ?? null);
         $attrs['fdc_id'] = $incomingFdcId;
@@ -188,6 +196,8 @@ final class IngredientsImport
         }
 
         Ingredient::query()->updateOrCreate(['name' => $name], $attrs);
+
+        return true;
     }
 
     private function normalizeHeader(string $value): string
@@ -415,8 +425,15 @@ final class IngredientsImport
     /**
      * @param  array<string, mixed>  $record
      */
-    private function importBaseRecipeRow(string $name, array $record, int $csvRowNumber): void
+    private function importBaseRecipeRow(string $name, array $record, int $csvRowNumber): bool
     {
+        /** @var Ingredient|null $existingByName */
+        $existingByName = Ingredient::query()->where('name', $name)->first();
+
+        if (MealLibraryEditGuard::shouldSkipIngredientCsvImport($existingByName)) {
+            return false;
+        }
+
         $record = BaseRecipeInstructionsText::stripImageFieldsFromCsvRecord($record);
 
         $componentsCell = trim((string) ($record['recipe_components'] ?? ''));
@@ -463,6 +480,8 @@ final class IngredientsImport
         } elseif (array_key_exists('g6pd_trigger', $record)) {
             $ingredient->update(['is_g6pd_trigger' => false]);
         }
+
+        return true;
     }
 
     /**

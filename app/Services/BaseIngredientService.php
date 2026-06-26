@@ -95,6 +95,9 @@ final class BaseIngredientService
         }
 
         $attrs['source_meal_id'] = null;
+        $attrs['finished_weight_grams'] = ($finishedWeightGrams !== null && $finishedWeightGrams > 0)
+            ? round($finishedWeightGrams, 4)
+            : null;
 
         return DB::transaction(function () use ($existing, $attrs, $sync): Ingredient {
             if ($existing !== null) {

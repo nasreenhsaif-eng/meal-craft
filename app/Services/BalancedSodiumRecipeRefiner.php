@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Ingredient;
 use App\Models\Meal;
+use App\Support\MealLibraryEditGuard;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -44,7 +45,9 @@ final class BalancedSodiumRecipeRefiner
         'Ratatouille (Base)' => 0.0,
         'Turmeric Rice (Base)' => 0.0,
         'Steamed Basmati Rice (Base)' => 0.0,
-        'Quinoa (Base)' => 0.0,
+        'Cooked Quinoa (Base)' => 0.0,
+        'Cooked Couscous (Base)' => 0.0,
+        'Cooked Chickpeas (Base)' => 0.0,
         'Quinoa Bread (Base)' => 0.65,
         'Quinoa Flatbread (Base)' => 0.65,
         'Bone Broth (Base)' => 0.5,
@@ -61,7 +64,9 @@ final class BalancedSodiumRecipeRefiner
      * @var array<string, array<string, float>>
      */
     private const REPLACEMENTS = [
-        'Quinoa (Base)' => ['Quinoa (White)' => 30.0],
+        'Cooked Quinoa (Base)' => ['Quinoa (White)' => 30.0],
+        'Cooked Couscous (Base)' => ['Couscous' => 30.0],
+        'Cooked Chickpeas (Base)' => ['Chickpeas' => 75.0],
         'Turmeric Rice (Base)' => ['Basmati Rice (Brown)' => 45.0, 'Turmeric Powder' => 1.0],
         'Steamed Basmati Rice (Base)' => ['Basmati Rice (Brown)' => 45.0],
         'Ratatouille (Base)' => [
@@ -99,6 +104,10 @@ final class BalancedSodiumRecipeRefiner
                 $meal = Meal::queryForMealLibrary()->where('name', $mealName)->first();
 
                 if ($meal === null) {
+                    continue;
+                }
+
+                if (MealLibraryEditGuard::shouldSkipMealRefinement($meal)) {
                     continue;
                 }
 

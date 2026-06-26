@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Ingredient;
 use App\Models\Meal;
 use App\Support\MealInstructionsText;
+use App\Support\MealLibraryEditGuard;
 use App\Support\WholeFoodDietPolicy;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -45,6 +46,10 @@ final class BalancedTandooriMealRecipeRefiner
                 $meal = Meal::queryForMealLibrary()->where('name', $mealName)->first();
 
                 if ($meal === null) {
+                    continue;
+                }
+
+                if (MealLibraryEditGuard::shouldSkipMealRefinement($meal)) {
                     continue;
                 }
 
@@ -180,7 +185,7 @@ final class BalancedTandooriMealRecipeRefiner
             'Grilled Chicken Tikka bowl w Quinoa & Mint Sauce' => [
                 'ingredients' => [
                     self::TANDOORI_CHICKEN_BASE => 95,
-                    'Quinoa (White)' => 30,
+                    'Cooked Quinoa (Base)' => 84,
                     'Cabbage (Purple)' => 30,
                     'Carrots' => 20,
                     'Cucumber' => 30,
@@ -195,7 +200,33 @@ final class BalancedTandooriMealRecipeRefiner
                     'Apple Cider Vinegar' => 5,
                 ],
                 'instructions' => [
-                    'Cook quinoa: rinse, simmer 15 minutes, fluff.',
+                    'Prepare Cooked Quinoa (Base) per base recipe instructions.',
+                    'Grill or pan-sear Tandoori Chicken (Base) until golden then in the oven for 20 minutes exactly, then Rest and slice.',
+                    'Shred cabbage; julienne carrots and cucumber.',
+                    'Layer quinoa, vegetables, and chicken.',
+                    SaladDressingMealRefiner::SERVE_DRESSING_ON_THE_SIDE,
+                ],
+                'diet_tags' => $spicyTags,
+            ],
+            'Grilled Chicken Tikka Salad w Quinoa & Cilantro Lime Dressing' => [
+                'ingredients' => [
+                    self::TANDOORI_CHICKEN_BASE => 95,
+                    'Cooked Quinoa (Base)' => 84,
+                    'Cabbage (Purple)' => 30,
+                    'Carrots' => 20,
+                    'Cucumber' => 30,
+                    'Tomato (Raw)' => 60,
+                    'Red Onion' => 15,
+                    'White Onion' => 40,
+                    'Fresh Coriander' => 5,
+                    'Fresh Mint' => 5,
+                    'Cilantro Lime Dressing (Base)' => 15,
+                    'Cashew Nuts' => 10,
+                    'Lime Juice' => 5,
+                    'Apple Cider Vinegar' => 5,
+                ],
+                'instructions' => [
+                    'Prepare Cooked Quinoa (Base) per base recipe instructions.',
                     'Grill or pan-sear Tandoori Chicken (Base) until golden then in the oven for 20 minutes exactly, then Rest and slice.',
                     'Shred cabbage; julienne carrots and cucumber.',
                     'Layer quinoa, vegetables, and chicken.',

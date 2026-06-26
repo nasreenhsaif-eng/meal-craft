@@ -14,6 +14,7 @@ use App\Support\IngredientG6pdSafety;
 use App\Support\IngredientLibraryCategory;
 use App\Support\MealImagePath;
 use App\Support\MealIngredientDisplayOrder;
+use App\Support\MealLibraryEditGuard;
 use App\Support\SickleCellNutrientRdi;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -185,6 +186,7 @@ class IngredientLibraryController extends Controller
             'fat' => (float) ($data['fat'] ?? $ingredient->fat),
             'density' => (float) ($data['density'] ?? $ingredient->density ?? 1),
             'is_verified' => true,
+            'library_edited_at' => now(),
         ]);
 
         $this->menuDevelopmentCsvSync->syncAllFromDatabase();
@@ -216,7 +218,7 @@ class IngredientLibraryController extends Controller
         try {
             $libraryText = $this->optionalLibraryTextPatchFromData($data);
 
-            $service->upsert(
+            $ingredient = $service->upsert(
                 $existing,
                 $data['name'],
                 $componentRows,
@@ -229,6 +231,7 @@ class IngredientLibraryController extends Controller
                 ->with('error', $e->getMessage());
         }
 
+        MealLibraryEditGuard::markIngredientEditedFromLibrary($ingredient);
         $this->menuDevelopmentCsvSync->syncAllFromDatabase();
 
         return redirect()
@@ -335,8 +338,13 @@ class IngredientLibraryController extends Controller
             ];
         }
 
+        $storedFinished = $ingredient->finished_weight_grams;
+        $finishedForEditor = ($storedFinished !== null && (float) $storedFinished > 0)
+            ? (float) $storedFinished
+            : $totalGrams;
+
         return [
-            'finishedWeightGrams' => $totalGrams > 0 ? $this->formatTrimmedDecimal($totalGrams, 2) : '',
+            'finishedWeightGrams' => $finishedForEditor > 0 ? $this->formatTrimmedDecimal($finishedForEditor, 2) : '',
             'description' => trim((string) ($ingredient->description ?? '')),
             'instructions' => trim((string) ($ingredient->instructions ?? '')),
             'compositionRows' => $rows,

@@ -87,6 +87,7 @@ new #[Title('Ingredients')] class extends Component {
                 'fat' => (float) $validated['fat'],
                 'micronutrients' => $decodedMicronutrients,
                 'is_verified' => true,
+                'library_edited_at' => now(),
             ],
             [
                 'b6' => (float) ($decodedMicronutrients['vitamin_b6'] ?? 0),

@@ -230,6 +230,7 @@ class MealLibraryController extends Controller
                 'servings_count' => ($data['is_bulk'] ?? false) && isset($data['servings_count'])
                     ? (float) $data['servings_count']
                     : null,
+                'library_edited_at' => now(),
             ];
             $nutritionTargets = $this->nutritionTargetsFromValidated($data);
             if ($nutritionTargets !== null) {
@@ -328,6 +329,7 @@ class MealLibraryController extends Controller
                 'servings_count' => ($data['is_bulk'] ?? false) && isset($data['servings_count'])
                     ? (float) $data['servings_count']
                     : null,
+                'library_edited_at' => now(),
             ];
             $nutritionTargets = $this->nutritionTargetsFromValidated($data);
             if ($nutritionTargets !== null) {
