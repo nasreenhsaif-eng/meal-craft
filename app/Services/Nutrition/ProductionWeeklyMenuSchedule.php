@@ -95,15 +95,23 @@ final class ProductionWeeklyMenuSchedule
                     continue;
                 }
 
-                $adapted = AdaptedMenuBuilder::adaptMealForProfile($profile, $row->meal, $dayAdaptOptions);
+                $slotType = $row->slot_type instanceof MealPlanSlotType
+                    ? $row->slot_type
+                    : MealPlanSlotType::tryFrom((string) $row->slot_type);
+
+                if (! $slotType instanceof MealPlanSlotType) {
+                    continue;
+                }
+
+                $adapted = AdaptedMenuBuilder::adaptMealForProfile($profile, $row->meal, array_merge(
+                    $dayAdaptOptions,
+                    ['schedule_slot' => AdaptedMenuBuilder::adaptationSlotForMealPlanSlot($slotType)],
+                ));
 
                 if ($adapted === null) {
                     continue;
                 }
 
-                $slotType = $row->slot_type instanceof MealPlanSlotType
-                    ? $row->slot_type
-                    : MealPlanSlotType::tryFrom((string) $row->slot_type);
                 $slotIndex = (int) $row->slot_index;
 
                 if ($slotType === MealPlanSlotType::Breakfast && in_array($slotIndex, [1, 2], true)) {

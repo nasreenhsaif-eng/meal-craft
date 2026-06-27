@@ -30,6 +30,7 @@ final class AdaptedMenuBuildOptionsFromRequest
             'dessert_calories' => ['sometimes', 'numeric', 'min:0'],
             'day_of_week' => ['sometimes', 'integer', 'min:1', 'max:7'],
             'plan_tier' => ['sometimes', 'integer', Rule::in(UserPlanCalculator::planTiers())],
+            'fixed_chia_breakfast' => ['sometimes', 'boolean'],
         ]);
 
         $buildOptions = [
@@ -56,14 +57,16 @@ final class AdaptedMenuBuildOptionsFromRequest
             $buildOptions['craft_key'] = $validated['craft_key'];
         }
 
-        $buildOptions = AdaptedMenuFixedPortionResolver::mergeIntoBuildOptions($buildOptions);
-
         $isAdminPreview = $user->isAdmin() && $user->isCustomer() !== true;
 
         if (isset($validated['plan_tier']) && $isAdminPreview) {
             $buildOptions['plan_tier'] = (float) (int) $validated['plan_tier'];
         }
 
-        return $buildOptions;
+        if (array_key_exists('fixed_chia_breakfast', $validated)) {
+            $buildOptions['fixed_chia_breakfast'] = (bool) $validated['fixed_chia_breakfast'];
+        }
+
+        return AdaptedMenuFixedPortionResolver::mergeIntoBuildOptions($buildOptions);
     }
 }

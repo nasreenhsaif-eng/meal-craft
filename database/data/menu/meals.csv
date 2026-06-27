@@ -174,7 +174,7 @@ Slice strawberries and onion.
 Toss beets, strawberries, onion, walnuts, and mint. Marinate 20 minutes.
 Serve over romaine.
 Serve dressing on the side."
-"Mediterranean Crunch Salad","Side Salad","Bell Pepper (Red):35 | Cherry Tomatoes:45 | Chicken Breast:110 | Classic Lemon Garlic Dressing (Base):12 | Cucumber:55 | Fresh Mint:3 | Kalamata Olives:15 | Red Onion:15 | Romaine Lettuce:45",350,35,35,7.8,,,,,false,1,,,,images/meals/mediterranean_crunch_salad.png,"A highly hydrating salad of diced cucumbers","Dice cucumber, tomatoes, pepper, and red onion.
+"Mediterranean Crunch Salad",Meal,"Bell Pepper (Red):35 | Cherry Tomatoes:45 | Chicken Breast:110 | Classic Lemon Garlic Dressing (Base):12 | Cucumber:55 | Fresh Mint:3 | Kalamata Olives:15 | Red Onion:15 | Romaine Lettuce:45",350,35,35,7.8,,,,,false,1,,,,images/meals/mediterranean_crunch_salad.png,"A highly hydrating salad of diced cucumbers","Dice cucumber, tomatoes, pepper, and red onion.
 Grill or pan-sear chicken until golden then in the oven for 20 minutes exactly, then Rest and slice.
 Toss romaine, vegetables, mint, and olives. Top with chicken.
 Serve dressing on the side."
@@ -194,12 +194,12 @@ Serve hamour over rice with roasted mixed vegetables on the side."
 Halve cherry tomatoes and toss with rocca.
 Combine with warm eggplant and pomegranate seeds.
 Serve dressing on the side."
-"Rosemary Chicken Rocca Salad","Side Salad","Cherry Tomatoes:45 | Chicken Breast:110 | Cucumber:55 | Garlic (Raw):3 | Red Pepper Dressing (Base):20 | Rocca:50 | Rosemary (Fresh):2 | Walnuts:6",350,35,35,7.8,,,,,false,1,,,Nuts,images/meals/rosemary_chicken_rocca_salad.png,"Juicy chicken breast grilled with fresh rosemary and garlic","Grill or pan-sear chicken with rosemary and garlic until golden then in the oven for 20 minutes exactly, then Rest and slice.
+"Rosemary Chicken Rocca Salad",Meal,"Cherry Tomatoes:45 | Chicken Breast:110 | Cucumber:55 | Garlic (Raw):3 | Red Pepper Dressing (Base):20 | Rocca:50 | Rosemary (Fresh):2 | Walnuts:6",350,35,35,7.8,,,,,false,1,,,Nuts,images/meals/rosemary_chicken_rocca_salad.png,"Juicy chicken breast grilled with fresh rosemary and garlic","Grill or pan-sear chicken with rosemary and garlic until golden then in the oven for 20 minutes exactly, then Rest and slice.
 Toss rocca, cucumber, and cherry tomatoes in a bowl.
 Top with chicken and walnuts.
 Serve dressing on the side."
 "Salmon Cashew Cream & Roasted Vegetabls",Meal,"Garlic:2 | Lemon Juice:5 | Roasted Mixed Vegetables (Base):100 | Salmon (Raw):130",350,35,35,7.8,,,,,false,,Balanced,,,images/meals/salmon_cashew_cream.png,"A premium pan-roasted salmon fillet smothered in a rich","dairy-free garlic cashew cream reduction"
-"Turmeric Chicken Kale Salad","Side Salad","Carrots:40 | Cherry Tomatoes:35 | Chicken Breast:110 | Cucumber:40 | Garlic (Raw):2 | Kale:50 | Pomegranate Seeds:12 | Red Onion:15 | Turmeric Lemon Dressing (Base):14",350,35,35,7.8,,,,,false,1,,,,images/meals/turmeric_chicken_kale_salad.png,"Lean chicken breast seasoned with golden turmeric and garlic","Rub chicken with half the turmeric dressing as a marinade. Grill or pan-sear chicken until golden then in the oven for 20 minutes exactly, then Rest and slice.
+"Turmeric Chicken Kale Salad",Meal,"Carrots:40 | Cherry Tomatoes:35 | Chicken Breast:110 | Cucumber:40 | Garlic (Raw):2 | Kale:50 | Pomegranate Seeds:12 | Red Onion:15 | Turmeric Lemon Dressing (Base):14",350,35,35,7.8,,,,,false,1,,,,images/meals/turmeric_chicken_kale_salad.png,"Lean chicken breast seasoned with golden turmeric and garlic","Rub chicken with half the turmeric dressing as a marinade. Grill or pan-sear chicken until golden then in the oven for 20 minutes exactly, then Rest and slice.
 Massage kale until tender.
 Add cucumber, carrots, tomatoes, onion, and pomegranate. Top with warm chicken.
 Serve remaining dressing on the side."
@@ -245,7 +245,7 @@ Serve dressing on the side."
 Spoon the set pudding into the bottom of a glass or jar.
 Blend strawberries and banana until smooth.
 Pour the fruit smoothie over the chia layer. Serve chilled."
-"Chicken Thai Mango Salad","Side Salad","Cabbage (Purple):75 | Cherry Tomatoes:40 | Chicken Breast:110 | Cucumber:45 | Fresh Coriander:5 | Mango:55 | Peanut Butter Dressing (Base):25 | Peanuts (Crushed):8 | Red Onion:15",350,35,35,7.8,,,,,false,1,,,Peanuts,images/meals/chicken_thai_mango_salad.png,"Juicy sliced grilled chicken breast tossed with shredded red and white cabbage","Grill or pan-sear chicken until golden then in the oven for 20 minutes exactly, then Rest and slice thinly.
+"Chicken Thai Mango Salad",Meal,"Cabbage (Purple):75 | Cherry Tomatoes:40 | Chicken Breast:110 | Cucumber:45 | Fresh Coriander:5 | Mango:55 | Peanut Butter Dressing (Base):25 | Peanuts (Crushed):8 | Red Onion:15",350,35,35,7.8,,,,,false,1,,,Peanuts,images/meals/chicken_thai_mango_salad.png,"Juicy sliced grilled chicken breast tossed with shredded red and white cabbage","Grill or pan-sear chicken until golden then in the oven for 20 minutes exactly, then Rest and slice thinly.
 Shred cabbage; slice mango, cucumber, tomatoes, and red onion.
 Toss vegetables with coriander.
 Top with chicken and crushed peanuts.
@@ -330,11 +330,11 @@ Serve chilled."
 3. Add roasted sweet potato to the pan and toss to combine. Season with a pinch of salt and pepper.
 4. Beat eggs, pour into the pan, and scramble gently over medium-low heat until just set.
 5. Finish with fresh coriander and serve hot."
-"Tandoori Chicken Salad","Side Salad","Cashew Nuts:10 | Celery:20 | Cherry Tomatoes:45 | Cucumber:45 | Fresh Coriander:4 | Fresh Mint:4 | Mint Coconut Chutney Dressing (Base):16 | Pomegranate Seeds:12 | Red Onion:12 | Romaine Lettuce:55 | Tandoori Chicken (Base):115",350,35,35,7.8,,,,,false,1,,,,images/meals/tandoori_chicken_salad.png,"Lean chicken breast strips marinated in bold tandoori spices and grilled","Grill or pan-sear Tandoori Chicken (Base) until golden then in the oven for 20 minutes exactly, then Rest and slice.
+"Tandoori Chicken Salad",Meal,"Cashew Nuts:10 | Celery:20 | Cherry Tomatoes:45 | Cucumber:45 | Fresh Coriander:4 | Fresh Mint:4 | Mint Coconut Chutney Dressing (Base):16 | Pomegranate Seeds:12 | Red Onion:12 | Romaine Lettuce:55 | Tandoori Chicken (Base):115",350,35,35,7.8,,,,,false,1,,,,images/meals/tandoori_chicken_salad.png,"Lean chicken breast strips marinated in bold tandoori spices and grilled","Grill or pan-sear Tandoori Chicken (Base) until golden then in the oven for 20 minutes exactly, then Rest and slice.
 Toss romaine, cucumber, celery, tomatoes, onion, herbs, and pomegranate.
 Top with chicken and cashews.
 Serve dressing on the side."
-"Tandoori Coconut Mint Salad","Side Salad","Black Seeds:1 | Cashew Nuts:12 | Celery:25 | Cherry Tomatoes:45 | Cucumber:45 | Fresh Coriander:5 | Fresh Mint:8 | Mint Coconut Chutney Dressing (Base):18 | Pomegranate Seeds:15 | Red Onion:12 | Romaine Lettuce:50 | Tandoori Chicken (Base):115",350,35,35,7.8,,,,,false,1,,,,images/meals/tandoori_coconut_mint_salad.png,"Grilled tandoori chicken breast slices tossed over romaine lettuce and mint leaves","Grill or pan-sear Tandoori Chicken (Base) until golden then in the oven for 20 minutes exactly, then Rest and slice.
+"Tandoori Coconut Mint Salad",Meal,"Black Seeds:1 | Cashew Nuts:12 | Celery:25 | Cherry Tomatoes:45 | Cucumber:45 | Fresh Coriander:5 | Fresh Mint:8 | Mint Coconut Chutney Dressing (Base):18 | Pomegranate Seeds:15 | Red Onion:12 | Romaine Lettuce:50 | Tandoori Chicken (Base):115",350,35,35,7.8,,,,,false,1,,,,images/meals/tandoori_coconut_mint_salad.png,"Grilled tandoori chicken breast slices tossed over romaine lettuce and mint leaves","Grill or pan-sear Tandoori Chicken (Base) until golden then in the oven for 20 minutes exactly, then Rest and slice.
 Toss romaine, cucumber, celery, tomatoes, onion, mint, and coriander.
 Top with chicken, cashews, and pomegranate. Finish with a pinch of black seeds.
 Serve dressing on the side."

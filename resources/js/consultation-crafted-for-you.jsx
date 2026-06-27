@@ -6,7 +6,7 @@ import { syncCsrfMetaTag } from './lib/csrfToken.js';
 const rootEl = document.getElementById('mc-consultation-crafted-root');
 const configEl = document.getElementById('mc-consultation-crafted-config');
 
-/** @type {{ closeHref?: string; homeHref?: string; summaryHref?: string; loginUrl?: string; signOutUrl?: string; csrfToken?: string; isCustomerAccount?: boolean; isAdminPreview?: boolean; pageEyebrow?: string; adaptedMenuUrl?: string; planTier?: number | null; planTiers?: number[]; editDraft?: object | null }} */
+/** @type {{ closeHref?: string; homeHref?: string; summaryHref?: string; loginUrl?: string; signOutUrl?: string; csrfToken?: string; isCustomerAccount?: boolean; isAdminPreview?: boolean; pageEyebrow?: string; adaptedMenuUrl?: string; planTier?: number | null; planTiers?: number[]; chiaBreakfastMealNames?: string[]; editDraft?: object | null }} */
 let config = {};
 
 if (configEl) {
@@ -87,6 +87,9 @@ if (rootEl) {
                     }
                     initialPlanTier={typeof config.planTier === 'number' ? config.planTier : null}
                     initialPlanTiers={Array.isArray(config.planTiers) ? config.planTiers : undefined}
+                    chiaBreakfastMealNames={
+                        Array.isArray(config.chiaBreakfastMealNames) ? config.chiaBreakfastMealNames : []
+                    }
                     initialEditDraft={
                         config.editDraft && typeof config.editDraft === 'object' ? config.editDraft : null
                     }

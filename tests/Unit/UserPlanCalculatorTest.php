@@ -58,6 +58,28 @@ test('included soup counts within tier and shrinks scalable slot targets', funct
         ->and($withSoup['day_total_calories'])->toBe(1500.0);
 });
 
+test('fixed chia breakfast counts 200 kcal toward tier and gives mains the remaining scalable budget', function () {
+    $profile = new CustomerProfile([
+        'id' => 1,
+        'daily_calorie_target' => 1500,
+        'protein_percentage' => 30.0,
+        'carb_percentage' => 40.0,
+        'fat_percentage' => 30.0,
+    ]);
+
+    $plan = UserPlanCalculator::calculateUserPlan($profile, [
+        'fixed_chia_breakfast' => true,
+    ]);
+
+    expect($plan['fixed_chia_breakfast'])->toBeTrue()
+        ->and($plan['fixed_portion']['calories'])->toBe(545.0)
+        ->and($plan['fixed_portion']['per_slot']['breakfast'])->toBe(200.0)
+        ->and($plan['scalable_budget']['calories'])->toBe(955.0)
+        ->and($plan['scalable_slot_targets']['breakfast']['calories'])->toBe(200.0)
+        ->and($plan['scalable_slot_targets']['main_each']['calories'])->toBe(477.5)
+        ->and($plan['day_total_calories'])->toBe(1500.0);
+});
+
 test('calculateUserPlan derives scaling multiplier from scalable budget and library baseline', function () {
     $profile = new CustomerProfile([
         'id' => 1,

@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react';
 
 /**
  * @param {string} [detailViewUrlTemplate] e.g. `/api/meals/{id}/detail-view`
- * @param {string} [detailQueryString] Adapted-menu query string (craft, tier, soup, etc.)
+ * @param {string | (() => string)} [detailQueryString] Adapted-menu query string (craft, tier, day, etc.). A function is resolved when the modal opens so params stay in sync with the consultation screen.
  */
 export function useMealDetailModal(detailViewUrlTemplate = '/api/meals/{id}/detail-view', detailQueryString = '') {
     const [mealDetailModal, setMealDetailModal] = useState(
@@ -26,7 +26,9 @@ export function useMealDetailModal(detailViewUrlTemplate = '/api/meals/{id}/deta
             }
 
             const baseUrl = detailViewUrlTemplate.replace('{id}', encodeURIComponent(String(mealId)));
-            const url = detailQueryString ? `${baseUrl}?${detailQueryString}` : baseUrl;
+            const resolvedQueryString =
+                typeof detailQueryString === 'function' ? detailQueryString() : detailQueryString;
+            const url = resolvedQueryString ? `${baseUrl}?${resolvedQueryString}` : baseUrl;
             setDetailLoading(true);
 
             try {

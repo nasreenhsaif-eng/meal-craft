@@ -6,6 +6,7 @@ use App\Enums\MealPlanSlotType;
 use App\Models\Meal;
 use App\Models\MealPlan;
 use App\Models\MealPlanDayMeal;
+use App\Support\ChiaBreakfastMeals;
 
 /**
  * Resolves actual fixed-portion calories for plan budgeting (side salad, dessert, soup).
@@ -19,11 +20,13 @@ final class AdaptedMenuFixedPortionResolver
      *     side_salad_calories?: float,
      *     dessert_calories?: float,
      *     day_of_week?: int,
+     *     fixed_chia_breakfast?: bool,
      * }  $options
      * @return array{
      *     side_salad_calories?: float,
      *     dessert_calories?: float,
      *     soup_calories?: float,
+     *     fixed_chia_breakfast?: bool,
      * }
      */
     public static function mergeIntoBuildOptions(array $options, ?MealPlan $productionPlan = null): array
@@ -51,6 +54,10 @@ final class AdaptedMenuFixedPortionResolver
                 ) {
                     $merged['soup_calories'] = $fromSchedule['soup_calories'];
                 }
+
+                if (! isset($merged['fixed_chia_breakfast']) && ($fromSchedule['fixed_chia_breakfast'] ?? false)) {
+                    $merged['fixed_chia_breakfast'] = true;
+                }
             }
         }
 
@@ -58,7 +65,12 @@ final class AdaptedMenuFixedPortionResolver
     }
 
     /**
-     * @return array{side_salad_calories?: float, dessert_calories?: float, soup_calories?: float}
+     * @return array{
+     *     side_salad_calories?: float,
+     *     dessert_calories?: float,
+     *     soup_calories?: float,
+     *     fixed_chia_breakfast?: bool,
+     * }
      */
     public static function fromProductionSchedule(int $dayOfWeek, ?MealPlan $plan = null): array
     {
@@ -104,6 +116,14 @@ final class AdaptedMenuFixedPortionResolver
 
             if ($slotType === MealPlanSlotType::Soup && ! isset($out['soup_calories'])) {
                 $out['soup_calories'] = round($calories, 2);
+            }
+
+            if (
+                $slotType === MealPlanSlotType::Breakfast
+                && (int) $row->slot_index === 1
+                && ChiaBreakfastMeals::isChiaBreakfast($row->meal)
+            ) {
+                $out['fixed_chia_breakfast'] = true;
             }
         }
 

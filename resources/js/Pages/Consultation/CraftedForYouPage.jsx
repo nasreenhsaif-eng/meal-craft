@@ -57,6 +57,57 @@ function readStoredPreviewPlanTier(planTiers, fallback) {
     return fallback;
 }
 
+/**
+ * @param {{
+ *   tiers: number[];
+ *   selectedTier: number;
+ *   onSelectTier: (tier: number) => void;
+ *   compact?: boolean;
+ * }} props
+ */
+function AdminPreviewTierPicker({ tiers, selectedTier, onSelectTier, compact = false }) {
+    return (
+        <div
+            className={
+                compact
+                    ? 'mt-3 shrink-0 border-t border-[#5A6B44]/15 pt-3'
+                    : 'rounded-[12px] border border-[#5A6B44]/25 bg-[#5A6B44]/10 px-4 py-3'
+            }
+        >
+            {!compact ? (
+                <p className="font-body text-sm text-[#262A22]">
+                    Admin preview — pick a calorie tier to scale breakfast and mains for this session.
+                </p>
+            ) : null}
+            <p
+                className={[
+                    'font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#555555]',
+                    compact ? '' : 'mt-3',
+                ].join(' ')}
+            >
+                Preview calorie tier
+            </p>
+            <div className="mt-2 flex flex-wrap gap-2">
+                {tiers.map((tier) => (
+                    <PillButton
+                        key={tier}
+                        label={`${tier} kcal`}
+                        variant={selectedTier === tier ? 'primary' : 'outline'}
+                        size="sm"
+                        onClick={() => onSelectTier(tier)}
+                        className={selectedTier === tier ? '' : 'ring-1 ring-[#E5E7EB]'}
+                    />
+                ))}
+            </div>
+            <p className="mt-2 font-body text-xs text-[#555555]">
+                {compact
+                    ? 'Meal portions scale to the tier you pick. Remembered for this browser session.'
+                    : `Currently testing at ${selectedTier} kcal. Your choice is remembered for this browser session.`}
+            </p>
+        </div>
+    );
+}
+
 const CRAFTS = [
     {
         key: 'full',
@@ -338,6 +389,7 @@ function slotId(dayIdx, slotKey, index) {
  *   mealDetailViewUrlTemplate?: string;
  *   initialPlanTier?: number | null;
  *   initialPlanTiers?: number[];
+ *   chiaBreakfastMealNames?: string[];
  *   disableAdaptedMenuFetch?: boolean;
  *   initialEditDraft?: {
  *     craftKey?: string;
@@ -364,6 +416,7 @@ export default function CraftedForYouPage({
     mealDetailViewUrlTemplate = '/api/meals/{id}/detail-view',
     initialPlanTier = null,
     initialPlanTiers = DEFAULT_PLAN_TIERS,
+    chiaBreakfastMealNames = [],
     disableAdaptedMenuFetch = false,
     initialEditDraft = null,
 } = {}) {
@@ -409,6 +462,22 @@ export default function CraftedForYouPage({
     const [fullCraftSoupOptInByDay, setFullCraftSoupOptInByDay] = useState(
         () => initialRestoreDraft?.fullCraftSoupOptInByDay ?? {},
     );
+    const chiaBreakfastNameSet = useMemo(
+        () => new Set(chiaBreakfastMealNames),
+        [chiaBreakfastMealNames],
+    );
+
+    const isChiaBreakfastMeal = useCallback(
+        (meal) => {
+            if (!meal || typeof meal.title !== 'string') {
+                return false;
+            }
+
+            return chiaBreakfastNameSet.has(meal.title);
+        },
+        [chiaBreakfastNameSet],
+    );
+
     const availablePlanTiers = useMemo(
         () => (initialPlanTiers.length > 0 ? initialPlanTiers : DEFAULT_PLAN_TIERS),
         [initialPlanTiers],
@@ -1002,6 +1071,14 @@ export default function CraftedForYouPage({
             { includeSoup: includeSoupForAdaptedMenu },
         );
 
+        const breakfastId = selectedByDay[calorieDay]?.breakfasts?.[0] ?? null;
+        const selectedBreakfast =
+            (breakfastId ? findScheduledMeal(breakfastId, scheduledDay?.breakfasts ?? []) : null)
+            ?? (breakfastId ? catalogMeals.find((meal) => meal.id === breakfastId) : null)
+            ?? scheduledDay?.breakfasts?.[0]
+            ?? null;
+        const fixedChiaBreakfast = isChiaBreakfastMeal(selectedBreakfast);
+
         return {
             craftKey,
             includeSoup: includeSoupForAdaptedMenu,
@@ -1010,12 +1087,38 @@ export default function CraftedForYouPage({
             dessertCalories: fixedPortion.dessertCalories,
             dayOfWeek: calorieDay,
             planTier: isAdminPreview ? previewPlanTier : undefined,
+            fixedChiaBreakfast: fixedChiaBreakfast || undefined,
         };
-    }, [adaptedMenuFetchKey, craftKey]);
+    }, [
+        calorieDay,
+        craftKey,
+        includeSoupForAdaptedMenu,
+        soupCaloriesForAdaptedMenu,
+        dayFixedSelectionIds,
+        selectedFixedBaselines,
+        scheduledFullCraftByWeekday,
+        scheduledSoupsByWeekday,
+        selectedByDay,
+        catalogMeals,
+        isAdminPreview,
+        previewPlanTier,
+        isChiaBreakfastMeal,
+    ]);
+
+    const resolveMealDetailQueryString = useCallback(() => {
+        const base = adaptedMenuFetchParams ?? {};
+
+        return buildAdaptedMenuQueryString({
+            ...base,
+            craftKey: base.craftKey ?? craftKey ?? undefined,
+            dayOfWeek: base.dayOfWeek ?? calorieDay ?? undefined,
+            planTier: base.planTier ?? (isAdminPreview ? previewPlanTier : undefined),
+        });
+    }, [adaptedMenuFetchParams, craftKey, calorieDay, isAdminPreview, previewPlanTier]);
 
     const { mealDetailModal, detailLoading, openMealDetail, closeMealDetail } = useMealDetailModal(
         mealDetailViewUrlTemplate,
-        buildAdaptedMenuQueryString(adaptedMenuFetchParams ?? {}),
+        resolveMealDetailQueryString,
     );
 
     useEffect(() => {
@@ -1293,7 +1396,7 @@ export default function CraftedForYouPage({
                 <div
                     className={[
                         'z-50 border-b border-gray-200/70 bg-[#F8F9F6]/95 px-4 pb-3 pt-2 backdrop-blur sm:pb-4',
-                        isCurationScreen ? 'shrink-0 md:sticky md:top-0' : 'sticky top-0 -mx-4 md:-mx-8 md:px-8',
+                        isCurationScreen ? 'shrink-0 sticky top-0' : 'sticky top-0 -mx-4 md:-mx-8 md:px-8',
                     ].join(' ')}
                 >
                     <div className="mx-auto max-w-[1100px]">
@@ -1327,16 +1430,25 @@ export default function CraftedForYouPage({
                                 />
                             </div>
                         </div>
+
+                        {isAdminPreview && isCurationScreen ? (
+                            <AdminPreviewTierPicker
+                                compact
+                                tiers={availablePlanTiers}
+                                selectedTier={previewPlanTier}
+                                onSelectTier={setPreviewPlanTier}
+                            />
+                        ) : null}
                     </div>
                 </div>
 
                 {!disableAdaptedMenuFetch && menuLoading && liveMeals === null ? (
-                    <p className="mb-4 rounded-[12px] border border-gray-200 bg-white px-4 py-3 font-body text-sm text-[#555555]">
+                    <p className="mb-4 shrink-0 rounded-[12px] border border-gray-200 bg-white px-4 py-3 font-body text-sm text-[#555555]">
                         Loading your meal library with adapted portions…
                     </p>
                 ) : null}
                 {!disableAdaptedMenuFetch && menuError ? (
-                    <p className="mb-4 rounded-[12px] border border-amber-200 bg-amber-50 px-4 py-3 font-body text-sm text-amber-900">
+                    <p className="mb-4 shrink-0 rounded-[12px] border border-amber-200 bg-amber-50 px-4 py-3 font-body text-sm text-amber-900">
                         {menuError} Showing sample meals until your plan is available.
                         {loginUrl && /log in again/i.test(menuError) ? (
                             <>
@@ -1349,37 +1461,18 @@ export default function CraftedForYouPage({
                     </p>
                 ) : null}
 
-                {isAdminPreview ? (
-                    <div className="mb-4 rounded-[12px] border border-[#5A6B44]/25 bg-[#5A6B44]/10 px-4 py-3 font-body text-sm text-[#262A22]">
-                        <p>
-                            Admin preview — you can run the full flow including Submit. Plans save to your staff
-                            preview profile for UI testing.
-                        </p>
-                        <p className="mt-3 font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#555555]">
-                            Preview calorie tier
-                        </p>
-                        <div className="mt-2 flex flex-wrap gap-2">
-                            {availablePlanTiers.map((tier) => (
-                                <PillButton
-                                    key={tier}
-                                    label={`${tier} kcal`}
-                                    variant={previewPlanTier === tier ? 'primary' : 'outline'}
-                                    size="sm"
-                                    onClick={() => setPreviewPlanTier(tier)}
-                                    className={previewPlanTier === tier ? '' : 'ring-1 ring-[#E5E7EB]'}
-                                />
-                            ))}
-                        </div>
-                        <p className="mt-2 font-body text-xs text-[#555555]">
-                            Meal portions scale to the tier you pick. Your choice is remembered for this browser
-                            session.
-                        </p>
-                    </div>
-                ) : null}
-
                 {/* Screen 1 — Craft & Duration */}
                 {screen === 1 ? (
                     <section className="rounded-[12px] border border-gray-200 bg-white p-6 shadow-sm">
+                        {isAdminPreview ? (
+                            <div className="mb-6">
+                                <AdminPreviewTierPicker
+                                    tiers={availablePlanTiers}
+                                    selectedTier={previewPlanTier}
+                                    onSelectTier={setPreviewPlanTier}
+                                />
+                            </div>
+                        ) : null}
                         <h2 className="font-montserrat text-[16px] font-bold tracking-tight text-[#262A22]">
                             The Craft &amp; Duration
                         </h2>
@@ -1461,6 +1554,15 @@ export default function CraftedForYouPage({
                 {/* Screen 2 — Manual Day Selection */}
                 {screen === 2 && usesManualDaySelection ? (
                     <section className="rounded-[12px] border border-gray-200 bg-white p-6 shadow-sm">
+                        {isAdminPreview ? (
+                            <div className="mb-6">
+                                <AdminPreviewTierPicker
+                                    tiers={availablePlanTiers}
+                                    selectedTier={previewPlanTier}
+                                    onSelectTier={setPreviewPlanTier}
+                                />
+                            </div>
+                        ) : null}
                         <h2 className="font-montserrat text-[16px] font-bold tracking-tight text-[#262A22]">
                             Manual Day Selection
                         </h2>

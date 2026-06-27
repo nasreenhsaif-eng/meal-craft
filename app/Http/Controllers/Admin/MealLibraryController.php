@@ -23,10 +23,12 @@ use App\Support\EggIngredientPresentation;
 use App\Support\IngredientAllergenCatalog;
 use App\Support\IngredientG6pdSafety;
 use App\Support\IngredientLibraryNameMatcher;
+use App\Support\LiquidIngredientPresentation;
 use App\Support\MealImagePath;
 use App\Support\MealInstructionsText;
 use App\Support\MealLibraryBulkNutrition;
 use App\Support\MealLibraryTaxonomy;
+use App\Support\RawPrepIngredientPresentation;
 use App\Support\SaladMealPresentation;
 use App\Support\SickleCellNutrientRdi;
 use Illuminate\Http\JsonResponse;
@@ -856,28 +858,57 @@ class MealLibraryController extends Controller
         return function (Ingredient $ingredient, float $baselineGrams) use ($meal, $rowsByIngredientId): string {
             $adaptedRow = $rowsByIngredientId[(int) $ingredient->id] ?? null;
             $grams = (float) ($adaptedRow['adapted_amount_grams'] ?? $baselineGrams);
-            $grams = MealLibraryBulkNutrition::perServingGramsForMealDisplay($meal, $grams);
-            $formattedGrams = $this->formatTrimmedDecimal($grams, 2);
 
-            if (EggIngredientPresentation::isEggIngredient($ingredient)) {
-                return EggIngredientPresentation::formatLine($grams, $formattedGrams);
-            }
-
-            if (is_array($adaptedRow)) {
-                $unit = (string) ($adaptedRow['unit'] ?? 'g');
-                $adaptedAmount = $adaptedRow['adapted_amount'] ?? null;
-
-                if ($adaptedAmount !== null && $unit !== '' && $unit !== 'g') {
-                    return round((float) $adaptedAmount, 2).$unit.' '.$ingredient->name;
-                }
-            }
-
-            if ($grams > 0) {
-                return $formattedGrams.'g '.$ingredient->name;
-            }
-
-            return $ingredient->name;
+            return $this->formatIngredientLineForMealDetail($meal, $ingredient, $grams, $adaptedRow);
         };
+    }
+
+    /**
+     * @param  array<string, mixed>|null  $adaptedRow
+     */
+    private function formatIngredientLineForMealDetail(
+        Meal $meal,
+        Ingredient $ingredient,
+        float $grams,
+        ?array $adaptedRow = null,
+    ): string {
+        $grams = MealLibraryBulkNutrition::perServingGramsForMealDisplay($meal, $grams);
+        $formattedGrams = $this->formatTrimmedDecimal($grams, 2);
+
+        if (EggIngredientPresentation::isEggIngredient($ingredient)) {
+            return EggIngredientPresentation::formatLine($grams, $formattedGrams);
+        }
+
+        if (RawPrepIngredientPresentation::isRawPrepIngredient($ingredient)) {
+            return RawPrepIngredientPresentation::formatLine($grams, $formattedGrams, $ingredient);
+        }
+
+        if (is_array($adaptedRow)) {
+            $unit = (string) ($adaptedRow['unit'] ?? 'g');
+            $adaptedAmount = $adaptedRow['adapted_amount'] ?? null;
+
+            if ($adaptedAmount !== null && $unit !== '' && $unit !== 'g') {
+                if (LiquidIngredientPresentation::isLiquidIngredient($ingredient)) {
+                    return LiquidIngredientPresentation::formatLineFromAmountAndUnit(
+                        (float) $adaptedAmount,
+                        $unit,
+                        $ingredient,
+                    );
+                }
+
+                return round((float) $adaptedAmount, 2).$unit.' '.$ingredient->name;
+            }
+        }
+
+        if ($grams > 0 && LiquidIngredientPresentation::isLiquidIngredient($ingredient)) {
+            return LiquidIngredientPresentation::formatLine($grams, $ingredient);
+        }
+
+        if ($grams > 0) {
+            return $formattedGrams.'g '.$ingredient->name;
+        }
+
+        return $ingredient->name;
     }
 
     /**
@@ -995,20 +1026,11 @@ class MealLibraryController extends Controller
             ));
         }
 
-        $formatLine = function (Ingredient $ingredient, float $grams) use ($meal): string {
-            $grams = MealLibraryBulkNutrition::perServingGramsForMealDisplay($meal, $grams);
-            $formattedGrams = $this->formatTrimmedDecimal($grams, 2);
-
-            if (EggIngredientPresentation::isEggIngredient($ingredient)) {
-                return EggIngredientPresentation::formatLine($grams, $formattedGrams);
-            }
-
-            if ($grams > 0) {
-                return $formattedGrams.'g '.$ingredient->name;
-            }
-
-            return $ingredient->name;
-        };
+        $formatLine = fn (Ingredient $ingredient, float $grams): string => $this->formatIngredientLineForMealDetail(
+            $meal,
+            $ingredient,
+            $grams,
+        );
 
         $ingredientLines = SaladMealPresentation::orderedIngredientLinesForMeal($meal, $formatLine);
 

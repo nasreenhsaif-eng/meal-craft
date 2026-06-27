@@ -6,6 +6,7 @@ use App\Enums\MealType;
 use App\Enums\RecipeCategory;
 use App\Models\CustomerProfile;
 use App\Models\Meal;
+use App\Support\ChiaBreakfastMeals;
 
 /**
  * Derives per-slot calorie targets from the customer's plan tier.
@@ -126,6 +127,7 @@ final class UserPlanCalculator
      *     dessert_calories?: float,
      *     snap_to_tier?: bool,
      *     plan_tier?: float,
+     *     fixed_chia_breakfast?: bool,
      * }  $options
      * @return array<string, mixed>
      */
@@ -155,13 +157,21 @@ final class UserPlanCalculator
             ? round((float) ($options['soup_calories'] ?? self::slotPlanningMidpoint('soup')), 2)
             : 0.0;
 
+        $fixedChiaBreakfast = (bool) ($options['fixed_chia_breakfast'] ?? false);
+        $chiaBreakfastCalories = $fixedChiaBreakfast
+            ? round(ChiaBreakfastMeals::fixedCalories(), 2)
+            : 0.0;
+
         $proteinPct = (float) $profile->protein_percentage;
         $carbPct = (float) $profile->carb_percentage;
         $fatPct = (float) $profile->fat_percentage;
 
         $dailyMacros = self::macroGramsFromCaloriesAndPercentages($planTier, $proteinPct, $carbPct, $fatPct);
 
-        $fixedPortionTotal = round($sideSaladCalories + $dessertCalories + $soupCalories, 2);
+        $fixedPortionTotal = round(
+            $sideSaladCalories + $dessertCalories + $soupCalories + $chiaBreakfastCalories,
+            2,
+        );
         $fixedPortionMacros = self::macroGramsFromCaloriesAndPercentages(
             $fixedPortionTotal,
             $proteinPct,
@@ -179,14 +189,27 @@ final class UserPlanCalculator
 
         $breakfastWeight = (float) config('customer_nutrition.scalable_slot_weights.breakfast', 0.20);
         $mainEachWeight = (float) config('customer_nutrition.scalable_slot_weights.main_each', 0.40);
+        $mainCount = max(1, (int) config('customer_nutrition.scalable_slots.main', 2));
 
-        $breakfastTargetCalories = round($scalableBudgetCalories * $breakfastWeight, 2);
-        $mainTargetCaloriesEach = round($scalableBudgetCalories * $mainEachWeight, 2);
+        if ($fixedChiaBreakfast) {
+            $breakfastTargetCalories = $chiaBreakfastCalories;
+            $mainTargetCaloriesEach = round($scalableBudgetCalories / $mainCount, 2);
+        } else {
+            $breakfastTargetCalories = round($scalableBudgetCalories * $breakfastWeight, 2);
+            $mainTargetCaloriesEach = round($scalableBudgetCalories * $mainEachWeight, 2);
+        }
 
-        $coreDayCalories = round(
-            $fixedPortionTotal + $breakfastTargetCalories + ($mainTargetCaloriesEach * 2),
-            2,
-        );
+        if ($fixedChiaBreakfast) {
+            $coreDayCalories = round(
+                $fixedPortionTotal + ($mainTargetCaloriesEach * $mainCount),
+                2,
+            );
+        } else {
+            $coreDayCalories = round(
+                $fixedPortionTotal + $breakfastTargetCalories + ($mainTargetCaloriesEach * $mainCount),
+                2,
+            );
+        }
         $dayTotalCalories = round($coreDayCalories, 2);
 
         $soupMacros = $includeSoup
@@ -194,7 +217,9 @@ final class UserPlanCalculator
             : self::macroGramsFromCaloriesAndPercentages(0.0, $proteinPct, $carbPct, $fatPct);
 
         $baseline = self::resolveScalableBaselineCalories();
-        $baselineTotal = $baseline['calories'];
+        $baselineTotal = $fixedChiaBreakfast
+            ? round($baseline['main_calories'] * $mainCount, 2)
+            : $baseline['calories'];
 
         $multiplier = $baselineTotal > 0
             ? $scalableBudgetCalories / $baselineTotal
@@ -211,6 +236,10 @@ final class UserPlanCalculator
             $perSlotFixed['soup'] = $soupCalories;
         }
 
+        if ($fixedChiaBreakfast) {
+            $perSlotFixed['breakfast'] = $chiaBreakfastCalories;
+        }
+
         return [
             'profile_id' => (int) $profile->id,
             'plan_tier' => $planTier,
@@ -220,6 +249,7 @@ final class UserPlanCalculator
             'fat_percentage' => $fatPct,
             'daily_macros' => $dailyMacros,
             'include_soup' => $includeSoup,
+            'fixed_chia_breakfast' => $fixedChiaBreakfast,
             'fixed_portion' => [
                 'slots' => self::coreFixedPortionSlots(),
                 'calories' => $fixedPortionTotal,

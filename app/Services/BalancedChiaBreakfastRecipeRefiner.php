@@ -12,15 +12,15 @@ use InvalidArgumentException;
 
 /**
  * Standardizes Balanced rotation chia breakfasts on {@see Coconut Chia Pudding (Base)}
- * with date-syrup-sweetened coconut chia and per-meal toppings only (max 250 kcal each).
+ * with date-syrup-sweetened coconut chia and per-meal toppings only (max 200 kcal each).
  */
 final class BalancedChiaBreakfastRecipeRefiner
 {
     public const COCONUT_CHIA_BASE_NAME = 'Coconut Chia Pudding (Base)';
 
-    public const COCONUT_CHIA_BASE_GRAMS = 75.0;
+    public const COCONUT_CHIA_BASE_GRAMS = 53.0;
 
-    public const MAX_CALORIES = 250.0;
+    public const MAX_CALORIES = 200.0;
 
     /**
      * @return list<string>
@@ -215,9 +215,9 @@ final class BalancedChiaBreakfastRecipeRefiner
             ],
             'Strawberry Almond Chia Pudding' => [
                 'ingredients' => [
-                    self::COCONUT_CHIA_BASE_NAME => 75,
-                    'Strawberries' => 50,
-                    'Almond whole' => 5,
+                    self::COCONUT_CHIA_BASE_NAME => $base,
+                    'Strawberries' => 40,
+                    'Almond whole' => 4,
                 ],
                 'instructions' => array_merge($basePrep, [
                     'Fold in sliced strawberries and almonds.',
@@ -271,9 +271,9 @@ final class BalancedChiaBreakfastRecipeRefiner
             ],
             'Chia Pudding Smoothie' => [
                 'ingredients' => [
-                    self::COCONUT_CHIA_BASE_NAME => 75,
-                    'Strawberries' => 40,
-                    'Banana' => 30,
+                    self::COCONUT_CHIA_BASE_NAME => $base,
+                    'Strawberries' => 30,
+                    'Banana' => 25,
                 ],
                 'instructions' => [
                     'Prepare Coconut Chia Pudding (Base) ahead and chill until thick.',

@@ -8,7 +8,22 @@ use App\Models\Meal;
 use App\Models\User;
 use App\Services\Nutrition\AdaptedMenuBuilder;
 use App\Services\Nutrition\CraftCaloriePlanner;
+use App\Services\Nutrition\ProductionWeeklyMenuSchedule;
 use App\Services\Nutrition\UserPlanCalculator;
+use App\Support\AdminConsultationPreviewProfile;
+
+test('meal detail view api formats salmon with raw before cooking label', function () {
+    $user = User::factory()->customer()->create();
+
+    $salmon = Ingredient::factory()->create(['name' => 'Salmon']);
+    $meal = Meal::factory()->create(['name' => 'API Detail Baked Salmon']);
+    $meal->ingredients()->attach($salmon->id, ['amount_grams' => 125, 'amount' => 125, 'unit' => 'g']);
+
+    $this->actingAs($user)
+        ->getJson(route('api.meals.detail-view', $meal))
+        ->assertOk()
+        ->assertJsonPath('detailView.ingredients.0', '125g Salmon (raw, before cooking)');
+});
 
 test('meal detail view api formats egg ingredients with large egg counts', function () {
     $user = User::factory()->customer()->create();
@@ -74,4 +89,61 @@ test('meal detail view api scales ingredient amounts for customer plan and craft
         ->assertOk()
         ->assertJsonPath('detailView.nutritionSubheading', 'Adapted for your plan')
         ->assertJsonPath('detailView.ingredients.0', "{$expectedGrams}g Scaled Rice");
+});
+
+test('meal detail view api formats liquid ingredients in milliliters', function () {
+    $user = User::factory()->customer()->create();
+
+    $oil = Ingredient::factory()->create([
+        'name' => 'Olive Oil (Extra Virgin)',
+        'usda_food_category' => 'Fats',
+        'density' => 1.0,
+    ]);
+    $meal = Meal::factory()->create(['name' => 'API Detail Omelet With Oil']);
+    $meal->ingredients()->attach($oil->id, ['amount_grams' => 6, 'amount' => 6, 'unit' => 'g']);
+
+    $this->actingAs($user)
+        ->getJson(route('api.meals.detail-view', $meal))
+        ->assertOk()
+        ->assertJsonPath('detailView.ingredients.0', '6ml Olive Oil (Extra Virgin)');
+});
+
+test('meal detail view api matches scheduled savory breakfast calories for full craft day', function () {
+    $meal = Meal::query()->where('name', 'Mediterranean Omelet')->first();
+
+    if ($meal === null) {
+        $this->markTestSkipped('Mediterranean Omelet is not in the meal library.');
+    }
+
+    $user = User::factory()->create();
+
+    $scheduled = ProductionWeeklyMenuSchedule::scheduledFullCraftByWeekday(
+        AdminConsultationPreviewProfile::resolve($user),
+        null,
+        ['plan_tier' => 1000, 'craft_key' => CraftCaloriePlanner::CRAFT_FULL],
+    );
+
+    $expectedCalories = null;
+
+    foreach ($scheduled[1]['breakfasts'] ?? [] as $breakfast) {
+        if (($breakfast['name'] ?? '') === 'Mediterranean Omelet') {
+            $expectedCalories = (int) round((float) ($breakfast['adapted_nutrition']['calories'] ?? 0));
+
+            break;
+        }
+    }
+
+    if ($expectedCalories === null) {
+        $this->markTestSkipped('Sunday production schedule does not include Mediterranean Omelet.');
+    }
+
+    $this->actingAs($user)
+        ->getJson(route('api.meals.detail-view', $meal).'?'.http_build_query([
+            'craft_key' => CraftCaloriePlanner::CRAFT_FULL,
+            'plan_tier' => 1000,
+            'day_of_week' => 1,
+        ]))
+        ->assertOk()
+        ->assertJsonPath('detailView.nutritionSubheading', 'Adapted for your plan')
+        ->assertJsonPath('detailView.macros.calories', $expectedCalories);
 });

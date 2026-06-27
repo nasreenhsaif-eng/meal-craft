@@ -218,7 +218,7 @@ export function scheduledFullCraftCategoryMealsForDay(schedule, dayOfWeek) {
 }
 
 /**
- * @param {{ includeSoup?: boolean; craftKey?: string; soupCalories?: number; sideSaladCalories?: number; dessertCalories?: number; dayOfWeek?: number; planTier?: number }} [options]
+ * @param {{ includeSoup?: boolean; craftKey?: string; soupCalories?: number; sideSaladCalories?: number; dessertCalories?: number; dayOfWeek?: number; planTier?: number; fixedChiaBreakfast?: boolean }} [options]
  */
 export function buildAdaptedMenuQueryString(options = {}) {
     const params = new URLSearchParams();
@@ -244,13 +244,16 @@ export function buildAdaptedMenuQueryString(options = {}) {
     if (typeof options.planTier === 'number' && options.planTier > 0) {
         params.set('plan_tier', String(Math.round(options.planTier)));
     }
+    if (options.fixedChiaBreakfast) {
+        params.set('fixed_chia_breakfast', '1');
+    }
 
     return params.toString();
 }
 
 /**
  * @param {string} url
- * @param {{ includeSoup?: boolean; craftKey?: string; soupCalories?: number; sideSaladCalories?: number; dessertCalories?: number; dayOfWeek?: number; planTier?: number }} [options]
+ * @param {{ includeSoup?: boolean; craftKey?: string; soupCalories?: number; sideSaladCalories?: number; dessertCalories?: number; dayOfWeek?: number; planTier?: number; fixedChiaBreakfast?: boolean }} [options]
  */
 export async function fetchAdaptedMenu(url, options = {}) {
     const query = buildAdaptedMenuQueryString(options);
