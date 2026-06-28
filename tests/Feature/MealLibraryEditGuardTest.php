@@ -6,6 +6,7 @@ use App\IngredientsImport;
 use App\Models\Ingredient;
 use App\Models\Meal;
 use App\Models\User;
+use App\Services\BalancedDairyFreeManualRecipeAdjustments;
 use App\Services\MealCsvLibraryImportService;
 use App\Services\SaladDressingMealRefiner;
 use App\Support\MealLibraryEditGuard;
@@ -22,6 +23,26 @@ test('meal library save marks meal as protected from automated overwrites', func
     MealLibraryEditGuard::markMealEditedFromLibrary($meal->fresh());
 
     expect($meal->fresh()->library_edited_at)->not->toBeNull();
+});
+
+test('manual dairy-free recipe adjustments skip meals edited in the library ui', function () {
+    $meal = Meal::factory()->create([
+        'name' => 'Beef Bibimbap',
+        'category' => RecipeCategory::Meal,
+        'meal_type' => MealType::Main,
+        'library_edited_at' => now(),
+    ]);
+
+    $beef = Ingredient::factory()->create(['name' => 'Beef Ground']);
+    $bokChoy = Ingredient::factory()->create(['name' => 'Bok Choy']);
+    $meal->ingredients()->attach($beef->id, ['amount_grams' => 140, 'amount' => 140, 'unit' => 'g']);
+    $meal->ingredients()->attach($bokChoy->id, ['amount_grams' => 50, 'amount' => 50, 'unit' => 'g']);
+
+    app(BalancedDairyFreeManualRecipeAdjustments::class)->apply();
+
+    expect($meal->fresh()->ingredients)->toHaveCount(2)
+        ->and((float) $meal->fresh()->ingredients->firstWhere('name', 'Beef Ground')->pivot->amount_grams)->toBe(140.0)
+        ->and((float) $meal->fresh()->ingredients->firstWhere('name', 'Bok Choy')->pivot->amount_grams)->toBe(50.0);
 });
 
 test('salad dressing refiner skips meals edited in the library ui', function () {

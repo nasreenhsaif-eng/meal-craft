@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Meal;
+use App\Support\MealLibraryEditGuard;
 
 /**
  * Targeted dairy-free calcium / B12 / K2 gram boosts on rotation meals after automated refinement.
@@ -279,6 +280,10 @@ final class BalancedDairyFreeManualRecipeAdjustments
                 ->first();
 
             if ($meal === null) {
+                continue;
+            }
+
+            if (MealLibraryEditGuard::shouldSkipMealRefinement($meal)) {
                 continue;
             }
 
