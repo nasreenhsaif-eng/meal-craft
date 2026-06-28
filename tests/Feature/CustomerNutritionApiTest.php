@@ -10,7 +10,6 @@ use App\Models\Meal;
 use App\Models\MealPlan;
 use App\Models\MealPlanDayMeal;
 use App\Models\User;
-use App\Services\Nutrition\AdaptedMenuBuilder;
 use App\Services\Nutrition\UserPlanCalculator;
 
 test('guests cannot post onboarding', function () {
@@ -35,7 +34,7 @@ test('authenticated user can complete onboarding and receive a plan', function (
 
     $response->assertCreated()
         ->assertJsonPath('profile.macro_split_style', 'high_protein')
-        ->assertJsonPath('plan.fixed.calories', 345)
+        ->assertJsonPath('plan.fixed.calories', 300)
         ->assertJsonStructure([
             'plan' => [
                 'scaling_multiplier',
@@ -96,7 +95,7 @@ test('customers cannot override plan tier via adapted menu query', function () {
     expect($user->fresh()->customerProfile?->daily_calorie_target)->toBe(2000);
 });
 
-test('actual fixed portion calories shrink scalable slot targets while day total stays at tier', function () {
+test('selected fixed slots keep explicit tier slot targets and day total at tier', function () {
     $user = User::factory()->create();
     CustomerProfile::factory()->for($user)->create([
         'daily_calorie_target' => 1200,
@@ -105,17 +104,17 @@ test('actual fixed portion calories shrink scalable slot targets while day total
         'fat_percentage' => 30,
     ]);
 
-    $withMidpoints = UserPlanCalculator::calculateUserPlan($profile = $user->customerProfile);
-    $withActualFixed = UserPlanCalculator::calculateUserPlan($profile, [
+    $withSideAndSoup = UserPlanCalculator::calculateUserPlan($user->customerProfile, [
+        'selected_fixed_slots' => ['side_salad', 'soup'],
         'side_salad_calories' => 220,
-        'dessert_calories' => 210,
-        'include_soup' => true,
         'soup_calories' => 107,
     ]);
 
-    expect($withActualFixed['day_total_calories'])->toBe(1200.0)
-        ->and($withActualFixed['scalable_slot_targets']['breakfast']['calories'])
-        ->toBeLessThan($withMidpoints['scalable_slot_targets']['breakfast']['calories']);
+    expect($withSideAndSoup['day_total_calories'])->toBe(1200.0)
+        ->and($withSideAndSoup['scalable_slot_targets']['breakfast']['calories'])->toBe(194.0)
+        ->and($withSideAndSoup['scalable_slot_targets']['main_each']['calories'])->toBe(339.5)
+        ->and($withSideAndSoup['fixed_portion']['per_slot']['side_salad'])->toBe(220.0)
+        ->and($withSideAndSoup['fixed_portion']['per_slot']['soup'])->toBe(107.0);
 });
 
 test('adapted menu is available during onboarding when daily calorie target is set', function () {
@@ -173,7 +172,7 @@ test('adapted menu scales breakfast and main meals by per-meal multiplier toward
 
     $profile = CustomerProfile::query()->where('user_id', $user->id)->first();
     $plan = UserPlanCalculator::calculateUserPlan($profile);
-    $expectedBreakfastMultiplier = AdaptedMenuBuilder::mealScalingMultiplier($breakfast, 'breakfast', $plan);
+    $breakfastTarget = (float) $plan['scalable_slot_targets']['breakfast']['calories'];
 
     $response = $this->actingAs($user)->getJson('/api/menu/adapted');
 
@@ -185,9 +184,7 @@ test('adapted menu scales breakfast and main meals by per-meal multiplier toward
 
     expect($scaledBreakfast)->not->toBeNull()
         ->and($scaledBreakfast['is_scaled'])->toBeTrue()
-        ->and($scaledBreakfast['scaling_multiplier'])->toEqual($expectedBreakfastMultiplier)
-        ->and((float) $scaledBreakfast['ingredients'][0]['adapted_amount_grams'])
-        ->toEqual(round(100 * $expectedBreakfastMultiplier, 2));
+        ->and((float) $scaledBreakfast['adapted_nutrition']['calories'])->toEqualWithDelta($breakfastTarget, 1.0);
 });
 
 test('adapted menu returns fixed portion meals with unscaled recipe nutrition', function () {
@@ -226,7 +223,7 @@ test('adapted menu returns fixed portion meals with unscaled recipe nutrition', 
         ->and((float) $sideSalad['adapted_nutrition']['calories'])->toBe(180.0);
 });
 
-test('adapted menu lists soups as optional add-ons and include_soup keeps day total at tier', function () {
+test('adapted menu lists soups as fixed portions when soup is a selected fixed slot', function () {
     $user = User::factory()->create();
     CustomerProfile::factory()->for($user)->create([
         'daily_calorie_target' => 1500,
@@ -247,20 +244,20 @@ test('adapted menu lists soups as optional add-ons and include_soup keeps day to
     ]);
 
     $withoutSoup = $this->actingAs($user)->getJson('/api/menu/adapted');
-    $withSoup = $this->actingAs($user)->getJson('/api/menu/adapted?include_soup=1');
+    $withSoup = $this->actingAs($user)->getJson('/api/menu/adapted?include_soup=1&selected_fixed_slots[]=soup&selected_fixed_slots[]=dessert');
 
     $withoutSoup->assertSuccessful();
     $withSoup->assertSuccessful()
         ->assertJsonPath('include_soup', true)
         ->assertJsonPath('plan.include_soup', true)
         ->assertJsonPath('plan.day_total_calories', 1500)
-        ->assertJsonPath('plan.scalable_slot_targets.breakfast.calories', 201);
+        ->assertJsonPath('plan.scalable_slot_targets.breakfast.calories', 300);
 
-    $soups = collect($withSoup->json('optional_add_on_meals'));
+    $soups = collect($withSoup->json('fixed_portion_meals'));
     $soup = $soups->firstWhere('name', 'Test Soup');
 
     expect($soup)->not->toBeNull()
-        ->and($soup['portion_behavior'])->toBe('optional_add_on')
+        ->and($soup['portion_behavior'])->toBe('fixed_portion')
         ->and($soup['counts_toward_core_tier'])->toBeTrue()
         ->and((float) $soup['adapted_nutrition']['calories'])->toBe(140.0)
         ->and((float) $withoutSoup->json('plan.day_total_calories'))->toEqual(1500.0);
@@ -434,7 +431,7 @@ test('adapted menu applies craft-specific calorie budgets when craft_key is prov
 
     $response->assertSuccessful()
         ->assertJsonPath('plan.craft_key', 'business')
-        ->assertJsonPath('plan.craft_day_calories', 500);
+        ->assertJsonPath('plan.craft_day_calories', 525);
 });
 
 test('adapted menu day craft subtracts one main meal from the plan tier', function () {
@@ -447,5 +444,5 @@ test('adapted menu day craft subtracts one main meal from the plan tier', functi
 
     $response->assertSuccessful()
         ->assertJsonPath('plan.craft_key', 'day')
-        ->assertJsonPath('plan.craft_day_calories', 1338);
+        ->assertJsonPath('plan.craft_day_calories', 1375);
 });

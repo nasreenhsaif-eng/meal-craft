@@ -100,6 +100,8 @@ final class BalancedWeeklyRotationSchedule
         'Beef Bibimbap',
         'Persian Herb Beef Stew',
         'Chili Beef Stuffed Peppers',
+        'Seared Beef Liver w Caramelized Onion, Spinach & Chimichurri',
+        'Beef & Liver Kefta w Herb Salad & Tahini',
     ];
 
     /** @var list<string> Legume-free vegan side salads (slot 1). */

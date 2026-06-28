@@ -11,12 +11,14 @@ final class AdaptedMenuBuildOptionsFromRequest
     /**
      * @return array{
      *     include_soup?: bool,
+     *     selected_fixed_slots?: list<string>,
      *     soup_calories?: float,
      *     side_salad_calories?: float,
      *     dessert_calories?: float,
      *     day_of_week?: int,
      *     craft_key?: string,
      *     plan_tier?: float,
+     *     fixed_chia_breakfast?: bool,
      * }
      */
     public static function resolve(Request $request, User $user): array
@@ -31,11 +33,25 @@ final class AdaptedMenuBuildOptionsFromRequest
             'day_of_week' => ['sometimes', 'integer', 'min:1', 'max:7'],
             'plan_tier' => ['sometimes', 'integer', Rule::in(UserPlanCalculator::planTiers())],
             'fixed_chia_breakfast' => ['sometimes', 'boolean'],
+            'selected_fixed_slots' => ['sometimes', 'array'],
+            'selected_fixed_slots.*' => ['string', Rule::in(UserPlanCalculator::fixedChoiceSlots())],
         ]);
+
+        $selectedFixedSlots = isset($validated['selected_fixed_slots'])
+            ? array_values(array_unique($validated['selected_fixed_slots']))
+            : null;
+
+        if ($selectedFixedSlots !== null) {
+            $includeSoup = in_array('soup', $selectedFixedSlots, true);
+        }
 
         $buildOptions = [
             'include_soup' => $includeSoup,
         ];
+
+        if ($selectedFixedSlots !== null) {
+            $buildOptions['selected_fixed_slots'] = $selectedFixedSlots;
+        }
 
         if (isset($validated['soup_calories'])) {
             $buildOptions['soup_calories'] = (float) $validated['soup_calories'];

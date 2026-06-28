@@ -4,14 +4,35 @@ import PillButton from '../Atoms/Button/Button.jsx';
 import SquareCheckbox from '../Atoms/Icons/SquareCheckbox.jsx';
 import StackedDeckCarousel from '../MealCard/StackedDeckCarousel.jsx';
 import MealCardClientViewNano from '../MealCardClientViewNano.jsx';
+import {
+    FIXED_CHOICE_CATEGORY_KEYS,
+    FIXED_CHOICE_REQUIRED_COUNT,
+    FIXED_CHOICE_SECTIONS,
+    FIXED_CHOICE_TOGGLE_OPTIONS,
+    applyFixedChoiceToggle,
+    countFixedChoiceSelections,
+    isFixedChoiceComplete,
+    visibleFixedChoiceCategoriesFromSelections,
+} from '../../consultation/fixedChoiceSelection.js';
+
+export {
+    FIXED_CHOICE_CATEGORY_KEYS,
+    FIXED_CHOICE_REQUIRED_COUNT,
+    FIXED_CHOICE_SECTIONS,
+    FIXED_CHOICE_TOGGLE_OPTIONS,
+    applyFixedChoiceToggle,
+    countFixedChoiceSelections,
+    isFixedChoiceComplete,
+    visibleFixedChoiceCategoriesFromSelections,
+} from '../../consultation/fixedChoiceSelection.js';
 
 /** @typedef {{ id: string; mealType?: string; category?: string; caloriesNumber?: number }} ConsultationMeal */
 
 /** @typedef {'breakfasts' | 'meals' | 'sideSalads' | 'desserts' | 'soup'} SelectionCategoryKey */
 
-/** Required categories for Full Craft NEXT (soup is optional). */
+/** Required categories for Full Craft NEXT (pick 2 fixed slots separate). */
 export const FULL_CRAFT_REQUIRED_SELECTION_KEYS = Object.freeze(
-    /** @type {const} */ (['breakfasts', 'meals', 'sideSalads', 'desserts']),
+    /** @type {const} */ (['breakfasts', 'meals']),
 );
 
 /**
@@ -164,7 +185,7 @@ export function selectionLimitWarningMessage(maxSelected) {
     return `You can only select ${slotLabel}. Deselect one to choose a different meal.`;
 }
 
-/** Default slot caps for Full Craft (optional soup: pick 1 from the deck). */
+/** Default slot caps for Full Craft (pick 2 of side / dessert / soup). */
 export const DEFAULT_FULL_CRAFT_MAX_SELECTIONS = Object.freeze({
     breakfasts: 1,
     meals: 2,
@@ -229,12 +250,12 @@ export function parseConsultationMacroValue(raw) {
     return 0;
 }
 
-/** Category rows for plan / admin day macro breakdown (soup omitted when empty). */
+/** Category rows for plan / admin day macro breakdown. */
 export const PLAN_MACRO_CATEGORY_ROWS = Object.freeze([
     { key: 'breakfasts', label: 'Breakfast', optional: false },
     { key: 'meals', label: 'Meals chosen', optional: false },
-    { key: 'sideSalads', label: 'Side salad', optional: false },
-    { key: 'desserts', label: 'Desserts', optional: false },
+    { key: 'sideSalads', label: 'Side salad', optional: true },
+    { key: 'desserts', label: 'Desserts', optional: true },
     { key: 'soup', label: 'Soup', optional: true },
 ]);
 
@@ -514,7 +535,7 @@ export function PlanMacroSummaryPanel({ activeDayTotals, categories, dayLabel = 
 }
 
 /**
- * Full Craft: required slots satisfied (breakfast ×1, meals ×2, side ×1, dessert ×1). Soup optional.
+ * Full Craft: breakfasts ×1, meals ×2, and exactly 2 fixed picks across side / dessert / soup.
  *
  * @param {Partial<Record<SelectionCategoryKey, string[]>> | null | undefined} categorySelections
  */
@@ -522,11 +543,15 @@ export function isFullCraftCategoriesComplete(categorySelections) {
     if (!categorySelections) {
         return false;
     }
-    return FULL_CRAFT_REQUIRED_SELECTION_KEYS.every((key) => {
+
+    const coreComplete = FULL_CRAFT_REQUIRED_SELECTION_KEYS.every((key) => {
         const need = DEFAULT_FULL_CRAFT_MAX_SELECTIONS[key];
         const have = categorySelections[key]?.length ?? 0;
+
         return have === need;
     });
+
+    return coreComplete && isFixedChoiceComplete(categorySelections);
 }
 
 /**
@@ -535,13 +560,22 @@ export function isFullCraftCategoriesComplete(categorySelections) {
  */
 export function getIncompleteFullCraftCategoryKeys(categorySelections) {
     if (!categorySelections) {
-        return [...FULL_CRAFT_REQUIRED_SELECTION_KEYS];
+        return [...FULL_CRAFT_REQUIRED_SELECTION_KEYS, 'fixedChoice'];
     }
-    return FULL_CRAFT_REQUIRED_SELECTION_KEYS.filter((key) => {
+
+    /** @type {(SelectionCategoryKey | 'fixedChoice')[]} */
+    const missing = FULL_CRAFT_REQUIRED_SELECTION_KEYS.filter((key) => {
         const need = DEFAULT_FULL_CRAFT_MAX_SELECTIONS[key];
         const have = categorySelections[key]?.length ?? 0;
+
         return have !== need;
     });
+
+    if (!isFixedChoiceComplete(categorySelections)) {
+        missing.push('fixedChoice');
+    }
+
+    return missing;
 }
 
 const INCOMPLETE_SELECTION_LABELS = Object.freeze({
@@ -549,6 +583,7 @@ const INCOMPLETE_SELECTION_LABELS = Object.freeze({
     meals: '2 main meals',
     sideSalads: 'side salad',
     desserts: 'dessert',
+    fixedChoice: '2 of side salad, dessert, or soup',
 });
 
 /**
@@ -759,6 +794,282 @@ export function MealSlotCarousel({
 }
 
 /**
+ * Pick-2 side options: horizontal category toggles reveal one deck per checked category.
+ *
+ * @param {object} props
+ * @param {Partial<Record<SelectionCategoryKey, string[]>> | null | undefined} props.categorySelections
+ * @param {(categoryKey: SelectionCategoryKey, meal: ConsultationMeal) => void} [props.onSelectMeal]
+ * @param {(categoryKey: SelectionCategoryKey) => void} [props.onClearCategory]
+ * @param {string} [props.deckScopePrefix]
+ * @param {ConsultationMeal[]} [props.meals]
+ * @param {Partial<Record<SelectionCategoryKey, ConsultationMeal[]>>} [props.assignedMealsByCategory]
+ * @param {ConsultationMeal[]} [props.scheduledSoupMeals]
+ * @param {ConsultationMeal[]} [props.soupCatalogMeals]
+ * @param {boolean} [props.readOnly]
+ * @param {boolean} [props.validationFlash]
+ * @param {(meal: ConsultationMeal) => void} [props.onViewDetails]
+ * @param {(cards: ConsultationMeal[], selectionKey: SelectionCategoryKey) => ConsultationMeal[]} [props.resolveCards]
+ */
+export function FixedChoicePicker({
+    categorySelections,
+    onSelectMeal,
+    onClearCategory,
+    deckScopePrefix = '',
+    meals = [],
+    assignedMealsByCategory = null,
+    scheduledSoupMeals = [],
+    soupCatalogMeals = [],
+    readOnly = false,
+    validationFlash = false,
+    onViewDetails,
+    resolveCards = null,
+}) {
+    const [visibleCategories, setVisibleCategories] = useState(
+        () => visibleFixedChoiceCategoriesFromSelections(categorySelections),
+    );
+    const [mealLimitWarning, setMealLimitWarning] = useState(/** @type {string | null} */ (null));
+    const [categoryLimitWarning, setCategoryLimitWarning] = useState(/** @type {string | null} */ (null));
+    const warningTimerRef = useRef(0);
+
+    const pickEnabled = typeof onSelectMeal === 'function' && !readOnly;
+
+    useEffect(
+        () => () => {
+            window.clearTimeout(warningTimerRef.current);
+        },
+        [],
+    );
+
+    useEffect(() => {
+        setVisibleCategories(visibleFixedChoiceCategoriesFromSelections(categorySelections));
+        setMealLimitWarning(null);
+        setCategoryLimitWarning(null);
+    }, [deckScopePrefix]);
+
+    useEffect(() => {
+        setVisibleCategories((previous) => {
+            const fromSelections = visibleFixedChoiceCategoriesFromSelections(categorySelections);
+            const merged = new Set([...previous, ...fromSelections]);
+
+            return FIXED_CHOICE_TOGGLE_OPTIONS.map((option) => option.selectionKey).filter((key) =>
+                merged.has(key),
+            );
+        });
+    }, [categorySelections]);
+
+    const fixedChoiceCount = countFixedChoiceSelections(categorySelections);
+
+    const soupDeckMeals = useMemo(() => {
+        const assignedSoups = assignedMealsByCategory?.soup;
+        if (assignedSoups && assignedSoups.length > 0) {
+            return assignedSoups;
+        }
+
+        if (scheduledSoupMeals.length > 0) {
+            return scheduledSoupMeals;
+        }
+
+        const catalog = soupCatalogMeals.length > 0 ? soupCatalogMeals : meals;
+
+        return soupOfTheDayMeals(catalog ?? []);
+    }, [meals, scheduledSoupMeals, soupCatalogMeals, assignedMealsByCategory]);
+
+    const showTransientWarning = useCallback((setter, message) => {
+        setter(message);
+        window.clearTimeout(warningTimerRef.current);
+        warningTimerRef.current = window.setTimeout(() => setter(null), 3200);
+    }, []);
+
+    const handleCategoryToggle = useCallback(
+        (categoryKey) => {
+            if (readOnly) {
+                return;
+            }
+
+            const isVisible = visibleCategories.includes(categoryKey);
+
+            if (isVisible) {
+                setVisibleCategories((previous) => previous.filter((key) => key !== categoryKey));
+                onClearCategory?.(categoryKey);
+                setCategoryLimitWarning(null);
+
+                return;
+            }
+
+            if (visibleCategories.length >= FIXED_CHOICE_REQUIRED_COUNT) {
+                showTransientWarning(
+                    setCategoryLimitWarning,
+                    'You can only open 2 categories. Uncheck one to choose a different side type.',
+                );
+
+                return;
+            }
+
+            setVisibleCategories((previous) => [...previous, categoryKey]);
+            setCategoryLimitWarning(null);
+        },
+        [readOnly, visibleCategories, onClearCategory, showTransientWarning],
+    );
+
+    const handleMealSelect = useCallback(
+        (categoryKey, meal) => {
+            if (!categorySelections || !onSelectMeal) {
+                return;
+            }
+
+            const { blocked } = applyFixedChoiceToggle(categorySelections, categoryKey, meal.id);
+
+            if (blocked) {
+                showTransientWarning(
+                    setMealLimitWarning,
+                    'You can only pick 2 of side salad, dessert, or soup. Deselect one to choose a different option.',
+                );
+
+                return;
+            }
+
+            setMealLimitWarning(null);
+            onSelectMeal(categoryKey, meal);
+        },
+        [categorySelections, onSelectMeal, showTransientWarning],
+    );
+
+    const cardsForSection = useCallback(
+        (def) => {
+            if (typeof resolveCards === 'function') {
+                const resolved = resolveCards([], def.selectionKey);
+
+                if (resolved.length > 0) {
+                    return resolved;
+                }
+            }
+
+            const assignedCards = assignedMealsByCategory?.[def.selectionKey];
+            if (assignedCards && assignedCards.length > 0) {
+                return assignedCards;
+            }
+
+            if (def.selectionKey === 'soup') {
+                return soupDeckMeals;
+            }
+
+            return filterMealsByCategory(meals ?? [], def.mealTypeLabel);
+        },
+        [assignedMealsByCategory, meals, resolveCards, soupDeckMeals],
+    );
+
+    const prefix = deckScopePrefix ? `${deckScopePrefix}-` : '';
+
+    return (
+        <div className="relative isolate w-full overflow-x-clip overflow-y-visible py-0.5">
+            <div className="mx-auto min-w-0 max-w-full px-4 text-center md:px-0">
+                <p className="font-montserrat text-[15px] font-bold leading-snug tracking-tight text-[#262A22] sm:text-base">
+                    Pick 2 — side salad, dessert, or soup
+                </p>
+                <p className="mt-0.5 font-body text-xs leading-snug text-[#555555] sm:text-sm">
+                    {pickEnabled
+                        ? `Each option is ~150 kcal • ${fixedChoiceCount}/${FIXED_CHOICE_REQUIRED_COUNT} selected`
+                        : `${fixedChoiceCount} selected (~150 kcal each)`}
+                </p>
+
+                <div
+                    className="mt-3 flex flex-wrap items-center justify-center gap-2 sm:gap-3"
+                    role="group"
+                    aria-label="Choose which side categories to show"
+                >
+                    {FIXED_CHOICE_TOGGLE_OPTIONS.map((option) => {
+                        const checked = visibleCategories.includes(option.selectionKey);
+
+                        return (
+                            <button
+                                key={option.selectionKey}
+                                type="button"
+                                aria-pressed={checked}
+                                disabled={readOnly}
+                                onClick={() => handleCategoryToggle(option.selectionKey)}
+                                className={[
+                                    'inline-flex items-center gap-2 rounded-full border px-3 py-2 font-body text-sm transition-colors sm:px-4',
+                                    checked
+                                        ? 'border-[#5A6B44] bg-[#F8F9F6] text-[#262A22] shadow-sm'
+                                        : 'border-gray-200 bg-white text-[#555555] hover:border-[#5A6B44]/40 hover:bg-[#F8F9F6]',
+                                    readOnly ? 'cursor-default opacity-80' : 'cursor-pointer',
+                                ]
+                                    .join(' ')
+                                    .trim()}
+                            >
+                                <SquareCheckbox checked={checked} presentational className="shrink-0" />
+                                <span className="font-medium">{option.label}</span>
+                            </button>
+                        );
+                    })}
+                </div>
+            </div>
+
+            {categoryLimitWarning ? (
+                <div className="mx-auto mt-2 max-w-full px-4 md:px-0" role="alert" aria-live="polite">
+                    <p className="rounded-[10px] border border-red-200 bg-red-50 px-3 py-2 text-center font-body text-xs font-semibold text-red-800 sm:text-sm">
+                        {categoryLimitWarning}
+                    </p>
+                </div>
+            ) : null}
+
+            {mealLimitWarning ? (
+                <div className="mx-auto mt-2 max-w-full px-4 md:px-0" role="alert" aria-live="polite">
+                    <p className="rounded-[10px] border border-red-200 bg-red-50 px-3 py-2 text-center font-body text-xs font-semibold text-red-800 sm:text-sm">
+                        {mealLimitWarning}
+                    </p>
+                </div>
+            ) : null}
+
+            <div
+                className={[
+                    'mt-3 space-y-4 transition-[box-shadow] duration-300',
+                    validationFlash ? 'rounded-xl ring-2 ring-[#C44F5D] ring-offset-2 ring-offset-white' : '',
+                ]
+                    .join(' ')
+                    .trim()}
+            >
+                {FIXED_CHOICE_TOGGLE_OPTIONS.map((def, idx) => {
+                    if (!visibleCategories.includes(def.selectionKey)) {
+                        return null;
+                    }
+
+                    const cards = cardsForSection(def);
+                    const selectedIds = categorySelections?.[def.selectionKey] ?? [];
+
+                    if (cards.length === 0) {
+                        return (
+                            <p
+                                key={def.selectionKey}
+                                className="px-4 text-center font-body text-sm text-[#666666] md:px-0"
+                            >
+                                No {def.label.toLowerCase()} options for this day yet.
+                            </p>
+                        );
+                    }
+
+                    return (
+                        <MealSlotCarousel
+                            key={def.selectionKey}
+                            sectionKey={def.selectionKey}
+                            sectionStackOrder={idx}
+                            title={def.header}
+                            deckScopeKey={`${prefix}${def.deckSuffix}`}
+                            cards={cards}
+                            selectedIds={selectedIds}
+                            maxSelected={1}
+                            readOnly={!pickEnabled}
+                            onSelect={pickEnabled ? (meal) => handleMealSelect(def.selectionKey, meal) : () => {}}
+                            onViewDetails={onViewDetails}
+                        />
+                    );
+                })}
+            </div>
+        </div>
+    );
+}
+
+/**
  * @param {object} props
  * @param {() => void} [props.onFooterBack]
  * @param {() => void} [props.onFooterNext]
@@ -769,7 +1080,7 @@ export function MealSlotCarousel({
  * @param {ConsultationMeal[]} [props.soupCatalogMeals] Full menu catalog for soup fallback (deck meals omit soup).
  * @param {Partial<Record<SelectionCategoryKey, ConsultationMeal[]>>} [props.assignedMealsByCategory]
  * @param {boolean} [props.categoriesReadOnly]
- * @param {(enabled: boolean) => void} [props.onSoupOptInChange]
+ * @param {(categoryKey: SelectionCategoryKey) => void} [props.onClearFixedChoiceCategory]
  * @param {(meal: ConsultationMeal) => void} [props.onViewDetails]
  * @param {string} [props.panelClassName] Height class for the viewport-locked panel shell.
  */
@@ -779,6 +1090,7 @@ export default function ChooseYourMeals({
     dayMacroTotals = null,
     summaryLabel,
     targetCalories = 1200,
+    dayCalorieTolerance = 50,
     layout = 'custom',
     meals = [],
     maxSelectionsByCategory,
@@ -803,7 +1115,7 @@ export default function ChooseYourMeals({
     soupCatalogMeals = [],
     assignedMealsByCategory = null,
     categoriesReadOnly = false,
-    onSoupOptInChange,
+    onClearFixedChoiceCategory,
     onViewDetails,
     panelClassName = 'h-[100dvh] min-h-screen',
 }) {
@@ -811,11 +1123,7 @@ export default function ChooseYourMeals({
     /** Daily option decks stay interactive whenever the parent wires selection (hides CRAFT THIS MEAL only in true read-only review). */
     const categoryPickEnabled = typeof onToggleCategory === 'function' && !categoriesReadOnly;
 
-    const [soupOptIn, setSoupOptIn] = useState(
-        () => categoriesReadOnly || (categorySelections?.soup?.length ?? 0) > 0,
-    );
-
-    const [validationFlashKeys, setValidationFlashKeys] = useState(/** @type {SelectionCategoryKey[]} */ ([]));
+    const [validationFlashKeys, setValidationFlashKeys] = useState(/** @type {(SelectionCategoryKey | 'fixedChoice')[]} */ ([]));
     const [incompleteWarning, setIncompleteWarning] = useState(/** @type {string | null} */ (null));
 
     const scrollContainerRef = useRef(/** @type {HTMLDivElement | null} */ (null));
@@ -890,21 +1198,6 @@ export default function ChooseYourMeals({
     }, [forwardWheelToMealScroller]);
 
     useEffect(() => {
-        if (categoriesReadOnly) {
-            setSoupOptIn(true);
-            return;
-        }
-
-        setSoupOptIn((categorySelections?.soup?.length ?? 0) > 0);
-    }, [deckScopePrefix, categoriesReadOnly]);
-
-    useEffect(() => {
-        if ((categorySelections?.soup?.length ?? 0) > 0) {
-            setSoupOptIn(true);
-        }
-    }, [categorySelections?.soup]);
-
-    useEffect(() => {
         if (layout === 'categories' && categorySelections && isFullCraftCategoriesComplete(categorySelections)) {
             setValidationFlashKeys([]);
             setIncompleteWarning(null);
@@ -916,8 +1209,6 @@ export default function ChooseYourMeals({
             setIncompleteWarning(null);
         }
     }, [layout, footerNextDisabled]);
-
-    const soupSectionDef = FULL_CRAFT_CATEGORY_SECTIONS.find((s) => s.selectionKey === 'soup');
 
     const categoriesComplete = useMemo(
         () => (layout === 'categories' ? isFullCraftCategoriesComplete(categorySelections) : true),
@@ -968,9 +1259,11 @@ export default function ChooseYourMeals({
             return null;
         }
 
-        const nonSoup = FULL_CRAFT_CATEGORY_SECTIONS.filter((def) => def.selectionKey !== 'soup');
+        const coreSections = FULL_CRAFT_CATEGORY_SECTIONS.filter(
+            (def) => def.selectionKey === 'breakfasts' || def.selectionKey === 'meals',
+        );
 
-        return nonSoup.map((def, idx) => {
+        return coreSections.map((def, idx) => {
             const assignedCards = assignedMealsByCategory?.[def.selectionKey];
             const cards =
                 assignedCards && assignedCards.length > 0
@@ -1015,80 +1308,24 @@ export default function ChooseYourMeals({
         onViewDetails,
     ]);
 
-    const soupDeckMeals = useMemo(() => {
-        const assignedSoups = assignedMealsByCategory?.soup;
-        if (assignedSoups && assignedSoups.length > 0) {
-            return assignedSoups;
-        }
-
-        if (scheduledSoupMeals.length > 0) {
-            return scheduledSoupMeals;
-        }
-
-        const catalog = soupCatalogMeals.length > 0 ? soupCatalogMeals : meals;
-
-        return soupOfTheDayMeals(catalog ?? []);
-    }, [meals, scheduledSoupMeals, soupCatalogMeals, assignedMealsByCategory]);
-
-    const showSoupBlock =
+    const fixedChoiceBlock =
         layout === 'categories' &&
         categorySelections &&
-        soupSectionDef &&
-        (categoryPickEnabled || categoriesReadOnly) &&
-        soupDeckMeals.length > 0;
-
-    const soupBlock = showSoupBlock ? (
-            <div
-                className="relative isolate w-full overflow-x-clip overflow-y-visible py-0.5"
-                style={{ zIndex: 35 + FULL_CRAFT_CATEGORY_SECTIONS.length * 6 }}
-            >
-                {categoryPickEnabled ? (
-                    <SoupOfTheDayOptIn
-                        checked={soupOptIn}
-                        header={soupSectionDef.header}
-                        onChange={(next) => {
-                            setSoupOptIn(next);
-                            if (!next) {
-                                onSoupOptInChange?.(false);
-                            }
-                        }}
-                    />
-                ) : (
-                    <p className="px-4 font-montserrat text-[15px] font-bold leading-snug tracking-tight text-[#262A22] sm:text-base md:px-0">
-                        {soupSectionDef.header}
-                    </p>
-                )}
-
-                <AnimatePresence initial={false}>
-                    {categoriesReadOnly || soupOptIn ? (
-                        <motion.div
-                            key="soup-deck"
-                            initial={{ opacity: 0, y: 12, scale: 0.97 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, y: 8, scale: 0.98 }}
-                            transition={{ type: 'spring', stiffness: 320, damping: 34 }}
-                            className="overflow-hidden"
-                        >
-                            <MealSlotCarousel
-                                sectionStackOrder={FULL_CRAFT_CATEGORY_SECTIONS.length}
-                                deckOnly
-                                showSelectionSubheader
-                                readOnly={!categoryPickEnabled}
-                                title=""
-                                deckScopeKey={`${deckScopePrefix ? `${deckScopePrefix}-` : ''}${soupSectionDef.deckSuffix}`}
-                                cards={soupDeckMeals}
-                                selectedIds={categorySelections.soup ?? []}
-                                maxSelected={1}
-                                onSelect={
-                                    categoryPickEnabled
-                                        ? (meal) => onToggleCategory?.('soup', meal)
-                                        : () => {}
-                                }
-                                onViewDetails={onViewDetails}
-                            />
-                        </motion.div>
-                    ) : null}
-                </AnimatePresence>
+        (categoryPickEnabled || categoriesReadOnly) ? (
+            <div style={{ zIndex: 35 + FULL_CRAFT_CATEGORY_SECTIONS.length * 6 }}>
+                <FixedChoicePicker
+                    categorySelections={categorySelections}
+                    deckScopePrefix={deckScopePrefix}
+                    meals={meals}
+                    assignedMealsByCategory={assignedMealsByCategory ?? undefined}
+                    scheduledSoupMeals={scheduledSoupMeals}
+                    soupCatalogMeals={soupCatalogMeals}
+                    readOnly={!categoryPickEnabled}
+                    validationFlash={validationFlashKeys.includes('fixedChoice')}
+                    onSelectMeal={categoryPickEnabled ? onToggleCategory : undefined}
+                    onClearCategory={categoryPickEnabled ? onClearFixedChoiceCategory : undefined}
+                    onViewDetails={onViewDetails}
+                />
             </div>
         ) : null;
 
@@ -1103,7 +1340,7 @@ export default function ChooseYourMeals({
         layout === 'categories' ? (
             <div className="flex flex-col gap-1.5 md:gap-2">
                 {categorySections}
-                {soupBlock}
+                {fixedChoiceBlock}
             </div>
         ) : children ? (
             children
@@ -1171,8 +1408,20 @@ export default function ChooseYourMeals({
                         ) : (
                             <span className="min-w-0 flex-1" />
                         )}
-                        <p className="font-montserrat text-sm font-bold tabular-nums text-[#1F2937]">
+                        <p
+                            className={[
+                                'font-montserrat text-sm font-bold tabular-nums',
+                                Math.abs(Math.round(totalKcal) - Math.round(targetCalories)) > dayCalorieTolerance
+                                    ? 'text-amber-800'
+                                    : 'text-[#1F2937]',
+                            ]
+                                .join(' ')
+                                .trim()}
+                        >
                             Total: {Math.round(totalKcal)} kcal
+                            <span className="ml-1.5 font-body text-xs font-normal text-[#555555]">
+                                (target {Math.round(targetCalories)} ±{dayCalorieTolerance})
+                            </span>
                         </p>
                     </div>
                     {dayMacroTotals && dayMacroTotals.calories > 0 ? (

@@ -10,7 +10,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-test('chia breakfast meals are served as fixed portions without tier scaling', function () {
+test('chia breakfast meals scale to the plan-tier breakfast target', function () {
     $base = Ingredient::factory()->create([
         'name' => 'Coconut Chia Pudding (Base)',
         'calories' => 265,
@@ -44,12 +44,13 @@ test('chia breakfast meals are served as fixed portions without tier scaling', f
 
     $adapted = AdaptedMenuBuilder::adaptMealForProfile($profile, $meal->fresh(['ingredients']), [
         'fixed_chia_breakfast' => true,
+        'plan_tier' => 1500,
+        'craft_key' => 'full',
     ]);
 
     expect($adapted)->not->toBeNull()
-        ->and($adapted['portion_behavior'])->toBe('fixed_portion')
-        ->and($adapted['is_scaled'])->toBeFalse()
-        ->and($adapted['scaling_multiplier'])->toBe(1.0)
+        ->and($adapted['portion_behavior'])->toBe('scalable')
+        ->and($adapted['is_scaled'])->toBeTrue()
         ->and($adapted['fixed_chia_breakfast'])->toBeTrue()
-        ->and((float) $adapted['adapted_nutrition']['calories'])->toBe(198.0);
+        ->and((float) $adapted['adapted_nutrition']['calories'])->toEqualWithDelta(300.0, 1.0);
 });

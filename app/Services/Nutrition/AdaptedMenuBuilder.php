@@ -12,7 +12,6 @@ use App\Models\Meal;
 use App\Services\RecipeIngredientUnitConverter;
 use App\Services\RecipeNutritionCalculator;
 use App\Support\ChiaBreakfastMeals;
-use App\Support\EggIngredientPresentation;
 use App\Support\MealPlanSlotBasedDayNutrition;
 use App\Support\SavoryEggBreakfastMeals;
 
@@ -77,21 +76,9 @@ final class AdaptedMenuBuilder
                 continue;
             }
 
-            if ($behavior === 'optional_add_on') {
-                $includeSoupInTier = (bool) ($plan['include_soup'] ?? false);
-                $optionalAddOnMeals[] = self::serializeStandardPortionMeal(
-                    $meal,
-                    $slot,
-                    $profile,
-                    isOptionalAddOn: ! $includeSoupInTier,
-                );
-
-                continue;
-            }
-
             if ($behavior === 'scalable') {
                 if ($slot === 'breakfast' && ChiaBreakfastMeals::isChiaBreakfast($meal)) {
-                    $fixedPortionMeals[] = self::serializeChiaBreakfastMeal($meal, $profile);
+                    $scalableMeals[] = self::serializeChiaBreakfastMeal($meal, $plan);
 
                     continue;
                 }
@@ -152,18 +139,13 @@ final class AdaptedMenuBuilder
 
         if ($behavior === 'scalable') {
             if ($slot === 'breakfast' && ChiaBreakfastMeals::isChiaBreakfast($meal)) {
-                return self::serializeChiaBreakfastMeal($meal, $profile);
+                return self::serializeChiaBreakfastMeal($meal, $plan);
             }
 
             return self::serializeScaledMeal($meal, $slot, $plan);
         }
 
-        return self::serializeStandardPortionMeal(
-            $meal,
-            $slot,
-            $profile,
-            isOptionalAddOn: $behavior === 'optional_add_on' && ! (bool) ($plan['include_soup'] ?? false),
-        );
+        return self::serializeStandardPortionMeal($meal, $slot, $profile);
     }
 
     /**
@@ -315,6 +297,11 @@ final class AdaptedMenuBuilder
             ? (float) $plan['scalable_slot_targets']['breakfast']['calories']
             : (float) $plan['scalable_slot_targets']['main_each']['calories'];
 
+        if ($slot === 'main' && ($plan['craft_key'] ?? '') === CraftCaloriePlanner::CRAFT_BUSINESS) {
+            $business = UserPlanCalculator::businessCraftConfig();
+            $slotTarget = max($business['main_min'], min($business['main_max'], $slotTarget));
+        }
+
         return max(0.0, round($slotTarget / $baselineCalories, 4));
     }
 
@@ -374,12 +361,15 @@ final class AdaptedMenuBuilder
         };
     }
 
-    private static function serializeChiaBreakfastMeal(Meal $meal, CustomerProfile $profile): array
+    /**
+     * @param  array<string, mixed>  $plan
+     * @return array<string, mixed>
+     */
+    private static function serializeChiaBreakfastMeal(Meal $meal, array $plan): array
     {
-        $serialized = self::serializeStandardPortionMeal($meal, 'breakfast', $profile);
-        $serialized['portion_behavior'] = 'fixed_portion';
+        $serialized = self::serializeScaledMeal($meal, 'breakfast', $plan);
         $serialized['fixed_chia_breakfast'] = true;
-        $serialized['planning_midpoint_calories'] = ChiaBreakfastMeals::fixedCalories();
+        $serialized['kitchen_portion_calories'] = ChiaBreakfastMeals::fixedCalories();
 
         return $serialized;
     }
@@ -430,26 +420,35 @@ final class AdaptedMenuBuilder
         ?float $overrideMultiplier = null,
         bool $proteinBalanced = false,
     ): array {
-        if (
-            $slot === 'breakfast'
-            && $overrideMultiplier === null
-            && SavoryEggBreakfastMeals::isSavoryEggBreakfast($meal)
-        ) {
-            return self::serializeSavoryEggBreakfastMeal($meal, $plan);
-        }
-
         $multiplier = $overrideMultiplier ?? self::mealScalingMultiplier($meal, $slot, $plan);
         $baseline = $meal->nutritionForDisplay();
-        $scaledRows = self::scaledIngredientRows($meal, $multiplier);
-        $adaptedNutrition = RecipeNutritionCalculator::fromRows($scaledRows);
+        $targetCalories = self::slotTargetCalories($slot, $plan);
+        $adaptedGramsByIngredientId = self::adaptedGramsFromMultiplier($meal, $multiplier);
 
-        return [
+        if ($slot === 'breakfast' && $targetCalories > 0) {
+            $adaptedGramsByIngredientId = self::normalizeAdaptedGramsToCalorieTarget(
+                $meal,
+                $adaptedGramsByIngredientId,
+                $targetCalories,
+                (float) ($plan['plan_tier'] ?? 0),
+            );
+        }
+
+        $scaledRows = self::scaledIngredientRowsFromAdaptedGrams($meal, $adaptedGramsByIngredientId);
+        $adaptedNutrition = RecipeNutritionCalculator::fromRows($scaledRows);
+        $baselineCalories = (float) ($baseline['calories'] ?? 0);
+        $adaptedCalories = (float) ($adaptedNutrition['calories'] ?? 0);
+        $overallMultiplier = $baselineCalories > 0
+            ? round($adaptedCalories / $baselineCalories, 4)
+            : $multiplier;
+
+        $serialized = [
             'id' => $meal->id,
             'name' => $meal->name,
             'slot' => $slot,
             'portion_behavior' => UserPlanCalculator::slotBehavior($slot),
-            'is_scaled' => $multiplier !== 1.0,
-            'scaling_multiplier' => $multiplier,
+            'is_scaled' => $overallMultiplier !== 1.0,
+            'scaling_multiplier' => $overallMultiplier,
             'protein_balanced' => $proteinBalanced,
             'is_vegan' => $meal->isVegan(),
             'counts_toward_core_tier' => true,
@@ -458,62 +457,207 @@ final class AdaptedMenuBuilder
             'short_description' => $meal->short_description,
             'baseline_nutrition' => self::normalizeNutritionKeys($baseline),
             'adapted_nutrition' => self::normalizeNutritionKeys($adaptedNutrition),
-            'ingredients' => self::serializeScaledIngredients($meal, $multiplier),
+            'ingredients' => self::serializeScaledIngredientsFromAdaptedGrams($meal, $adaptedGramsByIngredientId),
             'slot_target' => $slot === 'breakfast'
                 ? $plan['scalable_slot_targets']['breakfast']
                 : $plan['scalable_slot_targets']['main_each'],
         ];
+
+        if ($slot === 'breakfast' && SavoryEggBreakfastMeals::isSavoryEggBreakfast($meal)) {
+            $serialized['savory_egg_count'] = SavoryEggBreakfastMeals::eggCountForPlanTier(
+                (float) ($plan['plan_tier'] ?? 0),
+            );
+        }
+
+        return $serialized;
     }
 
     /**
-     * @param  array<string, mixed>  $plan
-     * @return array<string, mixed>
+     * Scale adapted ingredient grams so total calories land on the slot target.
+     *
+     * @param  array<int, float>  $adaptedGramsByIngredientId
+     * @return array<int, float>
      */
-    private static function serializeSavoryEggBreakfastMeal(Meal $meal, array $plan): array
-    {
-        $baseline = $meal->nutritionForDisplay();
-        $planTier = (float) ($plan['plan_tier'] ?? 0);
-        $eggCount = SavoryEggBreakfastMeals::eggCountForPlanTier($planTier);
-        $targetEggGrams = SavoryEggBreakfastMeals::eggGramsForPlanTier($planTier);
+    private static function normalizeAdaptedGramsToCalorieTarget(
+        Meal $meal,
+        array $adaptedGramsByIngredientId,
+        float $targetCalories,
+        float $planTier = 0.0,
+    ): array {
+        if ($targetCalories <= 0 || $adaptedGramsByIngredientId === []) {
+            return $adaptedGramsByIngredientId;
+        }
 
-        $hasEggIngredient = false;
+        $normalized = $adaptedGramsByIngredientId;
+
+        for ($attempt = 0; $attempt < 6; $attempt++) {
+            $scaledRows = self::scaledIngredientRowsFromAdaptedGrams($meal, $normalized);
+            $nutrition = RecipeNutritionCalculator::fromRows($scaledRows);
+            $adaptedCalories = (float) ($nutrition['calories'] ?? 0);
+
+            if ($adaptedCalories <= 0) {
+                return self::finalizeBreakfastGrams($meal, $normalized, $targetCalories, $planTier);
+            }
+
+            if (abs($adaptedCalories - $targetCalories) <= 0.5) {
+                break;
+            }
+
+            $ratio = round($targetCalories / $adaptedCalories, 4);
+            $next = [];
+
+            foreach ($meal->ingredients as $ingredient) {
+                $grams = (float) ($normalized[$ingredient->id] ?? 0);
+
+                if ($grams <= 0) {
+                    continue;
+                }
+
+                $next[$ingredient->id] = round($grams * $ratio, 4);
+            }
+
+            $normalized = $next;
+        }
+
+        return self::finalizeBreakfastGrams($meal, $normalized, $targetCalories, $planTier);
+    }
+
+    /**
+     * Apply tier side minimums, then trim flexible ingredients if minimums pushed calories over target.
+     *
+     * @param  array<int, float>  $adaptedGramsByIngredientId
+     * @return array<int, float>
+     */
+    private static function finalizeBreakfastGrams(
+        Meal $meal,
+        array $adaptedGramsByIngredientId,
+        float $targetCalories,
+        float $planTier,
+    ): array {
+        $withMinimums = self::applyBreakfastSideMinimums($meal, $adaptedGramsByIngredientId, $planTier);
+
+        if ($targetCalories <= 0) {
+            return $withMinimums;
+        }
+
+        return self::trimBreakfastFlexibleGramsToTarget($meal, $withMinimums, $targetCalories, $planTier);
+    }
+
+    /**
+     * @param  array<int, float>  $adaptedGramsByIngredientId
+     * @return array<int, float>
+     */
+    private static function trimBreakfastFlexibleGramsToTarget(
+        Meal $meal,
+        array $adaptedGramsByIngredientId,
+        float $targetCalories,
+        float $planTier,
+    ): array {
+        $scaledRows = self::scaledIngredientRowsFromAdaptedGrams($meal, $adaptedGramsByIngredientId);
+        $adaptedCalories = (float) (RecipeNutritionCalculator::fromRows($scaledRows)['calories'] ?? 0);
+
+        if ($adaptedCalories <= $targetCalories + 0.5) {
+            return $adaptedGramsByIngredientId;
+        }
+
+        /** @var list<int> $fixedIngredientIds */
+        $fixedIngredientIds = [];
 
         foreach ($meal->ingredients as $ingredient) {
-            if (EggIngredientPresentation::isEggIngredient($ingredient)) {
-                $hasEggIngredient = true;
-
-                break;
+            if ($planTier > 0 && SavoryEggBreakfastMeals::minimumSideGramsForPlanTier($ingredient, $planTier) !== null) {
+                $fixedIngredientIds[] = $ingredient->id;
             }
         }
 
-        if (! $hasEggIngredient) {
-            $multiplier = self::mealScalingMultiplier($meal, 'breakfast', $plan);
-            $scaledRows = self::scaledIngredientRows($meal, $multiplier);
-            $adaptedNutrition = RecipeNutritionCalculator::fromRows($scaledRows);
+        $fixedCalories = 0.0;
+        $flexibleCalories = 0.0;
 
-            return [
-                'id' => $meal->id,
-                'name' => $meal->name,
-                'slot' => 'breakfast',
-                'portion_behavior' => UserPlanCalculator::slotBehavior('breakfast'),
-                'is_scaled' => $multiplier !== 1.0,
-                'scaling_multiplier' => $multiplier,
-                'protein_balanced' => false,
-                'is_vegan' => $meal->isVegan(),
-                'counts_toward_core_tier' => true,
-                'image_url' => $meal->imageUrl(),
-                'instructions' => $meal->instructions,
-                'short_description' => $meal->short_description,
-                'baseline_nutrition' => self::normalizeNutritionKeys($baseline),
-                'adapted_nutrition' => self::normalizeNutritionKeys($adaptedNutrition),
-                'ingredients' => self::serializeScaledIngredients($meal, $multiplier),
-                'slot_target' => $plan['scalable_slot_targets']['breakfast'],
-            ];
+        foreach ($meal->ingredients as $ingredient) {
+            $grams = (float) ($adaptedGramsByIngredientId[$ingredient->id] ?? 0);
+
+            if ($grams <= 0) {
+                continue;
+            }
+
+            $rowCalories = self::ingredientCaloriesForGrams($ingredient, $grams);
+
+            if (in_array($ingredient->id, $fixedIngredientIds, true)) {
+                $fixedCalories += $rowCalories;
+            } else {
+                $flexibleCalories += $rowCalories;
+            }
         }
 
-        $nonEggMultiplier = SavoryEggBreakfastMeals::sidePortionMultiplierForMeal($meal, $planTier);
+        $flexibleBudget = max(0.0, $targetCalories - $fixedCalories);
 
-        $adaptedGramsByIngredientId = [];
+        if ($flexibleCalories <= 0 || $flexibleBudget <= 0) {
+            return $adaptedGramsByIngredientId;
+        }
+
+        $flexRatio = round($flexibleBudget / $flexibleCalories, 4);
+        $adjusted = $adaptedGramsByIngredientId;
+
+        foreach ($meal->ingredients as $ingredient) {
+            if (in_array($ingredient->id, $fixedIngredientIds, true)) {
+                continue;
+            }
+
+            $grams = (float) ($adaptedGramsByIngredientId[$ingredient->id] ?? 0);
+
+            if ($grams <= 0) {
+                continue;
+            }
+
+            $adjusted[$ingredient->id] = round($grams * $flexRatio, 4);
+        }
+
+        return $adjusted;
+    }
+
+    private static function ingredientCaloriesForGrams(Ingredient $ingredient, float $grams): float
+    {
+        $per100 = (float) ($ingredient->calories ?? 0);
+
+        return $per100 > 0 ? ($per100 / 100.0) * $grams : 0.0;
+    }
+
+    /**
+     * @param  array<int, float>  $adaptedGramsByIngredientId
+     * @return array<int, float>
+     */
+    private static function applyBreakfastSideMinimums(
+        Meal $meal,
+        array $adaptedGramsByIngredientId,
+        float $planTier,
+    ): array {
+        if ($planTier <= 0) {
+            return $adaptedGramsByIngredientId;
+        }
+
+        foreach ($meal->ingredients as $ingredient) {
+            if (! isset($adaptedGramsByIngredientId[$ingredient->id])) {
+                continue;
+            }
+
+            $minimum = SavoryEggBreakfastMeals::minimumSideGramsForPlanTier($ingredient, $planTier);
+
+            if ($minimum !== null) {
+                $adaptedGramsByIngredientId[$ingredient->id] = max(
+                    $minimum,
+                    (float) $adaptedGramsByIngredientId[$ingredient->id],
+                );
+            }
+        }
+
+        return $adaptedGramsByIngredientId;
+    }
+
+    /**
+     * @return array<int, float>
+     */
+    private static function adaptedGramsFromMultiplier(Meal $meal, float $multiplier): array
+    {
+        $gramsByIngredientId = [];
 
         foreach ($meal->ingredients as $ingredient) {
             $pivot = $ingredient->pivot;
@@ -524,46 +668,23 @@ final class AdaptedMenuBuilder
                 (float) ($pivot->amount_grams ?? 0),
             );
 
-            if (EggIngredientPresentation::isEggIngredient($ingredient)) {
-                $adaptedGramsByIngredientId[$ingredient->id] = $targetEggGrams;
-
+            if ($baselineGrams <= 0) {
                 continue;
             }
 
-            $adaptedGramsByIngredientId[$ingredient->id] = SavoryEggBreakfastMeals::adaptedSideGrams(
-                $ingredient,
-                $baselineGrams,
-                $nonEggMultiplier,
-            );
+            $gramsByIngredientId[$ingredient->id] = round($baselineGrams * $multiplier, 4);
         }
 
-        $scaledRows = self::scaledIngredientRowsFromAdaptedGrams($meal, $adaptedGramsByIngredientId);
-        $adaptedNutrition = RecipeNutritionCalculator::fromRows($scaledRows);
-        $baselineCalories = (float) ($baseline['calories'] ?? 0);
-        $adaptedCalories = (float) ($adaptedNutrition['calories'] ?? 0);
-        $overallMultiplier = $baselineCalories > 0
-            ? round($adaptedCalories / $baselineCalories, 4)
-            : 1.0;
+        return $gramsByIngredientId;
+    }
 
-        return [
-            'id' => $meal->id,
-            'name' => $meal->name,
-            'slot' => 'breakfast',
-            'portion_behavior' => UserPlanCalculator::slotBehavior('breakfast'),
-            'is_scaled' => $overallMultiplier !== 1.0,
-            'scaling_multiplier' => $overallMultiplier,
-            'savory_egg_count' => $eggCount,
-            'protein_balanced' => false,
-            'is_vegan' => $meal->isVegan(),
-            'counts_toward_core_tier' => true,
-            'image_url' => $meal->imageUrl(),
-            'instructions' => $meal->instructions,
-            'short_description' => $meal->short_description,
-            'baseline_nutrition' => self::normalizeNutritionKeys($baseline),
-            'adapted_nutrition' => self::normalizeNutritionKeys($adaptedNutrition),
-            'ingredients' => self::serializeScaledIngredientsFromAdaptedGrams($meal, $adaptedGramsByIngredientId),
-            'slot_target' => $plan['scalable_slot_targets']['breakfast'],
-        ];
+    private static function slotTargetCalories(string $slot, array $plan): float
+    {
+        if ($slot === 'breakfast') {
+            return (float) ($plan['scalable_slot_targets']['breakfast']['calories'] ?? 0);
+        }
+
+        return (float) ($plan['scalable_slot_targets']['main_each']['calories'] ?? 0);
     }
 
     /**

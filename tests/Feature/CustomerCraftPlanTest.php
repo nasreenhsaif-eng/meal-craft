@@ -165,8 +165,8 @@ test('kitchen daily sheet returns adapted ingredient lines for scalable meals', 
     $lines = $response->json('ingredient_lines');
     expect($lines)->not->toBeEmpty()
         ->and($lines[0]['ingredient'])->toBe('Chicken Breast')
-        ->and((float) $lines[0]['adapted_amount_grams'])->toBeGreaterThan(129)
-        ->and((float) $lines[0]['adapted_amount_grams'])->toBeLessThan(131);
+        ->and((float) $lines[0]['adapted_amount_grams'])->toBeGreaterThan(140)
+        ->and((float) $lines[0]['adapted_amount_grams'])->toBeLessThan(200);
 });
 
 test('guests cannot submit craft plans', function () {

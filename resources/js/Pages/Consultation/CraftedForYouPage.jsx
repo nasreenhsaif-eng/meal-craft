@@ -3,11 +3,16 @@ import Button from '../../Components/Atoms/Button.jsx';
 import PillButton from '../../Components/Atoms/Button/Button.jsx';
 import ChooseYourMeals, {
     applyDeckSelectionToggle,
+    applyFixedChoiceToggle,
     DEFAULT_FULL_CRAFT_MAX_SELECTIONS,
+    FIXED_CHOICE_CATEGORY_KEYS,
+    FIXED_CHOICE_REQUIRED_COUNT,
+    FixedChoicePicker,
     MealSlotCarousel,
-    SoupOfTheDayOptIn,
     buildConsultationDeckCatalog,
     consultationDeckOptionsForSlotKey,
+    filterMealsByCategory,
+    isFixedChoiceComplete,
     soupOfTheDayMeals,
     sumActiveDayMacros,
 } from '../../Components/Consultation/ChooseYourMeals.jsx';
@@ -23,7 +28,7 @@ import {
     scheduledSoupConsultationMealsForDay,
 } from '../../consultation/mapAdaptedMenuMeals.js';
 import { buildCraftPlanSubmissionPayload, submitCraftPlan } from '../../consultation/submitCraftPlan.js';
-import { craftDayCaloriesForKey, fixedPortionCaloriesForAdapt, mainProteinTargetPerMeal, mainSlotTargetCaloriesFromPlan } from '../../consultation/craftCalorieTargets.js';
+import { craftDayCaloriesForKey, fixedPortionCaloriesForAdapt, mainProteinTargetPerMeal, mainSlotTargetCaloriesFromPlan, selectedFixedSlotsFromSelections } from '../../consultation/craftCalorieTargets.js';
 import { balanceSelectedMainMealCards } from '../../consultation/balanceMainMealProtein.ts';
 import {
     resolveInitialConsultationRestoreDraft,
@@ -112,51 +117,45 @@ const CRAFTS = [
     {
         key: 'full',
         title: 'Full Craft',
-        description: '1 Breakfast, 2 Main Meals, 1 Side Salad, 1 Dessert, optional soup (vegan or bone broth)',
+        description: '1 Breakfast, 2 Main Meals, pick 2 of side salad / dessert / soup (~150 kcal each)',
         slots: [
             { id: 'breakfast', label: 'Breakfast', count: 1 },
             { id: 'meal', label: 'Meals', count: 2 },
-            { id: 'sidesalad', label: 'Side salad', count: 1 },
-            { id: 'dessert', label: 'Dessert', count: 1 },
-            { id: 'soup', label: 'Soups', count: 1, optional: true },
+            { id: 'fixedChoice', label: 'Pick 2 — side salad, dessert, or soup', count: 2 },
         ],
     },
     {
         key: 'day',
         title: 'Day Craft',
-        description: 'Breakfast, 1 Meal, Side Salad & Dessert',
+        description: 'Breakfast, 1 Meal, pick 2 of side salad / dessert / soup',
         slots: [
             { id: 'breakfast', label: 'Breakfast', count: 1 },
             { id: 'meal', label: 'Meal', count: 1 },
-            { id: 'sidesalad', label: 'Side salad', count: 1 },
-            { id: 'dessert', label: 'Dessert', count: 1 },
+            { id: 'fixedChoice', label: 'Pick 2 — side salad, dessert, or soup', count: 2 },
         ],
     },
     {
         key: 'afternoon',
         title: 'Afternoon Craft',
-        description: '2 Meals, Side Salad, Dessert & Soup for this day (optional)',
+        description: '2 Meals, pick 2 of side salad / dessert / soup',
         slots: [
             { id: 'meal', label: 'Meals', count: 2 },
-            { id: 'sidesalad', label: 'Side salad', count: 1 },
-            { id: 'dessert', label: 'Dessert', count: 1 },
+            { id: 'fixedChoice', label: 'Pick 2 — side salad, dessert, or soup', count: 2 },
         ],
     },
     {
         key: 'intermittent',
         title: 'Intermittent Craft',
-        description: '1 Soup, 1 Meal, Side Salad, Dessert',
+        description: '1 Meal, pick 2 of side salad / dessert / soup',
         slots: [
-            { id: 'soup', label: 'Soup', count: 1 },
             { id: 'meal', label: 'Meal', count: 1 },
-            { id: 'sidesalad', label: 'Side salad', count: 1 },
-            { id: 'dessert', label: 'Dessert', count: 1 },
+            { id: 'fixedChoice', label: 'Pick 2 — side salad, dessert, or soup', count: 2 },
         ],
     },
     {
         key: 'business',
         title: 'Business Craft',
-        description: '1 Meal + (Soup OR Side Salad OR Dessert)',
+        description: '1 Main (350–400 kcal) + pick 1 of soup, side salad, or dessert (~150 kcal)',
         slots: [
             { id: 'meal', label: 'Meal', count: 1 },
             { id: 'choice', label: 'Business choice', count: 1, choice: ['soup', 'sidesalad', 'dessert'] },
@@ -886,22 +885,8 @@ export default function CraftedForYouPage({
             return false;
         }
 
-        const selections = selectedByDay[calorieDay];
-
-        if ((selections?.soup?.length ?? 0) > 0) {
-            return true;
-        }
-
-        if (craftKey === 'full' && fullCraftSoupOptInByDay[calorieDay] === true) {
-            return true;
-        }
-
-        if (craftKey === 'afternoon' && afternoonSoupOptInByDay[calorieDay] === true) {
-            return true;
-        }
-
-        return false;
-    }, [calorieDay, selectedByDay, craftKey, fullCraftSoupOptInByDay, afternoonSoupOptInByDay]);
+        return (selectedByDay[calorieDay]?.soup?.length ?? 0) > 0;
+    }, [calorieDay, selectedByDay]);
 
     const soupCaloriesForAdaptedMenu = useMemo(() => {
         if (!includeSoupForAdaptedMenu || !calorieDay) {
@@ -992,10 +977,13 @@ export default function CraftedForYouPage({
                 ?.baselineCalories
             ?? null;
 
+        const selectedFixedSlots = selectedFixedSlotsFromSelections(selectedByDay[calorieDay]);
+
         return JSON.stringify({
             craftKey,
             includeSoup: includeSoupForAdaptedMenu,
             soupCalories: soupCaloriesForAdaptedMenu ?? null,
+            selectedFixedSlots,
             sideSaladId: dayFixedSelectionIds?.sideSaladId ?? null,
             dessertId: dayFixedSelectionIds?.dessertId ?? null,
             soupId: dayFixedSelectionIds?.soupId ?? null,
@@ -1015,6 +1003,7 @@ export default function CraftedForYouPage({
         dayFixedSelectionIds,
         selectedFixedBaselines,
         calorieDay,
+        selectedByDay,
         scheduledFullCraftByWeekday,
         scheduledSoupsByWeekday,
         isAdminPreview,
@@ -1057,18 +1046,20 @@ export default function CraftedForYouPage({
                   ])
                 : scheduledDay?.soup?.[0] ?? scheduledSoups[0]);
 
+        const selectedFixedSlots = selectedFixedSlotsFromSelections(selectedByDay[calorieDay]);
+
         const fixedPortion = fixedPortionCaloriesForAdapt(
             {
                 sideSalads: sideSaladMeal ? [sideSaladMeal] : scheduledDay?.sideSalads,
                 desserts: dessertMeal ? [dessertMeal] : scheduledDay?.desserts,
-                soup:
-                    includeSoupForAdaptedMenu && soupMeal
-                        ? [soupMeal]
-                        : includeSoupForAdaptedMenu
-                          ? scheduledDay?.soup ?? scheduledSoups
-                          : [],
+                soup: soupMeal ? [soupMeal] : scheduledDay?.soup ?? scheduledSoups,
             },
-            { includeSoup: includeSoupForAdaptedMenu },
+            {
+                selectedFixedSlots:
+                    selectedFixedSlots.length === FIXED_CHOICE_REQUIRED_COUNT
+                        ? selectedFixedSlots
+                        : ['side_salad', 'dessert', 'soup'],
+            },
         );
 
         const breakfastId = selectedByDay[calorieDay]?.breakfasts?.[0] ?? null;
@@ -1082,6 +1073,8 @@ export default function CraftedForYouPage({
         return {
             craftKey,
             includeSoup: includeSoupForAdaptedMenu,
+            selectedFixedSlots:
+                selectedFixedSlots.length > 0 ? selectedFixedSlots : undefined,
             soupCalories: fixedPortion.soupCalories || soupCaloriesForAdaptedMenu,
             sideSaladCalories: fixedPortion.sideSaladCalories,
             dessertCalories: fixedPortion.dessertCalories,
@@ -1280,7 +1273,9 @@ export default function CraftedForYouPage({
                 { key: businessCraftChoice, label: 'Business choice', count: 1, selectionKey: businessCraftChoice === 'sidesalad' ? 'sideSalads' : businessCraftChoice === 'dessert' ? 'desserts' : 'soup' },
             ];
         }
-        return craft.slots.map((s) => ({
+        return craft.slots
+            .filter((s) => s.id !== 'fixedChoice')
+            .map((s) => ({
             key: s.id,
             label:
                 s.id === 'breakfast'
@@ -1292,9 +1287,7 @@ export default function CraftedForYouPage({
                         : s.id === 'dessert'
                           ? 'Desserts'
                           : s.id === 'soup'
-                            ? s.optional
-                              ? 'Soup of the Day (optional)'
-                              : 'Soup'
+                            ? 'Soup'
                             : 'Slot',
             count: s.count,
             selectionKey: s.id === 'breakfast' ? 'breakfasts' : s.id === 'meal' ? 'meals' : s.id === 'sidesalad' ? 'sideSalads' : s.id === 'dessert' ? 'desserts' : 'soup',
@@ -1321,9 +1314,13 @@ export default function CraftedForYouPage({
                       : (s.sideSalads?.length ?? 0) === 1;
             return hasMeal && hasSide;
         }
-        return requiredSlotsByCraft
-            .filter((slot) => !slot.optional)
-            .every((slot) => (s[slot.selectionKey]?.length ?? 0) === slot.count);
+
+        const scalableComplete = requiredSlotsByCraft.every(
+            (slot) => (s[slot.selectionKey]?.length ?? 0) === slot.count,
+        );
+        const hasFixedChoiceSlot = craft.slots.some((slot) => slot.id === 'fixedChoice');
+
+        return scalableComplete && (!hasFixedChoiceSlot || isFixedChoiceComplete(s));
     }, [craft, curationDay, requiredSlotsByCraft, selectedByDay, businessSideChoiceByDay]);
 
     const curationIncompleteMessage = useMemo(() => {
@@ -1354,8 +1351,12 @@ export default function CraftedForYouPage({
         }
 
         const missing = requiredSlotsByCraft
-            .filter((slot) => !slot.optional && (s[slot.selectionKey]?.length ?? 0) < slot.count)
+            .filter((slot) => (s[slot.selectionKey]?.length ?? 0) < slot.count)
             .map((slot) => slot.label.toLowerCase());
+
+        if (craft.slots.some((slot) => slot.id === 'fixedChoice') && !isFixedChoiceComplete(s)) {
+            missing.push('2 of side salad, dessert, or soup');
+        }
 
         if (missing.length === 0) {
             return 'Select all required meals before continuing.';
@@ -1659,9 +1660,56 @@ export default function CraftedForYouPage({
                                         desserts: [],
                                         soup: [],
                                     };
+
+                                    if (FIXED_CHOICE_CATEGORY_KEYS.includes(key)) {
+                                        const { next, blocked } = applyFixedChoiceToggle(current, key, meal.id);
+
+                                        if (blocked) {
+                                            return prev;
+                                        }
+
+                                        return { ...prev, [day]: next };
+                                    }
+
                                     const next = applyDeckSelectionToggle(current[key], meal.id, max);
 
                                     return { ...prev, [day]: { ...current, [key]: next } };
+                                });
+                            };
+
+                            const toggleFixedChoice = (categoryKey, meal) => {
+                                setSelectedByDay((prev) => {
+                                    const current = prev[day] ?? {
+                                        breakfasts: [],
+                                        meals: [],
+                                        sideSalads: [],
+                                        desserts: [],
+                                        soup: [],
+                                    };
+                                    const { next, blocked } = applyFixedChoiceToggle(current, categoryKey, meal.id);
+
+                                    if (blocked) {
+                                        return prev;
+                                    }
+
+                                    return { ...prev, [day]: next };
+                                });
+                            };
+
+                            const clearFixedChoiceCategory = (categoryKey) => {
+                                setSelectedByDay((prev) => {
+                                    const current = prev[day] ?? {
+                                        breakfasts: [],
+                                        meals: [],
+                                        sideSalads: [],
+                                        desserts: [],
+                                        soup: [],
+                                    };
+
+                                    return {
+                                        ...prev,
+                                        [day]: { ...current, [categoryKey]: [] },
+                                    };
                                 });
                             };
 
@@ -1676,6 +1724,11 @@ export default function CraftedForYouPage({
                                 summaryLabel={`${WEEKDAY_LABELS[curationDay - 1]} selections`}
                                 craftTitle={craft ? craft.title : ''}
                                 targetCalories={planTierCalories}
+                                dayCalorieTolerance={
+                                    typeof nutritionPlan?.day_calorie_tolerance === 'number'
+                                        ? nutritionPlan.day_calorie_tolerance
+                                        : 50
+                                }
                                 layout={craft?.key === 'full' ? 'categories' : 'custom'}
                                 meals={craft?.key === 'full' && !usesWeeklyScheduledMenu ? consultationDeckMeals : []}
                                 assignedMealsByCategory={
@@ -1684,29 +1737,23 @@ export default function CraftedForYouPage({
                                 categorySelections={craft?.key === 'full' ? daySelections : undefined}
                                 onToggleCategory={
                                     craft?.key === 'full'
-                                        ? (categoryKey, meal) =>
+                                        ? (categoryKey, meal) => {
+                                              if (FIXED_CHOICE_CATEGORY_KEYS.includes(categoryKey)) {
+                                                  toggleFixedChoice(categoryKey, meal);
+                                                  return;
+                                              }
+
                                               toggle(
                                                   categoryKey,
                                                   DEFAULT_FULL_CRAFT_MAX_SELECTIONS[categoryKey],
-                                              )(meal)
+                                              )(meal);
+                                          }
                                         : undefined
                                 }
+                                onClearFixedChoiceCategory={
+                                    craft?.key === 'full' ? clearFixedChoiceCategory : undefined
+                                }
                                 deckScopePrefix={craft?.key === 'full' ? String(curationDay) : ''}
-                                onSoupOptInChange={(enabled) => {
-                                    setFullCraftSoupOptInByDay((prev) => ({ ...prev, [day]: enabled }));
-                                    if (!enabled) {
-                                        setSelectedByDay((prev) => {
-                                            const current = prev[day] ?? {
-                                                breakfasts: [],
-                                                meals: [],
-                                                sideSalads: [],
-                                                desserts: [],
-                                                soup: [],
-                                            };
-                                            return { ...prev, [day]: { ...current, soup: [] } };
-                                        });
-                                    }
-                                }}
                                 onFooterBack={() => {
                                     if (screen === curationStartScreen) {
                                         setScreen(usesManualDaySelection ? 2 : 1);
@@ -1842,42 +1889,28 @@ export default function CraftedForYouPage({
                                                         />
                                                     ))}
 
-                                                    {craft?.key === 'afternoon' ? (
-                                                        <div className="relative isolate w-full overflow-x-clip overflow-y-visible py-0.5">
-                                                            <SoupOfTheDayOptIn
-                                                                checked={afternoonSoupOptInForDay(day)}
-                                                                onChange={(next) => setAfternoonSoupOptIn(day, next)}
-                                                            />
+                                                    {craft?.slots.some((slot) => slot.id === 'fixedChoice') ? (
+                                                        <FixedChoicePicker
+                                                            categorySelections={selections}
+                                                            deckScopePrefix={String(day)}
+                                                            meals={catalogMeals}
+                                                            scheduledSoupMeals={scheduledSoupForDay(day)}
+                                                            soupCatalogMeals={catalogMeals}
+                                                            onSelectMeal={toggleFixedChoice}
+                                                            onClearCategory={clearFixedChoiceCategory}
+                                                            onViewDetails={openMealDetail}
+                                                            resolveCards={(_, selectionKey) => {
+                                                                if (selectionKey === 'soup') {
+                                                                    return pickCards('soup');
+                                                                }
 
-                                                            <AnimatePresence initial={false}>
-                                                                {afternoonSoupOptInForDay(day) ? (
-                                                                    <motion.div
-                                                                        key={`${day}-soup-deck`}
-                                                                        initial={{ opacity: 0, y: 12, scale: 0.97 }}
-                                                                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                                                                        exit={{ opacity: 0, y: 8, scale: 0.98 }}
-                                                                        transition={{
-                                                                            type: 'spring',
-                                                                            stiffness: 320,
-                                                                            damping: 34,
-                                                                        }}
-                                                                        className="overflow-hidden"
-                                                                    >
-                                                                        <MealSlotCarousel
-                                                                            deckOnly
-                                                                            showSelectionSubheader
-                                                                            title=""
-                                                                            deckScopeKey={`${day}-soup`}
-                                                                            cards={pickCards('soup')}
-                                                                            selectedIds={selections.soup}
-                                                                            maxSelected={1}
-                                                                            onSelect={toggle('soup', 1)}
-                                                                            onViewDetails={openMealDetail}
-                                                                        />
-                                                                    </motion.div>
-                                                                ) : null}
-                                                            </AnimatePresence>
-                                                        </div>
+                                                                return pickCards(
+                                                                    selectionKey === 'sideSalads'
+                                                                        ? 'sidesalad'
+                                                                        : 'dessert',
+                                                                );
+                                                            }}
+                                                        />
                                                     ) : null}
                                                 </>
                                             );

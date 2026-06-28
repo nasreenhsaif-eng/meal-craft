@@ -6,17 +6,15 @@ use App\Enums\MealType;
 use App\Enums\RecipeCategory;
 use App\Models\CustomerProfile;
 use App\Models\Meal;
-use App\Support\ChiaBreakfastMeals;
 
 /**
  * Derives per-slot calorie targets from the customer's plan tier.
  *
- * Core day (tier): breakfast + 2× main (scaled) + side salad + dessert (fixed standard portions).
- * When soup is included it uses a fixed standard portion counted within the tier, shrinking scalable slots.
+ * Core day (tier): breakfast + 2× main (scaled) + 2 fixed picks from {side salad, dessert, soup} (~150 kcal each).
  */
 final class UserPlanCalculator
 {
-    public const CORE_FIXED_PORTION_SLOTS = ['side_salad', 'dessert'];
+    public const CORE_FIXED_PORTION_SLOTS = ['side_salad', 'dessert', 'soup'];
 
     /**
      * @return list<int>
@@ -78,18 +76,108 @@ final class UserPlanCalculator
         return round($band['target'], 2);
     }
 
+    public static function fixedChoiceCaloriesPerSlot(): float
+    {
+        return round((float) config('customer_nutrition.fixed_choice_calories', 150.0), 2);
+    }
+
+    public static function dayCalorieTolerance(): float
+    {
+        return max(0.0, round((float) config('customer_nutrition.day_calorie_tolerance', 50.0), 2));
+    }
+
+    /**
+     * Split the scalable calorie budget across breakfast and mains using tier-table proportions.
+     *
+     * @return array{breakfast: float, main_each: float, scalable_budget: float}
+     */
+    public static function scalableSlotTargetsForFixedTotal(float $planTier, float $fixedPortionTotal): array
+    {
+        $tierTargets = self::tierSlotCalories($planTier);
+        $mainCount = max(1, (int) config('customer_nutrition.scalable_slots.main', 2));
+
+        $referenceScalableBudget = round(
+            $tierTargets['breakfast'] + ($tierTargets['main_each'] * $mainCount),
+            2,
+        );
+
+        $scalableBudget = max(0.0, round($planTier - $fixedPortionTotal, 2));
+
+        if ($referenceScalableBudget <= 0) {
+            return [
+                'breakfast' => 0.0,
+                'main_each' => 0.0,
+                'scalable_budget' => $scalableBudget,
+            ];
+        }
+
+        $breakfastShare = $tierTargets['breakfast'] / $referenceScalableBudget;
+        $mainEachShare = $tierTargets['main_each'] / $referenceScalableBudget;
+
+        return [
+            'breakfast' => round($scalableBudget * $breakfastShare, 2),
+            'main_each' => round($scalableBudget * $mainEachShare, 2),
+            'scalable_budget' => $scalableBudget,
+        ];
+    }
+
+    public static function fixedChoiceCount(): int
+    {
+        return max(0, (int) config('customer_nutrition.fixed_choice_count', 2));
+    }
+
+    /**
+     * @return list<string>
+     */
+    public static function fixedChoiceSlots(): array
+    {
+        /** @var list<string> $slots */
+        $slots = config('customer_nutrition.fixed_choice_slots', self::CORE_FIXED_PORTION_SLOTS);
+
+        return array_values($slots);
+    }
+
+    /**
+     * @return array{breakfast: float, main_each: float}
+     */
+    public static function tierSlotCalories(float $planTier): array
+    {
+        $snapped = (int) self::snapToPlanTier($planTier);
+
+        /** @var array<int, array{breakfast?: float, main_each?: float}> $table */
+        $table = config('customer_nutrition.tier_slot_calories', []);
+
+        $row = $table[$snapped] ?? null;
+
+        if ($row === null) {
+            $fixedTotal = self::fixedChoiceCount() * self::fixedChoiceCaloriesPerSlot();
+            $mainCount = max(1, (int) config('customer_nutrition.scalable_slots.main', 2));
+            $scalable = max(0.0, $planTier - $fixedTotal);
+            $breakfastWeight = 0.20;
+            $mainEachWeight = 0.40;
+
+            return [
+                'breakfast' => round($scalable * $breakfastWeight, 2),
+                'main_each' => round($scalable * $mainEachWeight, 2),
+            ];
+        }
+
+        return [
+            'breakfast' => round((float) ($row['breakfast'] ?? 0.0), 2),
+            'main_each' => round((float) ($row['main_each'] ?? 0.0), 2),
+        ];
+    }
+
     /**
      * @param  array<string, float>  $overrides
      */
     public static function coreFixedPortionCaloriesTotal(array $overrides = []): float
     {
-        $total = 0.0;
-
-        foreach (self::coreFixedPortionSlots() as $slot) {
-            $total += (float) ($overrides[$slot] ?? self::slotPlanningMidpoint($slot));
+        if ($overrides !== []) {
+            return round(array_sum($overrides), 2);
         }
 
-        return round($total, 2);
+        return round(self::fixedChoiceCount() * self::fixedChoiceCaloriesPerSlot(), 2);
     }
 
     /**
@@ -104,7 +192,7 @@ final class UserPlanCalculator
     }
 
     /**
-     * @deprecated Use {@see coreFixedPortionCaloriesTotal()} — soup is no longer subtracted from tier.
+     * @deprecated Use {@see coreFixedPortionCaloriesTotal()} — soup is part of pick-2 fixed group.
      */
     public static function fixedCaloriesTotal(): float
     {
@@ -116,12 +204,63 @@ final class UserPlanCalculator
      */
     public static function fixedCaloriesPerMeal(): float
     {
-        return self::slotPlanningMidpoint('side_salad');
+        return self::fixedChoiceCaloriesPerSlot();
+    }
+
+    /**
+     * @param  list<string>|null  $selectedFixedSlots
+     * @return array<string, float>
+     */
+    public static function resolveFixedSlotCalories(?array $selectedFixedSlots, array $options = []): array
+    {
+        $perSlotDefault = self::fixedChoiceCaloriesPerSlot();
+        $choiceSlots = self::fixedChoiceSlots();
+
+        if ($selectedFixedSlots === null || $selectedFixedSlots === []) {
+            $selected = $choiceSlots;
+            $count = self::fixedChoiceCount();
+        } else {
+            $selected = array_values(array_intersect($choiceSlots, $selectedFixedSlots));
+            $count = count($selected);
+        }
+
+        $out = [];
+
+        foreach ($choiceSlots as $slot) {
+            if (! in_array($slot, $selected, true)) {
+                continue;
+            }
+
+            $optionKey = match ($slot) {
+                'side_salad' => 'side_salad_calories',
+                'dessert' => 'dessert_calories',
+                'soup' => 'soup_calories',
+                default => null,
+            };
+
+            $out[$slot] = round(
+                (float) ($optionKey !== null && isset($options[$optionKey])
+                    ? $options[$optionKey]
+                    : $perSlotDefault),
+                2,
+            );
+        }
+
+        if ($count < self::fixedChoiceCount() && $selectedFixedSlots === null) {
+            return $out;
+        }
+
+        if ($count < self::fixedChoiceCount() && ($selectedFixedSlots === null || $selectedFixedSlots === [])) {
+            return $out;
+        }
+
+        return $out;
     }
 
     /**
      * @param  array{
      *     include_soup?: bool,
+     *     selected_fixed_slots?: list<string>,
      *     soup_calories?: float,
      *     side_salad_calories?: float,
      *     dessert_calories?: float,
@@ -143,24 +282,31 @@ final class UserPlanCalculator
             $planTier = $snapToTier ? self::snapToPlanTier($rawTarget) : $rawTarget;
         }
 
-        $includeSoup = (bool) ($options['include_soup'] ?? false);
+        $selectedFixedSlots = isset($options['selected_fixed_slots'])
+            ? array_values(array_intersect(
+                self::fixedChoiceSlots(),
+                (array) $options['selected_fixed_slots'],
+            ))
+            : null;
 
-        $sideSaladCalories = round(
-            (float) ($options['side_salad_calories'] ?? self::slotPlanningMidpoint('side_salad')),
-            2,
-        );
-        $dessertCalories = round(
-            (float) ($options['dessert_calories'] ?? self::slotPlanningMidpoint('dessert')),
-            2,
-        );
-        $soupCalories = $includeSoup
-            ? round((float) ($options['soup_calories'] ?? self::slotPlanningMidpoint('soup')), 2)
-            : 0.0;
+        if ($selectedFixedSlots === []) {
+            $selectedFixedSlots = null;
+        }
+
+        $includeSoup = in_array('soup', $selectedFixedSlots ?? [], true)
+            || (bool) ($options['include_soup'] ?? false);
 
         $fixedChiaBreakfast = (bool) ($options['fixed_chia_breakfast'] ?? false);
-        $chiaBreakfastCalories = $fixedChiaBreakfast
-            ? round(ChiaBreakfastMeals::fixedCalories(), 2)
-            : 0.0;
+
+        $perSlotFixed = self::resolveFixedSlotCalories($selectedFixedSlots, $options);
+
+        $budgetFixedTotal = round(self::fixedChoiceCount() * self::fixedChoiceCaloriesPerSlot(), 2);
+
+        $fixedPortionTotal = $budgetFixedTotal;
+
+        if ($selectedFixedSlots !== null && count($selectedFixedSlots) === self::fixedChoiceCount()) {
+            $fixedPortionTotal = round(array_sum($perSlotFixed), 2);
+        }
 
         $proteinPct = (float) $profile->protein_percentage;
         $carbPct = (float) $profile->carb_percentage;
@@ -168,10 +314,13 @@ final class UserPlanCalculator
 
         $dailyMacros = self::macroGramsFromCaloriesAndPercentages($planTier, $proteinPct, $carbPct, $fatPct);
 
-        $fixedPortionTotal = round(
-            $sideSaladCalories + $dessertCalories + $soupCalories + $chiaBreakfastCalories,
-            2,
-        );
+        $mainCount = max(1, (int) config('customer_nutrition.scalable_slots.main', 2));
+
+        $scalableTargets = self::scalableSlotTargetsForFixedTotal($planTier, $fixedPortionTotal);
+        $breakfastTargetCalories = $scalableTargets['breakfast'];
+        $mainTargetCaloriesEach = $scalableTargets['main_each'];
+        $scalableBudgetCalories = $scalableTargets['scalable_budget'];
+
         $fixedPortionMacros = self::macroGramsFromCaloriesAndPercentages(
             $fixedPortionTotal,
             $proteinPct,
@@ -179,7 +328,6 @@ final class UserPlanCalculator
             $fatPct,
         );
 
-        $scalableBudgetCalories = max(0.0, round($planTier - $fixedPortionTotal, 2));
         $scalableBudgetMacros = self::macroGramsFromCaloriesAndPercentages(
             $scalableBudgetCalories,
             $proteinPct,
@@ -187,58 +335,25 @@ final class UserPlanCalculator
             $fatPct,
         );
 
-        $breakfastWeight = (float) config('customer_nutrition.scalable_slot_weights.breakfast', 0.20);
-        $mainEachWeight = (float) config('customer_nutrition.scalable_slot_weights.main_each', 0.40);
-        $mainCount = max(1, (int) config('customer_nutrition.scalable_slots.main', 2));
-
-        if ($fixedChiaBreakfast) {
-            $breakfastTargetCalories = $chiaBreakfastCalories;
-            $mainTargetCaloriesEach = round($scalableBudgetCalories / $mainCount, 2);
-        } else {
-            $breakfastTargetCalories = round($scalableBudgetCalories * $breakfastWeight, 2);
-            $mainTargetCaloriesEach = round($scalableBudgetCalories * $mainEachWeight, 2);
-        }
-
-        if ($fixedChiaBreakfast) {
-            $coreDayCalories = round(
-                $fixedPortionTotal + ($mainTargetCaloriesEach * $mainCount),
-                2,
-            );
-        } else {
-            $coreDayCalories = round(
-                $fixedPortionTotal + $breakfastTargetCalories + ($mainTargetCaloriesEach * $mainCount),
-                2,
-            );
-        }
+        $coreDayCalories = round(
+            $fixedPortionTotal + $breakfastTargetCalories + ($mainTargetCaloriesEach * $mainCount),
+            2,
+        );
         $dayTotalCalories = round($coreDayCalories, 2);
 
-        $soupMacros = $includeSoup
+        $soupCalories = $perSlotFixed['soup'] ?? 0.0;
+        $soupMacros = $soupCalories > 0
             ? self::macroGramsFromCaloriesAndPercentages($soupCalories, $proteinPct, $carbPct, $fatPct)
             : self::macroGramsFromCaloriesAndPercentages(0.0, $proteinPct, $carbPct, $fatPct);
 
         $baseline = self::resolveScalableBaselineCalories();
-        $baselineTotal = $fixedChiaBreakfast
-            ? round($baseline['main_calories'] * $mainCount, 2)
-            : $baseline['calories'];
+        $baselineTotal = $baseline['calories'];
 
         $multiplier = $baselineTotal > 0
             ? $scalableBudgetCalories / $baselineTotal
             : 1.0;
 
         $multiplier = max(0.0, round($multiplier, 4));
-
-        $perSlotFixed = [
-            'side_salad' => $sideSaladCalories,
-            'dessert' => $dessertCalories,
-        ];
-
-        if ($includeSoup) {
-            $perSlotFixed['soup'] = $soupCalories;
-        }
-
-        if ($fixedChiaBreakfast) {
-            $perSlotFixed['breakfast'] = $chiaBreakfastCalories;
-        }
 
         return [
             'profile_id' => (int) $profile->id,
@@ -249,10 +364,14 @@ final class UserPlanCalculator
             'fat_percentage' => $fatPct,
             'daily_macros' => $dailyMacros,
             'include_soup' => $includeSoup,
+            'selected_fixed_slots' => $selectedFixedSlots ?? self::fixedChoiceSlots(),
             'fixed_chia_breakfast' => $fixedChiaBreakfast,
             'fixed_portion' => [
                 'slots' => self::coreFixedPortionSlots(),
+                'choice_count' => self::fixedChoiceCount(),
+                'calories_per_choice' => self::fixedChoiceCaloriesPerSlot(),
                 'calories' => $fixedPortionTotal,
+                'budget_calories' => $budgetFixedTotal,
                 'per_slot' => $perSlotFixed,
                 'macros' => $fixedPortionMacros,
             ],
@@ -265,6 +384,7 @@ final class UserPlanCalculator
             ],
             'core_day_calories' => $coreDayCalories,
             'day_total_calories' => $dayTotalCalories,
+            'day_calorie_tolerance' => self::dayCalorieTolerance(),
             'scalable_budget' => [
                 'calories' => $scalableBudgetCalories,
                 'macros' => $scalableBudgetMacros,
@@ -321,6 +441,27 @@ final class UserPlanCalculator
             'protein_g' => round(($calories * ($proteinPct / 100.0)) / 4.0, 2),
             'carbs_g' => round(($calories * ($carbPct / 100.0)) / 4.0, 2),
             'fat_g' => round(($calories * ($fatPct / 100.0)) / 9.0, 2),
+        ];
+    }
+
+    /**
+     * @return array{
+     *     main_min: float,
+     *     main_max: float,
+     *     main_target: float,
+     *     side_calories: float,
+     * }
+     */
+    public static function businessCraftConfig(): array
+    {
+        /** @var array{main_min?: float, main_max?: float, main_target?: float, side_calories?: float} $config */
+        $config = config('customer_nutrition.business_craft', []);
+
+        return [
+            'main_min' => (float) ($config['main_min'] ?? 350.0),
+            'main_max' => (float) ($config['main_max'] ?? 400.0),
+            'main_target' => (float) ($config['main_target'] ?? 375.0),
+            'side_calories' => (float) ($config['side_calories'] ?? 150.0),
         ];
     }
 

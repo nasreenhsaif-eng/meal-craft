@@ -4,6 +4,13 @@ import SafetyAlerts from '../MealSystem/SafetyAlerts.jsx';
 import { G6PD_HIGHLIGHT_BADGE } from '../../meal-library/mealSafetyAndSickle.ts';
 import { aggregateDayMicronutrientRows } from '../../meal-library/aggregateDayNutritionalData.ts';
 import {
+    BEST_EFFORT_NUTRIENT_LABELS,
+    FLOOR_RDI_TARGET_PERCENT,
+    isMicronutrientTierEnforced,
+} from '../../meal-library/nutrientDailyRdi.ts';
+import DayMicronutrientGapSuggestions from './DayMicronutrientGapSuggestions.jsx';
+import CaloricThresholdNotice from './CaloricThresholdNotice.jsx';
+import {
     PLAN_MACRO_CATEGORY_ROWS,
     PlanMacroSummaryPanel,
     sumActiveDayMacros,
@@ -209,9 +216,13 @@ export function DayMacronutrientsTabPanel({ categories, dayLabel = 'Day', planCa
     );
 }
 
-function MicronutrientRdiTable({ rows }) {
+function MicronutrientRdiTable({ rows, planTierCalories = 0 }) {
+    const tierEnforced = isMicronutrientTierEnforced(planTierCalories);
+
     if (rows.length === 0) {
-        return <p className="font-body text-sm text-[#555555]">No micronutrient data available for this day.</p>;
+        return (
+            <p className="font-body text-sm text-[#555555]">No micronutrient data available for this day.</p>
+        );
     }
 
     /** @type {Array<{ title: string; order: number; rows: typeof rows }>} */
@@ -237,7 +248,8 @@ function MicronutrientRdiTable({ rows }) {
     sections.sort((a, b) => a.order - b.order);
 
     return (
-        <div
+        <div className="space-y-3">
+            <div
             role="region"
             aria-label="Micronutrients with percent RDI"
             className="overflow-x-auto rounded-[12px] border border-gray-200 bg-white"
@@ -271,6 +283,11 @@ function MicronutrientRdiTable({ rows }) {
                                 <tr key={`${section.title}-${row.label}`} className="border-b border-gray-100 last:border-b-0">
                                     <td className="px-3 py-2.5 font-montserrat text-sm font-medium text-[#374151]">
                                         {row.label}
+                                        {BEST_EFFORT_NUTRIENT_LABELS.has(row.label) ? (
+                                            <span className="ml-1.5 font-body text-xs font-normal text-[#555555]">
+                                                (best effort)
+                                            </span>
+                                        ) : null}
                                     </td>
                                     <td className="px-3 py-2.5 text-right font-montserrat text-sm font-bold tabular-nums text-[#1F2937]">
                                         {row.formattedTotal}
@@ -278,9 +295,17 @@ function MicronutrientRdiTable({ rows }) {
                                     <td
                                         className={[
                                             'px-3 py-2.5 text-right font-montserrat text-sm font-bold tabular-nums',
-                                            row.rdiPercent != null && row.rdiPercent >= 20
-                                                ? 'text-[#5A6B44]'
-                                                : 'text-[#1F2937]',
+                                            BEST_EFFORT_NUTRIENT_LABELS.has(row.label)
+                                                ? 'text-[#555555]'
+                                                : tierEnforced
+                                                  && row.rdiPercent != null
+                                                  && row.rdiPercent < FLOOR_RDI_TARGET_PERCENT
+                                                  && !row.label.includes('Sugar')
+                                                  && !row.label.includes('Sodium')
+                                                    ? 'text-amber-800'
+                                                    : row.rdiPercent != null && row.rdiPercent >= 20
+                                                      ? 'text-[#5A6B44]'
+                                                      : 'text-[#1F2937]',
                                         ].join(' ')}
                                     >
                                         {row.formattedRdiPercent ?? '—'}
@@ -292,6 +317,7 @@ function MicronutrientRdiTable({ rows }) {
                 </tbody>
             </table>
         </div>
+        </div>
     );
 }
 
@@ -299,16 +325,29 @@ function MicronutrientRdiTable({ rows }) {
  * @param {object} props
  * @param {Partial<Record<string, unknown[]>>} props.categories
  * @param {string} [props.dayLabel]
+ * @param {number} [props.planTierCalories]
+ * @param {() => void} [props.onEditMeals]
  */
-export function DayMicronutrientsTabPanel({ categories, dayLabel = 'Day' }) {
+export function DayMicronutrientsTabPanel({
+    categories,
+    dayLabel = 'Day',
+    planTierCalories = 0,
+    onEditMeals,
+}) {
     const micronutrientRows = useMemo(() => aggregateDayMicronutrientRows(categories), [categories]);
 
     return (
         <SummarySection
             title="Micronutrients"
-            description={`Full-day totals and % of daily reference intake for ${dayLabel.toLowerCase()}.`}
+            description={`Full-day totals and % of daily reference intake for ${dayLabel.toLowerCase()}. Vitamin D is shown as best effort — it is difficult to reach 100% from food alone. Scroll below the table for nutrient guidance.`}
         >
-            <MicronutrientRdiTable rows={micronutrientRows} />
+            <CaloricThresholdNotice planTierCalories={planTierCalories} />
+            <MicronutrientRdiTable rows={micronutrientRows} planTierCalories={planTierCalories} />
+            <DayMicronutrientGapSuggestions
+                categories={categories}
+                planTierCalories={planTierCalories}
+                onEditMeals={onEditMeals}
+            />
         </SummarySection>
     );
 }
@@ -404,13 +443,16 @@ export function DaySickleCellTabPanel({ categories }) {
  * @param {string} [props.dayLabel]
  * @param {string} [props.planCategoryLabel]
  * @param {(meal: object) => void} [props.onOpenMeal]
+ * @param {() => void} [props.onEditMeals]
  */
 export default function DayNutritionalSummaryPanel({
     tab,
     categories,
     dayLabel = 'Day',
     planCategoryLabel = '',
+    planTierCalories = 0,
     onOpenMeal,
+    onEditMeals,
 }) {
     const meals = useMemo(() => listDayMealsWithHighlights(categories), [categories]);
 
@@ -426,7 +468,14 @@ export default function DayNutritionalSummaryPanel({
                 />
             );
         case 'micronutrients':
-            return <DayMicronutrientsTabPanel categories={categories} dayLabel={dayLabel} />;
+            return (
+                <DayMicronutrientsTabPanel
+                    categories={categories}
+                    dayLabel={dayLabel}
+                    planTierCalories={planTierCalories}
+                    onEditMeals={onEditMeals}
+                />
+            );
         case 'allergies':
             return <DayAllergySafetyTabPanel categories={categories} />;
         case 'sickle':

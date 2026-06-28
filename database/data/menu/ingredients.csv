@@ -41,6 +41,7 @@ Basil,Herbs,172232,23,3.15,2.65,0.64,0.15,68,0,3.17,64,1.6,0.3,177,295,4,0.81,18
 "Beef Chuck Roast",Proteins,100308,176,20,0,10.1,0.34,7,3.5,2.1,21,0,0,11,318,65,8.4,0,0,0.1,0.1,1.5,1,0,,,,,0
 "Beef Ground",Proteins,173111,250,18.2,0,19,0.38,9,2.6,1.9,19,0,0,12,280,70,4.8,0,0,0.2,0.1,1.5,1,0,,,,,0
 "Beef Ground Lean",Proteins,,182,26,0,8,0.4,8,2.2,2.7,21,0,0,12,340,65,4.5,0,0,0.1,0,1.5,0.95,0,,"Lean ground beef, raw","Lean ground beef sourced for clean whole-food profiles.",,0
+"Beef Liver",Proteins,168631,191,28,5.3,5,0.7,253,70,6.5,18,0,0.5,6,313,78,4,1.3,4968,0.4,1.2,12,1,0,,"Pan-seared beef liver. Very high in B12, iron, folate, and vitamin A — blend 15–25 g per serving into ground beef only, or use in dedicated liver mains/salads.",,,0
 "Beef Rib Bones (Trimmed)",Proteins,,55,2.5,0,3.5,0.08,0,0.4,0.5,5,0,0,15,80,12,1.2,0,0,0,0,0,1,0,,"Bone-in rib bones with all visible meat removed before roasting for broth.",,,0
 "Beef Ribeye",Proteins,174036,291,24,0,22,0.44,6,2.5,1.9,21,0,0,9,321,54,4.5,0,0,0.2,0.1,1.5,1,0,,,,,0
 "Beef Ribs",Proteins,,248,19,0,18,0.35,7,2.4,2,19,0,0,10,290,60,6.5,0,0,0.2,0.1,1.5,1,0,,"Bone-in beef ribs for roasting and broth extraction.",,,0
@@ -290,6 +291,7 @@ Prawns,Proteins,175179,99,24,0.2,0.3,0.1,2,1.3,0.5,37,0,0,70,259,111,1.1,2.2,54,
 "Psyllium Husks",Pantry,1103366,378,0,88.9,0,0,0,0,0,0,77.8,0,0,0,111,0,0,0,0,0,0,1,0,,,,,0
 Pumpkin,Vegetables,168448,26,1,6.5,0.1,0.08,16,0,0.8,12,0.5,2.8,21,340,1,0.3,9,426,0.4,0,0,1,0,,"Fresh pumpkin — cubed and roasted for Thai curries and autumn plates.",,,0
 "Pumpkin Seeds",Fats/Nuts,170556,559,30.2,10.7,49.1,0.14,58,0,8.8,592,6,1.4,46,809,7,7.8,1.9,1,0.6,0,8,1,0,,,,,0
+Purslane,Vegetables,169274,20,2,3.4,0.4,0.07,15,0,2,68,0.9,0.5,65,494,45,0.2,21,260,12.2,0,0,1,0,,"Fresh purslane leaves — lemony, omega-3 rich green for salads, stews, and herb mixes.",,,0
 Quinoa,Grain,168877,120,4.4,21.3,1.9,0.1,42,0,1.5,64,2.8,0.9,17,172,7,1.1,0,0,0.6,0,0,1,0,,,,,0
 "Quinoa (White)",Grains,168874,120,4.4,21.3,1.9,0.12,42,0,1.5,64,2.8,0.9,17,172,7,1.1,0,0,0.6,0,1.1,1,0,,,,,0
 "Quinoa Bread (Base)","Base Ingredient",,227.43,7.9,35.98,5.82,0.28,103.232,0,2.592,110.872,3.928,0.024,27.864,317.408,313.376,1.736,0.144,0.08,1.688,0,0,1,1,"43:70,58:3,244:1,272:1,284:50","A dense, clean, and fiber-rich gluten-free alternative bread made entirely from wholesome whole quinoa flour base.","Step 1: Whisk the dry quinoa flour, sea salt, and baking powder together thoroughly in a mixing bowl.\nStep 2: Stream in the filtered water and extra virgin olive oil, mixing continuously until a thick, structured batter forms.\nStep 3: Transfer the batter mixture into a prepared mini loaf pan and bake at 375°F (190°C) for 25 to 30 minutes until fully set and the top crust turns golden brown.",,0

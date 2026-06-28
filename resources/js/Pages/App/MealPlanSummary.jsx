@@ -230,7 +230,9 @@ export default function MealPlanSummary({
                                 categories={activeDayCategories}
                                 dayLabel={activeDayData?.label ?? 'Day'}
                                 planCategoryLabel={planCategoryLabel}
+                                planTierCalories={craftPlan.planTierCalories ?? 0}
                                 onOpenMeal={openMealDetail}
+                                onEditMeals={handleEditSelections}
                             />
                         </motion.div>
                     </AnimatePresence>

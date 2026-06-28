@@ -218,13 +218,19 @@ export function scheduledFullCraftCategoryMealsForDay(schedule, dayOfWeek) {
 }
 
 /**
- * @param {{ includeSoup?: boolean; craftKey?: string; soupCalories?: number; sideSaladCalories?: number; dessertCalories?: number; dayOfWeek?: number; planTier?: number; fixedChiaBreakfast?: boolean }} [options]
+ * @param {{ includeSoup?: boolean; selectedFixedSlots?: string[]; craftKey?: string; soupCalories?: number; sideSaladCalories?: number; dessertCalories?: number; dayOfWeek?: number; planTier?: number; fixedChiaBreakfast?: boolean }} [options]
  */
 export function buildAdaptedMenuQueryString(options = {}) {
     const params = new URLSearchParams();
 
     if (options.includeSoup) {
         params.set('include_soup', '1');
+    }
+
+    if (Array.isArray(options.selectedFixedSlots) && options.selectedFixedSlots.length > 0) {
+        for (const slot of options.selectedFixedSlots) {
+            params.append('selected_fixed_slots[]', slot);
+        }
     }
     if (typeof options.soupCalories === 'number' && options.soupCalories > 0) {
         params.set('soup_calories', String(Math.round(options.soupCalories)));

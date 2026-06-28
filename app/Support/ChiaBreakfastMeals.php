@@ -6,7 +6,7 @@ use App\Models\Meal;
 use App\Services\BalancedChiaBreakfastRecipeRefiner;
 
 /**
- * Coconut-chia breakfast deck meals served at a fixed kitchen portion for every plan tier.
+ * Coconut-chia breakfast deck meals — kitchen baseline ~200 kcal, scaled to the plan-tier breakfast target.
  */
 final class ChiaBreakfastMeals
 {

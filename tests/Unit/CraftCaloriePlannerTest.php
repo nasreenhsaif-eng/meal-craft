@@ -28,16 +28,16 @@ test('craft calorie budgets match consultation craft rules at 1500 kcal tier', f
     $business = CraftCaloriePlanner::applyCraftToPlan($basePlan, CraftCaloriePlanner::CRAFT_BUSINESS);
 
     expect($full['craft_day_calories'])->toBe(1500.0)
-        ->and($full['craft_soup_counts_as_add_on'])->toBeTrue()
+        ->and($full['craft_soup_counts_as_add_on'])->toBeFalse()
         ->and($afternoon['craft_day_calories'])->toBe(round(1500.0 - $breakfast, 2))
-        ->and($afternoon['craft_soup_counts_as_add_on'])->toBeTrue()
+        ->and($afternoon['craft_soup_counts_as_add_on'])->toBeFalse()
         ->and($day['craft_day_calories'])->toBe(round(1500.0 - $mainEach, 2))
         ->and($intermittent['craft_day_calories'])->toBe(round(1500.0 - $breakfast - $mainEach, 2))
-        ->and($business['craft_day_calories'])->toBe(500.0)
-        ->and($business['scalable_slot_targets']['main_each']['calories'])->toBe(325.0);
+        ->and($business['craft_day_calories'])->toBe(525.0)
+        ->and($business['scalable_slot_targets']['main_each']['calories'])->toBe(375.0);
 });
 
-test('intermittent craft scales the single main within soup salad and dessert budget', function () {
+test('intermittent craft scales the single main within pick-2 fixed budget', function () {
     $profile = new CustomerProfile([
         'id' => 1,
         'daily_calorie_target' => 1500,
@@ -50,7 +50,7 @@ test('intermittent craft scales the single main within soup salad and dessert bu
     $intermittent = CraftCaloriePlanner::applyCraftToPlan($basePlan, CraftCaloriePlanner::CRAFT_INTERMITTENT);
 
     expect($intermittent['craft_soup_counts_as_add_on'])->toBeFalse()
-        ->and($intermittent['scalable_slot_targets']['main_each']['calories'])->toBe(312.0);
+        ->and($intermittent['scalable_slot_targets']['main_each']['calories'])->toBe(450.0);
 });
 
 test('unknown craft keys throw', function () {

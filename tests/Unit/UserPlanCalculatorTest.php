@@ -6,7 +6,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-test('calculateUserPlan allocates core tier across fixed portions and scalable slots', function () {
+test('calculateUserPlan uses explicit tier slot targets and pick-2 fixed portions', function () {
     $profile = new CustomerProfile([
         'id' => 1,
         'daily_calorie_target' => 1500,
@@ -18,47 +18,42 @@ test('calculateUserPlan allocates core tier across fixed portions and scalable s
     $plan = UserPlanCalculator::calculateUserPlan($profile);
 
     expect($plan['plan_tier'])->toBe(1500.0)
-        ->and($plan['fixed_portion']['calories'])->toBe(345.0)
-        ->and($plan['fixed_portion']['per_slot']['side_salad'])->toBe(175.0)
-        ->and($plan['fixed_portion']['per_slot']['dessert'])->toBe(170.0)
-        ->and($plan['scalable_budget']['calories'])->toBe(1155.0)
-        ->and($plan['scalable_slot_targets']['breakfast']['calories'])->toBe(231.0)
-        ->and($plan['scalable_slot_targets']['main_each']['calories'])->toBe(462.0)
+        ->and($plan['fixed_portion']['calories'])->toBe(300.0)
+        ->and($plan['fixed_portion']['per_slot']['side_salad'])->toBe(150.0)
+        ->and($plan['fixed_portion']['per_slot']['dessert'])->toBe(150.0)
+        ->and($plan['fixed_portion']['per_slot']['soup'])->toBe(150.0)
+        ->and($plan['scalable_slot_targets']['breakfast']['calories'])->toBe(300.0)
+        ->and($plan['scalable_slot_targets']['main_each']['calories'])->toBe(450.0)
         ->and($plan['core_day_calories'])->toBe(1500.0)
         ->and($plan['day_total_calories'])->toBe(1500.0)
         ->and($plan['include_soup'])->toBeFalse();
 });
 
-test('included soup counts within tier and shrinks scalable slot targets', function () {
+test('selected fixed slots budget only chosen categories at 150 kcal each', function () {
     $profile = new CustomerProfile([
         'id' => 1,
-        'daily_calorie_target' => 1500,
+        'daily_calorie_target' => 2000,
         'protein_percentage' => 30.0,
         'carb_percentage' => 40.0,
         'fat_percentage' => 30.0,
     ]);
 
-    $corePlan = UserPlanCalculator::calculateUserPlan($profile);
-    $withSoup = UserPlanCalculator::calculateUserPlan($profile, [
-        'include_soup' => true,
-        'soup_calories' => 150.0,
+    $sideAndSoup = UserPlanCalculator::calculateUserPlan($profile, [
+        'selected_fixed_slots' => ['side_salad', 'soup'],
     ]);
 
-    expect($withSoup['include_soup'])->toBeTrue()
-        ->and($withSoup['optional_add_on']['soup']['calories'])->toBe(150.0)
-        ->and($withSoup['fixed_portion']['calories'])->toBe(495.0)
-        ->and($withSoup['scalable_budget']['calories'])->toBe(1005.0)
-        ->and($withSoup['scalable_slot_targets']['breakfast']['calories'])->toBe(201.0)
-        ->and($withSoup['scalable_slot_targets']['main_each']['calories'])->toBe(402.0)
-        ->and($withSoup['scalable_slot_targets']['breakfast']['calories'])
-        ->toBeLessThan($corePlan['scalable_slot_targets']['breakfast']['calories'])
-        ->and($withSoup['scalable_slot_targets']['main_each']['calories'])
-        ->toBeLessThan($corePlan['scalable_slot_targets']['main_each']['calories'])
-        ->and($withSoup['core_day_calories'])->toBe(1500.0)
-        ->and($withSoup['day_total_calories'])->toBe(1500.0);
+    expect($sideAndSoup['include_soup'])->toBeTrue()
+        ->and($sideAndSoup['fixed_portion']['calories'])->toBe(300.0)
+        ->and($sideAndSoup['fixed_portion']['per_slot'])->toBe([
+            'side_salad' => 150.0,
+            'soup' => 150.0,
+        ])
+        ->and($sideAndSoup['scalable_slot_targets']['breakfast']['calories'])->toBe(450.0)
+        ->and($sideAndSoup['scalable_slot_targets']['main_each']['calories'])->toBe(625.0)
+        ->and($sideAndSoup['day_total_calories'])->toBe(2000.0);
 });
 
-test('fixed chia breakfast counts 200 kcal toward tier and gives mains the remaining scalable budget', function () {
+test('fixed chia breakfast flag is tracked but tier breakfast targets still apply', function () {
     $profile = new CustomerProfile([
         'id' => 1,
         'daily_calorie_target' => 1500,
@@ -72,13 +67,33 @@ test('fixed chia breakfast counts 200 kcal toward tier and gives mains the remai
     ]);
 
     expect($plan['fixed_chia_breakfast'])->toBeTrue()
-        ->and($plan['fixed_portion']['calories'])->toBe(545.0)
-        ->and($plan['fixed_portion']['per_slot']['breakfast'])->toBe(200.0)
-        ->and($plan['scalable_budget']['calories'])->toBe(955.0)
-        ->and($plan['scalable_slot_targets']['breakfast']['calories'])->toBe(200.0)
-        ->and($plan['scalable_slot_targets']['main_each']['calories'])->toBe(477.5)
+        ->and($plan['fixed_portion']['calories'])->toBe(300.0)
+        ->and($plan['scalable_slot_targets']['breakfast']['calories'])->toBe(300.0)
+        ->and($plan['scalable_slot_targets']['main_each']['calories'])->toBe(450.0)
         ->and($plan['day_total_calories'])->toBe(1500.0);
 });
+
+test('tier slot targets match spreadsheet at each plan tier', function (int $tier, float $breakfast, float $mainEach) {
+    $profile = new CustomerProfile([
+        'id' => 1,
+        'daily_calorie_target' => $tier,
+        'protein_percentage' => 30.0,
+        'carb_percentage' => 40.0,
+        'fat_percentage' => 30.0,
+    ]);
+
+    $plan = UserPlanCalculator::calculateUserPlan($profile, ['plan_tier' => (float) $tier]);
+
+    expect($plan['scalable_slot_targets']['breakfast']['calories'])->toBe($breakfast)
+        ->and($plan['scalable_slot_targets']['main_each']['calories'])->toBe($mainEach)
+        ->and($plan['day_total_calories'])->toBe((float) $tier);
+})->with([
+    [1000, 200.0, 250.0],
+    [1200, 200.0, 350.0],
+    [1500, 300.0, 450.0],
+    [1800, 400.0, 550.0],
+    [2000, 450.0, 625.0],
+]);
 
 test('calculateUserPlan derives scaling multiplier from scalable budget and library baseline', function () {
     $profile = new CustomerProfile([
@@ -91,12 +106,12 @@ test('calculateUserPlan derives scaling multiplier from scalable budget and libr
 
     $plan = UserPlanCalculator::calculateUserPlan($profile);
 
-    expect($plan['fixed']['calories'])->toBe(345.0)
-        ->and($plan['remaining']['calories'])->toBe(1655.0)
+    expect($plan['fixed']['calories'])->toBe(300.0)
+        ->and($plan['remaining']['calories'])->toBe(1700.0)
         ->and($plan['scaling_multiplier'])->toBeGreaterThan(0);
 
     $baselineTotal = $plan['baseline_scalable']['calories'];
-    expect($plan['scaling_multiplier'])->toEqual(round(1655 / $baselineTotal, 4));
+    expect($plan['scaling_multiplier'])->toEqual(round(1700 / $baselineTotal, 4));
 });
 
 test('snapToPlanTier returns nearest configured tier', function () {

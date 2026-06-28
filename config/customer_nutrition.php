@@ -11,6 +11,41 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Explicit per-tier slot calorie targets (kcal)
+    |--------------------------------------------------------------------------
+    |
+    | Full Craft day = breakfast + 2× main_each + fixed_choice_count × fixed_choice_calories.
+    |
+    */
+    'tier_slot_calories' => [
+        1000 => ['breakfast' => 200.0, 'main_each' => 250.0],
+        1200 => ['breakfast' => 200.0, 'main_each' => 350.0],
+        1500 => ['breakfast' => 300.0, 'main_each' => 450.0],
+        1800 => ['breakfast' => 400.0, 'main_each' => 550.0],
+        2000 => ['breakfast' => 450.0, 'main_each' => 625.0],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Fixed pick slots — customer picks exactly 2 of 3 per day (~150 kcal each)
+    |--------------------------------------------------------------------------
+    */
+    'fixed_choice_slots' => ['side_salad', 'dessert', 'soup'],
+    'fixed_choice_count' => 2,
+    'fixed_choice_calories' => 150.0,
+
+    /*
+    |--------------------------------------------------------------------------
+    | Day calorie tolerance (kcal)
+    |--------------------------------------------------------------------------
+    |
+    | Selected meals should total plan_tier ± this amount when slot targets are met.
+    |
+    */
+    'day_calorie_tolerance' => 50.0,
+
+    /*
+    |--------------------------------------------------------------------------
     | Production weekly meal plan (admin scheduler)
     |--------------------------------------------------------------------------
     |
@@ -22,11 +57,15 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Consultation craft calorie budgets
+    | Business craft — main always 350–400 kcal; side pick ~150 kcal
     |--------------------------------------------------------------------------
     */
-    'business_craft_calories' => 500,
-    'business_side_planning_midpoint' => 175.0,
+    'business_craft' => [
+        'main_min' => 350.0,
+        'main_max' => 400.0,
+        'main_target' => 375.0,
+        'side_calories' => 150.0,
+    ],
 
     /*
     |--------------------------------------------------------------------------
@@ -73,9 +112,8 @@ return [
     | Slot behaviour
     |--------------------------------------------------------------------------
     |
-    | scalable         — portion scales to hit slot target within the plan tier
-    | fixed_portion    — standard kitchen portion; calories count toward tier
-    | optional_add_on  — optional slot; when included, fixed standard portion counts within tier
+    | scalable      — portion scales to hit slot target within the plan tier
+    | fixed_portion — standard kitchen portion; calories count toward tier
     |
     */
     'slot_behaviors' => [
@@ -83,15 +121,15 @@ return [
         'main' => 'scalable',
         'side_salad' => 'fixed_portion',
         'dessert' => 'fixed_portion',
-        'soup' => 'optional_add_on',
+        'soup' => 'fixed_portion',
     ],
 
     /*
     |--------------------------------------------------------------------------
-    | Slots that count toward the core plan tier when included (soup only when opted in)
+    | Slots eligible for the pick-2 fixed choice group
     |--------------------------------------------------------------------------
     */
-    'core_fixed_portion_slots' => ['side_salad', 'dessert'],
+    'core_fixed_portion_slots' => ['side_salad', 'dessert', 'soup'],
 
     /*
     |--------------------------------------------------------------------------
@@ -101,9 +139,9 @@ return [
     'slot_calorie_bands' => [
         'breakfast' => ['min' => 200.0, 'target' => 240.0, 'max' => 280.0],
         'main' => ['min' => 300.0, 'target' => 360.0, 'max' => 420.0],
-        'side_salad' => ['min' => 150.0, 'target' => 175.0, 'max' => 200.0],
-        'dessert' => ['min' => 140.0, 'target' => 170.0, 'max' => 200.0],
-        'soup' => ['min' => 120.0, 'target' => 150.0, 'max' => 180.0],
+        'side_salad' => ['min' => 140.0, 'target' => 150.0, 'max' => 160.0],
+        'dessert' => ['min' => 140.0, 'target' => 150.0, 'max' => 160.0],
+        'soup' => ['min' => 140.0, 'target' => 150.0, 'max' => 160.0],
     ],
 
     /*
@@ -114,19 +152,6 @@ return [
     'scalable_slots' => [
         'breakfast' => 1,
         'main' => 2,
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Share of scalable budget (after core fixed portions) per slot
-    |--------------------------------------------------------------------------
-    |
-    | Weights must sum to 1.0 across breakfast + (main_each × main count).
-    |
-    */
-    'scalable_slot_weights' => [
-        'breakfast' => 0.20,
-        'main_each' => 0.40,
     ],
 
     /*

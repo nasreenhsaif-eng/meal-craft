@@ -16,6 +16,7 @@ final class AdaptedMenuFixedPortionResolver
     /**
      * @param  array{
      *     include_soup?: bool,
+     *     selected_fixed_slots?: list<string>,
      *     soup_calories?: float,
      *     side_salad_calories?: float,
      *     dessert_calories?: float,
@@ -47,9 +48,12 @@ final class AdaptedMenuFixedPortionResolver
                     $merged['dessert_calories'] = $fromSchedule['dessert_calories'];
                 }
 
+                $soupSelected = in_array('soup', $options['selected_fixed_slots'] ?? [], true)
+                    || ($options['include_soup'] ?? false);
+
                 if (
                     ! isset($merged['soup_calories'])
-                    && ($options['include_soup'] ?? false)
+                    && $soupSelected
                     && isset($fromSchedule['soup_calories'])
                 ) {
                     $merged['soup_calories'] = $fromSchedule['soup_calories'];

@@ -113,14 +113,35 @@ final class SavoryEggBreakfastMeals
         return (float) $minimum;
     }
 
-    public static function adaptedSideGrams(Ingredient $ingredient, float $baselineGrams, float $sideMultiplier): float
+    /**
+     * Minimum side grams at the customer's plan tier — scales with the breakfast calorie target (50g avocado at 1000 kcal tier).
+     */
+    public static function minimumSideGramsForPlanTier(Ingredient $ingredient, float $planTier): ?float
+    {
+        $baseMinimum = self::minimumSideGramsForIngredient($ingredient);
+
+        if ($baseMinimum === null) {
+            return null;
+        }
+
+        $referenceBreakfast = UserPlanCalculator::tierSlotCalories(1000.0)['breakfast'];
+        $tierBreakfast = UserPlanCalculator::tierSlotCalories($planTier)['breakfast'];
+
+        if ($referenceBreakfast <= 0 || $tierBreakfast <= 0) {
+            return $baseMinimum;
+        }
+
+        return round($baseMinimum * ($tierBreakfast / $referenceBreakfast), 2);
+    }
+
+    public static function adaptedSideGrams(Ingredient $ingredient, float $baselineGrams, float $sideMultiplier, float $planTier = 1000.0): float
     {
         if ($baselineGrams <= 0) {
             return 0.0;
         }
 
         $grams = round($baselineGrams * $sideMultiplier, 4);
-        $minimum = self::minimumSideGramsForIngredient($ingredient);
+        $minimum = self::minimumSideGramsForPlanTier($ingredient, $planTier);
 
         if ($minimum !== null) {
             $grams = max($grams, $minimum);

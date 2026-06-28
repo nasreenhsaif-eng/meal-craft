@@ -21,6 +21,21 @@ export const NUTRIENT_RDI_BY_LABEL: Record<string, number> = {
     'Sodium (mg)': 2300,
 };
 
+export const ENFORCED_MICRONUTRIENT_TIERS = [1500, 1800, 2000] as const;
+
+export const INFORMATIONAL_MICRONUTRIENT_TIERS = [1000, 1200] as const;
+
+export const FLOOR_RDI_TARGET_PERCENT = 98;
+
+export const BEST_EFFORT_NUTRIENT_LABELS = new Set(['Vitamin D (mcg)']);
+
+/**
+ * @param {number} planTier
+ */
+export function isMicronutrientTierEnforced(planTier: number): boolean {
+    return ENFORCED_MICRONUTRIENT_TIERS.includes(/** @type {typeof ENFORCED_MICRONUTRIENT_TIERS[number]} */ (Math.round(planTier)));
+}
+
 /**
  * @param {string} label
  * @param {number} total
