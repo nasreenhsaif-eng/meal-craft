@@ -40,6 +40,7 @@ final class IngredientMicroDataAuditor
         'Salmon' => ['b12', 'vitamin_k2'],
         'Beef Chuck Roast' => ['b12', 'vitamin_k2', 'calcium', 'iron'],
         'Beef Liver' => ['b12', 'vitamin_k2', 'iron', 'b9_folate', 'vitamin_a'],
+        'Chicken Liver' => ['b12', 'vitamin_k2', 'iron', 'b9_folate', 'vitamin_a'],
         'Sesame Seeds' => ['calcium', 'vitamin_k2'],
         'Rocca' => ['calcium'],
         'Purslane' => ['calcium', 'iron', 'magnesium', 'potassium'],

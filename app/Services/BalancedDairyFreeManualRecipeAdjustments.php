@@ -59,7 +59,7 @@ final class BalancedDairyFreeManualRecipeAdjustments
             'Walnuts' => 8.0,
         ],
         'Beef Bibimbap' => [
-            'Baby Chard' => 15.0,
+            'Chard' => 15.0,
             'Beef Ground Lean' => 85.0,
             'Beef Liver' => self::LIVER_BLEND_GRAMS,
             'Carrots' => 40.0,
@@ -192,7 +192,7 @@ final class BalancedDairyFreeManualRecipeAdjustments
             'White Onion' => 25.0,
         ],
         'Vegan Butternut Squash, Lentil & Peanut Stew w Brown Rice' => [
-            'Baby Chard' => 20.0,
+            'Chard' => 20.0,
             'Bell Pepper (Red)' => 30.0,
             'Black Pepper' => 0.5,
             'Butternut Squash' => 60.0,
@@ -242,6 +242,21 @@ final class BalancedDairyFreeManualRecipeAdjustments
             'Tahini' => 12.0,
             'Tomato (Raw)' => 45.0,
             'White Onion' => 28.0,
+        ],
+        'Rosemary Garlic Chicken w Pomegranate Glaze, Beetroot & Rocca' => [
+            'Rosemary Garlic Chicken (Base)' => 88.0,
+            'Red Onion' => 32.0,
+            'Bell Pepper (Red)' => 38.0,
+            'Garlic (Raw)' => 3.0,
+            'Olive Oil (Extra Virgin)' => 4.0,
+            'Oregano' => 1.0,
+            'Pomegranate Molasses' => 10.0,
+            'Black Pepper' => 0.5,
+            'Nutmeg' => 0.2,
+            'Beetroot' => 70.0,
+            'Rocca' => 48.0,
+            'Quinoa Flatbread (Base)' => 32.0,
+            'Tomato (Raw)' => 48.0,
         ],
     ];
 

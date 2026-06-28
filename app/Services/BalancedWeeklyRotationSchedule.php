@@ -69,11 +69,11 @@ final class BalancedWeeklyRotationSchedule
     public const CHICKEN_PLATE_MAINS = [
         'Tamarind Honey & Sesame Chicken w Garlicky Green Beans',
         BalancedCanonicalMealRecipeRefiner::ROSEMARY_GARLIC_CHICKEN_PLATE_NAME,
+        'Rosemary Garlic Chicken w Pomegranate Glaze, Beetroot & Rocca',
         'Grilled Chicken Chimichurri',
         'Spicy Harissa Grilled Chicken w Roasted Sweet Potato & Zucchini',
         'Pepper Chicken in Creamy Cajun Sauce w Roasted Potato',
         'Grilled Sumac Chicken Skewers w Zereshk & Turmeric Rice & Roasted Mixed Vegetables',
-        'Grilled Chicken Tikka Salad w Quinoa & Cilantro Lime Dressing',
     ];
 
     /** @var list<string> */

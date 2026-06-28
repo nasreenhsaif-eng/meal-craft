@@ -13,7 +13,7 @@ final class MicronutrientBoostCatalog
     public const GREEN_BOOST_INGREDIENTS = [
         'Purslane',
         'Rocca',
-        'Baby Chard',
+        'Chard',
         'Bok Choy',
         'Beetroot',
         'Kale',
@@ -60,7 +60,7 @@ final class MicronutrientBoostCatalog
     public const BOOST_INGREDIENTS = [
         'Purslane',
         'Rocca',
-        'Baby Chard',
+        'Chard',
         'Bok Choy',
         'Beetroot',
         'Kale',
@@ -84,19 +84,19 @@ final class MicronutrientBoostCatalog
      * @var array<string, list<string>>
      */
     public const BOOST_BY_NUTRITION_KEY = [
-        'iron' => ['Beef Liver', 'Purslane', 'Baby Chard', 'Bok Choy', 'Rocca', 'Beetroot', 'Kale', 'Pumpkin Seeds', 'Chickpeas', 'French Lentils', 'Lentils (Red)', 'Spinach (Fresh)'],
-        'potassium' => ['Purslane', 'Beetroot', 'Bok Choy', 'Baby Chard', 'Sweet Potato', 'Kale', 'Broccoli', 'Carrots', 'Chickpeas', 'Spinach (Fresh)'],
-        'calcium' => ['Tahini', 'Sesame Seeds', 'Purslane', 'Rocca', 'Baby Chard', 'Bok Choy', 'Kale', 'Chickpeas', 'Spinach (Fresh)'],
-        'b9_folate' => ['Beef Liver', 'Purslane', 'Baby Chard', 'Rocca', 'Kale', 'Chickpeas', 'French Lentils', 'Lentils (Red)', 'Spinach (Fresh)'],
+        'iron' => ['Beef Liver', 'Chicken Liver', 'Purslane', 'Chard', 'Bok Choy', 'Rocca', 'Beetroot', 'Kale', 'Pumpkin Seeds', 'Chickpeas', 'French Lentils', 'Lentils (Red)', 'Spinach (Fresh)'],
+        'potassium' => ['Purslane', 'Beetroot', 'Bok Choy', 'Chard', 'Sweet Potato', 'Kale', 'Broccoli', 'Carrots', 'Chickpeas', 'Spinach (Fresh)'],
+        'calcium' => ['Tahini', 'Sesame Seeds', 'Purslane', 'Rocca', 'Chard', 'Bok Choy', 'Kale', 'Chickpeas', 'Spinach (Fresh)'],
+        'b9_folate' => ['Beef Liver', 'Chicken Liver', 'Purslane', 'Chard', 'Rocca', 'Kale', 'Chickpeas', 'French Lentils', 'Lentils (Red)', 'Spinach (Fresh)'],
         'vitamin_c' => ['Bell Pepper (Red)', 'Broccoli', 'Purslane', 'Bok Choy', 'Kale', 'Spinach (Fresh)'],
-        'vitamin_a' => ['Beef Liver', 'Purslane', 'Baby Chard', 'Beetroot', 'Sweet Potato', 'Carrots', 'Kale', 'Spinach (Fresh)'],
-        'fiber' => ['Chickpeas', 'Purslane', 'Baby Chard', 'Bok Choy', 'Beetroot', 'Kale', 'Broccoli', 'French Lentils', 'Spinach (Fresh)'],
-        'magnesium' => ['Purslane', 'Pumpkin Seeds', 'Baby Chard', 'Bok Choy', 'Kale', 'Walnuts', 'Chickpeas', 'Spinach (Fresh)'],
+        'vitamin_a' => ['Beef Liver', 'Chicken Liver', 'Purslane', 'Chard', 'Beetroot', 'Sweet Potato', 'Carrots', 'Kale', 'Spinach (Fresh)'],
+        'fiber' => ['Chickpeas', 'Purslane', 'Chard', 'Bok Choy', 'Beetroot', 'Kale', 'Broccoli', 'French Lentils', 'Spinach (Fresh)'],
+        'magnesium' => ['Purslane', 'Pumpkin Seeds', 'Chard', 'Bok Choy', 'Kale', 'Walnuts', 'Chickpeas', 'Spinach (Fresh)'],
         'zinc' => ['Pumpkin Seeds', 'Chickpeas', 'Lentils (Red)', 'French Lentils'],
         'vitamin_e' => ['Walnuts', 'Purslane', 'Pumpkin Seeds', 'Spinach (Fresh)'],
-        'vitamin_k2' => ['Beef Liver', 'Egg', 'Tahini', 'Sesame Seeds', 'Salmon', 'Beef Chuck Roast', 'Beef Ground Lean'],
-        'b6' => ['Chickpeas', 'Purslane', 'Baby Chard', 'Sweet Potato', 'French Lentils', 'Spinach (Fresh)'],
-        'b12' => ['Beef Liver', 'Salmon', 'Beef Chuck Roast', 'Beef Ground Lean', 'Sardines (Canned)', 'Mackerel', 'Egg'],
+        'vitamin_k2' => ['Beef Liver', 'Chicken Liver', 'Egg', 'Tahini', 'Sesame Seeds', 'Salmon', 'Beef Chuck Roast', 'Beef Ground Lean'],
+        'b6' => ['Chickpeas', 'Purslane', 'Chard', 'Sweet Potato', 'French Lentils', 'Spinach (Fresh)'],
+        'b12' => ['Beef Liver', 'Chicken Liver', 'Salmon', 'Beef Chuck Roast', 'Beef Ground Lean', 'Sardines (Canned)', 'Mackerel', 'Egg'],
     ];
 
     /**
@@ -154,7 +154,7 @@ final class MicronutrientBoostCatalog
      *
      * @param  array<string, float>  $ingredientGrams
      */
-    public static function allowsBeefLiverBoost(?string $mealName, array $ingredientGrams): bool
+    public static function allowsLiverBoost(?string $mealName, array $ingredientGrams): bool
     {
         if ($mealName !== null && str_contains($mealName, 'Liver')) {
             return true;
@@ -167,6 +167,14 @@ final class MicronutrientBoostCatalog
         }
 
         return false;
+    }
+
+    /**
+     * @param  array<string, float>  $ingredientGrams
+     */
+    public static function allowsBeefLiverBoost(?string $mealName, array $ingredientGrams): bool
+    {
+        return self::allowsLiverBoost($mealName, $ingredientGrams);
     }
 
     public static function isGreenBoostIngredient(string $ingredientName): bool

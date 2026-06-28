@@ -425,8 +425,8 @@ final class BalancedMicronutrientRecipeRefiner
                 return false;
             }
 
-            if ($candidate === 'Beef Liver'
-                && ! MicronutrientBoostCatalog::allowsBeefLiverBoost($mealName, $ingredientGrams)) {
+            if (in_array($candidate, ['Beef Liver', 'Chicken Liver'], true)
+                && ! MicronutrientBoostCatalog::allowsLiverBoost($mealName, $ingredientGrams)) {
                 return false;
             }
 

@@ -286,11 +286,11 @@ final class BalancedMealInstructionRefiner
 
             // Beef mains
             'Grilled Beef Steak Ratatouille & Saffron rice' => $this->steps([
-                'Warm Saffron Rice (Base) per base recipe instructions.',
-                'Sauté diced eggplant, zucchini, pepper, and tomato until soft (12–15 min). Stir in basil.',
-                'Season steak. Sear in a hot pan 3–4 minutes per side for medium-rare (adjust to taste).',
+                'Prepare Saffron Rice (Base) per base recipe instructions; keep warm.',
+                'Sauté diced eggplant, zucchini, pepper, and tomato with garlic in olive oil until soft (12–15 min). Stir in basil, chard, and parsley.',
+                'Season steak with black pepper. Sear in a hot pan 3–4 minutes per side for medium-rare (adjust to taste).',
                 'Rest steak 5 minutes. Slice against the grain.',
-                'Serve steak with vegetable medley and rice.',
+                'Finish the ratatouille with lemon juice. Serve sliced steak with the vegetable medley and saffron rice.',
             ]),
             'Beef Bibimbap' => $this->steps([
                 'Prepare Cooked Quinoa (Base) per base recipe instructions; keep warm.',
@@ -312,6 +312,14 @@ final class BalancedMealInstructionRefiner
                 'Mix beef with cooked brown basmati rice.',
                 'Halve peppers, remove seeds. Fill with beef mixture.',
                 'Bake at 190°C for 25–30 minutes until peppers are soft.',
+            ]),
+            'Rosemary Garlic Chicken w Pomegranate Glaze, Beetroot & Rocca' => $this->steps([
+                'Prepare Rosemary Garlic Chicken (Base) and Quinoa Flatbread (Base) per base recipe instructions; keep the flatbread warm.',
+                'Roast or boil beetroot until tender. Cool, peel, and slice.',
+                'Sauté diced onion in olive oil until softened (4–5 min). Add sliced red pepper; cook 2–3 minutes. Stir in garlic and oregano.',
+                'Grill or pan-sear the rosemary garlic chicken until golden, then finish in the oven for 20 minutes exactly. Rest and slice.',
+                'Finish the sautéed vegetables with pomegranate molasses, black pepper, and a pinch of nutmeg.',
+                'Serve sliced chicken with warm quinoa flatbread, pomegranate vegetables, beetroot, rocca, and sliced raw tomato.',
             ]),
 
             // Vegan mains
@@ -371,10 +379,11 @@ final class BalancedMealInstructionRefiner
                 'Add coriander and chilli before serving.',
             ]),
             'Tomato Parsely Salad w Sumac Za’ater Dressing' => $this->steps([
-                'Halve or wedge tomatoes. Thinly slice red onion.',
-                'Chop parsley and mint.',
-                'Whisk sumac za’atar dressing.',
-                'Toss everything together. Serve at room temperature.',
+                'Prepare Sumac Za\'atar Dressing (Base) per base recipe instructions; rest 10 minutes.',
+                'Halve or wedge tomatoes. Slice cucumber and thinly slice red onion.',
+                'Roughly chop parsley and mint; tear rocca into bite-sized pieces.',
+                'Combine tomatoes, cucumber, onion, rocca, herbs, and pomegranate seeds in a bowl.',
+                'Serve at room temperature with dressing on the side.',
             ]),
             'Citrus Beet Arugula Salad' => $this->steps([
                 'Roast or boil beetroot until tender. Cool, peel, and slice.',
