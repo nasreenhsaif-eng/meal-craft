@@ -1,19 +1,19 @@
 meal_name,meal_type,ingredients_string,target_calories,target_protein,target_carbs,target_fat,batch_calories,batch_protein,batch_carbs,batch_fat,is_bulk,servings_count,meal_plan_tag,cycle_phase,safety_alerts,image_url,short_description,instructions
-"Blueberry Walnut Chia Pudding",Breakfast,"Blueberries:7.0876 | Cinnamon:1 | Coconut Chia Pudding (Base):75 | Fresh Mint:1 | Sesame Seeds:8 | Walnuts:5",350,35,35,7.8,,,,,false,1,Balanced,,Nuts,images/meals/blueberry_walnut_chia_pudding.png,"Creamy coconut chia pudding with blueberries, walnuts, cinnamon, and mint.","Prepare Coconut Chia Pudding (Base) ahead (chia, coconut milk, and date syrup) and chill until thick.
+"Blueberry Walnut Chia Pudding",Breakfast,"Black Seeds:8 | Blueberries:7.09 | Cinnamon:1 | Coconut Chia Pudding (Base):75 | Fresh Mint:1 | Walnuts:5",350,35,35,7.8,,,,,false,,Balanced,,,images/meals/blueberry_walnut_chia_pudding.png,"Creamy coconut chia pudding with blueberries, walnuts, cinnamon, and mint.","Prepare Coconut Chia Pudding (Base) ahead (chia, coconut milk, and date syrup) and chill until thick.
 Spoon the set pudding into a bowl or jar.
 Fold in blueberries, walnuts, cinnamon, and mint.
 Serve chilled."
-"Mediterranean Omelet",Breakfast,"Avocado:7.35 | Basil:5 | Bell Pepper (Red):6.258 | Black Pepper:1 | Egg:100 | Kalamata Olives:7.3806 | Olive Oil (Extra Virgin):6 | Parsley:5 | Purslane:30 | Rocca:20 | Shallots:7.222 | Thyme (Fresh):2 | Tomato (Raw):9.5556",350,24,12,23,,,,,false,,Balanced,,,images/meals/mediterranean_omelet.png,"Earthy and rich in B-vitamins for morning mental clarity.","Beat eggs in a bowl.
+"Mediterranean Omelet",Breakfast,"Avocado:32.35 | Basil:5 | Bell Pepper (Red):10 | Black Pepper:1 | Egg:100 | Olive Oil (Extra Virgin):6 | Parsley:10 | Shallots:10 | Spinach:30 | Thyme (Fresh):2 | Tomato (Raw):20",350,24,12,23,,,,,false,,Balanced,,,images/meals/mediterranean_omelet.png,"Earthy and rich in B-vitamins for morning mental clarity.","Beat eggs in a bowl.
 Sauté diced pepper, tomato, and shallot in olive oil for 3 minutes.
 Pour in eggs. Cook over medium heat until almost set.
 Add olives and avocado on one half. Fold omelet in half.
 Finish with fresh herbs. Serve warm."
-"Tamarind Honey & Sesame Chicken w Garlicky Green Beans",Meal,"Bok Choy:30 | Broccoli:5.882 | Chicken Breast:110 | Cucumber Pickle (Base):25 | Garlic (Raw):3 | Garlicky Green Beans (Base):85 | Ginger (Raw):2 | Honey (Raw):5 | Pumpkin Seeds:8 | Rice Vinegar:4 | Sea Salt:1 | Sesame Oil:7 | Sesame Seeds:2 | Spring Onion:2.75 | Tamarind Paste:7.6729",360,36,27,12,,,,,false,1,Balanced,Luteal,"G6PD Trigger",images/meals/tamarind_honey_sesame_chicken_green_beans.png,"Baked chicken thighs glazed in tamarind honey sauce, with garlicky green beans and broccoli.","Combine tamarind paste, honey, rice vinegar, sesame oil, crushed garlic, grated ginger, salt, and spring onion pieces in a jug.
+"Tamarind Honey & Sesame Chicken w Garlicky Green Beans",Meal,"Bok Choy:30 | Broccoli:10 | Chicken Breast:110 | Cucumber Pickle (Base):25 | Garlic (Raw):5 | Garlicky Green Beans (Base):85 | Ginger (Raw):2 | Honey (Raw):5 | Rice Vinegar:10 | Sea Salt:1 | Sesame Oil:10 | Sesame Seeds:8 | Spring Onion:5 | Tamarind Paste:10",360,36,27,12,,,,,false,,Balanced,Luteal,"G6PD Trigger",images/meals/tamarind_honey_sesame_chicken_green_beans.png,"Baked chicken thighs glazed in tamarind honey sauce, with garlicky green beans and broccoli.","Combine tamarind paste, honey, rice vinegar, sesame oil, crushed garlic, grated ginger, salt, and spring onion pieces in a jug.
 Marinate chicken breast in the sauce overnight.
 Preheat oven. Bake 25 minutes until cooked through (74°C internal).
 Sprinkle chicken with finely sliced spring onion. Combine tray juices with leftover marinade and drizzle over liberally.
 Serve with steamed broccoli, cucumber pickle, and Garlicky Green Beans (Base) sprinkled with sesame seeds and spring onion."
-"Baked Salmon with Fermented Chimichurri & Steamed Basmati Rice",Meal,"Broccoli:60 | Fermented Chimichurri (Base):22 | Salmon:125 | Steamed Basmati Rice (Base):75",360,36,27,12,,,,,false,1,Balanced,,Fish,images/meals/salmon_fermented_chimichurri.png,"Premium baked salmon with fermented chimichurri over fluffy steamed basmati rice and broccoli.","Prepare Steamed Basmati Rice (Base) and keep warm.
+"Baked Salmon with Fermented Chimichurri & Steamed Basmati Rice",Meal,"Broccoli:60 | Fermented Chimichurri (Base):25 | Pumpkin Seeds:10 | Salmon:125 | Steamed Basmati Rice (Base):75",360,36,27,12,,,,,false,,Balanced,,,images/meals/salmon_fermented_chimichurri.png,"Premium baked salmon with fermented chimichurri over fluffy steamed basmati rice and broccoli.","Prepare Steamed Basmati Rice (Base) and keep warm.
 Coat salmon generously with Fermented Chimichurri (Base).
 Bake at 190°C for 12–15 minutes until flaky.
 Steam or roast broccoli until bright green and tender.
@@ -24,7 +24,7 @@ Add chopped tomatoes and cook for a couple of minutes. Add water, rinsed red len
 Stir in vegetable stock and peanut butter until combined. Add zucchini and simmer for 20 minutes.
 Add mushrooms and spinach–cabbage greens. Simmer a couple of minutes until wilted. Season with sea salt, black pepper, and chilli flakes.
 Serve stew over cooked brown basmati rice. Top with fresh coriander, cherry tomatoes, crushed peanuts, and lime juice."
-"Marinated Pineapple, Peppers, Red Onion & Cilantro Side Salad","Side Salad","Bell Pepper (Red):20 | Cabbage (Purple):32 | Cucumber:28 | Fresh Coriander:4 | Pineapple:35 | Red Onion:10 | Red Thai Chillies:2 | Rocca:28 | Sesame Seeds:6 | Tahini:6 | Zesty Lime Chili Salad Dressing (Base):10",150,1.8,19.5,8.2,,,,,false,,Balanced,,,images/meals/marinated_pineapple_peppers_salad.png,"A tropical side salad combining pineapple chunks","Dice pineapple, pepper, cucumber, and red onion.
+"Marinated Pineapple, Peppers, Red Onion & Cilantro Side Salad","Side Salad","Bell Pepper (Red):20 | Cabbage (Purple):32 | Cashew Nuts:10 | Cucumber:28 | Fresh Coriander:10 | Pineapple:35 | Red Onion:10 | Red Thai Chillies:2 | Rocca:28 | Zesty Lime Chili Salad Dressing (Base):10",150,1.8,19.5,8.2,,,,,false,,Balanced,,,images/meals/marinated_pineapple_peppers_salad.png,"A tropical side salad combining pineapple chunks","Dice pineapple, pepper, cucumber, and red onion.
 Toss with thinly sliced cabbage and fresh coriander.
 Refrigerate 15–30 minutes so the vegetables soften slightly.
 Add chilli just before serving.
@@ -38,10 +38,10 @@ Whisk eggs, date syrup, melted ghee, and coconut cream until smooth.
 Fold in grated carrots, almond flour, tapioca starch, coconut flour, cinnamon, nutmeg, walnuts, and raisins.
 Pour into the pan. Bake 30–35 minutes until set and golden.
 Cool, then cut into 8 equal slices. One slice is one serving."
-"Fruit Salad Bowl",Dessert,"Apple Green:40 | Blueberries:40 | Fresh Mint:3 | Honey (Raw):1 | Lemon Juice:5 | Pineapple:40 | Pomegranate Seeds:30 | Strawberries:50",350,35,35,7.8,,,,,false,,Balanced,,,images/meals/fruit_salad_bowl.png,"A clean refreshing side array of sliced strawberries","Wash and chop all fruit into bite-size pieces.
+"Fruit Salad Bowl",Dessert,"Apple Green:40 | Blueberries:40 | Fresh Mint:3 | Honey (Raw):1 | Lemon Juice:5 | Pear:3 | Pineapple:40 | Pomegranate Seeds:30 | Strawberries:50",350,35,35,7.8,,,,,false,,Balanced,,,images/meals/fruit_salad_bowl.png,"A clean refreshing side array of sliced strawberries","Wash and chop all fruit into bite-size pieces.
 Toss gently with lemon juice and honey if using.
 Chill 15 minutes. Serve cold."
-"Vegan Mushroom Soup",Soup,"Garlic:3 | Homemade Coconut Milk:25 | Mushrooms:200 | Olive Oil:3 | Thyme (Fresh):3 | Turmeric Powder:2 | Vegetable Stock:2.5 | Water (Filtered):147.5 | White Onion:30",350,35,35,7.8,,,,,false,1,Balanced,,,images/meals/vegan_mushroom_soup.png,"A rich creamy plant-based umami soup combining sautéed wild mushrooms and garlic blended with coconut cream","Sauté onion and mushrooms in oil until browned (8 min).
+"Vegan Mushroom Soup",Soup,"Bone Broth (Base):50 | Garlic:3 | Mushrooms:300 | Olive Oil:3 | Thyme (Fresh):5 | Water (Filtered):147.5 | White Onion:30",350,35,35,7.8,,,,,false,,Balanced,,,images/meals/vegan_mushroom_soup.png,"A rich creamy plant-based umami soup combining sautéed wild mushrooms and garlic blended with coconut cream","Sauté onion and mushrooms in oil until browned (8 min).
 Add garlic, thyme, and turmeric. Cook 1 minute.
 Pour in stock and coconut milk. Simmer 15 minutes.
 Blend partially for a creamy texture, or leave chunky.
@@ -50,31 +50,31 @@ Serve hot."
 Pour into a small pot.
 Heat gently on the stove until steaming (do not boil hard).
 Pour into a mug or bowl and serve hot."
-"Cacao & Almond Chia",Breakfast,"Almond Butter:2.2476 | Almond whole:5 | Cocoa Powder:2 | Coconut Chia Pudding (Base):75 | Sesame Seeds:8",150,4,15,9,,,,,false,,,,,images/meals/cacao_almond_chia.png,"Rich cacao coconut chia pudding swirled with almond butter and almonds.","Prepare Coconut Chia Pudding (Base) ahead (chia, coconut milk, and date syrup) and chill until thick.
+"Cacao & Almond Chia",Breakfast,"Almond Butter:2.25 | Almond whole:5 | Cocoa Powder:2 | Coconut Chia Pudding (Base):75",150,4,15,9,,,,,false,,,,,images/meals/cacao_almond_chia.png,"Rich cacao coconut chia pudding swirled with almond butter and almonds.","Prepare Coconut Chia Pudding (Base) ahead (chia, coconut milk, and date syrup) and chill until thick.
 Spoon the set pudding into a bowl or jar.
 Swirl in almond butter and cocoa powder. Top with chopped almonds.
 Serve chilled."
-"Smashed Beans & Eggs",Breakfast,"Black Pepper:2 | Egg:100 | Fresh Coriander:4 | Sea Salt:2 | Smashed White Beans (Base):80 | Tomato (Raw):50",350,18,36,14,,,,,false,,,,"G6PD Trigger",images/meals/smashed_beans_eggs.png,"Creamy white beans topped with a perfectly crispy fried egg.","1. Prepare Smashed White Beans (Base) per base recipe instructions.
-2. Dice tomato and chop fresh coriander.
-3. Fry or poach eggs until whites are set and yolks are runny.
-4. Spoon warm smashed beans onto plates, top with eggs, tomato, and coriander.
-5. Serve immediately."
-"Grilled Chicken Tikka Salad w Quinoa & Cilantro Lime Dressing",Meal,"Apple Cider Vinegar:5 | Cabbage (Purple):30 | Carrots:20 | Cashew Nuts:10 | Cilantro Lime Dressing (Base):15 | Cooked Quinoa (Base):84 | Cucumber:30 | Fresh Coriander:5 | Fresh Mint:5 | Lime Juice:5 | Red Onion:15 | Tandoori Chicken (Base):95 | Tomato (Raw):60 | White Onion:40",350,32,28,12,,,,,false,,Balanced,,,images/meals/crispy_chicken_tikka_quinoa_mint_sauce.png,"Grilled chicken tikka over white quinoa with fresh vegetables and cilantro lime dressing.","Cook quinoa: rinse, simmer 15 minutes, fluff.
+"Smashed Beans & Eggs",Breakfast,"Black Pepper:2 | Egg:100 | Fresh Coriander:10 | Sea Salt:2 | Smashed White Beans (Base):80 | Tomato (Raw):50",350,18,36,14,,,,,false,,,,"G6PD Trigger",images/meals/smashed_beans_eggs.png,"Creamy white beans topped with a perfectly crispy fried egg.","Prepare Smashed White Beans (Base) per base recipe instructions.
+Dice tomato and chop fresh coriander.
+Fry or poach eggs until whites are set and yolks are runny.
+Spoon warm smashed beans onto plates, top with eggs, tomato, and coriander.
+Serve immediately."
+"Grilled Chicken Tikka Salad w Quinoa & Cilantro Lime Dressing",Meal,"Apple Cider Vinegar:5 | Cabbage (Purple):30 | Carrots:20 | Cashew Nuts:10 | Cilantro Lime Dressing (Base):15 | Cooked Quinoa (Base):84 | Cucumber:30 | Fresh Coriander:5 | Fresh Mint:5 | Lime Juice:8 | Red Onion:15 | Tandoori Chicken (Base):95 | Tomato (Raw):60 | White Onion:40",350,32,28,12,,,,,false,,Balanced,,,images/meals/crispy_chicken_tikka_quinoa_mint_sauce.png,"Grilled chicken tikka over white quinoa with fresh vegetables and cilantro lime dressing.","Cook quinoa: rinse, simmer 15 minutes, fluff.
 Grill or pan-sear Tandoori Chicken (Base) until golden then in the oven for 20 minutes exactly, then Rest and slice.
 Shred cabbage; julienne carrots and cucumber.
 Layer quinoa, vegetables, and chicken.
 Serve dressing on the side."
-"Leek & Salmon in Capers, Lemon & Dill Sauce w Roasted Potato",Meal,"Black Pepper:2 | Capers:10 | Dill (Fresh):8 | Garlic (Raw):6 | Leeks:100 | Lemon Juice:20 | Olive Oil (Extra Virgin):5 | Potato:80 | Preserved Lemon:12 | Rosemary (Fresh):2 | Salmon:116 | Sea Salt:2 | Vegetable Broth (Base):40",350,27,16,19,,,,,false,,Balanced,Luteal,,images/meals/leek_salmon_capers_lemon_dill_roasted_potato.png,"Tender parchment-baked salmon fillets over sautéed leeks, with herb-roasted potato cubes.","Preheat oven to 200°C. Toss potato cubes with olive oil, minced garlic, fresh rosemary, and sea salt; roast for 25 minutes.
+"Leek & Salmon in Capers, Lemon & Dill Sauce w Roasted Potato",Meal,"Black Pepper:2 | Capers:10 | Dill (Fresh):10 | Garlic (Raw):10 | Leeks:100 | Lemon Juice:20 | Lemon Zest:2 | Olive Oil (Extra Virgin):5 | Potato:80 | Preserved Lemon:12 | Salmon:116 | Sea Salt:2",350,27,16,19,,,,,false,,Balanced,Luteal,,images/meals/leek_salmon_capers_lemon_dill_roasted_potato.png,"Tender parchment-baked salmon fillets over sautéed leeks, with herb-roasted potato cubes.","Preheat oven to 200°C. Toss potato cubes with olive oil, minced garlic, fresh rosemary, and sea salt; roast for 25 minutes.
 Sauté julienned leeks in olive oil over medium heat for 6 to 8 minutes until sweet and golden.
 Prepare a large greaseproof paper parchment square and layer the sautéed leeks down in the center core.
 Lay the clean salmon fillet over the leek bed; season with black pepper, capers, preserved lemon, and fresh dill.
 Spoon house vegetable broth base and lemon juice over the salmon, wrap paper tightly to trap steam, and bake for 15 minutes."
-"Harissa Chicken Balls w Couscous Cucumber Herb Salad & Eggplant Dip",Meal,"Black Pepper:1 | Chicken Breast:150 | Cooked Couscous (Base):75 | Cucumber:60 | Dill (Fresh):3 | Eggplant Dip (Mutabal) (Base):40 | Fresh Mint:3 | Garlic (Raw):6 | Harissa Paste (Base):15 | Lemon Juice:15 | Olive Oil (Extra Virgin):4 | Parsley:5 | Red Onion:8 | Sea Salt:1 | White Onion:15",350,24.2,33.8,13.1,,,,,false,,Balanced,,,images/meals/harissa_chicken_balls_couscous.png,"Harissa chicken meatballs with a cucumber-herb salad, fluffy couscous, and mutabal eggplant dip.","Mix ground chicken meat with Harissa Paste (Base), garlic, white onion, parsley, dill, mint, and sea salt; roll into uniform meatballs.
+"Harissa Chicken Balls w Quinoa Cucumber Herb Salad & Eggplant Dip",Meal,"Black Pepper:1 | Chicken Breast:150 | Cooked Quinoa (Base):75 | Cucumber:60 | Dill (Fresh):5 | Eggplant Dip (Mutabal) (Base):60 | Fresh Mint:3 | Garlic (Raw):6 | Harissa Paste (Base):15 | Lemon Juice:15 | Olive Oil (Extra Virgin):4 | Parsley:5 | Red Onion:8 | Sea Salt:1 | White Onion:15",350,24.2,33.8,13.1,,,,,false,,Balanced,,,images/meals/harissa_chicken_balls_couscous.png,"Harissa chicken meatballs with a cucumber-herb salad, fluffy couscous, and mutabal eggplant dip.","Mix ground chicken meat with Harissa Paste (Base), garlic, white onion, parsley, dill, mint, and sea salt; roll into uniform meatballs.
 Sear meatballs in a hot cast-iron skillet with olive oil until golden, then bake at 200°C for 12 minutes until cooked through.
 Toss diced cucumber, fresh lemon juice, chopped red onion, and fresh mint together to assemble the salad.
 Prepare Cooked Couscous (Base) per base recipe instructions.
 Layer couscous into container base, arrange meatballs and cucumber salad neatly adjacent, and accompany with a side of house mutabal dip."
-"Vegan Smoky Cauliflower & Lentil Stew w Quinoa Bread & Tahini",Meal,"Baby Chard:25 | Carrots:30 | Cauliflower:100 | Cherry Tomatoes:38 | Chili Flakes:1 | Coriander Seeds:1 | Cumin Seeds:2 | Garlic (Raw):3 | Lemon Juice:10 | Lentils (Red):80 | Olive Oil (Extra Virgin):4 | Quinoa Flatbread (Base):29.25 | Smoked Paprika:2 | Tahini:12 | Vegetable Stock:1.875 | Water (Filtered):125.625 | White Onion:28",360,36,27,12,,,,,false,1,,,"G6PD Trigger",images/meals/vegan_smoky_cauliflower_lentil_stew_quinoa_bread_tahini.png,"Smoky red lentil and cauliflower stew with a rich lemon-tahini drizzle.","Roast cauliflower florets at 200°C for 20 minutes until golden.
+"Vegan Smoky Cauliflower & Lentil Stew w Quinoa Bread & Tahini",Meal,"Baby Chard:30 | Carrots:30 | Cauliflower:100 | Cherry Tomatoes:38 | Chili Flakes:1 | Coriander Seeds:2 | Cumin Seeds:2 | Garlic (Raw):5 | Lemon Juice:10 | Lentils (Red):80 | Olive Oil (Extra Virgin):4 | Quinoa Flatbread (Base):50 | Smoked Paprika:2 | Tahini:15 | Vegetable Stock:125 | White Onion:28",360,36,27,12,,,,,false,,,,"G6PD Trigger",images/meals/vegan_smoky_cauliflower_lentil_stew_quinoa_bread_tahini.png,"Smoky red lentil and cauliflower stew with a rich lemon-tahini drizzle.","Roast cauliflower florets at 200°C for 20 minutes until golden.
 Simmer lentils with aromatics and stock until tender.
 Combine roasted cauliflower with lentils. Season with smoked paprika.
 Warm quinoa flatbread. Drizzle tahini over stew.
@@ -86,7 +86,7 @@ Refrigerate 30 to 60 minutes until the caramel layer sets.
 Whisk cocoa powder, remaining coconut oil, and a little date syrup until smooth and glossy.
 Pour the chocolate layer over the caramel, tilt the pan to coat evenly, and chill 1 hour until firm. Sprinkle with flaky sea salt.
 Lift from the pan and cut into 16 squares. One square is one serving."
-"Chocolate Orange Brownie",Dessert,"Almond Flour (Base):444 | Cocoa Powder:180 | Egg:552 | Honey (Raw):120 | Olive Oil:84 | Orange Juice:252 | Orange Zest:30 | Walnuts:120",485,12.2,42.1,28.4,5871.42,219.77,355.67,467.98,true,24,Balanced,Luteal,,images/meals/Chocolate-Orange-Brownie-(N).png,"Rich flourless cocoa-orange brownie batch (24 small squares) with house almond flour, eggs, honey, olive oil, and walnuts.","Heat oven to 175°C. Line a small tin.
+"Chocolate Orange Brownie",Dessert,"Almond Flour (Base):444 | Cocoa Powder:180 | Date Syrup:50 | Egg:552 | Olive Oil:84 | Orange Juice:252 | Orange Zest:30 | Walnuts:120",485,12.2,42.1,28.4,5656.62,219.91,294.29,468.03,true,24,Balanced,Luteal,,images/meals/Chocolate-Orange-Brownie-(N).png,"Rich flourless cocoa-orange brownie batch (24 small squares) with house almond flour, eggs, honey, olive oil, and walnuts.","Heat oven to 175°C. Line a small tin.
 Whisk eggs with orange juice, zest, honey, and olive oil.
 Fold in almond flour, cocoa powder, and chopped walnuts until combined.
 Pour into tin. Bake until a skewer comes out mostly clean.
@@ -96,17 +96,23 @@ Roast at 200°C for 25 minutes until crisp.
 Toss roasted vegetables with herbs.
 Serve warm or at room temperature.
 Serve dressing on the side."
-"Eggplant & Ground Beef Stew w Quinoa Bread",Meal,"Avocado Oil:4 | Beef Ground:80 | Black Pepper:1 | Chili Flakes:1 | Eggplant:90 | Garlic (Raw):5 | Ginger (Raw):3 | Parsley:2 | Quinoa Bread (Base):45 | Sea Salt:1 | Sesame Oil:3 | Soy Sauce:8 | White Onion:20",350,24.1,30.5,14.6,,,,,false,1,Balanced,,"G6PD Trigger",meals/ysBLJrzn9J3eeev06wo4StVN3PisSXF5eyz9o94w.png,"Comforting skillet stir-fry of tender eggplant cubes and lean ground beef with a slice of rustic quinoa bread.","Heat avocado oil in a heavy stainless steel skillet. Add eggplant cubes and stir-fry for 7 minutes until soft and golden; remove.
+"Eggplant & Ground Beef Stew w Quinoa Bread",Meal,"Baby Chard:30 | Beef Ground:80 | Beef Liver:30 | Black Pepper:1 | Chili Flakes:1 | Eggplant:90 | Garlic (Raw):5 | Ginger (Raw):3 | Olive Oil (Extra Virgin):10 | Parsley:15 | Quinoa Bread (Base):50 | Sea Salt:1 | Sesame Seeds:10 | Tomato (Raw):100 | White Onion:20",350,24.1,30.5,14.6,,,,,false,,Balanced,,,meals/ysBLJrzn9J3eeev06wo4StVN3PisSXF5eyz9o94w.png,"Comforting skillet stir-fry of tender eggplant cubes and lean ground beef with a slice of rustic quinoa bread.","Heat avocado oil in a heavy stainless steel skillet. Add eggplant cubes and stir-fry for 7 minutes until soft and golden; remove.
 Add remaining oil to the skillet and input ground beef; cook for 8 minutes until entirely browned and crumbly.
 Stir in chopped white onion, minced raw garlic, and grated ginger; sauté over medium-high heat for 3 minutes until highly fragrant.
 Return browned eggplant cubes to the skillet, pour in soy sauce and sesame oil, and sprinkle with chili flakes.
 Sauté for 3 minutes to emulsify layout; serve hot with fresh parsley garnish and a toasted slice of house quinoa bread base."
-"Vegan Mushroom Bowl",Meal,"Bell Pepper (Red):45 | Broccoli:50 | Cherry Tomato:40 | Cilantro Lime Dressing (Base):22 | Fresh Coriander:3 | Garlic (Raw):3 | Mushrooms:110 | Quinoa:35 | Spinach (Fresh):25 | White Onion:20",350,11.8,45.3,13.5,,,,,false,1,,,,images/meals/vegan_mushroom_bowl.png,"Vibrant plant bowl featuring sautéed Portobello mushrooms","fluffy quinoa"
-"Spicy Harissa Grilled Chicken w Roasted Sweet Potato & Zucchini",Meal,"Black Pepper:0.5 | Chicken Breast:110 | Fresh Mint:5 | Garlic (Raw):3 | Harissa Paste (Base):6.3 | Lemon Juice:10 | Olive Oil (Extra Virgin):4 | Sweet Potato:90 | Zucchini:80",350,26.4,35.9,11.2,,,,,false,,,,,images/meals/harissa_grilled_chicken_sweet_potato.png,"Lean chicken breast marinated in house harissa paste","1. Coat chicken with Harissa Paste (Base) and a little olive oil. Rest 15 minutes.
-2. Cube sweet potato and zucchini. Toss with oil. Roast at 200°C for 25 minutes.
-3. Grill or pan-sear chicken until golden then in the oven for 20 minutes exactly, then Rest and slice.
-4. Rest, slice, and serve over roasted vegetables.
-5. Garnish with fresh chopped mint."
+"Vegan Mushroom Bowl",Meal,"Bell Pepper (Red):45 | Black Beans (Cooked):100 | Broccoli:50 | Cherry Tomato:40 | Cilantro Lime Dressing (Base):10 | Fresh Coriander:3 | Garlic (Raw):3 | Mushrooms:110 | Quinoa:35 | Spinach (Fresh):50 | White Onion:20",350,11.8,45.3,13.5,,,,,false,,,,,images/meals/vegan_mushroom_bowl.png,"Vibrant vegan bowl with sautéed mushrooms, black beans, red pepper, broccoli, and cherry tomatoes over quinoa, finished with cilantro-lime dressing.","Prepare quinoa per standard method: rinse, simmer until fluffy, and keep warm.
+Sauté diced white onion and minced garlic in a little olive oil until softened.
+Add sliced mushrooms and diced red bell pepper; cook 6–8 minutes until the mushrooms brown and release their moisture.
+Add broccoli florets, cover briefly, and steam 3–4 minutes until bright and tender-crisp.
+Fold in black beans and spinach; cook until the spinach wilts and the beans are warmed through.
+Season lightly. Spoon quinoa into a bowl, top with the mushroom and vegetable mixture, and scatter cherry tomatoes.
+Drizzle with Cilantro Lime Dressing (Base) and finish with fresh coriander."
+"Spicy Harissa Grilled Chicken w Roasted Sweet Potato & Zucchini",Meal,"Baby Chard:50 | Black Pepper:0.5 | Chicken Breast:110 | Fresh Mint:5 | Garlic (Raw):3 | Harissa Paste (Base):6.3 | Lemon Juice:10 | Olive Oil (Extra Virgin):4 | Sweet Potato:90 | Zucchini:80",350,26.4,35.9,11.2,,,,,false,,,,,images/meals/harissa_grilled_chicken_sweet_potato.png,"Lean chicken breast marinated in house harissa paste","Coat chicken with Harissa Paste (Base) and a little olive oil. Rest 15 minutes.
+Cube sweet potato and zucchini. Toss with oil. Roast at 200°C for 25 minutes.
+Grill or pan-sear chicken until golden then in the oven for 20 minutes exactly, then Rest and slice.
+Rest, slice, and serve over roasted vegetables.
+Garnish with fresh chopped mint."
 "Grilled Beef Steak Ratatouille & Saffron rice",Meal,"Baby Chard:30 | Beef Sirloin:85 | Bell Pepper (Red):4.387 | Black Pepper:1 | Eggplant:40 | Fresh Basil:5 | Garlic (Raw):3 | Lemon Juice:1.6364 | Olive Oil (Extra Virgin):4 | Parsley:5 | Saffron Rice (Base):75 | Tomato (Raw):9.1112 | Zucchini:1.706",360,36,27,12,,,,,false,1,Balanced,,,images/meals/grilled_beef_steak_ratatouille.png,"Seared lean sirloin steak over rich","Warm Saffron Rice (Base) per base recipe instructions.
 Sauté diced eggplant, zucchini, pepper, and tomato until soft (12–15 min). Stir in basil.
 Season steak. Sear in a hot pan 3–4 minutes per side for medium-rare (adjust to taste).
