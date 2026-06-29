@@ -296,7 +296,7 @@ test('beef liver boost is allowed only for ground beef or dedicated liver meals'
         ))->toBeFalse();
 });
 
-test('chia breakfast isocaloric boost uses seeds not leafy greens', function () {
+test('chia dessert isocaloric boost uses seeds not leafy greens', function () {
     $tahini = Ingredient::query()->firstOrCreate(
         ['name' => 'Tahini'],
         [
@@ -334,13 +334,13 @@ test('chia breakfast isocaloric boost uses seeds not leafy greens', function () 
     );
 
     $meal = Meal::factory()->create([
-        'name' => BalancedWeeklyRotationSchedule::CHIA_BREAKFASTS[0],
-        'meal_type' => MealType::Breakfast,
-        'category' => RecipeCategory::Breakfast,
+        'name' => BalancedWeeklyRotationSchedule::CHIA_DESSERTS[0],
+        'meal_type' => MealType::Dessert,
+        'category' => RecipeCategory::Dessert,
     ]);
 
     $meal->ingredients()->sync([
-        $base->id => ['amount_grams' => 75, 'amount' => 75, 'unit' => 'g'],
+        $base->id => ['amount_grams' => 120, 'amount' => 120, 'unit' => 'g'],
         $tahini->id => ['amount_grams' => 20, 'amount' => 20, 'unit' => 'g'],
     ]);
 

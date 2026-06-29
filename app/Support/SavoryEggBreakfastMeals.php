@@ -35,9 +35,9 @@ final class SavoryEggBreakfastMeals
         $counts = config('customer_nutrition.savory_egg_breakfast_tier_counts', [
             1000 => 2,
             1200 => 2,
-            1500 => 4,
+            1500 => 3,
             1800 => 4,
-            2000 => 5,
+            2000 => 4,
         ]);
 
         if (isset($counts[$snapped])) {

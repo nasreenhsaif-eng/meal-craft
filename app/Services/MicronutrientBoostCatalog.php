@@ -20,7 +20,7 @@ final class MicronutrientBoostCatalog
         'Spinach (Fresh)',
     ];
 
-    /** Sweet-breakfast chia enrichments only: nuts, seeds, herbs, and spices — never legumes or greens. */
+    /** Chia dessert enrichments only: nuts, seeds, herbs, and spices — never legumes or greens. */
     /** @var list<string> */
     public const CHIA_ALLOWED_BOOSTS = [
         'Tahini',
@@ -40,7 +40,7 @@ final class MicronutrientBoostCatalog
     ];
 
     /**
-     * Per-nutrient priority for chia breakfasts (subset of {@see CHIA_ALLOWED_BOOSTS}).
+     * Per-nutrient priority for chia desserts (subset of {@see CHIA_ALLOWED_BOOSTS}).
      *
      * @var array<string, list<string>>
      */

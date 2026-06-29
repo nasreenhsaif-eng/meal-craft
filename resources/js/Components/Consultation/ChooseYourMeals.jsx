@@ -30,9 +30,14 @@ export {
 
 /** @typedef {'breakfasts' | 'meals' | 'sideSalads' | 'desserts' | 'soup'} SelectionCategoryKey */
 
-/** Required categories for Full Craft NEXT (pick 2 fixed slots separate). */
+/** Required categories for Full Craft NEXT (breakfast is auto-assigned; pick 2 fixed slots separate). */
 export const FULL_CRAFT_REQUIRED_SELECTION_KEYS = Object.freeze(
-    /** @type {const} */ (['breakfasts', 'meals']),
+    /** @type {const} */ (['meals']),
+);
+
+/** Auto-assigned from the weekly rotation — not shown as a customer pick step. */
+export const AUTO_ASSIGNED_SELECTION_KEYS = Object.freeze(
+    /** @type {const} */ (['breakfasts']),
 );
 
 /**
@@ -90,10 +95,10 @@ export function soupOfTheDayMeals(source) {
 
 /** Max cards shown per category deck in consultation (matches fixture / product caps). */
 export const CONSULTATION_DECK_OPTION_LIMITS = Object.freeze({
-    breakfast: 2,
+    breakfast: 1,
     meal: 4,
     sidesalad: 2,
-    dessert: 2,
+    dessert: 3,
     soup: 2,
 });
 
@@ -117,10 +122,77 @@ export function consultationDeckOptionsForSlotKey(source, slotKey) {
         return [];
     }
 
-    const filtered = source.filter((meal) => meal.mealType === mealTypeLabel);
+    const filtered = source.filter((meal) => {
+        if (meal.mealType !== mealTypeLabel) {
+            return false;
+        }
+
+        if (slotKey === 'breakfast') {
+            return typeof meal.savoryEggCount === 'number' && meal.savoryEggCount > 0;
+        }
+
+        return true;
+    });
     const limit = CONSULTATION_DECK_OPTION_LIMITS[slotKey];
 
     return limit !== undefined ? filtered.slice(0, limit) : filtered;
+}
+
+/**
+ * @param {ConsultationMeal} meal
+ */
+export function isChiaDessertMeal(meal) {
+    const title = String(meal.title ?? '');
+
+    return title.includes('Chia');
+}
+
+/**
+ * Dessert deck: today's rotated chia (from schedule) first, then fill to 3 from the catalog.
+ *
+ * @param {ConsultationMeal[]} source
+ * @param {ConsultationMeal[]} [scheduledDesserts]
+ */
+export function consultationDessertDeckForDay(source, scheduledDesserts = []) {
+    const limit = CONSULTATION_DECK_OPTION_LIMITS.dessert;
+    /** @type {ConsultationMeal[]} */
+    const deck = [];
+    const seen = new Set();
+    let hasChia = false;
+
+    for (const meal of scheduledDesserts) {
+        if (!meal?.id || seen.has(meal.id)) {
+            continue;
+        }
+
+        seen.add(meal.id);
+        deck.push(meal);
+
+        if (isChiaDessertMeal(meal)) {
+            hasChia = true;
+        }
+    }
+
+    const catalogDesserts = source.filter((meal) => meal.mealType === 'Dessert');
+
+    for (const meal of catalogDesserts) {
+        if (deck.length >= limit) {
+            break;
+        }
+
+        if (seen.has(meal.id)) {
+            continue;
+        }
+
+        if (hasChia && isChiaDessertMeal(meal)) {
+            continue;
+        }
+
+        seen.add(meal.id);
+        deck.push(meal);
+    }
+
+    return deck.slice(0, limit);
 }
 
 /**
@@ -198,7 +270,7 @@ export const FULL_CRAFT_CATEGORY_SECTIONS = Object.freeze([
     {
         selectionKey: 'breakfasts',
         deckSuffix: 'breakfast',
-        header: 'Choose Your Breakfast',
+        header: 'Your Breakfast',
         mealTypeLabel: 'Breakfast',
         defaultMax: 1,
     },
@@ -544,6 +616,13 @@ export function isFullCraftCategoriesComplete(categorySelections) {
         return false;
     }
 
+    const autoAssignedComplete = AUTO_ASSIGNED_SELECTION_KEYS.every((key) => {
+        const need = DEFAULT_FULL_CRAFT_MAX_SELECTIONS[key];
+        const have = categorySelections[key]?.length ?? 0;
+
+        return have === need;
+    });
+
     const coreComplete = FULL_CRAFT_REQUIRED_SELECTION_KEYS.every((key) => {
         const need = DEFAULT_FULL_CRAFT_MAX_SELECTIONS[key];
         const have = categorySelections[key]?.length ?? 0;
@@ -551,7 +630,7 @@ export function isFullCraftCategoriesComplete(categorySelections) {
         return have === need;
     });
 
-    return coreComplete && isFixedChoiceComplete(categorySelections);
+    return autoAssignedComplete && coreComplete && isFixedChoiceComplete(categorySelections);
 }
 
 /**
@@ -564,12 +643,20 @@ export function getIncompleteFullCraftCategoryKeys(categorySelections) {
     }
 
     /** @type {(SelectionCategoryKey | 'fixedChoice')[]} */
-    const missing = FULL_CRAFT_REQUIRED_SELECTION_KEYS.filter((key) => {
+    const missing = [
+        ...AUTO_ASSIGNED_SELECTION_KEYS.filter((key) => {
+            const need = DEFAULT_FULL_CRAFT_MAX_SELECTIONS[key];
+            const have = categorySelections[key]?.length ?? 0;
+
+            return have !== need;
+        }),
+        ...FULL_CRAFT_REQUIRED_SELECTION_KEYS.filter((key) => {
         const need = DEFAULT_FULL_CRAFT_MAX_SELECTIONS[key];
         const have = categorySelections[key]?.length ?? 0;
 
         return have !== need;
-    });
+        }),
+    ];
 
     if (!isFixedChoiceComplete(categorySelections)) {
         missing.push('fixedChoice');
@@ -604,6 +691,30 @@ export function incompleteSelectionWarningMessage(missingKeys) {
 }
 
 /**
+ * @param {number} minWidthPx
+ */
+function useMinWidth(minWidthPx) {
+    const [matches, setMatches] = useState(() => {
+        if (typeof window === 'undefined') {
+            return false;
+        }
+
+        return window.matchMedia(`(min-width: ${minWidthPx}px)`).matches;
+    });
+
+    useEffect(() => {
+        const mq = window.matchMedia(`(min-width: ${minWidthPx}px)`);
+        const onChange = () => setMatches(mq.matches);
+        onChange();
+        mq.addEventListener('change', onChange);
+
+        return () => mq.removeEventListener('change', onChange);
+    }, [minWidthPx]);
+
+    return matches;
+}
+
+/**
  * One consultation slot: section header, instructions, and `StackedDeckCarousel` centered in the frame.
  *
  * @param {object} props
@@ -619,6 +730,7 @@ export function incompleteSelectionWarningMessage(missingKeys) {
  * @param {SelectionCategoryKey} [props.sectionKey]
  * @param {boolean} [props.validationFlash]
  * @param {boolean} [props.readOnly]
+ * @param {boolean} [props.showSelectedState] Locked selection: show green SELECTED chrome without toggling.
  * @param {(meal: ConsultationMeal) => void} [props.onViewDetails]
  * @param {(meal: ConsultationMeal) => void} [props.onEditMeal]
  */
@@ -635,13 +747,15 @@ export function MealSlotCarousel({
     sectionKey,
     validationFlash = false,
     readOnly = false,
+    showSelectedState = false,
     onViewDetails,
     onEditMeal,
 }) {
     const selectedSet = new Set(selectedIds);
     const atLimit = selectedIds.length >= maxSelected;
     const stackZ = 35 + sectionStackOrder * 6;
-    const showSwipeHint = cards.length > 2;
+    const isDesktopViewport = useMinWidth(768);
+    const showSwipeHint = cards.length > 2 && !isDesktopViewport;
     const [limitWarning, setLimitWarning] = useState(/** @type {string | null} */ (null));
     const limitWarningTimerRef = useRef(0);
 
@@ -683,6 +797,14 @@ export function MealSlotCarousel({
     );
 
     const deckSubheader = (() => {
+        if (readOnly && showSelectedState) {
+            const countPart = `${selectedIds.length}/${maxSelected} selected`;
+
+            return showSwipeHint
+                ? `In your plan • ${countPart} • Swipe the deck to browse`
+                : `In your plan • ${countPart}`;
+        }
+
         if (readOnly) {
             return showSwipeHint ? `${cards.length} assigned • Swipe the deck to browse` : `${cards.length} assigned`;
         }
@@ -711,7 +833,7 @@ export function MealSlotCarousel({
                             {title}
                         </p>
                     ) : null}
-                    {!readOnly ? (
+                    {!readOnly || showSelectedState ? (
                         <p
                             className={`font-body text-xs leading-snug text-[#555555] sm:text-sm ${!deckOnly && title ? 'mt-0.5 sm:mt-1' : 'mt-0'}`}
                         >
@@ -746,6 +868,7 @@ export function MealSlotCarousel({
                         className={[
                             'w-full',
                             cards.length === 2 ? 'md:mx-auto md:max-w-[680px]' : '',
+                            cards.length === 3 ? 'md:mx-auto md:max-w-[960px]' : '',
                         ]
                             .filter(Boolean)
                             .join(' ')}
@@ -771,10 +894,10 @@ export function MealSlotCarousel({
                                             title={meal.title ?? ''}
                                             imageUrl={meal.imageUrl}
                                             macros={meal.macros}
-                                            selected={!readOnly && isSelected}
-                                            assigned={readOnly && isSelected}
+                                            selected={isSelected && (!readOnly || showSelectedState)}
+                                            assigned={readOnly && isSelected && !showSelectedState}
                                             disabled={false}
-                                            hideCraftButton={readOnly}
+                                            hideCraftButton={readOnly && !showSelectedState}
                                             imageLoading={isFront ? 'eager' : 'lazy'}
                                             imageAlt={meal.title ?? ''}
                                             onToggleSelected={readOnly ? undefined : () => handleSelect(meal)}
@@ -945,6 +1068,24 @@ export function FixedChoicePicker({
             }
 
             const assignedCards = assignedMealsByCategory?.[def.selectionKey];
+            if (assignedCards && assignedCards.length > 0 && def.selectionKey !== 'desserts' && def.selectionKey !== 'sideSalads') {
+                return assignedCards;
+            }
+
+            if (def.selectionKey === 'desserts') {
+                const catalogSource = (soupCatalogMeals.length > 0 ? soupCatalogMeals : meals) ?? [];
+
+                return consultationDessertDeckForDay(catalogSource, assignedMealsByCategory?.desserts ?? []);
+            }
+
+            if (def.selectionKey === 'sideSalads') {
+                const deckOptions = consultationDeckOptionsForSlotKey(meals ?? [], 'sidesalad');
+
+                if (deckOptions.length > 0) {
+                    return deckOptions;
+                }
+            }
+
             if (assignedCards && assignedCards.length > 0) {
                 return assignedCards;
             }
@@ -968,8 +1109,8 @@ export function FixedChoicePicker({
                 </p>
                 <p className="mt-0.5 font-body text-xs leading-snug text-[#555555] sm:text-sm">
                     {pickEnabled
-                        ? `Each option is ~150 kcal • ${fixedChoiceCount}/${FIXED_CHOICE_REQUIRED_COUNT} selected`
-                        : `${fixedChoiceCount} selected (~150 kcal each)`}
+                        ? `Standard kitchen portion • ${fixedChoiceCount}/${FIXED_CHOICE_REQUIRED_COUNT} selected`
+                        : `${fixedChoiceCount} selected (standard kitchen portion)`}
                 </p>
 
                 <div
@@ -1264,11 +1405,14 @@ export default function ChooseYourMeals({
         );
 
         return coreSections.map((def, idx) => {
+            const isAutoAssigned = AUTO_ASSIGNED_SELECTION_KEYS.includes(def.selectionKey);
             const assignedCards = assignedMealsByCategory?.[def.selectionKey];
             const cards =
                 assignedCards && assignedCards.length > 0
                     ? assignedCards
-                    : filterMealsByCategory(meals ?? [], def.mealTypeLabel);
+                    : def.selectionKey === 'breakfasts'
+                      ? consultationDeckOptionsForSlotKey(meals ?? [], 'breakfast')
+                      : filterMealsByCategory(meals ?? [], def.mealTypeLabel);
             const max =
                 maxSelectionsByCategory?.[def.selectionKey] !== undefined
                     ? /** @type {number} */ (maxSelectionsByCategory[def.selectionKey])
@@ -1288,8 +1432,9 @@ export default function ChooseYourMeals({
                     cards={cards}
                     selectedIds={selectedIds}
                     maxSelected={max}
-                    readOnly={!categoryPickEnabled}
-                    onSelect={categoryPickEnabled ? (meal) => onToggleCategory?.(def.selectionKey, meal) : () => {}}
+                    readOnly={isAutoAssigned || !categoryPickEnabled}
+                    showSelectedState={isAutoAssigned}
+                    onSelect={categoryPickEnabled && !isAutoAssigned ? (meal) => onToggleCategory?.(def.selectionKey, meal) : () => {}}
                     onViewDetails={onViewDetails}
                 />
             );

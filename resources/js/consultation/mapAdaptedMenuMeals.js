@@ -65,6 +65,8 @@ export function mapAdaptedApiMealToConsultationMeal(apiMeal) {
             typeof apiMeal.scaling_multiplier === 'number' ? apiMeal.scaling_multiplier : 1,
         proteinBalanced: Boolean(apiMeal.protein_balanced),
         isVegan: Boolean(apiMeal.is_vegan),
+        savoryEggCount:
+            typeof apiMeal.savory_egg_count === 'number' ? apiMeal.savory_egg_count : undefined,
         baselineCalories: Number(
             /** @type {Record<string, number>} */ (apiMeal.baseline_nutrition ?? {}).calories ?? 0,
         ),
@@ -218,7 +220,7 @@ export function scheduledFullCraftCategoryMealsForDay(schedule, dayOfWeek) {
 }
 
 /**
- * @param {{ includeSoup?: boolean; selectedFixedSlots?: string[]; craftKey?: string; soupCalories?: number; sideSaladCalories?: number; dessertCalories?: number; dayOfWeek?: number; planTier?: number; fixedChiaBreakfast?: boolean }} [options]
+ * @param {{ includeSoup?: boolean; selectedFixedSlots?: string[]; craftKey?: string; soupCalories?: number; sideSaladCalories?: number; dessertCalories?: number; dayOfWeek?: number; planTier?: number }} [options]
  */
 export function buildAdaptedMenuQueryString(options = {}) {
     const params = new URLSearchParams();
@@ -250,16 +252,13 @@ export function buildAdaptedMenuQueryString(options = {}) {
     if (typeof options.planTier === 'number' && options.planTier > 0) {
         params.set('plan_tier', String(Math.round(options.planTier)));
     }
-    if (options.fixedChiaBreakfast) {
-        params.set('fixed_chia_breakfast', '1');
-    }
 
     return params.toString();
 }
 
 /**
  * @param {string} url
- * @param {{ includeSoup?: boolean; craftKey?: string; soupCalories?: number; sideSaladCalories?: number; dessertCalories?: number; dayOfWeek?: number; planTier?: number; fixedChiaBreakfast?: boolean }} [options]
+ * @param {{ includeSoup?: boolean; craftKey?: string; soupCalories?: number; sideSaladCalories?: number; dessertCalories?: number; dayOfWeek?: number; planTier?: number }} [options]
  */
 export async function fetchAdaptedMenu(url, options = {}) {
     const query = buildAdaptedMenuQueryString(options);

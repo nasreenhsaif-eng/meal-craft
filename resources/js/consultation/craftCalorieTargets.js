@@ -70,7 +70,11 @@ export function scalableSlotTargetsForTier(planTier) {
  * @param {{ selectedFixedSlots?: string[] }} [options]
  */
 export function fixedPortionCaloriesForAdapt(grouped, options = {}) {
-    const selected = options.selectedFixedSlots ?? ['side_salad', 'dessert', 'soup'];
+    const selected = options.selectedFixedSlots;
+    const activeSlots =
+        selected === undefined || selected.length === 0
+            ? ['side_salad', 'dessert']
+            : selected;
     const sideMeal = grouped?.sideSalads?.[0];
     const dessertMeal = grouped?.desserts?.[0];
     const soupMeal = grouped?.soup?.[0];

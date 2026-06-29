@@ -50,6 +50,10 @@ const STATIC_CARD_SHELL_SINGLE =
 const STATIC_PAIR_CARD_SHELL =
     'flex h-full w-full min-w-0 max-w-[302px] flex-1 flex-col md:w-[302px] md:flex-none transform-gpu';
 
+/** Desktop side-by-side triple — equal flex columns within a 960px row. */
+const STATIC_TRIPLE_CARD_SHELL =
+    'flex h-full w-full min-w-0 max-w-[302px] flex-1 flex-col transform-gpu';
+
 const DESKTOP_MIN_WIDTH_PX = 768;
 
 /**
@@ -191,6 +195,7 @@ export default function StackedDeckCarousel({ title: _title, items: itemsProp, m
     const copies = ribbonCopyCount(itemCount);
     const isDesktop = useMinWidth(DESKTOP_MIN_WIDTH_PX);
     const useDesktopStaticPair = itemCount === 2 && isDesktop;
+    const useDesktopStaticTriple = itemCount === 3 && isDesktop;
 
     const galleryRef = useRef(/** @type {HTMLDivElement|null} */ (null));
     const trackRef = useRef(/** @type {HTMLDivElement|null} */ (null));
@@ -466,7 +471,7 @@ export default function StackedDeckCarousel({ title: _title, items: itemsProp, m
     }, [itemCount]);
 
     useLayoutEffect(() => {
-        if (itemCount === 0 || useDesktopStaticPair) {
+        if (itemCount === 0 || useDesktopStaticPair || useDesktopStaticTriple) {
             return;
         }
         let innerId = 0;
@@ -483,7 +488,7 @@ export default function StackedDeckCarousel({ title: _title, items: itemsProp, m
             cancelAnimationFrame(outerId);
             cancelAnimationFrame(innerId);
         };
-    }, [alignTrackToLogical, galleryResizeSeq, itemCount, copies, trackX, useDesktopStaticPair]);
+    }, [alignTrackToLogical, galleryResizeSeq, itemCount, copies, trackX, useDesktopStaticPair, useDesktopStaticTriple]);
 
     if (itemCount === 1) {
         return (
@@ -507,6 +512,24 @@ export default function StackedDeckCarousel({ title: _title, items: itemsProp, m
                 <div className="mx-auto flex w-full max-w-[680px] items-stretch justify-center gap-4 md:gap-6">
                     {items.map((item, idx) => (
                         <div key={`static-pair-${getKey(item, idx)}`} className={STATIC_PAIR_CARD_SHELL}>
+                            {renderMealCard(item, idx, {
+                                isFront: true,
+                                stackPos: null,
+                                deckLayout: 'staticPair',
+                            })}
+                        </div>
+                    ))}
+                </div>
+            </div>
+        );
+    }
+
+    if (useDesktopStaticTriple) {
+        return (
+            <div className="w-full px-4 py-4">
+                <div className="mx-auto flex w-full max-w-[960px] items-stretch justify-center gap-3 md:gap-4 lg:gap-6">
+                    {items.map((item, idx) => (
+                        <div key={`static-triple-${getKey(item, idx)}`} className={STATIC_TRIPLE_CARD_SHELL}>
                             {renderMealCard(item, idx, {
                                 isFront: true,
                                 stackPos: null,

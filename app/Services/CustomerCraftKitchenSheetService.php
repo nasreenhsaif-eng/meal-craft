@@ -7,7 +7,6 @@ use App\Models\CustomerCraftPlanDay;
 use App\Models\CustomerCraftPlanDayMeal;
 use App\Models\Meal;
 use App\Services\Nutrition\AdaptedMenuBuilder;
-use App\Support\ChiaBreakfastMeals;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
@@ -111,10 +110,6 @@ final class CustomerCraftKitchenSheetService
 
             $breakfastMeal = $planDay->meals
                 ->first(fn (CustomerCraftPlanDayMeal $row): bool => $row->slot === CustomerCraftMealSlot::Breakfast)?->meal;
-
-            if ($breakfastMeal !== null && ChiaBreakfastMeals::isChiaBreakfast($breakfastMeal)) {
-                $adaptOptions['fixed_chia_breakfast'] = true;
-            }
 
             /** @var list<Meal> $mainMeals */
             $mainMeals = [];

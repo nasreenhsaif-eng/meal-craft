@@ -7,7 +7,7 @@ use App\Enums\RecipeCategory;
 use App\Models\Ingredient;
 use App\Models\Meal;
 use App\Models\MealPlan;
-use App\Services\BalancedChiaBreakfastRecipeRefiner;
+use App\Services\BalancedChiaDessertRecipeRefiner;
 use App\Services\BalancedWeeklyMealPlanBuilder;
 use App\Services\BalancedWeeklyRotationSchedule;
 use App\Support\WholeFoodDietPolicy;
@@ -65,7 +65,23 @@ test('balanced weekly plan builder creates seven day rotating menus with twelve 
         ->and($result['slots'])->toBe(7 * $slotsPerDay)
         ->and($plan->dayMeals()->count())->toBe($result['slots'] * 2);
 
-    $dayOneChia = $plan->dayMeals()
+    $dayOneChiaDessert = $plan->dayMeals()
+        ->where('day_number', 1)
+        ->where('slot_type', MealPlanSlotType::Dessert->value)
+        ->where('slot_index', 1)
+        ->where('is_option_b', false)
+        ->first()
+        ?->meal?->name;
+
+    $dayTwoChiaDessert = $plan->dayMeals()
+        ->where('day_number', 2)
+        ->where('slot_type', MealPlanSlotType::Dessert->value)
+        ->where('slot_index', 1)
+        ->where('is_option_b', false)
+        ->first()
+        ?->meal?->name;
+
+    $dayOneSavoryBreakfast = $plan->dayMeals()
         ->where('day_number', 1)
         ->where('slot_type', MealPlanSlotType::Breakfast->value)
         ->where('slot_index', 1)
@@ -73,16 +89,9 @@ test('balanced weekly plan builder creates seven day rotating menus with twelve 
         ->first()
         ?->meal?->name;
 
-    $dayTwoChia = $plan->dayMeals()
-        ->where('day_number', 2)
-        ->where('slot_type', MealPlanSlotType::Breakfast->value)
-        ->where('slot_index', 1)
-        ->where('is_option_b', false)
-        ->first()
-        ?->meal?->name;
-
-    expect($dayOneChia)->toBe('Blueberry Walnut Chia Pudding')
-        ->and($dayTwoChia)->toBe('Mango Pumpkin Seed Chia Pudding');
+    expect($dayOneChiaDessert)->toBe('Blueberry Walnut Chia Pudding')
+        ->and($dayTwoChiaDessert)->toBe('Mango Pumpkin Seed Chia Pudding')
+        ->and($dayOneSavoryBreakfast)->toBe('Mediterranean Omelet');
 
     foreach (range(1, 7) as $day) {
         $rotatingSoup = $plan->dayMeals()
@@ -106,7 +115,7 @@ test('balanced weekly plan builder creates seven day rotating menus with twelve 
     }
 });
 
-test('chia breakfast refiner standardizes deck meals on coconut chia base', function (): void {
+test('chia dessert refiner standardizes deck meals on coconut chia base', function (): void {
     seedBalancedWeeklyPlanDeck();
 
     $base = Ingredient::query()->create([
@@ -206,10 +215,11 @@ test('chia breakfast refiner standardizes deck meals on coconut chia base', func
         $base->id => ['amount_grams' => 25],
     ]);
 
-    app(BalancedChiaBreakfastRecipeRefiner::class)->refine('Blueberry Walnut Chia Pudding');
+    app(BalancedChiaDessertRecipeRefiner::class)->refine('Blueberry Walnut Chia Pudding');
 
     $meal->refresh()->load('ingredients');
     $names = $meal->ingredients->pluck('name')->all();
+    $baseLine = $meal->ingredients->firstWhere('name', 'Coconut Chia Pudding (Base)');
 
     expect($names)->not->toContain('Protein Powder (Isolate)')
         ->and($names)->not->toContain('Almond Milk (Unsweetened)')
@@ -218,7 +228,10 @@ test('chia breakfast refiner standardizes deck meals on coconut chia base', func
         ->and($names)->toContain('Walnuts')
         ->and($names)->not->toContain('Pumpkin Seeds')
         ->and($names)->toContain('Cinnamon')
-        ->and($meal->total_calories)->toBeLessThanOrEqual(BalancedChiaBreakfastRecipeRefiner::MAX_CALORIES);
+        ->and($meal->meal_type)->toBe(MealType::Dessert)
+        ->and($meal->category)->toBe(RecipeCategory::Dessert)
+        ->and((float) $baseLine->pivot->amount_grams)->toBe(BalancedChiaDessertRecipeRefiner::COCONUT_CHIA_BASE_GRAMS)
+        ->and($meal->total_calories)->toBeGreaterThanOrEqual(BalancedChiaDessertRecipeRefiner::MIN_CALORIES);
 });
 
 test('whole food policy flags meals with banned ingredients or missing tags', function (): void {

@@ -8,6 +8,9 @@ use App\Models\CustomerProfile;
 use App\Models\Meal;
 use App\Models\MealPlan;
 use App\Models\MealPlanDayMeal;
+use App\Services\BalancedWeeklyRotationSchedule;
+use App\Support\ChiaDessertMeals;
+use App\Support\SavoryEggBreakfastMeals;
 use Illuminate\Support\Collection;
 
 /**
@@ -114,7 +117,11 @@ final class ProductionWeeklyMenuSchedule
 
                 $slotIndex = (int) $row->slot_index;
 
-                if ($slotType === MealPlanSlotType::Breakfast && in_array($slotIndex, [1, 2], true)) {
+                if ($slotType === MealPlanSlotType::Breakfast && $slotIndex === 1) {
+                    if (ChiaDessertMeals::isChiaDessert($row->meal) || ! SavoryEggBreakfastMeals::isSavoryEggBreakfast($row->meal)) {
+                        continue;
+                    }
+
                     $dayMenu['breakfasts'][] = $adapted;
                 } elseif ($slotType === MealPlanSlotType::Main && in_array($slotIndex, [1, 2, 3, 4], true)) {
                     $dayMenu['meals'][] = $adapted;
@@ -127,12 +134,102 @@ final class ProductionWeeklyMenuSchedule
                 }
             }
 
+            if ($dayMenu['breakfasts'] === []) {
+                $fallbackMeal = self::resolveRotationBreakfastMeal($dayNumber);
+
+                if ($fallbackMeal instanceof Meal) {
+                    $adapted = AdaptedMenuBuilder::adaptMealForProfile($profile, $fallbackMeal, array_merge(
+                        $dayAdaptOptions,
+                        ['schedule_slot' => AdaptedMenuBuilder::adaptationSlotForMealPlanSlot(MealPlanSlotType::Breakfast)],
+                    ));
+
+                    if ($adapted !== null) {
+                        $dayMenu['breakfasts'][] = $adapted;
+                    }
+                }
+            }
+
             if ($dayMenu['breakfasts'] !== [] || $dayMenu['meals'] !== []) {
+                self::ensureRotationDessertsForDay($dayNumber, $dayMenu, $profile, $dayAdaptOptions);
                 $out[$dayNumber] = $dayMenu;
             }
         }
 
         return $out;
+    }
+
+    /**
+     * @param  array{
+     *     breakfasts: list<array<string, mixed>>,
+     *     meals: list<array<string, mixed>>,
+     *     sideSalads: list<array<string, mixed>>,
+     *     desserts: list<array<string, mixed>>,
+     *     soup: list<array<string, mixed>>
+     * }  $dayMenu
+     * @param  array<string, mixed>  $dayAdaptOptions
+     */
+    private static function ensureRotationDessertsForDay(
+        int $dayNumber,
+        array &$dayMenu,
+        CustomerProfile $profile,
+        array $dayAdaptOptions,
+    ): void {
+        $hasChia = false;
+
+        foreach ($dayMenu['desserts'] as $adapted) {
+            $name = is_array($adapted) ? (string) ($adapted['name'] ?? '') : '';
+
+            if ($name !== '' && ChiaDessertMeals::isChiaDessert($name)) {
+                $hasChia = true;
+
+                break;
+            }
+        }
+
+        if ($hasChia) {
+            return;
+        }
+
+        $fallbackMeal = self::resolveRotationDessertMeal($dayNumber);
+
+        if (! $fallbackMeal instanceof Meal) {
+            return;
+        }
+
+        $adapted = AdaptedMenuBuilder::adaptMealForProfile($profile, $fallbackMeal, array_merge(
+            $dayAdaptOptions,
+            ['schedule_slot' => AdaptedMenuBuilder::adaptationSlotForMealPlanSlot(MealPlanSlotType::Dessert)],
+        ));
+
+        if ($adapted !== null) {
+            array_unshift($dayMenu['desserts'], $adapted);
+        }
+    }
+
+    private static function resolveRotationDessertMeal(int $dayNumber): ?Meal
+    {
+        $name = BalancedWeeklyRotationSchedule::mealNameForDay($dayNumber, MealPlanSlotType::Dessert, 1);
+
+        return Meal::queryForMealLibrary()
+            ->where('name', $name)
+            ->with('ingredients')
+            ->first();
+    }
+
+    public static function resolveRotationBreakfastMeal(int $dayNumber): ?Meal
+    {
+        $name = BalancedWeeklyRotationSchedule::mealNameForDay($dayNumber, MealPlanSlotType::Breakfast, 1);
+
+        $meal = Meal::queryForMealLibrary()
+            ->where('name', $name)
+            ->with('ingredients')
+            ->first();
+
+        if ($meal instanceof Meal && SavoryEggBreakfastMeals::isSavoryEggBreakfast($meal)) {
+            return $meal;
+        }
+
+        return null;
     }
 
     /**

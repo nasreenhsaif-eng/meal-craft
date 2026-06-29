@@ -22,11 +22,11 @@ final class BalancedMealInstructionRefiner
             $definitions = $this->instructionDefinitions();
 
             $saladDressingMeals = array_flip(SaladDressingMealRefiner::refinedMealNames());
-            $chiaBreakfastMeals = array_flip(BalancedChiaBreakfastRecipeRefiner::refinedMealNames());
+            $chiaDessertMeals = array_flip(BalancedChiaDessertRecipeRefiner::refinedMealNames());
             $tandooriMeals = array_flip(BalancedTandooriMealRecipeRefiner::refinedMealNames());
 
             foreach (BalancedWeeklyRotationSchedule::allScheduledMealNames() as $mealName) {
-                if (isset($saladDressingMeals[$mealName]) || isset($chiaBreakfastMeals[$mealName]) || isset($tandooriMeals[$mealName])) {
+                if (isset($saladDressingMeals[$mealName]) || isset($chiaDessertMeals[$mealName]) || isset($tandooriMeals[$mealName])) {
                     continue;
                 }
 
@@ -64,7 +64,7 @@ final class BalancedMealInstructionRefiner
     private function instructionDefinitions(): array
     {
         return [
-            // Chia breakfasts
+            // Chia desserts
             'Blueberry Walnut Chia Pudding' => $this->steps([
                 'Whisk chia seeds with coconut water and coconut milk in a jar.',
                 'Fold in blueberries and chopped walnuts.',

@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Customer;
 use App\Http\Controllers\Controller;
 use App\Services\Nutrition\UserPlanCalculator;
 use App\Support\AdminConsultationPreviewProfile;
-use App\Support\ChiaBreakfastMeals;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 
@@ -38,7 +37,6 @@ class ConsultationCraftedForYouController extends Controller
             'adaptedMenuUrl' => route('api.menu.adapted', absolute: false),
             'mealDetailViewUrlTemplate' => '/api/meals/{id}/detail-view',
             'planTiers' => UserPlanCalculator::planTiers(),
-            'chiaBreakfastMealNames' => ChiaBreakfastMeals::mealNames(),
             'planTier' => $profile?->daily_calorie_target !== null
                 ? (int) UserPlanCalculator::snapToPlanTier((float) $profile->daily_calorie_target)
                 : null,

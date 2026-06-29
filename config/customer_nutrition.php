@@ -69,17 +69,6 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Fixed chia breakfast portion (kcal)
-    |--------------------------------------------------------------------------
-    |
-    | Balanced rotation chia puddings are a standard kitchen portion — they do not
-    | scale with the customer's plan tier. Mains absorb the remaining budget.
-    |
-    */
-    'chia_breakfast_calories' => 200.0,
-
-    /*
-    |--------------------------------------------------------------------------
     | Savory egg breakfast — large eggs per plan tier
     |--------------------------------------------------------------------------
     |
@@ -90,9 +79,9 @@ return [
     'savory_egg_breakfast_tier_counts' => [
         1000 => 2,
         1200 => 2,
-        1500 => 4,
+        1500 => 3,
         1800 => 4,
-        2000 => 5,
+        2000 => 4,
     ],
 
     /*

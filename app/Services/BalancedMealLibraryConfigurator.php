@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\DB;
 
 /**
  * Curates the meal library for the Balanced protocol customer deck:
- * 2 breakfasts, 4 mains, 2 side salads, 2 desserts, 2 soups (same choices for all customers; portions scale by tier).
+ * 1 savory breakfast, 4 mains, 2 side salads, 3 desserts, 2 soups (same choices for all customers; portions scale by tier).
  */
 final class BalancedMealLibraryConfigurator
 {
@@ -36,72 +36,72 @@ final class BalancedMealLibraryConfigurator
     {
         return [
             [
-                'name' => 'Blueberry Walnut Chia Pudding',
+                'name' => 'Hummus Egg Stack',
                 'sort' => 0,
-                'slot' => 'breakfast',
-                'meal_plan_tags' => ['Balanced'],
-                'diet_tags' => ['Vegan', 'Dairy-free', 'Gluten-free'],
-            ],
-            [
-                'name' => 'Mediterranean Omelet',
-                'sort' => 1,
                 'slot' => 'breakfast',
                 'meal_plan_tags' => ['Balanced'],
                 'diet_tags' => ['Vegetarian', 'Dairy-free', 'Gluten-free'],
             ],
             [
                 'name' => 'Tamarind Honey & Sesame Chicken w Garlicky Green Beans',
-                'sort' => 2,
+                'sort' => 1,
                 'slot' => 'main_chicken_plate',
                 'meal_plan_tags' => ['Balanced'],
                 'diet_tags' => ['Dairy-free', 'Gluten-free'],
             ],
             [
                 'name' => BalancedCanonicalMealRecipeRefiner::ROSEMARY_GARLIC_CHICKEN_PLATE_NAME,
-                'sort' => 3,
+                'sort' => 2,
                 'slot' => 'main_chicken_plate',
                 'meal_plan_tags' => ['Balanced'],
                 'diet_tags' => ['Dairy-free', 'Gluten-free'],
             ],
             [
                 'name' => BalancedCanonicalMealRecipeRefiner::BAKED_SALMON_NAME,
-                'sort' => 4,
+                'sort' => 3,
                 'slot' => 'main_salmon',
                 'meal_plan_tags' => ['Balanced'],
                 'diet_tags' => ['Dairy-free', 'Gluten-free'],
             ],
             [
                 'name' => BalancedCanonicalMealRecipeRefiner::VEGAN_BUTTERNUT_PEANUT_STEW_NAME,
-                'sort' => 5,
+                'sort' => 4,
                 'slot' => 'main_vegan',
                 'meal_plan_tags' => ['Balanced'],
                 'diet_tags' => ['Vegan', 'Dairy-free', 'Gluten-free'],
             ],
             [
                 'name' => 'Marinated Pineapple, Peppers, Red Onion & Cilantro Side Salad',
-                'sort' => 6,
+                'sort' => 5,
                 'slot' => 'side_salad',
                 'meal_plan_tags' => ['Balanced'],
                 'diet_tags' => ['Vegan', 'Dairy-free', 'Gluten-free'],
             ],
             [
                 'name' => 'Classic Garden Salad',
-                'sort' => 7,
+                'sort' => 6,
                 'slot' => 'side_salad_classic',
                 'meal_plan_tags' => ['Balanced'],
                 'diet_tags' => ['Vegan', 'Dairy-free', 'Gluten-free'],
             ],
             [
                 'name' => BalancedCanonicalMealRecipeRefiner::CARROT_DESSERT_NAME,
-                'sort' => 8,
+                'sort' => 7,
                 'slot' => 'dessert',
                 'meal_plan_tags' => ['Balanced'],
                 'diet_tags' => ['Vegetarian', 'Dairy-free', 'Gluten-free'],
             ],
             [
                 'name' => 'Fruit Salad Bowl',
-                'sort' => 9,
+                'sort' => 8,
                 'slot' => 'dessert_fruit',
+                'meal_plan_tags' => ['Balanced'],
+                'diet_tags' => ['Vegan', 'Dairy-free', 'Gluten-free'],
+            ],
+            [
+                'name' => 'Blueberry Walnut Chia Pudding',
+                'sort' => 9,
+                'slot' => 'dessert_chia',
                 'meal_plan_tags' => ['Balanced'],
                 'diet_tags' => ['Vegan', 'Dairy-free', 'Gluten-free'],
             ],
@@ -214,7 +214,7 @@ final class BalancedMealLibraryConfigurator
             'meal_plan_tags' => ['Balanced'],
             'meal_plan_tag' => 'Balanced',
             'diet_tags' => ['Dairy-free', 'Gluten-free'],
-            'library_sort_order' => 11,
+            'library_sort_order' => 12,
             'nutrition_aggregates_synced' => true,
         ]);
 

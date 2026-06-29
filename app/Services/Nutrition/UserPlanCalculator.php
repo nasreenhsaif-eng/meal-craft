@@ -266,7 +266,6 @@ final class UserPlanCalculator
      *     dessert_calories?: float,
      *     snap_to_tier?: bool,
      *     plan_tier?: float,
-     *     fixed_chia_breakfast?: bool,
      * }  $options
      * @return array<string, mixed>
      */
@@ -295,8 +294,6 @@ final class UserPlanCalculator
 
         $includeSoup = in_array('soup', $selectedFixedSlots ?? [], true)
             || (bool) ($options['include_soup'] ?? false);
-
-        $fixedChiaBreakfast = (bool) ($options['fixed_chia_breakfast'] ?? false);
 
         $perSlotFixed = self::resolveFixedSlotCalories($selectedFixedSlots, $options);
 
@@ -365,7 +362,6 @@ final class UserPlanCalculator
             'daily_macros' => $dailyMacros,
             'include_soup' => $includeSoup,
             'selected_fixed_slots' => $selectedFixedSlots ?? self::fixedChoiceSlots(),
-            'fixed_chia_breakfast' => $fixedChiaBreakfast,
             'fixed_portion' => [
                 'slots' => self::coreFixedPortionSlots(),
                 'choice_count' => self::fixedChoiceCount(),

@@ -1,5 +1,5 @@
 meal_name,meal_type,ingredients_string,target_calories,target_protein,target_carbs,target_fat,batch_calories,batch_protein,batch_carbs,batch_fat,is_bulk,servings_count,meal_plan_tag,cycle_phase,safety_alerts,image_url,short_description,instructions
-"Blueberry Walnut Chia Pudding",Breakfast,"Black Seeds:8 | Blueberries:7.09 | Cinnamon:1 | Coconut Chia Pudding (Base):75 | Fresh Mint:1 | Walnuts:5",350,35,35,7.8,,,,,false,,Balanced,,,images/meals/blueberry_walnut_chia_pudding.png,"Creamy coconut chia pudding with blueberries, walnuts, cinnamon, and mint.","Prepare Coconut Chia Pudding (Base) ahead (chia, coconut milk, and date syrup) and chill until thick.
+"Blueberry Walnut Chia Pudding",Dessert,"Coconut Chia Pudding (Base):120 | Blueberries:20 | Walnuts:5 | Fresh Mint:1 | Cinnamon:1",350,35,35,7.8,,,,,false,,Balanced,,,images/meals/blueberry_walnut_chia_pudding.png,"Creamy coconut chia pudding with blueberries, walnuts, cinnamon, and mint.","Prepare Coconut Chia Pudding (Base) ahead (chia, coconut milk, and date syrup) and chill until thick.
 Spoon the set pudding into a bowl or jar.
 Fold in blueberries, walnuts, cinnamon, and mint.
 Serve chilled."
@@ -50,7 +50,7 @@ Serve hot."
 Pour into a small pot.
 Heat gently on the stove until steaming (do not boil hard).
 Pour into a mug or bowl and serve hot."
-"Cacao & Almond Chia",Breakfast,"Almond Butter:2.25 | Almond whole:5 | Cocoa Powder:2 | Coconut Chia Pudding (Base):75",150,4,15,9,,,,,false,,,,,images/meals/cacao_almond_chia.png,"Rich cacao coconut chia pudding swirled with almond butter and almonds.","Prepare Coconut Chia Pudding (Base) ahead (chia, coconut milk, and date syrup) and chill until thick.
+"Cacao & Almond Chia",Dessert,"Coconut Chia Pudding (Base):120 | Cocoa Powder:2 | Almond Butter:2.25 | Almond whole:5",150,4,15,9,,,,,false,,,,,images/meals/cacao_almond_chia.png,"Rich cacao coconut chia pudding swirled with almond butter and almonds.","Prepare Coconut Chia Pudding (Base) ahead (chia, coconut milk, and date syrup) and chill until thick.
 Spoon the set pudding into a bowl or jar.
 Swirl in almond butter and cocoa powder. Top with chopped almonds.
 Serve chilled."
@@ -155,7 +155,7 @@ Grill pepper strips and onion until charred and soft.
 Massage kale until tender.
 Toss quinoa, kale, and vegetables. Top with chicken.
 Serve dressing on the side."
-"Mango Pumpkin Seed Chia Pudding",Breakfast,"Coconut Chia Pudding (Base):75 | Fresh Mint:1 | Mango:13.1333 | Pumpkin Seeds:8 | Sesame Seeds:6",350,35,35,7.8,,,,,false,,Balanced,,,images/meals/mango_pumpkin_seed_chia_pudding.png,"Tropical coconut chia pudding topped with fresh mango and pumpkin seeds.","Prepare Coconut Chia Pudding (Base) ahead (chia, coconut milk, and date syrup) and chill until thick.
+"Mango Pumpkin Seed Chia Pudding",Dessert,"Coconut Chia Pudding (Base):120 | Mango:35 | Pumpkin Seeds:5",350,35,35,7.8,,,,,false,,Balanced,,,images/meals/mango_pumpkin_seed_chia_pudding.png,"Tropical coconut chia pudding topped with fresh mango and pumpkin seeds.","Prepare Coconut Chia Pudding (Base) ahead (chia, coconut milk, and date syrup) and chill until thick.
 Spoon the set pudding into a bowl or jar.
 Top with diced mango and pumpkin seeds.
 Serve chilled."
@@ -254,7 +254,7 @@ When cool, place the butternut squash in a blender with any roasting juices. Add
 Transfer the mixture to a bowl and stir in enough quinoa flour to make a smooth mix. Refrigerate for 1 hour to firm up. The mix should be sticky rather than wet — add a little more flour if needed.
 With wet hands, shape into ping-pong-ball-sized fritters. Bake at 200°C until golden and set through, or pan-fry in olive oil until crisp.
 Prepare Marinara Sauce (Base) per base recipe instructions. Warm and serve on the side."
-"Chia Pudding Smoothie",Breakfast,"Banana:25 | Coconut Chia Pudding (Base):53 | Strawberries:30",350,35,35,7.8,,,,,false,1,,,,images/meals/chia_pudding_smoothie.png,"Layered coconut chia pudding with a strawberry-banana smoothie top.","Prepare Coconut Chia Pudding (Base) ahead and chill until thick.
+"Chia Pudding Smoothie",Dessert,"Coconut Chia Pudding (Base):120 | Banana:25 | Strawberries:30",350,35,35,7.8,,,,,false,1,,,,images/meals/chia_pudding_smoothie.png,"Layered coconut chia pudding with a strawberry-banana smoothie top.","Prepare Coconut Chia Pudding (Base) ahead and chill until thick.
 Spoon the set pudding into the bottom of a glass or jar.
 Blend strawberries and banana until smooth.
 Pour the fruit smoothie over the chia layer. Serve chilled."
@@ -285,15 +285,15 @@ Whisk eggs with sea salt and black pepper until frothy.
 Fold in the minced herbs, spring onion, chopped walnuts, and barberries (zereshk).
 Divide between muffin cups, filling about three-quarters full. Bake 18–22 minutes until set in the centre.
 Cool 5 minutes before removing. Serve warm or at room temperature."
-"Strawberry Almond Chia Pudding",Breakfast,"Almond whole:5 | Coconut Chia Pudding (Base):75 | Sesame Seeds:10 | Strawberries:4",350,35,35,7.8,,,,,false,1,,,Nuts,images/meals/strawberry_almond_chia_pudding.png,"Coconut chia pudding with fresh strawberries and almonds.","Prepare Coconut Chia Pudding (Base) ahead (chia, coconut milk, and date syrup) and chill until thick.
+"Strawberry Almond Chia Pudding",Dessert,"Coconut Chia Pudding (Base):120 | Strawberries:40 | Almond whole:4",350,35,35,7.8,,,,,false,1,,,Nuts,images/meals/strawberry_almond_chia_pudding.png,"Coconut chia pudding with fresh strawberries and almonds.","Prepare Coconut Chia Pudding (Base) ahead (chia, coconut milk, and date syrup) and chill until thick.
 Spoon the set pudding into a bowl or jar.
 Fold in sliced strawberries and almonds.
 Serve chilled."
-"Peach Pecan Chia Pudding",Breakfast,"Cinnamon:0.5 | Coconut Chia Pudding (Base):75 | Fresh Mint:2 | Peach:6.6926 | Pecans:5 | Sesame Seeds:8",350,35,35,7.8,,,,,false,1,,,Nuts,images/meals/peach_pecan_chia_pudding.png,"Coconut chia pudding with sweet peach, pecans, cinnamon, and mint.","Prepare Coconut Chia Pudding (Base) ahead (chia, coconut milk, and date syrup) and chill until thick.
+"Peach Pecan Chia Pudding",Dessert,"Coconut Chia Pudding (Base):120 | Peach:35 | Pecans:5 | Cinnamon:0.5 | Fresh Mint:2",350,35,35,7.8,,,,,false,1,,,Nuts,images/meals/peach_pecan_chia_pudding.png,"Coconut chia pudding with sweet peach, pecans, cinnamon, and mint.","Prepare Coconut Chia Pudding (Base) ahead (chia, coconut milk, and date syrup) and chill until thick.
 Spoon the set pudding into a bowl or jar.
 Top with sliced peach, pecans, cinnamon, and mint.
 Serve chilled."
-"Raspberry Cacao Chia Pudding",Breakfast,"Cacao Nibs:4 | Cocoa Powder:2 | Coconut Chia Pudding (Base):75 | Pumpkin Seeds:4 | Raspberries:6.692 | Sesame Seeds:8",350,35,35,7.8,,,,,false,1,,,,images/meals/raspberry_cacao_chia_pudding.png,"Dark cacao coconut chia pudding with raspberries and cacao nibs.","Prepare Coconut Chia Pudding (Base) ahead (chia, coconut milk, and date syrup) and chill until thick.
+"Raspberry Cacao Chia Pudding",Dessert,"Coconut Chia Pudding (Base):120 | Raspberries:35 | Cacao Nibs:4 | Cocoa Powder:2 | Pumpkin Seeds:4",350,35,35,7.8,,,,,false,1,,,,images/meals/raspberry_cacao_chia_pudding.png,"Dark cacao coconut chia pudding with raspberries and cacao nibs.","Prepare Coconut Chia Pudding (Base) ahead (chia, coconut milk, and date syrup) and chill until thick.
 Spoon the set pudding into a bowl or jar.
 Fold in raspberries, cacao nibs, and cocoa powder.
 Serve chilled."
@@ -339,7 +339,7 @@ Roast at 200°C for 22 minutes. Add chickpeas for the last 10 minutes.
 Toss roasted vegetables with tomatoes and red onion.
 Serve over romaine.
 Serve remaining dressing on the side."
-"Spiced Crunch Chia Pudding",Breakfast,"Almond whole:3 | Black Seeds:2 | Cinnamon:1.5 | Clove:0.5 | Coconut Chia Pudding (Base):75 | Ground Ginger:1 | Pumpkin Seeds:4 | Sesame Seeds:12",350,35,35,7.8,,,,,false,1,,,Nuts,images/meals/spiced_crunch_chia_pudding.png,"Warming spiced coconut chia pudding topped with almonds, black seeds, and sesame.","Prepare Coconut Chia Pudding (Base) ahead (chia, coconut milk, and date syrup) and chill until thick.
+"Spiced Crunch Chia Pudding",Dessert,"Coconut Chia Pudding (Base):120 | Almond whole:3 | Black Seeds:2 | Sesame Seeds:3 | Cinnamon:1.5 | Clove:0.5 | Ground Ginger:1",350,35,35,7.8,,,,,false,1,,,Nuts,images/meals/spiced_crunch_chia_pudding.png,"Warming spiced coconut chia pudding topped with almonds, black seeds, and sesame.","Prepare Coconut Chia Pudding (Base) ahead (chia, coconut milk, and date syrup) and chill until thick.
 Spoon the set pudding into a bowl or jar.
 Stir cinnamon, clove, and ginger through the pudding.
 Top with chopped almonds, black seeds, and sesame seeds.

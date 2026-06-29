@@ -12,7 +12,6 @@ use App\Models\Meal;
 use App\Services\Nutrition\AdaptedMenuBuilder;
 use App\Services\Nutrition\CraftCaloriePlanner;
 use App\Services\Nutrition\UserPlanCalculator;
-use App\Support\ChiaBreakfastMeals;
 
 final class CustomerCraftPlanPresentationService
 {
@@ -194,7 +193,7 @@ final class CustomerCraftPlanPresentationService
     }
 
     /**
-     * @return array{soup_calories?: float, side_salad_calories?: float, dessert_calories?: float, fixed_chia_breakfast?: bool}
+     * @return array{soup_calories?: float, side_salad_calories?: float, dessert_calories?: float}
      */
     private function fixedPortionAdaptOptions(CustomerCraftPlanDay $day): array
     {
@@ -220,13 +219,6 @@ final class CustomerCraftPlanPresentationService
             if ($calories > 0) {
                 $options['dessert_calories'] = $calories;
             }
-        }
-
-        $breakfastMeal = $day->meals
-            ->first(fn (CustomerCraftPlanDayMeal $row): bool => $row->slot === CustomerCraftMealSlot::Breakfast)?->meal;
-
-        if ($breakfastMeal !== null && ChiaBreakfastMeals::isChiaBreakfast($breakfastMeal)) {
-            $options['fixed_chia_breakfast'] = true;
         }
 
         return $options;

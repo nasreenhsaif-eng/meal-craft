@@ -53,26 +53,6 @@ test('selected fixed slots budget only chosen categories at 150 kcal each', func
         ->and($sideAndSoup['day_total_calories'])->toBe(2000.0);
 });
 
-test('fixed chia breakfast flag is tracked but tier breakfast targets still apply', function () {
-    $profile = new CustomerProfile([
-        'id' => 1,
-        'daily_calorie_target' => 1500,
-        'protein_percentage' => 30.0,
-        'carb_percentage' => 40.0,
-        'fat_percentage' => 30.0,
-    ]);
-
-    $plan = UserPlanCalculator::calculateUserPlan($profile, [
-        'fixed_chia_breakfast' => true,
-    ]);
-
-    expect($plan['fixed_chia_breakfast'])->toBeTrue()
-        ->and($plan['fixed_portion']['calories'])->toBe(300.0)
-        ->and($plan['scalable_slot_targets']['breakfast']['calories'])->toBe(300.0)
-        ->and($plan['scalable_slot_targets']['main_each']['calories'])->toBe(450.0)
-        ->and($plan['day_total_calories'])->toBe(1500.0);
-});
-
 test('tier slot targets match spreadsheet at each plan tier', function (int $tier, float $breakfast, float $mainEach) {
     $profile = new CustomerProfile([
         'id' => 1,

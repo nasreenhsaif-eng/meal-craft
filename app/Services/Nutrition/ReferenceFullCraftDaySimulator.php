@@ -6,7 +6,6 @@ use App\Enums\MealPlanSlotType;
 use App\Models\CustomerProfile;
 use App\Models\Meal;
 use App\Services\BalancedWeeklyRotationSchedule;
-use App\Support\ChiaBreakfastMeals;
 
 /**
  * Simulates a Full Craft day (1 breakfast, 2 mains, pick-2 fixed) for micronutrient coverage analysis.
@@ -67,13 +66,7 @@ final class ReferenceFullCraftDaySimulator
         $breakfast = $mealsByRole['breakfast'];
 
         if ($breakfast instanceof Meal) {
-            $breakfastOptions = $buildOptions;
-
-            if (ChiaBreakfastMeals::isChiaBreakfast($breakfast)) {
-                $breakfastOptions['fixed_chia_breakfast'] = true;
-            }
-
-            $adapted = AdaptedMenuBuilder::adaptMealForProfile($profile, $breakfast, $breakfastOptions);
+            $adapted = AdaptedMenuBuilder::adaptMealForProfile($profile, $breakfast, $buildOptions);
 
             if (is_array($adapted)) {
                 $adaptedMeals[] = $adapted;
@@ -134,7 +127,7 @@ final class ReferenceFullCraftDaySimulator
     {
         return [
             'breakfast' => self::findMealByName(
-                BalancedWeeklyRotationSchedule::mealNameForDay($dayNumber, MealPlanSlotType::Breakfast, 2),
+                BalancedWeeklyRotationSchedule::mealNameForDay($dayNumber, MealPlanSlotType::Breakfast, 1),
             ),
             'mains' => array_values(array_filter([
                 self::findMealByName(

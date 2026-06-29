@@ -223,6 +223,51 @@ test('adapted menu returns fixed portion meals with unscaled recipe nutrition', 
         ->and((float) $sideSalad['adapted_nutrition']['calories'])->toBe(180.0);
 });
 
+test('adapted menu lists chia dessert as fixed portion when high-cal dessert is selected', function () {
+    $user = User::factory()->create();
+    CustomerProfile::factory()->for($user)->create([
+        'daily_calorie_target' => 1500,
+        'protein_percentage' => 30,
+        'carb_percentage' => 40,
+        'fat_percentage' => 30,
+    ]);
+
+    $base = Ingredient::factory()->create([
+        'name' => 'Coconut Chia Pudding (Base)',
+        'calories' => 265,
+        'protein' => 3.9,
+        'carbs' => 14.6,
+        'fat' => 23,
+    ]);
+
+    Meal::factory()->create([
+        'name' => 'Blueberry Walnut Chia Pudding',
+        'meal_type' => MealType::Dessert,
+        'category' => RecipeCategory::Dessert,
+        'total_calories' => 318,
+        'library_sort_order' => 10,
+    ])->ingredients()->attach($base->id, ['amount_grams' => 120]);
+
+    $response = $this->actingAs($user)->getJson(
+        '/api/menu/adapted?craft_key=full'
+        .'&selected_fixed_slots[]=side_salad&selected_fixed_slots[]=dessert'
+        .'&dessert_calories=318&side_salad_calories=150&plan_tier=1500'
+    );
+
+    $response->assertSuccessful()
+        ->assertJsonPath('plan.scalable_slot_targets.breakfast.calories', 258);
+
+    expect((float) $response->json('plan.scalable_slot_targets.main_each.calories'))->toEqualWithDelta(387.0, 1.0)
+        ->and((float) $response->json('plan.day_total_calories'))->toBe(1500.0);
+
+    $chia = collect($response->json('fixed_portion_meals'))->firstWhere('name', 'Blueberry Walnut Chia Pudding');
+
+    expect($chia)->not->toBeNull()
+        ->and($chia['portion_behavior'])->toBe('fixed_portion')
+        ->and($chia['is_scaled'])->toBeFalse()
+        ->and((float) $chia['adapted_nutrition']['calories'])->toBeGreaterThanOrEqual(300.0);
+});
+
 test('adapted menu lists soups as fixed portions when soup is a selected fixed slot', function () {
     $user = User::factory()->create();
     CustomerProfile::factory()->for($user)->create([
@@ -324,23 +369,17 @@ test('adapted menu exposes admin-scheduled soups per weekday from production mea
     expect($response->json('scheduled_soups_by_weekday.3'))->toBeNull();
 });
 
-test('adapted menu exposes full craft day options with two breakfasts and four mains per weekday', function () {
+test('adapted menu exposes full craft day options with one breakfast and four mains per weekday', function () {
     $user = User::factory()->create();
     CustomerProfile::factory()->for($user)->create([
         'daily_calorie_target' => 1500,
     ]);
 
-    $breakfastOne = Meal::factory()->create([
-        'name' => 'Chia Day One',
+    $breakfast = Meal::factory()->create([
+        'name' => 'Mediterranean Omelet',
         'meal_type' => MealType::Breakfast,
         'category' => RecipeCategory::Breakfast,
         'total_calories' => 300,
-    ]);
-    $breakfastTwo = Meal::factory()->create([
-        'name' => 'Egg Day One',
-        'meal_type' => MealType::Breakfast,
-        'category' => RecipeCategory::Breakfast,
-        'total_calories' => 320,
     ]);
 
     $mains = collect(range(1, 4))->map(fn (int $index) => Meal::factory()->create([
@@ -364,10 +403,10 @@ test('adapted menu exposes full craft day options with two breakfasts and four m
     ]);
 
     $dessertOne = Meal::factory()->create([
-        'name' => 'Rotating Dessert',
+        'name' => 'Chia Day One',
         'meal_type' => MealType::Dessert,
         'category' => RecipeCategory::Dessert,
-        'total_calories' => 200,
+        'total_calories' => 318,
     ]);
     $dessertTwo = Meal::factory()->create([
         'name' => 'Fruit Salad Bowl',
@@ -384,8 +423,7 @@ test('adapted menu exposes full craft day options with two breakfasts and four m
     ]);
 
     $slots = [
-        [MealPlanSlotType::Breakfast, 1, $breakfastOne],
-        [MealPlanSlotType::Breakfast, 2, $breakfastTwo],
+        [MealPlanSlotType::Breakfast, 1, $breakfast],
         [MealPlanSlotType::Main, 1, $mains[0]],
         [MealPlanSlotType::Main, 2, $mains[1]],
         [MealPlanSlotType::Main, 3, $mains[2]],
@@ -412,12 +450,12 @@ test('adapted menu exposes full craft day options with two breakfasts and four m
     $response = $this->actingAs($user)->getJson('/api/menu/adapted?craft_key=full');
 
     $response->assertSuccessful()
-        ->assertJsonCount(2, 'scheduled_full_craft_by_weekday.1.breakfasts')
+        ->assertJsonCount(1, 'scheduled_full_craft_by_weekday.1.breakfasts')
         ->assertJsonCount(4, 'scheduled_full_craft_by_weekday.1.meals')
         ->assertJsonCount(2, 'scheduled_full_craft_by_weekday.1.sideSalads')
         ->assertJsonCount(2, 'scheduled_full_craft_by_weekday.1.desserts')
-        ->assertJsonPath('scheduled_full_craft_by_weekday.1.breakfasts.0.name', 'Chia Day One')
-        ->assertJsonPath('scheduled_full_craft_by_weekday.1.breakfasts.1.name', 'Egg Day One')
+        ->assertJsonPath('scheduled_full_craft_by_weekday.1.breakfasts.0.name', 'Mediterranean Omelet')
+        ->assertJsonPath('scheduled_full_craft_by_weekday.1.desserts.0.name', 'Chia Day One')
         ->assertJsonPath('scheduled_full_craft_by_weekday.1.sideSalads.1.name', 'Classic Garden Salad');
 });
 

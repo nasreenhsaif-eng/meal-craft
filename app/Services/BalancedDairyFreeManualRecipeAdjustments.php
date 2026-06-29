@@ -151,7 +151,7 @@ final class BalancedDairyFreeManualRecipeAdjustments
             'Black Seeds' => 2.0,
             'Cinnamon' => 1.5,
             'Clove' => 0.5,
-            'Coconut Chia Pudding (Base)' => 75.0,
+            'Coconut Chia Pudding (Base)' => 120.0,
             'Ground Ginger' => 1.0,
             'Pumpkin Seeds' => 4.0,
             'Sesame Seeds' => 12.0,
@@ -159,13 +159,13 @@ final class BalancedDairyFreeManualRecipeAdjustments
         'Blueberry Walnut Chia Pudding' => [
             'Blueberries' => 7.0876,
             'Cinnamon' => 1.0,
-            'Coconut Chia Pudding (Base)' => 75.0,
+            'Coconut Chia Pudding (Base)' => 120.0,
             'Fresh Mint' => 1.0,
             'Sesame Seeds' => 8.0,
             'Walnuts' => 5.0,
         ],
         'Mango Pumpkin Seed Chia Pudding' => [
-            'Coconut Chia Pudding (Base)' => 75.0,
+            'Coconut Chia Pudding (Base)' => 120.0,
             'Fresh Mint' => 1.0,
             'Mango' => 13.1333,
             'Pumpkin Seeds' => 8.0,
@@ -173,13 +173,13 @@ final class BalancedDairyFreeManualRecipeAdjustments
         ],
         'Strawberry Almond Chia Pudding' => [
             'Almond whole' => 5.0,
-            'Coconut Chia Pudding (Base)' => 75.0,
+            'Coconut Chia Pudding (Base)' => 120.0,
             'Sesame Seeds' => 10.0,
             'Strawberries' => 4.0,
         ],
         'Peach Pecan Chia Pudding' => [
             'Cinnamon' => 0.5,
-            'Coconut Chia Pudding (Base)' => 75.0,
+            'Coconut Chia Pudding (Base)' => 120.0,
             'Fresh Mint' => 2.0,
             'Peach' => 6.6926,
             'Pecans' => 5.0,
@@ -188,7 +188,7 @@ final class BalancedDairyFreeManualRecipeAdjustments
         'Raspberry Cacao Chia Pudding' => [
             'Cacao Nibs' => 4.0,
             'Cocoa Powder' => 2.0,
-            'Coconut Chia Pudding (Base)' => 75.0,
+            'Coconut Chia Pudding (Base)' => 120.0,
             'Pumpkin Seeds' => 4.0,
             'Raspberries' => 6.692,
             'Sesame Seeds' => 8.0,
@@ -197,7 +197,7 @@ final class BalancedDairyFreeManualRecipeAdjustments
             'Almond Butter' => 2.2476,
             'Almond whole' => 5.0,
             'Cocoa Powder' => 2.0,
-            'Coconut Chia Pudding (Base)' => 75.0,
+            'Coconut Chia Pudding (Base)' => 120.0,
             'Sesame Seeds' => 8.0,
         ],
         'Cinnamon Raisin Balls' => [

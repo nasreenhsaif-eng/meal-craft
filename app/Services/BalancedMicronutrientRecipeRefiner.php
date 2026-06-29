@@ -235,14 +235,11 @@ final class BalancedMicronutrientRecipeRefiner
 
         if ($role === 'breakfast') {
             return $this->findMealByName(
-                BalancedWeeklyRotationSchedule::mealNameForDay($dayNumber, MealPlanSlotType::Breakfast, 2),
+                BalancedWeeklyRotationSchedule::mealNameForDay($dayNumber, MealPlanSlotType::Breakfast, 1),
             );
         }
 
         return match ($role) {
-            'breakfast' => $this->findMealByName(
-                BalancedWeeklyRotationSchedule::mealNameForDay($dayNumber, MealPlanSlotType::Breakfast, 2),
-            ),
             'side_salad' => $this->findMealByName(
                 BalancedWeeklyRotationSchedule::mealNameForDay($dayNumber, MealPlanSlotType::Salad, 1),
             ),
@@ -379,7 +376,7 @@ final class BalancedMicronutrientRecipeRefiner
     private function resolveBoostIngredientName(string $nutritionKey, array $ingredientGrams, ?string $mealName = null): ?string
     {
         $isChia = $mealName !== null
-            && in_array($mealName, BalancedWeeklyRotationSchedule::CHIA_BREAKFASTS, true);
+            && in_array($mealName, BalancedWeeklyRotationSchedule::CHIA_DESSERTS, true);
 
         $primaryPool = $isChia
             ? MicronutrientBoostCatalog::chiaBoostIngredientsForKey($nutritionKey)
@@ -418,7 +415,7 @@ final class BalancedMicronutrientRecipeRefiner
     private function filterBoostCandidates(array $candidates, array $ingredientGrams, ?string $mealName): array
     {
         $isChia = $mealName !== null
-            && in_array($mealName, BalancedWeeklyRotationSchedule::CHIA_BREAKFASTS, true);
+            && in_array($mealName, BalancedWeeklyRotationSchedule::CHIA_DESSERTS, true);
 
         return array_values(array_filter($candidates, function (string $candidate) use ($ingredientGrams, $isChia, $mealName): bool {
             if ($isChia && ! MicronutrientBoostCatalog::isChiaAllowedBoost($candidate)) {

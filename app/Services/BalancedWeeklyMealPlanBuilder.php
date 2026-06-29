@@ -34,7 +34,7 @@ final class BalancedWeeklyMealPlanBuilder
 
             if ($refineRecipes) {
                 $refined = app(BalancedCanonicalMealRecipeRefiner::class)->refine();
-                $refined = array_merge($refined, app(BalancedChiaBreakfastRecipeRefiner::class)->refine());
+                $refined = array_merge($refined, app(BalancedChiaDessertRecipeRefiner::class)->refine());
                 $refined = array_merge($refined, app(BalancedComplexCarbRecipeRefiner::class)->refine());
                 $refined = array_merge($refined, app(BalancedEggBreakfastRecipeRefiner::class)->refine());
                 $refined = array_merge($refined, app(BalancedVeganSideSaladRecipeRefiner::class)->refine());

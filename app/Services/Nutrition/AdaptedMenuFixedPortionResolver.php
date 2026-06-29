@@ -6,7 +6,6 @@ use App\Enums\MealPlanSlotType;
 use App\Models\Meal;
 use App\Models\MealPlan;
 use App\Models\MealPlanDayMeal;
-use App\Support\ChiaBreakfastMeals;
 
 /**
  * Resolves actual fixed-portion calories for plan budgeting (side salad, dessert, soup).
@@ -21,48 +20,41 @@ final class AdaptedMenuFixedPortionResolver
      *     side_salad_calories?: float,
      *     dessert_calories?: float,
      *     day_of_week?: int,
-     *     fixed_chia_breakfast?: bool,
      * }  $options
      * @return array{
      *     side_salad_calories?: float,
      *     dessert_calories?: float,
      *     soup_calories?: float,
-     *     fixed_chia_breakfast?: bool,
      * }
      */
     public static function mergeIntoBuildOptions(array $options, ?MealPlan $productionPlan = null): array
     {
         $merged = $options;
+        $dayOfWeek = isset($options['day_of_week']) ? (int) $options['day_of_week'] : 0;
 
-        if (! isset($merged['side_salad_calories']) || ! isset($merged['dessert_calories'])) {
-            $dayOfWeek = isset($options['day_of_week']) ? (int) $options['day_of_week'] : 0;
+        if ($dayOfWeek < 1 || $dayOfWeek > 7) {
+            return $merged;
+        }
 
-            if ($dayOfWeek >= 1 && $dayOfWeek <= 7) {
-                $fromSchedule = self::fromProductionSchedule($dayOfWeek, $productionPlan);
+        $fromSchedule = self::fromProductionSchedule($dayOfWeek, $productionPlan);
 
-                if (! isset($merged['side_salad_calories']) && isset($fromSchedule['side_salad_calories'])) {
-                    $merged['side_salad_calories'] = $fromSchedule['side_salad_calories'];
-                }
+        if (! isset($merged['side_salad_calories']) && isset($fromSchedule['side_salad_calories'])) {
+            $merged['side_salad_calories'] = $fromSchedule['side_salad_calories'];
+        }
 
-                if (! isset($merged['dessert_calories']) && isset($fromSchedule['dessert_calories'])) {
-                    $merged['dessert_calories'] = $fromSchedule['dessert_calories'];
-                }
+        if (! isset($merged['dessert_calories']) && isset($fromSchedule['dessert_calories'])) {
+            $merged['dessert_calories'] = $fromSchedule['dessert_calories'];
+        }
 
-                $soupSelected = in_array('soup', $options['selected_fixed_slots'] ?? [], true)
-                    || ($options['include_soup'] ?? false);
+        $soupSelected = in_array('soup', $options['selected_fixed_slots'] ?? [], true)
+            || ($options['include_soup'] ?? false);
 
-                if (
-                    ! isset($merged['soup_calories'])
-                    && $soupSelected
-                    && isset($fromSchedule['soup_calories'])
-                ) {
-                    $merged['soup_calories'] = $fromSchedule['soup_calories'];
-                }
-
-                if (! isset($merged['fixed_chia_breakfast']) && ($fromSchedule['fixed_chia_breakfast'] ?? false)) {
-                    $merged['fixed_chia_breakfast'] = true;
-                }
-            }
+        if (
+            ! isset($merged['soup_calories'])
+            && $soupSelected
+            && isset($fromSchedule['soup_calories'])
+        ) {
+            $merged['soup_calories'] = $fromSchedule['soup_calories'];
         }
 
         return $merged;
@@ -73,7 +65,6 @@ final class AdaptedMenuFixedPortionResolver
      *     side_salad_calories?: float,
      *     dessert_calories?: float,
      *     soup_calories?: float,
-     *     fixed_chia_breakfast?: bool,
      * }
      */
     public static function fromProductionSchedule(int $dayOfWeek, ?MealPlan $plan = null): array
@@ -120,14 +111,6 @@ final class AdaptedMenuFixedPortionResolver
 
             if ($slotType === MealPlanSlotType::Soup && ! isset($out['soup_calories'])) {
                 $out['soup_calories'] = round($calories, 2);
-            }
-
-            if (
-                $slotType === MealPlanSlotType::Breakfast
-                && (int) $row->slot_index === 1
-                && ChiaBreakfastMeals::isChiaBreakfast($row->meal)
-            ) {
-                $out['fixed_chia_breakfast'] = true;
             }
         }
 

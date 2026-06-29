@@ -8,7 +8,7 @@ use InvalidArgumentException;
 /**
  * Seven-day Balanced weekly plan: same slot roles every day, different meals per weekday.
  *
- * Breakfast 1 — vegan chia pudding (rotates). Breakfast 2 — egg-based savory (rotates).
+ * Breakfast — savory egg (rotates). Dessert 1 — chia pudding (rotates).
  * Main 1 — chicken + carbs/veg. Main 2 — chicken salad. Main 3 — salmon and beef alternate daily.
  * Main 4 — vegan main (includes former legume-heavy side salads). Salad 1 — legume-free vegan side (rotates). Salad 2 — Classic Garden Salad.
  * Dessert 1 — dessert (rotates). Dessert 2 — Fruit Salad Bowl.
@@ -44,7 +44,7 @@ final class BalancedWeeklyRotationSchedule
     ];
 
     /** @var list<string> */
-    public const CHIA_BREAKFASTS = [
+    public const CHIA_DESSERTS = [
         'Blueberry Walnut Chia Pudding',
         'Mango Pumpkin Seed Chia Pudding',
         'Spiced Crunch Chia Pudding',
@@ -154,8 +154,7 @@ final class BalancedWeeklyRotationSchedule
 
         return match ($slotType) {
             MealPlanSlotType::Breakfast => match ($slotIndex) {
-                1 => self::CHIA_BREAKFASTS[$index],
-                2 => self::EGG_BREAKFASTS[$index],
+                1 => self::EGG_BREAKFASTS[$index],
                 default => throw new InvalidArgumentException("Invalid breakfast slot index {$slotIndex}"),
             },
             MealPlanSlotType::Main => match ($slotIndex) {
@@ -170,7 +169,7 @@ final class BalancedWeeklyRotationSchedule
                 default => throw new InvalidArgumentException("Invalid salad slot index {$slotIndex}"),
             },
             MealPlanSlotType::Dessert => match ($slotIndex) {
-                1 => self::DESSERTS[$index],
+                1 => self::CHIA_DESSERTS[$index],
                 default => throw new InvalidArgumentException("Invalid dessert slot index {$slotIndex}"),
             },
             MealPlanSlotType::Soup => match ($slotIndex) {
@@ -209,7 +208,7 @@ final class BalancedWeeklyRotationSchedule
 
         foreach ([
             self::ROTATING_SOUPS,
-            self::CHIA_BREAKFASTS,
+            self::CHIA_DESSERTS,
             self::EGG_BREAKFASTS,
             self::CHICKEN_PLATE_MAINS,
             self::CHICKEN_SALAD_MAINS,

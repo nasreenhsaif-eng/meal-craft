@@ -45,15 +45,21 @@ function seedBalancedDeckMealsForTest(): void
         'is_verified' => true,
     ]);
 
-    balancedDeckMeal('Blueberry Walnut Chia Pudding', [
+    balancedDeckMeal('Hummus Egg Stack', [
         'category' => RecipeCategory::Breakfast,
         'meal_type' => MealType::Breakfast,
-        'total_calories' => 280,
+        'total_calories' => 290,
+    ]);
+    balancedDeckMeal('Blueberry Walnut Chia Pudding', [
+        'category' => RecipeCategory::Dessert,
+        'meal_type' => MealType::Dessert,
+        'total_calories' => 318,
     ]);
     balancedDeckMeal('Mediterranean Omelet', [
         'category' => RecipeCategory::Breakfast,
         'meal_type' => MealType::Breakfast,
         'total_calories' => 276,
+        'library_sort_order' => 500,
     ]);
     balancedDeckMeal('Tamarind Honey & Sesame Chicken w Garlicky Green Beans');
     balancedDeckMeal(BalancedCanonicalMealRecipeRefiner::ROSEMARY_GARLIC_CHICKEN_PLATE_NAME);
@@ -138,13 +144,12 @@ test('adapted menu lists canonical breakfasts and mains before demoted library m
     $breakfastNames = collect($menu['scalable_meals'] ?? [])
         ->filter(fn (array $m): bool => ($m['slot'] ?? '') === 'breakfast')
         ->pluck('name')
-        ->take(2)
+        ->take(1)
         ->values()
         ->all();
 
     expect($breakfastNames)->toBe([
-        'Blueberry Walnut Chia Pudding',
-        'Mediterranean Omelet',
+        'Hummus Egg Stack',
     ]);
 
     $mainNames = collect($menu['scalable_meals'] ?? [])

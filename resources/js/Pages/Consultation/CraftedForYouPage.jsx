@@ -11,6 +11,7 @@ import ChooseYourMeals, {
     MealSlotCarousel,
     buildConsultationDeckCatalog,
     consultationDeckOptionsForSlotKey,
+    consultationDessertDeckForDay,
     filterMealsByCategory,
     isFixedChoiceComplete,
     soupOfTheDayMeals,
@@ -388,7 +389,6 @@ function slotId(dayIdx, slotKey, index) {
  *   mealDetailViewUrlTemplate?: string;
  *   initialPlanTier?: number | null;
  *   initialPlanTiers?: number[];
- *   chiaBreakfastMealNames?: string[];
  *   disableAdaptedMenuFetch?: boolean;
  *   initialEditDraft?: {
  *     craftKey?: string;
@@ -415,7 +415,6 @@ export default function CraftedForYouPage({
     mealDetailViewUrlTemplate = '/api/meals/{id}/detail-view',
     initialPlanTier = null,
     initialPlanTiers = DEFAULT_PLAN_TIERS,
-    chiaBreakfastMealNames = [],
     disableAdaptedMenuFetch = false,
     initialEditDraft = null,
 } = {}) {
@@ -460,21 +459,6 @@ export default function CraftedForYouPage({
     );
     const [fullCraftSoupOptInByDay, setFullCraftSoupOptInByDay] = useState(
         () => initialRestoreDraft?.fullCraftSoupOptInByDay ?? {},
-    );
-    const chiaBreakfastNameSet = useMemo(
-        () => new Set(chiaBreakfastMealNames),
-        [chiaBreakfastMealNames],
-    );
-
-    const isChiaBreakfastMeal = useCallback(
-        (meal) => {
-            if (!meal || typeof meal.title !== 'string') {
-                return false;
-            }
-
-            return chiaBreakfastNameSet.has(meal.title);
-        },
-        [chiaBreakfastNameSet],
     );
 
     const availablePlanTiers = useMemo(
@@ -979,6 +963,8 @@ export default function CraftedForYouPage({
 
         const selectedFixedSlots = selectedFixedSlotsFromSelections(selectedByDay[calorieDay]);
 
+        const breakfastId = selectedByDay[calorieDay]?.breakfasts?.[0] ?? null;
+
         return JSON.stringify({
             craftKey,
             includeSoup: includeSoupForAdaptedMenu,
@@ -995,6 +981,7 @@ export default function CraftedForYouPage({
             scheduledSoupBaseline,
             dayOfWeek: calorieDay ?? null,
             planTier: isAdminPreview ? previewPlanTier : null,
+            breakfastId: breakfastId ?? null,
         });
     }, [
         craftKey,
@@ -1008,6 +995,7 @@ export default function CraftedForYouPage({
         scheduledSoupsByWeekday,
         isAdminPreview,
         previewPlanTier,
+        catalogMeals,
     ]);
 
     const adaptedMenuFetchParams = useMemo(() => {
@@ -1027,60 +1015,53 @@ export default function CraftedForYouPage({
             return { id, baselineCalories: baseline, caloriesNumber: baseline };
         };
 
-        const sideSaladMeal =
-            mealFromBaseline(dayFixedSelectionIds?.sideSaladId, selectedFixedBaselines.sideSalad)
-            ?? (dayFixedSelectionIds?.sideSaladId
-                ? findScheduledMeal(dayFixedSelectionIds.sideSaladId, scheduledDay?.sideSalads ?? [])
-                : scheduledDay?.sideSalads?.[0]);
-        const dessertMeal =
-            mealFromBaseline(dayFixedSelectionIds?.dessertId, selectedFixedBaselines.dessert)
-            ?? (dayFixedSelectionIds?.dessertId
-                ? findScheduledMeal(dayFixedSelectionIds.dessertId, scheduledDay?.desserts ?? [])
-                : scheduledDay?.desserts?.[0]);
-        const soupMeal =
-            mealFromBaseline(dayFixedSelectionIds?.soupId, selectedFixedBaselines.soup)
-            ?? (dayFixedSelectionIds?.soupId
-                ? findScheduledMeal(dayFixedSelectionIds.soupId, [
-                      ...(scheduledDay?.soup ?? []),
-                      ...scheduledSoups,
-                  ])
-                : scheduledDay?.soup?.[0] ?? scheduledSoups[0]);
-
         const selectedFixedSlots = selectedFixedSlotsFromSelections(selectedByDay[calorieDay]);
+        const planningFixedSlots =
+            selectedFixedSlots.length === FIXED_CHOICE_REQUIRED_COUNT ? selectedFixedSlots : undefined;
+
+        const sideSaladMeal =
+            planningFixedSlots?.includes('side_salad')
+                ? mealFromBaseline(dayFixedSelectionIds?.sideSaladId, selectedFixedBaselines.sideSalad)
+                    ?? (dayFixedSelectionIds?.sideSaladId
+                        ? findScheduledMeal(dayFixedSelectionIds.sideSaladId, scheduledDay?.sideSalads ?? [])
+                        : scheduledDay?.sideSalads?.[0])
+                : undefined;
+        const dessertMeal =
+            planningFixedSlots?.includes('dessert')
+                ? mealFromBaseline(dayFixedSelectionIds?.dessertId, selectedFixedBaselines.dessert)
+                    ?? (dayFixedSelectionIds?.dessertId
+                        ? findScheduledMeal(dayFixedSelectionIds.dessertId, scheduledDay?.desserts ?? [])
+                        : scheduledDay?.desserts?.[0])
+                : undefined;
+        const soupMeal =
+            planningFixedSlots?.includes('soup')
+                ? mealFromBaseline(dayFixedSelectionIds?.soupId, selectedFixedBaselines.soup)
+                    ?? (dayFixedSelectionIds?.soupId
+                        ? findScheduledMeal(dayFixedSelectionIds.soupId, [
+                              ...(scheduledDay?.soup ?? []),
+                              ...scheduledSoups,
+                          ])
+                        : scheduledDay?.soup?.[0] ?? scheduledSoups[0])
+                : undefined;
 
         const fixedPortion = fixedPortionCaloriesForAdapt(
             {
-                sideSalads: sideSaladMeal ? [sideSaladMeal] : scheduledDay?.sideSalads,
-                desserts: dessertMeal ? [dessertMeal] : scheduledDay?.desserts,
-                soup: soupMeal ? [soupMeal] : scheduledDay?.soup ?? scheduledSoups,
+                sideSalads: sideSaladMeal ? [sideSaladMeal] : undefined,
+                desserts: dessertMeal ? [dessertMeal] : undefined,
+                soup: soupMeal ? [soupMeal] : undefined,
             },
-            {
-                selectedFixedSlots:
-                    selectedFixedSlots.length === FIXED_CHOICE_REQUIRED_COUNT
-                        ? selectedFixedSlots
-                        : ['side_salad', 'dessert', 'soup'],
-            },
+            { selectedFixedSlots: planningFixedSlots },
         );
-
-        const breakfastId = selectedByDay[calorieDay]?.breakfasts?.[0] ?? null;
-        const selectedBreakfast =
-            (breakfastId ? findScheduledMeal(breakfastId, scheduledDay?.breakfasts ?? []) : null)
-            ?? (breakfastId ? catalogMeals.find((meal) => meal.id === breakfastId) : null)
-            ?? scheduledDay?.breakfasts?.[0]
-            ?? null;
-        const fixedChiaBreakfast = isChiaBreakfastMeal(selectedBreakfast);
 
         return {
             craftKey,
             includeSoup: includeSoupForAdaptedMenu,
-            selectedFixedSlots:
-                selectedFixedSlots.length > 0 ? selectedFixedSlots : undefined,
-            soupCalories: fixedPortion.soupCalories || soupCaloriesForAdaptedMenu,
-            sideSaladCalories: fixedPortion.sideSaladCalories,
-            dessertCalories: fixedPortion.dessertCalories,
+            selectedFixedSlots: planningFixedSlots,
+            soupCalories: fixedPortion.soupCalories || undefined,
+            sideSaladCalories: fixedPortion.sideSaladCalories || undefined,
+            dessertCalories: fixedPortion.dessertCalories || undefined,
             dayOfWeek: calorieDay,
             planTier: isAdminPreview ? previewPlanTier : undefined,
-            fixedChiaBreakfast: fixedChiaBreakfast || undefined,
         };
     }, [
         calorieDay,
@@ -1095,7 +1076,6 @@ export default function CraftedForYouPage({
         catalogMeals,
         isAdminPreview,
         previewPlanTier,
-        isChiaBreakfastMeal,
     ]);
 
     const resolveMealDetailQueryString = useCallback(() => {
@@ -1193,6 +1173,50 @@ export default function CraftedForYouPage({
         [catalogMealsWithBalancedMains],
     );
 
+    useEffect(() => {
+        if (!craft || (craft.key !== 'full' && craft.key !== 'day')) {
+            return;
+        }
+
+        if (sortedSelectedDays.length === 0) {
+            return;
+        }
+
+        setSelectedByDay((prev) => {
+            let changed = false;
+            /** @type {Record<number, import('../../consultation/consultationDraft.js').DaySelections>} */
+            const next = { ...prev };
+
+            for (const day of sortedSelectedDays) {
+                const current = next[day] ?? {
+                    breakfasts: [],
+                    meals: [],
+                    sideSalads: [],
+                    desserts: [],
+                    soup: [],
+                };
+
+                const assigned = scheduledFullCraftCategoryMealsForDay(scheduledFullCraftByWeekday, day);
+                const scheduledBreakfast = assigned?.breakfasts?.[0];
+                const deckBreakfast = consultationDeckOptionsForSlotKey(catalogMeals, 'breakfast')[0];
+                const breakfast = scheduledBreakfast ?? deckBreakfast;
+
+                if (!breakfast?.id) {
+                    continue;
+                }
+
+                if (current.breakfasts?.[0] === breakfast.id) {
+                    continue;
+                }
+
+                next[day] = { ...current, breakfasts: [breakfast.id] };
+                changed = true;
+            }
+
+            return changed ? next : prev;
+        });
+    }, [craft, sortedSelectedDays, scheduledFullCraftByWeekday, catalogMeals]);
+
     const assignedMealsForCalorieDay = useMemo(() => {
         if (!calorieDay || !usesWeeklyScheduledMenu) {
             return null;
@@ -1237,16 +1261,8 @@ export default function CraftedForYouPage({
         };
         const ids = [...s.breakfasts, ...s.meals, ...s.sideSalads, ...s.desserts, ...s.soup];
 
-        if (assignedMealsForCalorieDay) {
-            for (const meals of Object.values(assignedMealsForCalorieDay)) {
-                for (const meal of meals ?? []) {
-                    byId.set(meal.id, meal);
-                }
-            }
-        }
-
         return ids.map((id) => byId.get(id)).filter(Boolean);
-    }, [calorieDay, selectedByDay, catalogMealsWithBalancedMains, assignedMealsForCalorieDay]);
+    }, [calorieDay, selectedByDay, catalogMealsWithBalancedMains]);
 
     const dayCaloriesTotal = useMemo(() => {
         return selectedMealCardsForDay.reduce((acc, m) => acc + (m?.caloriesNumber ?? 0), 0);
@@ -1274,7 +1290,7 @@ export default function CraftedForYouPage({
             ];
         }
         return craft.slots
-            .filter((s) => s.id !== 'fixedChoice')
+            .filter((s) => s.id !== 'fixedChoice' && s.id !== 'breakfast')
             .map((s) => ({
             key: s.id,
             label:
@@ -1315,12 +1331,16 @@ export default function CraftedForYouPage({
             return hasMeal && hasSide;
         }
 
+        const breakfastSlot = craft.slots.find((slot) => slot.id === 'breakfast');
+        const hasBreakfast =
+            !breakfastSlot || (s.breakfasts?.length ?? 0) === breakfastSlot.count;
+
         const scalableComplete = requiredSlotsByCraft.every(
             (slot) => (s[slot.selectionKey]?.length ?? 0) === slot.count,
         );
         const hasFixedChoiceSlot = craft.slots.some((slot) => slot.id === 'fixedChoice');
 
-        return scalableComplete && (!hasFixedChoiceSlot || isFixedChoiceComplete(s));
+        return hasBreakfast && scalableComplete && (!hasFixedChoiceSlot || isFixedChoiceComplete(s));
     }, [craft, curationDay, requiredSlotsByCraft, selectedByDay, businessSideChoiceByDay]);
 
     const curationIncompleteMessage = useMemo(() => {
@@ -1649,7 +1669,28 @@ export default function CraftedForYouPage({
 
                             const daySelections = selectedByDay[day] ?? emptyDaySelections;
 
-                            const dayAssignedMeals = assignedMealsForCalorieDay;
+                            let dayAssignedMeals = null;
+                            if (usesWeeklyScheduledMenu && craft?.key === 'full') {
+                                const assigned = scheduledFullCraftCategoryMealsForDay(
+                                    scheduledFullCraftByWeekday,
+                                    day,
+                                );
+                                if (assigned) {
+                                    const selectedMainIds = daySelections.meals ?? [];
+                                    dayAssignedMeals =
+                                        selectedMainIds.length === 0
+                                            ? assigned
+                                            : {
+                                                  ...assigned,
+                                                  meals: balanceSelectedMainMealCards(
+                                                      assigned.meals ?? [],
+                                                      selectedMainIds,
+                                                      mainProteinTarget,
+                                                      mainSlotTargetCalories,
+                                                  ),
+                                              };
+                                }
+                            }
 
                             const toggle = (key, max) => (meal) => {
                                 setSelectedByDay((prev) => {
@@ -1730,7 +1771,7 @@ export default function CraftedForYouPage({
                                         : 50
                                 }
                                 layout={craft?.key === 'full' ? 'categories' : 'custom'}
-                                meals={craft?.key === 'full' && !usesWeeklyScheduledMenu ? consultationDeckMeals : []}
+                                meals={craft?.key === 'full' ? consultationDeckMeals : []}
                                 assignedMealsByCategory={
                                     craft?.key === 'full' ? dayAssignedMeals ?? undefined : undefined
                                 }
@@ -1738,6 +1779,10 @@ export default function CraftedForYouPage({
                                 onToggleCategory={
                                     craft?.key === 'full'
                                         ? (categoryKey, meal) => {
+                                              if (categoryKey === 'breakfasts') {
+                                                  return;
+                                              }
+
                                               if (FIXED_CHOICE_CATEGORY_KEYS.includes(categoryKey)) {
                                                   toggleFixedChoice(categoryKey, meal);
                                                   return;
@@ -1769,7 +1814,7 @@ export default function CraftedForYouPage({
                                 scheduledSoupMeals={scheduledSoupForDay(curationDay)}
                                 hintText={
                                     usesWeeklyScheduledMenu
-                                        ? "Today's options rotate each weekday — pick your breakfast, meals, and sides."
+                                        ? "Today's options rotate each weekday — pick your meals and sides."
                                         : undefined
                                 }
                                 onViewDetails={openMealDetail}
@@ -1790,6 +1835,18 @@ export default function CraftedForYouPage({
                                             const pickCards = (slotKey) => {
                                                 if (slotKey === 'soup') {
                                                     return scheduledSoupForDay(day).map((meal) => meal);
+                                                }
+
+                                                if (slotKey === 'dessert') {
+                                                    const assigned = scheduledFullCraftCategoryMealsForDay(
+                                                        scheduledFullCraftByWeekday,
+                                                        day,
+                                                    );
+
+                                                    return consultationDessertDeckForDay(
+                                                        catalogMeals,
+                                                        assigned?.desserts ?? [],
+                                                    );
                                                 }
 
                                                 return consultationDeckOptionsForSlotKey(catalogMeals, slotKey);
@@ -1874,8 +1931,32 @@ export default function CraftedForYouPage({
                                                 );
                                             }
 
+                                            const hasBreakfastSlot = craft?.slots.some((slot) => slot.id === 'breakfast');
+                                            const assignedForDay = scheduledFullCraftCategoryMealsForDay(
+                                                scheduledFullCraftByWeekday,
+                                                day,
+                                            );
+                                            const breakfastCards =
+                                                assignedForDay?.breakfasts?.length
+                                                    ? assignedForDay.breakfasts
+                                                    : consultationDeckOptionsForSlotKey(catalogMeals, 'breakfast');
+
                                             return (
                                                 <>
+                                                    {hasBreakfastSlot ? (
+                                                        <MealSlotCarousel
+                                                            title="Your Breakfast"
+                                                            deckScopeKey={`${day}-breakfast`}
+                                                            cards={breakfastCards}
+                                                            selectedIds={selections.breakfasts}
+                                                            maxSelected={1}
+                                                            readOnly
+                                                            showSelectedState
+                                                            onSelect={() => {}}
+                                                            onViewDetails={openMealDetail}
+                                                        />
+                                                    ) : null}
+
                                                     {requiredSlotsByCraft.map((slot) => (
                                                         <MealSlotCarousel
                                                             key={slotId(day, slot.key, 1)}

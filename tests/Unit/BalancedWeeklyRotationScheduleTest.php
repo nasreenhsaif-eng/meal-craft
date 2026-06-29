@@ -4,12 +4,27 @@ use App\Enums\MealPlanSlotType;
 use App\Services\BalancedCanonicalMealRecipeRefiner;
 use App\Services\BalancedWeeklyRotationSchedule;
 
-test('balanced weekly rotation assigns different chia breakfasts each day', function (): void {
+test('balanced weekly rotation assigns one savory egg breakfast per day', function (): void {
     $dayOne = BalancedWeeklyRotationSchedule::mealNameForDay(1, MealPlanSlotType::Breakfast, 1);
     $dayTwo = BalancedWeeklyRotationSchedule::mealNameForDay(2, MealPlanSlotType::Breakfast, 1);
 
-    expect($dayOne)->not->toBe($dayTwo)
-        ->and($dayOne)->toBe('Blueberry Walnut Chia Pudding');
+    expect($dayOne)->toBe('Mediterranean Omelet')
+        ->and($dayTwo)->toBe('Deconstructed Shakshuka Skillet')
+        ->and($dayOne)->not->toBe($dayTwo);
+});
+
+test('balanced weekly rotation rejects a second breakfast slot', function (): void {
+    expect(fn () => BalancedWeeklyRotationSchedule::mealNameForDay(1, MealPlanSlotType::Breakfast, 2))
+        ->toThrow(InvalidArgumentException::class);
+});
+
+test('balanced weekly rotation assigns chia desserts in dessert slot one', function (): void {
+    $dayOne = BalancedWeeklyRotationSchedule::mealNameForDay(1, MealPlanSlotType::Dessert, 1);
+    $dayTwo = BalancedWeeklyRotationSchedule::mealNameForDay(2, MealPlanSlotType::Dessert, 1);
+
+    expect($dayOne)->toBe('Blueberry Walnut Chia Pudding')
+        ->and($dayTwo)->toBe('Mango Pumpkin Seed Chia Pudding')
+        ->and($dayOne)->not->toBe($dayTwo);
 });
 
 test('balanced weekly rotation keeps fixed second choices per slot pattern', function (): void {
@@ -46,7 +61,7 @@ test('balanced weekly rotation alternates salmon and beef mains each day', funct
         ->and(BalancedWeeklyRotationSchedule::mealNameForDay(2, MealPlanSlotType::Main, 3))
         ->toBe('Grilled Beef Steak Ratatouille & Saffron rice')
         ->and(BalancedWeeklyRotationSchedule::mealNameForDay(3, MealPlanSlotType::Main, 3))
-        ->toBe('Citrus Herb Salmon')
+        ->toBe('Citrus Herb Salmon with Asparagus & Sweet Potato')
         ->and(BalancedWeeklyRotationSchedule::mealNameForDay(4, MealPlanSlotType::Main, 3))
         ->toBe('Beef Bibimbap')
         ->and(BalancedWeeklyRotationSchedule::mealNameForDay(6, MealPlanSlotType::Main, 3))

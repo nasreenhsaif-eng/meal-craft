@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Enums\MealType;
+use App\Enums\RecipeCategory;
 use App\Models\Ingredient;
 use App\Models\Meal;
 use App\Support\MealInstructionsText;
@@ -11,16 +13,16 @@ use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
 /**
- * Standardizes Balanced rotation chia breakfasts on {@see Coconut Chia Pudding (Base)}
- * with date-syrup-sweetened coconut chia and per-meal toppings only (max 200 kcal each).
+ * Standardizes Balanced rotation chia desserts on {@see Coconut Chia Pudding (Base)}
+ * with a 120g kitchen portion (~300+ kcal); plan tier rebalance handles actual calories.
  */
-final class BalancedChiaBreakfastRecipeRefiner
+final class BalancedChiaDessertRecipeRefiner
 {
     public const COCONUT_CHIA_BASE_NAME = 'Coconut Chia Pudding (Base)';
 
-    public const COCONUT_CHIA_BASE_GRAMS = 53.0;
+    public const COCONUT_CHIA_BASE_GRAMS = 120.0;
 
-    public const MAX_CALORIES = 200.0;
+    public const MIN_CALORIES = 280.0;
 
     /**
      * @return list<string>
@@ -113,13 +115,14 @@ final class BalancedChiaBreakfastRecipeRefiner
 
         $fresh = $meal->fresh(['ingredients']);
         $nutrition = RecipeNutritionCalculator::fromMeal($fresh);
+        $calories = (float) ($nutrition['calories'] ?? 0);
 
-        if ((float) ($nutrition['calories'] ?? 0) > self::MAX_CALORIES + 0.5) {
+        if ($calories < self::MIN_CALORIES - 0.5) {
             throw new InvalidArgumentException(sprintf(
-                '%s exceeds %gkcal cap (%.1f kcal).',
+                '%s is below %gkcal minimum (%.1f kcal).',
                 $meal->name,
-                self::MAX_CALORIES,
-                (float) $nutrition['calories'],
+                self::MIN_CALORIES,
+                $calories,
             ));
         }
 
@@ -132,6 +135,8 @@ final class BalancedChiaBreakfastRecipeRefiner
         $updates = array_merge(
             Meal::nutritionSummaryToPersistedAttributes($nutrition),
             [
+                'meal_type' => MealType::Dessert,
+                'category' => RecipeCategory::Dessert,
                 'nutrition_aggregates_synced' => true,
                 'diet_tags' => array_merge($dietTags, ['Vegan']),
                 'instructions' => MealInstructionsText::normalizeForStorage(implode("\n", $instructionLines)),
