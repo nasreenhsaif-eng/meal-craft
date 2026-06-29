@@ -6,6 +6,7 @@ use App\Models\Ingredient;
 use App\Models\Meal;
 use App\Support\MealInstructionsText;
 use App\Support\MealLibraryEditGuard;
+use App\Support\StandardMeatPortion;
 use App\Support\WholeFoodDietPolicy;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -139,7 +140,7 @@ final class BalancedTandooriMealRecipeRefiner
         return [
             'Tandoori Chicken Salad' => [
                 'ingredients' => [
-                    self::TANDOORI_CHICKEN_BASE => 115,
+                    self::TANDOORI_CHICKEN_BASE => StandardMeatPortion::GRAMS,
                     'Romaine Lettuce' => 55,
                     'Cucumber' => 45,
                     'Cherry Tomatoes' => 45,
@@ -161,7 +162,7 @@ final class BalancedTandooriMealRecipeRefiner
             ],
             'Tandoori Coconut Mint Salad' => [
                 'ingredients' => [
-                    self::TANDOORI_CHICKEN_BASE => 115,
+                    self::TANDOORI_CHICKEN_BASE => StandardMeatPortion::GRAMS,
                     'Romaine Lettuce' => 50,
                     'Cucumber' => 45,
                     'Cherry Tomatoes' => 45,
@@ -184,7 +185,7 @@ final class BalancedTandooriMealRecipeRefiner
             ],
             'Grilled Chicken Tikka bowl w Quinoa & Mint Sauce' => [
                 'ingredients' => [
-                    self::TANDOORI_CHICKEN_BASE => 95,
+                    self::TANDOORI_CHICKEN_BASE => StandardMeatPortion::GRAMS,
                     'Cooked Quinoa (Base)' => 84,
                     'Cabbage (Purple)' => 30,
                     'Carrots' => 20,
@@ -210,7 +211,7 @@ final class BalancedTandooriMealRecipeRefiner
             ],
             'Grilled Chicken Tikka Salad w Quinoa & Cilantro Lime Dressing' => [
                 'ingredients' => [
-                    self::TANDOORI_CHICKEN_BASE => 95,
+                    self::TANDOORI_CHICKEN_BASE => StandardMeatPortion::GRAMS,
                     'Cooked Quinoa (Base)' => 84,
                     'Cabbage (Purple)' => 30,
                     'Carrots' => 20,

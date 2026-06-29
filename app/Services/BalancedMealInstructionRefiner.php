@@ -227,9 +227,10 @@ final class BalancedMealInstructionRefiner
                 'Plate roasted sweet potato, spinach, and mushrooms. Top with sliced chicken and serve warm.',
             ]),
             'Rosemary Chicken Rocca Salad' => $this->steps([
-                'Grill or pan-sear chicken with rosemary and garlic until golden then in the oven for 20 minutes exactly, then Rest and slice.',
-                'Toss rocca and cucumber with a little olive oil and lemon.',
-                'Plate greens. Top with chicken and dressing from the recipe.',
+                'Grill or pan-sear Rosemary Garlic Chicken (Base) until golden then in the oven for 20 minutes exactly, then Rest and slice.',
+                'Toss rocca, cucumber, and cherry tomatoes in a bowl.',
+                'Top with chicken and walnuts.',
+                SaladDressingMealRefiner::SERVE_DRESSING_ON_THE_SIDE,
             ]),
             'Turmeric Chicken Kale Salad' => $this->steps([
                 'Rub chicken with turmeric and garlic. Grill or pan-sear chicken until golden then in the oven for 20 minutes exactly, then Rest and slice.',
@@ -250,10 +251,10 @@ final class BalancedMealInstructionRefiner
                 SaladDressingMealRefiner::SERVE_DRESSING_ON_THE_SIDE,
             ]),
             'Mediterranean Crunch Salad' => $this->steps([
-                'Dice cucumber, tomatoes, and pepper.',
-                'Grill or pan-sear chicken until golden then in the oven for 20 minutes exactly, then Rest and slice.',
-                'Combine vegetables with olives and lemon dressing.',
-                'Top with chicken. Serve chilled or at room temperature.',
+                'Dice cucumber, cherry tomatoes, red pepper, and red onion.',
+                'Grill or pan-sear Rosemary Garlic Chicken (Base) until golden then in the oven for 20 minutes exactly, then Rest and slice.',
+                'Toss romaine, rocca, vegetables, basil, olives, walnuts, and pumpkin seeds. Top with chicken.',
+                SaladDressingMealRefiner::SERVE_DRESSING_ON_THE_SIDE,
             ]),
             'Tandoori Chicken Salad' => $this->steps([
                 'Grill or pan-sear Tandoori Chicken (Base) until golden then in the oven for 20 minutes exactly, then Rest and slice.',
@@ -346,10 +347,11 @@ final class BalancedMealInstructionRefiner
             ]),
             'Vegan Harissa Roasted Cauliflower & Chickpea Salad w Tahini Dressing' => $this->steps([
                 'Prepare Cooked Chickpeas (Base) per base recipe instructions.',
-                'Toss cauliflower and cooked chickpeas with Harissa Paste (Base) and oil.',
-                'Roast at 200°C for 25 minutes until crisp.',
-                'Whisk tahini with lemon and water for dressing.',
-                'Toss roasted mix with greens and dressing. Serve warm or at room temperature.',
+                'Toss cauliflower, beetroot, and chickpeas with Harissa Paste (Base) and olive oil.',
+                'Roast at 200°C for 25 minutes until crisp and charred at the edges.',
+                'Toss roasted vegetables with shallots, dill, mint, sunflower seeds, and black seeds.',
+                'Serve warm or at room temperature.',
+                SaladDressingMealRefiner::SERVE_DRESSING_ON_THE_SIDE,
             ]),
             'Vegan Curry Lentil Salad' => $this->steps([
                 'Cook lentils until tender but not mushy. Drain and cool.',

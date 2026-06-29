@@ -8,6 +8,13 @@ namespace App\Support;
  */
 final class BaseRecipeInstructionsText
 {
+    /** Shared rationale appended to overnight-soak step 1 on pulse, rice, and quinoa base recipes. */
+    public const OVERNIGHT_SOAK_RATIONALE_BEANS = '(Soak overnight for better nutrient absorption by deactivating phytic acid, to improve digestibility, and to reduce cooking time.)';
+
+    public const OVERNIGHT_SOAK_RATIONALE_RICE = '(Soak overnight for better nutrient absorption by deactivating phytic acid, to improve digestibility, remove bitterness, and to reduce cooking time.)';
+
+    public const OVERNIGHT_SOAK_RATIONALE_QUINOA = '(Soak overnight for better nutrient absorption by deactivating phytic acid, to improve digestibility, remove bitterness, and to make it faster and fluffier when cooking.)';
+
     /**
      * @return list<string>
      */

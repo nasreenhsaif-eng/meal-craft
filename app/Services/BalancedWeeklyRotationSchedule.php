@@ -101,6 +101,7 @@ final class BalancedWeeklyRotationSchedule
         'Persian Herb Beef Stew',
         'Chili Beef Stuffed Peppers',
         'Seared Beef Liver w Caramelized Onion, Spinach & Chimichurri',
+        'Sautéed Chicken Liver w Pomegranate Molasses, Quinoa Flatbread & Rocca',
         'Beef & Liver Kefta w Herb Salad & Tahini',
     ];
 

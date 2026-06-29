@@ -19,22 +19,27 @@ export const LIVER_K2_MEAL_OPTIONS: LiverMealOption[] = [
     {
         title: 'Seared Beef Liver w Caramelized Onion, Spinach & Chimichurri',
         description: 'Dedicated liver main — the strongest K2 boost in the rotation.',
-        k2Note: '50 g beef liver per serving',
+        k2Note: '150 g beef liver per serving',
+    },
+    {
+        title: 'Sautéed Chicken Liver w Pomegranate Molasses, Quinoa Flatbread & Rocca',
+        description: 'Pan-sautéed chicken liver finished with pomegranate molasses — rich in B12, iron, and vitamin A.',
+        k2Note: '150 g chicken liver per serving',
     },
     {
         title: 'Beef & Liver Kefta w Herb Salad & Tahini',
         description: 'Spiced patties with minced liver blended into the beef.',
-        k2Note: '22 g beef liver per serving',
+        k2Note: '22 g beef liver + 128 g ground beef (150 g total meat)',
     },
     {
         title: 'Beef Bibimbap',
-        description: 'Korean-style bowl with seasoned ground beef and a liver blend.',
-        k2Note: '20 g beef liver blended into ground beef',
+        description: 'Korean-style bowl with seasoned ground beef.',
+        k2Note: '150 g ground beef (no liver blend)',
     },
     {
         title: 'Chili Beef Stuffed Peppers',
         description: 'Savory stuffed peppers with liver blended into the beef filling.',
-        k2Note: '20 g beef liver blended into ground beef',
+        k2Note: '20 g beef liver + 130 g ground beef (150 g total meat)',
     },
 ];
 

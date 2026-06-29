@@ -6,6 +6,7 @@ use App\Models\Ingredient;
 use App\Models\Meal;
 use App\Support\MealLibraryBulkNutrition;
 use App\Support\MealLibraryEditGuard;
+use App\Support\StandardMeatPortion;
 use App\Support\WholeFoodDietPolicy;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -292,7 +293,7 @@ final class BalancedRotationMealRecipeRefiner
         return [
             'Spicy Harissa Grilled Chicken w Roasted Sweet Potato & Zucchini' => [
                 'ingredients' => [
-                    'Chicken Breast' => 110,
+                    'Chicken Breast' => StandardMeatPortion::GRAMS,
                     'Harissa Paste (Base)' => 6.3,
                     'Sweet Potato' => 90,
                     'Zucchini' => 80,
@@ -306,7 +307,7 @@ final class BalancedRotationMealRecipeRefiner
             ],
             self::ROASTED_POMEGRANATE_CHICKEN_NAME => [
                 'ingredients' => [
-                    'Chicken Breast' => 110,
+                    'Chicken Breast' => StandardMeatPortion::GRAMS,
                     'Pomegranate Sumac Sauce (Base)' => 40,
                     'Red Onion' => 30,
                     'Turmeric Rice (Base)' => 70,
@@ -319,7 +320,7 @@ final class BalancedRotationMealRecipeRefiner
             ],
             'Pepper Chicken in Creamy Cajun Sauce w Roasted Potato' => [
                 'ingredients' => [
-                    'Chicken Breast' => 115,
+                    'Chicken Breast' => StandardMeatPortion::GRAMS,
                     'Potato' => 90,
                     'Bell Pepper (Red)' => 40,
                     'Cherry Tomatoes' => 30,

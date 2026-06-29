@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Ingredient;
 use App\Models\Meal;
 use App\Support\MealLibraryEditGuard;
+use App\Support\StandardMeatPortion;
 use App\Support\WholeFoodDietPolicy;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -111,7 +112,7 @@ final class BalancedComplexCarbRecipeRefiner
         return [
             'Citrus Herb Salmon' => [
                 'ingredients' => [
-                    'Salmon (Raw)' => 95,
+                    'Salmon (Raw)' => StandardMeatPortion::GRAMS,
                     'Sweet Potato' => 90,
                     'Asparagus' => 55,
                     'Lemon Juice' => 10,
@@ -122,7 +123,7 @@ final class BalancedComplexCarbRecipeRefiner
             ],
             'Grilled Salmon Mango Salsa' => [
                 'ingredients' => [
-                    'Salmon (Raw)' => 110,
+                    'Salmon (Raw)' => StandardMeatPortion::GRAMS,
                     'Wild Rice (Cooked)' => 90,
                     'Mango' => 50,
                     'Bell Pepper (Red)' => 30,
@@ -134,7 +135,7 @@ final class BalancedComplexCarbRecipeRefiner
             ],
             'Grilled Beef Steak Ratatouille & Saffron rice' => [
                 'ingredients' => [
-                    'Beef Sirloin' => 85,
+                    'Beef Sirloin' => StandardMeatPortion::GRAMS,
                     'Saffron Rice (Base)' => 75,
                     'Zucchini' => 45,
                     'Bell Pepper (Red)' => 40,
@@ -151,7 +152,7 @@ final class BalancedComplexCarbRecipeRefiner
             ],
             'Beef Bibimbap' => [
                 'ingredients' => [
-                    'Beef Ground Lean' => 88,
+                    'Beef Ground Lean' => StandardMeatPortion::GRAMS,
                     'Cooked Quinoa (Base)' => 84,
                     'Spinach (Fresh)' => 50,
                     'Carrots' => 40,
@@ -165,7 +166,7 @@ final class BalancedComplexCarbRecipeRefiner
             ],
             'Persian Herb Beef Stew' => [
                 'ingredients' => [
-                    'Beef Chuck Roast' => 88,
+                    'Beef Chuck Roast' => StandardMeatPortion::GRAMS,
                     'Cannellini Beans' => 70,
                     'Quinoa Bread (Base)' => 50,
                     'Spinach (Fresh)' => 35,
@@ -179,7 +180,7 @@ final class BalancedComplexCarbRecipeRefiner
             ],
             'Chili Beef Stuffed Peppers' => [
                 'ingredients' => [
-                    'Beef Ground Lean' => 88,
+                    'Beef Ground Lean' => StandardMeatPortion::GRAMS,
                     'Cooked Brown Basmati Rice (Base)' => 138,
                     'Bell Pepper (Red)' => 105,
                     'White Onion' => 28,
@@ -192,7 +193,7 @@ final class BalancedComplexCarbRecipeRefiner
             ],
             'Grilled Chicken Chimichurri' => [
                 'ingredients' => [
-                    'Chicken Breast' => 120,
+                    'Chicken Breast' => StandardMeatPortion::GRAMS,
                     'Sweet Potato' => 85,
                     'Broccoli' => 60,
                     'Parsley' => 8,

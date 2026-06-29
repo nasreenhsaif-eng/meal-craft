@@ -6,6 +6,7 @@ use App\Models\Ingredient;
 use App\Models\Meal;
 use App\Support\MealLibraryBulkNutrition;
 use App\Support\MealLibraryEditGuard;
+use App\Support\StandardMeatPortion;
 use App\Support\WholeFoodDietPolicy;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -245,7 +246,7 @@ final class BalancedCanonicalMealRecipeRefiner
             ],
             'Tamarind Honey & Sesame Chicken w Garlicky Green Beans' => [
                 'ingredients' => [
-                    'Chicken Breast' => 110,
+                    'Chicken Breast' => StandardMeatPortion::GRAMS,
                     'Tamarind Paste' => 30,
                     'Honey (Raw)' => 5,
                     'Ginger (Raw)' => 2,
@@ -263,7 +264,7 @@ final class BalancedCanonicalMealRecipeRefiner
             ],
             self::ROSEMARY_GARLIC_CHICKEN_PLATE_NAME => [
                 'ingredients' => [
-                    'Rosemary Garlic Chicken (Base)' => 95,
+                    'Rosemary Garlic Chicken (Base)' => StandardMeatPortion::GRAMS,
                     'Sweet Potato' => 85,
                     'Spinach (Fresh)' => 55,
                     'Mushrooms' => 45,
@@ -274,7 +275,7 @@ final class BalancedCanonicalMealRecipeRefiner
             ],
             self::BAKED_SALMON_NAME => [
                 'ingredients' => [
-                    'Salmon' => 125,
+                    'Salmon' => StandardMeatPortion::GRAMS,
                     'Steamed Basmati Rice (Base)' => 75,
                     'Broccoli' => 60,
                     'Fermented Chimichurri (Base)' => 22,

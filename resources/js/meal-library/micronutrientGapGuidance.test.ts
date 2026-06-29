@@ -65,7 +65,7 @@ describe('buildDayMicronutrientGuidance', () => {
         const k2 = guidance.find((item) => item.id === 'vitamin-k2');
 
         expect(k2).toBeDefined();
-        expect(k2?.liverMeals?.length).toBe(4);
+        expect(k2?.liverMeals?.length).toBe(5);
         expect(k2?.actions?.[0]?.type).toBe('edit_meals');
     });
 

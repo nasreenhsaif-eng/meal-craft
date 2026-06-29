@@ -7,6 +7,7 @@ use App\Models\Meal;
 use App\Support\MealInstructionsText;
 use App\Support\MealLibraryEditGuard;
 use App\Support\SaladMealPresentation;
+use App\Support\StandardMeatPortion;
 use App\Support\WholeFoodDietPolicy;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -340,10 +341,10 @@ final class SaladDressingMealRefiner
             ],
             'Rosemary Chicken Rocca Salad' => [
                 'salad_ingredients' => [
-                    'Chicken Breast' => 110,
+                    'Rosemary Garlic Chicken (Base)' => StandardMeatPortion::GRAMS,
                     'Rocca' => 50,
                     'Cucumber' => 55,
-                    'Cherry Tomatoes' => 45,
+                    'Roasted Cherry Tomato (Base)' => 45,
                     'Rosemary (Fresh)' => 2,
                     'Garlic (Raw)' => 3,
                     'Walnuts' => 6,
@@ -352,7 +353,7 @@ final class SaladDressingMealRefiner
                     'Red Pepper Dressing (Base)' => 20,
                 ],
                 'salad_instructions' => [
-                    'Grill or pan-sear chicken with rosemary and garlic until golden then in the oven for 20 minutes exactly, then Rest and slice.',
+                    'Grill or pan-sear Rosemary Garlic Chicken (Base) until golden then in the oven for 20 minutes exactly, then Rest and slice.',
                     'Toss rocca, cucumber, and cherry tomatoes in a bowl.',
                     'Top with chicken and walnuts.',
                     self::SERVE_DRESSING_ON_THE_SIDE,
@@ -361,7 +362,7 @@ final class SaladDressingMealRefiner
             ],
             'Turmeric Chicken Kale Salad' => [
                 'salad_ingredients' => [
-                    'Chicken Breast' => 110,
+                    'Chicken Breast' => StandardMeatPortion::GRAMS,
                     'Kale' => 50,
                     'Carrots' => 40,
                     'Cucumber' => 40,
@@ -383,7 +384,7 @@ final class SaladDressingMealRefiner
             ],
             'Chicken Thai Mango Salad' => [
                 'salad_ingredients' => [
-                    'Chicken Breast' => 110,
+                    'Chicken Breast' => StandardMeatPortion::GRAMS,
                     'Cabbage (Purple)' => 75,
                     'Cucumber' => 45,
                     'Mango' => 55,
@@ -406,29 +407,32 @@ final class SaladDressingMealRefiner
             ],
             'Mediterranean Crunch Salad' => [
                 'salad_ingredients' => [
-                    'Chicken Breast' => 110,
+                    'Rosemary Garlic Chicken (Base)' => StandardMeatPortion::GRAMS,
                     'Romaine Lettuce' => 45,
+                    'Rocca' => 45,
                     'Cucumber' => 55,
                     'Cherry Tomatoes' => 45,
                     'Bell Pepper (Red)' => 35,
                     'Red Onion' => 15,
-                    'Fresh Mint' => 3,
+                    'Fresh Basil' => 3,
                     'Kalamata Olives' => 15,
+                    'Walnuts' => 10,
+                    'Pumpkin Seeds' => 10,
                 ],
                 'dressing_ingredients' => [
                     self::CLASSIC_LEMON_GARLIC_DRESSING => 12,
                 ],
                 'salad_instructions' => [
-                    'Dice cucumber, tomatoes, pepper, and red onion.',
-                    'Grill or pan-sear chicken until golden then in the oven for 20 minutes exactly, then Rest and slice.',
-                    'Toss romaine, vegetables, mint, and olives. Top with chicken.',
+                    'Dice cucumber, cherry tomatoes, red pepper, and red onion.',
+                    'Grill or pan-sear Rosemary Garlic Chicken (Base) until golden then in the oven for 20 minutes exactly, then Rest and slice.',
+                    'Toss romaine, rocca, vegetables, basil, olives, walnuts, and pumpkin seeds. Top with chicken.',
                     self::SERVE_DRESSING_ON_THE_SIDE,
                 ],
                 'diet_tags' => $wholeFoodTags,
             ],
             'Blackened Chicken, Grilled Peppers & Onion Salad w Quinoa, Kale & Mustard Dressing' => [
                 'salad_ingredients' => [
-                    'Chicken Breast' => 120,
+                    'Chicken Breast' => StandardMeatPortion::GRAMS,
                     'Cooked Quinoa (Base)' => 84,
                     'Kale' => 40,
                     'Bell Pepper (Red)' => 40,
@@ -518,21 +522,24 @@ final class SaladDressingMealRefiner
             'Vegan Harissa Roasted Cauliflower & Chickpea Salad w Tahini Dressing' => [
                 'salad_ingredients' => [
                     'Cauliflower' => 150,
+                    'Beetroot' => 100,
                     'Cooked Chickpeas (Base)' => 75,
                     'Shallots' => 20,
                     'Harissa Paste (Base)' => 5,
                     'Olive Oil (Extra Virgin)' => 5,
                     'Fresh Mint' => 3,
                     'Dill (Fresh)' => 2,
+                    'Sunflower Seeds' => 10,
+                    'Black Seeds' => 5,
                 ],
                 'dressing_ingredients' => [
                     'Lemon-Tahini Dressing (Base)' => 35,
                 ],
                 'salad_instructions' => [
                     'Prepare Cooked Chickpeas (Base) per base recipe instructions.',
-                    'Toss cauliflower and cooked chickpeas with Harissa Paste (Base) and oil.',
-                    'Roast at 200°C for 25 minutes until crisp.',
-                    'Toss roasted vegetables with herbs.',
+                    'Toss cauliflower, beetroot, and chickpeas with Harissa Paste (Base) and olive oil.',
+                    'Roast at 200°C for 25 minutes until crisp and charred at the edges.',
+                    'Toss roasted vegetables with shallots, dill, mint, sunflower seeds, and black seeds.',
                     'Serve warm or at room temperature.',
                     self::SERVE_DRESSING_ON_THE_SIDE,
                 ],
