@@ -80,7 +80,7 @@ export function fixedPortionCaloriesForAdapt(grouped, options = {}) {
     const soupMeal = grouped?.soup?.[0];
 
     const valueFor = (slot, meal) => {
-        if (!selected.includes(slot)) {
+        if (!activeSlots.includes(slot)) {
             return 0;
         }
 
