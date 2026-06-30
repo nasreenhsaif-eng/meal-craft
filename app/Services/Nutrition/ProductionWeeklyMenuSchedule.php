@@ -112,7 +112,13 @@ final class ProductionWeeklyMenuSchedule
                     continue;
                 }
 
-                $adapted = AdaptedMenuBuilder::adaptMealForProfile($profile, $row->meal, array_merge(
+                $mealForAdaptation = $row->meal;
+
+                if ($slotType === MealPlanSlotType::Dessert) {
+                    $mealForAdaptation = ChiaDessertMeals::resolveMealForProfile($mealForAdaptation, $profile);
+                }
+
+                $adapted = AdaptedMenuBuilder::adaptMealForProfile($profile, $mealForAdaptation, array_merge(
                     $dayAdaptOptions,
                     ['schedule_slot' => AdaptedMenuBuilder::adaptationSlotForMealPlanSlot($slotType)],
                 ));
@@ -280,7 +286,7 @@ final class ProductionWeeklyMenuSchedule
             return;
         }
 
-        $fallbackMeal = self::resolveRotationDessertMeal($dayNumber);
+        $fallbackMeal = self::resolveRotationDessertMeal($dayNumber, $profile);
 
         if (! $fallbackMeal instanceof Meal) {
             return;
@@ -296,14 +302,20 @@ final class ProductionWeeklyMenuSchedule
         }
     }
 
-    private static function resolveRotationDessertMeal(int $dayNumber): ?Meal
+    private static function resolveRotationDessertMeal(int $dayNumber, CustomerProfile $profile): ?Meal
     {
         $name = BalancedWeeklyRotationSchedule::mealNameForDay($dayNumber, MealPlanSlotType::Dessert, 1);
 
-        return Meal::queryForMealLibrary()
+        $meal = Meal::queryForMealLibrary()
             ->where('name', $name)
             ->with('ingredients')
             ->first();
+
+        if (! $meal instanceof Meal) {
+            return null;
+        }
+
+        return ChiaDessertMeals::resolveMealForProfile($meal, $profile);
     }
 
     public static function resolveRotationBreakfastMeal(int $dayNumber): ?Meal

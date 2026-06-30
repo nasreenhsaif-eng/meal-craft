@@ -1,5 +1,4 @@
 import { Fragment, type ReactElement, useState } from 'react';
-import { MealPlanTag } from '../../MealSystem/DietaryTags.jsx';
 import SafetyAlerts from '../../MealSystem/SafetyAlerts.jsx';
 import NutrientBadge from '../../Atoms/MealSystem/NutrientBadge.jsx';
 import MealCraftLogo from '../../Atoms/Logo/MealCraftLogo.jsx';
@@ -45,7 +44,7 @@ export type MealInstructionSection = {
 export type MealDetailModel = {
     shortDescription?: string;
     cyclePhases: CyclePhase[];
-    dietaryTags: string[];
+    dietaryTags?: string[];
     hasG6pdTrigger?: boolean;
     safetyAlerts: MealSafetyAlert[];
     sickleCellHighlights?: string[];
@@ -137,7 +136,6 @@ export default function MealDetailView({ meal, className = '', hideImage = false
     const {
         shortDescription,
         cyclePhases,
-        dietaryTags,
         hasG6pdTrigger = false,
         safetyAlerts,
         sickleCellHighlights = [],
@@ -206,27 +204,15 @@ export default function MealDetailView({ meal, className = '', hideImage = false
                         </div>
                     ) : null}
 
-                    <div className="flex flex-col gap-4">
-                        {dietaryTags?.length ? (
-                            <div className="flex flex-wrap gap-2" role="list" aria-label="Dietary tags">
-                                {dietaryTags.map((tag) => (
-                                    <span key={tag} role="listitem" className="inline-flex">
-                                        <MealPlanTag label={tag} />
-                                    </span>
-                                ))}
-                            </div>
-                        ) : null}
-
-                        {cyclePhases?.length ? (
-                            <div className="flex flex-wrap gap-2" role="list" aria-label="Cycle phases">
-                                {cyclePhases.map((phase) => (
-                                    <span key={phase} role="listitem" className="inline-flex">
-                                        <CyclePhaseTag phase={phase} />
-                                    </span>
-                                ))}
-                            </div>
-                        ) : null}
-                    </div>
+                    {cyclePhases?.length ? (
+                        <div className="flex flex-wrap gap-2" role="list" aria-label="Cycle phases">
+                            {cyclePhases.map((phase) => (
+                                <span key={phase} role="listitem" className="inline-flex">
+                                    <CyclePhaseTag phase={phase} />
+                                </span>
+                            ))}
+                        </div>
+                    ) : null}
 
                     <section className="space-y-4" aria-labelledby="meal-detail-ingredients-heading">
                         <h2

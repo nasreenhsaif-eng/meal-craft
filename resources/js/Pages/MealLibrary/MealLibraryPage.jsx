@@ -49,6 +49,8 @@ import { resolvePerServingActualForTargets, scaleNutritionRecord } from '../../m
 import { downloadMissingIngredientsCSV } from '../../meal-library/downloadMissingIngredientsCSV.ts';
 import { downloadMealCraftCsvTemplate } from '../../meal-library/generateLibraryExportCSV.ts';
 import SafetyAlerts from '../../Components/MealSystem/SafetyAlerts.jsx';
+import FoodFilterMultiSelect from '../../Components/MealSystem/FoodFilterMultiSelect.jsx';
+import { MEAL_LIBRARY_FOOD_FILTER_OPTIONS } from '../../Components/MealSystem/foodFilterOptions.js';
 
 const PAGE_BG = 'bg-[#F8F9F6]';
 const PAGE_SIZE = 12;
@@ -738,6 +740,7 @@ export function MealLibraryPageContent({
     const [isBulkRecipe, setIsBulkRecipe] = useState(false);
     const [bulkServingsCount, setBulkServingsCount] = useState('');
     const [selectedDietTags, setSelectedDietTags] = useState(/** @type {string[]} */ ([]));
+    const [selectedFoodFilterTags, setSelectedFoodFilterTags] = useState(/** @type {string[]} */ ([]));
     const [selectedCyclePhaseValues, setSelectedCyclePhaseValues] = useState(/** @type {string[]} */ ([]));
     const [formInstructions, setFormInstructions] = useState('');
     const [formHighlight, setFormHighlight] = useState('');
@@ -769,6 +772,7 @@ export function MealLibraryPageContent({
         setIsBulkRecipe(false);
         setBulkServingsCount('');
         setSelectedDietTags([]);
+        setSelectedFoodFilterTags([]);
         setSelectedCyclePhaseValues([]);
         setFormInstructions('');
         setFormHighlight('');
@@ -849,6 +853,11 @@ export function MealLibraryPageContent({
         const mpt = Array.isArray(ef.mealPlanTags) ? ef.mealPlanTags.filter((t) => typeof t === 'string' && t.trim() !== '') : [];
         setSelectedMealPlanTags(mpt.length ? [...mpt] : ef.mealPlanTag ? [String(ef.mealPlanTag)] : []);
         setSelectedDietTags(canonicalDietTagsFromList(Array.isArray(ef.dietTags) ? ef.dietTags : []));
+        setSelectedFoodFilterTags(
+            Array.isArray(ef.foodFilterTags)
+                ? ef.foodFilterTags.filter((tag) => typeof tag === 'string' && tag.trim() !== '')
+                : [],
+        );
         const cpv = Array.isArray(ef.cyclePhaseValues)
             ? ef.cyclePhaseValues.filter((v) => typeof v === 'string' && v.trim() !== '')
             : [];
@@ -1275,6 +1284,7 @@ export function MealLibraryPageContent({
             description: formInstructions,
             highlight: formHighlight,
             diet_tags: canonicalDietTagsFromList(selectedDietTags),
+            food_filter_tags: selectedFoodFilterTags,
             is_bulk: useBulk,
             servings_count: useBulk ? servingsDivisor : null,
         });
@@ -1578,10 +1588,22 @@ export function MealLibraryPageContent({
         [ingredientRowsForSafety, ingredientPasteField, ingredientDatabase],
     );
 
-    const safetyFormAlerts = useMemo(
-        () => collectSafetyAlertLabelsFromIngredientSelection(ingredientRowsForSafety, ingredientDatabase),
-        [ingredientRowsForSafety, ingredientDatabase],
-    );
+    const safetyFormAlerts = useMemo(() => {
+        if (selectedFoodFilterTags.length > 0) {
+            const labels = selectedFoodFilterTags
+                .map((id) => MEAL_LIBRARY_FOOD_FILTER_OPTIONS.find((option) => option.id === id)?.label ?? id)
+                .filter((label) => label.trim() !== '')
+                .sort();
+
+            if (hasG6pdTrigger) {
+                labels.push(G6PD_TRIGGER_SAFETY_LABEL);
+            }
+
+            return labels;
+        }
+
+        return collectSafetyAlertLabelsFromIngredientSelection(ingredientRowsForSafety, ingredientDatabase);
+    }, [selectedFoodFilterTags, ingredientRowsForSafety, ingredientDatabase, hasG6pdTrigger]);
 
     const [g6pdToastVisible, setG6pdToastVisible] = useState(false);
     const g6pdToastShownRef = useRef(false);
@@ -2575,9 +2597,9 @@ export function MealLibraryPageContent({
                                     />
                                     <div className="space-y-2">
                                         <p className="font-montserrat text-sm font-bold leading-snug tracking-tight text-grey-94">
-                                            Dietary tags
+                                            Diet tags
                                         </p>
-                                        <div className="flex flex-wrap gap-3" role="group" aria-label="Dietary tags">
+                                        <div className="flex flex-wrap gap-3" role="group" aria-label="Diet tags">
                                             {DIETARY_TAG_OPTIONS.map((tag) => {
                                                 const checked = selectedDietTags.includes(tag);
                                                 return (
@@ -2594,6 +2616,18 @@ export function MealLibraryPageContent({
                                                 );
                                             })}
                                         </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <p className="font-montserrat text-sm font-bold leading-snug tracking-tight text-grey-94">
+                                            Food filters
+                                        </p>
+                                        <FoodFilterMultiSelect
+                                            value={selectedFoodFilterTags}
+                                            onChange={setSelectedFoodFilterTags}
+                                            options={MEAL_LIBRARY_FOOD_FILTER_OPTIONS}
+                                            showOther={false}
+                                            className="!justify-start"
+                                        />
                                     </div>
                                     <MultiPillDropdown
                                         label="Cycle phase"

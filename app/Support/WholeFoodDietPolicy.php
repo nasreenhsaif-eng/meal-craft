@@ -28,6 +28,7 @@ final class WholeFoodDietPolicy
         'Almond Butter',
         'Date Syrup',
         'Coconut Cream',
+        'Baking Powder',
     ];
 
     /** @var list<string> */
@@ -187,12 +188,32 @@ final class WholeFoodDietPolicy
         $tags = is_array($meal->diet_tags) ? $meal->diet_tags : [];
 
         foreach (self::REQUIRED_MEAL_DIET_TAGS as $required) {
+            if ($required === 'Dairy-free' && ! self::mealRequiresDairyFreeDietTag($meal)) {
+                continue;
+            }
+
             if (! in_array($required, $tags, true)) {
                 $violations[] = "{$meal->name}: missing diet tag «{$required}»";
             }
         }
 
         return $violations;
+    }
+
+    /**
+     * Meals with grass-fed butter or ghee are tagged without «Dairy-free».
+     */
+    public static function mealRequiresDairyFreeDietTag(Meal $meal): bool
+    {
+        $meal->loadMissing('ingredients');
+
+        foreach ($meal->ingredients as $ingredient) {
+            if (in_array($ingredient->name, ['Butter (Unsalted)', 'Ghee', 'Ghee (Clarified)'], true)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**

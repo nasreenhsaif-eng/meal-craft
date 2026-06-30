@@ -24,6 +24,7 @@ use App\Support\IngredientAllergenCatalog;
 use App\Support\IngredientG6pdSafety;
 use App\Support\IngredientLibraryNameMatcher;
 use App\Support\LiquidIngredientPresentation;
+use App\Support\MealFoodFilterCatalog;
 use App\Support\MealImagePath;
 use App\Support\MealInstructionsText;
 use App\Support\MealLibraryBulkNutrition;
@@ -207,9 +208,10 @@ class MealLibraryController extends Controller
         $mealType = MealType::fromRecipeCategory($category);
 
         $dietTags = array_values(array_unique(array_filter($data['diet_tags'] ?? [])));
+        $foodFilterTags = MealFoodFilterCatalog::canonicalSlugsFromList($data['food_filter_tags'] ?? null);
         $planPhaseBundle = $this->mealPlanTagsAndCyclePhasesForPersistence($data);
 
-        DB::transaction(function () use ($request, $data, $category, $mealType, $planPhaseBundle, $dietTags): void {
+        DB::transaction(function () use ($request, $data, $category, $mealType, $planPhaseBundle, $dietTags, $foodFilterTags): void {
             $createData = [
                 'name' => $data['name'],
                 'category' => $category,
@@ -225,6 +227,7 @@ class MealLibraryController extends Controller
                 'total_carbs' => (float) ($data['total_carbs'] ?? 0),
                 'total_fat' => (float) ($data['total_fat'] ?? 0),
                 'diet_tags' => $dietTags,
+                'food_filter_tags' => $foodFilterTags,
                 'diet_type' => null,
                 'cycle_phase' => $planPhaseBundle['cycle_phase'],
                 'cycle_phases' => $planPhaseBundle['cycle_phases'],
@@ -278,6 +281,7 @@ class MealLibraryController extends Controller
         $mealType = MealType::fromRecipeCategory($category);
 
         $dietTags = array_values(array_unique(array_filter($data['diet_tags'] ?? [])));
+        $foodFilterTags = MealFoodFilterCatalog::canonicalSlugsFromList($data['food_filter_tags'] ?? null);
         $planPhaseBundle = $this->mealPlanTagsAndCyclePhasesForPersistence($data);
 
         $ingredientRows = is_array($data['ingredients'] ?? null) ? $data['ingredients'] : [];
@@ -308,7 +312,7 @@ class MealLibraryController extends Controller
             }
         }
 
-        DB::transaction(function () use ($request, $data, $meal, $category, $mealType, $planPhaseBundle, $dietTags): void {
+        DB::transaction(function () use ($request, $data, $meal, $category, $mealType, $planPhaseBundle, $dietTags, $foodFilterTags): void {
             $updateData = [
                 'name' => $data['name'],
                 'category' => $category,
@@ -324,6 +328,7 @@ class MealLibraryController extends Controller
                 'total_carbs' => (float) ($data['total_carbs'] ?? 0),
                 'total_fat' => (float) ($data['total_fat'] ?? 0),
                 'diet_tags' => $dietTags,
+                'food_filter_tags' => $foodFilterTags,
                 'diet_type' => null,
                 'cycle_phase' => $planPhaseBundle['cycle_phase'],
                 'cycle_phases' => $planPhaseBundle['cycle_phases'],
@@ -386,7 +391,11 @@ class MealLibraryController extends Controller
         $meal->load('ingredients');
 
         $ingredientIdsForSafety = array_map(intval(...), array_keys($byIngredientGrams));
-        $meal->safety_alert_tags = $this->safetyAlertTagsForIngredientIds($ingredientIdsForSafety);
+        $foodFilterTags = MealFoodFilterCatalog::canonicalSlugsFromList($data['food_filter_tags'] ?? null);
+        $meal->food_filter_tags = $foodFilterTags;
+        $meal->safety_alert_tags = $foodFilterTags !== []
+            ? $this->safetyAlertTagsForMeal($foodFilterTags, $ingredientIdsForSafety)
+            : $this->safetyAlertTagsForIngredientIds($ingredientIdsForSafety);
 
         $isBulk = (bool) ($data['is_bulk'] ?? false);
 
@@ -609,6 +618,9 @@ class MealLibraryController extends Controller
             'category' => ($meal->category ?? RecipeCategory::Meal)->value,
             'mealPlanTags' => $mealPlanTagsArr,
             'dietTags' => is_array($meal->diet_tags) ? array_values(array_filter($meal->diet_tags, static fn ($t): bool => is_string($t) && trim($t) !== '')) : [],
+            'foodFilterTags' => MealFoodFilterCatalog::canonicalSlugsFromList(
+                is_array($meal->food_filter_tags) ? $meal->food_filter_tags : null,
+            ),
             'cyclePhaseValues' => $cyclePhaseValues,
             'description' => $this->mealInstructionsText($meal),
             'highlight' => $this->mealShortDescriptionText($meal),
@@ -952,9 +964,14 @@ class MealLibraryController extends Controller
         $nutrientHighlights = array_values(array_unique($nutrientHighlights));
 
         $storedSafety = is_array($meal->safety_alert_tags) ? $meal->safety_alert_tags : [];
-        $safetyAlertTags = $ingredientIds !== []
-            ? $this->safetyAlertTagsForIngredientIds($ingredientIds)
-            : array_values($storedSafety);
+        $foodFilterTags = MealFoodFilterCatalog::canonicalSlugsFromList(
+            is_array($meal->food_filter_tags) ? $meal->food_filter_tags : null,
+        );
+        $safetyAlertTags = $foodFilterTags !== []
+            ? $this->safetyAlertTagsForMeal($foodFilterTags, $ingredientIds)
+            : ($ingredientIds !== []
+                ? $this->safetyAlertTagsForIngredientIds($ingredientIds)
+                : array_values($storedSafety));
 
         return [
             'id' => (string) $meal->id,
@@ -1206,6 +1223,19 @@ class MealLibraryController extends Controller
         $formatted = number_format($value, $decimals, '.', '');
 
         return rtrim(rtrim($formatted, '0'), '.') ?: '0';
+    }
+
+    /**
+     * @param  list<string>  $foodFilterTags
+     * @param  list<int>  $ingredientIds
+     * @return list<string>
+     */
+    private function safetyAlertTagsForMeal(array $foodFilterTags, array $ingredientIds): array
+    {
+        return IngredientG6pdSafety::mergeTriggerIntoSafetyLabels(
+            MealFoodFilterCatalog::safetyLabelsFromSlugs($foodFilterTags),
+            IngredientG6pdSafety::mealContainsG6pdTrigger($ingredientIds),
+        );
     }
 
     /**

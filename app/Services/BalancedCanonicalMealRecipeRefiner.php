@@ -67,7 +67,7 @@ final class BalancedCanonicalMealRecipeRefiner
                 if ($mealName === self::CARROT_DESSERT_NAME && in_array($meal->name, self::CARROT_DESSERT_PREVIOUS_NAMES, true)) {
                     $meal->update([
                         'name' => self::CARROT_DESSERT_NAME,
-                        'short_description' => 'Moist gluten-free carrot cake with almond and coconut flours, walnuts, raisins, warm spices, date syrup, and ghee.',
+                        'short_description' => 'Moist gluten-free carrot cake batch (8 slices) with house-milled almond flour, dates, pumpkin puree, walnuts, warm spices, grass-fed butter, and vanilla bean.',
                     ]);
                 }
 
@@ -344,8 +344,8 @@ final class BalancedCanonicalMealRecipeRefiner
                 'ingredients' => $this->carrotDessertBatchIngredients(),
                 'is_bulk' => true,
                 'servings_count' => self::CARROT_DESSERT_SERVINGS_COUNT,
-                'diet_tags' => array_merge($wholeFoodTags, ['Vegetarian']),
-                'short_description' => 'Moist gluten-free carrot cake batch (8 slices) with almond and coconut flours, walnuts, raisins, warm spices, date syrup, and ghee.',
+                'diet_tags' => ['Vegetarian', 'Gluten-free'],
+                'short_description' => 'Moist gluten-free carrot cake batch (8 slices) with house-milled almond flour, dates, pumpkin puree, walnuts, warm spices, grass-fed butter, and vanilla bean.',
             ],
             'Fruit Salad Bowl' => [
                 'ingredients' => [
@@ -466,18 +466,21 @@ final class BalancedCanonicalMealRecipeRefiner
     private function carrotDessertPerServingIngredients(): array
     {
         return [
-            'Carrots' => 75,
-            'Egg' => 100,
-            'Almond Flour (Base)' => 40,
-            'Tapioca Starch' => 12,
-            'Coconut Flour' => 8,
-            'Walnuts' => 12,
-            'Raisins' => 12,
-            'Cinnamon' => 2,
-            'Nutmeg' => 0.5,
-            'Date Syrup' => 18,
-            'Coconut Cream' => 20,
-            'Ghee' => 12,
+            'Medjool Dates' => 45,
+            'Almond Flour (Base)' => 30,
+            'Carrots' => 38,
+            'Water (Filtered)' => 22,
+            'Cinnamon' => 1,
+            'Walnuts' => 8,
+            'Butter (Unsalted)' => 14,
+            'Pumpkin Puree' => 15,
+            'Ground Ginger' => 0.25,
+            'Nutmeg' => 0.1,
+            'Eggs (Large)' => 19,
+            'Baking Soda' => 0.8,
+            'Vanilla Pods' => 0.5,
+            'Baking Powder' => 0.9,
+            'Sea Salt' => 0.4,
         ];
     }
 

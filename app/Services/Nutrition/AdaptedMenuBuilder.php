@@ -74,6 +74,13 @@ final class AdaptedMenuBuilder
                 continue;
             }
 
+            if (
+                ChiaDessertMeals::isChiaDessert($meal)
+                && $meal->name !== ChiaDessertMeals::resolveMealNameForProfile((string) $meal->name, $profile)
+            ) {
+                continue;
+            }
+
             $behavior = UserPlanCalculator::slotBehavior($slot);
 
             if ($behavior === 'fixed_portion') {
@@ -827,8 +834,10 @@ final class AdaptedMenuBuilder
                 continue;
             }
 
-            if ($ingredient->name === BalancedChiaDessertRecipeRefiner::COCONUT_CHIA_BASE_NAME) {
-                $baselineGrams = BalancedChiaDessertRecipeRefiner::COCONUT_CHIA_BASE_GRAMS;
+            $canonicalBaseGrams = BalancedChiaDessertRecipeRefiner::canonicalBaseGramsForIngredientName($ingredient->name);
+
+            if ($canonicalBaseGrams !== null) {
+                $baselineGrams = $canonicalBaseGrams;
             }
 
             $adaptedGramsByIngredientId[$ingredient->id] = round($baselineGrams, 2);
@@ -1429,8 +1438,10 @@ final class AdaptedMenuBuilder
                 continue;
             }
 
-            if ($ingredient->name === BalancedChiaDessertRecipeRefiner::COCONUT_CHIA_BASE_NAME) {
-                $baselineGrams = BalancedChiaDessertRecipeRefiner::COCONUT_CHIA_BASE_GRAMS;
+            $canonicalBaseGrams = BalancedChiaDessertRecipeRefiner::canonicalBaseGramsForIngredientName($ingredient->name);
+
+            if ($canonicalBaseGrams !== null) {
+                $baselineGrams = $canonicalBaseGrams;
             }
 
             $gramsByIngredientId[$ingredient->id] = round($baselineGrams, 4);

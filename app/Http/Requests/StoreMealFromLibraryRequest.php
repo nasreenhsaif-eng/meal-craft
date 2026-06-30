@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Enums\CyclePhase;
 use App\Enums\RecipeCategory;
+use App\Support\MealFoodFilterCatalog;
 use App\Support\MealLibraryTaxonomy;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -91,6 +92,12 @@ class StoreMealFromLibraryRequest extends FormRequest
             }
             $this->merge(['diet_tags' => array_values(array_unique($dietTags))]);
         }
+
+        if ($this->has('food_filter_tags') && is_array($this->input('food_filter_tags'))) {
+            $this->merge([
+                'food_filter_tags' => MealFoodFilterCatalog::canonicalSlugsFromList($this->input('food_filter_tags')),
+            ]);
+        }
     }
 
     /**
@@ -120,6 +127,8 @@ class StoreMealFromLibraryRequest extends FormRequest
             'meal_plan_tag' => ['nullable', 'string', Rule::in(MealLibraryTaxonomy::MEAL_PLAN_TAGS)],
             'diet_tags' => ['nullable', 'array'],
             'diet_tags.*' => ['string', Rule::in(MealLibraryTaxonomy::DIETARY_TAGS)],
+            'food_filter_tags' => ['nullable', 'array'],
+            'food_filter_tags.*' => ['string', Rule::in(MealFoodFilterCatalog::SLUGS)],
             'cycle_phases' => ['nullable', 'array'],
             'cycle_phases.*' => ['string', Rule::in($cycleValues)],
             'cycle_phase' => ['nullable', 'string', Rule::in($cycleValues)],

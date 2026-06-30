@@ -89,7 +89,7 @@ final class BalancedMealLibraryConfigurator
                 'sort' => 7,
                 'slot' => 'dessert',
                 'meal_plan_tags' => ['Balanced'],
-                'diet_tags' => ['Vegetarian', 'Dairy-free', 'Gluten-free'],
+                'diet_tags' => ['Vegetarian', 'Gluten-free'],
             ],
             [
                 'name' => 'Fruit Salad Bowl',

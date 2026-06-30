@@ -14,7 +14,7 @@ use InvalidArgumentException;
 
 /**
  * Standardizes Balanced rotation chia desserts on {@see Coconut Chia Pudding (Base)}
- * with a 120g kitchen portion (~300+ kcal); plan tier rebalance handles actual calories.
+ * or {@see Greek Yogurt Chia Pudding (Base)} with fixed kitchen portions (~300+ kcal).
  */
 final class BalancedChiaDessertRecipeRefiner
 {
@@ -22,7 +22,13 @@ final class BalancedChiaDessertRecipeRefiner
 
     public const COCONUT_CHIA_BASE_GRAMS = 120.0;
 
+    public const GREEK_YOGURT_CHIA_BASE_NAME = 'Greek Yogurt Chia Pudding (Base)';
+
+    public const GREEK_YOGURT_CHIA_BASE_GRAMS = 150.0;
+
     public const MIN_CALORIES = 280.0;
+
+    public const GREEK_YOGURT_CHIA_MIN_CALORIES = 160.0;
 
     /**
      * @return list<string>
@@ -30,6 +36,36 @@ final class BalancedChiaDessertRecipeRefiner
     public static function refinedMealNames(): array
     {
         return array_keys((new self)->recipeDefinitions());
+    }
+
+    public static function canonicalBaseGramsForIngredientName(string $ingredientName): ?float
+    {
+        return match ($ingredientName) {
+            self::COCONUT_CHIA_BASE_NAME => self::COCONUT_CHIA_BASE_GRAMS,
+            self::GREEK_YOGURT_CHIA_BASE_NAME => self::GREEK_YOGURT_CHIA_BASE_GRAMS,
+            default => null,
+        };
+    }
+
+    /**
+     * @return list<string>
+     */
+    public static function greekYogurtVariantMealNames(): array
+    {
+        $names = [];
+
+        foreach (self::refinedMealNames() as $mealName) {
+            if (self::isGreekYogurtVariantMealName($mealName)) {
+                $names[] = $mealName;
+            }
+        }
+
+        return $names;
+    }
+
+    public static function isGreekYogurtVariantMealName(string $mealName): bool
+    {
+        return str_contains($mealName, 'Greek Yogurt');
     }
 
     /**
@@ -62,6 +98,7 @@ final class BalancedChiaDessertRecipeRefiner
                     $definition['instructions'],
                     $definition['diet_tags'] ?? WholeFoodDietPolicy::REQUIRED_MEAL_DIET_TAGS,
                     $definition['short_description'] ?? null,
+                    (bool) ($definition['is_vegan'] ?? true),
                 );
                 $updated[] = $mealName;
             }
@@ -81,6 +118,7 @@ final class BalancedChiaDessertRecipeRefiner
         array $instructionSteps,
         array $dietTags,
         ?string $shortDescription = null,
+        bool $isVegan = true,
     ): void {
         $sync = [];
 
@@ -117,11 +155,15 @@ final class BalancedChiaDessertRecipeRefiner
         $nutrition = RecipeNutritionCalculator::fromMeal($fresh);
         $calories = (float) ($nutrition['calories'] ?? 0);
 
-        if ($calories < self::MIN_CALORIES - 0.5) {
+        $minCalories = array_key_exists(self::GREEK_YOGURT_CHIA_BASE_NAME, $ingredientGrams)
+            ? self::GREEK_YOGURT_CHIA_MIN_CALORIES
+            : self::MIN_CALORIES;
+
+        if ($calories < $minCalories - 0.5) {
             throw new InvalidArgumentException(sprintf(
                 '%s is below %gkcal minimum (%.1f kcal).',
                 $meal->name,
-                self::MIN_CALORIES,
+                $minCalories,
                 $calories,
             ));
         }
@@ -138,7 +180,7 @@ final class BalancedChiaDessertRecipeRefiner
                 'meal_type' => MealType::Dessert,
                 'category' => RecipeCategory::Dessert,
                 'nutrition_aggregates_synced' => true,
-                'diet_tags' => array_merge($dietTags, ['Vegan']),
+                'diet_tags' => array_merge($dietTags, $isVegan ? ['Vegan'] : ['Vegetarian']),
                 'instructions' => MealInstructionsText::normalizeForStorage(implode("\n", $instructionLines)),
             ],
         );
@@ -159,50 +201,164 @@ final class BalancedChiaDessertRecipeRefiner
     }
 
     /**
-     * @return array<string, array{ingredients: array<string, float>, instructions: list<string>, diet_tags?: list<string>, short_description?: string}>
+     * @return array<string, array{ingredients: array<string, float>, instructions: list<string>, diet_tags?: list<string>, short_description?: string, is_vegan?: bool}>
      */
     private function recipeDefinitions(): array
     {
-        $tags = WholeFoodDietPolicy::REQUIRED_MEAL_DIET_TAGS;
-        $base = self::COCONUT_CHIA_BASE_GRAMS;
+        $definitions = [];
 
-        $basePrep = [
+        foreach ($this->flavorDefinitions() as $coconutMealName => $flavor) {
+            $definitions[$coconutMealName] = $this->buildVariantDefinition(
+                $flavor,
+                self::COCONUT_CHIA_BASE_NAME,
+                self::COCONUT_CHIA_BASE_GRAMS,
+                true,
+                $flavor['short_description_coconut'],
+            );
+
+            $definitions[$this->greekYogurtVariantName($coconutMealName)] = $this->buildVariantDefinition(
+                $flavor,
+                self::GREEK_YOGURT_CHIA_BASE_NAME,
+                self::GREEK_YOGURT_CHIA_BASE_GRAMS,
+                false,
+                $flavor['short_description_greek'],
+            );
+        }
+
+        return $definitions;
+    }
+
+    /**
+     * @param  array{
+     *     toppings: array<string, float>,
+     *     instruction_suffix?: list<string>,
+     *     custom_instructions?: list<string>,
+     *     short_description_coconut: string,
+     *     short_description_greek: string
+     * }  $flavor
+     * @return array{ingredients: array<string, float>, instructions: list<string>, diet_tags: list<string>, short_description: string, is_vegan: bool}
+     */
+    private function buildVariantDefinition(
+        array $flavor,
+        string $baseName,
+        float $baseGrams,
+        bool $isVegan,
+        string $shortDescription,
+    ): array {
+        $basePrep = $this->basePrepSteps($baseName);
+
+        if (isset($flavor['custom_instructions'])) {
+            $instructions = $this->instructionsForBase($flavor['custom_instructions'], $baseName);
+        } else {
+            $instructions = array_merge($basePrep, $flavor['instruction_suffix'] ?? []);
+        }
+
+        return [
+            'ingredients' => array_merge([$baseName => $baseGrams], $flavor['toppings']),
+            'instructions' => $instructions,
+            'diet_tags' => WholeFoodDietPolicy::REQUIRED_MEAL_DIET_TAGS,
+            'short_description' => $shortDescription,
+            'is_vegan' => $isVegan,
+        ];
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function basePrepSteps(string $baseName): array
+    {
+        if ($baseName === self::GREEK_YOGURT_CHIA_BASE_NAME) {
+            return [
+                'Prepare Greek Yogurt Chia Pudding (Base) ahead (chia, Greek yogurt, and honey) and chill until thick.',
+                'Spoon the set pudding into a bowl or jar.',
+            ];
+        }
+
+        return [
             'Prepare Coconut Chia Pudding (Base) ahead (chia, coconut milk, and date syrup) and chill until thick.',
             'Spoon the set pudding into a bowl or jar.',
         ];
+    }
 
+    /**
+     * @param  list<string>  $steps
+     * @return list<string>
+     */
+    private function instructionsForBase(array $steps, string $baseName): array
+    {
+        if ($baseName === self::COCONUT_CHIA_BASE_NAME) {
+            return $steps;
+        }
+
+        return array_map(
+            static fn (string $step): string => str_replace(
+                [
+                    'Prepare Coconut Chia Pudding (Base) ahead and chill until thick.',
+                    'Coconut Chia Pudding (Base)',
+                ],
+                [
+                    'Prepare Greek Yogurt Chia Pudding (Base) ahead and chill until thick.',
+                    'Greek Yogurt Chia Pudding (Base)',
+                ],
+                $step,
+            ),
+            $steps,
+        );
+    }
+
+    private function greekYogurtVariantName(string $coconutMealName): string
+    {
+        if ($coconutMealName === 'Chia Pudding Smoothie') {
+            return 'Greek Yogurt Chia Pudding Smoothie';
+        }
+
+        if (str_contains($coconutMealName, 'Chia Pudding')) {
+            return str_replace('Chia Pudding', 'Greek Yogurt Chia Pudding', $coconutMealName);
+        }
+
+        return str_replace(' Chia', ' Greek Yogurt Chia', $coconutMealName);
+    }
+
+    /**
+     * @return array<string, array{
+     *     toppings: array<string, float>,
+     *     instruction_suffix?: list<string>,
+     *     custom_instructions?: list<string>,
+     *     short_description_coconut: string,
+     *     short_description_greek: string
+     * }>
+     */
+    private function flavorDefinitions(): array
+    {
         return [
             'Blueberry Walnut Chia Pudding' => [
-                'ingredients' => [
-                    self::COCONUT_CHIA_BASE_NAME => $base,
+                'toppings' => [
                     'Blueberries' => 20,
                     'Walnuts' => 8,
                     'Fresh Mint' => 1,
                     'Cinnamon' => 1,
                 ],
-                'instructions' => array_merge($basePrep, [
+                'instruction_suffix' => [
                     'Fold in blueberries, walnuts, cinnamon, and mint.',
                     'Serve chilled.',
-                ]),
-                'diet_tags' => $tags,
-                'short_description' => 'Creamy coconut chia pudding with blueberries, walnuts, cinnamon, and mint.',
+                ],
+                'short_description_coconut' => 'Creamy coconut chia pudding with blueberries, walnuts, cinnamon, and mint.',
+                'short_description_greek' => 'Creamy Greek yogurt chia pudding with blueberries, walnuts, cinnamon, and mint.',
             ],
             'Mango Pumpkin Seed Chia Pudding' => [
-                'ingredients' => [
-                    self::COCONUT_CHIA_BASE_NAME => $base,
+                'toppings' => [
                     'Mango' => 35,
                     'Pumpkin Seeds' => 10,
                 ],
-                'instructions' => array_merge($basePrep, [
+                'instruction_suffix' => [
                     'Top with diced mango and pumpkin seeds.',
                     'Serve chilled.',
-                ]),
-                'diet_tags' => $tags,
-                'short_description' => 'Tropical coconut chia pudding topped with fresh mango and pumpkin seeds.',
+                ],
+                'short_description_coconut' => 'Tropical coconut chia pudding topped with fresh mango and pumpkin seeds.',
+                'short_description_greek' => 'Tropical Greek yogurt chia pudding topped with fresh mango and pumpkin seeds.',
             ],
             'Spiced Crunch Chia Pudding' => [
-                'ingredients' => [
-                    self::COCONUT_CHIA_BASE_NAME => $base,
+                'toppings' => [
                     'Almond whole' => 6,
                     'Black Seeds' => 2,
                     'Sesame Seeds' => 3,
@@ -210,84 +366,79 @@ final class BalancedChiaDessertRecipeRefiner
                     'Clove' => 0.5,
                     'Ground Ginger' => 1,
                 ],
-                'instructions' => array_merge($basePrep, [
+                'instruction_suffix' => [
                     'Stir cinnamon, clove, and ginger through the pudding.',
                     'Top with chopped almonds, black seeds, and sesame seeds.',
                     'Serve chilled.',
-                ]),
-                'diet_tags' => $tags,
-                'short_description' => 'Warming spiced coconut chia pudding topped with almonds, black seeds, and sesame.',
+                ],
+                'short_description_coconut' => 'Warming spiced coconut chia pudding topped with almonds, black seeds, and sesame.',
+                'short_description_greek' => 'Warming spiced Greek yogurt chia pudding topped with almonds, black seeds, and sesame.',
             ],
             'Strawberry Almond Chia Pudding' => [
-                'ingredients' => [
-                    self::COCONUT_CHIA_BASE_NAME => $base,
+                'toppings' => [
                     'Strawberries' => 40,
                     'Almond whole' => 7,
                 ],
-                'instructions' => array_merge($basePrep, [
+                'instruction_suffix' => [
                     'Fold in sliced strawberries and almonds.',
                     'Serve chilled.',
-                ]),
-                'diet_tags' => $tags,
-                'short_description' => 'Coconut chia pudding with fresh strawberries and almonds.',
+                ],
+                'short_description_coconut' => 'Coconut chia pudding with fresh strawberries and almonds.',
+                'short_description_greek' => 'Greek yogurt chia pudding with fresh strawberries and almonds.',
             ],
             'Peach Pecan Chia Pudding' => [
-                'ingredients' => [
-                    self::COCONUT_CHIA_BASE_NAME => $base,
+                'toppings' => [
                     'Peach' => 35,
                     'Pecans' => 8,
                     'Cinnamon' => 0.5,
                     'Fresh Mint' => 2,
                 ],
-                'instructions' => array_merge($basePrep, [
+                'instruction_suffix' => [
                     'Top with sliced peach, pecans, cinnamon, and mint.',
                     'Serve chilled.',
-                ]),
-                'diet_tags' => $tags,
-                'short_description' => 'Coconut chia pudding with sweet peach, pecans, cinnamon, and mint.',
+                ],
+                'short_description_coconut' => 'Coconut chia pudding with sweet peach, pecans, cinnamon, and mint.',
+                'short_description_greek' => 'Greek yogurt chia pudding with sweet peach, pecans, cinnamon, and mint.',
             ],
             'Raspberry Cacao Chia Pudding' => [
-                'ingredients' => [
-                    self::COCONUT_CHIA_BASE_NAME => $base,
+                'toppings' => [
                     'Raspberries' => 35,
                     'Cacao Nibs' => 4,
                     'Cocoa Powder' => 2,
                 ],
-                'instructions' => array_merge($basePrep, [
+                'instruction_suffix' => [
                     'Fold in raspberries, cacao nibs, and cocoa powder.',
                     'Serve chilled.',
-                ]),
-                'diet_tags' => $tags,
-                'short_description' => 'Dark cacao coconut chia pudding with raspberries and cacao nibs.',
+                ],
+                'short_description_coconut' => 'Dark cacao coconut chia pudding with raspberries and cacao nibs.',
+                'short_description_greek' => 'Dark cacao Greek yogurt chia pudding with raspberries and cacao nibs.',
             ],
             'Cacao & Almond Chia' => [
-                'ingredients' => [
-                    self::COCONUT_CHIA_BASE_NAME => $base,
+                'toppings' => [
                     'Almond Butter' => 2,
                     'Almond whole' => 5,
                     'Cocoa Powder' => 2,
                 ],
-                'instructions' => array_merge($basePrep, [
+                'instruction_suffix' => [
                     'Swirl in almond butter and cocoa powder. Top with chopped almonds.',
                     'Serve chilled.',
-                ]),
-                'diet_tags' => $tags,
-                'short_description' => 'Rich cacao coconut chia pudding swirled with almond butter and almonds.',
+                ],
+                'short_description_coconut' => 'Rich cacao coconut chia pudding swirled with almond butter and almonds.',
+                'short_description_greek' => 'Rich cacao Greek yogurt chia pudding swirled with almond butter and almonds.',
             ],
             'Chia Pudding Smoothie' => [
-                'ingredients' => [
-                    self::COCONUT_CHIA_BASE_NAME => $base,
+                'toppings' => [
                     'Strawberries' => 30,
                     'Banana' => 25,
                 ],
-                'instructions' => [
+                'custom_instructions' => [
                     'Prepare Coconut Chia Pudding (Base) ahead and chill until thick.',
                     'Spoon the set pudding into the bottom of a glass or jar.',
                     'Blend strawberries and banana until smooth.',
                     'Pour the fruit smoothie over the chia layer. Serve chilled.',
                 ],
-                'diet_tags' => $tags,
-                'short_description' => 'Layered coconut chia pudding with a strawberry-banana smoothie top.',
+                'short_description_coconut' => 'Layered coconut chia pudding with a strawberry-banana smoothie top.',
+                'short_description_greek' => 'Layered Greek yogurt chia pudding with a strawberry-banana smoothie top.',
             ],
         ];
     }

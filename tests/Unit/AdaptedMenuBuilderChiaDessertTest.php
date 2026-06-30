@@ -110,3 +110,46 @@ test('chia dessert enforces 120g base even when library pivot is stale', functio
     expect((float) $baseLine['adapted_amount_grams'])->toBe(120.0)
         ->and((float) $adapted['adapted_nutrition']['calories'])->toBeGreaterThanOrEqual(300.0);
 });
+
+test('greek yogurt chia dessert meals enforce 150g base at fixed portion', function () {
+    $base = Ingredient::factory()->create([
+        'name' => 'Greek Yogurt Chia Pudding (Base)',
+        'calories' => 126,
+        'protein' => 10.3,
+        'carbs' => 13.1,
+        'fat' => 4.1,
+    ]);
+
+    $meal = Meal::factory()->create([
+        'name' => 'Blueberry Walnut Greek Yogurt Chia Pudding',
+        'meal_type' => MealType::Dessert,
+        'category' => RecipeCategory::Dessert,
+        'total_calories' => 318,
+        'total_protein' => 22,
+        'total_carbs' => 31,
+        'total_fat' => 13,
+    ]);
+
+    $meal->ingredients()->attach($base->id, [
+        'amount_grams' => 120,
+        'amount' => 120,
+        'unit' => 'g',
+    ]);
+
+    $profile = CustomerProfile::factory()->create([
+        'daily_calorie_target' => 2000,
+        'protein_percentage' => 40,
+        'carb_percentage' => 30,
+        'fat_percentage' => 30,
+    ]);
+
+    $adapted = AdaptedMenuBuilder::adaptMealForProfile($profile, $meal->fresh(['ingredients']), [
+        'plan_tier' => 2000,
+        'craft_key' => 'full',
+        'dessert_calories' => 318,
+    ]);
+
+    $baseLine = collect($adapted['ingredients'])->firstWhere('name', 'Greek Yogurt Chia Pudding (Base)');
+
+    expect((float) $baseLine['adapted_amount_grams'])->toBe(150.0);
+});

@@ -21,13 +21,17 @@ final class BalancedRotationMealRecipeRefiner
 
     public const CHOCOLATE_ORANGE_BROWNIE_NAME = 'Chocolate Orange Brownie';
 
-    public const CHOCOLATE_ORANGE_BROWNIE_SERVINGS_COUNT = 24;
+    public const CHOCOLATE_ORANGE_BROWNIE_SERVINGS_COUNT = 16;
 
     public const SALTED_TAHINI_CARAMEL_CHOCOLATE_BAR_NAME = 'Salted Tahini Caramel Chocolate Bar';
 
     public const SALTED_CARAMEL_CHOCOLATE_BAR_SERVINGS_COUNT = 16;
 
     public const APPLE_PIE_BALLS_PER_SERVING_COUNT = 3;
+
+    public const BANANA_BLUEBERRY_BALLS_PER_SERVING_COUNT = 3;
+
+    public const CHOCOLATE_PB_BANANA_MUFFIN_BATCH_SERVINGS_COUNT = 6;
 
     /**
      * @return list<string>
@@ -203,19 +207,26 @@ final class BalancedRotationMealRecipeRefiner
     }
 
     /**
+     * Batch yields {@see CHOCOLATE_ORANGE_BROWNIE_SERVINGS_COUNT} squares.
+     * Volumes: 1½ cups dates, ⅓ cup water, zest of 2 oranges, 2 tbsp OJ; ¾ cup butter & cocoa, 3 eggs;
+     * ½ cup almond flour, ¼ cup tapioca, ¼ tsp baking powder & salt.
+     *
      * @return array<string, float>
      */
     private function chocolateOrangeBrowniePerServingIngredients(): array
     {
         return [
-            'Almond Flour (Base)' => 18.5,
-            'Egg' => 23,
-            'Cocoa Powder' => 7.5,
-            'Honey (Raw)' => 5,
-            'Orange Juice' => 10.5,
-            'Orange Zest' => 1.25,
-            'Olive Oil' => 3.5,
-            'Walnuts' => 5,
+            'Medjool Dates' => 16.6875,
+            'Water (Filtered)' => 4.9375,
+            'Orange Zest' => 0.75,
+            'Orange Juice' => 1.9375,
+            'Butter (Unsalted)' => 10.625,
+            'Cocoa Powder' => 4.6875,
+            'Eggs (Large)' => 9.375,
+            'Almond Flour (Base)' => 6,
+            'Tapioca Starch' => 1.875,
+            'Baking Powder' => 0.0781,
+            'Sea Salt' => 0.0938,
         ];
     }
 
@@ -393,6 +404,19 @@ final class BalancedRotationMealRecipeRefiner
                 'diet_tags' => $vegetarianTags,
                 'short_description' => 'No-bake apple-cinnamon balls with khelas dates, almond flour, walnuts, and almond butter — '.self::APPLE_PIE_BALLS_PER_SERVING_COUNT.' small bites per serving (~150 kcal).',
             ],
+            'Banana Blueberry Balls' => [
+                'ingredients' => [
+                    'Almond Flour' => 16,
+                    'Flaxseeds' => 2,
+                    'Cinnamon' => 0.1,
+                    'Maple Syrup' => 12,
+                    'Almond Butter' => 7,
+                    'Banana' => 11,
+                    'Blueberries' => 9,
+                ],
+                'diet_tags' => $vegetarianTags,
+                'short_description' => 'No-bake banana-blueberry energy balls with almond flour, flaxseed, maple syrup, and almond butter — '.self::BANANA_BLUEBERRY_BALLS_PER_SERVING_COUNT.' bites per serving (~193 kcal).',
+            ],
             'Cinnamon Raisin Balls' => [
                 'ingredients' => [
                     'Medjool Dates' => 40,
@@ -417,21 +441,26 @@ final class BalancedRotationMealRecipeRefiner
             ],
             'Chocolate PB Banana Muffin' => [
                 'ingredients' => [
-                    'Banana' => 60,
-                    'Egg' => 55,
-                    'Peanut Butter' => 18,
-                    'Cocoa Powder' => 12,
-                    'Almond Flour (Base)' => 22,
-                    'Honey (Raw)' => 6,
+                    'Almond Flour' => 80,
+                    'Banana' => 120,
+                    'Cocoa Powder' => 20,
+                    'Maple Syrup' => 30,
+                    'Peanut Butter' => 15,
+                    'Egg Whites' => 50,
+                    'Baking Soda' => 2.3,
+                    'Sea Salt' => 0.5,
                 ],
+                'is_bulk' => true,
+                'servings_count' => self::CHOCOLATE_PB_BANANA_MUFFIN_BATCH_SERVINGS_COUNT,
                 'diet_tags' => $vegetarianTags,
+                'short_description' => 'Grain-free cocoa-banana muffin batch ('.self::CHOCOLATE_PB_BANANA_MUFFIN_BATCH_SERVINGS_COUNT.' muffins) with almond flour, peanut butter, maple syrup, and egg whites — one muffin per serving (~135 kcal).',
             ],
             self::CHOCOLATE_ORANGE_BROWNIE_NAME => [
                 'ingredients' => $this->chocolateOrangeBrownieBatchIngredients(),
                 'is_bulk' => true,
                 'servings_count' => self::CHOCOLATE_ORANGE_BROWNIE_SERVINGS_COUNT,
                 'diet_tags' => $vegetarianTags,
-                'short_description' => 'Rich flourless cocoa-orange brownie batch (24 small squares) with house almond flour, eggs, honey, olive oil, and walnuts.',
+                'short_description' => 'Rich grain-free cocoa-orange brownie batch ('.self::CHOCOLATE_ORANGE_BROWNIE_SERVINGS_COUNT.' small squares) with date-orange sweetener, Dutch cocoa, grass-fed butter, blanched almond flour, and tapioca.',
             ],
             self::SALTED_TAHINI_CARAMEL_CHOCOLATE_BAR_NAME => [
                 'ingredients' => $this->saltedTahiniCaramelChocolateBarBatchIngredients(),

@@ -421,18 +421,21 @@ final class BalancedMealInstructionRefiner
 
             // Desserts
             BalancedCanonicalMealRecipeRefiner::CARROT_DESSERT_NAME => $this->steps([
-                'Heat oven to 175°C (350°F). Grease a baking pan with ghee.',
-                'Whisk eggs, date syrup, melted ghee, and coconut cream until smooth.',
-                'Fold in grated carrots, almond flour, tapioca starch, coconut flour, cinnamon, nutmeg, walnuts, and raisins.',
-                'Pour into the pan. Bake 30–35 minutes until set and golden.',
-                'Cool, then cut into '.BalancedCanonicalMealRecipeRefiner::CARROT_DESSERT_SERVINGS_COUNT.' equal slices. One slice is one serving.',
+                'Create the sweet date paste (15 min). Soak the pitted dates in boiling water for 10 minutes. Blend the dates and all the soaking water in a food processor until entirely smooth. Let it cool slightly so it does not cook the eggs.',
+                'Prep your oven and vanilla bean (5 min). Preheat your oven to 350°F (175°C) and grease a 9×13-inch pan. Split the vanilla bean pod lengthwise and scrape out all the tiny black seeds.',
+                'Whisk the dry base (2 min). In a large bowl, thoroughly whisk together the almond flour, cinnamon, ginger, nutmeg, baking soda, baking powder, and salt.',
+                'Emulsify the wet ingredients (3 min). In a separate bowl, whisk the room-temperature eggs, homemade date paste, pumpkin puree, and scraped vanilla seeds until unified. Slowly drizzle in the melted grass-fed butter while whisking constantly.',
+                'Combine and fold textures (2 min). Pour the wet mixture into the dry flour blend. Stir gently with a spatula just until combined, then fold in the grated carrots and chopped walnuts.',
+                'Bake to perfection (38–42 min). Spread the batter evenly into your pan. Bake for 38 to 42 minutes. Because pumpkin holds excellent moisture, it needs those extra few minutes. Test the center with a toothpick—it should come out clean.',
+                'Cool completely, then cut into '.BalancedCanonicalMealRecipeRefiner::CARROT_DESSERT_SERVINGS_COUNT.' equal slices. One slice is one serving.',
             ]),
             BalancedRotationMealRecipeRefiner::CHOCOLATE_ORANGE_BROWNIE_NAME => $this->steps([
-                'Heat oven to 175°C. Line a small tin.',
-                'Whisk eggs with orange juice, zest, honey, and olive oil.',
-                'Fold in almond flour, cocoa powder, and chopped walnuts until combined.',
-                'Pour into tin. Bake until a skewer comes out mostly clean.',
-                'Cool, then cut into '.BalancedRotationMealRecipeRefiner::CHOCOLATE_ORANGE_BROWNIE_SERVINGS_COUNT.' equal small squares. One square is one serving.',
+                'Make the citrus & date sweetener. Pour boiling water over the pitted dates and soak 10 minutes. Blend with the orange zest and fresh orange juice until completely smooth.',
+                'Build the rich chocolate base. Melt the grass-fed butter, then whisk in the Dutch-process cocoa until glossy. Beat in the room-temperature eggs one at a time.',
+                'Whisk the grain-free flours. In a bowl, combine the super-fine blanched almond flour, tapioca starch, baking powder, and fine sea salt.',
+                'Fold the batters together. Stir the date-orange puree into the chocolate base, then fold in the dry ingredients just until no dry streaks remain.',
+                'Bake at 175°C. Spread into a lined tin and bake until a skewer from the center comes out mostly clean with moist crumbs.',
+                'Cool completely, then cut into '.BalancedRotationMealRecipeRefiner::CHOCOLATE_ORANGE_BROWNIE_SERVINGS_COUNT.' equal small squares. One square is one serving.',
             ]),
             BalancedRotationMealRecipeRefiner::SALTED_TAHINI_CARAMEL_CHOCOLATE_BAR_NAME => $this->steps([
                 'Heat oven to 175°C. Line an 8x8 inch pan with parchment paper.',
@@ -448,6 +451,11 @@ final class BalancedMealInstructionRefiner
                 'Roll into '.BalancedRotationMealRecipeRefiner::APPLE_PIE_BALLS_PER_SERVING_COUNT.' small bite-size balls (~14g each). One serving is all '.BalancedRotationMealRecipeRefiner::APPLE_PIE_BALLS_PER_SERVING_COUNT.' balls.',
                 'Chill 30 minutes until firm. Serve cold.',
             ]),
+            'Banana Blueberry Balls' => $this->steps([
+                'Pulse almond flour, flaxseeds, cinnamon, maple syrup, almond butter, banana, and blueberries in a food processor until the mixture holds together.',
+                'Roll into '.BalancedRotationMealRecipeRefiner::BANANA_BLUEBERRY_BALLS_PER_SERVING_COUNT.' bite-size balls (~19g each). One serving is all '.BalancedRotationMealRecipeRefiner::BANANA_BLUEBERRY_BALLS_PER_SERVING_COUNT.' balls.',
+                'Chill 30 minutes until firm. Serve cold.',
+            ]),
             'Cinnamon Raisin Balls' => $this->steps([
                 'Combine dates or binder, raisins, nuts, and cinnamon in a food processor.',
                 'Pulse until mixture holds together.',
@@ -460,10 +468,11 @@ final class BalancedMealInstructionRefiner
                 'Cool before serving.',
             ]),
             'Chocolate PB Banana Muffin' => $this->steps([
-                'Heat oven to 180°C. Line a muffin tin.',
-                'Mash banana. Mix with peanut butter, egg, and dry ingredients.',
-                'Fill muffin cups. Bake until set (18–22 min).',
-                'Cool on a rack.',
+                'Heat oven to 180°C. Line a '.BalancedRotationMealRecipeRefiner::CHOCOLATE_PB_BANANA_MUFFIN_BATCH_SERVINGS_COUNT.'-cup muffin tin.',
+                'Mash banana. Whisk egg whites with peanut butter and maple syrup.',
+                'Stir in almond flour, cocoa powder, baking soda, and sea salt until just combined.',
+                'Divide among '.BalancedRotationMealRecipeRefiner::CHOCOLATE_PB_BANANA_MUFFIN_BATCH_SERVINGS_COUNT.' cups. Bake 18–22 minutes until set.',
+                'Cool on a rack. One muffin is one serving.',
             ]),
             'Fruit Salad Bowl' => $this->steps([
                 'Wash and chop all fruit into bite-size pieces.',

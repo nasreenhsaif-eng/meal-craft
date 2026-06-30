@@ -55,6 +55,17 @@ final class BalancedWeeklyRotationSchedule
     ];
 
     /** @var list<string> */
+    public const GREEK_YOGURT_CHIA_DESSERTS = [
+        'Blueberry Walnut Greek Yogurt Chia Pudding',
+        'Mango Pumpkin Seed Greek Yogurt Chia Pudding',
+        'Spiced Crunch Greek Yogurt Chia Pudding',
+        'Strawberry Almond Greek Yogurt Chia Pudding',
+        'Peach Pecan Greek Yogurt Chia Pudding',
+        'Raspberry Cacao Greek Yogurt Chia Pudding',
+        'Cacao & Almond Greek Yogurt Chia',
+    ];
+
+    /** @var list<string> */
     public const EGG_BREAKFASTS = [
         'Mediterranean Omelet',
         'Deconstructed Shakshuka Skillet',
@@ -133,6 +144,7 @@ final class BalancedWeeklyRotationSchedule
         'Chocolate Orange Brownie',
         BalancedRotationMealRecipeRefiner::SALTED_TAHINI_CARAMEL_CHOCOLATE_BAR_NAME,
         'Apple Pie Balls',
+        'Banana Blueberry Balls',
         'Cinnamon Raisin Balls',
         'Saffron Pumpkin Muffin',
         'Chocolate PB Banana Muffin',
@@ -209,6 +221,7 @@ final class BalancedWeeklyRotationSchedule
         foreach ([
             self::ROTATING_SOUPS,
             self::CHIA_DESSERTS,
+            self::GREEK_YOGURT_CHIA_DESSERTS,
             self::EGG_BREAKFASTS,
             self::CHICKEN_PLATE_MAINS,
             self::CHICKEN_SALAD_MAINS,
