@@ -264,7 +264,7 @@ class OnboardingController extends Controller
 
     private function redirectAfterOnboardingComplete(): RedirectResponse|HttpFoundationResponse
     {
-        $url = route('consultation.crafted-for-you');
+        $url = route('consultation.crafted-for-you', ['from' => 'onboarding'], absolute: false);
 
         if (request()->header('X-Inertia')) {
             return Inertia::location($url);

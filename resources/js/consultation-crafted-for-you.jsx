@@ -6,7 +6,7 @@ import { syncCsrfMetaTag } from './lib/csrfToken.js';
 const rootEl = document.getElementById('mc-consultation-crafted-root');
 const configEl = document.getElementById('mc-consultation-crafted-config');
 
-/** @type {{ closeHref?: string; homeHref?: string; summaryHref?: string; loginUrl?: string; signOutUrl?: string; csrfToken?: string; isCustomerAccount?: boolean; isAdminPreview?: boolean; pageEyebrow?: string; adaptedMenuUrl?: string; planTier?: number | null; planTiers?: number[]; editDraft?: object | null }} */
+/** @type {{ closeHref?: string; homeHref?: string; backHref?: string; summaryHref?: string; loginUrl?: string; signOutUrl?: string; csrfToken?: string; isCustomerAccount?: boolean; isAdminPreview?: boolean; pageEyebrow?: string; adaptedMenuUrl?: string; planTier?: number | null; planTiers?: number[]; editDraft?: object | null }} */
 let config = {};
 
 if (configEl) {
@@ -73,6 +73,7 @@ if (rootEl) {
         <StrictMode>
             <ConsultationErrorBoundary>
                 <CraftedForYouPage
+                    backHref={typeof config.backHref === 'string' ? config.backHref : undefined}
                     closeHref={typeof config.closeHref === 'string' ? config.closeHref : undefined}
                     homeHref={typeof config.homeHref === 'string' ? config.homeHref : undefined}
                     summaryHref={typeof config.summaryHref === 'string' ? config.summaryHref : undefined}

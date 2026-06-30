@@ -87,6 +87,20 @@ final class UserPlanCalculator
     }
 
     /**
+     * @return array{protein_g: float, carbs_g: float, fat_g: float}
+     */
+    public static function dayMacroTolerance(): array
+    {
+        $config = config('customer_nutrition.day_macro_tolerance', []);
+
+        return [
+            'protein_g' => max(0.0, round((float) ($config['protein_g'] ?? 15.0), 2)),
+            'carbs_g' => max(0.0, round((float) ($config['carbs_g'] ?? 20.0), 2)),
+            'fat_g' => max(0.0, round((float) ($config['fat_g'] ?? 15.0), 2)),
+        ];
+    }
+
+    /**
      * Split the scalable calorie budget across breakfast and mains using tier-table proportions.
      *
      * @return array{breakfast: float, main_each: float, scalable_budget: float}
@@ -381,6 +395,7 @@ final class UserPlanCalculator
             'core_day_calories' => $coreDayCalories,
             'day_total_calories' => $dayTotalCalories,
             'day_calorie_tolerance' => self::dayCalorieTolerance(),
+            'day_macro_tolerance' => self::dayMacroTolerance(),
             'scalable_budget' => [
                 'calories' => $scalableBudgetCalories,
                 'macros' => $scalableBudgetMacros,

@@ -220,7 +220,7 @@ export function scheduledFullCraftCategoryMealsForDay(schedule, dayOfWeek) {
 }
 
 /**
- * @param {{ includeSoup?: boolean; selectedFixedSlots?: string[]; craftKey?: string; soupCalories?: number; sideSaladCalories?: number; dessertCalories?: number; dayOfWeek?: number; planTier?: number }} [options]
+ * @param {{ includeSoup?: boolean; selectedFixedSlots?: string[]; craftKey?: string; soupCalories?: number; sideSaladCalories?: number; dessertCalories?: number; dayOfWeek?: number; planTier?: number; selectedMainMealIds?: string[] }} [options]
  */
 export function buildAdaptedMenuQueryString(options = {}) {
     const params = new URLSearchParams();
@@ -232,6 +232,11 @@ export function buildAdaptedMenuQueryString(options = {}) {
     if (Array.isArray(options.selectedFixedSlots) && options.selectedFixedSlots.length > 0) {
         for (const slot of options.selectedFixedSlots) {
             params.append('selected_fixed_slots[]', slot);
+        }
+    }
+    if (Array.isArray(options.selectedMainMealIds) && options.selectedMainMealIds.length > 0) {
+        for (const mealId of options.selectedMainMealIds) {
+            params.append('selected_main_meal_ids[]', String(mealId));
         }
     }
     if (typeof options.soupCalories === 'number' && options.soupCalories > 0) {
@@ -258,7 +263,7 @@ export function buildAdaptedMenuQueryString(options = {}) {
 
 /**
  * @param {string} url
- * @param {{ includeSoup?: boolean; craftKey?: string; soupCalories?: number; sideSaladCalories?: number; dessertCalories?: number; dayOfWeek?: number; planTier?: number }} [options]
+ * @param {{ includeSoup?: boolean; craftKey?: string; soupCalories?: number; sideSaladCalories?: number; dessertCalories?: number; dayOfWeek?: number; planTier?: number; selectedMainMealIds?: string[] }} [options]
  */
 export async function fetchAdaptedMenu(url, options = {}) {
     const query = buildAdaptedMenuQueryString(options);

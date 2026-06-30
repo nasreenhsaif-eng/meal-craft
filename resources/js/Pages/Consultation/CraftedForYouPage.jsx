@@ -29,8 +29,8 @@ import {
     scheduledSoupConsultationMealsForDay,
 } from '../../consultation/mapAdaptedMenuMeals.js';
 import { buildCraftPlanSubmissionPayload, submitCraftPlan } from '../../consultation/submitCraftPlan.js';
-import { craftDayCaloriesForKey, fixedPortionCaloriesForAdapt, mainProteinTargetPerMeal, mainSlotTargetCaloriesFromPlan, selectedFixedSlotsFromSelections } from '../../consultation/craftCalorieTargets.js';
-import { balanceSelectedMainMealCards } from '../../consultation/balanceMainMealProtein.ts';
+import { craftDayCaloriesForKey, dailyMacroTargetsFromPlan, dayMacroToleranceFromPlan, fixedPortionCaloriesForAdapt, mainProteinTargetPerMeal, mainSlotTargetCaloriesFromPlan, nutritionPlanMatchesTier, selectedFixedSlotsFromSelections } from '../../consultation/craftCalorieTargets.js';
+import { reconcileConsultationDayMacros } from '../../consultation/balanceMainMealProtein.ts';
 import {
     resolveInitialConsultationRestoreDraft,
     saveConsultationDraft,
@@ -43,6 +43,7 @@ const WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const WEEKDAY_LONG = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const DEFAULT_PLAN_TIERS = [1000, 1200, 1500, 1800, 2000];
 const PREVIEW_PLAN_TIER_STORAGE_KEY = 'mc-admin-preview-plan-tier';
+const CONSULTATION_BACK_HREF_STORAGE_KEY = 'mc-consultation-back-href';
 
 /**
  * @param {number[]} planTiers
@@ -379,6 +380,7 @@ function slotId(dayIdx, slotKey, index) {
  * @param {{
  *   closeHref?: string;
  *   homeHref?: string;
+ *   backHref?: string;
  *   summaryHref?: string;
  *   loginUrl?: string;
  *   signOutUrl?: string;
@@ -405,6 +407,7 @@ function slotId(dayIdx, slotKey, index) {
 export default function CraftedForYouPage({
     closeHref,
     homeHref,
+    backHref,
     summaryHref,
     loginUrl,
     signOutUrl,
@@ -461,6 +464,36 @@ export default function CraftedForYouPage({
         () => initialRestoreDraft?.fullCraftSoupOptInByDay ?? {},
     );
 
+    const planSetupBackHref = useMemo(() => {
+        if (typeof backHref === 'string' && backHref.trim() !== '') {
+            return backHref;
+        }
+
+        try {
+            const stored = sessionStorage.getItem(CONSULTATION_BACK_HREF_STORAGE_KEY);
+
+            if (typeof stored === 'string' && stored.trim() !== '') {
+                return stored;
+            }
+        } catch {
+            // sessionStorage may be unavailable
+        }
+
+        return null;
+    }, [backHref]);
+
+    useEffect(() => {
+        if (typeof backHref !== 'string' || backHref.trim() === '') {
+            return;
+        }
+
+        try {
+            sessionStorage.setItem(CONSULTATION_BACK_HREF_STORAGE_KEY, backHref);
+        } catch {
+            // sessionStorage may be unavailable
+        }
+    }, [backHref]);
+
     const availablePlanTiers = useMemo(
         () => (initialPlanTiers.length > 0 ? initialPlanTiers : DEFAULT_PLAN_TIERS),
         [initialPlanTiers],
@@ -491,6 +524,7 @@ export default function CraftedForYouPage({
     const [menuLoading, setMenuLoading] = useState(false);
     const [menuError, setMenuError] = useState(/** @type {string | null} */ (null));
     const hasLoadedAdaptedMenuRef = useRef(false);
+    const adaptedMenuFetchGenerationRef = useRef(0);
     const [isLgViewport, setIsLgViewport] = useState(/** @type {boolean | null} */ (null));
 
     useLayoutEffect(() => {
@@ -560,12 +594,13 @@ export default function CraftedForYouPage({
     );
 
     const basePlanTier = useMemo(() => {
+        if (isAdminPreview && typeof previewPlanTier === 'number' && previewPlanTier > 0) {
+            return previewPlanTier;
+        }
+
         const fromPlan = nutritionPlan?.plan_tier ?? nutritionPlan?.core_day_calories;
         if (typeof fromPlan === 'number' && fromPlan > 0) {
             return Math.round(fromPlan);
-        }
-        if (isAdminPreview && typeof previewPlanTier === 'number' && previewPlanTier > 0) {
-            return previewPlanTier;
         }
         if (typeof initialPlanTier === 'number' && initialPlanTier > 0) {
             return initialPlanTier;
@@ -587,7 +622,9 @@ export default function CraftedForYouPage({
     }, [isAdminPreview, previewPlanTier]);
 
     const planTierCalories = useMemo(() => {
-        const fromCraft = nutritionPlan?.craft_day_calories;
+        const planSynced = nutritionPlan && nutritionPlanMatchesTier(nutritionPlan, basePlanTier);
+        const fromCraft = planSynced ? nutritionPlan?.craft_day_calories : null;
+
         if (typeof fromCraft === 'number' && fromCraft > 0) {
             return Math.round(fromCraft);
         }
@@ -605,8 +642,8 @@ export default function CraftedForYouPage({
     );
 
     const mainSlotTargetCalories = useMemo(
-        () => mainSlotTargetCaloriesFromPlan(nutritionPlan),
-        [nutritionPlan],
+        () => mainSlotTargetCaloriesFromPlan(nutritionPlan, basePlanTier),
+        [nutritionPlan, basePlanTier],
     );
 
     const usesWeeklyScheduledMenu = useMemo(
@@ -781,6 +818,22 @@ export default function CraftedForYouPage({
         window.history.back();
     }
 
+    function goBackFromPlanSetup() {
+        if (planSetupBackHref) {
+            window.location.assign(planSetupBackHref);
+
+            return;
+        }
+
+        if (typeof window !== 'undefined' && window.history.length > 1) {
+            window.history.back();
+
+            return;
+        }
+
+        exitConsultation();
+    }
+
     async function submit() {
         if (!craftKey || weekDuration === null) {
             return;
@@ -864,6 +917,10 @@ export default function CraftedForYouPage({
 
     const calorieDay = curationDay ?? effectiveActiveDay;
 
+    /** Admin preview: keep adapted menu in sync when tier/craft change before day curation. */
+    const adaptedMenuDay =
+        calorieDay ?? (isAdminPreview && craftKey ? (sortedSelectedDays[0] ?? 1) : null);
+
     const includeSoupForAdaptedMenu = useMemo(() => {
         if (!calorieDay) {
             return false;
@@ -946,8 +1003,8 @@ export default function CraftedForYouPage({
     ]);
 
     const adaptedMenuFetchKey = useMemo(() => {
-        const scheduledDay = calorieDay
-            ? scheduledFullCraftCategoryMealsForDay(scheduledFullCraftByWeekday, calorieDay)
+        const scheduledDay = adaptedMenuDay
+            ? scheduledFullCraftCategoryMealsForDay(scheduledFullCraftByWeekday, adaptedMenuDay)
             : null;
         const scheduledSideBaseline = scheduledDay?.sideSalads?.[0]?.baselineCalories
             ?? scheduledDay?.sideSalads?.[0]?.caloriesNumber
@@ -957,13 +1014,14 @@ export default function CraftedForYouPage({
             ?? null;
         const scheduledSoupBaseline = scheduledDay?.soup?.[0]?.baselineCalories
             ?? scheduledDay?.soup?.[0]?.caloriesNumber
-            ?? scheduledSoupConsultationMealsForDay(scheduledSoupsByWeekday, calorieDay ?? 0)[0]
+            ?? scheduledSoupConsultationMealsForDay(scheduledSoupsByWeekday, adaptedMenuDay ?? 0)[0]
                 ?.baselineCalories
             ?? null;
 
-        const selectedFixedSlots = selectedFixedSlotsFromSelections(selectedByDay[calorieDay]);
+        const selectedFixedSlots = selectedFixedSlotsFromSelections(selectedByDay[adaptedMenuDay]);
 
-        const breakfastId = selectedByDay[calorieDay]?.breakfasts?.[0] ?? null;
+        const breakfastId = selectedByDay[adaptedMenuDay]?.breakfasts?.[0] ?? null;
+        const selectedMainMealIds = selectedByDay[adaptedMenuDay]?.meals ?? [];
 
         return JSON.stringify({
             craftKey,
@@ -979,9 +1037,10 @@ export default function CraftedForYouPage({
             scheduledSideBaseline,
             scheduledDessertBaseline,
             scheduledSoupBaseline,
-            dayOfWeek: calorieDay ?? null,
+            dayOfWeek: adaptedMenuDay ?? null,
             planTier: isAdminPreview ? previewPlanTier : null,
             breakfastId: breakfastId ?? null,
+            selectedMainMealIds,
         });
     }, [
         craftKey,
@@ -989,7 +1048,7 @@ export default function CraftedForYouPage({
         soupCaloriesForAdaptedMenu,
         dayFixedSelectionIds,
         selectedFixedBaselines,
-        calorieDay,
+        adaptedMenuDay,
         selectedByDay,
         scheduledFullCraftByWeekday,
         scheduledSoupsByWeekday,
@@ -999,12 +1058,12 @@ export default function CraftedForYouPage({
     ]);
 
     const adaptedMenuFetchParams = useMemo(() => {
-        if (!calorieDay || !craftKey) {
+        if (!adaptedMenuDay || !craftKey) {
             return null;
         }
 
-        const scheduledDay = scheduledFullCraftCategoryMealsForDay(scheduledFullCraftByWeekday, calorieDay);
-        const scheduledSoups = scheduledSoupConsultationMealsForDay(scheduledSoupsByWeekday, calorieDay);
+        const scheduledDay = scheduledFullCraftCategoryMealsForDay(scheduledFullCraftByWeekday, adaptedMenuDay);
+        const scheduledSoups = scheduledSoupConsultationMealsForDay(scheduledSoupsByWeekday, adaptedMenuDay);
         const findScheduledMeal = (id, list) => list.find((meal) => meal.id === id);
 
         const mealFromBaseline = (id, baseline) => {
@@ -1015,7 +1074,7 @@ export default function CraftedForYouPage({
             return { id, baselineCalories: baseline, caloriesNumber: baseline };
         };
 
-        const selectedFixedSlots = selectedFixedSlotsFromSelections(selectedByDay[calorieDay]);
+        const selectedFixedSlots = selectedFixedSlotsFromSelections(selectedByDay[adaptedMenuDay]);
         const planningFixedSlots =
             selectedFixedSlots.length === FIXED_CHOICE_REQUIRED_COUNT ? selectedFixedSlots : undefined;
 
@@ -1060,11 +1119,12 @@ export default function CraftedForYouPage({
             soupCalories: fixedPortion.soupCalories || undefined,
             sideSaladCalories: fixedPortion.sideSaladCalories || undefined,
             dessertCalories: fixedPortion.dessertCalories || undefined,
-            dayOfWeek: calorieDay,
+            dayOfWeek: adaptedMenuDay,
             planTier: isAdminPreview ? previewPlanTier : undefined,
+            selectedMainMealIds: selectedByDay[adaptedMenuDay]?.meals ?? [],
         };
     }, [
-        calorieDay,
+        adaptedMenuDay,
         craftKey,
         includeSoupForAdaptedMenu,
         soupCaloriesForAdaptedMenu,
@@ -1100,10 +1160,11 @@ export default function CraftedForYouPage({
         }
 
         let cancelled = false;
+        const fetchGeneration = ++adaptedMenuFetchGenerationRef.current;
         const showInitialLoading = !hasLoadedAdaptedMenuRef.current;
 
         const timeoutId = window.setTimeout(() => {
-            if (showInitialLoading) {
+            if (showInitialLoading || isAdminPreview) {
                 setMenuLoading(true);
             }
             setMenuError(null);
@@ -1111,7 +1172,7 @@ export default function CraftedForYouPage({
             (async () => {
                 try {
                     const payload = await fetchAdaptedMenu(adaptedMenuUrl, adaptedMenuFetchParams);
-                    if (cancelled) {
+                    if (cancelled || fetchGeneration !== adaptedMenuFetchGenerationRef.current) {
                         return;
                     }
                     setLiveMeals(mapAdaptedMenuPayloadToConsultationMeals(payload));
@@ -1136,11 +1197,11 @@ export default function CraftedForYouPage({
                     );
                     hasLoadedAdaptedMenuRef.current = true;
                 } catch (error) {
-                    if (!cancelled) {
+                    if (!cancelled && fetchGeneration === adaptedMenuFetchGenerationRef.current) {
                         setMenuError(error instanceof Error ? error.message : 'Could not load meals.');
                     }
                 } finally {
-                    if (!cancelled) {
+                    if (!cancelled && fetchGeneration === adaptedMenuFetchGenerationRef.current) {
                         setMenuLoading(false);
                     }
                 }
@@ -1151,21 +1212,9 @@ export default function CraftedForYouPage({
             cancelled = true;
             window.clearTimeout(timeoutId);
         };
-    }, [adaptedMenuFetchKey, adaptedMenuUrl, disableAdaptedMenuFetch, craftKey, adaptedMenuFetchParams]);
+    }, [adaptedMenuFetchKey, adaptedMenuUrl, disableAdaptedMenuFetch, craftKey, adaptedMenuFetchParams, isAdminPreview]);
 
-    const catalogMealsWithBalancedMains = useMemo(() => {
-        if (!calorieDay) {
-            return catalogMeals;
-        }
-
-        const selectedMainIds = selectedByDay[calorieDay]?.meals ?? [];
-
-        if (selectedMainIds.length === 0) {
-            return catalogMeals;
-        }
-
-        return balanceSelectedMainMealCards(catalogMeals, selectedMainIds, mainProteinTarget, mainSlotTargetCalories);
-    }, [calorieDay, selectedByDay, catalogMeals, mainProteinTarget, mainSlotTargetCalories]);
+    const catalogMealsWithBalancedMains = useMemo(() => catalogMeals, [catalogMeals]);
 
     /** Capped option sets only — mirrors pre–live-API MOCK_MEALS deck (2 / 4 / 2 / 2). */
     const consultationDeckMeals = useMemo(
@@ -1222,36 +1271,14 @@ export default function CraftedForYouPage({
             return null;
         }
 
-        const assigned = scheduledFullCraftCategoryMealsForDay(scheduledFullCraftByWeekday, calorieDay);
-
-        if (!assigned) {
-            return null;
-        }
-
-        const selectedMainIds = selectedByDay[calorieDay]?.meals ?? [];
-
-        if (selectedMainIds.length === 0) {
-            return assigned;
-        }
-
-        return {
-            ...assigned,
-            meals: balanceSelectedMainMealCards(assigned.meals ?? [], selectedMainIds, mainProteinTarget, mainSlotTargetCalories),
-        };
-    }, [
-        calorieDay,
-        usesWeeklyScheduledMenu,
-        scheduledFullCraftByWeekday,
-        selectedByDay,
-        mainProteinTarget,
-        mainSlotTargetCalories,
-    ]);
+        return scheduledFullCraftCategoryMealsForDay(scheduledFullCraftByWeekday, calorieDay);
+    }, [calorieDay, usesWeeklyScheduledMenu, scheduledFullCraftByWeekday]);
 
     const selectedMealCardsForDay = useMemo(() => {
         if (!calorieDay) {
             return [];
         }
-        const byId = new Map(catalogMealsWithBalancedMains.map((m) => [m.id, m]));
+
         const s = selectedByDay[calorieDay] ?? {
             breakfasts: [],
             meals: [],
@@ -1259,18 +1286,82 @@ export default function CraftedForYouPage({
             desserts: [],
             soup: [],
         };
+
+        const assigned = assignedMealsForCalorieDay;
+        const byId = new Map(catalogMealsWithBalancedMains.map((m) => [m.id, m]));
+
+        if (assigned) {
+            const assignedById = new Map(
+                [
+                    ...(assigned.breakfasts ?? []),
+                    ...(assigned.meals ?? []),
+                    ...(assigned.sideSalads ?? []),
+                    ...(assigned.desserts ?? []),
+                    ...(assigned.soup ?? []),
+                ].map((meal) => [meal.id, meal]),
+            );
+
+            const ids = [...s.breakfasts, ...s.meals, ...s.sideSalads, ...s.desserts, ...s.soup];
+
+            return ids.map((id) => assignedById.get(id) ?? byId.get(id)).filter(Boolean);
+        }
+
         const ids = [...s.breakfasts, ...s.meals, ...s.sideSalads, ...s.desserts, ...s.soup];
 
         return ids.map((id) => byId.get(id)).filter(Boolean);
-    }, [calorieDay, selectedByDay, catalogMealsWithBalancedMains]);
+    }, [calorieDay, selectedByDay, catalogMealsWithBalancedMains, assignedMealsForCalorieDay]);
+
+    const dayMacroTargets = useMemo(
+        () =>
+            dailyMacroTargetsFromPlan(
+                nutritionPlan,
+                planTierCalories,
+                craft?.key ?? 'full',
+            ),
+        [nutritionPlan, planTierCalories, craft?.key],
+    );
+
+    const dayMacroTolerance = useMemo(
+        () => dayMacroToleranceFromPlan(nutritionPlan),
+        [nutritionPlan],
+    );
+
+    const reconciledMealCardsForDay = useMemo(() => {
+        if (!calorieDay || selectedMealCardsForDay.length === 0) {
+            return selectedMealCardsForDay;
+        }
+
+        if (usesWeeklyScheduledMenu && assignedMealsForCalorieDay) {
+            return selectedMealCardsForDay;
+        }
+
+        return reconcileConsultationDayMacros(
+            groupConsultationMealsByCategory(selectedMealCardsForDay),
+            dayMacroTargets,
+            dayMacroTolerance,
+            planTierCalories,
+            typeof nutritionPlan?.day_calorie_tolerance === 'number' ? nutritionPlan.day_calorie_tolerance : 50,
+            mainSlotTargetCalories,
+        );
+    }, [
+        calorieDay,
+        usesWeeklyScheduledMenu,
+        assignedMealsForCalorieDay,
+        selectedMealCardsForDay,
+        dayMacroTargets,
+        dayMacroTolerance,
+        planTierCalories,
+        nutritionPlan?.day_calorie_tolerance,
+        mainSlotTargetCalories,
+    ]);
 
     const dayCaloriesTotal = useMemo(() => {
-        return selectedMealCardsForDay.reduce((acc, m) => acc + (m?.caloriesNumber ?? 0), 0);
-    }, [selectedMealCardsForDay]);
+        return reconciledMealCardsForDay.reduce((acc, m) => acc + (m?.caloriesNumber ?? 0), 0);
+    }, [reconciledMealCardsForDay]);
 
     const dayMacroTotals = useMemo(
-        () => sumActiveDayMacros(groupConsultationMealsByCategory(selectedMealCardsForDay)),
-        [selectedMealCardsForDay],
+        () => sumActiveDayMacros(groupConsultationMealsByCategory(reconciledMealCardsForDay)),
+        [reconciledMealCardsForDay],
     );
 
     const progressPercent = totalScreens <= 1 ? 0 : ((screen - 1) / (totalScreens - 1)) * 100;
@@ -1551,7 +1642,7 @@ export default function CraftedForYouPage({
                         </div>
 
                         <div className="mt-8 flex items-center justify-between gap-3 fixed bottom-0 left-0 right-0 z-40 border-t border-gray-200/70 bg-[#F8F9F6]/95 p-3 backdrop-blur sm:static sm:mt-6 sm:border-t-0 sm:bg-transparent sm:p-0">
-                            <Button label="BACK" variant="outline" onClick={exitConsultation} className="px-10" />
+                            <Button label="BACK" variant="outline" onClick={goBackFromPlanSetup} className="px-10" />
                             <Button
                                 label="NEXT"
                                 variant="primary"
@@ -1676,19 +1767,7 @@ export default function CraftedForYouPage({
                                     day,
                                 );
                                 if (assigned) {
-                                    const selectedMainIds = daySelections.meals ?? [];
-                                    dayAssignedMeals =
-                                        selectedMainIds.length === 0
-                                            ? assigned
-                                            : {
-                                                  ...assigned,
-                                                  meals: balanceSelectedMainMealCards(
-                                                      assigned.meals ?? [],
-                                                      selectedMainIds,
-                                                      mainProteinTarget,
-                                                      mainSlotTargetCalories,
-                                                  ),
-                                              };
+                                    dayAssignedMeals = assigned;
                                 }
                             }
 
@@ -1762,6 +1841,8 @@ export default function CraftedForYouPage({
                                 dayName={WEEKDAY_LONG[curationDay - 1] ?? ''}
                                 totalKcal={dayCaloriesTotal}
                                 dayMacroTotals={dayMacroTotals}
+                                dayMacroTargets={dayMacroTargets}
+                                dayMacroTolerance={dayMacroTolerance}
                                 summaryLabel={`${WEEKDAY_LABELS[curationDay - 1]} selections`}
                                 craftTitle={craft ? craft.title : ''}
                                 targetCalories={planTierCalories}

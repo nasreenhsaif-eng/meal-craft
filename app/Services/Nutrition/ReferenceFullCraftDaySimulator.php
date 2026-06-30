@@ -47,6 +47,7 @@ final class ReferenceFullCraftDaySimulator
             'craft_key' => 'full',
             'selected_fixed_slots' => $selectedFixedSlots,
             'snap_to_tier' => false,
+            'day_of_week' => $dayNumber,
         ];
 
         if (isset($fixedCalories['soup'])) {
@@ -83,6 +84,14 @@ final class ReferenceFullCraftDaySimulator
             );
         }
 
+        $dayMenu = [
+            'breakfasts' => array_values(array_filter($adaptedMeals, static fn (array $meal): bool => ($meal['slot'] ?? '') === 'breakfast')),
+            'meals' => array_values(array_filter($adaptedMeals, static fn (array $meal): bool => ($meal['slot'] ?? '') === 'main')),
+            'sideSalads' => [],
+            'desserts' => [],
+            'soup' => [],
+        ];
+
         foreach (['side_salad', 'dessert', 'soup'] as $slot) {
             if (! in_array($slot, $selectedFixedSlots, true)) {
                 continue;
@@ -96,10 +105,27 @@ final class ReferenceFullCraftDaySimulator
 
             $adapted = AdaptedMenuBuilder::adaptMealForProfile($profile, $meal, $buildOptions);
 
-            if (is_array($adapted)) {
-                $adaptedMeals[] = $adapted;
+            if (! is_array($adapted)) {
+                continue;
             }
+
+            $bucket = match ($slot) {
+                'side_salad' => 'sideSalads',
+                'dessert' => 'desserts',
+                default => 'soup',
+            };
+            $dayMenu[$bucket][] = $adapted;
+            $adaptedMeals[] = $adapted;
         }
+
+        $reconciled = DayMacroReconciliation::reconcile($profile, $dayMenu, $mainMeals, $buildOptions);
+        $adaptedMeals = [
+            ...$dayMenu['breakfasts'],
+            ...$reconciled['dayMenu']['meals'],
+            ...$reconciled['dayMenu']['sideSalads'],
+            ...$reconciled['dayMenu']['desserts'],
+            ...$reconciled['dayMenu']['soup'],
+        ];
 
         $dayNutrition = DayMicronutrientCoverageAnalyzer::aggregateAdaptedNutrition($adaptedMeals);
 

@@ -268,6 +268,8 @@ final class BalancedCanonicalMealRecipeRefiner
                     'Sweet Potato' => 85,
                     'Spinach (Fresh)' => 55,
                     'Mushrooms' => 45,
+                    'Rosemary (Fresh)' => 2,
+                    'Garlic (Raw)' => 4,
                     'Olive Oil (Extra Virgin)' => 4,
                     'Black Pepper' => 0.5,
                 ],

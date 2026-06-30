@@ -484,3 +484,36 @@ test('adapted menu day craft subtracts one main meal from the plan tier', functi
         ->assertJsonPath('plan.craft_key', 'day')
         ->assertJsonPath('plan.craft_day_calories', 1375);
 });
+
+test('adapted menu returns day macro tolerance and consistent daily macros across tier switches', function () {
+    $user = User::factory()->create();
+    $profile = CustomerProfile::factory()->for($user)->create([
+        'daily_calorie_target' => 2000,
+        'protein_percentage' => 40,
+        'carb_percentage' => 30,
+        'fat_percentage' => 30,
+    ]);
+
+    $at2000 = $this->actingAs($user)->getJson('/api/menu/adapted?craft_key=full');
+    $at2000->assertSuccessful()
+        ->assertJsonPath('plan.plan_tier', 2000)
+        ->assertJsonPath('plan.day_macro_tolerance.protein_g', 15);
+
+    $proteinAt2000 = (float) $at2000->json('plan.daily_macros.protein_g');
+    expect($proteinAt2000)->toBeGreaterThanOrEqual(190)->toBeLessThanOrEqual(200);
+
+    $profile->update(['daily_calorie_target' => 1500]);
+    $user->refresh();
+
+    $this->actingAs($user)->getJson('/api/menu/adapted?craft_key=full')->assertSuccessful()
+        ->assertJsonPath('plan.plan_tier', 1500);
+
+    $profile->update(['daily_calorie_target' => 2000]);
+    $user->refresh();
+
+    $this->actingAs($user)->getJson('/api/menu/adapted?craft_key=full')->assertSuccessful()
+        ->assertJsonPath('plan.plan_tier', 2000);
+
+    expect((float) $this->actingAs($user)->getJson('/api/menu/adapted?craft_key=full')->json('plan.daily_macros.protein_g'))
+        ->toBe($proteinAt2000);
+});

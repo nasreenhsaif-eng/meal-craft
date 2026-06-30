@@ -18,6 +18,7 @@ final class AdaptedMenuBuildOptionsFromRequest
      *     day_of_week?: int,
      *     craft_key?: string,
      *     plan_tier?: float,
+     *     selected_main_meal_ids?: list<int>,
      * }
      */
     public static function resolve(Request $request, User $user): array
@@ -33,6 +34,8 @@ final class AdaptedMenuBuildOptionsFromRequest
             'plan_tier' => ['sometimes', 'integer', Rule::in(UserPlanCalculator::planTiers())],
             'selected_fixed_slots' => ['sometimes', 'array'],
             'selected_fixed_slots.*' => ['string', Rule::in(UserPlanCalculator::fixedChoiceSlots())],
+            'selected_main_meal_ids' => ['sometimes', 'array', 'max:4'],
+            'selected_main_meal_ids.*' => ['integer', 'min:1'],
         ]);
 
         $selectedFixedSlots = isset($validated['selected_fixed_slots'])
@@ -75,6 +78,13 @@ final class AdaptedMenuBuildOptionsFromRequest
 
         if (isset($validated['plan_tier']) && $isAdminPreview) {
             $buildOptions['plan_tier'] = (float) (int) $validated['plan_tier'];
+        }
+
+        if (isset($validated['selected_main_meal_ids'])) {
+            $buildOptions['selected_main_meal_ids'] = array_values(array_unique(array_map(
+                static fn (mixed $id): int => (int) $id,
+                $validated['selected_main_meal_ids'],
+            )));
         }
 
         return AdaptedMenuFixedPortionResolver::mergeIntoBuildOptions($buildOptions);

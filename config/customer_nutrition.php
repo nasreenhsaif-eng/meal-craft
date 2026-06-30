@@ -46,6 +46,30 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Day macro tolerance (grams) — consultation footer warnings & reconciliation
+    |--------------------------------------------------------------------------
+    */
+    'day_macro_tolerance' => [
+        'protein_g' => 15.0,
+        'carbs_g' => 20.0,
+        'fat_g' => 15.0,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Macro-first main meal scaling
+    |--------------------------------------------------------------------------
+    */
+    'macro_first_main_scaling' => [
+        'enabled' => true,
+        'herb_flavor_multiplier_min' => 0.5,
+        'herb_flavor_multiplier_max' => 2.0,
+        'max_primary_meat_grams' => 200.0,
+        'carb_baseline_floor_ratio' => 0.6,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Production weekly meal plan (admin scheduler)
     |--------------------------------------------------------------------------
     |

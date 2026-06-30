@@ -176,7 +176,7 @@ final class BalancedChiaDessertRecipeRefiner
                 'ingredients' => [
                     self::COCONUT_CHIA_BASE_NAME => $base,
                     'Blueberries' => 20,
-                    'Walnuts' => 5,
+                    'Walnuts' => 8,
                     'Fresh Mint' => 1,
                     'Cinnamon' => 1,
                 ],
@@ -191,7 +191,7 @@ final class BalancedChiaDessertRecipeRefiner
                 'ingredients' => [
                     self::COCONUT_CHIA_BASE_NAME => $base,
                     'Mango' => 35,
-                    'Pumpkin Seeds' => 5,
+                    'Pumpkin Seeds' => 10,
                 ],
                 'instructions' => array_merge($basePrep, [
                     'Top with diced mango and pumpkin seeds.',
@@ -203,7 +203,7 @@ final class BalancedChiaDessertRecipeRefiner
             'Spiced Crunch Chia Pudding' => [
                 'ingredients' => [
                     self::COCONUT_CHIA_BASE_NAME => $base,
-                    'Almond whole' => 3,
+                    'Almond whole' => 6,
                     'Black Seeds' => 2,
                     'Sesame Seeds' => 3,
                     'Cinnamon' => 1.5,
@@ -222,7 +222,7 @@ final class BalancedChiaDessertRecipeRefiner
                 'ingredients' => [
                     self::COCONUT_CHIA_BASE_NAME => $base,
                     'Strawberries' => 40,
-                    'Almond whole' => 4,
+                    'Almond whole' => 7,
                 ],
                 'instructions' => array_merge($basePrep, [
                     'Fold in sliced strawberries and almonds.',
@@ -235,7 +235,7 @@ final class BalancedChiaDessertRecipeRefiner
                 'ingredients' => [
                     self::COCONUT_CHIA_BASE_NAME => $base,
                     'Peach' => 35,
-                    'Pecans' => 5,
+                    'Pecans' => 8,
                     'Cinnamon' => 0.5,
                     'Fresh Mint' => 2,
                 ],

@@ -481,7 +481,7 @@ test('completed onboarding redirects to meal selection', function () {
         ->post(route('onboarding.food-filters.store'), [
             'allergies' => ['gluten', 'dairy'],
         ])
-        ->assertRedirect(route('consultation.crafted-for-you'));
+        ->assertRedirect(route('consultation.crafted-for-you', ['from' => 'onboarding'], absolute: false));
 
     $profile = $customer->fresh()->customerProfile;
 
@@ -510,7 +510,7 @@ test('inertia food filter completion uses external location redirect to meal sel
             'X-Inertia' => 'true',
         ])
         ->assertStatus(409)
-        ->assertHeader('X-Inertia-Location', route('consultation.crafted-for-you'));
+        ->assertHeader('X-Inertia-Location', route('consultation.crafted-for-you', ['from' => 'onboarding'], absolute: false));
 });
 
 test('completed customers can reset onboarding for testing', function () {
@@ -536,6 +536,15 @@ test('completed customers are redirected away from onboarding', function () {
     $this->actingAs($customer)
         ->get(route('onboarding.show', ['step' => OnboardingStep::Gender->value]))
         ->assertRedirect(route('app.home'));
+});
+
+test('completed customers can revisit food filters from meal consultation', function () {
+    $customer = User::factory()->customer()->create();
+    CustomerProfile::factory()->for($customer)->create();
+
+    $this->actingAs($customer)
+        ->get(route('onboarding.show', ['step' => OnboardingStep::FoodFilters->value]))
+        ->assertSuccessful();
 });
 
 test('admin can view customer profiles list', function () {

@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\OnboardingStep;
 use App\Models\CustomerProfile;
 use App\Models\User;
 use App\Services\Nutrition\UserPlanCalculator;
@@ -79,4 +80,43 @@ test('customer consultation page does not enable admin tier preview', function (
     $config = json_decode($matches[1] ?? '{}', true);
 
     expect($config['isAdminPreview'] ?? null)->toBeFalse();
+});
+
+test('consultation page exposes onboarding back link when opened from onboarding', function () {
+    $user = User::factory()->create();
+
+    $response = $this->actingAs($user)
+        ->get(route('consultation.crafted-for-you', ['from' => 'onboarding']))
+        ->assertOk();
+
+    preg_match(
+        '/id="mc-consultation-crafted-config" type="application\/json">(.*?)<\/script>/s',
+        $response->getContent(),
+        $matches,
+    );
+
+    $config = json_decode($matches[1] ?? '{}', true);
+
+    expect($config['backHref'] ?? null)->toBe(
+        route('onboarding.show', ['step' => OnboardingStep::FoodFilters->value], absolute: false),
+    );
+});
+
+test('consultation page omits onboarding back link for direct visits', function () {
+    $user = User::factory()->customer()->create();
+    CustomerProfile::factory()->for($user)->create();
+
+    $response = $this->actingAs($user)
+        ->get(route('consultation.crafted-for-you'))
+        ->assertOk();
+
+    preg_match(
+        '/id="mc-consultation-crafted-config" type="application\/json">(.*?)<\/script>/s',
+        $response->getContent(),
+        $matches,
+    );
+
+    $config = json_decode($matches[1] ?? '{}', true);
+
+    expect($config['backHref'] ?? null)->toBeNull();
 });

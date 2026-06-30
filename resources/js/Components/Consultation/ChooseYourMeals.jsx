@@ -495,19 +495,43 @@ function PlanMacroValueCells({ macros, cellClassName = '', lastCellClassName = '
  * @param {object} props
  * @param {MacroTotals} props.macros
  * @param {string} [props.ariaLabel]
+ * @param {Array<'calories' | 'protein' | 'carbs' | 'fat'>} [props.highlightKeys]
+ * @param {boolean} [props.muted]
  */
-export function PlanMacroSummaryRow({ macros, ariaLabel = 'Macros' }) {
+export function PlanMacroSummaryRow({ macros, ariaLabel = 'Macros', highlightKeys = [], muted = false }) {
     return (
         <div className="grid w-full grid-cols-4 gap-2 sm:gap-3" role="group" aria-label={ariaLabel}>
             {PLAN_MACRO_CELL_META.map((cell) => (
                 <div key={cell.key} className="min-w-0 text-center">
                     <p
-                        className="truncate text-sm font-bold tabular-nums leading-none sm:text-[15px]"
-                        style={{ color: cell.color }}
+                        className={[
+                            'truncate text-sm font-bold tabular-nums leading-none sm:text-[15px]',
+                            muted ? 'opacity-70' : '',
+                            highlightKeys.includes(cell.key) ? 'text-amber-800' : '',
+                        ]
+                            .join(' ')
+                            .trim()}
+                        style={highlightKeys.includes(cell.key) ? undefined : { color: muted ? '#6B7280' : cell.color }}
                     >
                         {formatPlanMacroValue(cell.key, macros?.[cell.key])}
                     </p>
                 </div>
+            ))}
+        </div>
+    );
+}
+
+/** Column labels for compact consultation macro footer (Cal / Pro / Carb / Fat). */
+export function PlanMacroColumnHeaderRow() {
+    return (
+        <div className="mb-1 grid w-full grid-cols-4 gap-2 sm:gap-3" aria-hidden="true">
+            {PLAN_MACRO_CELL_META.map((cell) => (
+                <p
+                    key={cell.key}
+                    className="truncate text-center font-montserrat text-[9px] font-semibold uppercase tracking-[0.12em] text-[#6B7280] sm:text-[10px]"
+                >
+                    {cell.shortLabel}
+                </p>
             ))}
         </div>
     );
@@ -1229,6 +1253,8 @@ export default function ChooseYourMeals({
     dayName = '',
     totalKcal = 0,
     dayMacroTotals = null,
+    dayMacroTargets = null,
+    dayMacroTolerance = null,
     summaryLabel,
     targetCalories = 1200,
     dayCalorieTolerance = 50,
@@ -1506,6 +1532,39 @@ export default function ChooseYourMeals({
 
     const showLegacyNavigation = typeof onFooterNext !== 'function' && navigation;
 
+    const macroHighlightKeys = useMemo(() => {
+        if (!dayMacroTotals || !dayMacroTargets) {
+            return [];
+        }
+
+        const tolerance = {
+            protein: dayMacroTolerance?.protein ?? 15,
+            carbs: dayMacroTolerance?.carbs ?? 20,
+            fat: dayMacroTolerance?.fat ?? 15,
+        };
+
+        /** @type {Array<'calories' | 'protein' | 'carbs' | 'fat'>} */
+        const keys = [];
+
+        if (Math.abs(Math.round(dayMacroTotals.calories) - Math.round(dayMacroTargets.calories)) > dayCalorieTolerance) {
+            keys.push('calories');
+        }
+
+        if (Math.abs(Math.round(dayMacroTotals.protein) - Math.round(dayMacroTargets.protein)) > tolerance.protein) {
+            keys.push('protein');
+        }
+
+        if (Math.abs(Math.round(dayMacroTotals.carbs) - Math.round(dayMacroTargets.carbs)) > tolerance.carbs) {
+            keys.push('carbs');
+        }
+
+        if (Math.abs(Math.round(dayMacroTotals.fat) - Math.round(dayMacroTargets.fat)) > tolerance.fat) {
+            keys.push('fat');
+        }
+
+        return keys;
+    }, [dayMacroTotals, dayMacroTargets, dayMacroTolerance, dayCalorieTolerance]);
+
     return (
         <section
             className={`box-border flex w-full flex-col overflow-x-clip border border-gray-200 bg-white shadow-sm max-md:rounded-none max-md:border-x-0 max-md:shadow-none md:rounded-[12px] ${panelClassName}`.trim()}
@@ -1571,10 +1630,27 @@ export default function ChooseYourMeals({
                     </div>
                     {dayMacroTotals && dayMacroTotals.calories > 0 ? (
                         <div className="mt-2">
+                            <PlanMacroColumnHeaderRow />
+                            <p className="mb-0.5 font-montserrat text-[10px] font-semibold uppercase tracking-[0.08em] text-[#555555]">
+                                Selected
+                            </p>
                             <PlanMacroSummaryRow
                                 macros={dayMacroTotals}
                                 ariaLabel="Selected day macros"
+                                highlightKeys={macroHighlightKeys}
                             />
+                            {dayMacroTargets ? (
+                                <>
+                                    <p className="mb-0.5 mt-1.5 font-montserrat text-[10px] font-semibold uppercase tracking-[0.08em] text-[#555555]">
+                                        Target
+                                    </p>
+                                    <PlanMacroSummaryRow
+                                        macros={dayMacroTargets}
+                                        ariaLabel="Target day macros"
+                                        muted
+                                    />
+                                </>
+                            ) : null}
                         </div>
                     ) : null}
                     {hintText ? <p className="mt-1.5 font-body text-xs text-[#555555]">{hintText}</p> : null}

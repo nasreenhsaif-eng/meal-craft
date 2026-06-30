@@ -103,14 +103,37 @@ export function fixedPortionCaloriesForAdapt(grouped, options = {}) {
 
 /**
  * @param {Record<string, unknown> | null | undefined} nutritionPlan
+ * @param {number} planTier
  */
-export function mainSlotTargetCaloriesFromPlan(nutritionPlan) {
+export function nutritionPlanMatchesTier(nutritionPlan, planTier) {
+    if (!nutritionPlan || !Number.isFinite(planTier) || planTier <= 0) {
+        return false;
+    }
+
+    const fromPlan = nutritionPlan.plan_tier ?? nutritionPlan.core_day_calories;
+
+    return typeof fromPlan === 'number' && Math.round(fromPlan) === Math.round(planTier);
+}
+
+/**
+ * @param {Record<string, unknown> | null | undefined} nutritionPlan
+ * @param {number} [planTier]
+ */
+export function mainSlotTargetCaloriesFromPlan(nutritionPlan, planTier = 0) {
     const fromPlan = /** @type {{ calories?: number } | undefined} */ (
         /** @type {Record<string, unknown> | undefined} */ (nutritionPlan?.scalable_slot_targets)?.main_each
     )?.calories;
 
-    if (typeof fromPlan === 'number' && fromPlan > 0) {
+    if (
+        typeof fromPlan === 'number'
+        && fromPlan > 0
+        && (planTier <= 0 || nutritionPlanMatchesTier(nutritionPlan, planTier))
+    ) {
         return Math.round(fromPlan);
+    }
+
+    if (planTier > 0) {
+        return tierSlotTargetsForPlanTier(planTier).mainEach;
     }
 
     return 0;
@@ -177,7 +200,7 @@ export function mainProteinTargetPerMeal(craftKey, planTier, nutritionPlan = nul
         /** @type {Record<string, unknown> | undefined} */ (nutritionPlan?.scalable_slot_targets)?.main_each
     )?.macros?.protein_g;
 
-    if (typeof fromPlan === 'number' && fromPlan > 0) {
+    if (typeof fromPlan === 'number' && fromPlan > 0 && nutritionPlanMatchesTier(nutritionPlan, planTier)) {
         return fromPlan;
     }
 
@@ -207,6 +230,92 @@ export function mainProteinTargetPerMeal(craftKey, planTier, nutritionPlan = nul
  * } | null | undefined} selections
  * @returns {string[]}
  */
+/** Default gram tolerances — mirrors config/customer_nutrition.php day_macro_tolerance. */
+export const DEFAULT_DAY_MACRO_TOLERANCE = Object.freeze({
+    protein: 15,
+    carbs: 20,
+    fat: 15,
+});
+
+/**
+ * @param {Record<string, unknown> | null | undefined} nutritionPlan
+ */
+export function dayMacroToleranceFromPlan(nutritionPlan) {
+    const tol = /** @type {{ protein_g?: number; carbs_g?: number; fat_g?: number } | undefined} */ (
+        nutritionPlan?.day_macro_tolerance
+    );
+
+    return {
+        protein: typeof tol?.protein_g === 'number' ? tol.protein_g : DEFAULT_DAY_MACRO_TOLERANCE.protein,
+        carbs: typeof tol?.carbs_g === 'number' ? tol.carbs_g : DEFAULT_DAY_MACRO_TOLERANCE.carbs,
+        fat: typeof tol?.fat_g === 'number' ? tol.fat_g : DEFAULT_DAY_MACRO_TOLERANCE.fat,
+    };
+}
+
+/**
+ * Daily macro gram targets for the active craft day (matches onboarding daily_macros at full craft).
+ *
+ * @param {Record<string, unknown> | null | undefined} nutritionPlan
+ * @param {number} planTier
+ * @param {string | null | undefined} [craftKey]
+ * @returns {{ calories: number; protein: number; carbs: number; fat: number }}
+ */
+export function dailyMacroTargetsFromPlan(nutritionPlan, planTier, craftKey = 'full') {
+    const tier = Math.round(planTier);
+    const dayCalories = craftDayCaloriesForKey(craftKey ?? 'full', tier);
+
+    if (nutritionPlan && nutritionPlanMatchesTier(nutritionPlan, tier)) {
+        const daily = /** @type {{ protein_g?: number; carbs_g?: number; fat_g?: number } | undefined} */ (
+            nutritionPlan.daily_macros
+        );
+
+        if (daily && craftKey === 'full') {
+            return {
+                calories: Math.round(dayCalories),
+                protein: Math.round(daily.protein_g ?? 0),
+                carbs: Math.round(daily.carbs_g ?? 0),
+                fat: Math.round(daily.fat_g ?? 0),
+            };
+        }
+
+        if (daily && tier > 0) {
+            const ratio = dayCalories / tier;
+
+            return {
+                calories: Math.round(dayCalories),
+                protein: Math.round((daily.protein_g ?? 0) * ratio),
+                carbs: Math.round((daily.carbs_g ?? 0) * ratio),
+                fat: Math.round((daily.fat_g ?? 0) * ratio),
+            };
+        }
+    }
+
+    const proteinPct = Number(nutritionPlan?.protein_percentage ?? BALANCED_MACRO_SPLIT.protein);
+    const carbPct = Number(nutritionPlan?.carb_percentage ?? BALANCED_MACRO_SPLIT.carbs);
+    const fatPct = Number(nutritionPlan?.fat_percentage ?? BALANCED_MACRO_SPLIT.fat);
+    const grams = macroGramsFromCalories(dayCalories, {
+        protein: proteinPct,
+        carbs: carbPct,
+        fat: fatPct,
+    });
+
+    return {
+        calories: Math.round(dayCalories),
+        protein: Math.round(grams.protein),
+        carbs: Math.round(grams.carbs),
+        fat: Math.round(grams.fat),
+    };
+}
+
+/**
+ * @param {number} selected
+ * @param {number} target
+ * @param {number} tolerance
+ */
+export function isMacroOutsideTolerance(selected, target, tolerance) {
+    return Math.abs(Math.round(selected) - Math.round(target)) > tolerance;
+}
+
 export function selectedFixedSlotsFromSelections(selections) {
     if (!selections) {
         return [];

@@ -21,11 +21,22 @@ test('adaptMainMealsForProfile boosts non-vegan mains when a vegan choice lowers
         'fat_percentage' => 30,
     ]);
 
-    $ingredient = Ingredient::factory()->create([
+    $veganIngredient = Ingredient::factory()->create([
+        'name' => 'Zucchini',
+        'calories' => 17,
+        'protein' => 1.2,
+        'carbs' => 3.1,
+        'fat' => 0.3,
+        'usda_food_category' => 'Vegetables',
+    ]);
+
+    $chickenIngredient = Ingredient::factory()->create([
+        'name' => 'Chicken Breast',
         'calories' => 100,
         'protein' => 10,
         'carbs' => 10,
         'fat' => 5,
+        'usda_food_category' => 'Proteins',
     ]);
 
     $veganMain = Meal::factory()->create([
@@ -39,7 +50,7 @@ test('adaptMainMealsForProfile boosts non-vegan mains when a vegan choice lowers
         'total_fat' => 12,
         'library_sort_order' => 1,
     ]);
-    $veganMain->ingredients()->attach($ingredient->id, ['amount_grams' => 200]);
+    $veganMain->ingredients()->attach($veganIngredient->id, ['amount_grams' => 200]);
 
     $chickenMain = Meal::factory()->create([
         'name' => 'Chicken Test Plate',
@@ -52,7 +63,7 @@ test('adaptMainMealsForProfile boosts non-vegan mains when a vegan choice lowers
         'total_fat' => 12,
         'library_sort_order' => 2,
     ]);
-    $chickenMain->ingredients()->attach($ingredient->id, ['amount_grams' => 200]);
+    $chickenMain->ingredients()->attach($chickenIngredient->id, ['amount_grams' => 200]);
 
     $plan = UserPlanCalculator::calculateUserPlan($profile);
     $proteinTargetEach = (float) $plan['scalable_slot_targets']['main_each']['macros']['protein_g'];
@@ -68,19 +79,14 @@ test('adaptMainMealsForProfile boosts non-vegan mains when a vegan choice lowers
         + (float) $chickenAdapted['adapted_nutrition']['protein'];
 
     expect($veganAdapted['is_vegan'])->toBeTrue()
-        ->and($veganAdapted['protein_balanced'] ?? false)->toBeFalse()
-        ->and($chickenAdapted['protein_balanced'] ?? false)->toBeTrue()
-        ->and($chickenAdapted['scaling_multiplier'])->toBeGreaterThan(
-            AdaptedMenuBuilder::mealScalingMultiplier($chickenMain, 'main', $plan),
+        ->and((float) $chickenAdapted['adapted_nutrition']['protein'])->toBeGreaterThanOrEqual($proteinTargetEach - 1)
+        ->and((float) $chickenAdapted['adapted_nutrition']['protein'])->toBeGreaterThan(
+            (float) $veganAdapted['adapted_nutrition']['protein'],
         )
-        ->and((float) $chickenAdapted['adapted_nutrition']['calories'])
-        ->toBeLessThanOrEqual((float) $plan['scalable_slot_targets']['main_each']['calories'] + 1)
-        ->and($combinedProtein)->toBeGreaterThan(
-            (float) $veganAdapted['adapted_nutrition']['protein'] + (float) $chickenMain->total_protein,
-        );
+        ->and($chickenAdapted['protein_balanced'] ?? false)->toBeTrue();
 });
 
-test('adaptMainMealsForProfile leaves protein unchanged when both mains already meet target', function () {
+test('adaptMainMealsForProfile boosts mains toward per-meal protein target when below slot goal', function () {
     $user = User::factory()->create();
     $profile = CustomerProfile::factory()->for($user)->create([
         'daily_calorie_target' => 1500,
@@ -90,10 +96,12 @@ test('adaptMainMealsForProfile leaves protein unchanged when both mains already 
     ]);
 
     $ingredient = Ingredient::factory()->create([
+        'name' => 'Chicken Breast',
         'calories' => 100,
         'protein' => 20,
         'carbs' => 5,
         'fat' => 2,
+        'usda_food_category' => 'Proteins',
     ]);
 
     $mainA = Meal::factory()->create([
@@ -106,7 +114,7 @@ test('adaptMainMealsForProfile leaves protein unchanged when both mains already 
         'total_fat' => 10,
         'library_sort_order' => 1,
     ]);
-    $mainA->ingredients()->attach($ingredient->id, ['amount_grams' => 180]);
+    $mainA->ingredients()->attach($ingredient->id, ['amount_grams' => 360]);
 
     $mainB = Meal::factory()->create([
         'name' => 'Protein Main B',
@@ -118,19 +126,66 @@ test('adaptMainMealsForProfile leaves protein unchanged when both mains already 
         'total_fat' => 10,
         'library_sort_order' => 2,
     ]);
-    $mainB->ingredients()->attach($ingredient->id, ['amount_grams' => 180]);
-
-    $plan = UserPlanCalculator::calculateUserPlan($profile);
-    $expectedMultiplierA = AdaptedMenuBuilder::mealScalingMultiplier($mainA, 'main', $plan);
-    $expectedMultiplierB = AdaptedMenuBuilder::mealScalingMultiplier($mainB, 'main', $plan);
+    $mainB->ingredients()->attach($ingredient->id, ['amount_grams' => 360]);
 
     $adapted = AdaptedMenuBuilder::adaptMainMealsForProfile($profile, [$mainA, $mainB]);
 
     $adaptedA = collect($adapted)->firstWhere('name', 'Protein Main A');
     $adaptedB = collect($adapted)->firstWhere('name', 'Protein Main B');
 
-    expect($adaptedA['scaling_multiplier'])->toEqual($expectedMultiplierA)
-        ->and($adaptedB['scaling_multiplier'])->toEqual($expectedMultiplierB)
-        ->and($adaptedA['protein_balanced'] ?? false)->toBeFalse()
-        ->and($adaptedB['protein_balanced'] ?? false)->toBeFalse();
+    expect((float) $adaptedA['adapted_nutrition']['protein'])->toBeGreaterThanOrEqual(40)
+        ->and((float) $adaptedB['adapted_nutrition']['protein'])->toBeGreaterThanOrEqual(40);
+});
+
+test('adaptMainMealsForProfile boosts each non-vegan main below per-meal protein target', function () {
+    $user = User::factory()->create();
+    $profile = CustomerProfile::factory()->for($user)->create([
+        'daily_calorie_target' => 2000,
+        'protein_percentage' => 40,
+        'carb_percentage' => 30,
+        'fat_percentage' => 30,
+    ]);
+
+    $ingredient = Ingredient::factory()->create([
+        'name' => 'Chicken Breast',
+        'calories' => 165,
+        'protein' => 31,
+        'carbs' => 0,
+        'fat' => 3.6,
+        'usda_food_category' => 'Proteins',
+    ]);
+
+    $mainA = Meal::factory()->create([
+        'name' => 'Lean Main A',
+        'meal_type' => MealType::Main,
+        'category' => RecipeCategory::Meal,
+        'total_calories' => 360,
+        'total_protein' => 24,
+        'total_carbs' => 35,
+        'total_fat' => 12,
+        'library_sort_order' => 1,
+    ]);
+    $mainA->ingredients()->attach($ingredient->id, ['amount_grams' => 250]);
+
+    $mainB = Meal::factory()->create([
+        'name' => 'Lean Main B',
+        'meal_type' => MealType::Main,
+        'category' => RecipeCategory::Meal,
+        'total_calories' => 360,
+        'total_protein' => 24,
+        'total_carbs' => 35,
+        'total_fat' => 12,
+        'library_sort_order' => 2,
+    ]);
+    $mainB->ingredients()->attach($ingredient->id, ['amount_grams' => 250]);
+
+    $plan = UserPlanCalculator::calculateUserPlan($profile);
+    $proteinTargetEach = (float) $plan['scalable_slot_targets']['main_each']['macros']['protein_g'];
+
+    $adapted = AdaptedMenuBuilder::adaptMainMealsForProfile($profile, [$mainA, $mainB]);
+
+    foreach ($adapted as $row) {
+        expect((float) $row['adapted_nutrition']['protein'])->toBeGreaterThan(24);
+        expect($row['protein_balanced'] ?? false)->toBeTrue();
+    }
 });
