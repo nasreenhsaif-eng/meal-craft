@@ -1,13 +1,9 @@
 meal_name,meal_type,ingredients_string,target_calories,target_protein,target_carbs,target_fat,batch_calories,batch_protein,batch_carbs,batch_fat,is_bulk,servings_count,meal_plan_tag,cycle_phase,safety_alerts,image_url,short_description,instructions
-"Blueberry Walnut Chia Pudding",Breakfast,"Black Seeds:8 | Blueberries:7.09 | Cinnamon:1 | Coconut Chia Pudding (Base):75 | Fresh Mint:1 | Walnuts:5",350,35,35,7.8,,,,,false,,Balanced,,Nuts,images/meals/blueberry_walnut_chia_pudding.png,"Creamy coconut chia pudding with blueberries, walnuts, cinnamon, and mint.","Prepare Coconut Chia Pudding (Base) ahead (chia, coconut milk, and date syrup) and chill until thick.
-Spoon the set pudding into a bowl or jar.
-Fold in blueberries, walnuts, cinnamon, and mint.
-Serve chilled."
-"Mediterranean Omelet",Breakfast,"Avocado:32.35 | Basil:5 | Bell Pepper (Red):10 | Black Pepper:1 | Egg:100 | Olive Oil (Extra Virgin):6 | Parsley:10 | Shallots:10 | Spinach:30 | Thyme (Fresh):2 | Tomato (Raw):20",350,24,12,23,,,,,false,,Balanced,,"Eggs, Nightshades",images/meals/mediterranean_omelet.png,"Earthy and rich in B-vitamins for morning mental clarity.","Beat eggs in a bowl.
-Sauté diced pepper, tomato, and shallot in olive oil for 3 minutes.
-Pour in eggs. Cook over medium heat until almost set.
-Add olives and avocado on one half. Fold omelet in half.
-Finish with fresh herbs. Serve warm."
+"Hummus Egg Stack",Breakfast,"Black Pepper:1 | Cherry Tomatoes:45 | Creamy Cumin Hummus (Base):100 | Cucumber:40 | Egg:100 | Olive Oil:5 | Spinach (Fresh):45",350,35,35,7.8,,,,,false,,Balanced,,"Beans, Eggs, G6PD Trigger, Nightshades, Sesame",images/meals/hummus_egg_stack.png,"Soft-boiled eggs stacked over sautéed spinach and cherry tomatoes on a bed of creamy house cumin hummus.","1. Prepare Creamy Cumin Hummus (Base) per base recipe instructions. Warm and spread a generous layer in a shallow bowl.
+2. Halve the cherry tomatoes. Sauté spinach and tomatoes in olive oil over medium heat until the spinach is wilted and the tomatoes are softened (3–4 min).
+3. Spoon the spinach and tomato layer over the hummus.
+4. Soft-boil eggs until the whites are set and yolks are jammy (6–7 min). Halve and place on top.
+5. Add cucumber slices and finish with cracked black pepper. Serve immediately."
 "Tamarind Honey & Sesame Chicken w Garlicky Green Beans",Meal,"Bok Choy:30 | Broccoli:10 | Chicken Breast:150 | Cucumber Pickle (Base):25 | Garlic (Raw):5 | Garlicky Green Beans (Base):85 | Ginger (Raw):2 | Honey (Raw):5 | Rice Vinegar:10 | Sea Salt:1 | Sesame Oil:10 | Sesame Seeds:8 | Spring Onion:5 | Tamarind Paste:10",360,36,27,12,,,,,false,,Balanced,Luteal,"G6PD Trigger, Sesame, Soy",images/meals/tamarind_honey_sesame_chicken_green_beans.png,"Baked chicken thighs glazed in tamarind honey sauce, with garlicky green beans and broccoli.","Combine tamarind paste, honey, rice vinegar, sesame oil, crushed garlic, grated ginger, salt, and spring onion pieces in a jug.
 Marinate chicken breast in the sauce overnight.
 Preheat oven. Bake 25 minutes until cooked through (74°C internal).
@@ -43,11 +39,20 @@ Cool completely, then cut into 8 equal slices. One slice is one serving."
 "Fruit Salad Bowl",Dessert,"Apple Green:40 | Blueberries:40 | Fresh Mint:3 | Honey (Raw):1 | Lemon Juice:5 | Pear:3 | Pineapple:40 | Pomegranate Seeds:30 | Strawberries:50",350,35,35,7.8,,,,,false,,Balanced,,,images/meals/fruit_salad_bowl.png,"A clean refreshing side array of sliced strawberries","Wash and chop all fruit into bite-size pieces.
 Toss gently with lemon juice and honey if using.
 Chill 15 minutes. Serve cold."
+"Blueberry Walnut Chia Pudding",Breakfast,"Black Seeds:8 | Blueberries:7.09 | Cinnamon:1 | Coconut Chia Pudding (Base):75 | Fresh Mint:1 | Walnuts:5",350,35,35,7.8,,,,,false,,Balanced,,Nuts,images/meals/blueberry_walnut_chia_pudding.png,"Creamy coconut chia pudding with blueberries, walnuts, cinnamon, and mint.","Prepare Coconut Chia Pudding (Base) ahead (chia, coconut milk, and date syrup) and chill until thick.
+Spoon the set pudding into a bowl or jar.
+Fold in blueberries, walnuts, cinnamon, and mint.
+Serve chilled."
 "Vegan Mushroom Soup",Soup,"Bone Broth (Base):50 | Garlic:3 | Mushrooms:300 | Olive Oil:3 | Thyme (Fresh):5 | Water (Filtered):147.5 | White Onion:30",350,35,35,7.8,,,,,false,,Balanced,,,images/meals/vegan_mushroom_soup.png,"A rich creamy plant-based umami soup combining sautéed wild mushrooms and garlic blended with coconut cream","Sauté onion and mushrooms in oil until browned (8 min).
 Add garlic, thyme, and turmeric. Cook 1 minute.
 Pour in stock and coconut milk. Simmer 15 minutes.
 Blend partially for a creamy texture, or leave chunky.
 Serve hot."
+"Mediterranean Omelet",Breakfast,"Avocado:32.35 | Basil:5 | Bell Pepper (Red):10 | Black Pepper:1 | Egg:100 | Olive Oil (Extra Virgin):6 | Parsley:10 | Shallots:10 | Spinach:30 | Thyme (Fresh):2 | Tomato (Raw):20",350,24,12,23,,,,,false,,Balanced,,"Eggs, Nightshades",images/meals/mediterranean_omelet.png,"Earthy and rich in B-vitamins for morning mental clarity.","Beat eggs in a bowl.
+Sauté diced pepper, tomato, and shallot in olive oil for 3 minutes.
+Pour in eggs. Cook over medium heat until almost set.
+Add olives and avocado on one half. Fold omelet in half.
+Finish with fresh herbs. Serve warm."
 "Bone Broth Cup",Soup,"Bone Broth (Base):500",,,,,,,,,false,,Balanced,,,images/meals/bone_broth_cup.png,"500 ml cup of defatted house bone broth — long-simmered and gelatin-rich.","1. Measure 500 ml (one serving) of defatted Bone Broth (Base).
 2. Pour into a small pot.
 3. Heat gently on the stove until steaming (do not boil hard).
@@ -235,23 +240,18 @@ Season to taste and serve."
 Pat salmon dry. Pan-sear salmon 4 minutes per side until crisp.
 In a small pan, sizzle sesame oil with ginger and spring onion matchsticks; spoon over salmon.
 Drizzle with tamari. Serve with garlicky green beans."
-"Deconstructed Shakshuka Skillet",Breakfast,"Bell Pepper (Red):4.387 | Chard:35 | Egg:118 | Fresh Coriander:4 | Garlic (Raw):4 | Olive Oil:4 | Smoked Paprika:1 | Tomato (Raw):9.5557 | White Onion:7",350,35,35,7.8,,,,,false,1,Balanced,,"Eggs, Nightshades",images/meals/deconstructed_shakshuka_skillet.png,"Two soft-cooked eggs nestled within a rich","1. Sauté onion and pepper in olive oil until soft (5 min).
+"Deconstructed Shakshuka Skillet",Breakfast,"Bell Pepper (Red):40 | Egg:110 | Fresh Coriander:4 | Garlic (Raw):4 | Olive Oil:5 | Smoked Paprika:1 | Tomato (Raw):150 | White Onion:30",350,35,35,7.8,,,,,false,1,Balanced,,"Eggs, Nightshades",images/meals/deconstructed_shakshuka_skillet.png,"Two soft-cooked eggs nestled within a rich","1. Sauté onion and pepper in olive oil until soft (5 min).
 2. Add crushed tomato and spices. Simmer 8–10 minutes.
 3. Make small wells in the sauce. Crack eggs into the wells.
 4. Cover and cook on low until whites are set (5–7 min).
 5. Serve straight from the pan."
 "Eggplant Beef Stew Quinoa Bread",Meal,"Beef Chuck Roast:150 | Eggplant:120 | Garlic:2 | Marinara Sauce (Base):80 | Olive Oil:2 | Quinoa Bread (Base):45 | White Onion:30",350,35,35,7.8,,,,,false,1,,,Nightshades,images/meals/eggplant_beef_stew_quinoa_bread.png,"A rustic slow-cooked stew of tender cubed beef chuck and melting globe eggplants in a savory tomato reduction","served with a dense slice of quinoa bread."
-"Hummus Egg Stack",Breakfast,"Black Pepper:1 | Cherry Tomatoes:45 | Creamy Cumin Hummus (Base):100 | Cucumber:40 | Egg:100 | Olive Oil:3 | Spinach (Fresh):45",350,35,35,7.8,,,,,false,,Balanced,,"Beans, Eggs, G6PD Trigger, Nightshades, Sesame",images/meals/hummus_egg_stack.png,"Soft-boiled eggs stacked over sautéed spinach and cherry tomatoes on a bed of creamy house cumin hummus.","1. Prepare Creamy Cumin Hummus (Base) per base recipe instructions. Warm and spread a generous layer in a shallow bowl.
-2. Halve the cherry tomatoes. Sauté spinach and tomatoes in olive oil over medium heat until the spinach is wilted and the tomatoes are softened (3–4 min).
-3. Spoon the spinach and tomato layer over the hummus.
-4. Soft-boil eggs until the whites are set and yolks are jammy (6–7 min). Halve and place on top.
-5. Add cucumber slices and finish with cracked black pepper. Serve immediately."
 "Sumac Beef Baba Ghanoush",Meal,"Beef Ground Lean:150 | Eggplant:150 | Garlic:2 | Lemon Juice:10 | Olive Oil:3 | Sumac:3 | Tahini:10 | White Onion:20",350,35,35,7.8,,,,,false,1,,,"Nightshades, Sesame",images/meals/sumac_beef_baba_ghanoush.png,"Pan-seared ground beef seasoned with tart sumac over a bed of smoky","roasted globe eggplant dip mixed with creamy tahini and garlic."
 "Thai Rainbow Peanut Salad","Side Salad","Bell Pepper (Red):30 | Cabbage (Purple):55 | Carrots:40 | Cucumber:40 | Fresh Coriander:5 | Peanut Butter Dressing (Base):25 | Peanuts (Crushed):8 | Red Onion:12",350,35,35,7.8,,,,,false,1,,,"Nightshades, Nuts, Sesame, Soy, Spicy",images/meals/thai_rainbow_peanut_salad.png,"A colorful crunchy crunch bowl of shredded purple cabbage","Shred cabbage and julienne carrots, cucumber, and red onion.
 Toss vegetables with coriander and crushed peanuts.
 Serve chilled.
 Serve dressing on the side."
-"Butternut Squash Fritters & Eggs",Breakfast,"Butternut Squash:200 | Chili Flakes:0.5 | Coriander Seeds:0.5 | Cumin Seeds:0.5 | Egg:100 | Fennel Seeds:0.5 | Fresh Coriander:10 | Garlic (Raw):1.5 | Lemon Juice:30 | Marinara Sauce (Base):80 | Olive Oil:4 | Quinoa Flour:10 | Sea Salt:1",350,35,35,7.8,,,,,false,1,Balanced,,"Eggs, Nightshades",images/meals/butternut_squash_fritters_eggs_marinara.png,"Spiced roasted butternut squash fritters bound with eggs, fresh coriander, and lemon — served with warm marinara on the side.","1. Preheat the oven to 200°C.
+"Butternut Squash Fritters & Eggs",Breakfast,"Butternut Squash:200 | Chili Flakes:0.5 | Coriander Seeds:0.5 | Cumin Seeds:0.5 | Egg:100 | Fennel Seeds:0.5 | Fresh Coriander:10 | Garlic (Raw):1.5 | Lemon Juice:30 | Marinara Sauce (Base):80 | Olive Oil:5 | Quinoa Flour:10 | Sea Salt:1",350,35,35,7.8,,,,,false,1,Balanced,,"Eggs, Nightshades",images/meals/butternut_squash_fritters_eggs_marinara.png,"Spiced roasted butternut squash fritters bound with eggs, fresh coriander, and lemon — served with warm marinara on the side.","1. Preheat the oven to 200°C.
 2. Cut the butternut squash into 2–3 cm chunks. Place in a roasting tin, drizzle with olive oil, and season with sea salt, chili flakes, and fennel seeds. Roast for about 20 minutes, then leave to cool.
 3. When cool, place the butternut squash in a blender with any roasting juices. Add eggs, garlic, fresh coriander, lemon juice, cumin seeds, and coriander seeds. Blend to a rough paste and season to taste.
 4. Transfer the mixture to a bowl and stir in enough quinoa flour to make a smooth mix. Refrigerate for 1 hour to firm up. The mix should be sticky rather than wet — add a little more flour if needed.
@@ -283,7 +283,7 @@ Roll into balls. Refrigerate until firm."
 Arrange arugula on plates.
 Top with beets, orange segments, cucumber, walnuts, and mint.
 Serve dressing on the side."
-"Kuku Sabzi Egg Muffins",Breakfast,"Barberries:5 | Black Pepper:1 | Dill (Fresh):4 | Egg:110 | Fresh Coriander:8 | Olive Oil:4 | Purslane:15 | Rocca:10 | Sea Salt:1 | Spinach (Fresh):30 | Spring Onion:15 | Walnuts:8",350,35,35,7.8,,,,,false,1,Balanced,,"Eggs, Nuts",images/meals/kuku_sabzi_egg_muffins.png,"Traditional Persian-style baked egg muffins packed with minced fresh herbs, walnuts, barberries (zereshk), and seasoning.","1. Heat oven to 180°C (350°F). Brush a muffin tin with olive oil.
+"Kuku Sabzi Egg Muffins",Breakfast,"Barberries:5 | Black Pepper:1 | Dill (Fresh):4 | Egg:110 | Fresh Coriander:8 | Olive Oil:5 | Sea Salt:1 | Spinach (Fresh):30 | Spring Onion:15 | Walnuts:5",350,35,35,7.8,,,,,false,1,Balanced,,"Eggs, Nuts",images/meals/kuku_sabzi_egg_muffins.png,"Traditional Persian-style baked egg muffins packed with minced fresh herbs, walnuts, barberries (zereshk), and seasoning.","1. Heat oven to 180°C (350°F). Brush a muffin tin with olive oil.
 2. Finely mince spinach, fresh coriander, dill, and spring onion.
 3. Whisk eggs with sea salt and black pepper until frothy.
 4. Fold in the minced herbs, spring onion, chopped walnuts, and barberries (zereshk).
@@ -348,9 +348,9 @@ Spoon the set pudding into a bowl or jar.
 Stir cinnamon, clove, and ginger through the pudding.
 Top with chopped almonds, black seeds, and sesame seeds.
 Serve chilled."
-"Sweet Potato Egg Hash",Breakfast,"Bell Pepper (Red):30 | Black Pepper:1 | Egg:100 | Fresh Coriander:3 | Olive Oil:4 | Rosemary (Fresh):2 | Sea Salt:1 | Sweet Potato:90 | Thyme (Fresh):2 | White Onion:25",350,35,35,7.8,,,,,false,1,Balanced,,"Eggs, Nightshades",images/meals/sweet_potato_egg_hash.png,"Rosemary-thyme roasted sweet potato hash with sautéed onion and pepper, finished with softly scrambled eggs.","1. Preheat oven to 200°C. Toss diced sweet potato with olive oil, rosemary, thyme, sea salt, and black pepper. Spread on a tray and roast until tender (25–30 min).
-2. Sauté diced white onion and red bell pepper in a frying pan with olive oil until softened (5–6 min).
-3. Add roasted sweet potato to the pan and toss to combine. Season with a pinch of salt and pepper.
+"Sweet Potato Egg Hash",Breakfast,"Bell Pepper (Red):30 | Black Pepper:1 | Egg:100 | Fresh Coriander:3 | Olive Oil:10 | Rosemary (Fresh):2 | Sea Salt:1 | Sweet Potato:90 | Thyme (Fresh):2 | White Onion:25",350,35,35,7.8,,,,,false,1,Balanced,,"Eggs, Nightshades",images/meals/sweet_potato_egg_hash.png,"Rosemary-thyme roasted sweet potato hash with sautéed onion and pepper, finished with softly scrambled eggs.","1. Preheat oven to 200°C. Toss diced sweet potato with half the olive oil, rosemary, thyme, sea salt, and black pepper. Roast until tender (25–30 min).
+2. Heat the remaining olive oil in a frying pan. Sauté diced onion and red bell pepper until softened (5–6 min).
+3. Add roasted sweet potato and toss to combine.
 4. Beat eggs, pour into the pan, and scramble gently over medium-low heat until just set.
 5. Finish with fresh coriander and serve hot."
 "Tandoori Chicken Salad",Meal,"Cashew Nuts:10 | Celery:20 | Cherry Tomatoes:45 | Cucumber:45 | Fresh Coriander:4 | Fresh Mint:4 | Mint Coconut Chutney Dressing (Base):16 | Pomegranate Seeds:12 | Red Onion:12 | Romaine Lettuce:55 | Tandoori Chicken (Base):150",350,35,35,7.8,,,,,false,1,,,"Nightshades, Nuts, Soy, Spicy",images/meals/tandoori_chicken_salad.png,"Lean chicken breast strips marinated in bold tandoori spices and grilled","Grill or pan-sear Tandoori Chicken (Base) until golden then in the oven for 20 minutes exactly, then Rest and slice.
@@ -470,3 +470,29 @@ Serve chilled."
 Spoon the set pudding into the bottom of a glass or jar.
 Blend strawberries and banana until smooth.
 Pour the fruit smoothie over the chia layer. Serve chilled."
+"Halloumi & Spinach Scramble",Breakfast,"Black Pepper:1 | Egg:100 | Halloumi:40 | Olive Oil:10 | Spinach (Fresh):40",260,24,4,16,,,,,false,,Balanced,,"Dairy, Eggs",images/meals/halloumi_spinach_scramble.png,"Grilled halloumi folded through softly scrambled eggs with wilted spinach.","1. Heat half the olive oil in a non-stick skillet over medium heat. Wilt spinach for 1 minute, then set aside.
+2. Grill halloumi in the remaining oil until golden on both sides.
+3. Beat eggs, add to the skillet with a little more oil if the pan looks dry, and scramble gently until just set.
+4. Fold halloumi and spinach through the eggs. Season with black pepper and serve warm."
+"Greek Yogurt & Parmesan Frittata",Breakfast,"Bell Pepper (Red):30 | Black Pepper:1 | Egg:100 | Greek Yogurt:40 | Olive Oil:5 | Parmesan:15 | Sea Salt:1 | Spinach (Fresh):30",250,26,8,12,,,,,false,,Balanced,,"Dairy, Eggs",images/meals/greek_yogurt_parmesan_frittata.png,"Fluffy oven-baked frittata with Greek yogurt for extra protein and parmesan finish.","1. Heat oven to 180°C (350°F).
+2. Whisk eggs with Greek yogurt, salt, and pepper. Fold in spinach and diced pepper.
+3. Brush an oven-safe pan with olive oil, pour in the mixture, and bake 12–15 minutes until set.
+4. Finish with grated parmesan and serve warm from the pan."
+"Feta & Herb Open Omelet",Breakfast,"Bell Pepper (Red):25 | Black Pepper:1 | Dill (Fresh):5 | Egg:110 | Feta:35 | Olive Oil:10 | Spinach (Fresh):30",245,24,6,14,,,,,false,,Balanced,,"Dairy, Eggs",images/meals/feta_herb_open_omelet.png,"Open omelet with crumbled feta, peppers, spinach, and fresh dill.","1. Heat olive oil in a non-stick pan over medium heat. Sauté pepper and spinach until tender (2–3 min).
+2. Beat eggs with black pepper. Pour over the vegetables and cook until the bottom is set.
+3. Crumble feta and dill over the top. Fold one side over and slide onto a plate."
+"Brie & Mushroom Skillet Eggs",Breakfast,"Black Pepper:1 | Brie:30 | Egg:100 | Mushrooms:60 | Olive Oil:10 | Thyme (Fresh):2 | White Onion:20",270,22,6,18,,,,,false,,Balanced,,"Dairy, Eggs",images/meals/brie_mushroom_skillet_eggs.png,"Sautéed mushrooms and brie with skillet eggs and thyme.","1. Heat olive oil in a skillet over medium heat. Sauté onion and mushrooms until golden (5–6 min).
+2. Add thyme. Make small wells and crack in eggs. Cover and cook on low until whites are set.
+3. Top with brie slices, cover briefly to melt, and season with black pepper. Serve from the skillet."
+"Parmesan Shakshuka",Breakfast,"Bell Pepper (Red):40 | Egg:110 | Garlic (Raw):4 | Olive Oil:5 | Parmesan:20 | Smoked Paprika:1 | Tomato (Raw):150 | White Onion:30",255,23,14,12,,,,,false,,Balanced,,"Dairy, Eggs, Nightshades",images/meals/parmesan_shakshuka.png,"Poached eggs in a tomato-pepper skillet finished with grated parmesan.","1. Heat olive oil in a skillet. Sauté onion, pepper, and garlic until softened (5 min).
+2. Add crushed tomato and smoked paprika. Simmer 8–10 minutes until saucy.
+3. Make wells in the sauce, crack in eggs, cover, and cook on low until whites are set (5–7 min).
+4. Finish with grated parmesan and serve straight from the pan."
+"Halloumi Egg Stack",Breakfast,"Black Pepper:1 | Cherry Tomatoes:30 | Egg:100 | Greek Yogurt:30 | Halloumi:35 | Olive Oil:5 | Spinach (Fresh):30",255,25,6,14,,,,,false,,Balanced,,"Dairy, Eggs",images/meals/halloumi_egg_stack.png,"Poached eggs on grilled halloumi with lemony Greek yogurt and wilted spinach.","1. Brush halloumi lightly with olive oil and grill until golden on both sides.
+2. Wilt spinach in a pan with the remaining olive oil. Halve cherry tomatoes.
+3. Poach eggs until whites are set and yolks are runny.
+4. Layer halloumi, spinach, and poached eggs. Spoon Greek yogurt on top and finish with black pepper."
+"Feta & Dill Egg Muffins",Breakfast,"Black Pepper:1 | Dill (Fresh):5 | Egg:110 | Feta:30 | Olive Oil:5 | Sea Salt:1 | Spinach (Fresh):25 | Spring Onion:15",250,23,5,15,,,,,false,,Balanced,,"Dairy, Eggs",images/meals/feta_dill_egg_muffins.png,"Baked feta and dill egg muffins — three protein-forward bites per serving.","1. Heat oven to 180°C (350°F). Brush a muffin tin with olive oil.
+2. Whisk eggs with salt, pepper, chopped dill, and spring onion.
+3. Fold in spinach and crumbled feta. Divide between cups, filling about three-quarters full.
+4. Bake 15–18 minutes until set in the centre. Cool 5 minutes before serving."
