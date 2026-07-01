@@ -258,7 +258,7 @@ test('savory egg breakfast keeps realistic avocado minimum at small tiers and sc
 
     $avocadoLine = collect($adapted['ingredients'])->firstWhere('name', 'Avocado');
 
-    expect((float) $avocadoLine['adapted_amount_grams'])->toEqualWithDelta(50.0, 0.5);
+    expect((float) $avocadoLine['adapted_amount_grams'])->toEqualWithDelta(25.0, 0.5);
 
     $profile->daily_calorie_target = 2000;
     $adaptedHigh = AdaptedMenuBuilder::adaptMealForProfile($profile, $meal->fresh(['ingredients']), [
@@ -268,6 +268,6 @@ test('savory egg breakfast keeps realistic avocado minimum at small tiers and sc
 
     $avocadoHigh = collect($adaptedHigh['ingredients'])->firstWhere('name', 'Avocado');
 
-    expect((float) $avocadoHigh['adapted_amount_grams'])->toBeGreaterThan(50.0)
-        ->and((float) $avocadoHigh['adapted_amount_grams'])->toEqualWithDelta(112.5, 2.0);
+    expect((float) $avocadoHigh['adapted_amount_grams'])->toBeGreaterThan(25.0)
+        ->and((float) $avocadoHigh['adapted_amount_grams'])->toEqualWithDelta(56.25, 2.0);
 });

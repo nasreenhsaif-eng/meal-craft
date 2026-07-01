@@ -6,6 +6,7 @@ use App\Models\Ingredient;
 use App\Models\Meal;
 use App\Support\MealLibraryBulkNutrition;
 use App\Support\MealLibraryEditGuard;
+use App\Support\MealLibraryRefinerOverrides;
 use App\Support\StandardMeatPortion;
 use App\Support\WholeFoodDietPolicy;
 use Illuminate\Support\Facades\DB;
@@ -301,7 +302,7 @@ final class BalancedRotationMealRecipeRefiner
         $veganTags = array_merge($tags, ['Vegan']);
         $vegetarianTags = array_merge($tags, ['Vegetarian']);
 
-        return [
+        $definitions = [
             'Spicy Harissa Grilled Chicken w Roasted Sweet Potato & Zucchini' => [
                 'ingredients' => [
                     'Chicken Breast' => StandardMeatPortion::GRAMS,
@@ -470,5 +471,7 @@ final class BalancedRotationMealRecipeRefiner
                 'short_description' => 'Three-layer 8x8 no-bake bar (16 squares): almond shortbread, salted tahini-date caramel, and dark cocoa topping.',
             ],
         ];
+
+        return MealLibraryRefinerOverrides::mergeRecipeDefinitionMap($definitions);
     }
 }

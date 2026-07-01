@@ -8,8 +8,8 @@ test('balanced weekly rotation assigns one savory egg breakfast per day', functi
     $dayOne = BalancedWeeklyRotationSchedule::mealNameForDay(1, MealPlanSlotType::Breakfast, 1);
     $dayTwo = BalancedWeeklyRotationSchedule::mealNameForDay(2, MealPlanSlotType::Breakfast, 1);
 
-    expect($dayOne)->toBe('Mediterranean Omelet')
-        ->and($dayTwo)->toBe('Deconstructed Shakshuka Skillet')
+    expect($dayOne)->toBe('Halloumi & Spinach Scramble')
+        ->and($dayTwo)->toBe('Greek Yogurt & Parmesan Frittata')
         ->and($dayOne)->not->toBe($dayTwo);
 });
 
@@ -81,4 +81,36 @@ test('balanced weekly rotation uses legume-free vegan side salads in slot one', 
         ->and($salads)->not->toContain('Spiced Cauliflower Chickpea Salad')
         ->and($salads)->not->toContain('Thai Rainbow Peanut Salad')
         ->and($salads[6])->toBe('Coconut Grapefruit Salad');
+});
+
+test('balanced weekly rotation assigns a unique liver main in slot five each weekday', function (): void {
+    $liverMains = [];
+
+    foreach (range(1, 7) as $day) {
+        $liverMains[] = BalancedWeeklyRotationSchedule::mealNameForDay($day, MealPlanSlotType::Main, 5);
+    }
+
+    expect($liverMains[0])->toBe('Seared Beef Liver w Roasted Beetroot, Chard & Chimichurri')
+        ->and($liverMains[1])->toBe('Sautéed Chicken Liver w Garlicky Cabbage, Bok Choy & Peppers')
+        ->and($liverMains[6])->toBe('Beef & Liver Stuffed Zucchini w Marinara & Basil')
+        ->and(count(array_unique($liverMains)))->toBe(7);
+});
+
+test('balanced weekly rotation keeps liver mains out of slots one through four', function (): void {
+    foreach (range(1, 7) as $day) {
+        foreach ([1, 2, 3, 4] as $slotIndex) {
+            $name = BalancedWeeklyRotationSchedule::mealNameForDay($day, MealPlanSlotType::Main, $slotIndex);
+
+            expect(str_contains(strtolower($name), 'liver'))->toBeFalse();
+        }
+    }
+});
+
+test('balanced weekly rotation keeps slot three even-day beef mains liver-free', function (): void {
+    foreach ([2, 4, 6] as $day) {
+        $name = BalancedWeeklyRotationSchedule::mealNameForDay($day, MealPlanSlotType::Main, 3);
+
+        expect(str_contains(strtolower($name), 'liver'))->toBeFalse()
+            ->and($name)->toBeIn(BalancedWeeklyRotationSchedule::BEEF_MAINS);
+    }
 });

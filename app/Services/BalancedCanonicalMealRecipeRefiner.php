@@ -6,6 +6,7 @@ use App\Models\Ingredient;
 use App\Models\Meal;
 use App\Support\MealLibraryBulkNutrition;
 use App\Support\MealLibraryEditGuard;
+use App\Support\MealLibraryRefinerOverrides;
 use App\Support\StandardMeatPortion;
 use App\Support\WholeFoodDietPolicy;
 use Illuminate\Support\Facades\DB;
@@ -227,7 +228,7 @@ final class BalancedCanonicalMealRecipeRefiner
     {
         $wholeFoodTags = WholeFoodDietPolicy::REQUIRED_MEAL_DIET_TAGS;
 
-        return [
+        $definitions = [
             'Mediterranean Omelet' => [
                 'ingredients' => [
                     'Egg' => 100,
@@ -239,7 +240,7 @@ final class BalancedCanonicalMealRecipeRefiner
                     'Basil' => 5,
                     'Parsley' => 5,
                     'Thyme (Fresh)' => 2,
-                    'Olive Oil (Extra Virgin)' => 6,
+                    'Olive Oil (Extra Virgin)' => 5,
                     'Black Pepper' => 1,
                 ],
                 'diet_tags' => array_merge($wholeFoodTags, ['Vegetarian']),
@@ -270,7 +271,7 @@ final class BalancedCanonicalMealRecipeRefiner
                     'Mushrooms' => 45,
                     'Rosemary (Fresh)' => 2,
                     'Garlic (Raw)' => 4,
-                    'Olive Oil (Extra Virgin)' => 4,
+                    'Olive Oil (Extra Virgin)' => 5,
                     'Black Pepper' => 0.5,
                 ],
                 'diet_tags' => $wholeFoodTags,
@@ -288,7 +289,7 @@ final class BalancedCanonicalMealRecipeRefiner
                 'ingredients' => [
                     'Cooked Brown Basmati Rice (Base)' => 113,
                     'Red Onion' => 30,
-                    'Olive Oil' => 3,
+                    'Olive Oil' => 5,
                     'Garlic (Raw)' => 2,
                     'Tomato (Raw)' => 80,
                     'Bell Pepper (Red)' => 30,
@@ -335,7 +336,7 @@ final class BalancedCanonicalMealRecipeRefiner
                     'Red Onion' => 25,
                     'Fresh Basil' => 5,
                     'Fresh Mint' => 5,
-                    'Olive Oil' => 4,
+                    'Olive Oil' => 5,
                     'Lemon Juice' => 8,
                 ],
                 'diet_tags' => array_merge($wholeFoodTags, ['Vegan']),
@@ -368,7 +369,7 @@ final class BalancedCanonicalMealRecipeRefiner
                     'Water (Filtered)' => 140,
                     'Vegetable Stock' => 40,
                     'Garlic' => 3,
-                    'Olive Oil' => 3,
+                    'Olive Oil' => 5,
                     'Turmeric Powder' => 2,
                     'Thyme (Fresh)' => 3,
                 ],
@@ -379,7 +380,7 @@ final class BalancedCanonicalMealRecipeRefiner
                     'Tomato (Raw)' => 250,
                     'Fresh Basil' => 12,
                     'Garlic' => 4,
-                    'Olive Oil' => 4,
+                    'Olive Oil' => 5,
                     'Water (Filtered)' => 150,
                     'Vegetable Broth (Base)' => 50,
                     'White Onion' => 35,
@@ -398,7 +399,7 @@ final class BalancedCanonicalMealRecipeRefiner
                     'Cumin Seeds' => 2,
                     'Water (Filtered)' => 150,
                     'Vegetable Broth (Base)' => 50,
-                    'Olive Oil' => 3,
+                    'Olive Oil' => 5,
                     'Lemon Juice' => 8,
                     'White Onion' => 30,
                 ],
@@ -413,7 +414,7 @@ final class BalancedCanonicalMealRecipeRefiner
                     'Vegetable Stock' => 40,
                     'White Onion' => 30,
                     'Garlic' => 4,
-                    'Olive Oil' => 4,
+                    'Olive Oil' => 5,
                     'Turmeric Powder' => 2,
                     'Black Pepper' => 1,
                 ],
@@ -429,7 +430,7 @@ final class BalancedCanonicalMealRecipeRefiner
                     'Vegetable Broth (Base)' => 50,
                     'White Onion' => 35,
                     'Garlic' => 4,
-                    'Olive Oil' => 4,
+                    'Olive Oil' => 5,
                     'Fresh Parsley' => 5,
                     'Lemon Juice' => 8,
                 ],
@@ -445,7 +446,7 @@ final class BalancedCanonicalMealRecipeRefiner
                     'White Onion' => 30,
                     'Ginger (Raw)' => 10,
                     'Garlic' => 3,
-                    'Olive Oil' => 4,
+                    'Olive Oil' => 5,
                     'Turmeric Powder' => 2,
                 ],
                 'diet_tags' => array_merge($wholeFoodTags, ['Vegan']),
@@ -458,6 +459,8 @@ final class BalancedCanonicalMealRecipeRefiner
                 'short_description' => '500 ml cup of defatted house bone broth — long-simmered and gelatin-rich.',
             ],
         ];
+
+        return MealLibraryRefinerOverrides::mergeRecipeDefinitionMap($definitions);
     }
 
     /**

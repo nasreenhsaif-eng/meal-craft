@@ -8,6 +8,7 @@ use App\Models\Ingredient;
 use App\Models\Meal;
 use App\Support\MealInstructionsText;
 use App\Support\MealLibraryEditGuard;
+use App\Support\MealLibraryRefinerOverrides;
 use App\Support\WholeFoodDietPolicy;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -225,7 +226,7 @@ final class BalancedChiaDessertRecipeRefiner
             );
         }
 
-        return $definitions;
+        return MealLibraryRefinerOverrides::mergeRecipeDefinitionMap($definitions);
     }
 
     /**

@@ -2,10 +2,15 @@
 
 namespace App\Services\Nutrition;
 
+use App\Enums\DietProtocol;
 use App\Enums\MealPlanSlotType;
 use App\Models\CustomerProfile;
 use App\Models\Meal;
 use App\Services\BalancedWeeklyRotationSchedule;
+use App\Services\NutrientDenseWeeklyRotationSchedule;
+use App\Support\ChiaDessertMeals;
+use App\Support\NutrientDenseDessertMeals;
+use App\Support\SavoryEggBreakfastMeals;
 
 /**
  * Simulates a Full Craft day (1 breakfast, 2 mains, pick-2 fixed) for micronutrient coverage analysis.
@@ -28,6 +33,7 @@ final class ReferenceFullCraftDaySimulator
         int $dayNumber,
         float $planTier,
         array $selectedFixedSlots,
+        bool $withLiverSwap = false,
     ): array {
         $dayNumber = max(1, min(7, $dayNumber));
         $selectedFixedSlots = array_values(array_intersect(
@@ -39,7 +45,7 @@ final class ReferenceFullCraftDaySimulator
             $selectedFixedSlots = ['side_salad', 'dessert'];
         }
 
-        $mealsByRole = self::resolveMealsForDay($dayNumber, $selectedFixedSlots);
+        $mealsByRole = self::resolveMealsForDay($profile, $dayNumber, $selectedFixedSlots, $withLiverSwap);
         $fixedCalories = self::resolveFixedCalories($mealsByRole, $selectedFixedSlots);
 
         $buildOptions = [
@@ -149,36 +155,70 @@ final class ReferenceFullCraftDaySimulator
      *     soup: Meal|null,
      * }
      */
-    private static function resolveMealsForDay(int $dayNumber, array $selectedFixedSlots): array
-    {
+    private static function resolveMealsForDay(
+        CustomerProfile $profile,
+        int $dayNumber,
+        array $selectedFixedSlots,
+        bool $withLiverSwap,
+    ): array {
+        $breakfastName = SavoryEggBreakfastMeals::scheduledBreakfastNameForDay($dayNumber, $profile);
+
+        $dessertMeal = null;
+
+        if (in_array('dessert', $selectedFixedSlots, true)) {
+            $schedule = self::rotationScheduleForProfile($profile);
+            $scheduledDessert = self::findMealByName(
+                $schedule::mealNameForDay($dayNumber, MealPlanSlotType::Dessert, 1),
+            );
+
+            if ($scheduledDessert instanceof Meal) {
+                $dessertMeal = self::isNutrientDenseProfile($profile)
+                    ? NutrientDenseDessertMeals::resolveMealForProfile($scheduledDessert, $profile)
+                    : ChiaDessertMeals::resolveMealForProfile($scheduledDessert, $profile);
+            }
+        }
+
+        $secondMainSlot = $withLiverSwap ? 5 : 3;
+
+        $schedule = self::rotationScheduleForProfile($profile);
+
         return [
-            'breakfast' => self::findMealByName(
-                BalancedWeeklyRotationSchedule::mealNameForDay($dayNumber, MealPlanSlotType::Breakfast, 1),
-            ),
+            'breakfast' => self::findMealByName($breakfastName),
             'mains' => array_values(array_filter([
                 self::findMealByName(
-                    BalancedWeeklyRotationSchedule::mealNameForDay($dayNumber, MealPlanSlotType::Main, 1),
+                    $schedule::mealNameForDay($dayNumber, MealPlanSlotType::Main, 1),
                 ),
                 self::findMealByName(
-                    BalancedWeeklyRotationSchedule::mealNameForDay($dayNumber, MealPlanSlotType::Main, 3),
+                    $schedule::mealNameForDay($dayNumber, MealPlanSlotType::Main, $secondMainSlot),
                 ),
             ])),
             'side_salad' => in_array('side_salad', $selectedFixedSlots, true)
                 ? self::findMealByName(
-                    BalancedWeeklyRotationSchedule::mealNameForDay($dayNumber, MealPlanSlotType::Salad, 1),
+                    $schedule::mealNameForDay($dayNumber, MealPlanSlotType::Salad, 1),
                 )
                 : null,
-            'dessert' => in_array('dessert', $selectedFixedSlots, true)
-                ? self::findMealByName(
-                    BalancedWeeklyRotationSchedule::mealNameForDay($dayNumber, MealPlanSlotType::Dessert, 1),
-                )
-                : null,
+            'dessert' => $dessertMeal,
             'soup' => in_array('soup', $selectedFixedSlots, true)
                 ? self::findMealByName(
-                    BalancedWeeklyRotationSchedule::mealNameForDay($dayNumber, MealPlanSlotType::Soup, 1),
+                    $schedule::mealNameForDay($dayNumber, MealPlanSlotType::Soup, 1),
                 )
                 : null,
         ];
+    }
+
+    private static function isNutrientDenseProfile(CustomerProfile $profile): bool
+    {
+        return DietProtocol::tryFromStored($profile->diet_protocol) === DietProtocol::NutrientDense;
+    }
+
+    /**
+     * @return class-string
+     */
+    private static function rotationScheduleForProfile(CustomerProfile $profile): string
+    {
+        return self::isNutrientDenseProfile($profile)
+            ? NutrientDenseWeeklyRotationSchedule::class
+            : BalancedWeeklyRotationSchedule::class;
     }
 
     /**

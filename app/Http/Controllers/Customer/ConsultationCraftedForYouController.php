@@ -47,6 +47,7 @@ class ConsultationCraftedForYouController extends Controller
                 ? (int) UserPlanCalculator::snapToPlanTier((float) $profile->daily_calorie_target)
                 : null,
             'editDraft' => $editDraft,
+            'dietProtocol' => $profile?->diet_protocol ?? 'balanced',
         ];
 
         return view('pages.consultation.crafted-for-you', [

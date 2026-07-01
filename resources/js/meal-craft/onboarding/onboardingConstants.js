@@ -8,7 +8,7 @@
  */
 
 /**
- * @typedef {'balanced' | 'ketobiotic' | 'cycle_sync' | 'thyroid' | 'sickle_cell_warrior' | 'sickle_cell'} OnboardingDietProtocol
+ * @typedef {'balanced' | 'ketobiotic' | 'cycle_sync' | 'thyroid' | 'sickle_cell_warrior' | 'sickle_cell' | 'nutrient_dense'} OnboardingDietProtocol
  */
 
 export const ONBOARDING_STORAGE_KEY = 'mealcraft.onboarding.wizard.v1';

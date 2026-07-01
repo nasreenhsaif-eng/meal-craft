@@ -12,6 +12,7 @@ import ChooseYourMeals, {
     buildConsultationDeckCatalog,
     consultationDeckOptionsForSlotKey,
     consultationDessertDeckForDay,
+    consultationSideSaladDeckForDay,
     filterMealsByCategory,
     isFixedChoiceComplete,
     soupOfTheDayMeals,
@@ -1346,10 +1347,6 @@ export default function CraftedForYouPage({
             return selectedMealCardsForDay;
         }
 
-        if (usesWeeklyScheduledMenu && assignedMealsForCalorieDay) {
-            return selectedMealCardsForDay;
-        }
-
         return reconcileConsultationDayMacros(
             groupConsultationMealsByCategory(selectedMealCardsForDay),
             dayMacroTargets,
@@ -1775,17 +1772,6 @@ export default function CraftedForYouPage({
 
                             const daySelections = selectedByDay[day] ?? emptyDaySelections;
 
-                            let dayAssignedMeals = null;
-                            if (usesWeeklyScheduledMenu && craft?.key === 'full') {
-                                const assigned = scheduledFullCraftCategoryMealsForDay(
-                                    scheduledFullCraftByWeekday,
-                                    day,
-                                );
-                                if (assigned) {
-                                    dayAssignedMeals = assigned;
-                                }
-                            }
-
                             const toggle = (key, max) => (meal) => {
                                 setSelectedByDay((prev) => {
                                     const current = prev[day] ?? {
@@ -1869,7 +1855,7 @@ export default function CraftedForYouPage({
                                 layout={craft?.key === 'full' ? 'categories' : 'custom'}
                                 meals={craft?.key === 'full' ? consultationDeckMeals : []}
                                 assignedMealsByCategory={
-                                    craft?.key === 'full' ? dayAssignedMeals ?? undefined : undefined
+                                    craft?.key === 'full' ? assignedMealsForCalorieDay ?? undefined : undefined
                                 }
                                 categorySelections={craft?.key === 'full' ? daySelections : undefined}
                                 onToggleCategory={
@@ -1908,11 +1894,6 @@ export default function CraftedForYouPage({
                                 footerNextDisabled={!isCurationDayComplete}
                                 footerIncompleteMessage={curationIncompleteMessage}
                                 scheduledSoupMeals={scheduledSoupForDay(curationDay)}
-                                hintText={
-                                    usesWeeklyScheduledMenu
-                                        ? "Today's options rotate each weekday — pick your meals and sides."
-                                        : undefined
-                                }
                                 onViewDetails={openMealDetail}
                                 isMenuPending={isMenuPending}
                             >
@@ -1943,6 +1924,18 @@ export default function CraftedForYouPage({
                                                     return consultationDessertDeckForDay(
                                                         catalogMeals,
                                                         assigned?.desserts ?? [],
+                                                    );
+                                                }
+
+                                                if (slotKey === 'sidesalad') {
+                                                    const assigned = scheduledFullCraftCategoryMealsForDay(
+                                                        scheduledFullCraftByWeekday,
+                                                        day,
+                                                    );
+
+                                                    return consultationSideSaladDeckForDay(
+                                                        catalogMeals,
+                                                        assigned?.sideSalads ?? [],
                                                     );
                                                 }
 

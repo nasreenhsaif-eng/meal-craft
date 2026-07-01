@@ -103,12 +103,14 @@ final class DayMicronutrientCoverageAnalyzer
         int $dayNumber,
         float $planTier,
         array $selectedFixedSlots,
+        bool $withLiverSwap = false,
     ): array {
         $simulation = ReferenceFullCraftDaySimulator::simulate(
             $profile,
             $dayNumber,
             $planTier,
             $selectedFixedSlots,
+            $withLiverSwap,
         );
 
         $nutrients = self::analyzeDayNutrition($simulation['day_nutrition'], (int) round($planTier));

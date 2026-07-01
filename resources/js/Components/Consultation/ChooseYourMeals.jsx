@@ -196,6 +196,43 @@ export function consultationDessertDeckForDay(source, scheduledDesserts = []) {
 }
 
 /**
+ * Side salad deck: today's scheduled rotation first, then fill to the slot limit from the catalog.
+ *
+ * @param {ConsultationMeal[]} source
+ * @param {ConsultationMeal[]} [scheduledSideSalads]
+ */
+export function consultationSideSaladDeckForDay(source, scheduledSideSalads = []) {
+    const limit = CONSULTATION_DECK_OPTION_LIMITS.sidesalad;
+    /** @type {ConsultationMeal[]} */
+    const deck = [];
+    const seen = new Set();
+
+    for (const meal of scheduledSideSalads) {
+        if (!meal?.id || seen.has(meal.id)) {
+            continue;
+        }
+
+        seen.add(meal.id);
+        deck.push(meal);
+    }
+
+    for (const meal of source.filter((entry) => entry.mealType === 'Side salad')) {
+        if (deck.length >= limit) {
+            break;
+        }
+
+        if (seen.has(meal.id)) {
+            continue;
+        }
+
+        seen.add(meal.id);
+        deck.push(meal);
+    }
+
+    return deck.slice(0, limit);
+}
+
+/**
  * Consultation UI only ever surfaces capped deck options — same shape as the original MOCK_MEALS fixture.
  *
  * @param {ConsultationMeal[]} source
@@ -420,6 +457,10 @@ const PLAN_MACRO_CELL_META = Object.freeze([
 const PLAN_MACRO_TABLE_GRID =
     'grid grid-cols-[5.5rem_repeat(4,minmax(0,1fr))] items-center gap-x-2 gap-y-2 sm:grid-cols-[6rem_repeat(4,minmax(0,1fr))] sm:gap-x-3';
 
+/** Consultation footer: label column + four macro columns, one row at a time. */
+const CONSULTATION_MACRO_FOOTER_ROW_GRID =
+    'grid grid-cols-[4.25rem_repeat(4,minmax(0,1fr))] items-baseline gap-x-2 sm:grid-cols-[4.75rem_repeat(4,minmax(0,1fr))] sm:gap-x-3';
+
 /** @param {'calories' | 'protein' | 'carbs' | 'fat'} key @param {number | string | null | undefined} raw */
 function formatPlanMacroValue(key, raw) {
     const n = Number(raw ?? 0);
@@ -467,24 +508,30 @@ function PlanMacroTableHeader({ planCategoryLabel = '' }) {
  * @param {string} [props.cellClassName]
  * @param {string} [props.lastCellClassName]
  */
-function PlanMacroValueCells({ macros, cellClassName = '', lastCellClassName = '' }) {
+function PlanMacroValueCells({ macros, cellClassName = '', lastCellClassName = '', highlightKeys = [], muted = false }) {
     return (
         <>
-            {PLAN_MACRO_CELL_META.map((cell, index) => (
-                <p
-                    key={cell.key}
-                    className={[
-                        'truncate text-center text-sm font-bold tabular-nums leading-none sm:text-[15px]',
-                        cellClassName,
-                        index === PLAN_MACRO_CELL_META.length - 1 ? lastCellClassName : '',
-                    ]
-                        .join(' ')
-                        .trim()}
-                    style={{ color: cell.color }}
-                >
-                    {formatPlanMacroValue(cell.key, macros?.[cell.key])}
-                </p>
-            ))}
+            {PLAN_MACRO_CELL_META.map((cell, index) => {
+                const highlighted = !muted && highlightKeys.includes(cell.key);
+
+                return (
+                    <p
+                        key={cell.key}
+                        className={[
+                            'truncate text-center text-sm font-bold tabular-nums leading-none sm:text-[15px]',
+                            muted ? 'font-semibold text-[#9CA3AF]' : '',
+                            highlighted ? 'text-amber-800' : '',
+                            cellClassName,
+                            index === PLAN_MACRO_CELL_META.length - 1 ? lastCellClassName : '',
+                        ]
+                            .join(' ')
+                            .trim()}
+                        style={highlighted || muted ? undefined : { color: cell.color }}
+                    >
+                        {formatPlanMacroValue(cell.key, macros?.[cell.key])}
+                    </p>
+                );
+            })}
         </>
     );
 }
@@ -533,6 +580,46 @@ export function PlanMacroColumnHeaderRow() {
                     {cell.shortLabel}
                 </p>
             ))}
+        </div>
+    );
+}
+
+/**
+ * Selected vs target macros in the consultation footer — label left, values on same baseline.
+ *
+ * @param {object} props
+ * @param {MacroTotals} props.totals
+ * @param {MacroTotals | null} [props.targets]
+ * @param {Array<'calories' | 'protein' | 'carbs' | 'fat'>} [props.highlightKeys]
+ */
+function ConsultationDayMacroFooterGrid({ totals, targets = null, highlightKeys = [] }) {
+    return (
+        <div className="space-y-1.5" role="table" aria-label="Day macro comparison">
+            <div className={CONSULTATION_MACRO_FOOTER_ROW_GRID} role="row">
+                <span aria-hidden="true" />
+                {PLAN_MACRO_CELL_META.map((cell) => (
+                    <p
+                        key={cell.key}
+                        className="truncate text-center font-montserrat text-[9px] font-semibold uppercase tracking-[0.12em] text-[#6B7280] sm:text-[10px]"
+                    >
+                        {cell.shortLabel}
+                    </p>
+                ))}
+            </div>
+            <div className={CONSULTATION_MACRO_FOOTER_ROW_GRID} role="row">
+                <p className="font-montserrat text-[10px] font-semibold uppercase leading-none tracking-[0.08em] text-[#555555]">
+                    Selected
+                </p>
+                <PlanMacroValueCells macros={totals} highlightKeys={highlightKeys} />
+            </div>
+            {targets ? (
+                <div className={CONSULTATION_MACRO_FOOTER_ROW_GRID} role="row">
+                    <p className="font-montserrat text-[10px] font-semibold uppercase leading-none tracking-[0.08em] text-[#555555]">
+                        Target
+                    </p>
+                    <PlanMacroValueCells macros={targets} muted />
+                </div>
+            ) : null}
         </div>
     );
 }
@@ -1123,7 +1210,8 @@ export function FixedChoicePicker({
             }
 
             if (def.selectionKey === 'sideSalads') {
-                const deckOptions = consultationDeckOptionsForSlotKey(meals ?? [], 'sidesalad');
+                const scheduledSideSalads = assignedMealsByCategory?.sideSalads ?? [];
+                const deckOptions = consultationSideSaladDeckForDay(meals ?? [], scheduledSideSalads);
 
                 if (deckOptions.length > 0) {
                     return deckOptions;
@@ -1616,7 +1704,7 @@ export default function ChooseYourMeals({
             <div className="flex min-h-0 flex-1 flex-col overflow-x-clip">
                 <div
                     ref={scrollContainerRef}
-                    className="mc-choose-meals-scroll min-h-0 flex-1 overflow-y-auto overscroll-y-contain pt-2 max-md:px-0 max-md:pb-4 md:px-5 md:pb-8 md:pt-4 [-webkit-overflow-scrolling:touch]"
+                    className="mc-choose-meals-scroll min-h-0 flex-1 overflow-y-auto overscroll-y-contain [scrollbar-gutter:stable] pt-2 max-md:px-0 max-md:pb-4 md:px-5 md:pb-8 md:pt-4 [-webkit-overflow-scrolling:touch]"
                 >
                     <div className="relative z-0 min-w-0 space-y-0">{mainScrollable}</div>
                 </div>
@@ -1654,29 +1742,19 @@ export default function ChooseYourMeals({
                             </span>
                         </p>
                     </div>
-                    {dayMacroTotals && dayMacroTotals.calories > 0 ? (
-                        <div className="mt-2">
-                            <PlanMacroColumnHeaderRow />
-                            <p className="mb-0.5 font-montserrat text-[10px] font-semibold uppercase tracking-[0.08em] text-[#555555]">
-                                Selected
-                            </p>
-                            <PlanMacroSummaryRow
-                                macros={dayMacroTotals}
-                                ariaLabel="Selected day macros"
-                                highlightKeys={macroHighlightKeys}
+                    {dayMacroTargets ? (
+                        <div className="mt-2 min-h-[4.75rem]">
+                            <ConsultationDayMacroFooterGrid
+                                totals={
+                                    dayMacroTotals && dayMacroTotals.calories > 0
+                                        ? dayMacroTotals
+                                        : { calories: 0, protein: 0, carbs: 0, fat: 0 }
+                                }
+                                targets={dayMacroTargets}
+                                highlightKeys={
+                                    dayMacroTotals && dayMacroTotals.calories > 0 ? macroHighlightKeys : []
+                                }
                             />
-                            {dayMacroTargets ? (
-                                <>
-                                    <p className="mb-0.5 mt-1.5 font-montserrat text-[10px] font-semibold uppercase tracking-[0.08em] text-[#555555]">
-                                        Target
-                                    </p>
-                                    <PlanMacroSummaryRow
-                                        macros={dayMacroTargets}
-                                        ariaLabel="Target day macros"
-                                        muted
-                                    />
-                                </>
-                            ) : null}
                         </div>
                     ) : null}
                     {hintText ? <p className="mt-1.5 font-body text-xs text-[#555555]">{hintText}</p> : null}

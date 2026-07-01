@@ -95,6 +95,11 @@ final class BalancedMicronutrientRecipeRefiner
             ));
 
             $updated = array_merge($updated, $this->refineMealList(
+                BalancedWeeklyRotationSchedule::LIVER_MAINS,
+                ['b12', 'vitamin_k2', 'iron', 'b9_folate', 'vitamin_a', 'fiber', 'potassium', 'magnesium', 'zinc', 'b6', 'vitamin_e'],
+            ));
+
+            $updated = array_merge($updated, $this->refineMealList(
                 BalancedWeeklyRotationSchedule::EGG_BREAKFASTS,
                 ['b9_folate', 'vitamin_a', 'iron', 'b12', 'vitamin_k2'],
             ));
@@ -220,13 +225,19 @@ final class BalancedMicronutrientRecipeRefiner
         return match ($nutritionKey) {
             'iron', 'b9_folate', 'vitamin_a', 'vitamin_c', 'fiber', 'potassium' => 'side_salad',
             'calcium', 'magnesium', 'zinc', 'vitamin_e', 'b6' => 'side_salad',
-            'b12', 'vitamin_k2' => 'fish_beef',
+            'b12', 'vitamin_k2' => 'liver',
             default => 'main',
         };
     }
 
     private function mealForDayRole(int $dayNumber, string $role): ?Meal
     {
+        if ($role === 'liver') {
+            return $this->findMealByName(
+                BalancedWeeklyRotationSchedule::mealNameForDay($dayNumber, MealPlanSlotType::Main, 5),
+            );
+        }
+
         if ($role === 'fish_beef') {
             return $this->findMealByName(
                 BalancedWeeklyRotationSchedule::mealNameForDay($dayNumber, MealPlanSlotType::Main, 3),

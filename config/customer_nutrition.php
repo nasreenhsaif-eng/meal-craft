@@ -42,6 +42,17 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Breakfast macro split (% of breakfast slot calories)
+    |--------------------------------------------------------------------------
+    */
+    'breakfast_macro_split' => [
+        'protein_percentage' => 40.0,
+        'carb_percentage' => 25.0,
+        'fat_percentage' => 35.0,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Fixed pick slots — customer picks exactly 2 of 3 per day (~150 kcal each)
     |--------------------------------------------------------------------------
     */
@@ -132,7 +143,7 @@ return [
     |
     */
     'savory_egg_breakfast_minimum_side_grams' => [
-        'Avocado' => 50.0,
+        'Avocado' => 25.0,
     ],
 
     /*
@@ -199,8 +210,8 @@ return [
     */
     'macro_presets' => [
         'balanced' => [
-            'protein_percentage' => 40.0,
-            'carb_percentage' => 30.0,
+            'protein_percentage' => 35.0,
+            'carb_percentage' => 35.0,
             'fat_percentage' => 30.0,
         ],
         'high_protein' => [
@@ -217,8 +228,8 @@ return [
     */
     'diet_protocol_macro_presets' => [
         'balanced' => [
-            'protein_percentage' => 40.0,
-            'carb_percentage' => 30.0,
+            'protein_percentage' => 35.0,
+            'carb_percentage' => 35.0,
             'fat_percentage' => 30.0,
         ],
         'ketobiotic' => [
@@ -241,7 +252,55 @@ return [
             'carb_percentage' => 50.0,
             'fat_percentage' => 25.0,
         ],
+        'nutrient_dense' => [
+            'protein_percentage' => 32.0,
+            'carb_percentage' => 28.0,
+            'fat_percentage' => 40.0,
+        ],
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Nutrient-dense protocol per-slot macro splits (% of calories)
+    |--------------------------------------------------------------------------
+    */
+    'nutrient_dense_slot_macro_splits' => [
+        'breakfast' => [
+            'protein_percentage' => 35.0,
+            'carb_percentage' => 20.0,
+            'fat_percentage' => 45.0,
+        ],
+        'main_each' => [
+            'protein_percentage' => 35.0,
+            'carb_percentage' => 22.0,
+            'fat_percentage' => 43.0,
+        ],
+        'fixed_choice' => [
+            'protein_percentage' => 25.0,
+            'carb_percentage' => 30.0,
+            'fat_percentage' => 45.0,
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Nutrient-dense fermented portion caps (grams per serving)
+    |--------------------------------------------------------------------------
+    */
+    'nutrient_dense_fermented_caps' => [
+        'miso_paste' => 12.0,
+        'kimchi' => 40.0,
+        'sauerkraut' => 50.0,
+        'kefir' => 120.0,
+        'fermented_chimichurri' => 25.0,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Nutrient-dense production meal plan (optional env override)
+    |--------------------------------------------------------------------------
+    */
+    'nutrient_dense_production_meal_plan_id' => env('CUSTOMER_NUTRIENT_DENSE_MEAL_PLAN_ID'),
 
     /*
     |--------------------------------------------------------------------------

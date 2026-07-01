@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Ingredient;
 use App\Models\Meal;
 use App\Support\MealLibraryEditGuard;
+use App\Support\MealLibraryRefinerOverrides;
 use App\Support\StandardMeatPortion;
 use App\Support\WholeFoodDietPolicy;
 use Illuminate\Support\Facades\DB;
@@ -109,7 +110,7 @@ final class BalancedComplexCarbRecipeRefiner
     {
         $tags = WholeFoodDietPolicy::REQUIRED_MEAL_DIET_TAGS;
 
-        return [
+        $definitions = [
             'Citrus Herb Salmon' => [
                 'ingredients' => [
                     'Salmon (Raw)' => StandardMeatPortion::GRAMS,
@@ -206,5 +207,7 @@ final class BalancedComplexCarbRecipeRefiner
                 'diet_tags' => $tags,
             ],
         ];
+
+        return MealLibraryRefinerOverrides::mergeRecipeDefinitionMap($definitions);
     }
 }

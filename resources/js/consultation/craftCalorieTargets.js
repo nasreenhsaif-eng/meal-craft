@@ -12,8 +12,8 @@ const FIXED_CHOICE_COUNT = 2;
 const BUSINESS_MAIN_TARGET = 375;
 const BUSINESS_SIDE_CALORIES = 150;
 const BALANCED_MACRO_SPLIT = Object.freeze({
-    protein: 40,
-    carbs: 30,
+    protein: 35,
+    carbs: 35,
     fat: 30,
 });
 

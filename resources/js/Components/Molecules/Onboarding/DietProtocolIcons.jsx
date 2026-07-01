@@ -3,11 +3,6 @@ export const DIET_PROTOCOL_ICON_STROKE = 1.75;
 
 const iconClass = (className = '') => `block h-[22px] w-[22px] shrink-0 ${className}`.trim();
 
-/**
- * Classic symmetrical balance scale — nutritional equilibrium.
- *
- * @param {{ className?: string }} props
- */
 export function IconBalanced({ className = '' }) {
     const s = DIET_PROTOCOL_ICON_STROKE;
 
@@ -153,6 +148,30 @@ export function IconThyroid({ className = '' }) {
                 strokeWidth={s}
                 strokeLinecap="round"
             />
+        </svg>
+    );
+}
+
+/**
+ * Leaf with nutrient dots — micronutrient density protocol.
+ *
+ * @param {{ className?: string }} props
+ */
+export function IconNutrientDense({ className = '' }) {
+    const s = DIET_PROTOCOL_ICON_STROKE;
+
+    return (
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden className={iconClass(className)}>
+            <path
+                d="M12 20c-4-6-6-10-6-14a6 6 0 0 1 12 0c0 4-2 8-6 14Z"
+                stroke="currentColor"
+                strokeWidth={s}
+                strokeLinejoin="round"
+            />
+            <path d="M12 6v8" stroke="currentColor" strokeWidth={s} strokeLinecap="round" />
+            <circle cx="9" cy="11" r="1" fill="currentColor" />
+            <circle cx="12" cy="9" r="1" fill="currentColor" />
+            <circle cx="15" cy="11" r="1" fill="currentColor" />
         </svg>
     );
 }

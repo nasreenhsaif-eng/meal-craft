@@ -6,9 +6,11 @@ use App\Support\WholeFoodDietPolicy;
 test('whole food policy bans protein powder oats dairy and soy', function (): void {
     expect(WholeFoodDietPolicy::isBannedIngredientName('Protein Powder (Isolate)'))->toBeTrue()
         ->and(WholeFoodDietPolicy::isBannedIngredientName('Oats (Rolled)'))->toBeTrue()
-        ->and(WholeFoodDietPolicy::isBannedIngredientName('Parmesan'))->toBeTrue()
+        ->and(WholeFoodDietPolicy::isBannedIngredientName('Cheddar Cheese'))->toBeTrue()
         ->and(WholeFoodDietPolicy::isBannedIngredientName('Soy Sauce'))->toBeTrue()
-        ->and(WholeFoodDietPolicy::isBannedIngredientName('Salmon'))->toBeFalse();
+        ->and(WholeFoodDietPolicy::isBannedIngredientName('Salmon'))->toBeFalse()
+        ->and(WholeFoodDietPolicy::isBannedIngredientName('Greek Yogurt'))->toBeFalse()
+        ->and(WholeFoodDietPolicy::isBannedIngredientName('Halloumi'))->toBeFalse();
 });
 
 test('whole food policy allows ghee olives house almond flour and vetted pantry staples', function (): void {

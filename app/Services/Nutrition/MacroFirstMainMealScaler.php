@@ -6,6 +6,7 @@ use App\Enums\MealScalingRole as MealScalingRoleEnum;
 use App\Models\Ingredient;
 use App\Models\Meal;
 use App\Services\RecipeNutritionCalculator;
+use App\Support\KitchenPortionRounding;
 use App\Support\MealScalingRole;
 use App\Support\StandardMeatPortion;
 
@@ -84,6 +85,7 @@ final class MacroFirstMainMealScaler
 
         $grams = self::trimToCalorieTarget($meal, $grams, $targetCalories);
         $grams = self::recoverCarbTargetAfterTrim($meal, $grams, $targetCarbs, $targetCalories);
+        $grams = KitchenPortionRounding::snapFatRoleGramsForMeal($meal, $grams);
 
         return [
             'grams' => $grams,
@@ -316,6 +318,97 @@ final class MacroFirstMainMealScaler
      * @param  array<int, float>  $grams
      * @return array<int, float>
      */
+    public static function boostCarbRoleGrams(Meal $meal, array $grams, float $multiplier): array
+    {
+        if ($multiplier <= 1.0001) {
+            return $grams;
+        }
+
+        $boosted = $grams;
+
+        foreach ($meal->ingredients as $ingredient) {
+            if (MealScalingRole::roleForIngredient($ingredient, $meal) !== MealScalingRoleEnum::Carb) {
+                continue;
+            }
+
+            $baseline = (float) ($grams[$ingredient->id] ?? 0);
+
+            if ($baseline <= 0) {
+                continue;
+            }
+
+            $boosted[$ingredient->id] = round($baseline * $multiplier, 4);
+        }
+
+        return $boosted;
+    }
+
+    /**
+     * @param  array<int, float>  $grams
+     * @return array<int, float>
+     */
+    public static function trimCarbRoleGrams(Meal $meal, array $grams, float $multiplier): array
+    {
+        if ($multiplier >= 0.9999) {
+            return $grams;
+        }
+
+        $multiplier = max(0.0, $multiplier);
+        $trimmed = $grams;
+
+        foreach ($meal->ingredients as $ingredient) {
+            if (MealScalingRole::roleForIngredient($ingredient, $meal) !== MealScalingRoleEnum::Carb) {
+                continue;
+            }
+
+            $baseline = (float) ($grams[$ingredient->id] ?? 0);
+
+            if ($baseline <= 0) {
+                continue;
+            }
+
+            $trimmed[$ingredient->id] = round($baseline * $multiplier, 4);
+        }
+
+        return $trimmed;
+    }
+
+    /**
+     * @param  array<int, float>  $grams
+     * @return array<int, float>
+     */
+    public static function trimFatRoleGrams(Meal $meal, array $grams, float $multiplier): array
+    {
+        if ($multiplier >= 0.9999) {
+            return $grams;
+        }
+
+        $multiplier = max(0.0, $multiplier);
+        $trimmed = $grams;
+
+        foreach ($meal->ingredients as $ingredient) {
+            $role = MealScalingRole::roleForIngredient($ingredient, $meal);
+
+            if (! in_array($role, [MealScalingRoleEnum::Fat, MealScalingRoleEnum::Sauce], true)) {
+                continue;
+            }
+
+            $baseline = (float) ($grams[$ingredient->id] ?? 0);
+
+            if ($baseline <= 0) {
+                continue;
+            }
+
+            $trimmed[$ingredient->id] = round($baseline * $multiplier, 4);
+        }
+
+        return KitchenPortionRounding::snapFatRoleGramsForMeal($meal, $trimmed);
+    }
+
+    /**
+     * @param  array<int, float>  $grams
+     * @return array<int, float>
+     */
     private static function recoverCarbTargetAfterTrim(
         Meal $meal,
         array $grams,
@@ -369,7 +462,9 @@ final class MacroFirstMainMealScaler
             return $grams;
         }
 
-        return self::trimToCalorieTarget($meal, $grams, $targetCalories);
+        $trimmed = self::trimToCalorieTarget($meal, $grams, $targetCalories);
+
+        return KitchenPortionRounding::snapFatRoleGramsForMeal($meal, $trimmed);
     }
 
     /**

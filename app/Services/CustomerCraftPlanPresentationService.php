@@ -56,6 +56,7 @@ final class CustomerCraftPlanPresentationService
      *     selectedWeekdays: list<int>,
      *     planTierCalories: int,
      *     submittedAt: string|null,
+     *     dietProtocol: string|null,
      *     days: list<array{
      *         dayNumber: int,
      *         label: string,
@@ -118,6 +119,7 @@ final class CustomerCraftPlanPresentationService
             'selectedWeekdays' => array_values($plan->selected_weekdays ?? []),
             'planTierCalories' => $planTierCalories,
             'submittedAt' => $plan->submitted_at?->toIso8601String(),
+            'dietProtocol' => $profile instanceof CustomerProfile ? $profile->diet_protocol : null,
             'days' => $presentedDays,
         ];
     }

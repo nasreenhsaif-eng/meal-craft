@@ -56,40 +56,185 @@ class DayMacroReconciliation
         $targetProtein = (float) ($targets['protein_g'] ?? 0);
         $proteinDeficit = round($targetProtein - $actual['protein_g'], 2);
 
-        if ($proteinDeficit <= $tolerance['protein_g']) {
-            return ['dayMenu' => $dayMenu, 'warnings' => []];
+        if ($proteinDeficit > $tolerance['protein_g']) {
+            $primaryAdaptedMains = self::adaptedMainsForMeals($dayMenu['meals'], $mainMeals);
+
+            if ($primaryAdaptedMains !== []) {
+                $balancedPrimary = AdaptedMenuBuilder::balanceMainMealProteinForDayDeficit(
+                    $primaryAdaptedMains,
+                    $plan,
+                    $mainMeals,
+                    $proteinDeficit,
+                    self::fixedPortionCalories($dayMenu),
+                    self::scalableNonMainCalories($dayMenu),
+                );
+
+                $dayMenu['meals'] = self::mergeAdaptedMainsById($dayMenu['meals'], $balancedPrimary);
+            }
+
+            $afterProtein = self::sumDayMacros(self::dayMenuForMacroTotals($dayMenu, $options));
+            $remainingDeficit = round($targetProtein - $afterProtein['protein_g'], 2);
+
+            if ($remainingDeficit > $tolerance['protein_g']) {
+                $warnings[] = sprintf(
+                    'Day protein is %.0fg below target (%.0fg selected vs %.0fg target).',
+                    $remainingDeficit,
+                    $afterProtein['protein_g'],
+                    $targetProtein,
+                );
+            }
+        }
+
+        $dayMenu = self::reconcileCarbCalorieSurplus($dayMenu, $mainMeals, $plan, $targets, $tolerance, $options);
+        $dayMenu = self::reconcileCarbCalorieDeficit($dayMenu, $mainMeals, $plan, $targets, $tolerance, $options);
+
+        return ['dayMenu' => $dayMenu, 'warnings' => $warnings];
+    }
+
+    /**
+     * @param  array{
+     *     breakfasts: list<array<string, mixed>>,
+     *     meals: list<array<string, mixed>>,
+     *     sideSalads: list<array<string, mixed>>,
+     *     desserts: list<array<string, mixed>>,
+     *     soup: list<array<string, mixed>>
+     * }  $dayMenu
+     * @param  list<Meal>  $mainMeals
+     * @param  array<string, mixed>  $plan
+     * @param  array<string, float>  $targets
+     * @param  array<string, float>  $tolerance
+     * @param  array<string, mixed>  $options
+     * @return array{
+     *     breakfasts: list<array<string, mixed>>,
+     *     meals: list<array<string, mixed>>,
+     *     sideSalads: list<array<string, mixed>>,
+     *     desserts: list<array<string, mixed>>,
+     *     soup: list<array<string, mixed>>
+     * }
+     */
+    private static function reconcileCarbCalorieDeficit(
+        array $dayMenu,
+        array $mainMeals,
+        array $plan,
+        array $targets,
+        array $tolerance,
+        array $options,
+    ): array {
+        if ($mainMeals === []) {
+            return $dayMenu;
+        }
+
+        $dayMenuForTotals = self::dayMenuForMacroTotals($dayMenu, $options);
+        $actual = self::sumDayMacros($dayMenuForTotals);
+        $dayTargetCalories = (float) ($plan['craft_day_calories'] ?? $plan['plan_tier'] ?? 0);
+        $dayCalorieTolerance = UserPlanCalculator::dayCalorieTolerance();
+        $targetProtein = (float) ($targets['protein_g'] ?? 0);
+        $targetCarbs = (float) ($targets['carbs_g'] ?? 0);
+        $targetFat = (float) ($targets['fat_g'] ?? 0);
+        $calorieDeficit = round($dayTargetCalories - $actual['calories'], 2);
+        $carbDeficit = round($targetCarbs - $actual['carbs_g'], 2);
+        $proteinDeficit = round($targetProtein - $actual['protein_g'], 2);
+        $fatGap = abs(round($targetFat - $actual['fat_g'], 2));
+
+        if (
+            $calorieDeficit <= $dayCalorieTolerance
+            || $proteinDeficit > $tolerance['protein_g']
+            || $fatGap > $tolerance['fat_g']
+            || $carbDeficit <= $tolerance['carbs_g']
+        ) {
+            return $dayMenu;
         }
 
         $primaryAdaptedMains = self::adaptedMainsForMeals($dayMenu['meals'], $mainMeals);
 
         if ($primaryAdaptedMains === []) {
-            return ['dayMenu' => $dayMenu, 'warnings' => []];
+            return $dayMenu;
         }
 
-        $balancedPrimary = AdaptedMenuBuilder::balanceMainMealProteinForDayDeficit(
+        $balancedPrimary = AdaptedMenuBuilder::balanceMainMealCarbsForDayDeficit(
             $primaryAdaptedMains,
             $plan,
             $mainMeals,
-            $proteinDeficit,
-            self::fixedPortionCalories($dayMenu),
-            self::scalableNonMainCalories($dayMenu),
+            $carbDeficit,
+            $calorieDeficit,
         );
 
         $dayMenu['meals'] = self::mergeAdaptedMainsById($dayMenu['meals'], $balancedPrimary);
 
-        $after = self::sumDayMacros(self::dayMenuForMacroTotals($dayMenu, $options));
-        $remainingDeficit = round($targetProtein - $after['protein_g'], 2);
+        return $dayMenu;
+    }
 
-        if ($remainingDeficit > $tolerance['protein_g']) {
-            $warnings[] = sprintf(
-                'Day protein is %.0fg below target (%.0fg selected vs %.0fg target).',
-                $remainingDeficit,
-                $after['protein_g'],
-                $targetProtein,
-            );
+    /**
+     * @param  array{
+     *     breakfasts: list<array<string, mixed>>,
+     *     meals: list<array<string, mixed>>,
+     *     sideSalads: list<array<string, mixed>>,
+     *     desserts: list<array<string, mixed>>,
+     *     soup: list<array<string, mixed>>
+     * }  $dayMenu
+     * @param  list<Meal>  $mainMeals
+     * @param  array<string, mixed>  $plan
+     * @param  array<string, float>  $targets
+     * @param  array<string, float>  $tolerance
+     * @param  array<string, mixed>  $options
+     * @return array{
+     *     breakfasts: list<array<string, mixed>>,
+     *     meals: list<array<string, mixed>>,
+     *     sideSalads: list<array<string, mixed>>,
+     *     desserts: list<array<string, mixed>>,
+     *     soup: list<array<string, mixed>>
+     * }
+     */
+    private static function reconcileCarbCalorieSurplus(
+        array $dayMenu,
+        array $mainMeals,
+        array $plan,
+        array $targets,
+        array $tolerance,
+        array $options,
+    ): array {
+        if ($mainMeals === []) {
+            return $dayMenu;
         }
 
-        return ['dayMenu' => $dayMenu, 'warnings' => $warnings];
+        $dayMenuForTotals = self::dayMenuForMacroTotals($dayMenu, $options);
+        $actual = self::sumDayMacros($dayMenuForTotals);
+        $dayTargetCalories = (float) ($plan['craft_day_calories'] ?? $plan['plan_tier'] ?? 0);
+        $dayCalorieTolerance = UserPlanCalculator::dayCalorieTolerance();
+        $targetProtein = (float) ($targets['protein_g'] ?? 0);
+        $targetCarbs = (float) ($targets['carbs_g'] ?? 0);
+        $targetFat = (float) ($targets['fat_g'] ?? 0);
+        $calorieSurplus = round($actual['calories'] - $dayTargetCalories, 2);
+        $carbSurplus = round($actual['carbs_g'] - $targetCarbs, 2);
+        $fatSurplus = round($actual['fat_g'] - $targetFat, 2);
+        $proteinDeficit = round($targetProtein - $actual['protein_g'], 2);
+
+        if (
+            $calorieSurplus <= $dayCalorieTolerance
+            || $proteinDeficit > $tolerance['protein_g']
+            || ($carbSurplus <= $tolerance['carbs_g'] && $fatSurplus <= $tolerance['fat_g'])
+        ) {
+            return $dayMenu;
+        }
+
+        $primaryAdaptedMains = self::adaptedMainsForMeals($dayMenu['meals'], $mainMeals);
+
+        if ($primaryAdaptedMains === []) {
+            return $dayMenu;
+        }
+
+        $trimmedPrimary = AdaptedMenuBuilder::trimMainMealsForDaySurplus(
+            $primaryAdaptedMains,
+            $plan,
+            $mainMeals,
+            max(0.0, $carbSurplus),
+            max(0.0, $fatSurplus),
+            $calorieSurplus,
+        );
+
+        $dayMenu['meals'] = self::mergeAdaptedMainsById($dayMenu['meals'], $trimmedPrimary);
+
+        return $dayMenu;
     }
 
     /**

@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Meal;
 use App\Support\MealLibraryEditGuard;
+use App\Support\MealLibraryRefinerOverrides;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -63,7 +64,7 @@ final class BalancedMealInstructionRefiner
      */
     private function instructionDefinitions(): array
     {
-        return [
+        $definitions = [
             // Chia desserts
             'Blueberry Walnut Chia Pudding' => $this->steps([
                 'Whisk chia seeds with coconut water and coconut milk in a jar.',
@@ -110,10 +111,50 @@ final class BalancedMealInstructionRefiner
             // Egg breakfasts
             'Mediterranean Omelet' => $this->steps([
                 'Beat eggs in a bowl.',
-                'Sauté diced pepper, tomato, and shallot in olive oil for 3 minutes.',
-                'Pour in eggs. Cook over medium heat until almost set.',
+                'Heat olive oil in a non-stick pan over medium heat. Sauté diced pepper, tomato, and shallot for 3 minutes.',
+                'Pour in eggs. Cook over medium-low heat until almost set.',
                 'Add olives and avocado on one half. Fold omelet in half.',
                 'Finish with fresh herbs. Serve warm.',
+            ]),
+            'Halloumi & Spinach Scramble' => $this->steps([
+                'Heat half the olive oil in a non-stick skillet over medium heat. Wilt spinach for 1 minute, then set aside.',
+                'Grill halloumi in the remaining oil until golden on both sides.',
+                'Beat eggs, add to the skillet with a little more oil if the pan looks dry, and scramble gently until just set.',
+                'Fold halloumi and spinach through the eggs. Season with black pepper and serve warm.',
+            ]),
+            'Greek Yogurt & Parmesan Frittata' => $this->steps([
+                'Heat oven to 180°C (350°F).',
+                'Whisk eggs with Greek yogurt, salt, and pepper. Fold in spinach and diced pepper.',
+                'Brush an oven-safe pan with olive oil, pour in the mixture, and bake 12–15 minutes until set.',
+                'Finish with grated parmesan and serve warm from the pan.',
+            ]),
+            'Feta & Herb Open Omelet' => $this->steps([
+                'Heat olive oil in a non-stick pan over medium heat. Sauté pepper and spinach until tender (2–3 min).',
+                'Beat eggs with black pepper. Pour over the vegetables and cook until the bottom is set.',
+                'Crumble feta and dill over the top. Fold one side over and slide onto a plate.',
+            ]),
+            'Brie & Mushroom Skillet Eggs' => $this->steps([
+                'Heat olive oil in a skillet over medium heat. Sauté onion and mushrooms until golden (5–6 min).',
+                'Add thyme. Make small wells and crack in eggs. Cover and cook on low until whites are set.',
+                'Top with brie slices, cover briefly to melt, and season with black pepper. Serve from the skillet.',
+            ]),
+            'Parmesan Shakshuka' => $this->steps([
+                'Heat olive oil in a skillet. Sauté onion, pepper, and garlic until softened (5 min).',
+                'Add crushed tomato and smoked paprika. Simmer 8–10 minutes until saucy.',
+                'Make wells in the sauce, crack in eggs, cover, and cook on low until whites are set (5–7 min).',
+                'Finish with grated parmesan and serve straight from the pan.',
+            ]),
+            'Halloumi Egg Stack' => $this->steps([
+                'Brush halloumi lightly with olive oil and grill until golden on both sides.',
+                'Wilt spinach in a pan with the remaining olive oil. Halve cherry tomatoes.',
+                'Poach eggs until whites are set and yolks are runny.',
+                'Layer halloumi, spinach, and poached eggs. Spoon Greek yogurt on top and finish with black pepper.',
+            ]),
+            'Feta & Dill Egg Muffins' => $this->steps([
+                'Heat oven to 180°C (350°F). Brush a muffin tin with olive oil.',
+                'Whisk eggs with salt, pepper, chopped dill, and spring onion.',
+                'Fold in spinach and crumbled feta. Divide between cups, filling about three-quarters full.',
+                'Bake 15–18 minutes until set in the centre. Cool 5 minutes before serving.',
             ]),
             'Deconstructed Shakshuka Skillet' => $this->steps([
                 'Sauté onion and pepper in olive oil until soft (5 min).',
@@ -138,9 +179,9 @@ final class BalancedMealInstructionRefiner
                 'Cool 5 minutes before removing. Serve warm or at room temperature.',
             ]),
             'Sweet Potato Egg Hash' => $this->steps([
-                'Preheat oven to 200°C. Toss diced sweet potato with olive oil, rosemary, thyme, sea salt, and black pepper. Spread on a tray and roast until tender (25–30 min).',
-                'Sauté diced white onion and red bell pepper in a frying pan with olive oil until softened (5–6 min).',
-                'Add roasted sweet potato to the pan and toss to combine. Season with a pinch of salt and pepper.',
+                'Preheat oven to 200°C. Toss diced sweet potato with half the olive oil, rosemary, thyme, sea salt, and black pepper. Roast until tender (25–30 min).',
+                'Heat the remaining olive oil in a frying pan. Sauté diced onion and red bell pepper until softened (5–6 min).',
+                'Add roasted sweet potato and toss to combine.',
                 'Beat eggs, pour into the pan, and scramble gently over medium-low heat until just set.',
                 'Finish with fresh coriander and serve hot.',
             ]),
@@ -155,7 +196,7 @@ final class BalancedMealInstructionRefiner
             'Smashed Beans & Eggs' => $this->steps([
                 'Prepare Smashed White Beans (Base) per base recipe instructions.',
                 'Dice tomato and chop fresh coriander.',
-                'Fry or poach eggs until whites are set and yolks are runny.',
+                'Heat olive oil in a non-stick pan over medium heat. Fry eggs until whites are crisp and yolks are runny.',
                 'Spoon warm smashed beans onto plates, top with eggs, tomato, and coriander.',
                 'Serve immediately.',
             ]),
@@ -531,6 +572,8 @@ final class BalancedMealInstructionRefiner
                 'Pour into a mug or bowl and serve hot.',
             ]),
         ];
+
+        return MealLibraryRefinerOverrides::mergeInstructionDefinitionMap($definitions);
     }
 
     /**

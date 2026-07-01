@@ -100,8 +100,8 @@ export default function MealCardClientViewNano({
 
     const showCheckmark = assigned || selected;
 
-    /** Selected: subtle dark ring only — no light-green gradient rim or glow (keeps check badge clean). */
-    const selectedShellClass = selected ? 'ring-2 ring-[#5A6B44]/35 ring-offset-0' : '';
+    /** Selected: inset ring keeps outer card dimensions stable in the carousel track. */
+    const selectedShellClass = selected ? 'ring-2 ring-inset ring-[#5A6B44]/35' : '';
     const cardShadowClass =
         deck ? (selected ? 'shadow-none ring-0' : 'shadow-none') : selected ? 'shadow-none' : 'shadow-md';
     /** Mobile 3D stack only — fan depth cue (not used on flat desktop ribbon). */

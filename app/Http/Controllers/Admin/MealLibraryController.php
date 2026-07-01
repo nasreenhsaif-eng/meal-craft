@@ -15,6 +15,7 @@ use App\Models\MealCsvImportPendingRow;
 use App\Models\User;
 use App\Services\BaseIngredientService;
 use App\Services\MealCraftMasterCsvExport;
+use App\Services\MealLibraryPersistenceSync;
 use App\Services\MenuDevelopmentCsvExport;
 use App\Services\MenuDevelopmentCsvSync;
 use App\Services\Nutrition\AdaptedMenuBuilder;
@@ -47,6 +48,7 @@ class MealLibraryController extends Controller
     public function __construct(
         private MenuDevelopmentCsvExport $menuDevelopmentCsvExport,
         private MenuDevelopmentCsvSync $menuDevelopmentCsvSync,
+        private MealLibraryPersistenceSync $mealLibraryPersistenceSync,
     ) {}
 
     public function downloadMealCraftCsvTemplate(): SymfonyResponse
@@ -105,11 +107,14 @@ class MealLibraryController extends Controller
         $ids = $request->validated('ids');
 
         $deletedCount = 0;
+        /** @var list<string> $deletedMealNames */
+        $deletedMealNames = [];
 
         Meal::queryForMealLibrary()
             ->whereIn('id', $ids)
             ->orderBy('id')
-            ->each(function (Meal $meal) use (&$deletedCount): void {
+            ->each(function (Meal $meal) use (&$deletedCount, &$deletedMealNames): void {
+                $deletedMealNames[] = $meal->name;
                 $nameKey = strtolower(trim($meal->name));
 
                 Meal::withTrashed()
@@ -138,7 +143,7 @@ class MealLibraryController extends Controller
             ? __('1 meal removed from the library.')
             : __(':count meals removed from the library.', ['count' => $deletedCount]);
 
-        $this->syncMealMasterCsvFromDatabase();
+        $this->mealLibraryPersistenceSync->afterMealsDeleted(array_values(array_unique($deletedMealNames)));
 
         if ($request->expectsJson()) {
             return response()->json([
@@ -211,7 +216,9 @@ class MealLibraryController extends Controller
         $foodFilterTags = MealFoodFilterCatalog::canonicalSlugsFromList($data['food_filter_tags'] ?? null);
         $planPhaseBundle = $this->mealPlanTagsAndCyclePhasesForPersistence($data);
 
-        DB::transaction(function () use ($request, $data, $category, $mealType, $planPhaseBundle, $dietTags, $foodFilterTags): void {
+        $savedMeal = null;
+
+        DB::transaction(function () use ($request, $data, $category, $mealType, $planPhaseBundle, $dietTags, $foodFilterTags, &$savedMeal): void {
             $createData = [
                 'name' => $data['name'],
                 'category' => $category,
@@ -248,9 +255,12 @@ class MealLibraryController extends Controller
             $meal = Meal::query()->create($createData);
 
             $this->syncLibraryMealIngredientsPhotoAndAggregates($request, $meal, $data);
+            $savedMeal = $meal->fresh(['ingredients']);
         });
 
-        $this->syncMealMasterCsvFromDatabase();
+        if ($savedMeal instanceof Meal) {
+            $this->mealLibraryPersistenceSync->afterMealSaved($savedMeal);
+        }
 
         $successMessage = ($data['submission_context'] ?? null) === 'duplicate'
             ? __('New meal version saved successfully.')
@@ -348,7 +358,7 @@ class MealLibraryController extends Controller
             $this->syncLibraryMealIngredientsPhotoAndAggregates($request, $meal, $data);
         });
 
-        $this->syncMealMasterCsvFromDatabase();
+        $this->mealLibraryPersistenceSync->afterMealSaved($meal->fresh(['ingredients']));
 
         return redirect()
             ->route('admin.meal-library')

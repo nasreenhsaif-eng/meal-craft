@@ -65,7 +65,7 @@ describe('buildDayMicronutrientGuidance', () => {
         const k2 = guidance.find((item) => item.id === 'vitamin-k2');
 
         expect(k2).toBeDefined();
-        expect(k2?.liverMeals?.length).toBe(5);
+        expect(k2?.liverMeals?.length).toBe(7);
         expect(k2?.actions?.[0]?.type).toBe('edit_meals');
     });
 
@@ -77,7 +77,20 @@ describe('buildDayMicronutrientGuidance', () => {
 
         expect(calcium).toBeDefined();
         expect(calcium?.body).toMatch(/Greek yogurt/);
+        expect(calcium?.body).toMatch(/dairy-free/);
         expect(calcium?.body).toMatch(/\d+ g/);
+    });
+
+    it('does not claim dairy-free for nutrient dense protocol when calcium is low', () => {
+        const rows = [mockRow('Calcium (mg)', 650, 65)];
+
+        const guidance = buildDayMicronutrientGuidance(rows, 1500, null, 'nutrient_dense');
+        const calcium = guidance.find((item) => item.id === 'calcium');
+
+        expect(calcium).toBeDefined();
+        expect(calcium?.body).not.toMatch(/dairy-free/);
+        expect(calcium?.body).toMatch(/includes dairy/i);
+        expect(calcium?.bullets?.[0]).toMatch(/include dairy/i);
     });
 
     it('includes D3 and MK-7 guidance when vitamin D is low', () => {

@@ -13,26 +13,29 @@ import { isMicronutrientTierEnforced } from '../../meal-library/nutrientDailyRdi
  * @param {object} props
  * @param {Partial<Record<string, Array<{ title?: string }>>>} props.categories
  * @param {number} [props.planTierCalories]
+ * @param {string | null} [props.dietProtocol]
  * @param {() => void} [props.onEditMeals]
  */
 export default function DayMicronutrientGapSuggestions({
     categories,
     planTierCalories = 0,
+    dietProtocol = null,
     onEditMeals,
 }) {
     const micronutrientRows = useMemo(() => aggregateDayMicronutrientRows(categories), [categories]);
 
     const guidance = useMemo(
-        () => buildDayMicronutrientGuidance(micronutrientRows, planTierCalories, categories),
-        [categories, micronutrientRows, planTierCalories],
+        () => buildDayMicronutrientGuidance(micronutrientRows, planTierCalories, categories, dietProtocol),
+        [categories, micronutrientRows, planTierCalories, dietProtocol],
     );
 
     const tierEnforced = isMicronutrientTierEnforced(planTierCalories);
     const showSupplementGuide = tierEnforced || guidance.length > 0;
+    const nutrientDense = dietProtocol === 'nutrient_dense';
 
     const [supplementGuideOpen, setSupplementGuideOpen] = useState(true);
     const [selectedLiverMeal, setSelectedLiverMeal] = useState(
-        () => 'Seared Beef Liver w Caramelized Onion, Spinach & Chimichurri',
+        () => 'Seared Beef Liver w Roasted Beetroot, Chard & Chimichurri',
     );
 
     const hasLiverOnDay = useMemo(() => dayHasLiverMain(categories), [categories]);
@@ -53,9 +56,9 @@ export default function DayMicronutrientGapSuggestions({
                         Keep K2, calcium &amp; vitamin D on your radar
                     </h3>
                     <p className="mt-2 font-body text-sm leading-relaxed text-[#374151]">
-                        Dairy-free plans often run low on vitamin K2 and calcium. If any nutrient in the table
-                        above drops below 98% RDI, swap in a liver main for K2, add plain Greek yogurt on the
-                        side for calcium, and consider sensible sun plus a D3 + MK-7 supplement.
+                        {nutrientDense
+                            ? 'Nutrient Density plans include fermented dairy, Greek yogurt desserts, and liver mains for calcium and vitamin K2. If any nutrient in the table above drops below 98% RDI, favor kefir or chia dessert days for calcium, swap in a liver main for K2, and consider sensible sun plus a D3 + MK-7 supplement.'
+                            : 'Dairy-free plans often run low on vitamin K2 and calcium. If any nutrient in the table above drops below 98% RDI, swap in a liver main for K2, add plain Greek yogurt on the side for calcium, and consider sensible sun plus a D3 + MK-7 supplement.'}
                     </p>
                     <ul className="mt-3 list-disc space-y-1.5 pl-5 font-body text-sm text-[#374151]">
                         {LIVER_K2_MEAL_OPTIONS.slice(0, 2).map((meal) => (

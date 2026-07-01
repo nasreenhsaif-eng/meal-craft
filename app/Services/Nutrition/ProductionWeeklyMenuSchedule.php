@@ -2,6 +2,7 @@
 
 namespace App\Services\Nutrition;
 
+use App\Enums\DietProtocol;
 use App\Enums\MealPlanSchemaType;
 use App\Enums\MealPlanSlotType;
 use App\Models\CustomerProfile;
@@ -9,7 +10,9 @@ use App\Models\Meal;
 use App\Models\MealPlan;
 use App\Models\MealPlanDayMeal;
 use App\Services\BalancedWeeklyRotationSchedule;
+use App\Services\NutrientDenseWeeklyMealPlanBuilder;
 use App\Support\ChiaDessertMeals;
+use App\Support\NutrientDenseDessertMeals;
 use App\Support\SavoryEggBreakfastMeals;
 use Illuminate\Support\Collection;
 
@@ -18,7 +21,36 @@ use Illuminate\Support\Collection;
  */
 final class ProductionWeeklyMenuSchedule
 {
-    public static function resolveProductionMealPlan(): ?MealPlan
+    public static function resolveProductionMealPlan(?CustomerProfile $profile = null): ?MealPlan
+    {
+        if ($profile !== null && DietProtocol::tryFromStored($profile->diet_protocol) === DietProtocol::NutrientDense) {
+            $configuredId = config('customer_nutrition.nutrient_dense_production_meal_plan_id');
+
+            if (is_numeric($configuredId) && (int) $configuredId > 0) {
+                $plan = MealPlan::query()
+                    ->where('schema_type', MealPlanSchemaType::WeeklyStructured)
+                    ->find((int) $configuredId);
+
+                if ($plan !== null) {
+                    return $plan;
+                }
+            }
+
+            $named = MealPlan::query()
+                ->where('schema_type', MealPlanSchemaType::WeeklyStructured)
+                ->where('name', NutrientDenseWeeklyMealPlanBuilder::PLAN_NAME)
+                ->latest('id')
+                ->first();
+
+            if ($named !== null) {
+                return $named;
+            }
+        }
+
+        return self::resolveBalancedProductionMealPlan();
+    }
+
+    public static function resolveBalancedProductionMealPlan(): ?MealPlan
     {
         $configuredId = config('customer_nutrition.production_meal_plan_id');
 
@@ -56,7 +88,7 @@ final class ProductionWeeklyMenuSchedule
         array $adaptOptions = [],
         ?array &$macroWarningsByDay = null,
     ): array {
-        $plan ??= self::resolveProductionMealPlan();
+        $plan ??= self::resolveProductionMealPlan($profile);
 
         if ($plan === null) {
             return [];
@@ -115,7 +147,11 @@ final class ProductionWeeklyMenuSchedule
                 $mealForAdaptation = $row->meal;
 
                 if ($slotType === MealPlanSlotType::Dessert) {
-                    $mealForAdaptation = ChiaDessertMeals::resolveMealForProfile($mealForAdaptation, $profile);
+                    $mealForAdaptation = self::resolveDessertMealForProfile($mealForAdaptation, $profile);
+                }
+
+                if ($slotType === MealPlanSlotType::Breakfast) {
+                    $mealForAdaptation = SavoryEggBreakfastMeals::resolveMealForProfile($mealForAdaptation, $profile);
                 }
 
                 $adapted = AdaptedMenuBuilder::adaptMealForProfile($profile, $mealForAdaptation, array_merge(
@@ -135,7 +171,7 @@ final class ProductionWeeklyMenuSchedule
                     }
 
                     $dayMenu['breakfasts'][] = $adapted;
-                } elseif ($slotType === MealPlanSlotType::Main && in_array($slotIndex, [1, 2, 3, 4], true)) {
+                } elseif ($slotType === MealPlanSlotType::Main && in_array($slotIndex, [1, 2, 3, 4, 5], true)) {
                     $carouselMainsBySlot[$slotIndex] = $row->meal;
 
                     if (in_array($slotIndex, [1, 3], true)) {
@@ -151,7 +187,7 @@ final class ProductionWeeklyMenuSchedule
             }
 
             if ($dayMenu['breakfasts'] === []) {
-                $fallbackMeal = self::resolveRotationBreakfastMeal($dayNumber);
+                $fallbackMeal = self::resolveRotationBreakfastMeal($dayNumber, $profile);
 
                 if ($fallbackMeal instanceof Meal) {
                     $adapted = AdaptedMenuBuilder::adaptMealForProfile($profile, $fallbackMeal, array_merge(
@@ -315,12 +351,21 @@ final class ProductionWeeklyMenuSchedule
             return null;
         }
 
+        return self::resolveDessertMealForProfile($meal, $profile);
+    }
+
+    private static function resolveDessertMealForProfile(Meal $meal, CustomerProfile $profile): Meal
+    {
+        if (DietProtocol::tryFromStored($profile->diet_protocol) === DietProtocol::NutrientDense) {
+            return NutrientDenseDessertMeals::resolveMealForProfile($meal, $profile);
+        }
+
         return ChiaDessertMeals::resolveMealForProfile($meal, $profile);
     }
 
-    public static function resolveRotationBreakfastMeal(int $dayNumber): ?Meal
+    public static function resolveRotationBreakfastMeal(int $dayNumber, CustomerProfile $profile): ?Meal
     {
-        $name = BalancedWeeklyRotationSchedule::mealNameForDay($dayNumber, MealPlanSlotType::Breakfast, 1);
+        $name = SavoryEggBreakfastMeals::scheduledBreakfastNameForDay($dayNumber, $profile);
 
         $meal = Meal::queryForMealLibrary()
             ->where('name', $name)
@@ -344,7 +389,7 @@ final class ProductionWeeklyMenuSchedule
         ?MealPlan $plan = null,
         array $adaptOptions = [],
     ): array {
-        $plan ??= self::resolveProductionMealPlan();
+        $plan ??= self::resolveProductionMealPlan($profile);
 
         if ($plan === null) {
             return [];

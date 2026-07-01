@@ -29,11 +29,11 @@ test('savory egg breakfast side multiplier tracks egg count', function () {
 test('savory egg breakfast enforces minimum avocado portion scaled by plan tier', function () {
     $avocado = Ingredient::factory()->create(['name' => 'Avocado']);
 
-    expect(SavoryEggBreakfastMeals::minimumSideGramsForPlanTier($avocado, 1000))->toBe(50.0)
-        ->and(SavoryEggBreakfastMeals::minimumSideGramsForPlanTier($avocado, 1500))->toBe(75.0)
-        ->and(SavoryEggBreakfastMeals::minimumSideGramsForPlanTier($avocado, 2000))->toBe(112.5)
-        ->and(SavoryEggBreakfastMeals::adaptedSideGrams($avocado, 20.0, 1.0, 1000))->toBe(50.0)
-        ->and(SavoryEggBreakfastMeals::adaptedSideGrams($avocado, 20.0, 2.0, 2000))->toBe(112.5);
+    expect(SavoryEggBreakfastMeals::minimumSideGramsForPlanTier($avocado, 1000))->toBe(25.0)
+        ->and(SavoryEggBreakfastMeals::minimumSideGramsForPlanTier($avocado, 1500))->toBe(37.5)
+        ->and(SavoryEggBreakfastMeals::minimumSideGramsForPlanTier($avocado, 2000))->toBe(56.25)
+        ->and(SavoryEggBreakfastMeals::adaptedSideGrams($avocado, 20.0, 1.0, 1000))->toBe(25.0)
+        ->and(SavoryEggBreakfastMeals::adaptedSideGrams($avocado, 20.0, 2.0, 2000))->toBe(56.25);
 });
 
 test('savory egg breakfasts include balanced rotation meals', function () {

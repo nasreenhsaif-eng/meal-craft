@@ -14,17 +14,17 @@ export type LiverMealOption = {
     k2Note: string;
 };
 
-/** Rotation mains that meaningfully raise vitamin K2 from beef liver. */
+/** Rotation slot-5 liver mains — dedicated liver or minced liver blends. */
 export const LIVER_K2_MEAL_OPTIONS: LiverMealOption[] = [
     {
-        title: 'Seared Beef Liver w Caramelized Onion, Spinach & Chimichurri',
-        description: 'Dedicated liver main — the strongest K2 boost in the rotation.',
-        k2Note: '150 g beef liver per serving',
+        title: 'Seared Beef Liver w Roasted Beetroot, Chard & Chimichurri',
+        description: 'Dedicated beef liver with roasted roots, chard, and purple cabbage — higher fiber than rice-heavy liver plates.',
+        k2Note: '150 g beef liver + beetroot, chard, cabbage, and carrots',
     },
     {
-        title: 'Sautéed Chicken Liver w Pomegranate Molasses, Quinoa Flatbread & Rocca',
-        description: 'Pan-sautéed chicken liver finished with pomegranate molasses — rich in B12, iron, and vitamin A.',
-        k2Note: '150 g chicken liver per serving',
+        title: 'Sautéed Chicken Liver w Garlicky Cabbage, Bok Choy & Peppers',
+        description: 'Pan-sautéed chicken liver with shredded cabbage, bok choy, peppers, and greens — rich in B12, iron, and fiber.',
+        k2Note: '150 g chicken liver + cabbage, bok choy, and peppers',
     },
     {
         title: 'Beef & Liver Kefta w Herb Salad & Tahini',
@@ -32,13 +32,23 @@ export const LIVER_K2_MEAL_OPTIONS: LiverMealOption[] = [
         k2Note: '22 g beef liver + 128 g ground beef (150 g total meat)',
     },
     {
-        title: 'Beef Bibimbap',
-        description: 'Korean-style bowl with seasoned ground beef.',
-        k2Note: '150 g ground beef (no liver blend)',
-    },
-    {
         title: 'Chili Beef Stuffed Peppers',
         description: 'Savory stuffed peppers with liver blended into the beef filling.',
+        k2Note: '20 g beef liver + 130 g ground beef (150 g total meat)',
+    },
+    {
+        title: 'Eggplant & Ground Beef Stew w Quinoa Bread',
+        description: 'Skillet stew with minced liver blended into seasoned ground beef.',
+        k2Note: '30 g beef liver + 120 g ground beef (150 g total meat)',
+    },
+    {
+        title: 'Spiced Beef & Liver Meatballs w Roasted Tomato Couscous',
+        description: 'North African–spiced meatballs with minced liver in marinara over couscous.',
+        k2Note: '22 g beef liver + 128 g ground beef (150 g total meat)',
+    },
+    {
+        title: 'Beef & Liver Stuffed Zucchini w Marinara & Basil',
+        description: 'Zucchini boats filled with seasoned beef and minced liver, baked in marinara.',
         k2Note: '20 g beef liver + 130 g ground beef (150 g total meat)',
     },
 ];
@@ -112,16 +122,25 @@ function isBelowFloor(rdiPercent: number | null | undefined): boolean {
 }
 
 /**
+ * @param {string | null | undefined} dietProtocol
+ */
+function isNutrientDenseProtocol(dietProtocol: string | null | undefined): boolean {
+    return dietProtocol === 'nutrient_dense';
+}
+
+/**
  * Build contextual guidance when day micronutrients fall below the 98% floor.
  *
  * @param {DayMicronutrientRow[]} rows
  * @param {number} planTierCalories
  * @param {Partial<Record<string, MealWithTitle[]>> | null | undefined} categories
+ * @param {string | null | undefined} [dietProtocol]
  */
 export function buildDayMicronutrientGuidance(
     rows: DayMicronutrientRow[],
     planTierCalories: number,
     categories: Partial<Record<string, MealWithTitle[]>> | null | undefined = null,
+    dietProtocol: string | null | undefined = null,
 ): MicronutrientGapGuidance[] {
     if (!isMicronutrientTierEnforced(planTierCalories)) {
         return [];
@@ -143,7 +162,7 @@ export function buildDayMicronutrientGuidance(
                 : 'Choose a liver main to raise vitamin K2',
             body: hasLiver
                 ? `Your day includes ${onDay.map((meal) => meal.title.split(' w ')[0]).join(' or ')}, but K2 is still at ${k2Row.formattedRdiPercent} of daily need. Consider swapping your other main for a dedicated liver dish, or add a D3 + MK-7 supplement (see below).`
-                : `Today is at ${k2Row.formattedRdiPercent} of vitamin K2 need. Beef liver is the most reliable whole-food source in Meal Craft — pick one main below and swap it in via Edit selections.`,
+                : `Today is at ${k2Row.formattedRdiPercent} of vitamin K2 need. Beef liver is the most reliable whole-food source in Meal Craft — swap in today's liver main (slot 5) via Edit selections.`,
             liverMeals: LIVER_K2_MEAL_OPTIONS,
             actions: [{ label: 'Edit main meals', type: 'edit_meals' }],
             showSupplementGuide: true,
@@ -157,19 +176,29 @@ export function buildDayMicronutrientGuidance(
         const gapMg = Math.max(0, targetMg - calciumRow.total);
         const yogurtGrams = yogurtGramsForCalciumGap(gapMg);
         const calciumMgFromYogurt = Math.round((yogurtGrams * GREEK_YOGURT_CALCIUM_MG_PER_100G) / 100);
+        const nutrientDense = isNutrientDenseProtocol(dietProtocol);
 
         guidance.push({
             id: 'calcium',
             nutrient: 'Calcium',
             title: 'Calcium is below target from meals alone',
             body:
-                yogurtGrams > 0
-                    ? `Meal Craft menus are dairy-free. If you add plain Greek yogurt on the side, about ${yogurtGrams} g (~${calciumMgFromYogurt} mg calcium) would help close today's gap toward 98% of daily need.`
-                    : `Today's calcium total is ${calciumRow.formattedTotal} mg (${calciumRow.formattedRdiPercent} RDI). Leafy greens, tahini, and sardines in your plan help, but dairy-free days often need an extra calcium source.`,
-            bullets: [
-                'Plain, unsweetened Greek yogurt is the simplest add-on — not included in your delivered meals.',
-                'Sesame/tahini, sardines, and leafy greens already contribute; yogurt fills what food alone may miss.',
-            ],
+                nutrientDense && yogurtGrams > 0
+                    ? `Your Nutrient Density plan already includes dairy — Greek yogurt chia desserts, kefir breakfasts, and other fermented dairy. Today is still at ${calciumRow.formattedRdiPercent} of calcium need; about ${yogurtGrams} g extra plain Greek yogurt on the side (~${calciumMgFromYogurt} mg) could help close the gap toward 98% of daily need.`
+                    : nutrientDense
+                      ? `Today's calcium total is ${calciumRow.formattedTotal} mg (${calciumRow.formattedRdiPercent} RDI). Greek yogurt desserts, kefir, tahini, sardines, and leafy greens in this plan all contribute; an extra plain yogurt serving can help if you're still short.`
+                      : yogurtGrams > 0
+                        ? `Meal Craft menus are dairy-free. If you add plain Greek yogurt on the side, about ${yogurtGrams} g (~${calciumMgFromYogurt} mg calcium) would help close today's gap toward 98% of daily need.`
+                        : `Today's calcium total is ${calciumRow.formattedTotal} mg (${calciumRow.formattedRdiPercent} RDI). Leafy greens, tahini, and sardines in your plan help, but dairy-free days often need an extra calcium source.`,
+            bullets: nutrientDense
+                ? [
+                      'Delivered meals in this protocol include dairy — Greek yogurt chia puddings and kefir are already in rotation.',
+                      'Sesame/tahini, sardines, and leafy greens also contribute; extra plain yogurt helps when you are still below target.',
+                  ]
+                : [
+                      'Plain, unsweetened Greek yogurt is the simplest add-on — not included in your delivered meals.',
+                      'Sesame/tahini, sardines, and leafy greens already contribute; yogurt fills what food alone may miss.',
+                  ],
         });
     }
 
@@ -189,6 +218,48 @@ export function buildDayMicronutrientGuidance(
                 'Take D3+K2 with a meal that includes fat (egg, tahini, olive oil) for absorption.',
             ],
             showSupplementGuide: true,
+        });
+    }
+
+    const magnesiumRow = rowForLabel(rows, 'Magnesium (mg)');
+    if (magnesiumRow && isBelowFloor(magnesiumRow.rdiPercent)) {
+        guidance.push({
+            id: 'magnesium',
+            nutrient: 'Magnesium',
+            title: 'Magnesium is below target',
+            body: `Today is at ${magnesiumRow.formattedRdiPercent} of magnesium need. Pick side salad + soup, and favor pumpkin seeds, tahini, and cocoa-rich desserts.`,
+            bullets: ['Leafy greens, legumes, and fish mains in your rotation all contribute magnesium.'],
+        });
+    }
+
+    const ironRow = rowForLabel(rows, 'Iron (mg)');
+    if (ironRow && isBelowFloor(ironRow.rdiPercent)) {
+        guidance.push({
+            id: 'iron',
+            nutrient: 'Iron',
+            title: 'Iron is below target',
+            body: `Today is at ${ironRow.formattedRdiPercent} of iron need. Liver mains, sardines, and tahini-heavy salads are your strongest whole-food levers.`,
+            actions: [{ label: 'Edit main meals', type: 'edit_meals' }],
+        });
+    }
+
+    const fiberRow = rowForLabel(rows, 'Fiber (g)');
+    if (fiberRow && isBelowFloor(fiberRow.rdiPercent)) {
+        guidance.push({
+            id: 'fiber',
+            nutrient: 'Fiber',
+            title: 'Fiber is below target',
+            body: `Today is at ${fiberRow.formattedRdiPercent} of fiber need. Side salad + soup picks and legume-forward vegan mains help most.`,
+        });
+    }
+
+    const folateRow = rowForLabel(rows, 'Folate B9 (mcg)');
+    if (folateRow && isBelowFloor(folateRow.rdiPercent)) {
+        guidance.push({
+            id: 'folate',
+            nutrient: 'Folate',
+            title: 'Folate is below target',
+            body: `Today is at ${folateRow.formattedRdiPercent} of folate need. Miso soups, leafy greens, and liver rotation days close this gap fastest.`,
         });
     }
 

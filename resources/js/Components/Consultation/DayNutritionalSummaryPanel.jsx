@@ -326,12 +326,14 @@ function MicronutrientRdiTable({ rows, planTierCalories = 0 }) {
  * @param {Partial<Record<string, unknown[]>>} props.categories
  * @param {string} [props.dayLabel]
  * @param {number} [props.planTierCalories]
+ * @param {string | null} [props.dietProtocol]
  * @param {() => void} [props.onEditMeals]
  */
 export function DayMicronutrientsTabPanel({
     categories,
     dayLabel = 'Day',
     planTierCalories = 0,
+    dietProtocol = null,
     onEditMeals,
 }) {
     const micronutrientRows = useMemo(() => aggregateDayMicronutrientRows(categories), [categories]);
@@ -346,6 +348,7 @@ export function DayMicronutrientsTabPanel({
             <DayMicronutrientGapSuggestions
                 categories={categories}
                 planTierCalories={planTierCalories}
+                dietProtocol={dietProtocol}
                 onEditMeals={onEditMeals}
             />
         </SummarySection>
@@ -442,6 +445,8 @@ export function DaySickleCellTabPanel({ categories }) {
  * @param {Partial<Record<string, unknown[]>>} props.categories
  * @param {string} [props.dayLabel]
  * @param {string} [props.planCategoryLabel]
+ * @param {number} [props.planTierCalories]
+ * @param {string | null} [props.dietProtocol]
  * @param {(meal: object) => void} [props.onOpenMeal]
  * @param {() => void} [props.onEditMeals]
  */
@@ -451,6 +456,7 @@ export default function DayNutritionalSummaryPanel({
     dayLabel = 'Day',
     planCategoryLabel = '',
     planTierCalories = 0,
+    dietProtocol = null,
     onOpenMeal,
     onEditMeals,
 }) {
@@ -473,6 +479,7 @@ export default function DayNutritionalSummaryPanel({
                     categories={categories}
                     dayLabel={dayLabel}
                     planTierCalories={planTierCalories}
+                    dietProtocol={dietProtocol}
                     onEditMeals={onEditMeals}
                 />
             );

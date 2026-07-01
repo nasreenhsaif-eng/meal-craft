@@ -31,14 +31,38 @@ final class WholeFoodDietPolicy
         'Baking Powder',
     ];
 
+    /**
+     * Fermented whole foods allowed in nutrient-dense protocol meals.
+     * Natto is intentionally excluded (palatability).
+     *
+     * @var list<string>
+     */
+    public const ALLOWED_FERMENTED_NAMES = [
+        'Miso',
+        'Miso Paste',
+        'Kimchi',
+        'Sauerkraut',
+        'Kefir',
+        'Fermented Chimichurri (Base)',
+        'Miso Tahini Dressing (Base)',
+        'Sardines (Canned)',
+    ];
+
+    /** @var list<string> Dairy used only in customer-opt-in meals (food filter: dairy not selected). */
+    public const OPTIONAL_DAIRY_INGREDIENT_NAMES = [
+        'Greek Yogurt',
+        'Parmesan',
+        'Feta',
+        'Brie',
+        'Halloumi',
+    ];
+
     /** @var list<string> */
     public const BANNED_INGREDIENT_NAMES = [
         'Protein Powder (Isolate)',
         'Oats (Rolled)',
-        'Parmesan',
         'Cheddar Cheese',
         'Goat Cheese',
-        'Greek Yogurt',
         'Heavy Cream',
         'Milk',
         'Almond Milk (Unsweetened)',
@@ -49,11 +73,10 @@ final class WholeFoodDietPolicy
         'Tamari Sauce',
         'Tofu (Firm)',
         'Tempeh',
-        'Miso',
-        'Miso Paste',
         'Edamame',
         'Wheat Flour',
         'Nutritional Yeast',
+        'Natto',
         'Tomato Paste',
         'Wasabi (Paste)',
         'Sardines (Canned)',
@@ -96,6 +119,14 @@ final class WholeFoodDietPolicy
         }
 
         if (in_array($name, self::ALLOWED_PANTRY_NAMES, true)) {
+            return false;
+        }
+
+        if (in_array($name, self::ALLOWED_FERMENTED_NAMES, true)) {
+            return false;
+        }
+
+        if (in_array($name, self::OPTIONAL_DAIRY_INGREDIENT_NAMES, true)) {
             return false;
         }
 

@@ -91,7 +91,7 @@ test('balanced weekly plan builder creates seven day rotating menus with twelve 
 
     expect($dayOneChiaDessert)->toBe('Blueberry Walnut Chia Pudding')
         ->and($dayTwoChiaDessert)->toBe('Mango Pumpkin Seed Chia Pudding')
-        ->and($dayOneSavoryBreakfast)->toBe('Mediterranean Omelet');
+        ->and($dayOneSavoryBreakfast)->toBe('Halloumi & Spinach Scramble');
 
     foreach (range(1, 7) as $day) {
         $rotatingSoup = $plan->dayMeals()
@@ -112,6 +112,18 @@ test('balanced weekly plan builder creates seven day rotating menus with twelve 
 
         expect($rotatingSoup)->toBe(BalancedWeeklyRotationSchedule::mealNameForDay($day, MealPlanSlotType::Soup, 1))
             ->and($boneBroth)->toBe('Bone Broth Cup');
+
+        $liverMain = $plan->dayMeals()
+            ->where('day_number', $day)
+            ->where('slot_type', MealPlanSlotType::Main->value)
+            ->where('slot_index', 5)
+            ->where('is_option_b', false)
+            ->first()
+            ?->meal?->name;
+
+        expect($liverMain)->toBe(
+            BalancedWeeklyRotationSchedule::mealNameForDay($day, MealPlanSlotType::Main, 5),
+        );
     }
 });
 
@@ -300,7 +312,7 @@ test('rebuilding balanced weekly plan replaces existing plan with same name', fu
         ->and($second['plan']->id)->not->toBe($first['plan']->id);
 });
 
-test('balanced weekly plan stores day-level 40/30/30 macro targets from diet protocol preset', function (): void {
+test('balanced weekly plan stores day-level 35/35/30 macro targets from diet protocol preset', function (): void {
     seedBalancedWeeklyPlanDeck();
 
     $builder = app(BalancedWeeklyMealPlanBuilder::class);
@@ -309,8 +321,8 @@ test('balanced weekly plan stores day-level 40/30/30 macro targets from diet pro
     $result = $builder->build(refineRecipes: false);
     $plan = $result['plan'];
 
-    expect($dailyProtein)->toBe(150.0)
-        ->and($dailyCarbs)->toBe(112.5)
+    expect($dailyProtein)->toBe(131.25)
+        ->and($dailyCarbs)->toBe(131.25)
         ->and($dailyFat)->toBe(50.0)
         ->and((float) $plan->target_total_calories / 7)->toBe(BalancedWeeklyMealPlanBuilder::REFERENCE_DAILY_CALORIES)
         ->and((float) $plan->target_total_protein_g / 7)->toBe($dailyProtein)

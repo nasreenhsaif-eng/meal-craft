@@ -453,17 +453,24 @@ export default function StackedDeckCarousel({ title: _title, items: itemsProp, m
     );
 
     useEffect(() => {
-        const bump = () => setGalleryResizeSeq((s) => s + 1);
-        const ro = new ResizeObserver(bump);
-
         const gallery = galleryRef.current;
-        const track = trackRef.current;
-        if (gallery) {
-            ro.observe(gallery);
+        if (!gallery) {
+            return undefined;
         }
-        if (track) {
-            ro.observe(track);
-        }
+
+        let lastWidth = gallery.getBoundingClientRect().width;
+        const ro = new ResizeObserver((entries) => {
+            for (const entry of entries) {
+                const nextWidth = entry.contentRect.width;
+                if (Math.abs(nextWidth - lastWidth) <= 1) {
+                    continue;
+                }
+                lastWidth = nextWidth;
+                setGalleryResizeSeq((s) => s + 1);
+            }
+        });
+
+        ro.observe(gallery);
 
         return () => {
             ro.disconnect();
@@ -471,16 +478,27 @@ export default function StackedDeckCarousel({ title: _title, items: itemsProp, m
     }, [itemCount]);
 
     useLayoutEffect(() => {
-        if (itemCount === 0 || useDesktopStaticPair || useDesktopStaticTriple) {
+        if (itemCount === 0 || useDesktopStaticPair || useDesktopStaticTriple || navBusyRef.current) {
             return;
         }
         let innerId = 0;
         const outerId = requestAnimationFrame(() => {
             innerId = requestAnimationFrame(() => {
-                const tx = alignTrackToLogical(ribbonActiveIndexRef.current);
-                if (tx !== undefined) {
-                    trackX.set(tx);
+                if (navBusyRef.current) {
+                    return;
                 }
+
+                const tx = alignTrackToLogical(ribbonActiveIndexRef.current);
+                if (tx === undefined) {
+                    return;
+                }
+
+                const drift = Math.abs(trackX.get() - tx);
+                if (drift <= 4) {
+                    return;
+                }
+
+                trackX.set(tx);
             });
         });
 

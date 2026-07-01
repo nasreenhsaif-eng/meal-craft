@@ -10,7 +10,8 @@ use InvalidArgumentException;
  *
  * Breakfast — savory egg (rotates). Dessert 1 — chia pudding (rotates).
  * Main 1 — chicken + carbs/veg. Main 2 — chicken salad. Main 3 — salmon and beef alternate daily.
- * Main 4 — vegan main (includes former legume-heavy side salads). Salad 1 — legume-free vegan side (rotates). Salad 2 — Classic Garden Salad.
+ * Main 4 — vegan main (includes former legume-heavy side salads). Main 5 — liver (dedicated or liver-blend; rotates daily).
+ * Salad 1 — legume-free vegan side (rotates). Salad 2 — Classic Garden Salad.
  * Dessert 1 — dessert (rotates). Dessert 2 — Fruit Salad Bowl.
  * Soup 1 — rotating soup. Soup 2 — Bone Broth Cup (fixed every day).
  */
@@ -65,7 +66,7 @@ final class BalancedWeeklyRotationSchedule
         'Cacao & Almond Greek Yogurt Chia',
     ];
 
-    /** @var list<string> */
+    /** @var list<string> Dairy-free egg breakfasts when customer filters dairy. */
     public const EGG_BREAKFASTS = [
         'Mediterranean Omelet',
         'Deconstructed Shakshuka Skillet',
@@ -74,6 +75,17 @@ final class BalancedWeeklyRotationSchedule
         'Sweet Potato Egg Hash',
         'Butternut Squash Fritters & Eggs',
         'Smashed Beans & Eggs',
+    ];
+
+    /** @var list<string> High-protein dairy + egg breakfasts when dairy is allowed. */
+    public const DAIRY_FORWARD_EGG_BREAKFASTS = [
+        'Halloumi & Spinach Scramble',
+        'Greek Yogurt & Parmesan Frittata',
+        'Feta & Herb Open Omelet',
+        'Brie & Mushroom Skillet Eggs',
+        'Parmesan Shakshuka',
+        'Halloumi Egg Stack',
+        'Feta & Dill Egg Muffins',
     ];
 
     /** @var list<string> */
@@ -105,15 +117,22 @@ final class BalancedWeeklyRotationSchedule
         'Grilled Salmon Mango Salsa',
     ];
 
-    /** @var list<string> */
+    /** @var list<string> Pure beef mains — slot 3 on even days only. */
     public const BEEF_MAINS = [
         'Grilled Beef Steak Ratatouille & Saffron rice',
         'Beef Bibimbap',
         'Persian Herb Beef Stew',
-        'Chili Beef Stuffed Peppers',
-        'Seared Beef Liver w Caramelized Onion, Spinach & Chimichurri',
-        'Sautéed Chicken Liver w Pomegranate Molasses, Quinoa Flatbread & Rocca',
+    ];
+
+    /** @var list<string> Liver mains — slot 5, one per weekday. */
+    public const LIVER_MAINS = [
+        'Seared Beef Liver w Roasted Beetroot, Chard & Chimichurri',
+        'Sautéed Chicken Liver w Garlicky Cabbage, Bok Choy & Peppers',
         'Beef & Liver Kefta w Herb Salad & Tahini',
+        'Chili Beef Stuffed Peppers',
+        'Eggplant & Ground Beef Stew w Quinoa Bread',
+        'Spiced Beef & Liver Meatballs w Roasted Tomato Couscous',
+        'Beef & Liver Stuffed Zucchini w Marinara & Basil',
     ];
 
     /** @var list<string> Legume-free vegan side salads (slot 1). */
@@ -166,7 +185,7 @@ final class BalancedWeeklyRotationSchedule
 
         return match ($slotType) {
             MealPlanSlotType::Breakfast => match ($slotIndex) {
-                1 => self::EGG_BREAKFASTS[$index],
+                1 => self::DAIRY_FORWARD_EGG_BREAKFASTS[$index],
                 default => throw new InvalidArgumentException("Invalid breakfast slot index {$slotIndex}"),
             },
             MealPlanSlotType::Main => match ($slotIndex) {
@@ -174,6 +193,7 @@ final class BalancedWeeklyRotationSchedule
                 2 => self::CHICKEN_SALAD_MAINS[$index],
                 3 => self::alternatingFishOrBeefMainForDay($dayNumber),
                 4 => self::VEGAN_MAINS[$index],
+                5 => self::LIVER_MAINS[$index],
                 default => throw new InvalidArgumentException("Invalid main slot index {$slotIndex}"),
             },
             MealPlanSlotType::Salad => match ($slotIndex) {
@@ -222,11 +242,13 @@ final class BalancedWeeklyRotationSchedule
             self::ROTATING_SOUPS,
             self::CHIA_DESSERTS,
             self::GREEK_YOGURT_CHIA_DESSERTS,
+            self::DAIRY_FORWARD_EGG_BREAKFASTS,
             self::EGG_BREAKFASTS,
             self::CHICKEN_PLATE_MAINS,
             self::CHICKEN_SALAD_MAINS,
             self::SALMON_MAINS,
             self::BEEF_MAINS,
+            self::LIVER_MAINS,
             self::VEGAN_MAINS,
             self::VEGAN_SIDE_SALADS,
             self::DESSERTS,

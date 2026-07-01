@@ -53,6 +53,7 @@ final class VitaminK2Resolver
         'supplement',
         'soup',
         'broth',
+        'nuts',
     ];
 
     /**
@@ -139,6 +140,10 @@ final class VitaminK2Resolver
             return true;
         }
 
+        if (self::isPlantFatOrSeedName($normalizedName)) {
+            return true;
+        }
+
         $normalizedCategory = self::normalize($category);
 
         foreach (self::K1_DOMINANT_CATEGORY_FRAGMENTS as $fragment) {
@@ -157,6 +162,10 @@ final class VitaminK2Resolver
         }
 
         $normalizedCategory = self::normalize($category);
+
+        if (str_contains($normalizedCategory, 'nuts')) {
+            return false;
+        }
 
         foreach (self::ANIMAL_K2_CATEGORY_FRAGMENTS as $fragment) {
             if (str_contains($normalizedCategory, $fragment)) {
@@ -190,8 +199,12 @@ final class VitaminK2Resolver
             return self::NATTO_MK7_MCG_PER_100G;
         }
 
-        if (self::nameMatchesAny($name, ['egg yolk'])) {
-            return self::EGG_YOLK_MK4_MCG_PER_100G;
+        if (self::nameMatchesAny($name, ['egg yolk', 'egg white', 'egg whites'])) {
+            return 0.0;
+        }
+
+        if (self::nameMatchesAny($name, ['egg'])) {
+            return self::EGG_YOLK_MK4_MCG_PER_100G * 0.55;
         }
 
         if (self::nameMatchesAny($name, ['liver'])) {
@@ -229,7 +242,7 @@ final class VitaminK2Resolver
             return $fdcPhylloquinone > 0 ? min(15.0, max(2.0, $fdcPhylloquinone)) : 2.0;
         }
 
-        if (str_contains(self::normalize($category), 'fat')) {
+        if (str_contains(self::normalize($category), 'fat') && ! str_contains(self::normalize($category), 'nuts')) {
             return self::BUTTER_GHEE_MK4_MCG_PER_100G;
         }
 
@@ -300,6 +313,45 @@ final class VitaminK2Resolver
             'duck',
             'poultry',
             'hen',
+        ]);
+    }
+
+    private static function isPlantFatOrSeedName(string $normalizedName): bool
+    {
+        if (self::nameMatchesAny($normalizedName, ['ghee', 'clarified butter'])) {
+            return false;
+        }
+
+        if ($normalizedName === 'butter' || str_starts_with($normalizedName, 'butter ')) {
+            return false;
+        }
+
+        if (str_contains($normalizedName, ' oil') || str_ends_with($normalizedName, 'oil')) {
+            return true;
+        }
+
+        return self::nameMatchesAny($normalizedName, [
+            'seeds',
+            ' seed',
+            ' nuts',
+            ' nut',
+            'tahini',
+            'chia',
+            'flax',
+            'hemp',
+            'walnut',
+            'almond',
+            'cashew',
+            'pecan',
+            'hazelnut',
+            'pistachio',
+            'pine nut',
+            'sunflower',
+            'pumpkin seed',
+            'sesame',
+            'avocado',
+            'coconut cream',
+            'coconut oil',
         ]);
     }
 

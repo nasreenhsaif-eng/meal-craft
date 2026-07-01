@@ -2,6 +2,7 @@ import {
     IconBalanced,
     IconCycleSync,
     IconKetobiotic,
+    IconNutrientDense,
     IconSickleCellWarrior,
     IconThyroid,
 } from './DietProtocolIcons.jsx';
@@ -11,7 +12,7 @@ import {
  */
 export const AUTO_ADVANCE_DIET_PROTOCOL_ID = 'balanced';
 
-/** @typedef {'balanced' | 'ketobiotic' | 'cycle_sync' | 'thyroid' | 'sickle_cell'} DietProtocolId */
+/** @typedef {'balanced' | 'ketobiotic' | 'cycle_sync' | 'thyroid' | 'sickle_cell' | 'nutrient_dense'} DietProtocolId */
 
 /**
  * @typedef {{
@@ -29,6 +30,13 @@ export const DIET_PROTOCOL_OPTIONS = [
         label: 'Balanced Protocol',
         description: 'Flexible macros with varied whole foods for everyday wellness.',
         Icon: IconBalanced,
+    },
+    {
+        id: 'nutrient_dense',
+        label: 'Nutrient Density Protocol',
+        description:
+            'Micronutrient-optimized whole foods — 98% daily RDI targets at 1500+ kcal. Recommended minimum tier: 1500 kcal.',
+        Icon: IconNutrientDense,
     },
     {
         id: 'ketobiotic',

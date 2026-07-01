@@ -12,7 +12,7 @@ test('primary meat ingredients include beef chicken and fish', function () {
 test('liver blend ingredients are not primary unless the meal is a liver main', function () {
     expect(StandardMeatPortion::isPrimaryMeatIngredient('Beef Liver', 'Beef & Liver Kefta w Herb Salad & Tahini'))->toBeFalse()
         ->and(StandardMeatPortion::isPrimaryMeatIngredient('Beef Liver', 'Chili Beef Stuffed Peppers'))->toBeFalse()
-        ->and(StandardMeatPortion::isPrimaryMeatIngredient('Beef Liver', 'Seared Beef Liver w Caramelized Onion, Spinach & Chimichurri'))->toBeTrue();
+        ->and(StandardMeatPortion::isPrimaryMeatIngredient('Beef Liver', 'Seared Beef Liver w Roasted Beetroot, Chard & Chimichurri'))->toBeTrue();
 });
 
 test('liver blend meals target beef grams that sum to 150 g with liver', function () {

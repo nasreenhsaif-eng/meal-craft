@@ -128,3 +128,33 @@ test('macro grams follow 4-4-9 rule from calorie percentages', function () {
         ->and($macros['carbs_g'])->toBe(200.0)
         ->and($macros['fat_g'])->toBe(66.67);
 });
+
+test('calculateUserPlan subtracts actual fixed-slot macros from scalable budget', function () {
+    $profile = new CustomerProfile([
+        'id' => 1,
+        'daily_calorie_target' => 1200,
+        'protein_percentage' => 35.0,
+        'carb_percentage' => 35.0,
+        'fat_percentage' => 30.0,
+    ]);
+
+    $plan = UserPlanCalculator::calculateUserPlan($profile, [
+        'fixed_slot_actual_macros' => [
+            'protein_g' => 12.0,
+            'carbs_g' => 18.0,
+            'fat_g' => 14.0,
+        ],
+    ]);
+
+    expect($plan['fixed_portion']['macros']['protein_g'])->toBe(12.0)
+        ->and($plan['scalable_budget']['macros']['protein_g'])->toBe(93.0)
+        ->and($plan['scalable_budget']['macros']['fat_g'])->toBe(26.0);
+});
+
+test('breakfast slot uses protein-forward breakfast macro split', function () {
+    $macros = UserPlanCalculator::breakfastMacroGrams(200.0);
+
+    expect($macros['protein_g'])->toBe(20.0)
+        ->and($macros['carbs_g'])->toBe(12.5)
+        ->and($macros['fat_g'])->toBe(7.78);
+});

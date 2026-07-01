@@ -386,7 +386,7 @@ test('adapted menu exposes full craft day options with one breakfast and four ma
     ]);
 
     $breakfast = Meal::factory()->create([
-        'name' => 'Mediterranean Omelet',
+        'name' => 'Halloumi & Spinach Scramble',
         'meal_type' => MealType::Breakfast,
         'category' => RecipeCategory::Breakfast,
         'total_calories' => 300,
@@ -464,7 +464,7 @@ test('adapted menu exposes full craft day options with one breakfast and four ma
         ->assertJsonCount(4, 'scheduled_full_craft_by_weekday.1.meals')
         ->assertJsonCount(2, 'scheduled_full_craft_by_weekday.1.sideSalads')
         ->assertJsonCount(2, 'scheduled_full_craft_by_weekday.1.desserts')
-        ->assertJsonPath('scheduled_full_craft_by_weekday.1.breakfasts.0.name', 'Mediterranean Omelet')
+        ->assertJsonPath('scheduled_full_craft_by_weekday.1.breakfasts.0.name', 'Halloumi & Spinach Scramble')
         ->assertJsonPath('scheduled_full_craft_by_weekday.1.desserts.0.name', 'Chia Day One')
         ->assertJsonPath('scheduled_full_craft_by_weekday.1.sideSalads.1.name', 'Classic Garden Salad');
 });
@@ -607,7 +607,7 @@ test('adapted menu fixed portion catalog includes only one chia variant family p
 function seedProductionFullCraftDayWithChiaDessert(string $chiaDessertName): MealPlan
 {
     $breakfast = Meal::factory()->create([
-        'name' => 'Mediterranean Omelet',
+        'name' => 'Halloumi & Spinach Scramble',
         'meal_type' => MealType::Breakfast,
         'category' => RecipeCategory::Breakfast,
         'total_calories' => 300,

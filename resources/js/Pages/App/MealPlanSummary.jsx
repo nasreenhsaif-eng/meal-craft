@@ -38,6 +38,7 @@ function formatMacroValue(value) {
  *   craftTitle?: string;
  *   weekDuration?: number;
  *   planTierCalories?: number;
+ *   dietProtocol?: string | null;
  *   submittedAt?: string | null;
  *   days?: Array<{
  *     dayNumber: number;
@@ -231,6 +232,7 @@ export default function MealPlanSummary({
                                 dayLabel={activeDayData?.label ?? 'Day'}
                                 planCategoryLabel={planCategoryLabel}
                                 planTierCalories={craftPlan.planTierCalories ?? 0}
+                                dietProtocol={craftPlan.dietProtocol ?? null}
                                 onOpenMeal={openMealDetail}
                                 onEditMeals={handleEditSelections}
                             />

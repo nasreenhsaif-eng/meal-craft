@@ -279,7 +279,7 @@ test('purslane is registered in boost catalog and ingredient library', function 
 
 test('beef liver boost is allowed only for ground beef or dedicated liver meals', function () {
     expect(MicronutrientBoostCatalog::allowsBeefLiverBoost(
-        'Seared Beef Liver w Caramelized Onion, Spinach & Chimichurri',
+        'Seared Beef Liver w Roasted Beetroot, Chard & Chimichurri',
         [],
     ))->toBeTrue()
         ->and(MicronutrientBoostCatalog::allowsBeefLiverBoost(

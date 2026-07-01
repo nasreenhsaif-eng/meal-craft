@@ -6,6 +6,7 @@ use App\Models\Ingredient;
 use App\Models\Meal;
 use App\Support\MealInstructionsText;
 use App\Support\MealLibraryEditGuard;
+use App\Support\MealLibraryRefinerOverrides;
 use App\Support\SaladMealPresentation;
 use App\Support\StandardMeatPortion;
 use App\Support\WholeFoodDietPolicy;
@@ -173,7 +174,7 @@ final class SaladDressingMealRefiner
         $wholeFoodTags = WholeFoodDietPolicy::REQUIRED_MEAL_DIET_TAGS;
         $veganTags = array_merge($wholeFoodTags, ['Vegan']);
 
-        return [
+        $definitions = [
             'Marinated Pineapple, Peppers, Red Onion & Cilantro Side Salad' => [
                 'salad_ingredients' => [
                     'Pineapple' => 40,
@@ -546,5 +547,7 @@ final class SaladDressingMealRefiner
                 'diet_tags' => $veganTags,
             ],
         ];
+
+        return MealLibraryRefinerOverrides::mergeRecipeDefinitionMap($definitions);
     }
 }

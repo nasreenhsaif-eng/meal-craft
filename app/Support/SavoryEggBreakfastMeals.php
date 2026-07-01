@@ -2,29 +2,143 @@
 
 namespace App\Support;
 
+use App\Enums\DietProtocol;
+use App\Models\CustomerProfile;
 use App\Models\Ingredient;
 use App\Models\Meal;
 use App\Services\BalancedWeeklyRotationSchedule;
+use App\Services\NutrientDenseWeeklyRotationSchedule;
 use App\Services\Nutrition\UserPlanCalculator;
 
 /**
  * Balanced rotation savory (egg-based) breakfasts scale egg count by plan tier.
+ * Dairy-forward breakfasts swap to dairy-free when the customer filters dairy.
  */
 final class SavoryEggBreakfastMeals
 {
     /**
      * @return list<string>
      */
-    public static function mealNames(): array
+    public static function dairyFreeMealNames(): array
     {
         return BalancedWeeklyRotationSchedule::EGG_BREAKFASTS;
     }
 
-    public static function isSavoryEggBreakfast(Meal|string $meal): bool
+    /**
+     * @return list<string>
+     */
+    public static function dairyForwardMealNames(): array
+    {
+        return BalancedWeeklyRotationSchedule::DAIRY_FORWARD_EGG_BREAKFASTS;
+    }
+
+    /**
+     * @return list<string>
+     */
+    public static function mealNames(): array
+    {
+        return array_values(array_unique(array_merge(
+            self::dairyFreeMealNames(),
+            self::dairyForwardMealNames(),
+        )));
+    }
+
+    public static function isDairyForwardBreakfast(Meal|string $meal): bool
     {
         $name = $meal instanceof Meal ? (string) $meal->name : $meal;
 
-        return in_array($name, self::mealNames(), true);
+        return in_array($name, self::dairyForwardMealNames(), true);
+    }
+
+    public static function isDairyFreeBreakfast(Meal|string $meal): bool
+    {
+        $name = $meal instanceof Meal ? (string) $meal->name : $meal;
+
+        return in_array($name, self::dairyFreeMealNames(), true);
+    }
+
+    public static function isSavoryEggBreakfast(Meal|string $meal): bool
+    {
+        return self::isDairyForwardBreakfast($meal) || self::isDairyFreeBreakfast($meal);
+    }
+
+    public static function profileAvoidsDairy(CustomerProfile $profile): bool
+    {
+        return ChiaDessertMeals::profileAvoidsDairy($profile);
+    }
+
+    public static function dairyFreeVariantMealName(string $dairyForwardMealName): ?string
+    {
+        $index = array_search($dairyForwardMealName, self::dairyForwardMealNames(), true);
+
+        if ($index === false) {
+            return null;
+        }
+
+        return self::dairyFreeMealNames()[$index] ?? null;
+    }
+
+    public static function dairyForwardVariantMealName(string $dairyFreeMealName): ?string
+    {
+        $index = array_search($dairyFreeMealName, self::dairyFreeMealNames(), true);
+
+        if ($index === false) {
+            return null;
+        }
+
+        return self::dairyForwardMealNames()[$index] ?? null;
+    }
+
+    public static function resolveMealNameForProfile(string $mealName, CustomerProfile $profile): string
+    {
+        if (! self::isSavoryEggBreakfast($mealName)) {
+            return $mealName;
+        }
+
+        if (self::profileAvoidsDairy($profile)) {
+            if (self::isDairyForwardBreakfast($mealName)) {
+                return self::dairyFreeVariantMealName($mealName) ?? $mealName;
+            }
+
+            return $mealName;
+        }
+
+        if (self::isDairyFreeBreakfast($mealName)) {
+            return self::dairyForwardVariantMealName($mealName) ?? $mealName;
+        }
+
+        return $mealName;
+    }
+
+    public static function resolveMealForProfile(Meal $meal, CustomerProfile $profile): Meal
+    {
+        $resolvedName = self::resolveMealNameForProfile((string) $meal->name, $profile);
+
+        if ($resolvedName === $meal->name) {
+            return $meal;
+        }
+
+        $resolved = Meal::queryForMealLibrary()
+            ->where('name', $resolvedName)
+            ->with('ingredients')
+            ->first();
+
+        return $resolved instanceof Meal ? $resolved : $meal;
+    }
+
+    public static function scheduledBreakfastNameForDay(int $dayNumber, CustomerProfile $profile): string
+    {
+        $index = max(0, min(6, $dayNumber - 1));
+
+        if (DietProtocol::tryFromStored($profile->diet_protocol) === DietProtocol::NutrientDense) {
+            return NutrientDenseWeeklyRotationSchedule::EGG_BREAKFASTS[$index];
+        }
+
+        if (self::profileAvoidsDairy($profile)) {
+            return self::dairyFreeMealNames()[$index];
+        }
+
+        return self::dairyForwardMealNames()[$index];
     }
 
     public static function eggCountForPlanTier(float $planTier): int
@@ -97,11 +211,15 @@ final class SavoryEggBreakfastMeals
         return round(self::eggGramsForPlanTier($planTier) / $baselineEggGrams, 4);
     }
 
-    public static function minimumSideGramsForIngredient(Ingredient $ingredient): ?float
+    public static function minimumSideGramsForIngredient(Ingredient $ingredient, ?string $mealName = null): ?float
     {
+        if ($mealName !== null && self::isDairyForwardBreakfast($mealName)) {
+            return null;
+        }
+
         /** @var array<string, float> $minimums */
         $minimums = config('customer_nutrition.savory_egg_breakfast_minimum_side_grams', [
-            'Avocado' => 50.0,
+            'Avocado' => 25.0,
         ]);
 
         $minimum = $minimums[$ingredient->name] ?? null;
@@ -114,11 +232,14 @@ final class SavoryEggBreakfastMeals
     }
 
     /**
-     * Minimum side grams at the customer's plan tier — scales with the breakfast calorie target (50g avocado at 1000 kcal tier).
+     * Minimum side grams at the customer's plan tier — scales with the breakfast calorie target.
      */
-    public static function minimumSideGramsForPlanTier(Ingredient $ingredient, float $planTier): ?float
-    {
-        $baseMinimum = self::minimumSideGramsForIngredient($ingredient);
+    public static function minimumSideGramsForPlanTier(
+        Ingredient $ingredient,
+        float $planTier,
+        ?string $mealName = null,
+    ): ?float {
+        $baseMinimum = self::minimumSideGramsForIngredient($ingredient, $mealName);
 
         if ($baseMinimum === null) {
             return null;
@@ -134,14 +255,19 @@ final class SavoryEggBreakfastMeals
         return round($baseMinimum * ($tierBreakfast / $referenceBreakfast), 2);
     }
 
-    public static function adaptedSideGrams(Ingredient $ingredient, float $baselineGrams, float $sideMultiplier, float $planTier = 1000.0): float
-    {
+    public static function adaptedSideGrams(
+        Ingredient $ingredient,
+        float $baselineGrams,
+        float $sideMultiplier,
+        float $planTier = 1000.0,
+        ?string $mealName = null,
+    ): float {
         if ($baselineGrams <= 0) {
             return 0.0;
         }
 
         $grams = round($baselineGrams * $sideMultiplier, 4);
-        $minimum = self::minimumSideGramsForPlanTier($ingredient, $planTier);
+        $minimum = self::minimumSideGramsForPlanTier($ingredient, $planTier, $mealName);
 
         if ($minimum !== null) {
             $grams = max($grams, $minimum);
