@@ -75,6 +75,27 @@ test('tier slot targets match spreadsheet at each plan tier', function (int $tie
     [2000, 450.0, 625.0],
 ]);
 
+test('main each slot uses protein-first macro split at every tier', function (int $tier, float $mainCalories, float $expectedProteinG) {
+    $profile = new CustomerProfile([
+        'id' => 1,
+        'daily_calorie_target' => $tier,
+        'protein_percentage' => 30.0,
+        'carb_percentage' => 40.0,
+        'fat_percentage' => 30.0,
+    ]);
+
+    $plan = UserPlanCalculator::calculateUserPlan($profile, ['plan_tier' => (float) $tier]);
+
+    expect($plan['scalable_slot_targets']['main_each']['calories'])->toBe($mainCalories)
+        ->and($plan['scalable_slot_targets']['main_each']['macros']['protein_g'])->toBe($expectedProteinG);
+})->with([
+    '1000 kcal tier' => [1000, 250.0, 28.13],
+    '1200 kcal tier' => [1200, 350.0, 39.38],
+    '1500 kcal tier' => [1500, 450.0, 50.63],
+    '1800 kcal tier' => [1800, 550.0, 61.88],
+    '2000 kcal tier' => [2000, 625.0, 70.31],
+]);
+
 test('calculateUserPlan derives scaling multiplier from scalable budget and library baseline', function () {
     $profile = new CustomerProfile([
         'id' => 1,

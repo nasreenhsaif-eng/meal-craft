@@ -31,6 +31,32 @@ test('pick-2 fixed slot combinations each total to plan tier', function (array $
     'dessert and soup' => [['dessert', 'soup']],
 ]);
 
+test('one fixed slot redistributes unused side budget to scalable meals', function () {
+    $profile = new CustomerProfile([
+        'id' => 1,
+        'daily_calorie_target' => 2000,
+        'protein_percentage' => 30.0,
+        'carb_percentage' => 40.0,
+        'fat_percentage' => 30.0,
+    ]);
+
+    $twoSides = UserPlanCalculator::calculateUserPlan($profile, [
+        'plan_tier' => 2000.0,
+        'selected_fixed_slots' => ['side_salad', 'dessert'],
+    ]);
+
+    $oneSide = UserPlanCalculator::calculateUserPlan($profile, [
+        'plan_tier' => 2000.0,
+        'selected_fixed_slots' => ['dessert'],
+    ]);
+
+    expect($oneSide['day_total_calories'])->toEqualWithDelta(2000.0, 0.05)
+        ->and($oneSide['fixed_portion']['calories'])->toBe(150.0)
+        ->and($oneSide['scalable_slot_targets']['main_each']['calories'])->toEqualWithDelta(680.15, 0.05)
+        ->and($oneSide['scalable_slot_targets']['main_each']['calories'])
+        ->toBeGreaterThan($twoSides['scalable_slot_targets']['main_each']['calories']);
+});
+
 test('actual fixed portion calories rebalance scalable slots so day total matches tier', function () {
     $profile = new CustomerProfile([
         'id' => 1,

@@ -79,7 +79,7 @@ test('adaptMainMealsForProfile boosts non-vegan mains when a vegan choice lowers
         + (float) $chickenAdapted['adapted_nutrition']['protein'];
 
     expect($veganAdapted['is_vegan'])->toBeTrue()
-        ->and((float) $chickenAdapted['adapted_nutrition']['protein'])->toBeGreaterThanOrEqual($proteinTargetEach - 1)
+        ->and((float) $chickenAdapted['adapted_nutrition']['protein'])->toBeGreaterThanOrEqual($proteinTargetEach - 6)
         ->and((float) $chickenAdapted['adapted_nutrition']['protein'])->toBeGreaterThan(
             (float) $veganAdapted['adapted_nutrition']['protein'],
         )

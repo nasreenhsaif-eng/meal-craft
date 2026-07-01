@@ -260,12 +260,7 @@ final class AdaptedMenuBuilder
         $newMain = max(0.0, round($currentMain - ($excess / $mainCount), 2));
 
         $plan['scalable_slot_targets']['main_each']['calories'] = $newMain;
-        $plan['scalable_slot_targets']['main_each']['macros'] = UserPlanCalculator::macroGramsFromCaloriesAndPercentages(
-            $newMain,
-            (float) ($plan['protein_percentage'] ?? 40),
-            (float) ($plan['carb_percentage'] ?? 30),
-            (float) ($plan['fat_percentage'] ?? 30),
-        );
+        $plan['scalable_slot_targets']['main_each']['macros'] = UserPlanCalculator::mainEachMacroGrams($newMain);
 
         return $plan;
     }

@@ -69,14 +69,14 @@ final class CraftCaloriePlanner
             $mainTarget = max(0.0, round($craftDayCalories - $fixedChoiceTotal, 2));
             $scalableSlotTargets = [
                 'breakfast' => self::slotTarget(0.0, $macroPct),
-                'main_each' => self::slotTarget($mainTarget, $macroPct),
+                'main_each' => self::mainSlotTarget($mainTarget),
             ];
         }
 
         if ($craftKey === self::CRAFT_BUSINESS) {
             $scalableSlotTargets = [
                 'breakfast' => self::slotTarget(0.0, $macroPct),
-                'main_each' => self::slotTarget($businessConfig['main_target'], $macroPct),
+                'main_each' => self::mainSlotTarget($businessConfig['main_target']),
             ];
         }
 
@@ -130,6 +130,17 @@ final class CraftCaloriePlanner
                 $macroPct['carb'],
                 $macroPct['fat'],
             ),
+        ];
+    }
+
+    /**
+     * @return array{calories: float, macros: array{protein_g: float, carbs_g: float, fat_g: float}}
+     */
+    private static function mainSlotTarget(float $calories): array
+    {
+        return [
+            'calories' => round($calories, 2),
+            'macros' => UserPlanCalculator::mainEachMacroGrams($calories),
         ];
     }
 }

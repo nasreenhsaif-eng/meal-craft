@@ -17,6 +17,13 @@ const BALANCED_MACRO_SPLIT = Object.freeze({
     fat: 30,
 });
 
+/** Mirrors config/customer_nutrition.php main_each_macro_split — protein-first main scaling. */
+const MAIN_EACH_MACRO_SPLIT = Object.freeze({
+    protein: 45,
+    carbs: 25,
+    fat: 30,
+});
+
 /**
  * @param {number} planTier
  */
@@ -207,7 +214,7 @@ export function mainProteinTargetPerMeal(craftKey, planTier, nutritionPlan = nul
     const { mainEach } = tierSlotTargetsForPlanTier(Math.round(planTier));
 
     if (craftKey === 'business') {
-        return macroGramsFromCalories(BUSINESS_MAIN_TARGET).protein;
+        return macroGramsFromCalories(BUSINESS_MAIN_TARGET, MAIN_EACH_MACRO_SPLIT).protein;
     }
 
     if (craftKey === 'intermittent') {
@@ -216,10 +223,10 @@ export function mainProteinTargetPerMeal(craftKey, planTier, nutritionPlan = nul
             craftDayCaloriesForKey('intermittent', planTier) - FIXED_CHOICE_COUNT * FIXED_CHOICE_CALORIES,
         );
 
-        return macroGramsFromCalories(intermittentMainEach).protein;
+        return macroGramsFromCalories(intermittentMainEach, MAIN_EACH_MACRO_SPLIT).protein;
     }
 
-    return macroGramsFromCalories(mainEach).protein;
+    return macroGramsFromCalories(mainEach, MAIN_EACH_MACRO_SPLIT).protein;
 }
 
 /**

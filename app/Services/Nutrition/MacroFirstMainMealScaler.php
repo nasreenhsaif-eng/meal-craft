@@ -84,7 +84,6 @@ final class MacroFirstMainMealScaler
 
         $grams = self::trimToCalorieTarget($meal, $grams, $targetCalories);
         $grams = self::recoverCarbTargetAfterTrim($meal, $grams, $targetCarbs, $targetCalories);
-        $grams = self::recoverCarbTargetAfterTrim($meal, $grams, $targetCarbs, $targetCalories);
 
         return [
             'grams' => $grams,
@@ -206,31 +205,26 @@ final class MacroFirstMainMealScaler
         Meal $meal,
         array $grams,
         float $targetCalories,
-        bool $preserveCarbs = false,
     ): array {
         if ($targetCalories <= 0) {
             return $grams;
         }
 
-        $currentCalories = self::totalCalories($meal, $grams);
+        $adjusted = $grams;
 
-        if ($currentCalories <= $targetCalories + 0.5) {
-            return $grams;
+        foreach ([
+            [MealScalingRoleEnum::Fat, MealScalingRoleEnum::Sauce],
+            [MealScalingRoleEnum::Carb],
+            [MealScalingRoleEnum::Protein],
+        ] as $roles) {
+            if (self::totalCalories($meal, $adjusted) <= $targetCalories + 0.5) {
+                break;
+            }
+
+            $adjusted = self::trimRoleCalories($meal, $adjusted, $targetCalories, $roles);
         }
 
-        $trimRoles = $preserveCarbs
-            ? [MealScalingRoleEnum::Fat, MealScalingRoleEnum::Sauce]
-            : [MealScalingRoleEnum::Fat, MealScalingRoleEnum::Sauce, MealScalingRoleEnum::Carb];
-
-        $adjusted = self::trimRoleCalories($meal, $grams, $targetCalories, $trimRoles);
-
-        $after = self::totalCalories($meal, $adjusted);
-
-        if ($after <= $targetCalories + 0.5 || $preserveCarbs) {
-            return $adjusted;
-        }
-
-        return self::trimRoleCalories($meal, $adjusted, $targetCalories, [MealScalingRoleEnum::Carb]);
+        return $adjusted;
     }
 
     /**
@@ -359,7 +353,7 @@ final class MacroFirstMainMealScaler
         }
 
         if (self::totalCalories($meal, $adjusted) > $targetCalories + 0.5) {
-            return self::trimToCalorieTarget($meal, $adjusted, $targetCalories, preserveCarbs: true);
+            return self::trimToCalorieTarget($meal, $adjusted, $targetCalories);
         }
 
         return $adjusted;

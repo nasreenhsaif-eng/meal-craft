@@ -123,7 +123,7 @@ const CRAFTS = [
         slots: [
             { id: 'breakfast', label: 'Breakfast', count: 1 },
             { id: 'meal', label: 'Meals', count: 2 },
-            { id: 'fixedChoice', label: 'Pick 2 — side salad, dessert, or soup', count: 2 },
+            { id: 'fixedChoice', label: 'Pick a maximum of 2 sides', count: 2 },
         ],
     },
     {
@@ -133,7 +133,7 @@ const CRAFTS = [
         slots: [
             { id: 'breakfast', label: 'Breakfast', count: 1 },
             { id: 'meal', label: 'Meal', count: 1 },
-            { id: 'fixedChoice', label: 'Pick 2 — side salad, dessert, or soup', count: 2 },
+            { id: 'fixedChoice', label: 'Pick a maximum of 2 sides', count: 2 },
         ],
     },
     {
@@ -142,7 +142,7 @@ const CRAFTS = [
         description: '2 Meals, pick 2 of side salad / dessert / soup',
         slots: [
             { id: 'meal', label: 'Meals', count: 2 },
-            { id: 'fixedChoice', label: 'Pick 2 — side salad, dessert, or soup', count: 2 },
+            { id: 'fixedChoice', label: 'Pick a maximum of 2 sides', count: 2 },
         ],
     },
     {
@@ -151,7 +151,7 @@ const CRAFTS = [
         description: '1 Meal, pick 2 of side salad / dessert / soup',
         slots: [
             { id: 'meal', label: 'Meal', count: 1 },
-            { id: 'fixedChoice', label: 'Pick 2 — side salad, dessert, or soup', count: 2 },
+            { id: 'fixedChoice', label: 'Pick a maximum of 2 sides', count: 2 },
         ],
     },
     {
@@ -918,8 +918,23 @@ export default function CraftedForYouPage({
     const calorieDay = curationDay ?? effectiveActiveDay;
 
     /** Admin preview: keep adapted menu in sync when tier/craft change before day curation. */
-    const adaptedMenuDay =
-        calorieDay ?? (isAdminPreview && craftKey ? (sortedSelectedDays[0] ?? 1) : null);
+    const adaptedMenuDay = useMemo(() => {
+        if (calorieDay) {
+            return calorieDay;
+        }
+
+        if (craftKey === 'full' && weekDuration !== null) {
+            return sortedSelectedDays[0] ?? 1;
+        }
+
+        if (isAdminPreview && craftKey) {
+            return sortedSelectedDays[0] ?? 1;
+        }
+
+        return null;
+    }, [calorieDay, craftKey, weekDuration, sortedSelectedDays, isAdminPreview]);
+
+    const isMenuPending = !disableAdaptedMenuFetch && liveMeals === null;
 
     const includeSoupForAdaptedMenu = useMemo(() => {
         if (!calorieDay) {
@@ -1076,7 +1091,7 @@ export default function CraftedForYouPage({
 
         const selectedFixedSlots = selectedFixedSlotsFromSelections(selectedByDay[adaptedMenuDay]);
         const planningFixedSlots =
-            selectedFixedSlots.length === FIXED_CHOICE_REQUIRED_COUNT ? selectedFixedSlots : undefined;
+            selectedFixedSlots.length > 0 ? selectedFixedSlots : undefined;
 
         const sideSaladMeal =
             planningFixedSlots?.includes('side_salad')
@@ -1206,7 +1221,7 @@ export default function CraftedForYouPage({
                     }
                 }
             })();
-        }, 200);
+        }, hasLoadedAdaptedMenuRef.current ? 200 : 0);
 
         return () => {
             cancelled = true;
@@ -1466,7 +1481,7 @@ export default function CraftedForYouPage({
             .map((slot) => slot.label.toLowerCase());
 
         if (craft.slots.some((slot) => slot.id === 'fixedChoice') && !isFixedChoiceComplete(s)) {
-            missing.push('2 of side salad, dessert, or soup');
+            missing.push('side (at least 1, up to 2)');
         }
 
         if (missing.length === 0) {
@@ -1899,6 +1914,7 @@ export default function CraftedForYouPage({
                                         : undefined
                                 }
                                 onViewDetails={openMealDetail}
+                                isMenuPending={isMenuPending}
                             >
                                 {craft?.key === 'full' ? null : (
                                 <AnimatePresence mode="wait" initial={false}>

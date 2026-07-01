@@ -183,6 +183,38 @@ final class UserPlanCalculator
     }
 
     /**
+     * Protein-first macro percentages for scalable main meal slots (all tiers).
+     *
+     * @return array{protein: float, carb: float, fat: float}
+     */
+    public static function mainEachMacroPercentages(): array
+    {
+        /** @var array{protein_percentage?: float, carb_percentage?: float, fat_percentage?: float} $split */
+        $split = config('customer_nutrition.main_each_macro_split', []);
+
+        return [
+            'protein' => (float) ($split['protein_percentage'] ?? 45.0),
+            'carb' => (float) ($split['carb_percentage'] ?? 25.0),
+            'fat' => (float) ($split['fat_percentage'] ?? 30.0),
+        ];
+    }
+
+    /**
+     * @return array{protein_g: float, carbs_g: float, fat_g: float}
+     */
+    public static function mainEachMacroGrams(float $calories): array
+    {
+        $split = self::mainEachMacroPercentages();
+
+        return self::macroGramsFromCaloriesAndPercentages(
+            $calories,
+            $split['protein'],
+            $split['carb'],
+            $split['fat'],
+        );
+    }
+
+    /**
      * @param  array<string, float>  $overrides
      */
     public static function coreFixedPortionCaloriesTotal(array $overrides = []): float
@@ -313,11 +345,9 @@ final class UserPlanCalculator
 
         $budgetFixedTotal = round(self::fixedChoiceCount() * self::fixedChoiceCaloriesPerSlot(), 2);
 
-        $fixedPortionTotal = $budgetFixedTotal;
-
-        if ($selectedFixedSlots !== null && count($selectedFixedSlots) === self::fixedChoiceCount()) {
-            $fixedPortionTotal = round(array_sum($perSlotFixed), 2);
-        }
+        $fixedPortionTotal = $selectedFixedSlots !== null
+            ? round(array_sum($perSlotFixed), 2)
+            : $budgetFixedTotal;
 
         $proteinPct = (float) $profile->protein_percentage;
         $carbPct = (float) $profile->carb_percentage;
@@ -424,12 +454,7 @@ final class UserPlanCalculator
                 ],
                 'main_each' => [
                     'calories' => $mainTargetCaloriesEach,
-                    'macros' => self::macroGramsFromCaloriesAndPercentages(
-                        $mainTargetCaloriesEach,
-                        $proteinPct,
-                        $carbPct,
-                        $fatPct,
-                    ),
+                    'macros' => self::mainEachMacroGrams($mainTargetCaloriesEach),
                 ],
             ],
         ];

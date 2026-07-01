@@ -27,6 +27,21 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Main meal macro split (% of each main slot's calories)
+    |--------------------------------------------------------------------------
+    |
+    | Mains scale to these protein-first targets at every tier. Carbs yield within
+    | the same tier calorie budget so daily totals stay on plan.
+    |
+    */
+    'main_each_macro_split' => [
+        'protein_percentage' => 45.0,
+        'carb_percentage' => 25.0,
+        'fat_percentage' => 30.0,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Fixed pick slots — customer picks exactly 2 of 3 per day (~150 kcal each)
     |--------------------------------------------------------------------------
     */

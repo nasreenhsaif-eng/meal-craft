@@ -5,7 +5,12 @@ export const FIXED_CHOICE_CATEGORY_KEYS = Object.freeze(
     /** @type {const} */ (['sideSalads', 'desserts', 'soup']),
 );
 
-export const FIXED_CHOICE_REQUIRED_COUNT = 2;
+export const FIXED_CHOICE_MAX_COUNT = 2;
+
+/** @deprecated Use {@link FIXED_CHOICE_MAX_COUNT} */
+export const FIXED_CHOICE_REQUIRED_COUNT = FIXED_CHOICE_MAX_COUNT;
+
+export const FIXED_CHOICE_MIN_COUNT = 1;
 
 /** Display order for the horizontal toggle bar. */
 export const FIXED_CHOICE_TOGGLE_OPTIONS = Object.freeze([
@@ -49,7 +54,9 @@ export function countFixedChoiceSelections(categorySelections) {
  * @param {Partial<Record<FixedChoiceCategoryKey, string[]>> | null | undefined} categorySelections
  */
 export function isFixedChoiceComplete(categorySelections) {
-    return countFixedChoiceSelections(categorySelections) === FIXED_CHOICE_REQUIRED_COUNT;
+    const count = countFixedChoiceSelections(categorySelections);
+
+    return count >= FIXED_CHOICE_MIN_COUNT && count <= FIXED_CHOICE_MAX_COUNT;
 }
 
 /**
@@ -98,7 +105,7 @@ export function applyFixedChoiceToggle(current, categoryKey, mealId) {
         0,
     );
 
-    if (otherTotal + existing.length >= FIXED_CHOICE_REQUIRED_COUNT) {
+    if (otherTotal + existing.length >= FIXED_CHOICE_MAX_COUNT) {
         return { next: current, blocked: true };
     }
 

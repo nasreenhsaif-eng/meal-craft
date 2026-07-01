@@ -694,7 +694,7 @@ const INCOMPLETE_SELECTION_LABELS = Object.freeze({
     meals: '2 main meals',
     sideSalads: 'side salad',
     desserts: 'dessert',
-    fixedChoice: '2 of side salad, dessert, or soup',
+    fixedChoice: 'side (at least 1, up to 2)',
 });
 
 /**
@@ -757,6 +757,7 @@ function useMinWidth(minWidthPx) {
  * @param {boolean} [props.showSelectedState] Locked selection: show green SELECTED chrome without toggling.
  * @param {(meal: ConsultationMeal) => void} [props.onViewDetails]
  * @param {(meal: ConsultationMeal) => void} [props.onEditMeal]
+ * @param {boolean} [props.isLoading] Show a skeleton while scheduled meals are still loading.
  */
 export function MealSlotCarousel({
     title,
@@ -774,6 +775,7 @@ export function MealSlotCarousel({
     showSelectedState = false,
     onViewDetails,
     onEditMeal,
+    isLoading = false,
 }) {
     const selectedSet = new Set(selectedIds);
     const atLimit = selectedIds.length >= maxSelected;
@@ -884,9 +886,27 @@ export function MealSlotCarousel({
                 data-consultation-deck=""
             >
                 {cards.length === 0 ? (
-                    <p className="font-body text-sm text-[#666666]">
-                        {readOnly ? 'No meal assigned for this slot yet.' : 'No options match this slot yet.'}
-                    </p>
+                    isLoading ? (
+                        <div
+                            className="mx-auto w-full max-w-[320px] animate-pulse rounded-[16px] border border-gray-200 bg-white p-4 shadow-sm"
+                            aria-busy="true"
+                            aria-label="Loading meal"
+                        >
+                            <div className="aspect-[4/3] w-full rounded-[12px] bg-gray-200" />
+                            <div className="mt-4 h-4 w-3/4 rounded bg-gray-200" />
+                            <div className="mt-3 flex gap-2">
+                                <div className="h-8 flex-1 rounded bg-gray-100" />
+                                <div className="h-8 flex-1 rounded bg-gray-100" />
+                                <div className="h-8 flex-1 rounded bg-gray-100" />
+                                <div className="h-8 flex-1 rounded bg-gray-100" />
+                            </div>
+                            <div className="mt-4 h-10 w-full rounded-full bg-gray-200" />
+                        </div>
+                    ) : (
+                        <p className="font-body text-sm text-[#666666]">
+                            {readOnly ? 'No meal assigned for this slot yet.' : 'No options match this slot yet.'}
+                        </p>
+                    )
                 ) : (
                     <div
                         className={[
@@ -1069,7 +1089,7 @@ export function FixedChoicePicker({
             if (blocked) {
                 showTransientWarning(
                     setMealLimitWarning,
-                    'You can only pick 2 of side salad, dessert, or soup. Deselect one to choose a different option.',
+                    'You can pick a maximum of 2 sides. Deselect one to choose a different option.',
                 );
 
                 return;
@@ -1129,7 +1149,7 @@ export function FixedChoicePicker({
         <div className="relative isolate w-full overflow-x-clip overflow-y-visible py-0.5">
             <div className="mx-auto min-w-0 max-w-full px-4 text-center md:px-0">
                 <p className="font-montserrat text-[15px] font-bold leading-snug tracking-tight text-[#262A22] sm:text-base">
-                    Pick 2 — side salad, dessert, or soup
+                    Pick a maximum of 2 sides
                 </p>
                 <p className="mt-0.5 font-body text-xs leading-snug text-[#555555] sm:text-sm">
                     {pickEnabled
@@ -1248,6 +1268,7 @@ export function FixedChoicePicker({
  * @param {(categoryKey: SelectionCategoryKey) => void} [props.onClearFixedChoiceCategory]
  * @param {(meal: ConsultationMeal) => void} [props.onViewDetails]
  * @param {string} [props.panelClassName] Height class for the viewport-locked panel shell.
+ * @param {boolean} [props.isMenuPending] Adapted menu / weekly schedule still loading from the API.
  */
 export default function ChooseYourMeals({
     dayName = '',
@@ -1285,6 +1306,7 @@ export default function ChooseYourMeals({
     onClearFixedChoiceCategory,
     onViewDetails,
     panelClassName = 'h-[100dvh] min-h-screen',
+    isMenuPending = false,
 }) {
     const craftingSubtitle = `CRAFTING YOUR ${String(dayName).trim().toUpperCase()}`;
     /** Daily option decks stay interactive whenever the parent wires selection (hides CRAFT THIS MEAL only in true read-only review). */
@@ -1436,9 +1458,11 @@ export default function ChooseYourMeals({
             const cards =
                 assignedCards && assignedCards.length > 0
                     ? assignedCards
-                    : def.selectionKey === 'breakfasts'
-                      ? consultationDeckOptionsForSlotKey(meals ?? [], 'breakfast')
-                      : filterMealsByCategory(meals ?? [], def.mealTypeLabel);
+                    : isAutoAssigned && isMenuPending
+                      ? []
+                      : def.selectionKey === 'breakfasts'
+                        ? consultationDeckOptionsForSlotKey(meals ?? [], 'breakfast')
+                        : filterMealsByCategory(meals ?? [], def.mealTypeLabel);
             const max =
                 maxSelectionsByCategory?.[def.selectionKey] !== undefined
                     ? /** @type {number} */ (maxSelectionsByCategory[def.selectionKey])
@@ -1460,6 +1484,7 @@ export default function ChooseYourMeals({
                     maxSelected={max}
                     readOnly={isAutoAssigned || !categoryPickEnabled}
                     showSelectedState={isAutoAssigned}
+                    isLoading={isAutoAssigned && isMenuPending && cards.length === 0}
                     onSelect={categoryPickEnabled && !isAutoAssigned ? (meal) => onToggleCategory?.(def.selectionKey, meal) : () => {}}
                     onViewDetails={onViewDetails}
                 />
@@ -1477,6 +1502,7 @@ export default function ChooseYourMeals({
         categoriesReadOnly,
         categoryPickEnabled,
         onViewDetails,
+        isMenuPending,
     ]);
 
     const fixedChoiceBlock =
