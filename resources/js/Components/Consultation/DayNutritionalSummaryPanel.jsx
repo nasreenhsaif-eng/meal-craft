@@ -328,17 +328,15 @@ function MicronutrientRdiTable({ rows, planTierCalories = 0 }) {
                                     <td
                                         className={[
                                             'px-3 py-2.5 text-right font-montserrat text-sm font-bold tabular-nums',
-                                            BEST_EFFORT_NUTRIENT_LABELS.has(row.label)
-                                                ? 'text-[#555555]'
-                                                : tierEnforced
-                                                  && row.rdiPercent != null
-                                                  && row.rdiPercent < FLOOR_RDI_TARGET_PERCENT
-                                                  && !row.label.includes('Sugar')
-                                                  && !row.label.includes('Sodium')
-                                                    ? 'text-amber-800'
-                                                    : row.rdiPercent != null && row.rdiPercent >= 20
-                                                      ? 'text-[#5A6B44]'
-                                                      : 'text-[#1F2937]',
+                                            tierEnforced
+                                              && row.rdiPercent != null
+                                              && row.rdiPercent < FLOOR_RDI_TARGET_PERCENT
+                                              && !row.label.includes('Sugar')
+                                              && !row.label.includes('Sodium')
+                                                ? 'text-amber-800'
+                                                : row.rdiPercent != null && row.rdiPercent >= 20
+                                                  ? 'text-[#5A6B44]'
+                                                  : 'text-[#1F2937]',
                                         ].join(' ')}
                                     >
                                         {row.formattedRdiPercent ?? '—'}

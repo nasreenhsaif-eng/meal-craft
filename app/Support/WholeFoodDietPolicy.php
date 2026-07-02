@@ -90,6 +90,7 @@ final class WholeFoodDietPolicy
 
     /** @var list<string> */
     public const ALLOWED_DAIRY_EXCEPTION_NAMES = [
+        'Grass Fed Butter',
         'Ghee',
         'Ghee (Clarified)',
     ];
@@ -240,7 +241,7 @@ final class WholeFoodDietPolicy
         $meal->loadMissing('ingredients');
 
         foreach ($meal->ingredients as $ingredient) {
-            if (in_array($ingredient->name, ['Butter (Unsalted)', 'Ghee', 'Ghee (Clarified)'], true)) {
+            if (in_array($ingredient->name, ['Butter (Unsalted)', 'Grass Fed Butter', 'Ghee', 'Ghee (Clarified)'], true)) {
                 return false;
             }
         }

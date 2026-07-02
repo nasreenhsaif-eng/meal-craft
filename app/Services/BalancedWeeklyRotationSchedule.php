@@ -202,6 +202,7 @@ final class BalancedWeeklyRotationSchedule
             },
             MealPlanSlotType::Dessert => match ($slotIndex) {
                 1 => self::CHIA_DESSERTS[$index],
+                3 => self::GREEK_YOGURT_CHIA_DESSERTS[$index],
                 default => throw new InvalidArgumentException("Invalid dessert slot index {$slotIndex}"),
             },
             MealPlanSlotType::Soup => match ($slotIndex) {

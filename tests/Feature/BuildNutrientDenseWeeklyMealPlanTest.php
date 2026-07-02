@@ -88,5 +88,5 @@ test('rebuilding nutrient dense weekly plan replaces existing plan with same nam
     $second = $builder->build(refineRecipes: false);
 
     expect(MealPlan::query()->where('name', NutrientDenseWeeklyMealPlanBuilder::PLAN_NAME)->count())->toBe(1)
-        ->and($second['plan']->id)->not->toBe($first['plan']->id);
+        ->and($second['plan']->id)->toBe($first['plan']->id);
 });

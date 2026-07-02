@@ -7,7 +7,6 @@ use App\Enums\MealPlanSlotType;
 use App\Models\CustomerProfile;
 use App\Models\Meal;
 use App\Models\MealPlan;
-use App\Models\MealPlanDayMeal;
 use App\Models\User;
 use App\Services\Nutrition\DayMicronutrientCoverageAnalyzer;
 use App\Support\NutrientDailyRdi;
@@ -52,8 +51,6 @@ final class NutrientDenseWeeklyMealPlanBuilder
         return DB::transaction(function () use ($refineRecipes, $refined): array {
             app(NutrientDenseMealLibraryConfigurator::class)->configure();
 
-            $this->removeExistingPlan();
-
             [$dailyProtein, $dailyCarbs, $dailyFat] = $this->referenceDailyMacros();
 
             $slots = $this->buildSlotPayload();
@@ -66,7 +63,7 @@ final class NutrientDenseWeeklyMealPlanBuilder
                 );
             }
 
-            $plan = app(MealPlanService::class)->createWeeklyStructuredPlanFromScheduler(
+            $plan = app(MealPlanService::class)->upsertWeeklyStructuredPlanFromScheduler(
                 self::PLAN_NAME,
                 self::PLAN_GOAL,
                 MealPlanLibraryCategory::NutrientDense,
@@ -250,17 +247,5 @@ final class NutrientDenseWeeklyMealPlanBuilder
         }
 
         return $map;
-    }
-
-    private function removeExistingPlan(): void
-    {
-        $existing = MealPlan::query()->where('name', self::PLAN_NAME)->first();
-
-        if ($existing === null) {
-            return;
-        }
-
-        MealPlanDayMeal::query()->where('meal_plan_id', $existing->id)->delete();
-        $existing->delete();
     }
 }

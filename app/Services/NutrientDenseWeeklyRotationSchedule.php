@@ -43,22 +43,26 @@ final class NutrientDenseWeeklyRotationSchedule
         ],
     ];
 
-    /** @var list<string> */
+    /** @var list<string> Daily rotating baked desserts (slot 1) — one per weekday. */
     public const NUTRIENT_DENSE_DESSERTS = [
-        'Blueberry Walnut Greek Yogurt Chia Pudding',
         'Chocolate Orange Brownie',
-        'Spiced Crunch Greek Yogurt Chia Pudding',
         BalancedCanonicalMealRecipeRefiner::CARROT_DESSERT_NAME,
-        'Raspberry Cacao Greek Yogurt Chia Pudding',
         BalancedRotationMealRecipeRefiner::SALTED_TAHINI_CARAMEL_CHOCOLATE_BAR_NAME,
         'Saffron Pumpkin Muffin',
+        'Chocolate PB Banana Muffin',
+        BalancedRotationMealRecipeRefiner::SALTED_TAHINI_CARAMEL_CHOCOLATE_BAR_NAME,
+        'Chocolate Orange Brownie',
     ];
 
-    /** @var list<string> Greek yogurt chia desserts — micronutrient boosts use the chia ingredient pool. */
+    /** @var list<string> Greek yogurt chia desserts — dessert slot 3 (one per weekday). */
     public const CHIA_DESSERTS = [
         'Blueberry Walnut Greek Yogurt Chia Pudding',
+        'Mango Pumpkin Seed Greek Yogurt Chia Pudding',
         'Spiced Crunch Greek Yogurt Chia Pudding',
+        'Strawberry Almond Greek Yogurt Chia Pudding',
+        'Peach Pecan Greek Yogurt Chia Pudding',
         'Raspberry Cacao Greek Yogurt Chia Pudding',
+        'Cacao & Almond Greek Yogurt Chia',
     ];
 
     /** @var list<string> Baked desserts — psyllium husk fiber enrichment allowed. */
@@ -67,6 +71,7 @@ final class NutrientDenseWeeklyRotationSchedule
         BalancedCanonicalMealRecipeRefiner::CARROT_DESSERT_NAME,
         BalancedRotationMealRecipeRefiner::SALTED_TAHINI_CARAMEL_CHOCOLATE_BAR_NAME,
         'Saffron Pumpkin Muffin',
+        'Chocolate PB Banana Muffin',
     ];
 
     /** @var list<string> Whole-egg breakfasts — min 2 eggs per serving. */
@@ -194,6 +199,7 @@ final class NutrientDenseWeeklyRotationSchedule
             },
             MealPlanSlotType::Dessert => match ($slotIndex) {
                 1 => self::NUTRIENT_DENSE_DESSERTS[$index],
+                3 => self::CHIA_DESSERTS[$index],
                 default => throw new InvalidArgumentException("Invalid dessert slot index {$slotIndex}"),
             },
             MealPlanSlotType::Soup => match ($slotIndex) {
@@ -229,6 +235,7 @@ final class NutrientDenseWeeklyRotationSchedule
         foreach ([
             self::ROTATING_SOUPS,
             self::NUTRIENT_DENSE_DESSERTS,
+            self::CHIA_DESSERTS,
             self::EGG_BREAKFASTS,
             self::CHICKEN_PLATE_MAINS,
             self::CHICKEN_SALAD_MAINS,

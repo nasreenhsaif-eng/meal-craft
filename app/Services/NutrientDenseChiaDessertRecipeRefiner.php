@@ -31,6 +31,10 @@ final class NutrientDenseChiaDessertRecipeRefiner
 
     public const GREEK_YOGURT_CHIA_MIN_CALORIES = 160.0;
 
+    public const GREEK_YOGURT_CHIA_PSYLLIUM_HUSK_GRAMS = 10.0;
+
+    public const PSYLLIUM_HUSKS_NAME = 'Psyllium Husks';
+
     /**
      * @return list<string>
      */
@@ -254,8 +258,14 @@ final class NutrientDenseChiaDessertRecipeRefiner
             $instructions = array_merge($basePrep, $flavor['instruction_suffix'] ?? []);
         }
 
+        $ingredients = array_merge([$baseName => $baseGrams], $flavor['toppings']);
+
+        if ($baseName === self::GREEK_YOGURT_CHIA_BASE_NAME) {
+            $ingredients[self::PSYLLIUM_HUSKS_NAME] = self::GREEK_YOGURT_CHIA_PSYLLIUM_HUSK_GRAMS;
+        }
+
         return [
-            'ingredients' => array_merge([$baseName => $baseGrams], $flavor['toppings']),
+            'ingredients' => $ingredients,
             'instructions' => $instructions,
             'diet_tags' => WholeFoodDietPolicy::REQUIRED_MEAL_DIET_TAGS,
             'short_description' => $shortDescription,

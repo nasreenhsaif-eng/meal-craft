@@ -24,6 +24,9 @@ final class BalancedRotationMealRecipeRefiner
 
     public const CHOCOLATE_ORANGE_BROWNIE_SERVINGS_COUNT = 16;
 
+    /** One US cup psyllium husks in the full batch (240 g at library density 1.0 g/ml). */
+    public const CHOCOLATE_ORANGE_BROWNIE_PSYLLIUM_BATCH_GRAMS = 240.0;
+
     public const SALTED_TAHINI_CARAMEL_CHOCOLATE_BAR_NAME = 'Salted Tahini Caramel Chocolate Bar';
 
     public const SALTED_CARAMEL_CHOCOLATE_BAR_SERVINGS_COUNT = 16;
@@ -210,7 +213,7 @@ final class BalancedRotationMealRecipeRefiner
     /**
      * Batch yields {@see CHOCOLATE_ORANGE_BROWNIE_SERVINGS_COUNT} squares.
      * Volumes: 1½ cups dates, ⅓ cup water, zest of 2 oranges, 2 tbsp OJ; ¾ cup butter & cocoa, 3 eggs;
-     * ½ cup almond flour, ¼ cup tapioca, ¼ tsp baking powder & salt.
+     * ½ cup almond flour, ¼ cup tapioca, 1 cup psyllium husks, ¼ tsp baking powder & salt.
      *
      * @return array<string, float>
      */
@@ -221,11 +224,12 @@ final class BalancedRotationMealRecipeRefiner
             'Water (Filtered)' => 4.9375,
             'Orange Zest' => 0.75,
             'Orange Juice' => 1.9375,
-            'Butter (Unsalted)' => 10.625,
+            'Grass Fed Butter' => 10.625,
             'Cocoa Powder' => 4.6875,
             'Eggs (Large)' => 9.375,
             'Almond Flour (Base)' => 6,
             'Tapioca Starch' => 1.875,
+            'Psyllium Husks' => self::CHOCOLATE_ORANGE_BROWNIE_PSYLLIUM_BATCH_GRAMS / self::CHOCOLATE_ORANGE_BROWNIE_SERVINGS_COUNT,
             'Baking Powder' => 0.0781,
             'Sea Salt' => 0.0938,
         ];
@@ -461,7 +465,7 @@ final class BalancedRotationMealRecipeRefiner
                 'is_bulk' => true,
                 'servings_count' => self::CHOCOLATE_ORANGE_BROWNIE_SERVINGS_COUNT,
                 'diet_tags' => $vegetarianTags,
-                'short_description' => 'Rich grain-free cocoa-orange brownie batch ('.self::CHOCOLATE_ORANGE_BROWNIE_SERVINGS_COUNT.' small squares) with date-orange sweetener, Dutch cocoa, grass-fed butter, blanched almond flour, and tapioca.',
+                'short_description' => 'Rich grain-free cocoa-orange brownie batch ('.self::CHOCOLATE_ORANGE_BROWNIE_SERVINGS_COUNT.' small squares) with date-orange sweetener, Dutch cocoa, grass-fed butter, blanched almond flour, tapioca, and psyllium husks for fiber.',
             ],
             self::SALTED_TAHINI_CARAMEL_CHOCOLATE_BAR_NAME => [
                 'ingredients' => $this->saltedTahiniCaramelChocolateBarBatchIngredients(),

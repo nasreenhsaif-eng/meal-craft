@@ -83,7 +83,7 @@ const CRAFTS = [
         slots: [
             { id: 'breakfast', label: 'Breakfast', count: 1 },
             { id: 'meal', label: 'Meals', count: 2 },
-            { id: 'fixedChoice', label: 'Pick a maximum of 2 sides', count: 2 },
+            { id: 'fixedChoice', label: 'Pick 2 of 3 sides', count: 2 },
         ],
     },
     {
@@ -93,7 +93,7 @@ const CRAFTS = [
         slots: [
             { id: 'breakfast', label: 'Breakfast', count: 1 },
             { id: 'meal', label: 'Meal', count: 1 },
-            { id: 'fixedChoice', label: 'Pick a maximum of 2 sides', count: 2 },
+            { id: 'fixedChoice', label: 'Pick 2 of 3 sides', count: 2 },
         ],
     },
     {
@@ -102,7 +102,7 @@ const CRAFTS = [
         description: '2 Meals, pick 2 of side salad / dessert / soup',
         slots: [
             { id: 'meal', label: 'Meals', count: 2 },
-            { id: 'fixedChoice', label: 'Pick a maximum of 2 sides', count: 2 },
+            { id: 'fixedChoice', label: 'Pick 2 of 3 sides', count: 2 },
         ],
     },
     {
@@ -111,7 +111,7 @@ const CRAFTS = [
         description: '1 Meal, pick 2 of side salad / dessert / soup',
         slots: [
             { id: 'meal', label: 'Meal', count: 1 },
-            { id: 'fixedChoice', label: 'Pick a maximum of 2 sides', count: 2 },
+            { id: 'fixedChoice', label: 'Pick 2 of 3 sides', count: 2 },
         ],
     },
     {
@@ -1443,7 +1443,7 @@ export default function CraftedForYouPage({
             .map((slot) => slot.label.toLowerCase());
 
         if (craft.slots.some((slot) => slot.id === 'fixedChoice') && !isFixedChoiceComplete(s)) {
-            missing.push('side (at least 1, up to 2)');
+            missing.push('2 sides (side salad, dessert, or soup)');
         }
 
         if (missing.length === 0) {
@@ -1872,6 +1872,7 @@ export default function CraftedForYouPage({
                                 footerIncompleteMessage={curationIncompleteMessage}
                                 scheduledSoupMeals={scheduledSoupForDay(curationDay)}
                                 onViewDetails={openMealDetail}
+                                dietProtocol={dietProtocol}
                                 isMenuPending={isMenuPending}
                             >
                                 {craft?.key === 'full' ? null : (
@@ -1901,6 +1902,7 @@ export default function CraftedForYouPage({
                                                     return consultationDessertDeckForDay(
                                                         catalogMeals,
                                                         assigned?.desserts ?? [],
+                                                        { preferBakedDesserts: dietProtocol === 'nutrient_dense' },
                                                     );
                                                 }
 
@@ -2044,8 +2046,8 @@ export default function CraftedForYouPage({
                                                             meals={catalogMeals}
                                                             scheduledSoupMeals={scheduledSoupForDay(day)}
                                                             soupCatalogMeals={catalogMeals}
+                                                            dietProtocol={dietProtocol}
                                                             onSelectMeal={toggleFixedChoice}
-                                                            onClearCategory={clearFixedChoiceCategory}
                                                             onViewDetails={openMealDetail}
                                                             resolveCards={(_, selectionKey) => {
                                                                 if (selectionKey === 'soup') {

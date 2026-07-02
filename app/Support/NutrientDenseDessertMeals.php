@@ -5,8 +5,6 @@ namespace App\Support;
 use App\Enums\MealPlanSlotType;
 use App\Models\CustomerProfile;
 use App\Models\Meal;
-use App\Services\BalancedCanonicalMealRecipeRefiner;
-use App\Services\BalancedRotationMealRecipeRefiner;
 use App\Services\NutrientDenseWeeklyRotationSchedule;
 
 /**
@@ -21,11 +19,8 @@ final class NutrientDenseDessertMeals
     {
         return array_values(array_unique([
             ...NutrientDenseWeeklyRotationSchedule::NUTRIENT_DENSE_DESSERTS,
+            ...NutrientDenseWeeklyRotationSchedule::BAKED_DESSERTS,
             ...ChiaDessertMeals::mealNames(),
-            BalancedCanonicalMealRecipeRefiner::CARROT_DESSERT_NAME,
-            'Chocolate Orange Brownie',
-            BalancedRotationMealRecipeRefiner::SALTED_TAHINI_CARAMEL_CHOCOLATE_BAR_NAME,
-            'Saffron Pumpkin Muffin',
         ]));
     }
 

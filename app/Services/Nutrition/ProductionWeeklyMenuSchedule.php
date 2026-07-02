@@ -11,6 +11,7 @@ use App\Models\MealPlan;
 use App\Models\MealPlanDayMeal;
 use App\Services\BalancedWeeklyRotationSchedule;
 use App\Services\NutrientDenseWeeklyMealPlanBuilder;
+use App\Services\NutrientDenseWeeklyRotationSchedule;
 use App\Support\ChiaDessertMeals;
 use App\Support\NutrientDenseDessertMeals;
 use App\Support\SavoryEggBreakfastMeals;
@@ -306,20 +307,24 @@ final class ProductionWeeklyMenuSchedule
         CustomerProfile $profile,
         array $dayAdaptOptions,
     ): void {
-        $hasChia = false;
+        $isNutrientDense = DietProtocol::tryFromStored($profile->diet_protocol) === DietProtocol::NutrientDense;
 
-        foreach ($dayMenu['desserts'] as $adapted) {
-            $name = is_array($adapted) ? (string) ($adapted['name'] ?? '') : '';
+        if ($isNutrientDense) {
+            foreach ($dayMenu['desserts'] as $adapted) {
+                $name = is_array($adapted) ? (string) ($adapted['name'] ?? '') : '';
 
-            if ($name !== '' && ChiaDessertMeals::isChiaDessert($name)) {
-                $hasChia = true;
-
-                break;
+                if ($name !== '' && in_array($name, NutrientDenseWeeklyRotationSchedule::NUTRIENT_DENSE_DESSERTS, true)) {
+                    return;
+                }
             }
-        }
+        } else {
+            foreach ($dayMenu['desserts'] as $adapted) {
+                $name = is_array($adapted) ? (string) ($adapted['name'] ?? '') : '';
 
-        if ($hasChia) {
-            return;
+                if ($name !== '' && ChiaDessertMeals::isChiaDessert($name)) {
+                    return;
+                }
+            }
         }
 
         $fallbackMeal = self::resolveRotationDessertMeal($dayNumber, $profile);
@@ -340,7 +345,9 @@ final class ProductionWeeklyMenuSchedule
 
     private static function resolveRotationDessertMeal(int $dayNumber, CustomerProfile $profile): ?Meal
     {
-        $name = BalancedWeeklyRotationSchedule::mealNameForDay($dayNumber, MealPlanSlotType::Dessert, 1);
+        $name = DietProtocol::tryFromStored($profile->diet_protocol) === DietProtocol::NutrientDense
+            ? NutrientDenseWeeklyRotationSchedule::mealNameForDay($dayNumber, MealPlanSlotType::Dessert, 1)
+            : BalancedWeeklyRotationSchedule::mealNameForDay($dayNumber, MealPlanSlotType::Dessert, 1);
 
         $meal = Meal::queryForMealLibrary()
             ->where('name', $name)

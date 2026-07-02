@@ -163,6 +163,7 @@ final class NutrientDenseLiverMealRecipeRefiner
                     'Lemon Juice' => 8.0,
                     'Olive Oil (Extra Virgin)' => 5.0,
                     'Cooked Quinoa (Base)' => 75.0,
+                    'Sesame Seeds' => 10.0,
                     'White Onion' => 35.0,
                 ],
                 'diet_tags' => $tags,
@@ -188,25 +189,6 @@ final class NutrientDenseLiverMealRecipeRefiner
                 ],
                 'diet_tags' => $tags,
                 'short_description' => 'Pan-sautéed chicken liver with garlicky cabbage, bok choy, and peppers.',
-            ],
-            'Carrot Cumin Soup' => [
-                'ingredients' => [
-                    'Carrots' => 150.0,
-                    'French Lentils' => 70.0,
-                    'Cumin Seeds' => 3.0,
-                    'Coriander Seeds' => 2.0,
-                    'Water (Filtered)' => 130.0,
-                    'Vegetable Broth (Base)' => 50.0,
-                    'White Onion' => 35.0,
-                    'Garlic' => 4.0,
-                    'Olive Oil' => 5.0,
-                    'Fresh Parsley' => 5.0,
-                    'Lemon Juice' => 8.0,
-                ],
-                'diet_tags' => $veganTags,
-                'meal_type' => MealType::Soup,
-                'category' => RecipeCategory::Soup,
-                'short_description' => 'Hearty carrot and French lentil soup with cumin and fresh parsley.',
             ],
         ];
     }

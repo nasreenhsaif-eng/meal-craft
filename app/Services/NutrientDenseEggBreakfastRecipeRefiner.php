@@ -154,7 +154,7 @@ final class NutrientDenseEggBreakfastRecipeRefiner
                     'Egg' => 100,
                     'Gouda' => 40,
                     'Spinach (Fresh)' => 50,
-                    'Butter (Unsalted)' => 10,
+                    'Grass Fed Butter' => 10,
                     'Black Pepper' => 1,
                 ],
                 'highlight' => 'Melted gouda folded through softly scrambled eggs with wilted spinach.',

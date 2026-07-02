@@ -157,32 +157,6 @@ final class NutrientDenseFermentedRecipeRefiner
         $breakfastTags = array_merge(WholeFoodDietPolicy::REQUIRED_MEAL_DIET_TAGS, ['Vegetarian']);
 
         return [
-            'Miso Mushroom Soup' => [
-                'category' => RecipeCategory::Soup,
-                'meal_type' => MealType::Soup,
-                'ingredients' => [
-                    'Mushrooms' => 120,
-                    'Water (Filtered)' => 200,
-                    'Miso Paste' => 10,
-                    'Spring Onion' => 10,
-                    'Ginger (Raw)' => 5,
-                ],
-                'diet_tags' => $veganTags,
-                'highlight' => 'Silky miso broth with mushrooms — fermented mineral anchor.',
-            ],
-            'Miso Carrot Ginger Soup' => [
-                'category' => RecipeCategory::Soup,
-                'meal_type' => MealType::Soup,
-                'ingredients' => [
-                    'Carrots' => 100,
-                    'Water (Filtered)' => 200,
-                    'Miso Paste' => 10,
-                    'Ginger (Raw)' => 8,
-                    'Spring Onion' => 8,
-                ],
-                'diet_tags' => $veganTags,
-                'highlight' => 'Golden carrot miso soup with ginger warmth.',
-            ],
             'Kimchi Purslane Side Salad' => [
                 'category' => RecipeCategory::SideSalad,
                 'meal_type' => MealType::Salad,

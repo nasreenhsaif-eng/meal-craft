@@ -18,11 +18,28 @@ test('nutrient dense rotation includes fermented anchor every day', function ():
     }
 });
 
-test('nutrient dense dessert rotation uses greek yogurt chia and baked goods', function (): void {
-    expect(NutrientDenseWeeklyRotationSchedule::NUTRIENT_DENSE_DESSERTS[0])
-        ->toContain('Greek Yogurt Chia')
-        ->and(NutrientDenseWeeklyRotationSchedule::NUTRIENT_DENSE_DESSERTS[1])
+test('nutrient dense dessert rotation uses baked goods daily', function (): void {
+    foreach (range(1, 7) as $day) {
+        $dessert = NutrientDenseWeeklyRotationSchedule::mealNameForDay($day, MealPlanSlotType::Dessert, 1);
+
+        expect($dessert)->toBeIn(NutrientDenseWeeklyRotationSchedule::BAKED_DESSERTS)
+            ->and($dessert)->not->toContain('Chia');
+    }
+
+    expect(NutrientDenseWeeklyRotationSchedule::mealNameForDay(1, MealPlanSlotType::Dessert, 1))
         ->toBe('Chocolate Orange Brownie');
+});
+
+test('nutrient dense dessert slot three rotates greek yogurt chia puddings', function (): void {
+    foreach (range(1, 7) as $day) {
+        $dessert = NutrientDenseWeeklyRotationSchedule::mealNameForDay($day, MealPlanSlotType::Dessert, 3);
+
+        expect($dessert)->toBeIn(NutrientDenseWeeklyRotationSchedule::CHIA_DESSERTS)
+            ->and($dessert)->toContain('Greek Yogurt');
+    }
+
+    expect(NutrientDenseWeeklyRotationSchedule::mealNameForDay(1, MealPlanSlotType::Dessert, 3))
+        ->toBe('Blueberry Walnut Greek Yogurt Chia Pudding');
 });
 
 test('egg mains appear at most three days per week in rotation', function (): void {

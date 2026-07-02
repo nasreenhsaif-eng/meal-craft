@@ -473,7 +473,7 @@ final class BalancedMealInstructionRefiner
             BalancedRotationMealRecipeRefiner::CHOCOLATE_ORANGE_BROWNIE_NAME => $this->steps([
                 'Make the citrus & date sweetener. Pour boiling water over the pitted dates and soak 10 minutes. Blend with the orange zest and fresh orange juice until completely smooth.',
                 'Build the rich chocolate base. Melt the grass-fed butter, then whisk in the Dutch-process cocoa until glossy. Beat in the room-temperature eggs one at a time.',
-                'Whisk the grain-free flours. In a bowl, combine the super-fine blanched almond flour, tapioca starch, baking powder, and fine sea salt.',
+                'Whisk the grain-free flours. In a bowl, combine the super-fine blanched almond flour, tapioca starch, psyllium husks, baking powder, and fine sea salt.',
                 'Fold the batters together. Stir the date-orange puree into the chocolate base, then fold in the dry ingredients just until no dry streaks remain.',
                 'Bake at 175°C. Spread into a lined tin and bake until a skewer from the center comes out mostly clean with moist crumbs.',
                 'Cool completely, then cut into '.BalancedRotationMealRecipeRefiner::CHOCOLATE_ORANGE_BROWNIE_SERVINGS_COUNT.' equal small squares. One square is one serving.',
@@ -521,55 +521,73 @@ final class BalancedMealInstructionRefiner
                 'Chill 15 minutes. Serve cold.',
             ]),
 
-            // Soups
+            // Soups — all batch recipes; whisk in 1 tbsp (15 g) psyllium husks per serving before portioning.
             'Vegan Mushroom Soup' => $this->steps([
                 'Sauté onion and mushrooms in oil until browned (8 min).',
                 'Add garlic, thyme, and turmeric. Cook 1 minute.',
                 'Pour in stock and coconut milk. Simmer 15 minutes.',
                 'Blend partially for a creamy texture, or leave chunky.',
-                'Serve hot.',
+                'Whisk in psyllium husks (1 tablespoon / 15 g per serving). Reheat gently and portion.',
             ]),
             'Butternut Squash Soup' => $this->steps([
                 'Sauté onion in oil until soft.',
                 'Add cubed squash and stock. Simmer until squash is very tender (20 min).',
-                'Blend until smooth. Season with spices from recipe.',
-                'Reheat gently and serve.',
+                'Blend until smooth. Whisk in psyllium husks (1 tablespoon / 15 g per serving). Season with spices from recipe.',
+                'Reheat gently and portion.',
             ]),
             'Tomato Basil Soup' => $this->steps([
                 'Sauté onion and garlic in olive oil for 3 minutes.',
                 'Add chopped tomatoes and broth. Simmer 20 minutes.',
                 'Blend with fresh basil until smooth.',
-                'Reheat and serve with extra basil on top.',
+                'Whisk in psyllium husks (1 tablespoon / 15 g per serving). Reheat and portion with extra basil on top.',
             ]),
             'Red Lentil Turmeric Soup' => $this->steps([
                 'Rinse red lentils.',
                 'Sauté onion, garlic, ginger, and spices for 2 minutes.',
                 'Add lentils, carrots, broth, and water. Simmer 25 minutes.',
                 'Stir in spinach until wilted. Finish with lemon juice.',
+                'Whisk in psyllium husks (1 tablespoon / 15 g per serving) and portion.',
             ]),
             'Cauliflower Ginger Soup' => $this->steps([
                 'Sauté onion and ginger in oil for 3 minutes.',
                 'Add cauliflower and stock. Simmer until very soft (18 min).',
                 'Blend with coconut milk until smooth.',
-                'Reheat and serve.',
+                'Whisk in psyllium husks (1 tablespoon / 15 g per serving). Reheat and portion.',
             ]),
             'Carrot Cumin Soup' => $this->steps([
                 'Toast cumin seeds in a dry pan for 30 seconds.',
                 'Sauté onion, garlic, and carrots in oil for 5 minutes.',
                 'Add lentils, stock, and spices. Simmer until carrots and lentils are soft.',
                 'Blend partially or fully. Finish with parsley and lemon.',
+                'Whisk in psyllium husks (1 tablespoon / 15 g per serving) and portion.',
+            ]),
+            'Lentil Carrot Soup' => $this->steps([
+                'Toast cumin seeds in a dry pan for 30 seconds.',
+                'Sauté onion, garlic, and carrots in oil for 5 minutes.',
+                'Add lentils, stock, and spices. Simmer until carrots and lentils are soft.',
+                'Blend partially or fully. Finish with parsley and lemon.',
+                'Whisk in psyllium husks (1 tablespoon / 15 g per serving) and portion.',
             ]),
             'Sweet Potato Fennel Soup' => $this->steps([
                 'Sauté fennel and onion in oil until softened.',
                 'Add sweet potato, ginger, and broth. Simmer 20 minutes.',
                 'Blend with coconut milk until smooth.',
-                'Reheat and serve.',
+                'Whisk in psyllium husks (1 tablespoon / 15 g per serving). Reheat and portion.',
+            ]),
+            'Miso Mushroom Soup' => $this->steps([
+                'Simmer mushrooms in water with ginger until tender.',
+                'Remove from heat. Whisk miso paste into the broth until smooth (do not boil miso).',
+                'Whisk in psyllium husks (1 tablespoon / 15 g per serving). Top with spring onion and portion.',
+            ]),
+            'Miso Carrot Ginger Soup' => $this->steps([
+                'Simmer carrots in water with ginger until very soft.',
+                'Remove from heat. Whisk miso paste into the broth until smooth (do not boil miso).',
+                'Whisk in psyllium husks (1 tablespoon / 15 g per serving). Top with spring onion and portion.',
             ]),
             BalancedMealLibraryConfigurator::BONE_BROTH_MEAL_NAME => $this->steps([
-                'Measure 500 ml (one serving) of defatted Bone Broth (Base).',
-                'Pour into a small pot.',
-                'Heat gently on the stove until steaming (do not boil hard).',
-                'Pour into a mug or bowl and serve hot.',
+                'Heat the full batch of defatted Bone Broth (Base) gently (do not boil hard).',
+                'Whisk psyllium husks into the batch (1 tablespoon / 15 g per serving).',
+                'Portion 500 ml per cup and serve hot.',
             ]),
         ];
 

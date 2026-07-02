@@ -282,6 +282,7 @@ final class BalancedDairyFreeManualRecipeAdjustments
             'Lemon Juice' => 8.0,
             'Olive Oil (Extra Virgin)' => 5.0,
             'Cooked Quinoa (Base)' => 45.0,
+            'Sesame Seeds' => 10.0,
             'White Onion' => 35.0,
         ],
         'Sautéed Chicken Liver w Garlicky Cabbage, Bok Choy & Peppers' => [

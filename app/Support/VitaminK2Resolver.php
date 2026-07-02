@@ -15,6 +15,9 @@ final class VitaminK2Resolver
     /** Typical MK-4 in butter / clarified butter when FDC lacks menaquinone rows. µg per 100 g. */
     public const BUTTER_GHEE_MK4_MCG_PER_100G = 8.0;
 
+    /** Pasture-raised grass-fed butter MK-4 (higher than grain-fed). µg per 100 g. */
+    public const GRASS_FED_BUTTER_MK4_MCG_PER_100G = 15.0;
+
     /** Egg yolk MK-4 literature estimate. µg per 100 g. */
     public const EGG_YOLK_MK4_MCG_PER_100G = 32.0;
 
@@ -211,6 +214,10 @@ final class VitaminK2Resolver
             return self::LIVER_MK4_MCG_PER_100G;
         }
 
+        if (self::nameMatchesAny($name, ['grass fed butter', 'grass-fed butter'])) {
+            return self::GRASS_FED_BUTTER_MK4_MCG_PER_100G;
+        }
+
         if (
             self::nameMatchesAny($name, ['ghee', 'clarified butter'])
             || ($name === 'butter' || str_starts_with($name, 'butter '))
@@ -318,7 +325,7 @@ final class VitaminK2Resolver
 
     private static function isPlantFatOrSeedName(string $normalizedName): bool
     {
-        if (self::nameMatchesAny($normalizedName, ['ghee', 'clarified butter'])) {
+        if (self::nameMatchesAny($normalizedName, ['ghee', 'clarified butter', 'grass fed butter', 'grass-fed butter'])) {
             return false;
         }
 

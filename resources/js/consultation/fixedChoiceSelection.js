@@ -10,7 +10,7 @@ export const FIXED_CHOICE_MAX_COUNT = 2;
 /** @deprecated Use {@link FIXED_CHOICE_MAX_COUNT} */
 export const FIXED_CHOICE_REQUIRED_COUNT = FIXED_CHOICE_MAX_COUNT;
 
-export const FIXED_CHOICE_MIN_COUNT = 1;
+export const FIXED_CHOICE_MIN_COUNT = 2;
 
 /** Display order for the horizontal toggle bar. */
 export const FIXED_CHOICE_TOGGLE_OPTIONS = Object.freeze([

@@ -11,8 +11,13 @@ import {
     applyDeckSelectionToggle,
     DEFAULT_FULL_CRAFT_MAX_SELECTIONS,
     MealSlotCarousel,
-    SoupOfTheDayOptIn,
 } from '../../Components/Consultation/ChooseYourMeals.jsx';
+import {
+    applyFixedChoiceToggle,
+    countFixedChoiceSelections,
+    FIXED_CHOICE_CATEGORY_KEYS,
+    FIXED_CHOICE_MAX_COUNT,
+} from '../../consultation/fixedChoiceSelection.js';
 import { DayMacroMicroTabPanel } from '../../Components/Consultation/DayNutritionalSummaryPanel.jsx';
 import MealDetailView from '../../Components/Molecules/MealDetailView/MealDetailView';
 import MealPlanMealEditSheet from '../../Components/MealPlan/MealPlanMealEditSheet.jsx';
@@ -88,8 +93,6 @@ const DETAIL_SECTIONS = SCHEDULER_SLOT_SECTIONS.map((section) => ({
     maxSelected: section.count,
 }));
 
-const SOUP_SECTION = DETAIL_SECTIONS.find((section) => section.categoryKey === 'soup');
-
 /** @param {string} categoryKey */
 function defaultSelectionCapForCategory(categoryKey) {
     return DEFAULT_FULL_CRAFT_MAX_SELECTIONS[categoryKey] ?? 1;
@@ -112,18 +115,6 @@ function buildInitialDaySelections(planDays) {
             const cap = defaultSelectionCapForCategory(section.categoryKey);
             out[day.dayNumber][section.categoryKey] = meals.slice(0, cap).map((meal) => String(meal.id));
         }
-    }
-
-    return out;
-}
-
-/** @param {Array<{ dayNumber: number }>} planDays */
-function buildInitialSoupOptInByDay(planDays) {
-    /** @type {Record<number, boolean>} */
-    const out = {};
-
-    for (const day of planDays) {
-        out[day.dayNumber] = false;
     }
 
     return out;
@@ -162,7 +153,6 @@ export default function MealPlanDetailPage({
     const [tierError, setTierError] = useState(/** @type {string | null} */ (null));
     const [activeDay, setActiveDay] = useState(() => days[0]?.dayNumber ?? 1);
     const [daySelections, setDaySelections] = useState(() => buildInitialDaySelections(days));
-    const [soupOptInByDay, setSoupOptInByDay] = useState(() => buildInitialSoupOptInByDay(days));
     const [mealDetailModal, setMealDetailModal] = useState(
         /** @type {{ title: string; detailView: object } | null} */ (null),
     );
@@ -173,7 +163,6 @@ export default function MealPlanDetailPage({
     useEffect(() => {
         setPlanDays(days);
         setDaySelections(buildInitialDaySelections(days));
-        setSoupOptInByDay(buildInitialSoupOptInByDay(days));
     }, [days]);
 
     useEffect(() => {
@@ -207,14 +196,12 @@ export default function MealPlanDetailPage({
 
                 setPlanDays(tierDays);
                 setDaySelections(buildInitialDaySelections(tierDays));
-                setSoupOptInByDay(buildInitialSoupOptInByDay(tierDays));
             })
             .catch(() => {
                 if (!cancelled) {
                     setTierError('Could not scale meals for this tier. Showing library portions.');
                     setPlanDays(days);
                     setDaySelections(buildInitialDaySelections(days));
-                    setSoupOptInByDay(buildInitialSoupOptInByDay(days));
                 }
             })
             .finally(() => {
@@ -233,8 +220,6 @@ export default function MealPlanDetailPage({
         [activeDay, planDays],
     );
 
-    const soupOptIn = soupOptInByDay[activeDay] ?? false;
-
     const activeDaySelections = daySelections[activeDay] ?? {};
 
     const selectedCategoriesForMacros = useMemo(() => {
@@ -246,17 +231,13 @@ export default function MealPlanDetailPage({
         const out = {};
 
         for (const section of DETAIL_SECTIONS) {
-            if (section.categoryKey === 'soup' && !soupOptIn) {
-                continue;
-            }
-
             const meals = activeDayData.categories?.[section.categoryKey] ?? [];
             const selectedSet = new Set(activeDaySelections[section.categoryKey] ?? []);
             out[section.categoryKey] = meals.filter((meal) => selectedSet.has(String(meal.id)));
         }
 
         return out;
-    }, [activeDayData, activeDaySelections, soupOptIn]);
+    }, [activeDayData, activeDaySelections]);
 
     const backUrl = resolveUrl(libraryUrl, '/admin/meal-plan-library');
 
@@ -312,18 +293,23 @@ export default function MealPlanDetailPage({
         });
     }, [activeDay]);
 
-    const setSoupOptInForActiveDay = useCallback((next) => {
-        setSoupOptInByDay((prev) => ({ ...prev, [activeDay]: next }));
+    /** Side salad / dessert / soup behave as one "pick 2 of 3" group, matching the customer flow. */
+    const toggleFixedChoiceSide = useCallback((categoryKey, meal) => {
+        const mealId = String(meal.id);
 
-        if (!next) {
-            setDaySelections((prev) => ({
+        setDaySelections((prev) => {
+            const day = prev[activeDay] ?? {};
+            const { next, blocked } = applyFixedChoiceToggle(day, categoryKey, mealId);
+
+            if (blocked) {
+                return prev;
+            }
+
+            return {
                 ...prev,
-                [activeDay]: {
-                    ...(prev[activeDay] ?? {}),
-                    soup: [],
-                },
-            }));
-        }
+                [activeDay]: next,
+            };
+        });
     }, [activeDay]);
 
     const planCategoryLabel = String(mealPlan?.category ?? '').trim();
@@ -344,7 +330,13 @@ export default function MealPlanDetailPage({
         [dietProtocol],
     );
 
-    const nonSoupSections = DETAIL_SECTIONS.filter((section) => section.categoryKey !== 'soup');
+    const coreSections = DETAIL_SECTIONS.filter(
+        (section) => !FIXED_CHOICE_CATEGORY_KEYS.includes(section.categoryKey),
+    );
+    const sideSections = FIXED_CHOICE_CATEGORY_KEYS.map((key) =>
+        DETAIL_SECTIONS.find((section) => section.categoryKey === key),
+    ).filter(Boolean);
+    const selectedSideCount = countFixedChoiceSelections(activeDaySelections);
 
     return (
         <div className={`min-h-full font-body ${PAGE_BG}`}>
@@ -435,7 +427,7 @@ export default function MealPlanDetailPage({
                     >
                         {activeDayData ? (
                             <>
-                                {nonSoupSections.map((section, idx) => {
+                                {coreSections.map((section, idx) => {
                                     const cards = activeDayData.categories?.[section.categoryKey] ?? [];
                                     const selectedIds = activeDaySelections[section.categoryKey] ?? [];
 
@@ -462,47 +454,38 @@ export default function MealPlanDetailPage({
                                     );
                                 })}
 
-                                {SOUP_SECTION ? (
+                                {sideSections.length > 0 ? (
                                     <div className="space-y-4">
-                                        <SoupOfTheDayOptIn
-                                            checked={soupOptIn}
-                                            header={SOUP_SECTION.header}
-                                            onChange={setSoupOptInForActiveDay}
-                                        />
-                                        <AnimatePresence initial={false}>
-                                            {soupOptIn ? (
-                                                <motion.div
-                                                    key={`soup-deck-${activeDayData.dayNumber}`}
-                                                    initial={{ opacity: 0, y: 12 }}
-                                                    animate={{ opacity: 1, y: 0 }}
-                                                    exit={{ opacity: 0, y: 8 }}
-                                                    transition={{ type: 'spring', stiffness: 320, damping: 34 }}
-                                                >
-                                                    <MealSlotCarousel
-                                                        title=""
-                                                        deckOnly
-                                                        showSelectionSubheader
-                                                        deckScopeKey={`plan-${mealPlan?.id ?? 'x'}-day-${activeDayData.dayNumber}-${SOUP_SECTION.deckSuffix}`}
-                                                        sectionKey={SOUP_SECTION.categoryKey}
-                                                        sectionStackOrder={nonSoupSections.length}
-                                                        cards={activeDayData.categories?.soup ?? []}
-                                                        selectedIds={activeDaySelections.soup ?? []}
-                                                        maxSelected={defaultSelectionCapForCategory(SOUP_SECTION.categoryKey)}
-                                                        onSelect={(meal) =>
-                                                            toggleMealSelection(
-                                                                SOUP_SECTION.categoryKey,
-                                                                meal,
-                                                                defaultSelectionCapForCategory(SOUP_SECTION.categoryKey),
-                                                            )
-                                                        }
-                                                        onViewDetails={openMealDetail}
-                                                        onEditMeal={(meal) =>
-                                                            openMealEdit(meal, SOUP_SECTION.categoryKey)
-                                                        }
-                                                    />
-                                                </motion.div>
-                                            ) : null}
-                                        </AnimatePresence>
+                                        <div className="min-w-0">
+                                            <h2 className="font-montserrat text-lg font-bold text-[#262A22]">
+                                                Pick 2 of 3 sides
+                                            </h2>
+                                            <p className="mt-0.5 text-sm text-[#555555]">
+                                                Side salad, soup, or dessert • {selectedSideCount}/{FIXED_CHOICE_MAX_COUNT} selected
+                                            </p>
+                                        </div>
+                                        {sideSections.map((section, idx) => {
+                                            const cards = activeDayData.categories?.[section.categoryKey] ?? [];
+                                            const selectedIds = activeDaySelections[section.categoryKey] ?? [];
+
+                                            return (
+                                                <MealSlotCarousel
+                                                    key={`${activeDayData.dayNumber}-${section.categoryKey}`}
+                                                    title={section.header}
+                                                    deckScopeKey={`plan-${mealPlan?.id ?? 'x'}-day-${activeDayData.dayNumber}-${section.deckSuffix}`}
+                                                    sectionKey={section.categoryKey}
+                                                    sectionStackOrder={coreSections.length + idx}
+                                                    cards={cards}
+                                                    selectedIds={selectedIds}
+                                                    maxSelected={1}
+                                                    onSelect={(meal) =>
+                                                        toggleFixedChoiceSide(section.categoryKey, meal)
+                                                    }
+                                                    onViewDetails={openMealDetail}
+                                                    onEditMeal={(meal) => openMealEdit(meal, section.categoryKey)}
+                                                />
+                                            );
+                                        })}
                                     </div>
                                 ) : null}
                             </>

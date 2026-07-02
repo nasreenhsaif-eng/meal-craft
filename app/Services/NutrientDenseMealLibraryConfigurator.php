@@ -6,6 +6,7 @@ use App\Enums\MealType;
 use App\Enums\RecipeCategory;
 use App\Models\Ingredient;
 use App\Models\Meal;
+use App\Support\MealLibraryBulkNutrition;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -67,7 +68,7 @@ final class NutrientDenseMealLibraryConfigurator
                 'diet_tags' => ['Vegan', 'Dairy-free', 'Gluten-free'],
             ],
             [
-                'name' => 'Blueberry Walnut Greek Yogurt Chia Pudding',
+                'name' => 'Chocolate Orange Brownie',
                 'sort' => 5,
                 'slot' => 'dessert',
                 'meal_plan_tags' => ['NutrientDense'],
@@ -180,35 +181,58 @@ final class NutrientDenseMealLibraryConfigurator
         /** @var Ingredient|null $broth */
         $broth = Ingredient::query()->where('name', 'Bone Broth (Base)')->first();
 
-        if ($broth === null) {
+        /** @var Ingredient|null $psyllium */
+        $psyllium = Ingredient::query()->where('name', 'Psyllium Husks')->first();
+
+        if ($broth === null || $psyllium === null) {
             return false;
         }
 
-        $portionGrams = self::BONE_BROTH_SERVING_GRAMS;
+        $servingsCount = (float) BalancedCanonicalMealRecipeRefiner::BATCH_SOUP_SERVINGS_COUNT;
+        $batchBrothGrams = BalancedMealLibraryConfigurator::BONE_BROTH_SERVING_GRAMS * $servingsCount;
+        $batchPsylliumGrams = BalancedCanonicalMealRecipeRefiner::BATCH_SOUP_PSYLLIUM_TABLESPOON_GRAMS * $servingsCount;
 
         $meal = Meal::query()->create([
             'name' => self::BONE_BROTH_MEAL_NAME,
             'category' => RecipeCategory::Soup,
             'meal_type' => MealType::Soup,
-            'short_description' => '500 ml cup of defatted house bone broth — mineral anchor.',
-            'instructions' => 'Heat gently and serve in a mug or bowl.',
+            'short_description' => '500 ml cup of defatted house bone broth — long-simmered, gelatin-rich, with psyllium husks for fiber.',
+            'instructions' => 'Heat the full batch of defatted Bone Broth (Base) gently (do not boil hard). Whisk psyllium husks into the batch (1 tablespoon / 15 g per serving). Portion 500 ml per cup and serve hot.',
             'meal_plan_tags' => ['Balanced', 'NutrientDense'],
             'meal_plan_tag' => 'NutrientDense',
             'diet_tags' => ['Dairy-free', 'Gluten-free'],
             'library_sort_order' => 12,
-            'nutrition_aggregates_synced' => true,
+            'is_bulk' => true,
+            'servings_count' => $servingsCount,
+            'nutrition_aggregates_synced' => false,
         ]);
 
         $meal->ingredients()->sync([
             $broth->id => [
-                'amount_grams' => $portionGrams,
-                'amount' => $portionGrams,
+                'amount_grams' => $batchBrothGrams,
+                'amount' => $batchBrothGrams,
+                'unit' => 'g',
+            ],
+            $psyllium->id => [
+                'amount_grams' => $batchPsylliumGrams,
+                'amount' => $batchPsylliumGrams,
                 'unit' => 'g',
             ],
         ]);
 
-        $nutrition = RecipeNutritionCalculator::fromMeal($meal->fresh(['ingredients']));
-        $meal->update(Meal::nutritionSummaryToPersistedAttributes($nutrition));
+        $batchNutrition = RecipeNutritionCalculator::fromMeal($meal->fresh(['ingredients']));
+        $nutritionResolution = MealLibraryBulkNutrition::resolvePersistedNutrition(
+            $batchNutrition,
+            true,
+            $servingsCount,
+            null,
+            true,
+        );
+
+        $meal->update(array_merge(
+            $nutritionResolution['attributes'],
+            ['nutrition_aggregates_synced' => $nutritionResolution['nutrition_aggregates_synced']],
+        ));
 
         return true;
     }

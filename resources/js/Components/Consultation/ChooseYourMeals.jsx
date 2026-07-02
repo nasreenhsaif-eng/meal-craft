@@ -12,7 +12,6 @@ import {
     applyFixedChoiceToggle,
     countFixedChoiceSelections,
     isFixedChoiceComplete,
-    visibleFixedChoiceCategoriesFromSelections,
 } from '../../consultation/fixedChoiceSelection.js';
 import {
     macroCaloriePercentsFromGrams,
@@ -27,7 +26,6 @@ export {
     applyFixedChoiceToggle,
     countFixedChoiceSelections,
     isFixedChoiceComplete,
-    visibleFixedChoiceCategoriesFromSelections,
 } from '../../consultation/fixedChoiceSelection.js';
 
 /** @typedef {{ id: string; mealType?: string; category?: string; caloriesNumber?: number }} ConsultationMeal */
@@ -101,7 +99,7 @@ export function soupOfTheDayMeals(source) {
 export const CONSULTATION_DECK_OPTION_LIMITS = Object.freeze({
     breakfast: 1,
     meal: 4,
-    sidesalad: 2,
+    sidesalad: 3,
     dessert: 3,
     soup: 2,
 });
@@ -152,17 +150,42 @@ export function isChiaDessertMeal(meal) {
 }
 
 /**
- * Dessert deck: today's rotated chia (from schedule) first, then fill to 3 from the catalog.
+ * @param {ConsultationMeal} meal
+ */
+export function isGreekYogurtChiaDessertMeal(meal) {
+    const title = String(meal.title ?? '');
+
+    return isChiaDessertMeal(meal) && title.includes('Greek Yogurt');
+}
+
+/**
+ * @param {ConsultationMeal} meal
+ */
+export function isBakedDessertMeal(meal) {
+    const title = String(meal.title ?? '');
+
+    if (title.includes('Chia') || title.includes('Fruit Salad')) {
+        return false;
+    }
+
+    return ['Brownie', 'Muffin', 'Cake', 'Bar', 'Balls'].some((hint) => title.includes(hint));
+}
+
+/**
+ * Dessert deck: today's rotated dessert (from schedule) first, then fill to 3 from the catalog.
  *
  * @param {ConsultationMeal[]} source
  * @param {ConsultationMeal[]} [scheduledDesserts]
+ * @param {{ preferBakedDesserts?: boolean }} [options]
  */
-export function consultationDessertDeckForDay(source, scheduledDesserts = []) {
+export function consultationDessertDeckForDay(source, scheduledDesserts = [], options = {}) {
+    const { preferBakedDesserts = false } = options;
     const limit = CONSULTATION_DECK_OPTION_LIMITS.dessert;
     /** @type {ConsultationMeal[]} */
     const deck = [];
     const seen = new Set();
     let hasChia = false;
+    let hasBaked = false;
 
     for (const meal of scheduledDesserts) {
         if (!meal?.id || seen.has(meal.id)) {
@@ -175,9 +198,25 @@ export function consultationDessertDeckForDay(source, scheduledDesserts = []) {
         if (isChiaDessertMeal(meal)) {
             hasChia = true;
         }
+
+        if (isBakedDessertMeal(meal)) {
+            hasBaked = true;
+        }
     }
 
     const catalogDesserts = source.filter((meal) => meal.mealType === 'Dessert');
+
+    if (preferBakedDesserts && hasBaked && !hasChia) {
+        const greekYogurtChia = catalogDesserts.find(
+            (meal) => meal?.id && !seen.has(meal.id) && isGreekYogurtChiaDessertMeal(meal),
+        );
+
+        if (greekYogurtChia) {
+            seen.add(greekYogurtChia.id);
+            deck.push(greekYogurtChia);
+            hasChia = true;
+        }
+    }
 
     for (const meal of catalogDesserts) {
         if (deck.length >= limit) {
@@ -188,8 +227,14 @@ export function consultationDessertDeckForDay(source, scheduledDesserts = []) {
             continue;
         }
 
-        if (hasChia && isChiaDessertMeal(meal)) {
-            continue;
+        if (isChiaDessertMeal(meal)) {
+            if (hasChia) {
+                continue;
+            }
+
+            if (preferBakedDesserts && hasBaked && !isGreekYogurtChiaDessertMeal(meal)) {
+                continue;
+            }
         }
 
         seen.add(meal.id);
@@ -882,7 +927,7 @@ const INCOMPLETE_SELECTION_LABELS = Object.freeze({
     meals: '2 main meals',
     sideSalads: 'side salad',
     desserts: 'dessert',
-    fixedChoice: 'side (at least 1, up to 2)',
+    fixedChoice: '2 sides (pick from side salad, dessert, or soup)',
 });
 
 /**
@@ -1149,17 +1194,17 @@ export function MealSlotCarousel({
 }
 
 /**
- * Pick-2 side options: horizontal category toggles reveal one deck per checked category.
+ * Pick 2 of 3 side categories — side salad, soup, and dessert decks always visible (onboarding UX).
  *
  * @param {object} props
  * @param {Partial<Record<SelectionCategoryKey, string[]>> | null | undefined} props.categorySelections
  * @param {(categoryKey: SelectionCategoryKey, meal: ConsultationMeal) => void} [props.onSelectMeal]
- * @param {(categoryKey: SelectionCategoryKey) => void} [props.onClearCategory]
  * @param {string} [props.deckScopePrefix]
  * @param {ConsultationMeal[]} [props.meals]
  * @param {Partial<Record<SelectionCategoryKey, ConsultationMeal[]>>} [props.assignedMealsByCategory]
  * @param {ConsultationMeal[]} [props.scheduledSoupMeals]
  * @param {ConsultationMeal[]} [props.soupCatalogMeals]
+ * @param {string | null} [props.dietProtocol]
  * @param {boolean} [props.readOnly]
  * @param {boolean} [props.validationFlash]
  * @param {(meal: ConsultationMeal) => void} [props.onViewDetails]
@@ -1168,22 +1213,18 @@ export function MealSlotCarousel({
 export function FixedChoicePicker({
     categorySelections,
     onSelectMeal,
-    onClearCategory,
     deckScopePrefix = '',
     meals = [],
     assignedMealsByCategory = null,
     scheduledSoupMeals = [],
     soupCatalogMeals = [],
+    dietProtocol = null,
     readOnly = false,
     validationFlash = false,
     onViewDetails,
     resolveCards = null,
 }) {
-    const [visibleCategories, setVisibleCategories] = useState(
-        () => visibleFixedChoiceCategoriesFromSelections(categorySelections),
-    );
     const [mealLimitWarning, setMealLimitWarning] = useState(/** @type {string | null} */ (null));
-    const [categoryLimitWarning, setCategoryLimitWarning] = useState(/** @type {string | null} */ (null));
     const warningTimerRef = useRef(0);
 
     const pickEnabled = typeof onSelectMeal === 'function' && !readOnly;
@@ -1196,21 +1237,8 @@ export function FixedChoicePicker({
     );
 
     useEffect(() => {
-        setVisibleCategories(visibleFixedChoiceCategoriesFromSelections(categorySelections));
         setMealLimitWarning(null);
-        setCategoryLimitWarning(null);
     }, [deckScopePrefix]);
-
-    useEffect(() => {
-        setVisibleCategories((previous) => {
-            const fromSelections = visibleFixedChoiceCategoriesFromSelections(categorySelections);
-            const merged = new Set([...previous, ...fromSelections]);
-
-            return FIXED_CHOICE_TOGGLE_OPTIONS.map((option) => option.selectionKey).filter((key) =>
-                merged.has(key),
-            );
-        });
-    }, [categorySelections]);
 
     const fixedChoiceCount = countFixedChoiceSelections(categorySelections);
 
@@ -1234,37 +1262,6 @@ export function FixedChoicePicker({
         window.clearTimeout(warningTimerRef.current);
         warningTimerRef.current = window.setTimeout(() => setter(null), 3200);
     }, []);
-
-    const handleCategoryToggle = useCallback(
-        (categoryKey) => {
-            if (readOnly) {
-                return;
-            }
-
-            const isVisible = visibleCategories.includes(categoryKey);
-
-            if (isVisible) {
-                setVisibleCategories((previous) => previous.filter((key) => key !== categoryKey));
-                onClearCategory?.(categoryKey);
-                setCategoryLimitWarning(null);
-
-                return;
-            }
-
-            if (visibleCategories.length >= FIXED_CHOICE_REQUIRED_COUNT) {
-                showTransientWarning(
-                    setCategoryLimitWarning,
-                    'You can only open 2 categories. Uncheck one to choose a different side type.',
-                );
-
-                return;
-            }
-
-            setVisibleCategories((previous) => [...previous, categoryKey]);
-            setCategoryLimitWarning(null);
-        },
-        [readOnly, visibleCategories, onClearCategory, showTransientWarning],
-    );
 
     const handleMealSelect = useCallback(
         (categoryKey, meal) => {
@@ -1307,7 +1304,9 @@ export function FixedChoicePicker({
             if (def.selectionKey === 'desserts') {
                 const catalogSource = (soupCatalogMeals.length > 0 ? soupCatalogMeals : meals) ?? [];
 
-                return consultationDessertDeckForDay(catalogSource, assignedMealsByCategory?.desserts ?? []);
+                return consultationDessertDeckForDay(catalogSource, assignedMealsByCategory?.desserts ?? [], {
+                    preferBakedDesserts: dietProtocol === 'nutrient_dense',
+                });
             }
 
             if (def.selectionKey === 'sideSalads') {
@@ -1329,7 +1328,7 @@ export function FixedChoicePicker({
 
             return filterMealsByCategory(meals ?? [], def.mealTypeLabel);
         },
-        [assignedMealsByCategory, meals, resolveCards, soupDeckMeals],
+        [assignedMealsByCategory, meals, resolveCards, soupDeckMeals, dietProtocol, soupCatalogMeals],
     );
 
     const prefix = deckScopePrefix ? `${deckScopePrefix}-` : '';
@@ -1338,54 +1337,14 @@ export function FixedChoicePicker({
         <div className="relative isolate w-full overflow-x-clip overflow-y-visible py-0.5">
             <div className="mx-auto min-w-0 max-w-full px-4 text-center md:px-0">
                 <p className="font-montserrat text-[15px] font-bold leading-snug tracking-tight text-[#262A22] sm:text-base">
-                    Pick a maximum of 2 sides
+                    Pick 2 of 3 sides
                 </p>
                 <p className="mt-0.5 font-body text-xs leading-snug text-[#555555] sm:text-sm">
                     {pickEnabled
-                        ? `Standard kitchen portion • ${fixedChoiceCount}/${FIXED_CHOICE_REQUIRED_COUNT} selected`
+                        ? `Side salad, soup, or dessert • ${fixedChoiceCount}/${FIXED_CHOICE_REQUIRED_COUNT} selected`
                         : `${fixedChoiceCount} selected (standard kitchen portion)`}
                 </p>
-
-                <div
-                    className="mt-3 flex flex-wrap items-center justify-center gap-2 sm:gap-3"
-                    role="group"
-                    aria-label="Choose which side categories to show"
-                >
-                    {FIXED_CHOICE_TOGGLE_OPTIONS.map((option) => {
-                        const checked = visibleCategories.includes(option.selectionKey);
-
-                        return (
-                            <button
-                                key={option.selectionKey}
-                                type="button"
-                                aria-pressed={checked}
-                                disabled={readOnly}
-                                onClick={() => handleCategoryToggle(option.selectionKey)}
-                                className={[
-                                    'inline-flex items-center gap-2 rounded-full border px-3 py-2 font-body text-sm transition-colors sm:px-4',
-                                    checked
-                                        ? 'border-[#5A6B44] bg-[#F8F9F6] text-[#262A22] shadow-sm'
-                                        : 'border-gray-200 bg-white text-[#555555] hover:border-[#5A6B44]/40 hover:bg-[#F8F9F6]',
-                                    readOnly ? 'cursor-default opacity-80' : 'cursor-pointer',
-                                ]
-                                    .join(' ')
-                                    .trim()}
-                            >
-                                <SquareCheckbox checked={checked} presentational className="shrink-0" />
-                                <span className="font-medium">{option.label}</span>
-                            </button>
-                        );
-                    })}
-                </div>
             </div>
-
-            {categoryLimitWarning ? (
-                <div className="mx-auto mt-2 max-w-full px-4 md:px-0" role="alert" aria-live="polite">
-                    <p className="rounded-[10px] border border-red-200 bg-red-50 px-3 py-2 text-center font-body text-xs font-semibold text-red-800 sm:text-sm">
-                        {categoryLimitWarning}
-                    </p>
-                </div>
-            ) : null}
 
             {mealLimitWarning ? (
                 <div className="mx-auto mt-2 max-w-full px-4 md:px-0" role="alert" aria-live="polite">
@@ -1404,10 +1363,6 @@ export function FixedChoicePicker({
                     .trim()}
             >
                 {FIXED_CHOICE_TOGGLE_OPTIONS.map((def, idx) => {
-                    if (!visibleCategories.includes(def.selectionKey)) {
-                        return null;
-                    }
-
                     const cards = cardsForSection(def);
                     const selectedIds = categorySelections?.[def.selectionKey] ?? [];
 
@@ -1428,6 +1383,7 @@ export function FixedChoicePicker({
                             sectionKey={def.selectionKey}
                             sectionStackOrder={idx}
                             title={def.header}
+                            showSelectionSubheader
                             deckScopeKey={`${prefix}${def.deckSuffix}`}
                             cards={cards}
                             selectedIds={selectedIds}
@@ -1497,6 +1453,7 @@ export default function ChooseYourMeals({
     onViewDetails,
     panelClassName = 'h-[100dvh] min-h-screen',
     isMenuPending = false,
+    dietProtocol = null,
 }) {
     const craftingSubtitle = `CRAFTING YOUR ${String(dayName).trim().toUpperCase()}`;
     /** Daily option decks stay interactive whenever the parent wires selection (hides CRAFT THIS MEAL only in true read-only review). */
@@ -1707,10 +1664,10 @@ export default function ChooseYourMeals({
                     assignedMealsByCategory={assignedMealsByCategory ?? undefined}
                     scheduledSoupMeals={scheduledSoupMeals}
                     soupCatalogMeals={soupCatalogMeals}
+                    dietProtocol={dietProtocol}
                     readOnly={!categoryPickEnabled}
                     validationFlash={validationFlashKeys.includes('fixedChoice')}
                     onSelectMeal={categoryPickEnabled ? onToggleCategory : undefined}
-                    onClearCategory={categoryPickEnabled ? onClearFixedChoiceCategory : undefined}
                     onViewDetails={onViewDetails}
                 />
             </div>

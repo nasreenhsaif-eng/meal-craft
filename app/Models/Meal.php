@@ -8,6 +8,7 @@ use App\Enums\MealType;
 use App\Enums\RecipeCategory;
 use App\Services\RecipeNutritionCalculator;
 use App\Support\MealImagePath;
+use App\Support\MealLibraryBulkNutrition;
 use Database\Factories\MealFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -306,6 +307,12 @@ class Meal extends Model
      */
     public function nutritionForDisplay(): array
     {
+        if ($this->is_bulk && (float) ($this->servings_count ?? 0) > 0) {
+            return MealLibraryBulkNutrition::perServingNutritionForMealDisplay(
+                $this->relationLoaded('ingredients') ? $this : $this->load('ingredients')
+            );
+        }
+
         $stored = $this->persistedNutritionAsCalculatorShape();
 
         $macrosEmpty = (float) $this->total_calories <= 0

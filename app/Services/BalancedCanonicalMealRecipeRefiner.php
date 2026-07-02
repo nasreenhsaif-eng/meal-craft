@@ -17,9 +17,17 @@ use InvalidArgumentException;
  */
 final class BalancedCanonicalMealRecipeRefiner
 {
-    public const BAKED_SALMON_NAME = 'Baked Salmon with Fermented Chimichurri & Steamed Basmati Rice';
+    public const BAKED_SALMON_NAME = 'Baked Salmon with Fermented Chimichurri & Roasted Vegetables';
 
     public const BAKED_SALMON_QUINOA_LEGACY_NAME = 'Baked Salmon with Fermented Chimichurri & Quinoa';
+
+    public const BAKED_SALMON_RICE_LEGACY_NAME = 'Baked Salmon with Fermented Chimichurri & Steamed Basmati Rice';
+
+    /** @var list<string> */
+    public const BAKED_SALMON_PREVIOUS_NAMES = [
+        self::BAKED_SALMON_QUINOA_LEGACY_NAME,
+        self::BAKED_SALMON_RICE_LEGACY_NAME,
+    ];
 
     public const CARROT_DESSERT_LEGACY_NAME = 'Carrot Oatmeal Cake';
 
@@ -32,6 +40,16 @@ final class BalancedCanonicalMealRecipeRefiner
     public const CARROT_DESSERT_NAME = 'Carrot Walnut Raisin Spice Cake';
 
     public const CARROT_DESSERT_SERVINGS_COUNT = 8;
+
+    public const BUTTERNUT_SQUASH_SOUP_NAME = 'Butternut Squash Soup';
+
+    public const BATCH_SOUP_SERVINGS_COUNT = 10;
+
+    /** @deprecated Use {@see BATCH_SOUP_SERVINGS_COUNT} */
+    public const BUTTERNUT_SQUASH_SOUP_SERVINGS_COUNT = self::BATCH_SOUP_SERVINGS_COUNT;
+
+    /** One US tablespoon psyllium husks per batch-soup serving (15 ml at library density 1.0 g/ml). */
+    public const BATCH_SOUP_PSYLLIUM_TABLESPOON_GRAMS = 15.0;
 
     public const ROSEMARY_GARLIC_CHICKEN_PLATE_LEGACY_NAME = 'Grilled Rosemary Garlic Chicken Salad w Rocca & Red Pepper Dressing';
 
@@ -72,10 +90,10 @@ final class BalancedCanonicalMealRecipeRefiner
                     ]);
                 }
 
-                if ($mealName === self::BAKED_SALMON_NAME && $meal->name === self::BAKED_SALMON_QUINOA_LEGACY_NAME) {
+                if ($mealName === self::BAKED_SALMON_NAME && in_array($meal->name, self::BAKED_SALMON_PREVIOUS_NAMES, true)) {
                     $meal->update([
                         'name' => self::BAKED_SALMON_NAME,
-                        'short_description' => 'Premium baked salmon with fermented chimichurri over fluffy steamed basmati rice and broccoli.',
+                        'short_description' => 'Premium baked salmon with fermented chimichurri over roasted pumpkin, vegetables, and broccoli.',
                     ]);
                 }
 
@@ -117,7 +135,7 @@ final class BalancedCanonicalMealRecipeRefiner
         }
 
         if ($mealName === self::BAKED_SALMON_NAME) {
-            return $query->whereIn('name', [self::BAKED_SALMON_NAME, self::BAKED_SALMON_QUINOA_LEGACY_NAME])->first();
+            return $query->whereIn('name', [self::BAKED_SALMON_NAME, ...self::BAKED_SALMON_PREVIOUS_NAMES])->first();
         }
 
         if ($mealName === self::ROSEMARY_GARLIC_CHICKEN_PLATE_NAME) {
@@ -367,8 +385,8 @@ final class BalancedCanonicalMealRecipeRefiner
                 ],
                 'diet_tags' => array_merge($wholeFoodTags, ['Vegan']),
             ],
-            'Vegan Mushroom Soup' => [
-                'ingredients' => [
+            'Vegan Mushroom Soup' => $this->bulkSoupDefinition(
+                [
                     'Mushrooms' => 200,
                     'White Onion' => 30,
                     'Homemade Coconut Milk' => 25,
@@ -379,10 +397,10 @@ final class BalancedCanonicalMealRecipeRefiner
                     'Turmeric Powder' => 2,
                     'Thyme (Fresh)' => 3,
                 ],
-                'diet_tags' => array_merge($wholeFoodTags, ['Vegan']),
-            ],
-            'Tomato Basil Soup' => [
-                'ingredients' => [
+                array_merge($wholeFoodTags, ['Vegan']),
+            ),
+            'Tomato Basil Soup' => $this->bulkSoupDefinition(
+                [
                     'Tomato (Raw)' => 250,
                     'Fresh Basil' => 12,
                     'Garlic' => 4,
@@ -392,10 +410,10 @@ final class BalancedCanonicalMealRecipeRefiner
                     'White Onion' => 35,
                     'Smoked Paprika' => 1,
                 ],
-                'diet_tags' => array_merge($wholeFoodTags, ['Vegan']),
-            ],
-            'Red Lentil Turmeric Soup' => [
-                'ingredients' => [
+                array_merge($wholeFoodTags, ['Vegan']),
+            ),
+            'Red Lentil Turmeric Soup' => $this->bulkSoupDefinition(
+                [
                     'Lentils (Red)' => 80,
                     'Carrots' => 80,
                     'Spinach (Fresh)' => 40,
@@ -409,10 +427,10 @@ final class BalancedCanonicalMealRecipeRefiner
                     'Lemon Juice' => 8,
                     'White Onion' => 30,
                 ],
-                'diet_tags' => array_merge($wholeFoodTags, ['Vegan']),
-            ],
-            'Cauliflower Ginger Soup' => [
-                'ingredients' => [
+                array_merge($wholeFoodTags, ['Vegan']),
+            ),
+            'Cauliflower Ginger Soup' => $this->bulkSoupDefinition(
+                [
                     'Cauliflower Florets' => 220,
                     'Ginger (Raw)' => 12,
                     'Homemade Coconut Milk' => 40,
@@ -424,26 +442,20 @@ final class BalancedCanonicalMealRecipeRefiner
                     'Turmeric Powder' => 2,
                     'Black Pepper' => 1,
                 ],
-                'diet_tags' => array_merge($wholeFoodTags, ['Vegan']),
-            ],
-            'Carrot Cumin Soup' => [
-                'ingredients' => [
-                    'Carrots' => 150,
-                    'French Lentils' => 70,
-                    'Cumin Seeds' => 3,
-                    'Coriander Seeds' => 2,
-                    'Water (Filtered)' => 130,
-                    'Vegetable Broth (Base)' => 50,
-                    'White Onion' => 35,
-                    'Garlic' => 4,
-                    'Olive Oil' => 5,
-                    'Fresh Parsley' => 5,
-                    'Lemon Juice' => 8,
-                ],
-                'diet_tags' => array_merge($wholeFoodTags, ['Vegan']),
-            ],
-            'Sweet Potato Fennel Soup' => [
-                'ingredients' => [
+                array_merge($wholeFoodTags, ['Vegan']),
+            ),
+            'Carrot Cumin Soup' => $this->bulkSoupDefinition(
+                $this->carrotCuminSoupPerServingIngredients(),
+                array_merge($wholeFoodTags, ['Vegan']),
+                'Hearty carrot and French lentil soup with cumin, fresh parsley, and psyllium husks for fiber.',
+            ),
+            'Lentil Carrot Soup' => $this->bulkSoupDefinition(
+                $this->carrotCuminSoupPerServingIngredients(),
+                array_merge($wholeFoodTags, ['Vegan']),
+                'Earthy carrot and French lentil soup with cumin and coriander.',
+            ),
+            'Sweet Potato Fennel Soup' => $this->bulkSoupDefinition(
+                [
                     'Sweet Potato' => 120,
                     'Fennel Bulb' => 80,
                     'Homemade Coconut Milk' => 35,
@@ -455,15 +467,42 @@ final class BalancedCanonicalMealRecipeRefiner
                     'Olive Oil' => 5,
                     'Turmeric Powder' => 2,
                 ],
-                'diet_tags' => array_merge($wholeFoodTags, ['Vegan']),
-            ],
-            BalancedMealLibraryConfigurator::BONE_BROTH_MEAL_NAME => [
-                'ingredients' => [
+                array_merge($wholeFoodTags, ['Vegan']),
+            ),
+            self::BUTTERNUT_SQUASH_SOUP_NAME => $this->bulkSoupDefinition(
+                $this->butternutSquashSoupPerServingIngredients(),
+                array_merge($wholeFoodTags, ['Vegan']),
+                'A silky velvet roasted pumpkin soup blended with light coconut cream, spices, and psyllium husks for fiber.',
+            ),
+            'Miso Mushroom Soup' => $this->bulkSoupDefinition(
+                [
+                    'Mushrooms' => 120,
+                    'Water (Filtered)' => 200,
+                    'Miso Paste' => 10,
+                    'Spring Onion' => 10,
+                    'Ginger (Raw)' => 5,
+                ],
+                array_merge($wholeFoodTags, ['Vegan']),
+                'Silky miso broth with mushrooms — fermented mineral anchor with psyllium husks for fiber.',
+            ),
+            'Miso Carrot Ginger Soup' => $this->bulkSoupDefinition(
+                [
+                    'Carrots' => 100,
+                    'Water (Filtered)' => 200,
+                    'Miso Paste' => 10,
+                    'Ginger (Raw)' => 8,
+                    'Spring Onion' => 8,
+                ],
+                array_merge($wholeFoodTags, ['Vegan']),
+                'Golden carrot miso soup with ginger warmth and psyllium husks for fiber.',
+            ),
+            BalancedMealLibraryConfigurator::BONE_BROTH_MEAL_NAME => $this->bulkSoupDefinition(
+                [
                     'Bone Broth (Base)' => BalancedMealLibraryConfigurator::BONE_BROTH_SERVING_GRAMS,
                 ],
-                'diet_tags' => $wholeFoodTags,
-                'short_description' => '500 ml cup of defatted house bone broth — long-simmered and gelatin-rich.',
-            ],
+                $wholeFoodTags,
+                '500 ml cup of defatted house bone broth — long-simmered, gelatin-rich, with psyllium husks for fiber.',
+            ),
         ];
 
         return MealLibraryRefinerOverrides::mergeRecipeDefinitionMap($definitions);
@@ -481,7 +520,7 @@ final class BalancedCanonicalMealRecipeRefiner
             'Water (Filtered)' => 22,
             'Cinnamon' => 1,
             'Walnuts' => 8,
-            'Butter (Unsalted)' => 14,
+            'Grass Fed Butter' => 14,
             'Pumpkin Puree' => 15,
             'Ground Ginger' => 0.25,
             'Nutmeg' => 0.1,
@@ -498,10 +537,98 @@ final class BalancedCanonicalMealRecipeRefiner
      */
     private function carrotDessertBatchIngredients(): array
     {
+        return $this->scalePerServingToBatch(
+            $this->carrotDessertPerServingIngredients(),
+            self::CARROT_DESSERT_SERVINGS_COUNT,
+        );
+    }
+
+    /**
+     * @return array<string, float>
+     */
+    private function carrotCuminSoupPerServingIngredients(): array
+    {
+        return [
+            'Carrots' => 150,
+            'French Lentils' => 70,
+            'Cumin Seeds' => 3,
+            'Coriander Seeds' => 2,
+            'Water (Filtered)' => 130,
+            'Vegetable Broth (Base)' => 50,
+            'White Onion' => 35,
+            'Garlic' => 4,
+            'Olive Oil' => 5,
+            'Fresh Parsley' => 5,
+            'Lemon Juice' => 8,
+        ];
+    }
+
+    /**
+     * @param  array<string, float>  $perServingIngredients
+     * @param  list<string>  $dietTags
+     * @return array{ingredients: array<string, float>, is_bulk: true, servings_count: float, diet_tags: list<string>, short_description?: string}
+     */
+    private function bulkSoupDefinition(
+        array $perServingIngredients,
+        array $dietTags,
+        ?string $shortDescription = null,
+    ): array {
+        $definition = [
+            'ingredients' => $this->scalePerServingToBatch(
+                $this->batchSoupPerServingIngredients($perServingIngredients),
+                self::BATCH_SOUP_SERVINGS_COUNT,
+            ),
+            'is_bulk' => true,
+            'servings_count' => self::BATCH_SOUP_SERVINGS_COUNT,
+            'diet_tags' => $dietTags,
+        ];
+
+        if ($shortDescription !== null) {
+            $definition['short_description'] = $shortDescription;
+        }
+
+        return $definition;
+    }
+
+    /**
+     * @param  array<string, float>  $base
+     * @return array<string, float>
+     */
+    private function batchSoupPerServingIngredients(array $base): array
+    {
+        return array_merge($base, [
+            'Psyllium Husks' => self::BATCH_SOUP_PSYLLIUM_TABLESPOON_GRAMS,
+        ]);
+    }
+
+    /**
+     * @return array<string, float>
+     */
+    private function butternutSquashSoupPerServingIngredients(): array
+    {
+        return [
+            'Black Pepper' => 0.2,
+            'Butternut Squash' => 100,
+            'Garlic' => 1,
+            'Homemade Coconut Milk' => 10,
+            'Nutmeg' => 0.1,
+            'Olive Oil' => 2,
+            'Pumpkin Seeds' => 3,
+            'Water (Filtered)' => 15,
+            'White Onion' => 8,
+        ];
+    }
+
+    /**
+     * @param  array<string, float>  $perServing
+     * @return array<string, float>
+     */
+    private function scalePerServingToBatch(array $perServing, float $servingsCount): array
+    {
         $batch = [];
 
-        foreach ($this->carrotDessertPerServingIngredients() as $ingredientName => $grams) {
-            $batch[$ingredientName] = round($grams * self::CARROT_DESSERT_SERVINGS_COUNT, 4);
+        foreach ($perServing as $ingredientName => $grams) {
+            $batch[$ingredientName] = round($grams * $servingsCount, 4);
         }
 
         return $batch;

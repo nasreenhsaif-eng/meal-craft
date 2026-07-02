@@ -43,7 +43,7 @@ enum MealPlanSlotType: string
         for ($i = 1; $i <= 2; $i++) {
             $out[] = [self::Salad, $i];
         }
-        for ($i = 1; $i <= 2; $i++) {
+        for ($i = 1; $i <= 3; $i++) {
             $out[] = [self::Dessert, $i];
         }
         for ($i = 1; $i <= 2; $i++) {

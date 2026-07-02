@@ -38,6 +38,16 @@ test('balanced weekly rotation keeps fixed second choices per slot pattern', fun
     }
 });
 
+test('balanced weekly rotation assigns greek yogurt chia desserts in dessert slot three', function (): void {
+    $dayOne = BalancedWeeklyRotationSchedule::mealNameForDay(1, MealPlanSlotType::Dessert, 3);
+    $dayTwo = BalancedWeeklyRotationSchedule::mealNameForDay(2, MealPlanSlotType::Dessert, 3);
+
+    expect($dayOne)->toBe('Blueberry Walnut Greek Yogurt Chia Pudding')
+        ->and($dayTwo)->toBe('Mango Pumpkin Seed Greek Yogurt Chia Pudding')
+        ->and($dayOne)->toBeIn(BalancedWeeklyRotationSchedule::GREEK_YOGURT_CHIA_DESSERTS)
+        ->and($dayTwo)->toBeIn(BalancedWeeklyRotationSchedule::GREEK_YOGURT_CHIA_DESSERTS);
+});
+
 test('balanced weekly rotation assigns a different rotating soup in slot 1 each weekday', function (): void {
     $soups = [];
 
