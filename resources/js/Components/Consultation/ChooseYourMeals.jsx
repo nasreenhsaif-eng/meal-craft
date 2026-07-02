@@ -14,6 +14,10 @@ import {
     isFixedChoiceComplete,
     visibleFixedChoiceCategoriesFromSelections,
 } from '../../consultation/fixedChoiceSelection.js';
+import {
+    macroCaloriePercentsFromGrams,
+    macroSplitPercentagesFromPlan,
+} from '../../consultation/craftCalorieTargets.js';
 
 export {
     FIXED_CHOICE_CATEGORY_KEYS,
@@ -505,31 +509,63 @@ function PlanMacroTableHeader({ planCategoryLabel = '' }) {
  *
  * @param {object} props
  * @param {MacroTotals} props.macros
+ * @param {{ protein?: number; carbs?: number; fat?: number } | null} [props.macroPercents]
  * @param {string} [props.cellClassName]
  * @param {string} [props.lastCellClassName]
  */
-function PlanMacroValueCells({ macros, cellClassName = '', lastCellClassName = '', highlightKeys = [], muted = false }) {
+function PlanMacroValueCells({
+    macros,
+    macroPercents = null,
+    cellClassName = '',
+    lastCellClassName = '',
+    highlightKeys = [],
+    muted = false,
+}) {
     return (
         <>
             {PLAN_MACRO_CELL_META.map((cell, index) => {
                 const highlighted = !muted && highlightKeys.includes(cell.key);
+                const percent =
+                    cell.key !== 'calories' && macroPercents ? macroPercents[cell.key] : null;
 
                 return (
-                    <p
+                    <div
                         key={cell.key}
                         className={[
-                            'truncate text-center text-sm font-bold tabular-nums leading-none sm:text-[15px]',
-                            muted ? 'font-semibold text-[#9CA3AF]' : '',
-                            highlighted ? 'text-amber-800' : '',
+                            'min-w-0 text-center',
                             cellClassName,
                             index === PLAN_MACRO_CELL_META.length - 1 ? lastCellClassName : '',
                         ]
                             .join(' ')
                             .trim()}
-                        style={highlighted || muted ? undefined : { color: cell.color }}
                     >
-                        {formatPlanMacroValue(cell.key, macros?.[cell.key])}
-                    </p>
+                        <p
+                            className={[
+                                'truncate text-sm font-bold tabular-nums leading-none sm:text-[15px]',
+                                muted ? 'font-semibold text-[#9CA3AF]' : '',
+                                highlighted ? 'text-amber-800' : '',
+                            ]
+                                .join(' ')
+                                .trim()}
+                            style={highlighted || muted ? undefined : { color: cell.color }}
+                        >
+                            {formatPlanMacroValue(cell.key, macros?.[cell.key])}
+                        </p>
+                        {percent !== null && percent !== undefined ? (
+                            <p
+                                className={[
+                                    'mt-0.5 truncate font-montserrat text-[10px] font-semibold tabular-nums leading-none tracking-tight',
+                                    muted ? 'text-[#C4C9D1]' : 'text-[#9CA3AF]',
+                                ]
+                                    .join(' ')
+                                    .trim()}
+                            >
+                                {percent}%
+                            </p>
+                        ) : (
+                            <span className="mt-0.5 block h-[10px]" aria-hidden="true" />
+                        )}
+                    </div>
                 );
             })}
         </>
@@ -590,9 +626,16 @@ export function PlanMacroColumnHeaderRow() {
  * @param {object} props
  * @param {MacroTotals} props.totals
  * @param {MacroTotals | null} [props.targets]
+ * @param {Record<string, unknown> | null | undefined} [props.nutritionPlan]
  * @param {Array<'calories' | 'protein' | 'carbs' | 'fat'>} [props.highlightKeys]
  */
-function ConsultationDayMacroFooterGrid({ totals, targets = null, highlightKeys = [] }) {
+function ConsultationDayMacroFooterGrid({ totals, targets = null, nutritionPlan = null, highlightKeys = [] }) {
+    const selectedMacroPercents = useMemo(() => macroCaloriePercentsFromGrams(totals), [totals]);
+    const targetMacroPercents = useMemo(
+        () => macroSplitPercentagesFromPlan(nutritionPlan),
+        [nutritionPlan],
+    );
+
     return (
         <div className="space-y-1.5" role="table" aria-label="Day macro comparison">
             <div className={CONSULTATION_MACRO_FOOTER_ROW_GRID} role="row">
@@ -610,14 +653,18 @@ function ConsultationDayMacroFooterGrid({ totals, targets = null, highlightKeys 
                 <p className="font-montserrat text-[10px] font-semibold uppercase leading-none tracking-[0.08em] text-[#555555]">
                     Selected
                 </p>
-                <PlanMacroValueCells macros={totals} highlightKeys={highlightKeys} />
+                <PlanMacroValueCells
+                    macros={totals}
+                    macroPercents={selectedMacroPercents}
+                    highlightKeys={highlightKeys}
+                />
             </div>
             {targets ? (
                 <div className={CONSULTATION_MACRO_FOOTER_ROW_GRID} role="row">
                     <p className="font-montserrat text-[10px] font-semibold uppercase leading-none tracking-[0.08em] text-[#555555]">
                         Target
                     </p>
-                    <PlanMacroValueCells macros={targets} muted />
+                    <PlanMacroValueCells macros={targets} macroPercents={targetMacroPercents} muted />
                 </div>
             ) : null}
         </div>
@@ -629,9 +676,10 @@ function ConsultationDayMacroFooterGrid({ totals, targets = null, highlightKeys 
  *
  * @param {object} props
  * @param {Partial<Record<SelectionCategoryKey, ConsultationMeal[]>>} props.categories
+ * @param {Partial<Record<SelectionCategoryKey, MacroTotals>> | null} [props.categoryTargets]
  * @param {string} [props.dayLabel]
  */
-export function PlanDayMacroBreakdown({ categories, dayLabel }) {
+export function PlanDayMacroBreakdown({ categories, categoryTargets = null, dayLabel }) {
     const rows = useMemo(() => buildCategoryMacroBreakdown(categories), [categories]);
 
     if (rows.length === 0) {
@@ -644,18 +692,32 @@ export function PlanDayMacroBreakdown({ categories, dayLabel }) {
                 {dayLabel ? `${dayLabel} breakdown` : 'Choice breakdown'}
             </p>
             {rows.map((row) => (
-                <div key={row.key} className="contents" role="row">
-                    <p
-                        className="rounded-l-[10px] bg-[#F8F9F6] py-2 pl-2 font-montserrat text-[11px] font-bold leading-tight text-[#262A22] sm:pl-3 sm:text-xs"
-                        role="rowheader"
-                    >
-                        {row.label}
-                    </p>
-                    <PlanMacroValueCells
-                        macros={row.totals}
-                        cellClassName="bg-[#F8F9F6] py-2"
-                        lastCellClassName="rounded-r-[10px]"
-                    />
+                <div key={row.key} className="contents" role="rowgroup" aria-label={`${row.label} macros`}>
+                    <div className="contents" role="row">
+                        <p
+                            className="rounded-l-[10px] bg-[#F8F9F6] py-2 pl-2 font-montserrat text-[11px] font-bold leading-tight text-[#262A22] sm:pl-3 sm:text-xs"
+                            role="rowheader"
+                        >
+                            {row.label}
+                        </p>
+                        <PlanMacroValueCells
+                            macros={row.totals}
+                            cellClassName="bg-[#F8F9F6] py-2"
+                            lastCellClassName="rounded-r-[10px]"
+                        />
+                    </div>
+                    {categoryTargets?.[row.key] ? (
+                        <div className="contents" role="row">
+                            <p className="py-1 pl-2 font-montserrat text-[10px] font-semibold uppercase tracking-[0.08em] text-[#9CA3AF] sm:pl-3">
+                                Target
+                            </p>
+                            <PlanMacroValueCells
+                                macros={categoryTargets[row.key]}
+                                cellClassName="py-1"
+                                muted
+                            />
+                        </div>
+                    ) : null}
                 </div>
             ))}
         </>
@@ -696,11 +758,31 @@ export function SoupOfTheDayOptIn({ checked, onChange, header = 'Soups for this 
  *
  * @param {object} props
  * @param {MacroTotals} props.activeDayTotals
+ * @param {MacroTotals | null} [props.dayMacroTargets]
+ * @param {Partial<Record<SelectionCategoryKey, MacroTotals>> | null} [props.categoryMacroTargets]
  * @param {Partial<Record<SelectionCategoryKey, ConsultationMeal[]>>} [props.categories]
  * @param {string} [props.dayLabel]
  * @param {string} [props.planCategoryLabel]
+ * @param {Record<string, unknown> | null | undefined} [props.nutritionPlan]
  */
-export function PlanMacroSummaryPanel({ activeDayTotals, categories, dayLabel = 'Day', planCategoryLabel = '' }) {
+export function PlanMacroSummaryPanel({
+    activeDayTotals,
+    dayMacroTargets = null,
+    categoryMacroTargets = null,
+    categories,
+    dayLabel = 'Day',
+    planCategoryLabel = '',
+    nutritionPlan = null,
+}) {
+    const selectedMacroPercents = useMemo(
+        () => macroCaloriePercentsFromGrams(activeDayTotals),
+        [activeDayTotals],
+    );
+    const targetMacroPercents = useMemo(
+        () => macroSplitPercentagesFromPlan(nutritionPlan),
+        [nutritionPlan],
+    );
+
     return (
         <div className="w-full rounded-[12px] border border-gray-200 bg-white px-4 py-4 sm:px-5">
             <div className={PLAN_MACRO_TABLE_GRID} role="table" aria-label={`${dayLabel} macro summary`}>
@@ -709,9 +791,28 @@ export function PlanMacroSummaryPanel({ activeDayTotals, categories, dayLabel = 
                 <p className="font-montserrat text-[11px] font-bold uppercase tracking-[0.1em] text-[#5A6B44]">
                     {dayLabel} total
                 </p>
-                <PlanMacroValueCells macros={activeDayTotals} />
+                <PlanMacroValueCells macros={activeDayTotals} macroPercents={selectedMacroPercents} />
 
-                {categories ? <PlanDayMacroBreakdown categories={categories} dayLabel={dayLabel} /> : null}
+                {dayMacroTargets ? (
+                    <>
+                        <p className="font-montserrat text-[10px] font-semibold uppercase tracking-[0.08em] text-[#9CA3AF]">
+                            Target
+                        </p>
+                        <PlanMacroValueCells
+                            macros={dayMacroTargets}
+                            macroPercents={targetMacroPercents}
+                            muted
+                        />
+                    </>
+                ) : null}
+
+                {categories ? (
+                    <PlanDayMacroBreakdown
+                        categories={categories}
+                        categoryTargets={categoryMacroTargets}
+                        dayLabel={dayLabel}
+                    />
+                ) : null}
             </div>
         </div>
     );
@@ -1364,6 +1465,7 @@ export default function ChooseYourMeals({
     dayMacroTotals = null,
     dayMacroTargets = null,
     dayMacroTolerance = null,
+    nutritionPlan = null,
     summaryLabel,
     targetCalories = 1200,
     dayCalorieTolerance = 50,
@@ -1751,6 +1853,7 @@ export default function ChooseYourMeals({
                                         : { calories: 0, protein: 0, carbs: 0, fat: 0 }
                                 }
                                 targets={dayMacroTargets}
+                                nutritionPlan={nutritionPlan}
                                 highlightKeys={
                                     dayMacroTotals && dayMacroTotals.calories > 0 ? macroHighlightKeys : []
                                 }

@@ -8,7 +8,7 @@ test('balanced weekly rotation assigns one savory egg breakfast per day', functi
     $dayOne = BalancedWeeklyRotationSchedule::mealNameForDay(1, MealPlanSlotType::Breakfast, 1);
     $dayTwo = BalancedWeeklyRotationSchedule::mealNameForDay(2, MealPlanSlotType::Breakfast, 1);
 
-    expect($dayOne)->toBe('Halloumi & Spinach Scramble')
+    expect($dayOne)->toBe('Gouda & Spinach Scramble')
         ->and($dayTwo)->toBe('Greek Yogurt & Parmesan Frittata')
         ->and($dayOne)->not->toBe($dayTwo);
 });

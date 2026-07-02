@@ -80,6 +80,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
                 Route::post('/meal-plan-library', [MealPlanLibraryController::class, 'store'])->name('meal-plan-library.store');
                 Route::get('/meal-plan-library/meals/search', [MealPlanLibraryController::class, 'searchMeals'])->name('meal-plan-library.meals.search');
                 Route::get('/meal-plan-library/{mealPlan}', [MealPlanLibraryController::class, 'show'])->name('meal-plan-library.show');
+                Route::get('/meal-plan-library/{mealPlan}/tier-preview', [MealPlanLibraryController::class, 'tierPreview'])->name('meal-plan-library.tier-preview');
                 Route::get('/customers', [CustomerProfileController::class, 'index'])->name('customers');
                 Route::get('/kitchen-logistics', [KitchenLogisticsController::class, 'index'])->name('kitchen-logistics');
 

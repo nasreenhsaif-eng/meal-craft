@@ -386,7 +386,7 @@ test('adapted menu exposes full craft day options with one breakfast and four ma
     ]);
 
     $breakfast = Meal::factory()->create([
-        'name' => 'Halloumi & Spinach Scramble',
+        'name' => 'Gouda & Spinach Scramble',
         'meal_type' => MealType::Breakfast,
         'category' => RecipeCategory::Breakfast,
         'total_calories' => 300,
@@ -464,9 +464,59 @@ test('adapted menu exposes full craft day options with one breakfast and four ma
         ->assertJsonCount(4, 'scheduled_full_craft_by_weekday.1.meals')
         ->assertJsonCount(2, 'scheduled_full_craft_by_weekday.1.sideSalads')
         ->assertJsonCount(2, 'scheduled_full_craft_by_weekday.1.desserts')
-        ->assertJsonPath('scheduled_full_craft_by_weekday.1.breakfasts.0.name', 'Halloumi & Spinach Scramble')
+        ->assertJsonPath('scheduled_full_craft_by_weekday.1.breakfasts.0.name', 'Gouda & Spinach Scramble')
         ->assertJsonPath('scheduled_full_craft_by_weekday.1.desserts.0.name', 'Chia Day One')
         ->assertJsonPath('scheduled_full_craft_by_weekday.1.sideSalads.1.name', 'Classic Garden Salad');
+});
+
+test('adapted menu keeps sunday breakfast when production plan still references legacy halloumi scramble name', function () {
+    $user = User::factory()->create();
+    CustomerProfile::factory()->for($user)->create([
+        'daily_calorie_target' => 1500,
+    ]);
+
+    $breakfast = Meal::factory()->create([
+        'name' => 'Halloumi & Spinach Scramble',
+        'meal_type' => MealType::Breakfast,
+        'category' => RecipeCategory::Breakfast,
+        'total_calories' => 300,
+    ]);
+
+    $main = Meal::factory()->create([
+        'name' => 'Sunday Main',
+        'meal_type' => MealType::Main,
+        'category' => RecipeCategory::Meal,
+        'total_calories' => 420,
+    ]);
+
+    $plan = MealPlan::query()->create([
+        'name' => 'Legacy Halloumi Production Plan',
+        'goal' => 'Customer production schedule',
+        'schema_type' => MealPlanSchemaType::WeeklyStructured,
+        'plan_category' => 'balanced',
+    ]);
+
+    foreach ([
+        [MealPlanSlotType::Breakfast, 1, $breakfast],
+        [MealPlanSlotType::Main, 1, $main],
+    ] as [$slotType, $slotIndex, $meal]) {
+        MealPlanDayMeal::query()->create([
+            'meal_plan_id' => $plan->id,
+            'meal_id' => $meal->id,
+            'day_number' => 1,
+            'slot_type' => $slotType->value,
+            'slot_index' => $slotIndex,
+            'is_option_b' => false,
+        ]);
+    }
+
+    config(['customer_nutrition.production_meal_plan_id' => $plan->id]);
+
+    $response = $this->actingAs($user)->getJson('/api/menu/adapted?craft_key=full');
+
+    $response->assertSuccessful()
+        ->assertJsonCount(1, 'scheduled_full_craft_by_weekday.1.breakfasts')
+        ->assertJsonPath('scheduled_full_craft_by_weekday.1.breakfasts.0.name', 'Halloumi & Spinach Scramble');
 });
 
 test('adapted menu applies craft-specific calorie budgets when craft_key is provided', function () {
@@ -607,7 +657,7 @@ test('adapted menu fixed portion catalog includes only one chia variant family p
 function seedProductionFullCraftDayWithChiaDessert(string $chiaDessertName): MealPlan
 {
     $breakfast = Meal::factory()->create([
-        'name' => 'Halloumi & Spinach Scramble',
+        'name' => 'Gouda & Spinach Scramble',
         'meal_type' => MealType::Breakfast,
         'category' => RecipeCategory::Breakfast,
         'total_calories' => 300,

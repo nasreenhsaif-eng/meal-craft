@@ -61,6 +61,46 @@ export function macroGramsFromCalories(calories, split = BALANCED_MACRO_SPLIT) {
 }
 
 /**
+ * Protocol macro split (% of calories) from the synced nutrition plan.
+ *
+ * @param {Record<string, unknown> | null | undefined} nutritionPlan
+ * @returns {{ protein: number; carbs: number; fat: number }}
+ */
+export function macroSplitPercentagesFromPlan(nutritionPlan) {
+    return {
+        protein: Number(nutritionPlan?.protein_percentage ?? BALANCED_MACRO_SPLIT.protein),
+        carbs: Number(nutritionPlan?.carb_percentage ?? BALANCED_MACRO_SPLIT.carbs),
+        fat: Number(nutritionPlan?.fat_percentage ?? BALANCED_MACRO_SPLIT.fat),
+    };
+}
+
+/**
+ * Actual macro calorie split from gram totals (protein/carbs 4 kcal/g, fat 9 kcal/g).
+ *
+ * @param {{ protein?: number; carbs?: number; fat?: number }} macros
+ * @returns {{ protein: number; carbs: number; fat: number }}
+ */
+export function macroCaloriePercentsFromGrams(macros) {
+    const protein = Math.max(0, Number(macros?.protein ?? 0));
+    const carbs = Math.max(0, Number(macros?.carbs ?? 0));
+    const fat = Math.max(0, Number(macros?.fat ?? 0));
+    const proteinKcal = protein * 4;
+    const carbKcal = carbs * 4;
+    const fatKcal = fat * 9;
+    const total = proteinKcal + carbKcal + fatKcal;
+
+    if (total <= 0) {
+        return { protein: 0, carbs: 0, fat: 0 };
+    }
+
+    return {
+        protein: Math.round((proteinKcal / total) * 100),
+        carbs: Math.round((carbKcal / total) * 100),
+        fat: Math.round((fatKcal / total) * 100),
+    };
+}
+
+/**
  * @param {number} planTier
  * @returns {{ breakfast: number; mainEach: number }}
  */
@@ -345,3 +385,188 @@ export function selectedFixedSlotsFromSelections(selections) {
 
     return slots;
 }
+
+const FIXED_CHOICE_MACRO_SPLIT = BALANCED_MACRO_SPLIT;
+
+/**
+ * @param {Record<string, unknown> | null | undefined} nutritionPlan
+ * @param {number} planTier
+ * @returns {{ calories: number; protein: number; carbs: number; fat: number }}
+ */
+export function breakfastSlotMacroTargetsFromPlan(nutritionPlan, planTier) {
+    const calories = breakfastSlotTargetCaloriesFromPlan(nutritionPlan, planTier);
+    const fromPlan = /** @type {{ protein_g?: number; carbs_g?: number; fat_g?: number } | undefined} */ (
+        /** @type {Record<string, unknown> | undefined} */ (nutritionPlan?.scalable_slot_targets)?.breakfast
+    )?.macros;
+
+    if (fromPlan && nutritionPlanMatchesTier(nutritionPlan, planTier)) {
+        return {
+            calories,
+            protein: Math.round(fromPlan.protein_g ?? 0),
+            carbs: Math.round(fromPlan.carbs_g ?? 0),
+            fat: Math.round(fromPlan.fat_g ?? 0),
+        };
+    }
+
+    const grams = macroGramsFromCalories(calories, BALANCED_MACRO_SPLIT);
+
+    return {
+        calories,
+        protein: Math.round(grams.protein),
+        carbs: Math.round(grams.carbs),
+        fat: Math.round(grams.fat),
+    };
+}
+
+/**
+ * @param {Record<string, unknown> | null | undefined} nutritionPlan
+ * @param {number} planTier
+ * @returns {{ calories: number; protein: number; carbs: number; fat: number }}
+ */
+export function mainSlotMacroTargetsFromPlan(nutritionPlan, planTier) {
+    const calories = mainSlotTargetCaloriesFromPlan(nutritionPlan, planTier);
+    const fromPlan = /** @type {{ protein_g?: number; carbs_g?: number; fat_g?: number } | undefined} */ (
+        /** @type {Record<string, unknown> | undefined} */ (nutritionPlan?.scalable_slot_targets)?.main_each
+    )?.macros;
+
+    if (fromPlan && nutritionPlanMatchesTier(nutritionPlan, planTier)) {
+        return {
+            calories,
+            protein: Math.round(fromPlan.protein_g ?? 0),
+            carbs: Math.round(fromPlan.carbs_g ?? 0),
+            fat: Math.round(fromPlan.fat_g ?? 0),
+        };
+    }
+
+    const grams = macroGramsFromCalories(calories, MAIN_EACH_MACRO_SPLIT);
+
+    return {
+        calories,
+        protein: Math.round(grams.protein),
+        carbs: Math.round(grams.carbs),
+        fat: Math.round(grams.fat),
+    };
+}
+
+/**
+ * @param {Record<string, unknown> | null | undefined} [nutritionPlan]
+ * @returns {{ calories: number; protein: number; carbs: number; fat: number }}
+ */
+export function fixedChoiceSlotMacroTargetsFromPlan(nutritionPlan = null) {
+    const fromPlan = /** @type {{ calories?: number; macros?: { protein_g?: number; carbs_g?: number; fat_g?: number } } | undefined} */ (
+        nutritionPlan?.fixed_portion
+    );
+
+    const calories = Math.round(
+        typeof fromPlan?.calories_per_choice === 'number'
+            ? fromPlan.calories_per_choice
+            : typeof fromPlan?.calories === 'number' && typeof fromPlan?.choice_count === 'number' && fromPlan.choice_count > 0
+              ? fromPlan.calories / fromPlan.choice_count
+              : FIXED_CHOICE_CALORIES,
+    );
+
+    const macros = fromPlan?.macros;
+
+    if (macros) {
+        const count = Math.max(1, Number(fromPlan?.choice_count ?? FIXED_CHOICE_COUNT));
+
+        return {
+            calories,
+            protein: Math.round((macros.protein_g ?? 0) / count),
+            carbs: Math.round((macros.carbs_g ?? 0) / count),
+            fat: Math.round((macros.fat_g ?? 0) / count),
+        };
+    }
+
+    const grams = macroGramsFromCalories(calories, FIXED_CHOICE_MACRO_SPLIT);
+
+    return {
+        calories,
+        protein: Math.round(grams.protein),
+        carbs: Math.round(grams.carbs),
+        fat: Math.round(grams.fat),
+    };
+}
+
+/**
+ * @param {{ calories: number; protein: number; carbs: number; fat: number }} base
+ * @param {number} count
+ */
+function scaleMacroTotals(base, count) {
+    const multiplier = Math.max(0, count);
+
+    return {
+        calories: Math.round(base.calories * multiplier),
+        protein: Math.round(base.protein * multiplier),
+        carbs: Math.round(base.carbs * multiplier),
+        fat: Math.round(base.fat * multiplier),
+    };
+}
+
+/**
+ * Per-category macro targets for a day's assigned meal structure.
+ *
+ * @param {string | null | undefined} craftKey
+ * @param {number} planTier
+ * @param {Record<string, unknown> | null | undefined} nutritionPlan
+ * @param {Partial<Record<'breakfasts' | 'meals' | 'sideSalads' | 'desserts' | 'soup', unknown[]>> | null | undefined} categories
+ * @returns {Partial<Record<'breakfasts' | 'meals' | 'sideSalads' | 'desserts' | 'soup', { calories: number; protein: number; carbs: number; fat: number }>>}
+ */
+export function categoryMacroTargetsFromPlan(craftKey, planTier, nutritionPlan, categories) {
+    /** @type {Partial<Record<'breakfasts' | 'meals' | 'sideSalads' | 'desserts' | 'soup', { calories: number; protein: number; carbs: number; fat: number }>>} */
+    const targets = {};
+
+    const key = craftKey ?? 'full';
+    const breakfastItems = categories?.breakfasts ?? [];
+    const mealItems = categories?.meals ?? [];
+    const sideItems = categories?.sideSalads ?? [];
+    const dessertItems = categories?.desserts ?? [];
+    const soupItems = categories?.soup ?? [];
+
+    if (key !== 'afternoon' && key !== 'intermittent' && key !== 'business' && breakfastItems.length > 0) {
+        targets.breakfasts = breakfastSlotMacroTargetsFromPlan(nutritionPlan, planTier);
+    }
+
+    if (mealItems.length > 0) {
+        const each = mainSlotMacroTargetsFromPlan(nutritionPlan, planTier);
+
+        if (key === 'business') {
+            const grams = macroGramsFromCalories(BUSINESS_MAIN_TARGET, MAIN_EACH_MACRO_SPLIT);
+            targets.meals = {
+                calories: BUSINESS_MAIN_TARGET,
+                protein: Math.round(grams.protein),
+                carbs: Math.round(grams.carbs),
+                fat: Math.round(grams.fat),
+            };
+        } else {
+            targets.meals = scaleMacroTotals(each, mealItems.length);
+        }
+    }
+
+    const fixedChoice = fixedChoiceSlotMacroTargetsFromPlan(nutritionPlan);
+
+    if (sideItems.length > 0) {
+        if (key === 'business') {
+            const grams = macroGramsFromCalories(BUSINESS_SIDE_CALORIES, FIXED_CHOICE_MACRO_SPLIT);
+            targets.sideSalads = {
+                calories: BUSINESS_SIDE_CALORIES,
+                protein: Math.round(grams.protein),
+                carbs: Math.round(grams.carbs),
+                fat: Math.round(grams.fat),
+            };
+        } else {
+            targets.sideSalads = fixedChoice;
+        }
+    }
+
+    if (dessertItems.length > 0) {
+        targets.desserts = fixedChoice;
+    }
+
+    if (soupItems.length > 0) {
+        targets.soup = fixedChoice;
+    }
+
+    return targets;
+}
+

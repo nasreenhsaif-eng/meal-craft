@@ -55,6 +55,7 @@ final class WholeFoodDietPolicy
         'Feta',
         'Brie',
         'Halloumi',
+        'Gouda',
     ];
 
     /** @var list<string> */

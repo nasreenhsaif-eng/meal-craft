@@ -153,20 +153,20 @@ final class NutrientDenseLiverMealRecipeRefiner
             'Seared Beef Liver w Roasted Beetroot, Chard & Chimichurri' => [
                 'ingredients' => [
                     'Beef Liver' => StandardMeatPortion::GRAMS,
-                    'Beetroot' => 70.0,
+                    'Beetroot' => 90.0,
                     'Black Pepper' => 0.5,
-                    'Cabbage (Purple)' => 55.0,
-                    'Carrots' => 45.0,
-                    'Chard' => 80.0,
+                    'Cabbage (Purple)' => 70.0,
+                    'Carrots' => 55.0,
+                    'Chard' => 100.0,
                     'Fermented Chimichurri (Base)' => 18.0,
                     'Garlic (Raw)' => 4.0,
                     'Lemon Juice' => 8.0,
                     'Olive Oil (Extra Virgin)' => 5.0,
-                    'Steamed Basmati Rice (Base)' => 40.0,
+                    'Cooked Quinoa (Base)' => 75.0,
                     'White Onion' => 35.0,
                 ],
                 'diet_tags' => $tags,
-                'short_description' => 'Quick-seared beef liver with roasted beetroot, wilted chard, and fermented chimichurri.',
+                'short_description' => 'Quick-seared beef liver with fluffy quinoa, roasted beetroot, wilted chard, and fermented chimichurri.',
             ],
             'Sautéed Chicken Liver w Garlicky Cabbage, Bok Choy & Peppers' => [
                 'ingredients' => [

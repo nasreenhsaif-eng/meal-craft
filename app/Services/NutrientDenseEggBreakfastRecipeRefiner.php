@@ -149,15 +149,15 @@ final class NutrientDenseEggBreakfastRecipeRefiner
         $dairyTags = ['dairy', 'eggs'];
 
         $definitions = [
-            'Halloumi & Spinach Scramble' => [
+            'Gouda & Spinach Scramble' => [
                 'ingredients' => [
                     'Egg' => 100,
-                    'Halloumi' => 40,
-                    'Spinach (Fresh)' => 40,
-                    'Olive Oil' => 10,
+                    'Gouda' => 40,
+                    'Spinach (Fresh)' => 50,
+                    'Butter (Unsalted)' => 10,
                     'Black Pepper' => 1,
                 ],
-                'highlight' => 'Grilled halloumi folded through softly scrambled eggs with wilted spinach.',
+                'highlight' => 'Melted gouda folded through softly scrambled eggs with wilted spinach.',
                 'diet_tags' => $tags,
                 'food_filter_tags' => $dairyTags,
             ],

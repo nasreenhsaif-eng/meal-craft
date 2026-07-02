@@ -20,7 +20,7 @@ test('resolveMealNameForProfile returns dairy-forward breakfast when dairy is no
     ]);
 
     expect(SavoryEggBreakfastMeals::resolveMealNameForProfile('Mediterranean Omelet', $profile))
-        ->toBe('Halloumi & Spinach Scramble');
+        ->toBe('Gouda & Spinach Scramble');
 });
 
 test('resolveMealNameForProfile returns dairy-free breakfast when dairy is filtered', function (): void {
@@ -29,7 +29,7 @@ test('resolveMealNameForProfile returns dairy-free breakfast when dairy is filte
         'allergies' => ['dairy'],
     ]);
 
-    expect(SavoryEggBreakfastMeals::resolveMealNameForProfile('Halloumi & Spinach Scramble', $profile))
+    expect(SavoryEggBreakfastMeals::resolveMealNameForProfile('Gouda & Spinach Scramble', $profile))
         ->toBe('Mediterranean Omelet');
 });
 
@@ -38,7 +38,14 @@ test('scheduledBreakfastNameForDay respects dairy filter', function (): void {
     $dairyFreeProfile = new CustomerProfile(['food_filters' => ['dairy'], 'allergies' => ['dairy']]);
 
     expect(SavoryEggBreakfastMeals::scheduledBreakfastNameForDay(1, $openProfile))
-        ->toBe('Halloumi & Spinach Scramble')
+        ->toBe('Gouda & Spinach Scramble')
         ->and(SavoryEggBreakfastMeals::scheduledBreakfastNameForDay(1, $dairyFreeProfile))
         ->toBe('Mediterranean Omelet');
+});
+
+test('legacy halloumi scramble name still resolves as sunday savory breakfast', function (): void {
+    expect(SavoryEggBreakfastMeals::canonicalMealName('Halloumi & Spinach Scramble'))
+        ->toBe('Gouda & Spinach Scramble')
+        ->and(SavoryEggBreakfastMeals::isSavoryEggBreakfast('Halloumi & Spinach Scramble'))->toBeTrue()
+        ->and(SavoryEggBreakfastMeals::isDairyForwardBreakfast('Halloumi & Spinach Scramble'))->toBeTrue();
 });

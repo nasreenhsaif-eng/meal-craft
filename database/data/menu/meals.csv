@@ -1,12 +1,14 @@
 meal_name,meal_type,ingredients_string,target_calories,target_protein,target_carbs,target_fat,batch_calories,batch_protein,batch_carbs,batch_fat,is_bulk,servings_count,meal_plan_tag,cycle_phase,safety_alerts,image_url,short_description,instructions
 "Kefir Herb Egg Bowl",Breakfast,"Beetroot:20.2791 | Black Pepper:1 | Bok Choy:24 | Chard:24 | Egg:126 | Kale:24 | Kefir:13.651 | Olive Oil:8 | Purslane:24 | Rocca:20 | Spinach (Fresh):40",,,,,,,,,false,,NutrientDense,,,,"Whole eggs with kefir, greens, and herbs — daily fermented breakfast anchor.",
-"Baked Salmon with Fermented Chimichurri & Steamed Basmati Rice",Meal,"Broccoli:60 | Fermented Chimichurri (Base):25 | Pumpkin Seeds:10 | Salmon:150 | Steamed Basmati Rice (Base):75",360,36,27,12,,,,,false,,NutrientDense,,Fish,images/meals/salmon_fermented_chimichurri.png,"Premium baked salmon with fermented chimichurri over fluffy steamed basmati rice and broccoli.","Prepare Steamed Basmati Rice (Base) and keep warm.
+"Baked Salmon with Fermented Chimichurri & Steamed Basmati Rice",Meal,"Bell Pepper (Red):55 | Broccoli:60 | Carrots:45 | Fermented Chimichurri (Base):25 | Olive Oil (Extra Virgin):5 | Pumpkin:90 | Pumpkin Seeds:10 | Salmon:150 | Zucchini:55",360,36,27,12,,,,,false,,NutrientDense,,Fish,images/meals/salmon_fermented_chimichurri.png,"Premium baked salmon with fermented chimichurri over roasted pumpkin, vegetables, and broccoli.","Toss pumpkin, bell pepper, zucchini, and carrots with olive oil. Roast at 200°C until tender and lightly caramelised.
 Coat salmon generously with Fermented Chimichurri (Base).
 Bake at 190°C for 12–15 minutes until flaky.
 Steam or roast broccoli until bright green and tender.
-Plate basmati rice and broccoli. Top with salmon and extra chimichurri if desired."
+Plate roasted vegetables and broccoli. Top with salmon, pumpkin seeds, and extra chimichurri if desired."
 "Sardine & Roasted Pepper Salad",Meal,"Beetroot:5.0235 | Bell Pepper (Red):6.3226 | Bok Choy:64 | Chard:96 | Cherry Tomatoes:40 | Kale:64 | Lemon Juice:8 | Olive Oil:7.9098 | Pumpkin Seeds:24.7444 | Purslane:152 | Rocca:33.6 | Sardines (Canned):6.654 | Spinach (Fresh):48",,,,,,,,,false,,NutrientDense,,,,"Omega-3 sardines with roasted pepper salad — vitamin D and B12.",
-"Kimchi Purslane Side Salad","Side Salad","Beetroot:5.7676 | Bell Pepper (Red):3.871 | Bok Choy:3.0769 | Chard:64 | Green Beans:8 | Kale:40 | Kimchi:1.3999 | Lemon Juice:8 | Okra:16 | Pumpkin:8 | Purslane:59.6 | Rocca:11.52 | Spinach (Fresh):48 | Tahini:7.9679 | Zucchini:8",,,,,,,,,false,,NutrientDense,,,,"Probiotic kimchi with purslane, tahini, and roasted pepper.",
+"Kimchi Purslane Side Salad","Side Salad","Bok Choy:40 | Kimchi (Base):30 | Purslane:60 | Tahini Miso Garlic Ginger Rice Vinegar Dressing (Base):20",,,,,,,,,false,,NutrientDense,,,images/meals/kimchi_purslane_side_salad.png,"Homemade fermented kimchi with purslane and bok choy, tahini-miso dressing.","Toss purslane and bok choy in a bowl.
+Add two spoons of homemade Kimchi (Base).
+Drizzle with Tahini Miso Garlic Ginger Rice Vinegar Dressing (Base) and toss to coat."
 "Classic Garden Salad","Side Salad","Bell Pepper (Red):40 | Cabbage (Purple):30 | Classic Lemon Garlic Dressing (Base):15 | Cucumber:60 | Red Onion:25 | Romaine Lettuce:50 | Tomato (Raw):60",350,35,35,7.8,,,,,false,,NutrientDense,,Nightshades,images/meals/classic_garden_salad.png,"A crisp","Wash and chop the lettuce, tomato, cucumber, pepper, cabbage, and onion.
 Toss the vegetables together in a large bowl.
 Serve immediately.
@@ -28,7 +30,7 @@ Chill 15 minutes. Serve cold."
 3. Spoon the spinach and tomato layer over the hummus.
 4. Soft-boil eggs until the whites are set and yolks are jammy (6–7 min). Halve and place on top.
 5. Add cucumber slices and finish with cracked black pepper. Serve immediately."
-"Tamarind Honey & Sesame Chicken w Garlicky Green Beans",Meal,"Bok Choy:30 | Broccoli:10 | Chicken Breast:150 | Cucumber Pickle (Base):25 | Garlic (Raw):5 | Garlicky Green Beans (Base):85 | Ginger (Raw):2 | Honey (Raw):5 | Rice Vinegar:10 | Sea Salt:1 | Sesame Oil:10 | Sesame Seeds:8 | Spring Onion:5 | Tamarind Paste:10",360,36,27,12,,,,,false,,Balanced,Luteal,"G6PD Trigger, Sesame, Soy",images/meals/tamarind_honey_sesame_chicken_green_beans.png,"Baked chicken thighs glazed in tamarind honey sauce, with garlicky green beans and broccoli.","Combine tamarind paste, honey, rice vinegar, sesame oil, crushed garlic, grated ginger, salt, and spring onion pieces in a jug.
+"Tamarind Honey & Sesame Chicken w Garlicky Green Beans",Meal,"Bok Choy:30 | Broccoli:60 | Chicken Breast:150 | Cucumber Pickle (Base):25 | Garlic (Raw):5 | Garlicky Green Beans (Base):85 | Ginger (Raw):2 | Honey (Raw):5 | Rice Vinegar:10 | Sea Salt:1 | Sesame Oil:10 | Sesame Seeds:8 | Spring Onion:5 | Tamarind Paste:10",360,36,27,12,,,,,false,,Balanced,Luteal,"G6PD Trigger, Sesame, Soy",images/meals/tamarind_honey_sesame_chicken_green_beans.png,"Baked chicken thighs glazed in tamarind honey sauce, with garlicky green beans and broccoli.","Combine tamarind paste, honey, rice vinegar, sesame oil, crushed garlic, grated ginger, salt, and spring onion pieces in a jug.
 Marinate chicken breast in the sauce overnight.
 Preheat oven. Bake 25 minutes until cooked through (74°C internal).
 Sprinkle chicken with finely sliced spring onion. Combine tray juices with leftover marinade and drizzle over liberally.
@@ -218,8 +220,8 @@ Warm quinoa bread separately. Serve stew with bread and lemon."
 Halve cherry tomatoes and toss with rocca.
 Combine with warm eggplant and pomegranate seeds.
 Serve dressing on the side."
-"Rosemary Chicken Rocca Salad",Meal,"Cucumber:55 | Garlic (Raw):3 | Red Pepper Dressing (Base):20 | Roasted Cherry Tomato (Base):45 | Rocca:50 | Rosemary (Fresh):2 | Rosemary Garlic Chicken (Base):150 | Walnuts:6",350,35,35,7.8,,,,,false,,,,"Nightshades, Nuts",images/meals/rosemary_chicken_rocca_salad.png,"Juicy chicken breast grilled with fresh rosemary and garlic","Grill or pan-sear Rosemary Garlic Chicken (Base) until golden then in the oven for 20 minutes exactly, then Rest and slice.
-Toss rocca, cucumber, and cherry tomatoes in a bowl.
+"Rosemary Chicken Rocca Salad",Meal,"Cucumber:55 | Garlic (Raw):3 | Purslane:40 | Red Pepper Dressing (Base):20 | Roasted Cherry Tomato (Base):45 | Rocca:50 | Rosemary (Fresh):2 | Rosemary Garlic Chicken (Base):150 | Walnuts:6",350,35,35,7.8,,,,,false,,,,"Nightshades, Nuts",images/meals/rosemary_chicken_rocca_salad.png,"Juicy chicken breast grilled with fresh rosemary and garlic","Grill or pan-sear Rosemary Garlic Chicken (Base) until golden then in the oven for 20 minutes exactly, then Rest and slice.
+Toss rocca, purslane, cucumber, and cherry tomatoes in a bowl.
 Top with chicken and walnuts.
 Serve dressing on the side."
 "Salmon Cashew Cream & Roasted Vegetabls",Meal,"Garlic:2 | Lemon Juice:5 | Roasted Mixed Vegetables (Base):100 | Salmon (Raw):150",350,35,35,7.8,,,,,false,,Balanced,,"Fish, Nightshades",images/meals/salmon_cashew_cream.png,"A premium pan-roasted salmon fillet smothered in a rich","dairy-free garlic cashew cream reduction"
@@ -399,15 +401,12 @@ Season chicken breast with salt and pepper. Sear in a hot pan until golden and c
 Warm Red Thai Curry Paste (Base) with a splash of coconut milk, then whisk in the remaining coconut milk and simmer until smooth.
 Add roasted pumpkin and palm sugar; simmer 2–3 minutes until fragrant.
 Fold in sliced chicken and warm through. Garnish with fresh coriander and serve."
-"aut unde consectetur",Meal,,,,,,,,,,false,,,,,,,
-"consequatur saepe dolore",Dessert,,,,,,,,,,false,,,,,,,
 "Rosemary Garlic Chicken w Pomegranate Glaze, Beetroot & Rocca",Meal,"Beetroot:7.8606 | Bell Pepper (Red):4.4516 | Black Pepper:0.5 | Bok Choy:1.8461 | Chard:104 | Garlic (Raw):3 | Kale:32.2286 | Nutmeg:0.2 | Olive Oil (Extra Virgin):4 | Oregano:1 | Pomegranate Molasses:7.2048 | Purslane:138.4 | Quinoa Flatbread (Base):8.788 | Red Onion:5.4 | Rocca:16 | Rosemary Garlic Chicken (Base):63.2813 | Spinach (Fresh):48 | Tomato (Raw):7.5555",360,36,27,12,,,,,false,,Balanced,,"Gluten, Nightshades",images/meals/rosemary_garlic_chicken_pomegranate_beetroot_rocca.png,"Rosemary garlic chicken over warm quinoa flatbread with sautéed peppers and onion in pomegranate molasses, roasted beetroot, rocca, and raw tomato.","1. Prepare Rosemary Garlic Chicken (Base) and Quinoa Flatbread (Base) per base recipe instructions; keep the flatbread warm.
 2. Roast or boil beetroot until tender. Cool, peel, and slice.
 3. Sauté diced onion in olive oil until softened (4–5 min). Add sliced red pepper; cook 2–3 minutes. Stir in garlic and oregano.
 4. Grill or pan-sear the rosemary garlic chicken until golden, then finish in the oven for 20 minutes exactly. Rest and slice.
 5. Finish the sautéed vegetables with pomegranate molasses, black pepper, and a pinch of nutmeg.
 6. Serve sliced chicken with warm quinoa flatbread, pomegranate vegetables, beetroot, rocca, and sliced raw tomato."
-"dolor accusantium earum",Breakfast,,,,,,,,,,false,,,,,,,
 "Italian Meatballs in Marinara w Buckwheat Spaghetti",Meal,"Buckwheat Spaghetti (Cooked):150 | Italian Meatballs (Base):150 | Marinara Sauce (Base):130 | Olive Oil:4",350,35,35,7.8,,,,,false,1,Balanced,,"Eggs, Gluten, Nightshades, Nuts",images/meals/italian_meatballs_buckwheat_spaghetti.png,"Classic Italian-style lean beef meatballs simmered in house marinara over buckwheat spaghetti.","Prepare Italian Meatballs (Base) per base recipe instructions; brown and set aside.
 Cook buckwheat spaghetti in boiling salted water until al dente. Drain, reserving a splash of pasta water.
 Prepare Marinara Sauce (Base) per base recipe instructions. Return meatballs to the sauce and simmer 10–15 minutes until cooked through.
@@ -474,10 +473,10 @@ Serve chilled."
 Spoon the set pudding into the bottom of a glass or jar.
 Blend strawberries and banana until smooth.
 Pour the fruit smoothie over the chia layer. Serve chilled."
-"Halloumi & Spinach Scramble",Breakfast,"Black Pepper:1 | Egg:100 | Halloumi:40 | Olive Oil:10 | Spinach (Fresh):40",260,24,4,16,,,,,false,,Balanced,,"Dairy, Eggs",images/meals/halloumi_spinach_scramble.png,"Grilled halloumi folded through softly scrambled eggs with wilted spinach.","1. Heat half the olive oil in a non-stick skillet over medium heat. Wilt spinach for 1 minute, then set aside.
-2. Grill halloumi in the remaining oil until golden on both sides.
-3. Beat eggs, add to the skillet with a little more oil if the pan looks dry, and scramble gently until just set.
-4. Fold halloumi and spinach through the eggs. Season with black pepper and serve warm."
+"Gouda & Spinach Scramble",Breakfast,"Black Pepper:1 | Butter (Unsalted):10 | Egg:100 | Gouda:40 | Spinach (Fresh):50",260,25,4,15,,,,,false,,Balanced,,"Dairy, Eggs",images/meals/halloumi_spinach_scramble.png,"Melted gouda folded through softly scrambled eggs with wilted spinach.","1. Heat half the grass-fed butter in a non-stick skillet over medium heat. Wilt spinach for 1 minute, then set aside.
+2. Dice gouda and melt it in the remaining butter over medium-low heat until just beginning to soften.
+3. Beat eggs, add to the skillet with a little more butter if the pan looks dry, and scramble gently until just set.
+4. Fold gouda and spinach through the eggs. Season with black pepper and serve warm."
 "Greek Yogurt & Parmesan Frittata",Breakfast,"Bell Pepper (Red):30 | Black Pepper:1 | Egg:100 | Greek Yogurt:40 | Olive Oil:5 | Parmesan:15 | Spinach (Fresh):30",250,26,8,12,,,,,false,,Balanced,,"Dairy, Eggs",images/meals/greek_yogurt_parmesan_frittata.png,"Fluffy oven-baked frittata with Greek yogurt for extra protein and parmesan finish.","1. Heat oven to 180°C (350°F).
 2. Whisk eggs with Greek yogurt, salt, and pepper. Fold in spinach and diced pepper.
 3. Brush an oven-safe pan with olive oil, pour in the mixture, and bake 12–15 minutes until set.
@@ -515,7 +514,11 @@ Spoon Marinara Sauce (Base) into a baking dish. Nestle stuffed zucchini in the s
 2. Grill or pan-sear Rosemary Garlic Chicken (Base) until golden then in the oven for 20 minutes exactly, then Rest and slice.
 3. Sauté mushrooms in remaining olive oil until golden. Wilt spinach briefly in the same pan.
 4. Plate roasted sweet potato, spinach, and mushrooms. Top with sliced chicken and serve warm."
-"Seared Beef Liver w Roasted Beetroot, Chard & Chimichurri",Meal,"Basmati Rice (Brown):10.0857 | Beef Liver:158 | Beetroot:20.1397 | Black Pepper:0.5 | Bok Choy:56 | Cabbage (Purple):55 | Carrots:20.8049 | Chard:88 | Fermented Chimichurri (Base):18 | Garlic (Raw):4 | Green Beans:16 | Kale:48 | Lemon Juice:8 | Okra:16 | Olive Oil (Extra Virgin):5 | Pumpkin:8 | Purslane:144 | Rocca:24 | Spinach (Fresh):48 | White Onion:3.8 | Zucchini:8",,,,,,,,,false,,"Balanced, NutrientDense",,,,"Quick-seared beef liver with roasted beetroot, wilted chard, and fermented chimichurri.",
+"Seared Beef Liver w Roasted Beetroot, Chard & Chimichurri",Meal,"Beef Liver:150 | Beetroot:90 | Black Pepper:0.5 | Cabbage (Purple):70 | Carrots:55 | Chard:100 | Cooked Quinoa (Base):75 | Fermented Chimichurri (Base):18 | Garlic (Raw):4 | Lemon Juice:8 | Olive Oil (Extra Virgin):5 | White Onion:35",,,,,,,,,false,,"Balanced, NutrientDense",,,images/meals/seared_beef_liver_beetroot_chimichurri_quinoa.png,"Quick-seared beef liver with fluffy quinoa, roasted beetroot, wilted chard, and fermented chimichurri.","1. Toss beetroot and carrots with half the olive oil. Roast at 200°C until tender and lightly caramelised.
+2. Slow-cook sliced onion in the remaining olive oil over medium-low heat until golden and sweet.
+3. Season liver strips with black pepper. Sear 1–2 minutes per side until just cooked through; remove from heat.
+4. Wilt chard and cabbage in the same pan with garlic and lemon juice.
+5. Prepare Cooked Quinoa (Base). Plate quinoa, roasted vegetables, and greens. Top with liver and Fermented Chimichurri (Base)."
 "Sautéed Chicken Liver w Garlicky Cabbage, Bok Choy & Peppers",Meal,"Beetroot:8 | Bell Pepper (Red):3.0322 | Black Pepper:0.5 | Bok Choy:25.7692 | Cabbage (Purple):4.7418 | Chard:48 | Cherry Tomatoes:35 | Chicken Liver:158 | Garlic (Raw):5 | Kale:40 | Nutmeg:0.2 | Okra:8 | Olive Oil (Extra Virgin):6 | Oregano:1 | Pomegranate Molasses:7.3655 | Purslane:75.2 | Quinoa Flatbread (Base):22.75 | Red Onion:4 | Rocca:40 | Spinach (Fresh):48",,,,,,,,,false,,"Balanced, NutrientDense",,,,"Pan-sautéed chicken liver with garlicky cabbage, bok choy, and peppers.",
 "Carrot Cumin Soup",Soup,"Carrots:150 | Coriander Seeds:2 | Cumin Seeds:3 | French Lentils:70 | Fresh Parsley:5 | Garlic:4 | Lemon Juice:8 | Olive Oil:5 | Vegetable Broth (Base):3.125 | Water (Filtered):139.375 | White Onion:35",,,,,,,,,false,,"Balanced, NutrientDense",,,,"Hearty carrot and French lentil soup with cumin and fresh parsley.","1. Toast cumin seeds in a dry pan for 30 seconds.
 2. Sauté onion, garlic, and carrots in oil for 5 minutes.

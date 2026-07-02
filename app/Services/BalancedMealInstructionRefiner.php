@@ -116,11 +116,11 @@ final class BalancedMealInstructionRefiner
                 'Add olives and avocado on one half. Fold omelet in half.',
                 'Finish with fresh herbs. Serve warm.',
             ]),
-            'Halloumi & Spinach Scramble' => $this->steps([
-                'Heat half the olive oil in a non-stick skillet over medium heat. Wilt spinach for 1 minute, then set aside.',
-                'Grill halloumi in the remaining oil until golden on both sides.',
-                'Beat eggs, add to the skillet with a little more oil if the pan looks dry, and scramble gently until just set.',
-                'Fold halloumi and spinach through the eggs. Season with black pepper and serve warm.',
+            'Gouda & Spinach Scramble' => $this->steps([
+                'Heat half the grass-fed butter in a non-stick skillet over medium heat. Wilt spinach for 1 minute, then set aside.',
+                'Dice gouda and melt it in the remaining butter over medium-low heat until just beginning to soften.',
+                'Beat eggs, add to the skillet with a little more butter if the pan looks dry, and scramble gently until just set.',
+                'Fold gouda and spinach through the eggs. Season with black pepper and serve warm.',
             ]),
             'Greek Yogurt & Parmesan Frittata' => $this->steps([
                 'Heat oven to 180°C (350°F).',
@@ -269,7 +269,7 @@ final class BalancedMealInstructionRefiner
             ]),
             'Rosemary Chicken Rocca Salad' => $this->steps([
                 'Grill or pan-sear Rosemary Garlic Chicken (Base) until golden then in the oven for 20 minutes exactly, then Rest and slice.',
-                'Toss rocca, cucumber, and cherry tomatoes in a bowl.',
+                'Toss rocca, purslane, cucumber, and cherry tomatoes in a bowl.',
                 'Top with chicken and walnuts.',
                 SaladDressingMealRefiner::SERVE_DRESSING_ON_THE_SIDE,
             ]),
@@ -306,11 +306,11 @@ final class BalancedMealInstructionRefiner
 
             // Salmon mains
             BalancedCanonicalMealRecipeRefiner::BAKED_SALMON_NAME => $this->steps([
-                'Prepare Steamed Basmati Rice (Base) and keep warm.',
+                'Toss pumpkin, bell pepper, zucchini, and carrots with olive oil. Roast at 200°C until tender and lightly caramelised.',
                 'Coat salmon generously with Fermented Chimichurri (Base).',
                 'Bake at 190°C for 12–15 minutes until flaky.',
                 'Steam or roast broccoli until bright green and tender.',
-                'Plate basmati rice and broccoli. Top with salmon and extra chimichurri if desired.',
+                'Plate roasted vegetables and broccoli. Top with salmon, pumpkin seeds, and extra chimichurri if desired.',
             ]),
             'Citrus Herb Salmon' => $this->steps([
                 'Roast sweet potato cubes at 200°C for 20 minutes.',

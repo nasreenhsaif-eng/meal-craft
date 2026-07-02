@@ -16,6 +16,59 @@ use App\Services\Nutrition\UserPlanCalculator;
  */
 final class SavoryEggBreakfastMeals
 {
+    /** @var array<string, string> Legacy library names still referenced by older production plans. */
+    private const LEGACY_MEAL_NAME_ALIASES = [
+        'Halloumi & Spinach Scramble' => 'Gouda & Spinach Scramble',
+    ];
+
+    public static function canonicalMealName(string $mealName): string
+    {
+        return self::LEGACY_MEAL_NAME_ALIASES[$mealName] ?? $mealName;
+    }
+
+    /**
+     * @return list<string>
+     */
+    public static function legacyMealNamesForCanonical(string $canonicalName): array
+    {
+        $legacy = [];
+
+        foreach (self::LEGACY_MEAL_NAME_ALIASES as $oldName => $newName) {
+            if ($newName === $canonicalName) {
+                $legacy[] = $oldName;
+            }
+        }
+
+        return $legacy;
+    }
+
+    public static function findRotationMealByName(string $mealName): ?Meal
+    {
+        $canonicalName = self::canonicalMealName($mealName);
+
+        $meal = Meal::queryForMealLibrary()
+            ->where('name', $canonicalName)
+            ->with('ingredients')
+            ->first();
+
+        if ($meal instanceof Meal) {
+            return $meal;
+        }
+
+        foreach (self::legacyMealNamesForCanonical($canonicalName) as $legacyName) {
+            $legacyMeal = Meal::queryForMealLibrary()
+                ->where('name', $legacyName)
+                ->with('ingredients')
+                ->first();
+
+            if ($legacyMeal instanceof Meal) {
+                return $legacyMeal;
+            }
+        }
+
+        return null;
+    }
+
     /**
      * @return list<string>
      */
@@ -46,6 +99,7 @@ final class SavoryEggBreakfastMeals
     public static function isDairyForwardBreakfast(Meal|string $meal): bool
     {
         $name = $meal instanceof Meal ? (string) $meal->name : $meal;
+        $name = self::canonicalMealName($name);
 
         return in_array($name, self::dairyForwardMealNames(), true);
     }
@@ -53,6 +107,7 @@ final class SavoryEggBreakfastMeals
     public static function isDairyFreeBreakfast(Meal|string $meal): bool
     {
         $name = $meal instanceof Meal ? (string) $meal->name : $meal;
+        $name = self::canonicalMealName($name);
 
         return in_array($name, self::dairyFreeMealNames(), true);
     }
@@ -91,6 +146,8 @@ final class SavoryEggBreakfastMeals
 
     public static function resolveMealNameForProfile(string $mealName, CustomerProfile $profile): string
     {
+        $mealName = self::canonicalMealName($mealName);
+
         if (! self::isSavoryEggBreakfast($mealName)) {
             return $mealName;
         }
@@ -112,18 +169,17 @@ final class SavoryEggBreakfastMeals
 
     public static function resolveMealForProfile(Meal $meal, CustomerProfile $profile): Meal
     {
-        $resolvedName = self::resolveMealNameForProfile((string) $meal->name, $profile);
+        $canonicalMeal = self::findRotationMealByName((string) $meal->name) ?? $meal;
 
-        if ($resolvedName === $meal->name) {
-            return $meal;
+        $resolvedName = self::resolveMealNameForProfile((string) $canonicalMeal->name, $profile);
+
+        if ($resolvedName === $canonicalMeal->name) {
+            return $canonicalMeal;
         }
 
-        $resolved = Meal::queryForMealLibrary()
-            ->where('name', $resolvedName)
-            ->with('ingredients')
-            ->first();
+        $resolved = self::findRotationMealByName($resolvedName);
 
-        return $resolved instanceof Meal ? $resolved : $meal;
+        return $resolved instanceof Meal ? $resolved : $canonicalMeal;
     }
 
     public static function scheduledBreakfastNameForDay(int $dayNumber, CustomerProfile $profile): string

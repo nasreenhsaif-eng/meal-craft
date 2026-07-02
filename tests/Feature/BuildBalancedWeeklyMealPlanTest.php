@@ -91,7 +91,7 @@ test('balanced weekly plan builder creates seven day rotating menus with twelve 
 
     expect($dayOneChiaDessert)->toBe('Blueberry Walnut Chia Pudding')
         ->and($dayTwoChiaDessert)->toBe('Mango Pumpkin Seed Chia Pudding')
-        ->and($dayOneSavoryBreakfast)->toBe('Halloumi & Spinach Scramble');
+        ->and($dayOneSavoryBreakfast)->toBe('Gouda & Spinach Scramble');
 
     foreach (range(1, 7) as $day) {
         $rotatingSoup = $plan->dayMeals()

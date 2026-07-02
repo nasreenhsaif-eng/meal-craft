@@ -8,6 +8,7 @@ use App\Models\Ingredient;
 use App\Models\Meal;
 use App\Models\User;
 use App\Services\Nutrition\DayMicronutrientCoverageAnalyzer;
+use App\Support\MainMealVegetablePortionFloor;
 use App\Support\MealLibraryEditGuard;
 use App\Support\NutrientDailyRdi;
 use Illuminate\Support\Facades\DB;
@@ -326,7 +327,7 @@ final class NutrientDenseMicronutrientRecipeRefiner
             return false;
         }
 
-        $reduceName = $this->resolveFlexibleReduceTarget($ingredientGrams, $nutritionKey);
+        $reduceName = $this->resolveFlexibleReduceTarget($ingredientGrams, $nutritionKey, $meal);
 
         if ($reduceName === null) {
             return false;
@@ -351,7 +352,12 @@ final class NutrientDenseMicronutrientRecipeRefiner
         $addedCalories = $gramStep * $boostCaloriesPerGram;
         $gramsToRemove = $addedCalories / $reduceCaloriesPerGram;
 
-        if (($ingredientGrams[$reduceName] ?? 0) - $gramsToRemove < 1.0) {
+        $minimumRemaining = max(
+            1.0,
+            MainMealVegetablePortionFloor::minimumGrams($meal, $reduceName) ?? 1.0,
+        );
+
+        if (($ingredientGrams[$reduceName] ?? 0) - $gramsToRemove < $minimumRemaining) {
             return false;
         }
 
@@ -523,13 +529,17 @@ final class NutrientDenseMicronutrientRecipeRefiner
     /**
      * @param  array<string, float>  $ingredientGrams
      */
-    private function resolveFlexibleReduceTarget(array $ingredientGrams, string $nutritionKey): ?string
+    private function resolveFlexibleReduceTarget(array $ingredientGrams, string $nutritionKey, Meal $meal): ?string
     {
         $bestName = null;
         $bestScore = null;
 
         foreach ($ingredientGrams as $name => $grams) {
             if ($grams <= self::GRAM_STEP || MicronutrientBoostCatalog::isAnchorIngredient($name)) {
+                continue;
+            }
+
+            if (MainMealVegetablePortionFloor::minimumGrams($meal, $name) !== null) {
                 continue;
             }
 
@@ -558,6 +568,8 @@ final class NutrientDenseMicronutrientRecipeRefiner
      */
     private function syncMeal(Meal $meal, array $ingredientGrams): void
     {
+        $ingredientGrams = MainMealVegetablePortionFloor::applyFloors($meal, $ingredientGrams);
+
         $sync = [];
 
         foreach ($ingredientGrams as $ingredientName => $grams) {

@@ -1,4 +1,5 @@
-import { Fragment, useMemo } from 'react';
+import { Fragment, useMemo, useState } from 'react';
+import PillButton from '../Atoms/Button/Button.jsx';
 import NutrientBadge from '../Atoms/MealSystem/NutrientBadge.jsx';
 import SafetyAlerts from '../MealSystem/SafetyAlerts.jsx';
 import { G6PD_HIGHLIGHT_BADGE } from '../../meal-library/mealSafetyAndSickle.ts';
@@ -8,15 +9,16 @@ import {
     FLOOR_RDI_TARGET_PERCENT,
     isMicronutrientTierEnforced,
 } from '../../meal-library/nutrientDailyRdi.ts';
-import DayMicronutrientGapSuggestions from './DayMicronutrientGapSuggestions.jsx';
 import CaloricThresholdNotice from './CaloricThresholdNotice.jsx';
 import {
     PLAN_MACRO_CATEGORY_ROWS,
     PlanMacroSummaryPanel,
     sumActiveDayMacros,
 } from './ChooseYourMeals.jsx';
-
-/** @typedef {'meals' | 'macronutrients' | 'micronutrients' | 'allergies' | 'sickle'} DaySummaryTabId */
+import {
+    categoryMacroTargetsFromPlan,
+    dailyMacroTargetsFromPlan,
+} from '../../consultation/craftCalorieTargets.js';
 
 export const DAY_SUMMARY_TABS = /** @type {const} */ ([
     { id: 'meals', label: 'Meals' },
@@ -25,6 +27,16 @@ export const DAY_SUMMARY_TABS = /** @type {const} */ ([
     { id: 'allergies', label: 'Allergy & safety' },
     { id: 'sickle', label: 'Sickle cell' },
 ]);
+
+/** Macro + micro tabs for day nutrition review during consultation or admin preview. */
+export const DAY_MACRO_MICRO_TABS = /** @type {const} */ ([
+    { id: 'macronutrients', label: 'Macronutrients' },
+    { id: 'micronutrients', label: 'Micronutrients' },
+]);
+
+/** @typedef {'meals' | 'macronutrients' | 'micronutrients' | 'allergies' | 'sickle'} DaySummaryTabId */
+
+/** @typedef {'macronutrients' | 'micronutrients'} DayMacroMicroTabId */
 
 /**
  * @param {Partial<Record<string, Array<{ title?: string; detailView?: Record<string, unknown> }>>>} categories
@@ -202,16 +214,37 @@ export function DayMealsTabPanel({ meals, onOpenMeal }) {
  * @param {Partial<Record<string, unknown[]>>} props.categories
  * @param {string} [props.dayLabel]
  * @param {string} [props.planCategoryLabel]
+ * @param {string | null | undefined} [props.craftKey]
+ * @param {number} [props.planTierCalories]
+ * @param {Record<string, unknown> | null | undefined} [props.nutritionPlan]
  */
-export function DayMacronutrientsTabPanel({ categories, dayLabel = 'Day', planCategoryLabel = '' }) {
+export function DayMacronutrientsTabPanel({
+    categories,
+    dayLabel = 'Day',
+    planCategoryLabel = '',
+    craftKey = 'full',
+    planTierCalories = 0,
+    nutritionPlan = null,
+}) {
     const activeDayTotals = useMemo(() => sumActiveDayMacros(categories), [categories]);
+    const dayMacroTargets = useMemo(
+        () => dailyMacroTargetsFromPlan(nutritionPlan, planTierCalories, craftKey ?? 'full'),
+        [nutritionPlan, planTierCalories, craftKey],
+    );
+    const categoryMacroTargets = useMemo(
+        () => categoryMacroTargetsFromPlan(craftKey, planTierCalories, nutritionPlan, categories),
+        [craftKey, planTierCalories, nutritionPlan, categories],
+    );
 
     return (
         <PlanMacroSummaryPanel
             activeDayTotals={activeDayTotals}
+            dayMacroTargets={dayMacroTargets}
+            categoryMacroTargets={categoryMacroTargets}
             categories={categories}
             dayLabel={dayLabel}
             planCategoryLabel={planCategoryLabel}
+            nutritionPlan={nutritionPlan}
         />
     );
 }
@@ -326,31 +359,21 @@ function MicronutrientRdiTable({ rows, planTierCalories = 0 }) {
  * @param {Partial<Record<string, unknown[]>>} props.categories
  * @param {string} [props.dayLabel]
  * @param {number} [props.planTierCalories]
- * @param {string | null} [props.dietProtocol]
- * @param {() => void} [props.onEditMeals]
  */
 export function DayMicronutrientsTabPanel({
     categories,
     dayLabel = 'Day',
     planTierCalories = 0,
-    dietProtocol = null,
-    onEditMeals,
 }) {
     const micronutrientRows = useMemo(() => aggregateDayMicronutrientRows(categories), [categories]);
 
     return (
         <SummarySection
             title="Micronutrients"
-            description={`Full-day totals and % of daily reference intake for ${dayLabel.toLowerCase()}. Vitamin D is shown as best effort — it is difficult to reach 100% from food alone. Scroll below the table for nutrient guidance.`}
+            description={`Full-day totals and % of daily reference intake for ${dayLabel.toLowerCase()}. Vitamin D is shown as best effort — it is difficult to reach 100% from food alone.`}
         >
             <CaloricThresholdNotice planTierCalories={planTierCalories} />
             <MicronutrientRdiTable rows={micronutrientRows} planTierCalories={planTierCalories} />
-            <DayMicronutrientGapSuggestions
-                categories={categories}
-                planTierCalories={planTierCalories}
-                dietProtocol={dietProtocol}
-                onEditMeals={onEditMeals}
-            />
         </SummarySection>
     );
 }
@@ -440,15 +463,80 @@ export function DaySickleCellTabPanel({ categories }) {
 }
 
 /**
+ * Tabbed macronutrients + micronutrients panel for a single day (consultation or admin preview).
+ *
+ * @param {object} props
+ * @param {Partial<Record<string, unknown[]>>} props.categories
+ * @param {string} [props.dayLabel]
+ * @param {string} [props.planCategoryLabel]
+ * @param {string | null | undefined} [props.craftKey]
+ * @param {number} [props.planTierCalories]
+ * @param {Record<string, unknown> | null | undefined} [props.nutritionPlan]
+ * @param {DayMacroMicroTabId} [props.initialTab]
+ */
+export function DayMacroMicroTabPanel({
+    categories,
+    dayLabel = 'Day',
+    planCategoryLabel = '',
+    craftKey = 'full',
+    planTierCalories = 0,
+    nutritionPlan = null,
+    initialTab = 'macronutrients',
+}) {
+    const [tab, setTab] = useState(initialTab);
+
+    return (
+        <div className="space-y-4">
+            <div
+                className="flex w-full flex-wrap items-center gap-2"
+                role="tablist"
+                aria-label={`${dayLabel} nutrition`}
+            >
+                {DAY_MACRO_MICRO_TABS.map((item) => (
+                    <PillButton
+                        key={item.id}
+                        type="button"
+                        role="tab"
+                        aria-selected={tab === item.id}
+                        label={item.label}
+                        variant={tab === item.id ? 'primary' : 'tab'}
+                        size="sm"
+                        onClick={() => setTab(item.id)}
+                        className="shrink-0"
+                    />
+                ))}
+            </div>
+
+            {tab === 'macronutrients' ? (
+                <DayMacronutrientsTabPanel
+                    categories={categories}
+                    dayLabel={dayLabel}
+                    planCategoryLabel={planCategoryLabel}
+                    craftKey={craftKey}
+                    planTierCalories={planTierCalories}
+                    nutritionPlan={nutritionPlan}
+                />
+            ) : (
+                <DayMicronutrientsTabPanel
+                    categories={categories}
+                    dayLabel={dayLabel}
+                    planTierCalories={planTierCalories}
+                />
+            )}
+        </div>
+    );
+}
+
+/**
  * @param {object} props
  * @param {DaySummaryTabId} props.tab
  * @param {Partial<Record<string, unknown[]>>} props.categories
  * @param {string} [props.dayLabel]
  * @param {string} [props.planCategoryLabel]
  * @param {number} [props.planTierCalories]
- * @param {string | null} [props.dietProtocol]
+ * @param {string | null | undefined} [props.craftKey]
+ * @param {Record<string, unknown> | null | undefined} [props.nutritionPlan]
  * @param {(meal: object) => void} [props.onOpenMeal]
- * @param {() => void} [props.onEditMeals]
  */
 export default function DayNutritionalSummaryPanel({
     tab,
@@ -456,9 +544,9 @@ export default function DayNutritionalSummaryPanel({
     dayLabel = 'Day',
     planCategoryLabel = '',
     planTierCalories = 0,
-    dietProtocol = null,
+    craftKey = 'full',
+    nutritionPlan = null,
     onOpenMeal,
-    onEditMeals,
 }) {
     const meals = useMemo(() => listDayMealsWithHighlights(categories), [categories]);
 
@@ -471,6 +559,9 @@ export default function DayNutritionalSummaryPanel({
                     categories={categories}
                     dayLabel={dayLabel}
                     planCategoryLabel={planCategoryLabel}
+                    craftKey={craftKey}
+                    planTierCalories={planTierCalories}
+                    nutritionPlan={nutritionPlan}
                 />
             );
         case 'micronutrients':
@@ -479,8 +570,6 @@ export default function DayNutritionalSummaryPanel({
                     categories={categories}
                     dayLabel={dayLabel}
                     planTierCalories={planTierCalories}
-                    dietProtocol={dietProtocol}
-                    onEditMeals={onEditMeals}
                 />
             );
         case 'allergies':

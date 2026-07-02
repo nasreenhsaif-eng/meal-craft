@@ -344,6 +344,7 @@ final class SaladDressingMealRefiner
                 'salad_ingredients' => [
                     'Rosemary Garlic Chicken (Base)' => StandardMeatPortion::GRAMS,
                     'Rocca' => 50,
+                    'Purslane' => 40,
                     'Cucumber' => 55,
                     'Roasted Cherry Tomato (Base)' => 45,
                     'Rosemary (Fresh)' => 2,
@@ -355,7 +356,7 @@ final class SaladDressingMealRefiner
                 ],
                 'salad_instructions' => [
                     'Grill or pan-sear Rosemary Garlic Chicken (Base) until golden then in the oven for 20 minutes exactly, then Rest and slice.',
-                    'Toss rocca, cucumber, and cherry tomatoes in a bowl.',
+                    'Toss rocca, purslane, cucumber, and cherry tomatoes in a bowl.',
                     'Top with chicken and walnuts.',
                     self::SERVE_DRESSING_ON_THE_SIDE,
                 ],

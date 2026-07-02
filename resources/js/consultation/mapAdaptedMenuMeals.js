@@ -33,6 +33,8 @@ function mealTypeLabelForSlot(slot) {
     }
 }
 
+import { buildNutritionalDataFromNutrition } from '../meal-library/buildNutritionalDataFromNutrition.js';
+
 /**
  * @param {Record<string, unknown>} apiMeal
  */
@@ -41,6 +43,7 @@ export function mapAdaptedApiMealToConsultationMeal(apiMeal) {
     const label = mealTypeLabelForSlot(slot);
     const adapted = /** @type {Record<string, number>} */ (apiMeal.adapted_nutrition ?? {});
     const calories = Number(adapted.calories ?? 0);
+    const nutritionalData = buildNutritionalDataFromNutrition(adapted);
 
     return {
         id: String(apiMeal.id ?? ''),
@@ -70,6 +73,10 @@ export function mapAdaptedApiMealToConsultationMeal(apiMeal) {
         baselineCalories: Number(
             /** @type {Record<string, number>} */ (apiMeal.baseline_nutrition ?? {}).calories ?? 0,
         ),
+        detailView: {
+            nutritionalData,
+            nutritionSubheading: 'Adapted for your plan',
+        },
     };
 }
 

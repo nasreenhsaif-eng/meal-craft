@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import Button from '../../Components/Atoms/Button.jsx';
 import PillButton from '../../Components/Atoms/Button/Button.jsx';
+import AdminPreviewTierPicker from '../../Components/Admin/AdminPreviewTierPicker.jsx';
 import ChooseYourMeals, {
     applyDeckSelectionToggle,
     applyFixedChoiceToggle,
@@ -37,6 +38,7 @@ import {
     saveConsultationDraft,
 } from '../../consultation/consultationDraft.js';
 import MealDetailModalPortal from '../../Components/Molecules/MealDetailModalPortal.jsx';
+import { DayMacroMicroTabPanel } from '../../Components/Consultation/DayNutritionalSummaryPanel.jsx';
 import { useMealDetailModal } from '../../meal-library/useMealDetailModal.js';
 
 const PAGE_BG = 'bg-[#F8F9F6]';
@@ -73,49 +75,6 @@ function readStoredPreviewPlanTier(planTiers, fallback) {
  *   compact?: boolean;
  * }} props
  */
-function AdminPreviewTierPicker({ tiers, selectedTier, onSelectTier, compact = false }) {
-    return (
-        <div
-            className={
-                compact
-                    ? 'mt-3 shrink-0 border-t border-[#5A6B44]/15 pt-3'
-                    : 'rounded-[12px] border border-[#5A6B44]/25 bg-[#5A6B44]/10 px-4 py-3'
-            }
-        >
-            {!compact ? (
-                <p className="font-body text-sm text-[#262A22]">
-                    Admin preview — pick a calorie tier to scale breakfast and mains for this session.
-                </p>
-            ) : null}
-            <p
-                className={[
-                    'font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#555555]',
-                    compact ? '' : 'mt-3',
-                ].join(' ')}
-            >
-                Preview calorie tier
-            </p>
-            <div className="mt-2 flex flex-wrap gap-2">
-                {tiers.map((tier) => (
-                    <PillButton
-                        key={tier}
-                        label={`${tier} kcal`}
-                        variant={selectedTier === tier ? 'primary' : 'outline'}
-                        size="sm"
-                        onClick={() => onSelectTier(tier)}
-                        className={selectedTier === tier ? '' : 'ring-1 ring-[#E5E7EB]'}
-                    />
-                ))}
-            </div>
-            <p className="mt-2 font-body text-xs text-[#555555]">
-                {compact
-                    ? 'Meal portions scale to the tier you pick. Remembered for this browser session.'
-                    : `Currently testing at ${selectedTier} kcal. Your choice is remembered for this browser session.`}
-            </p>
-        </div>
-    );
-}
-
 const CRAFTS = [
     {
         key: 'full',
@@ -421,6 +380,7 @@ export default function CraftedForYouPage({
     initialPlanTiers = DEFAULT_PLAN_TIERS,
     disableAdaptedMenuFetch = false,
     initialEditDraft = null,
+    dietProtocol = null,
 } = {}) {
     const initialRestoreDraft = useMemo(
         () => readInitialConsultationRestoreDraft(initialEditDraft),
@@ -1376,6 +1336,11 @@ export default function CraftedForYouPage({
         [reconciledMealCardsForDay],
     );
 
+    const curationNutritionCategories = useMemo(
+        () => groupConsultationMealsByCategory(reconciledMealCardsForDay),
+        [reconciledMealCardsForDay],
+    );
+
     const progressPercent = totalScreens <= 1 ? 0 : ((screen - 1) / (totalScreens - 1)) * 100;
 
     const canGoNextFromCraftDuration =
@@ -1836,6 +1801,17 @@ export default function CraftedForYouPage({
 
                             return (
                             <div className="flex min-h-0 w-full flex-1 flex-col">
+                            <div className="mb-4 shrink-0 px-4 md:px-5">
+                                <DayMacroMicroTabPanel
+                                    categories={curationNutritionCategories}
+                                    dayLabel={WEEKDAY_LONG[curationDay - 1] ?? 'Day'}
+                                    planCategoryLabel={`${craft?.title ?? 'Craft'} · ${planTierCalories} kcal`}
+                                    craftKey={craft?.key ?? 'full'}
+                                    planTierCalories={planTierCalories}
+                                    nutritionPlan={nutritionPlan}
+                                    dietProtocol={dietProtocol}
+                                />
+                            </div>
                             <ChooseYourMeals
                                 panelClassName="h-full min-h-0"
                                 soupCatalogMeals={catalogMeals}
@@ -1844,6 +1820,7 @@ export default function CraftedForYouPage({
                                 dayMacroTotals={dayMacroTotals}
                                 dayMacroTargets={dayMacroTargets}
                                 dayMacroTolerance={dayMacroTolerance}
+                                nutritionPlan={nutritionPlan}
                                 summaryLabel={`${WEEKDAY_LABELS[curationDay - 1]} selections`}
                                 craftTitle={craft ? craft.title : ''}
                                 targetCalories={planTierCalories}

@@ -15,9 +15,13 @@ use App\Http\Requests\StoreMealPlanFromLibraryRequest;
 use App\Models\Meal;
 use App\Models\MealPlan;
 use App\Models\MealPlanDayMeal;
+use App\Services\MealPlanLibraryTierPreview;
 use App\Services\MealPlanService;
+use App\Services\Nutrition\UserPlanCalculator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -29,6 +33,7 @@ class MealPlanLibraryController extends Controller
     public function __construct(
         private MealPlanService $mealPlanService,
         private MealLibraryController $mealLibrary,
+        private MealPlanLibraryTierPreview $tierPreview,
     ) {}
 
     public function index(): Response
@@ -148,6 +153,9 @@ class MealPlanLibraryController extends Controller
             $tags[] = $mealPlan->cycle_phase->label();
         }
 
+        $planTiers = UserPlanCalculator::planTiers();
+        $defaultPlanTier = in_array(1500, $planTiers, true) ? 1500 : ($planTiers[2] ?? $planTiers[0] ?? 1500);
+
         return Inertia::render('Admin/MealPlanDetail', [
             'mealPlan' => [
                 'id' => $mealPlan->id,
@@ -163,8 +171,27 @@ class MealPlanLibraryController extends Controller
                 ],
             ],
             'days' => array_values($daysByNumber),
+            'planTiers' => $planTiers,
+            'defaultPlanTier' => $defaultPlanTier,
+            'tierPreviewUrl' => route('admin.meal-plan-library.tier-preview', $mealPlan),
             'libraryUrl' => route('admin.meal-plan-library'),
             'ingredientProfiles' => $this->mealLibrary->verifiedIngredientProfilesForUi(),
+        ]);
+    }
+
+    public function tierPreview(Request $request, MealPlan $mealPlan): JsonResponse
+    {
+        $validated = $request->validate([
+            'plan_tier' => ['required', 'integer', Rule::in(UserPlanCalculator::planTiers())],
+        ]);
+
+        return response()->json([
+            'planTier' => (int) $validated['plan_tier'],
+            'days' => $this->tierPreview->daysForTier(
+                $mealPlan,
+                (int) $validated['plan_tier'],
+                $request->user(),
+            ),
         ]);
     }
 

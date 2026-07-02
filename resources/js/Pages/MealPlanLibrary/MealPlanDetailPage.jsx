@@ -6,20 +6,71 @@ import adminInertiaLayout from '../../lib/adminInertiaLayout.jsx';
 import { resolveUrl } from '../../meal-craft/mealCraftPageProps.js';
 import PillButton from '../../Components/Atoms/Button/Button.jsx';
 import Button from '../../Components/Atoms/Button.jsx';
+import AdminPreviewTierPicker from '../../Components/Admin/AdminPreviewTierPicker.jsx';
 import {
     applyDeckSelectionToggle,
     DEFAULT_FULL_CRAFT_MAX_SELECTIONS,
     MealSlotCarousel,
-    PlanMacroSummaryPanel,
     SoupOfTheDayOptIn,
-    sumActiveDayMacros,
 } from '../../Components/Consultation/ChooseYourMeals.jsx';
+import { DayMacroMicroTabPanel } from '../../Components/Consultation/DayNutritionalSummaryPanel.jsx';
 import MealDetailView from '../../Components/Molecules/MealDetailView/MealDetailView';
 import MealPlanMealEditSheet from '../../Components/MealPlan/MealPlanMealEditSheet.jsx';
 import { SCHEDULER_SLOT_SECTIONS } from '../../meal-library/mealSearch.ts';
 import { updateMealInPlanDays } from './mealPlanMealEdit.js';
 
 const PAGE_BG = 'bg-[#F8F9F6]';
+
+const DEFAULT_PLAN_TIERS = [1000, 1200, 1500, 1800, 2000];
+
+/**
+ * @param {number} mealPlanId
+ * @param {number[]} planTiers
+ * @param {number} fallback
+ */
+function readStoredMealPlanTier(mealPlanId, planTiers, fallback) {
+    if (typeof window === 'undefined' || mealPlanId <= 0) {
+        return fallback;
+    }
+
+    try {
+        const raw = sessionStorage.getItem(`mc-admin-meal-plan-tier-${mealPlanId}`);
+        const value = raw ? Number.parseInt(raw, 10) : Number.NaN;
+
+        if (Number.isFinite(value) && planTiers.includes(value)) {
+            return value;
+        }
+    } catch {
+        // ignore storage errors
+    }
+
+    return fallback;
+}
+
+/**
+ * @param {string} tierPreviewUrl
+ * @param {number} planTier
+ */
+async function fetchTierPreviewDays(tierPreviewUrl, planTier) {
+    const url = new URL(tierPreviewUrl, window.location.origin);
+    url.searchParams.set('plan_tier', String(planTier));
+
+    const response = await fetch(url.toString(), {
+        headers: {
+            Accept: 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+        },
+        credentials: 'same-origin',
+    });
+
+    if (!response.ok) {
+        throw new Error('Could not load tier preview.');
+    }
+
+    const payload = await response.json();
+
+    return payload.days ?? [];
+}
 
 /** @type {Record<string, 'breakfasts' | 'meals' | 'sideSalads' | 'desserts' | 'soup'>} */
 const SLOT_KEY_TO_CATEGORY = {
@@ -82,16 +133,33 @@ function buildInitialSoupOptInByDay(planDays) {
  * @param {object} props
  * @param {object} props.mealPlan
  * @param {Array<{ dayNumber: number; label: string; categories: Record<string, unknown[]> }>} props.days
+ * @param {number[]} [props.planTiers]
+ * @param {number} [props.defaultPlanTier]
+ * @param {string} [props.tierPreviewUrl]
  * @param {string} [props.libraryUrl]
  * @param {object[]} [props.ingredientProfiles]
  */
 export default function MealPlanDetailPage({
     mealPlan,
     days = [],
+    planTiers = DEFAULT_PLAN_TIERS,
+    defaultPlanTier = 1500,
+    tierPreviewUrl = '',
     libraryUrl = '/admin/meal-plan-library',
     ingredientProfiles = [],
 }) {
+    const availablePlanTiers = planTiers.length > 0 ? planTiers : DEFAULT_PLAN_TIERS;
+    const mealPlanId = mealPlan?.id ?? 0;
+    const initialTier = readStoredMealPlanTier(
+        mealPlanId,
+        availablePlanTiers,
+        availablePlanTiers.includes(defaultPlanTier) ? defaultPlanTier : availablePlanTiers[0],
+    );
+
+    const [selectedTier, setSelectedTier] = useState(initialTier);
     const [planDays, setPlanDays] = useState(days);
+    const [tierLoading, setTierLoading] = useState(Boolean(tierPreviewUrl));
+    const [tierError, setTierError] = useState(/** @type {string | null} */ (null));
     const [activeDay, setActiveDay] = useState(() => days[0]?.dayNumber ?? 1);
     const [daySelections, setDaySelections] = useState(() => buildInitialDaySelections(days));
     const [soupOptInByDay, setSoupOptInByDay] = useState(() => buildInitialSoupOptInByDay(days));
@@ -107,6 +175,58 @@ export default function MealPlanDetailPage({
         setDaySelections(buildInitialDaySelections(days));
         setSoupOptInByDay(buildInitialSoupOptInByDay(days));
     }, [days]);
+
+    useEffect(() => {
+        if (mealPlanId <= 0) {
+            return;
+        }
+
+        try {
+            sessionStorage.setItem(`mc-admin-meal-plan-tier-${mealPlanId}`, String(selectedTier));
+        } catch {
+            // ignore storage errors
+        }
+    }, [mealPlanId, selectedTier]);
+
+    useEffect(() => {
+        if (!tierPreviewUrl) {
+            setTierLoading(false);
+            return undefined;
+        }
+
+        let cancelled = false;
+
+        setTierLoading(true);
+        setTierError(null);
+
+        fetchTierPreviewDays(tierPreviewUrl, selectedTier)
+            .then((tierDays) => {
+                if (cancelled) {
+                    return;
+                }
+
+                setPlanDays(tierDays);
+                setDaySelections(buildInitialDaySelections(tierDays));
+                setSoupOptInByDay(buildInitialSoupOptInByDay(tierDays));
+            })
+            .catch(() => {
+                if (!cancelled) {
+                    setTierError('Could not scale meals for this tier. Showing library portions.');
+                    setPlanDays(days);
+                    setDaySelections(buildInitialDaySelections(days));
+                    setSoupOptInByDay(buildInitialSoupOptInByDay(days));
+                }
+            })
+            .finally(() => {
+                if (!cancelled) {
+                    setTierLoading(false);
+                }
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [tierPreviewUrl, selectedTier, days]);
 
     const activeDayData = useMemo(
         () => planDays.find((day) => day.dayNumber === activeDay) ?? planDays[0] ?? null,
@@ -213,9 +333,15 @@ export default function MealPlanDetailPage({
         goalText.toLowerCase() !== planCategoryLabel.toLowerCase() &&
         goalText.toLowerCase() !== 'balanced';
 
-    const activeDayTotals = useMemo(
-        () => sumActiveDayMacros(selectedCategoriesForMacros),
-        [selectedCategoriesForMacros],
+    const dietProtocol =
+        planCategoryLabel.toLowerCase().includes('nutrient') ? 'nutrient_dense' : 'balanced';
+
+    const nutritionPlanForMacros = useMemo(
+        () =>
+            dietProtocol === 'nutrient_dense'
+                ? { protein_percentage: 32, carb_percentage: 28, fat_percentage: 40 }
+                : { protein_percentage: 35, carb_percentage: 35, fat_percentage: 30 },
+        [dietProtocol],
     );
 
     const nonSoupSections = DETAIL_SECTIONS.filter((section) => section.categoryKey !== 'soup');
@@ -240,12 +366,33 @@ export default function MealPlanDetailPage({
                     ) : null}
                 </div>
 
+                {tierPreviewUrl ? (
+                    <div className="mb-6">
+                        <AdminPreviewTierPicker
+                            tiers={availablePlanTiers}
+                            selectedTier={selectedTier}
+                            onSelectTier={setSelectedTier}
+                            loading={tierLoading}
+                            description="Pick a calorie tier to scale breakfast and mains while you review each meal in this plan."
+                            compactHint="Breakfast and mains scale to the tier you pick. Side salads, desserts, and soup stay at standard kitchen portions."
+                        />
+                        {tierError ? (
+                            <p className="mt-2 rounded-[10px] border border-amber-200 bg-amber-50 px-3 py-2 font-body text-sm text-amber-900">
+                                {tierError}
+                            </p>
+                        ) : null}
+                    </div>
+                ) : null}
+
                 <div className="mb-6">
-                    <PlanMacroSummaryPanel
-                        activeDayTotals={activeDayTotals}
+                    <DayMacroMicroTabPanel
                         categories={selectedCategoriesForMacros}
                         dayLabel={activeDayData?.label ?? 'Day'}
-                        planCategoryLabel={planCategoryLabel}
+                        planCategoryLabel={`${planCategoryLabel} · ${selectedTier} kcal`.trim()}
+                        craftKey="full"
+                        planTierCalories={selectedTier}
+                        nutritionPlan={nutritionPlanForMacros}
+                        dietProtocol={dietProtocol}
                     />
                 </div>
 
@@ -278,12 +425,13 @@ export default function MealPlanDetailPage({
 
                 <AnimatePresence mode="wait" initial={false}>
                     <motion.div
-                        key={activeDayData?.dayNumber ?? 'empty'}
+                        key={`${activeDayData?.dayNumber ?? 'empty'}-${selectedTier}`}
                         initial={{ x: 24, opacity: 0 }}
-                        animate={{ x: 0, opacity: 1 }}
+                        animate={{ x: 0, opacity: tierLoading ? 0.6 : 1 }}
                         exit={{ x: -24, opacity: 0 }}
                         transition={{ type: 'spring', stiffness: 260, damping: 30, mass: 0.85 }}
-                        className="mt-8 space-y-10 overflow-visible pb-12"
+                        className={`mt-8 space-y-10 overflow-visible pb-12 ${tierLoading ? 'pointer-events-none' : ''}`}
+                        aria-busy={tierLoading}
                     >
                         {activeDayData ? (
                             <>

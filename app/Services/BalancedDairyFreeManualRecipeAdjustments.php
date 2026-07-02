@@ -104,6 +104,7 @@ final class BalancedDairyFreeManualRecipeAdjustments
         'Rosemary Chicken Rocca Salad' => [
             'Rosemary Garlic Chicken (Base)' => StandardMeatPortion::GRAMS,
             'Rocca' => 50.0,
+            'Purslane' => 40.0,
             'Cucumber' => 55.0,
             'Roasted Cherry Tomato (Base)' => 45.0,
             'Rosemary (Fresh)' => 2.0,
@@ -280,7 +281,7 @@ final class BalancedDairyFreeManualRecipeAdjustments
             'Garlic (Raw)' => 4.0,
             'Lemon Juice' => 8.0,
             'Olive Oil (Extra Virgin)' => 5.0,
-            'Steamed Basmati Rice (Base)' => 40.0,
+            'Cooked Quinoa (Base)' => 45.0,
             'White Onion' => 35.0,
         ],
         'Sautéed Chicken Liver w Garlicky Cabbage, Bok Choy & Peppers' => [

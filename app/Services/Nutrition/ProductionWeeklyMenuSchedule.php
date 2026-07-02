@@ -367,10 +367,7 @@ final class ProductionWeeklyMenuSchedule
     {
         $name = SavoryEggBreakfastMeals::scheduledBreakfastNameForDay($dayNumber, $profile);
 
-        $meal = Meal::queryForMealLibrary()
-            ->where('name', $name)
-            ->with('ingredients')
-            ->first();
+        $meal = SavoryEggBreakfastMeals::findRotationMealByName($name);
 
         if ($meal instanceof Meal && SavoryEggBreakfastMeals::isSavoryEggBreakfast($meal)) {
             return $meal;

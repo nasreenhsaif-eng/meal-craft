@@ -148,6 +148,37 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Main meal plate vegetables — minimum kitchen-realistic portions (grams)
+    |--------------------------------------------------------------------------
+    |
+    | When a vegetable is a named component in meal instructions (e.g. "steamed
+    | broccoli"), refiners and scaling must not strip it below this floor.
+    |
+    */
+    'main_meal_plate_vegetable_minimum_grams' => 40.0,
+
+    'main_meal_plate_vegetable_ingredients' => [
+        'Broccoli',
+        'Bok Choy',
+        'Sweet Potato',
+        'Beetroot',
+        'Zucchini',
+        'Pumpkin',
+        'Green Beans',
+        'Mushrooms',
+        'Carrots',
+        'Bell Pepper (Red)',
+        'Spinach (Fresh)',
+    ],
+
+    'main_meal_plate_vegetable_canonical_grams' => [
+        'Tamarind Honey & Sesame Chicken w Garlicky Green Beans' => [
+            'Broccoli' => 60.0,
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Slot behaviour
     |--------------------------------------------------------------------------
     |

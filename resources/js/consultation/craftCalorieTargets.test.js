@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
+    categoryMacroTargetsFromPlan,
     dailyMacroTargetsFromPlan,
     dayMacroToleranceFromPlan,
     isMacroOutsideTolerance,
+    macroCaloriePercentsFromGrams,
+    macroSplitPercentagesFromPlan,
+    mainSlotMacroTargetsFromPlan,
     nutritionPlanMatchesTier,
 } from './craftCalorieTargets.js';
 
@@ -63,5 +67,76 @@ describe('isMacroOutsideTolerance', () => {
     it('flags values outside the gram tolerance band', () => {
         expect(isMacroOutsideTolerance(180, 196, 15)).toBe(true);
         expect(isMacroOutsideTolerance(190, 196, 15)).toBe(false);
+    });
+});
+
+describe('categoryMacroTargetsFromPlan', () => {
+    it('returns breakfast and scaled main targets for full craft days', () => {
+        const categories = {
+            breakfasts: [{}],
+            meals: [{}, {}],
+            sideSalads: [{}],
+            desserts: [{}],
+        };
+
+        const targets = categoryMacroTargetsFromPlan('full', 2000, null, categories);
+
+        expect(targets.breakfasts?.calories).toBe(450);
+        expect(targets.meals?.calories).toBe(1250);
+        expect(targets.sideSalads?.calories).toBe(150);
+        expect(targets.desserts?.calories).toBe(150);
+    });
+
+    it('uses synced slot macros when nutrition plan matches tier', () => {
+        const plan = {
+            plan_tier: 1500,
+            scalable_slot_targets: {
+                breakfast: { calories: 300, macros: { protein_g: 26, carbs_g: 30, fat_g: 10 } },
+                main_each: { calories: 450, macros: { protein_g: 51, carbs_g: 28, fat_g: 15 } },
+            },
+        };
+
+        expect(mainSlotMacroTargetsFromPlan(plan, 1500)).toEqual({
+            calories: 450,
+            protein: 51,
+            carbs: 28,
+            fat: 15,
+        });
+    });
+});
+
+describe('macroSplitPercentagesFromPlan', () => {
+    it('returns nutrient dense protocol split from plan payload', () => {
+        expect(
+            macroSplitPercentagesFromPlan({
+                protein_percentage: 32,
+                carb_percentage: 28,
+                fat_percentage: 40,
+            }),
+        ).toEqual({ protein: 32, carbs: 28, fat: 40 });
+    });
+
+    it('falls back to balanced defaults when plan is missing', () => {
+        expect(macroSplitPercentagesFromPlan(null)).toEqual({ protein: 35, carbs: 35, fat: 30 });
+    });
+});
+
+describe('macroCaloriePercentsFromGrams', () => {
+    it('derives calorie split from gram totals', () => {
+        expect(
+            macroCaloriePercentsFromGrams({
+                protein: 120,
+                carbs: 105,
+                fat: 67,
+            }),
+        ).toEqual({ protein: 32, carbs: 28, fat: 40 });
+    });
+
+    it('returns zeros when macros are empty', () => {
+        expect(macroCaloriePercentsFromGrams({ protein: 0, carbs: 0, fat: 0 })).toEqual({
+            protein: 0,
+            carbs: 0,
+            fat: 0,
+        });
     });
 });

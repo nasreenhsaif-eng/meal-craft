@@ -91,6 +91,7 @@ if (rootEl) {
                     initialEditDraft={
                         config.editDraft && typeof config.editDraft === 'object' ? config.editDraft : null
                     }
+                    dietProtocol={typeof config.dietProtocol === 'string' ? config.dietProtocol : null}
                 />
             </ConsultationErrorBoundary>
         </StrictMode>,

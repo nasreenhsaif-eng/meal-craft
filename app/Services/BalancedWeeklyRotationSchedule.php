@@ -79,7 +79,7 @@ final class BalancedWeeklyRotationSchedule
 
     /** @var list<string> High-protein dairy + egg breakfasts when dairy is allowed. */
     public const DAIRY_FORWARD_EGG_BREAKFASTS = [
-        'Halloumi & Spinach Scramble',
+        'Gouda & Spinach Scramble',
         'Greek Yogurt & Parmesan Frittata',
         'Feta & Herb Open Omelet',
         'Brie & Mushroom Skillet Eggs',
