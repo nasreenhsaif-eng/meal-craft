@@ -55,10 +55,15 @@ function readStoredMealPlanTier(mealPlanId, planTiers, fallback) {
 /**
  * @param {string} tierPreviewUrl
  * @param {number} planTier
+ * @param {Record<number, Record<string, string[]>>} [daySelections]
  */
-async function fetchTierPreviewDays(tierPreviewUrl, planTier) {
+async function fetchTierPreviewDays(tierPreviewUrl, planTier, daySelections = {}) {
     const url = new URL(tierPreviewUrl, window.location.origin);
     url.searchParams.set('plan_tier', String(planTier));
+
+    if (Object.keys(daySelections).length > 0) {
+        url.searchParams.set('selections', JSON.stringify(daySelections));
+    }
 
     const response = await fetch(url.toString(), {
         headers: {
@@ -165,17 +170,7 @@ export default function MealPlanDetailPage({
         setDaySelections(buildInitialDaySelections(days));
     }, [days]);
 
-    useEffect(() => {
-        if (mealPlanId <= 0) {
-            return;
-        }
-
-        try {
-            sessionStorage.setItem(`mc-admin-meal-plan-tier-${mealPlanId}`, String(selectedTier));
-        } catch {
-            // ignore storage errors
-        }
-    }, [mealPlanId, selectedTier]);
+    const daySelectionsJson = useMemo(() => JSON.stringify(daySelections), [daySelections]);
 
     useEffect(() => {
         if (!tierPreviewUrl) {
@@ -188,32 +183,45 @@ export default function MealPlanDetailPage({
         setTierLoading(true);
         setTierError(null);
 
-        fetchTierPreviewDays(tierPreviewUrl, selectedTier)
-            .then((tierDays) => {
-                if (cancelled) {
-                    return;
-                }
+        const timer = window.setTimeout(() => {
+            fetchTierPreviewDays(tierPreviewUrl, selectedTier, daySelections)
+                .then((tierDays) => {
+                    if (cancelled) {
+                        return;
+                    }
 
-                setPlanDays(tierDays);
-                setDaySelections(buildInitialDaySelections(tierDays));
-            })
-            .catch(() => {
-                if (!cancelled) {
-                    setTierError('Could not scale meals for this tier. Showing library portions.');
-                    setPlanDays(days);
-                    setDaySelections(buildInitialDaySelections(days));
-                }
-            })
-            .finally(() => {
-                if (!cancelled) {
-                    setTierLoading(false);
-                }
-            });
+                    setPlanDays(tierDays);
+                })
+                .catch(() => {
+                    if (!cancelled) {
+                        setTierError('Could not scale meals for this tier. Showing library portions.');
+                        setPlanDays(days);
+                    }
+                })
+                .finally(() => {
+                    if (!cancelled) {
+                        setTierLoading(false);
+                    }
+                });
+        }, 300);
 
         return () => {
             cancelled = true;
+            window.clearTimeout(timer);
         };
-    }, [tierPreviewUrl, selectedTier, days]);
+    }, [tierPreviewUrl, selectedTier, daySelectionsJson, days]);
+
+    useEffect(() => {
+        if (mealPlanId <= 0) {
+            return;
+        }
+
+        try {
+            sessionStorage.setItem(`mc-admin-meal-plan-tier-${mealPlanId}`, String(selectedTier));
+        } catch {
+            // ignore storage errors
+        }
+    }, [mealPlanId, selectedTier]);
 
     const activeDayData = useMemo(
         () => planDays.find((day) => day.dayNumber === activeDay) ?? planDays[0] ?? null,
@@ -221,6 +229,11 @@ export default function MealPlanDetailPage({
     );
 
     const activeDaySelections = daySelections[activeDay] ?? {};
+
+    const activeDayReconciliationWarnings = useMemo(
+        () => (Array.isArray(activeDayData?.reconciliationWarnings) ? activeDayData.reconciliationWarnings : []),
+        [activeDayData],
+    );
 
     const selectedCategoriesForMacros = useMemo(() => {
         if (!activeDayData?.categories) {
@@ -252,7 +265,9 @@ export default function MealPlanDetailPage({
     }, []);
 
     const openMealEdit = useCallback((meal, categoryKey) => {
-        if (!meal?.editForm) {
+        const hasKitchenRows = Array.isArray(meal?.kitchenIngredientRows) && meal.kitchenIngredientRows.length > 0;
+
+        if (!meal?.editForm && !hasKitchenRows) {
             return;
         }
         setMealEditModal({
@@ -365,9 +380,16 @@ export default function MealPlanDetailPage({
                             selectedTier={selectedTier}
                             onSelectTier={setSelectedTier}
                             loading={tierLoading}
-                            description="Pick a calorie tier to scale breakfast and mains while you review each meal in this plan."
+                            description="Pick a calorie tier to reconcile kitchen portions and nutrition while you review each meal in this plan."
                             compactHint="Breakfast and mains scale to the tier you pick. Side salads, desserts, and soup stay at standard kitchen portions."
                         />
+                        {activeDayReconciliationWarnings.length > 0 ? (
+                            <div className="mt-2 rounded-[10px] border border-amber-200 bg-amber-50 px-3 py-2 font-body text-sm text-amber-900">
+                                {activeDayReconciliationWarnings.map((warning) => (
+                                    <p key={warning}>{warning}</p>
+                                ))}
+                            </div>
+                        ) : null}
                         {tierError ? (
                             <p className="mt-2 rounded-[10px] border border-amber-200 bg-amber-50 px-3 py-2 font-body text-sm text-amber-900">
                                 {tierError}
@@ -554,6 +576,8 @@ export default function MealPlanDetailPage({
                               <MealPlanMealEditSheet
                                   meal={mealEditModal.meal}
                                   ingredientProfiles={ingredientProfiles}
+                                  planTier={selectedTier}
+                                  tierPreviewActive={Boolean(tierPreviewUrl)}
                                   onClose={() => setMealEditModal(null)}
                                   onApply={handleApplyMealEdit}
                               />

@@ -183,7 +183,44 @@ class MealPlanLibraryController extends Controller
     {
         $validated = $request->validate([
             'plan_tier' => ['required', 'integer', Rule::in(UserPlanCalculator::planTiers())],
+            'selections' => ['sometimes', 'string'],
         ]);
+
+        $daySelectionsByDay = [];
+
+        if (isset($validated['selections']) && is_string($validated['selections']) && trim($validated['selections']) !== '') {
+            $decoded = json_decode($validated['selections'], true);
+
+            if (is_array($decoded)) {
+                foreach ($decoded as $dayNumber => $categories) {
+                    if (! is_numeric($dayNumber) || ! is_array($categories)) {
+                        continue;
+                    }
+
+                    $normalizedDay = (int) $dayNumber;
+
+                    if ($normalizedDay < 1) {
+                        continue;
+                    }
+
+                    /** @var array<string, list<int|string>> $categorySelections */
+                    $categorySelections = [];
+
+                    foreach ($categories as $categoryKey => $mealIds) {
+                        if (! is_string($categoryKey) || ! is_array($mealIds)) {
+                            continue;
+                        }
+
+                        $categorySelections[$categoryKey] = array_values(array_filter(
+                            array_map(static fn (mixed $id): int => (int) $id, $mealIds),
+                            static fn (int $id): bool => $id > 0,
+                        ));
+                    }
+
+                    $daySelectionsByDay[$normalizedDay] = $categorySelections;
+                }
+            }
+        }
 
         return response()->json([
             'planTier' => (int) $validated['plan_tier'],
@@ -191,6 +228,7 @@ class MealPlanLibraryController extends Controller
                 $mealPlan,
                 (int) $validated['plan_tier'],
                 $request->user(),
+                $daySelectionsByDay,
             ),
         ]);
     }

@@ -797,7 +797,47 @@ class MealLibraryController extends Controller
             $row['detailView'] = $this->overlayAdaptedDetailView($row['detailView'], $adapted, $meal);
         }
 
+        $row['kitchenIngredientRows'] = $this->kitchenIngredientRowsFromAdapted($adapted);
+
         return $row;
+    }
+
+    /**
+     * @param  array<string, mixed>  $adapted
+     * @return list<array{ingredientId: int, selectedName: string, nameQuery: string, amount: string, unit: string}>
+     */
+    public function kitchenIngredientRowsFromAdapted(array $adapted): array
+    {
+        $ingredients = is_array($adapted['ingredients'] ?? null) ? $adapted['ingredients'] : [];
+        $rows = [];
+
+        foreach ($ingredients as $ingredient) {
+            if (! is_array($ingredient)) {
+                continue;
+            }
+
+            $name = trim((string) ($ingredient['name'] ?? ''));
+
+            if ($name === '') {
+                continue;
+            }
+
+            $grams = (float) ($ingredient['adapted_amount_grams'] ?? 0);
+
+            if ($grams <= 0) {
+                continue;
+            }
+
+            $rows[] = [
+                'ingredientId' => (int) ($ingredient['id'] ?? 0),
+                'selectedName' => $name,
+                'nameQuery' => $name,
+                'amount' => (string) (round($grams * 10000) / 10000),
+                'unit' => 'g',
+            ];
+        }
+
+        return $rows;
     }
 
     /**

@@ -288,15 +288,17 @@ final class MicronutrientBoostCatalog
     public const NUTRIENT_DENSE_FERMENTED_BOOSTS = [
         'Miso Paste',
         'Kimchi',
+        'Kimchi (Base)',
         'Sauerkraut',
+        'Sauerkraut (Base)',
         'Kefir',
     ];
 
     /** @var array<string, list<string>> */
     public const NUTRIENT_DENSE_FERMENTED_BOOST_BY_NUTRITION_KEY = [
-        'b9_folate' => ['Miso Paste', 'Kimchi', 'Sauerkraut'],
-        'vitamin_c' => ['Kimchi', 'Sauerkraut'],
-        'fiber' => ['Kimchi', 'Sauerkraut', 'Miso Paste', 'Okra', 'Green Beans'],
+        'b9_folate' => ['Miso Paste', 'Kimchi', 'Kimchi (Base)', 'Sauerkraut', 'Sauerkraut (Base)'],
+        'vitamin_c' => ['Kimchi', 'Kimchi (Base)', 'Sauerkraut', 'Sauerkraut (Base)'],
+        'fiber' => ['Kimchi', 'Kimchi (Base)', 'Sauerkraut', 'Sauerkraut (Base)', 'Miso Paste', 'Okra', 'Green Beans'],
         'magnesium' => ['Miso Paste', 'Kefir'],
         'calcium' => ['Kefir'],
         'b12' => ['Kefir'],

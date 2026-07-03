@@ -18,7 +18,11 @@ use InvalidArgumentException;
  */
 final class NutrientDenseFermentedRecipeRefiner
 {
-    public const SARDINE_MAIN_NAME = 'Sardine & Roasted Pepper Salad';
+    public const SARDINE_MAIN_NAME = 'Sardine Pate w Zucchini Bread';
+
+    public const SARDINE_MAIN_LEGACY_NAME = 'Sardine & Roasted Pepper Salad';
+
+    public const SARDINE_MAIN_IMAGE = 'images/meals/sardine_pate_zucchini_bread.png';
 
     public const MACKEREL_PLATE_NAME = 'Grilled Mackerel w Roasted Vegetables';
 
@@ -29,6 +33,10 @@ final class NutrientDenseFermentedRecipeRefiner
     public const TAHINI_PURSLANE_PEPPER_SALAD_NAME = 'Tahini Purslane Pepper Salad';
 
     public const TAHINI_PURSLANE_PEPPER_SALAD_IMAGE = 'images/meals/tahini_purslane_pepper_salad.png';
+
+    public const SAUERKRAUT_ROCCA_SALAD_NAME = 'Sauerkraut & Rocca Salad';
+
+    public const SAUERKRAUT_ROCCA_SALAD_IMAGE = 'images/meals/sauerkraut_rocca_salad.png';
 
     /**
      * @return list<string>
@@ -73,10 +81,14 @@ final class NutrientDenseFermentedRecipeRefiner
      */
     private function ensureMealExists(string $mealName, array $definition): Meal
     {
-        $existing = Meal::queryForMealLibrary()->where('name', $mealName)->first();
+        $existing = $this->resolveMealForRefinement($mealName);
 
         if ($existing instanceof Meal) {
-            return $existing;
+            if ($mealName === self::SARDINE_MAIN_NAME && $existing->name === self::SARDINE_MAIN_LEGACY_NAME) {
+                $existing->update(['name' => self::SARDINE_MAIN_NAME]);
+            }
+
+            return $existing->fresh() ?? $existing;
         }
 
         return Meal::query()->create([
@@ -92,6 +104,17 @@ final class NutrientDenseFermentedRecipeRefiner
             'library_sort_order' => Meal::nextLibrarySortOrder(),
             'nutrition_aggregates_synced' => false,
         ]);
+    }
+
+    private function resolveMealForRefinement(string $mealName): ?Meal
+    {
+        $query = Meal::queryForMealLibrary();
+
+        if ($mealName === self::SARDINE_MAIN_NAME) {
+            return $query->whereIn('name', [self::SARDINE_MAIN_NAME, self::SARDINE_MAIN_LEGACY_NAME])->first();
+        }
+
+        return $query->where('name', $mealName)->first();
     }
 
     /**
@@ -204,18 +227,21 @@ final class NutrientDenseFermentedRecipeRefiner
                 'highlight' => 'Purslane and red pepper with roasted cherry tomatoes, sesame and pumpkin seeds, and lemon-tahini dressing.',
                 'image_path' => self::TAHINI_PURSLANE_PEPPER_SALAD_IMAGE,
             ],
-            'Sauerkraut & Rocca Salad' => [
+            self::SAUERKRAUT_ROCCA_SALAD_NAME => [
                 'category' => RecipeCategory::SideSalad,
                 'meal_type' => MealType::Salad,
                 'ingredients' => [
-                    'Sauerkraut' => 40,
-                    'Rocca' => 50,
-                    'Bell Pepper (Red)' => 35,
-                    'Olive Oil' => 8,
-                    'Lemon Juice' => 8,
+                    'Sauerkraut (Base)' => 40,
+                    'Rocca' => 45,
+                    'Avocado' => 35,
+                    'Cherry Tomatoes' => 50,
+                    'Almond whole' => 10,
+                    'Cilantro Lime Dressing (Base)' => 15,
                 ],
                 'diet_tags' => $veganTags,
-                'highlight' => 'Fermented cabbage with peppery rocca and lemon.',
+                'highlight' => 'Homemade sauerkraut with rocca, avocado, cherry tomatoes, and peeled chopped almonds with cilantro-lime dressing.',
+                'image_path' => self::SAUERKRAUT_ROCCA_SALAD_IMAGE,
+                'instructions' => "1. Prepare Sauerkraut (Base) per base recipe instructions.\n2. Toss sauerkraut, rocca, halved cherry tomatoes, diced avocado, and peeled chopped almonds in a bowl.\n3. Serve with Cilantro Lime Dressing (Base) on the side.",
             ],
             'Kefir Herb Egg Bowl' => [
                 'category' => RecipeCategory::Breakfast,
@@ -234,14 +260,21 @@ final class NutrientDenseFermentedRecipeRefiner
             self::SARDINE_MAIN_NAME => [
                 'ingredients' => [
                     'Sardines (Canned)' => 100,
-                    'Bell Pepper (Red)' => 60,
-                    'Rocca' => 40,
-                    'Cherry Tomatoes' => 40,
-                    'Olive Oil' => 10,
-                    'Lemon Juice' => 8,
+                    'Lemon Juice' => 10,
+                    'Dijon Mustard' => 8,
+                    'Radish' => 25,
+                    'Capers' => 10,
+                    'Spring Onion' => 15,
+                    'Garlic (Raw)' => 3,
+                    'Zucchini Almond Bread (Base)' => 100,
+                    'Purslane' => 40,
+                    'Avocado' => 35,
+                    'Roasted Red Bell Peppers (Base)' => 50,
                 ],
                 'diet_tags' => $fishTags,
-                'highlight' => 'Omega-3 sardines with roasted pepper salad — vitamin D and B12.',
+                'highlight' => 'Sardine pâté with lemon, mustard, radish, and capers on toasted zucchini almond bread — topped with purslane, avocado, and roasted peppers.',
+                'image_path' => self::SARDINE_MAIN_IMAGE,
+                'instructions' => "1. Drain the sardines. In a food processor, blend with lemon juice, Dijon mustard, grated radish, capers, chopped spring onion, and garlic until smooth.\n2. Prepare Zucchini Almond Bread (Base) per base recipe instructions. Toast 2 slices.\n3. Spread the sardine pâté on the toasted bread.\n4. Top with purslane, sliced avocado, and Roasted Red Bell Peppers (Base). Serve immediately.",
             ],
             self::MACKEREL_PLATE_NAME => [
                 'ingredients' => [
