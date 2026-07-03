@@ -248,6 +248,42 @@ final class MicronutrientBoostCatalog
         return false;
     }
 
+    /**
+     * Pick the best boost ingredient already present in the recipe — never introduce new lines.
+     *
+     * @param  list<string>  $candidates
+     * @param  array<string, float>  $ingredientGrams
+     */
+    public static function selectBestBoostCandidate(array $candidates, array $ingredientGrams): ?string
+    {
+        if ($candidates === []) {
+            return null;
+        }
+
+        $greenCandidates = array_values(array_filter(
+            $candidates,
+            fn (string $candidate): bool => self::isGreenBoostIngredient($candidate)
+                && ($ingredientGrams[$candidate] ?? 0) > 0,
+        ));
+
+        if ($greenCandidates !== []) {
+            usort(
+                $greenCandidates,
+                fn (string $a, string $b): int => ($ingredientGrams[$a] ?? 0) <=> ($ingredientGrams[$b] ?? 0),
+            );
+
+            return $greenCandidates[0];
+        }
+
+        foreach ($candidates as $candidate) {
+            if (($ingredientGrams[$candidate] ?? 0) > 0) {
+                return $candidate;
+            }
+        }
+
+        return null;
+    }
+
     /** @var list<string> */
     public const NUTRIENT_DENSE_FERMENTED_BOOSTS = [
         'Miso Paste',

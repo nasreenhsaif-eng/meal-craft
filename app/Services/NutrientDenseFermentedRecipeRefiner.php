@@ -8,6 +8,7 @@ use App\Models\Ingredient;
 use App\Models\Meal;
 use App\Support\MealLibraryEditGuard;
 use App\Support\NutrientDenseFermentedPortionCaps;
+use App\Support\StandardMeatPortion;
 use App\Support\WholeFoodDietPolicy;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -21,7 +22,13 @@ final class NutrientDenseFermentedRecipeRefiner
 
     public const MACKEREL_PLATE_NAME = 'Grilled Mackerel w Roasted Vegetables';
 
+    public const MACKEREL_PLATE_IMAGE = 'images/meals/grilled_mackerel_roasted_vegetables.png';
+
     public const MACKEREL_QUINOA_NAME = 'Grilled Mackerel w Lemon Herb Quinoa';
+
+    public const TAHINI_PURSLANE_PEPPER_SALAD_NAME = 'Tahini Purslane Pepper Salad';
+
+    public const TAHINI_PURSLANE_PEPPER_SALAD_IMAGE = 'images/meals/tahini_purslane_pepper_salad.png';
 
     /**
      * @return list<string>
@@ -51,6 +58,8 @@ final class NutrientDenseFermentedRecipeRefiner
                     $definition['ingredients'],
                     $definition['diet_tags'] ?? WholeFoodDietPolicy::REQUIRED_MEAL_DIET_TAGS,
                     $definition['highlight'] ?? null,
+                    $definition['image_path'] ?? null,
+                    $definition['instructions'] ?? null,
                 );
                 $updated[] = $mealName;
             }
@@ -60,7 +69,7 @@ final class NutrientDenseFermentedRecipeRefiner
     }
 
     /**
-     * @param  array{ingredients: array<string, float>, diet_tags?: list<string>, highlight?: string, meal_type?: MealType, category?: RecipeCategory}  $definition
+     * @param  array{ingredients: array<string, float>, diet_tags?: list<string>, highlight?: string, meal_type?: MealType, category?: RecipeCategory, image_path?: string}  $definition
      */
     private function ensureMealExists(string $mealName, array $definition): Meal
     {
@@ -79,6 +88,7 @@ final class NutrientDenseFermentedRecipeRefiner
             'diet_tags' => $definition['diet_tags'] ?? WholeFoodDietPolicy::REQUIRED_MEAL_DIET_TAGS,
             'short_description' => $definition['highlight'] ?? null,
             'highlight' => $definition['highlight'] ?? null,
+            'image_path' => $definition['image_path'] ?? null,
             'library_sort_order' => Meal::nextLibrarySortOrder(),
             'nutrition_aggregates_synced' => false,
         ]);
@@ -93,6 +103,8 @@ final class NutrientDenseFermentedRecipeRefiner
         array $ingredientGrams,
         array $dietTags,
         ?string $highlight = null,
+        ?string $imagePath = null,
+        ?string $instructions = null,
     ): void {
         $sync = [];
 
@@ -142,6 +154,13 @@ final class NutrientDenseFermentedRecipeRefiner
                 'short_description' => trim($highlight),
                 'highlight' => trim($highlight),
             ] : [],
+            $imagePath !== null && trim($imagePath) !== '' ? [
+                'image_path' => trim($imagePath),
+            ] : [],
+            $instructions !== null && trim($instructions) !== '' ? [
+                'instructions' => trim($instructions),
+                'description' => trim($instructions),
+            ] : [],
         ));
 
         MealRecipeAsIngredientSyncService::syncFromPersistedMeal($fresh->fresh(['ingredients']), false);
@@ -164,23 +183,26 @@ final class NutrientDenseFermentedRecipeRefiner
                     'Purslane' => 60,
                     'Bok Choy' => 40,
                     'Kimchi (Base)' => 30,
+                    'Sesame Seeds' => 8,
                     'Tahini Miso Garlic Ginger Rice Vinegar Dressing (Base)' => 20,
                 ],
                 'diet_tags' => $veganTags,
-                'highlight' => 'Homemade fermented kimchi with purslane and bok choy, tahini-miso dressing.',
+                'highlight' => 'Homemade fermented kimchi with purslane and bok choy, sesame seeds, and tahini-miso dressing.',
             ],
-            'Tahini Purslane Pepper Salad' => [
+            self::TAHINI_PURSLANE_PEPPER_SALAD_NAME => [
                 'category' => RecipeCategory::SideSalad,
                 'meal_type' => MealType::Salad,
                 'ingredients' => [
-                    'Purslane' => 50,
                     'Bell Pepper (Red)' => 50,
-                    'Rocca' => 30,
-                    'Tahini' => 18,
-                    'Lemon Juice' => 8,
+                    'Lemon-Tahini Dressing (Base)' => 22,
+                    'Purslane' => 55,
+                    'Pumpkin Seeds' => 8,
+                    'Roasted Cherry Tomato (Base)' => 45,
+                    'Sesame Seeds' => 8,
                 ],
                 'diet_tags' => $veganTags,
-                'highlight' => 'Calcium-rich tahini dressing over purslane and pepper.',
+                'highlight' => 'Purslane and red pepper with roasted cherry tomatoes, sesame and pumpkin seeds, and lemon-tahini dressing.',
+                'image_path' => self::TAHINI_PURSLANE_PEPPER_SALAD_IMAGE,
             ],
             'Sauerkraut & Rocca Salad' => [
                 'category' => RecipeCategory::SideSalad,
@@ -223,15 +245,23 @@ final class NutrientDenseFermentedRecipeRefiner
             ],
             self::MACKEREL_PLATE_NAME => [
                 'ingredients' => [
-                    'Mackerel' => 140,
-                    'Zucchini' => 80,
-                    'Bell Pepper (Red)' => 60,
-                    'Olive Oil' => 10,
-                    'Lemon Juice' => 8,
-                    'Fermented Chimichurri (Base)' => 20,
+                    'Black Pepper' => 0.5,
+                    'Buckwheat Spaghetti (Cooked)' => 120,
+                    'Fresh Coriander' => 8,
+                    'Fresh Parsley' => 8,
+                    'Garlic (Raw)' => 4,
+                    'Lemon Juice' => 12,
+                    'Loomi (Black Lime)' => 2,
+                    'Mackerel' => StandardMeatPortion::GRAMS,
+                    'Mustard Seeds' => 2,
+                    'Olive Oil (Extra Virgin)' => 10,
+                    'Roasted Mixed Vegetables (Base)' => 100,
+                    'Sea Salt' => 0.5,
                 ],
                 'diet_tags' => $fishTags,
-                'highlight' => 'Grilled mackerel with roasted vegetables and fermented chimichurri.',
+                'highlight' => 'Grilled mackerel with lemon-garlic marinade, roasted mixed vegetables, and buckwheat spaghetti.',
+                'image_path' => self::MACKEREL_PLATE_IMAGE,
+                'instructions' => "1. Prepare Roasted Mixed Vegetables (Base) and Buckwheat Spaghetti (Cooked) per base recipe instructions; keep warm.\n2. Lightly crush the loomi (black lime) and mustard seeds. Mince the garlic and chop the fresh coriander and parsley.\n3. Whisk olive oil, lemon juice, garlic, sea salt, black pepper, crushed loomi, and mustard seeds into a bright marinade.\n4. Score the mackerel fillets and coat with the marinade. Rest 10 minutes.\n5. Grill or pan-sear skin-side down over medium-high heat until the skin is crisp and the flesh is cooked through, about 4–5 minutes per side.\n6. Serve the fish over buckwheat spaghetti with roasted mixed vegetables. Finish with fresh coriander and parsley.",
             ],
             self::MACKEREL_QUINOA_NAME => [
                 'ingredients' => [

@@ -436,7 +436,7 @@ final class NutrientDenseMicronutrientRecipeRefiner
             $mealName,
         );
 
-        $selected = $this->selectBestBoostCandidate($candidates, $ingredientGrams);
+        $selected = MicronutrientBoostCatalog::selectBestBoostCandidate($candidates, $ingredientGrams);
 
         if ($selected !== null) {
             return $selected;
@@ -454,7 +454,7 @@ final class NutrientDenseMicronutrientRecipeRefiner
             $mealName,
         );
 
-        return $this->selectBestBoostCandidate($fallback, $ingredientGrams);
+        return MicronutrientBoostCatalog::selectBestBoostCandidate($fallback, $ingredientGrams);
     }
 
     /**
@@ -491,39 +491,6 @@ final class NutrientDenseMicronutrientRecipeRefiner
 
             return Ingredient::query()->where('name', $candidate)->exists();
         }));
-    }
-
-    /**
-     * @param  list<string>  $candidates
-     * @param  array<string, float>  $ingredientGrams
-     */
-    private function selectBestBoostCandidate(array $candidates, array $ingredientGrams): ?string
-    {
-        if ($candidates === []) {
-            return null;
-        }
-
-        $greenCandidates = array_values(array_filter(
-            $candidates,
-            fn (string $candidate): bool => MicronutrientBoostCatalog::isGreenBoostIngredient($candidate),
-        ));
-
-        if ($greenCandidates !== []) {
-            usort(
-                $greenCandidates,
-                fn (string $a, string $b): int => ($ingredientGrams[$a] ?? 0) <=> ($ingredientGrams[$b] ?? 0),
-            );
-
-            return $greenCandidates[0];
-        }
-
-        foreach ($candidates as $candidate) {
-            if (array_key_exists($candidate, $ingredientGrams)) {
-                return $candidate;
-            }
-        }
-
-        return $candidates[0];
     }
 
     /**

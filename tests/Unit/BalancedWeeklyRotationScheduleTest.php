@@ -3,6 +3,7 @@
 use App\Enums\MealPlanSlotType;
 use App\Services\BalancedCanonicalMealRecipeRefiner;
 use App\Services\BalancedWeeklyRotationSchedule;
+use App\Services\NutrientDenseLiverMealRecipeRefiner;
 
 test('balanced weekly rotation assigns one savory egg breakfast per day', function (): void {
     $dayOne = BalancedWeeklyRotationSchedule::mealNameForDay(1, MealPlanSlotType::Breakfast, 1);
@@ -101,7 +102,7 @@ test('balanced weekly rotation assigns a unique liver main in slot five each wee
     }
 
     expect($liverMains[0])->toBe('Seared Beef Liver w Roasted Beetroot, Chard & Chimichurri')
-        ->and($liverMains[1])->toBe('Sautéed Chicken Liver w Garlicky Cabbage, Bok Choy & Peppers')
+        ->and($liverMains[1])->toBe(NutrientDenseLiverMealRecipeRefiner::SAUTEED_CHICKEN_LIVER_NAME)
         ->and($liverMains[6])->toBe('Beef & Liver Stuffed Zucchini w Marinara & Basil')
         ->and(count(array_unique($liverMains)))->toBe(7);
 });

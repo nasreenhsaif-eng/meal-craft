@@ -125,7 +125,7 @@ final class BalancedDairyFreeManualRecipeAdjustments
             'Zucchini' => 40.0,
         ],
         'Chili Beef Stuffed Peppers' => [
-            'Beef Ground Lean' => StandardMeatPortion::beefGramsForLiverBlendMeal(self::LIVER_BLEND_GRAMS),
+            'Beef Ground Lean' => 130.0,
             'Beef Liver' => self::LIVER_BLEND_GRAMS,
             'Bell Pepper (Red)' => 105.0,
             'Chili Powder' => 2.0,
@@ -245,7 +245,6 @@ final class BalancedDairyFreeManualRecipeAdjustments
             'White Onion' => 25.0,
         ],
         'Vegan Butternut Squash, Lentil & Peanut Stew w Brown Rice' => [
-            'Chard' => 20.0,
             'Bell Pepper (Red)' => 30.0,
             'Black Pepper' => 0.5,
             'Butternut Squash' => 60.0,
@@ -258,10 +257,9 @@ final class BalancedDairyFreeManualRecipeAdjustments
             'Lentils (Red)' => 40.0,
             'Lime Juice' => 3.0,
             'Mushrooms' => 30.0,
-            'Olive Oil' => 3.0,
+            'Olive Oil' => 5.0,
             'Peanut Butter' => 10.0,
             'Peanuts (Crushed)' => 15.0,
-            'Purslane' => 10.0,
             'Red Onion' => 30.0,
             'Sea Salt' => 0.5,
             'Spinach (Fresh)' => 16.0,
@@ -285,10 +283,9 @@ final class BalancedDairyFreeManualRecipeAdjustments
             'Sesame Seeds' => 10.0,
             'White Onion' => 35.0,
         ],
-        'Sautéed Chicken Liver w Garlicky Cabbage, Bok Choy & Peppers' => [
+        'Sautéed Chicken Liver w Garlicky Cabbage & Peppers' => [
             'Bell Pepper (Red)' => 50.0,
             'Black Pepper' => 0.5,
-            'Bok Choy' => 75.0,
             'Cabbage (Purple)' => 85.0,
             'Cherry Tomatoes' => 35.0,
             'Chicken Liver' => StandardMeatPortion::GRAMS,
@@ -299,7 +296,6 @@ final class BalancedDairyFreeManualRecipeAdjustments
             'Pomegranate Molasses' => 10.0,
             'Quinoa Flatbread (Base)' => 35.0,
             'Red Onion' => 35.0,
-            'Rocca' => 40.0,
             'Sea Salt' => 0.5,
         ],
         'Seared Beef Liver w Caramelized Onion, Spinach & Chimichurri' => [
@@ -315,7 +311,7 @@ final class BalancedDairyFreeManualRecipeAdjustments
         ],
         'Beef & Liver Kefta w Herb Salad & Tahini' => [
             'Aleppo Pepper' => 5.0,
-            'Beef Ground Lean' => StandardMeatPortion::beefGramsForLiverBlendMeal(22.0),
+            'Beef Ground Lean' => 128.0,
             'Beef Liver' => 22.0,
             'Black Pepper' => 5.0,
             'Cucumber' => 40.0,

@@ -454,10 +454,10 @@ final class BalancedMealInstructionRefiner
                 'Top with grapefruit, cucumber, and coconut.',
             ]),
             'Classic Garden Salad' => $this->steps([
-                'Chop lettuce, tomato, cucumber, pepper, and cabbage.',
-                'Thinly slice red onion.',
-                'Whisk olive oil, lemon, and herbs for dressing.',
-                'Toss just before serving.',
+                'Chop lettuce, tomato, and cucumber.',
+                'Shred or thinly slice the carrots.',
+                'Toss the vegetables together in a large bowl.',
+                'Serve with Classic Lemon Garlic Dressing (Base) on the side.',
             ]),
 
             // Desserts

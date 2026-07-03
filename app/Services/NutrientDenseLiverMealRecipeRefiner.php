@@ -17,6 +17,14 @@ use InvalidArgumentException;
  */
 final class NutrientDenseLiverMealRecipeRefiner
 {
+    public const SAUTEED_CHICKEN_LIVER_NAME = 'Sautéed Chicken Liver w Garlicky Cabbage & Peppers';
+
+    public const SAUTEED_CHICKEN_LIVER_LEGACY_NAME = 'Sautéed Chicken Liver w Garlicky Cabbage, Bok Choy & Peppers';
+
+    public const SPICED_BEEF_LIVER_MEATBALLS_NAME = 'Spiced Beef & Liver Meatballs w Roasted Tomato Couscous';
+
+    public const BEEF_LIVER_STUFFED_ZUCCHINI_NAME = 'Beef & Liver Stuffed Zucchini w Marinara & Basil';
+
     /**
      * @return list<string>
      */
@@ -28,12 +36,16 @@ final class NutrientDenseLiverMealRecipeRefiner
     /**
      * @return list<string>
      */
-    public function refine(): array
+    public function refine(?string $onlyMealName = null): array
     {
-        return DB::transaction(function (): array {
+        return DB::transaction(function () use ($onlyMealName): array {
             $updated = [];
 
             foreach ($this->recipeDefinitions() as $mealName => $definition) {
+                if ($onlyMealName !== null && $mealName !== $onlyMealName) {
+                    continue;
+                }
+
                 $meal = $this->ensureMealExists($mealName, $definition);
 
                 if (MealLibraryEditGuard::shouldSkipMealRefinement($meal)) {
@@ -59,10 +71,16 @@ final class NutrientDenseLiverMealRecipeRefiner
      */
     private function ensureMealExists(string $mealName, array $definition): Meal
     {
-        $existing = Meal::queryForMealLibrary()->where('name', $mealName)->first();
+        $existing = Meal::queryForMealLibrary()
+            ->whereIn('name', [$mealName, ...$this->legacyNamesFor($mealName)])
+            ->first();
 
         if ($existing instanceof Meal) {
-            return $existing;
+            if ($existing->name !== $mealName) {
+                $existing->update(['name' => $mealName]);
+            }
+
+            return $existing->fresh();
         }
 
         return Meal::query()->create([
@@ -169,11 +187,10 @@ final class NutrientDenseLiverMealRecipeRefiner
                 'diet_tags' => $tags,
                 'short_description' => 'Quick-seared beef liver with fluffy quinoa, roasted beetroot, wilted chard, and fermented chimichurri.',
             ],
-            'Sautéed Chicken Liver w Garlicky Cabbage, Bok Choy & Peppers' => [
+            self::SAUTEED_CHICKEN_LIVER_NAME => [
                 'ingredients' => [
                     'Bell Pepper (Red)' => 50.0,
                     'Black Pepper' => 0.5,
-                    'Bok Choy' => 75.0,
                     'Cabbage (Purple)' => 85.0,
                     'Cherry Tomatoes' => 35.0,
                     'Chicken Liver' => StandardMeatPortion::GRAMS,
@@ -184,12 +201,54 @@ final class NutrientDenseLiverMealRecipeRefiner
                     'Pomegranate Molasses' => 10.0,
                     'Quinoa Flatbread (Base)' => 35.0,
                     'Red Onion' => 35.0,
-                    'Rocca' => 40.0,
                     'Sea Salt' => 0.5,
                 ],
                 'diet_tags' => $tags,
-                'short_description' => 'Pan-sautéed chicken liver with garlicky cabbage, bok choy, and peppers.',
+                'short_description' => 'Pan-sautéed chicken liver with garlicky cabbage and peppers.',
+            ],
+            self::SPICED_BEEF_LIVER_MEATBALLS_NAME => [
+                'ingredients' => [
+                    'Beef Ground Lean' => StandardMeatPortion::beefGramsForLiverBlendMeal(22.0),
+                    'Beef Liver' => 22.0,
+                    'Cherry Tomatoes' => 80.0,
+                    'Cooked Couscous (Base)' => 90.0,
+                    'Fresh Basil' => 5.0,
+                    'Garlic (Raw)' => 4.0,
+                    'Marinara Sauce (Base)' => 90.0,
+                    'Olive Oil (Extra Virgin)' => 4.0,
+                    'Ras El Hanout (Base)' => 2.0,
+                    'White Onion' => 28.0,
+                ],
+                'diet_tags' => $tags,
+                'short_description' => 'Spiced beef and liver meatballs simmered in marinara over fluffy couscous with roasted cherry tomatoes.',
+            ],
+            self::BEEF_LIVER_STUFFED_ZUCCHINI_NAME => [
+                'ingredients' => [
+                    'Beef Ground Lean' => StandardMeatPortion::beefGramsForLiverBlendMeal(20.0),
+                    'Beef Liver' => 20.0,
+                    'Fresh Basil' => 8.0,
+                    'Garlic (Raw)' => 4.0,
+                    'Marinara Sauce (Base)' => 80.0,
+                    'Olive Oil (Extra Virgin)' => 4.0,
+                    'Oregano' => 1.0,
+                    'White Onion' => 28.0,
+                    'Zucchini' => 200.0,
+                ],
+                'diet_tags' => $tags,
+                'short_description' => 'Tender zucchini boats stuffed with seasoned beef and minced liver, baked in marinara with fresh basil.',
             ],
         ];
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function legacyNamesFor(string $mealName): array
+    {
+        if ($mealName === self::SAUTEED_CHICKEN_LIVER_NAME) {
+            return [self::SAUTEED_CHICKEN_LIVER_LEGACY_NAME];
+        }
+
+        return [];
     }
 }

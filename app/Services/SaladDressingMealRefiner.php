@@ -202,15 +202,13 @@ final class SaladDressingMealRefiner
                     'Romaine Lettuce' => 50,
                     'Tomato (Raw)' => 60,
                     'Cucumber' => 60,
-                    'Bell Pepper (Red)' => 40,
-                    'Cabbage (Purple)' => 30,
-                    'Red Onion' => 25,
+                    'Carrots' => 40,
                 ],
                 'dressing_ingredients' => [
                     self::CLASSIC_LEMON_GARLIC_DRESSING => 15,
                 ],
                 'salad_instructions' => [
-                    'Wash and chop the lettuce, tomato, cucumber, pepper, cabbage, and onion.',
+                    'Wash and chop the lettuce, tomato, cucumber, and carrots.',
                     'Toss the vegetables together in a large bowl.',
                     'Serve immediately.',
                     self::SERVE_DRESSING_ON_THE_SIDE,

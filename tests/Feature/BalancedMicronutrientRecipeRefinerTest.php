@@ -415,12 +415,104 @@ test('spinach boost is skipped when recipe already exceeds cap', function () {
     $beforeSpinach = 50.0;
 
     $refiner = app(BalancedMicronutrientRecipeRefiner::class);
-    $refiner->applyIsocaloricBoost($meal->fresh(['ingredients']), 'iron');
+    $changed = $refiner->applyIsocaloricBoost($meal->fresh(['ingredients']), 'iron');
 
     $fresh = $meal->fresh(['ingredients']);
     $afterSpinach = (float) $fresh->ingredients->firstWhere('id', $spinach->id)?->pivot->amount_grams;
-    $purslaneGrams = (float) $fresh->ingredients->firstWhere('id', $purslane->id)?->pivot->amount_grams;
+    $names = $fresh->ingredients->pluck('name')->all();
 
-    expect($afterSpinach)->toEqual($beforeSpinach)
-        ->and($purslaneGrams)->toBeGreaterThan(0);
+    expect($changed)->toBeFalse()
+        ->and($afterSpinach)->toEqual($beforeSpinach)
+        ->and($names)->not->toContain('Purslane');
+});
+
+test('isocaloric boost does not introduce new green boost ingredients', function () {
+    $purslane = Ingredient::query()->firstOrCreate(
+        ['name' => 'Purslane'],
+        [
+            'calories' => 20,
+            'protein' => 2,
+            'carbs' => 3.4,
+            'fat' => 0.4,
+            'iron' => 2,
+            'micronutrients' => ['potassium' => 494, 'calcium' => 65],
+            'is_verified' => true,
+        ],
+    );
+
+    $tahini = Ingredient::query()->firstOrCreate(
+        ['name' => 'Tahini'],
+        [
+            'calories' => 595,
+            'protein' => 17,
+            'carbs' => 21.2,
+            'fat' => 53.8,
+            'micronutrients' => ['calcium' => 426, 'sodium' => 115],
+            'is_verified' => true,
+        ],
+    );
+
+    $lemon = Ingredient::query()->firstOrCreate(
+        ['name' => 'Lemon Juice'],
+        [
+            'calories' => 22,
+            'protein' => 0.35,
+            'carbs' => 6.9,
+            'fat' => 0.24,
+            'is_verified' => true,
+        ],
+    );
+
+    $pepper = Ingredient::query()->firstOrCreate(
+        ['name' => 'Bell Pepper (Red)'],
+        [
+            'calories' => 31,
+            'protein' => 1,
+            'carbs' => 6,
+            'fat' => 0.3,
+            'micronutrients' => ['vitamin_c' => 127],
+            'is_verified' => true,
+        ],
+    );
+
+    $rocca = Ingredient::query()->firstOrCreate(
+        ['name' => 'Rocca'],
+        [
+            'calories' => 25,
+            'protein' => 2.6,
+            'carbs' => 3.7,
+            'fat' => 0.7,
+            'micronutrients' => ['calcium' => 160, 'iron' => 1.5],
+            'is_verified' => true,
+        ],
+    );
+
+    $meal = Meal::factory()->create([
+        'name' => 'Test Tahini Purslane Pepper Salad '.uniqid(),
+        'meal_type' => MealType::Salad,
+        'category' => RecipeCategory::SideSalad,
+    ]);
+
+    $meal->ingredients()->sync([
+        $purslane->id => ['amount_grams' => 50, 'amount' => 50, 'unit' => 'g'],
+        $pepper->id => ['amount_grams' => 50, 'amount' => 50, 'unit' => 'g'],
+        $rocca->id => ['amount_grams' => 30, 'amount' => 30, 'unit' => 'g'],
+        $tahini->id => ['amount_grams' => 18, 'amount' => 18, 'unit' => 'g'],
+        $lemon->id => ['amount_grams' => 8, 'amount' => 8, 'unit' => 'g'],
+    ]);
+
+    $beforeNames = $meal->fresh(['ingredients'])->ingredients->pluck('name')->sort()->values()->all();
+
+    $refiner = app(BalancedMicronutrientRecipeRefiner::class);
+
+    foreach (['iron', 'calcium', 'b9_folate', 'fiber', 'potassium', 'magnesium'] as $key) {
+        for ($attempt = 0; $attempt < 6; $attempt++) {
+            $refiner->applyIsocaloricBoost($meal->fresh(['ingredients']), $key);
+        }
+    }
+
+    $afterNames = $meal->fresh(['ingredients'])->ingredients->pluck('name')->sort()->values()->all();
+
+    expect($afterNames)->toBe($beforeNames)
+        ->and(collect($afterNames)->contains(fn (string $n): bool => in_array($n, ['Beetroot', 'Bok Choy', 'Chard', 'Kale', 'Okra', 'Spinach (Fresh)'], true)))->toBeFalse();
 });

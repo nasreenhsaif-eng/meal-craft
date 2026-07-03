@@ -121,7 +121,7 @@ final class NutrientDenseWeeklyRotationSchedule
     /** @var list<string> */
     public const LIVER_MAINS = [
         'Seared Beef Liver w Roasted Beetroot, Chard & Chimichurri',
-        'Sautéed Chicken Liver w Garlicky Cabbage, Bok Choy & Peppers',
+        NutrientDenseLiverMealRecipeRefiner::SAUTEED_CHICKEN_LIVER_NAME,
         'Beef & Liver Kefta w Herb Salad & Tahini',
         'Chili Beef Stuffed Peppers',
         'Eggplant & Ground Beef Stew w Quinoa Bread',
