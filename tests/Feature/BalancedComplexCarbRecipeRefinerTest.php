@@ -107,7 +107,7 @@ test('balanced rotation mains use varied complex carbs instead of steamed white 
         'Grilled Beef Steak Ratatouille & Saffron rice' => 'Turmeric Rice (Base)',
         'Beef Bibimbap' => 'Cooked Quinoa (Base)',
         'Persian Herb Beef Stew' => 'Quinoa Bread (Base)',
-        'Chili Beef Stuffed Peppers' => 'Cooked Brown Basmati Rice (Base)',
+        'Chili Beef Stuffed Peppers' => 'Cooked Quinoa (Base)',
         'Grilled Chicken Chimichurri' => 'Sweet Potato',
     ];
 

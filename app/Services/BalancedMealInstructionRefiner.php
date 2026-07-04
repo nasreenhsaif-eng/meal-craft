@@ -183,7 +183,7 @@ final class BalancedMealInstructionRefiner
                 'Heat the remaining olive oil in a frying pan. Sauté diced onion and red bell pepper until softened (5–6 min).',
                 'Add roasted sweet potato and toss to combine.',
                 'Beat eggs, pour into the pan, and scramble gently over medium-low heat until just set.',
-                'Finish with fresh coriander and serve hot.',
+                'Finish with fresh coriander, flaxseeds, and serve hot.',
             ]),
             'Butternut Squash Fritters & Eggs' => $this->steps([
                 'Preheat the oven to 200°C.',
@@ -349,11 +349,11 @@ final class BalancedMealInstructionRefiner
                 'Warm quinoa bread separately. Serve stew with bread and lemon.',
             ]),
             'Chili Beef Stuffed Peppers' => $this->steps([
-                'Prepare Cooked Brown Basmati Rice (Base) per base recipe instructions.',
-                'Brown ground beef with onion and garlic. Stir in chili powder and diced tomato.',
-                'Mix beef with cooked brown basmati rice.',
-                'Halve peppers, remove seeds. Fill with beef mixture.',
+                'Prepare Cooked Quinoa (Base) and Fermented Beetroot (Base) per base recipe instructions.',
+                'Brown ground beef and beef liver with onion and garlic. Stir in chili powder, diced tomato, parsley, and spinach until wilted.',
+                'Fold in cooked quinoa. Halve peppers, remove seeds, and stuff with the mixture.',
                 'Bake at 190°C for 25–30 minutes until peppers are soft.',
+                'Plate stuffed peppers with purslane, fermented beetroot, and sunflower seeds on the side.',
             ]),
             'Rosemary Garlic Chicken w Pomegranate Glaze, Beetroot & Rocca' => $this->steps([
                 'Prepare Rosemary Garlic Chicken (Base) and Quinoa Flatbread (Base) per base recipe instructions; keep the flatbread warm.',

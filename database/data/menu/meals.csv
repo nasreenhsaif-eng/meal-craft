@@ -1,5 +1,10 @@
 meal_name,meal_type,ingredients_string,target_calories,target_protein,target_carbs,target_fat,batch_calories,batch_protein,batch_carbs,batch_fat,is_bulk,servings_count,meal_plan_tag,cycle_phase,safety_alerts,image_url,short_description,instructions
-"Kefir Herb Egg Bowl",Breakfast,"Black Pepper:1 | Egg:110 | Kefir:100 | Olive Oil:8 | Rocca:20 | Spinach (Fresh):40",,,,,,,,,false,,NutrientDense,,,,"Whole eggs with kefir, greens, and herbs — daily fermented breakfast anchor.",
+"Kefir Turkish Eggs w Zucchini Bread",Breakfast,"Black Pepper:1 | Chili Flakes:2 | Dill (Fresh):5 | Egg:110 | Fresh Mint:4 | Grass Fed Butter:10 | Greek Yogurt:240 | Garlic (Raw):1.5 | Kefir:30 | Pumpkin Seeds:15 | Sea Salt:1 | Smoked Paprika:1 | Zucchini Almond Bread (Base):100",,,,,,,,,false,,NutrientDense,,,images/meals/kefir_turkish_eggs_zucchini_bread.png,"Soft-boiled eggs on kefir-spiked Greek yogurt with spiced butter, dill, mint, and pumpkin seeds — served with toasted zucchini almond bread.","1. Place eggs in a pot and add enough cold water to cover them (do not fill the pot to the top). Cover the pot, bring to a boil, and cook for exactly 12 minutes.
+2. Transfer the eggs to an ice water bath until chilled; peel when ready — this keeps the yolks creamy and makes peeling easy.
+3. Prepare Zucchini Almond Bread (Base) per base recipe instructions. Toast 2 slices.
+4. Warm the butter in a small pan with minced garlic, smoked paprika, and chili flakes until fragrant.
+5. Whisk Greek yogurt, kefir, chopped dill, torn mint leaves, sea salt, and black pepper until smooth. Spread on a plate and drizzle with the warm spiced butter.
+6. Halve the soft-boiled eggs and nestle them on the yogurt. Scatter pumpkin seeds over the top and serve with toasted zucchini almond bread.",
 "Baked Salmon with Fermented Chimichurri & Roasted Vegetables",Meal,"Bell Pepper (Red):55 | Broccoli:60 | Carrots:45 | Fermented Chimichurri (Base):25 | Olive Oil (Extra Virgin):5 | Pumpkin:90 | Pumpkin Seeds:10 | Salmon:150 | Zucchini:55",360,36,27,12,,,,,false,,NutrientDense,,Fish,images/meals/salmon_fermented_chimichurri.png,"Premium baked salmon with fermented chimichurri over roasted pumpkin, vegetables, and broccoli.","Toss pumpkin, bell pepper, zucchini, and carrots with olive oil. Roast at 200°C until tender and lightly caramelised.
 Coat salmon generously with Fermented Chimichurri (Base).
 Bake at 190°C for 12–15 minutes until flaky.
@@ -278,11 +283,11 @@ Shred cabbage; slice mango, cucumber, tomatoes, and red onion.
 Toss vegetables with coriander.
 Top with chicken and crushed peanuts.
 Serve dressing on the side."
-"Chili Beef Stuffed Peppers",Meal,"Beef Ground Lean:130 | Beef Liver:20 | Bell Pepper (Red):105 | Chili Powder:2 | Cooked Brown Basmati Rice (Base):138 | Garlic (Raw):4 | Olive Oil:2 | Spinach (Fresh):35 | Tomato (Raw):55 | White Onion:28",360,36,27,12,,,,,false,1,Balanced,,Nightshades,images/meals/chili_beef_stuffed_peppers.png,"Sweet bell peppers stuffed with a savory","1. Prepare Cooked Brown Basmati Rice (Base) per base recipe instructions.
-2. Brown ground beef with onion and garlic. Stir in chili powder and diced tomato.
-3. Mix beef with cooked brown basmati rice.
-4. Halve peppers, remove seeds. Fill with beef mixture.
-5. Bake at 190°C for 25–30 minutes until peppers are soft."
+"Chili Beef Stuffed Peppers",Meal,"Beef Ground Lean:130 | Beef Liver:20 | Bell Pepper (Red):105 | Chili Powder:2 | Cooked Quinoa (Base):80 | Fermented Beetroot (Base):50 | Garlic (Raw):4 | Olive Oil:2 | Parsley:8 | Purslane:40 | Spinach (Fresh):35 | Sunflower Seeds:10 | Tomato (Raw):55 | White Onion:28",360,36,27,12,,,,,false,1,Balanced,,Nightshades,images/meals/chili_beef_stuffed_peppers.png,"Sweet bell peppers stuffed with beef, liver, quinoa, parsley, and spinach — served with purslane, fermented beetroot, and sunflower seeds.","1. Prepare Cooked Quinoa (Base) and Fermented Beetroot (Base) per base recipe instructions.
+2. Brown ground beef and beef liver with onion and garlic. Stir in chili powder, diced tomato, parsley, and spinach until wilted.
+3. Fold in cooked quinoa. Halve peppers, remove seeds, and stuff with the mixture.
+4. Bake at 190°C for 25–30 minutes until peppers are soft.
+5. Plate stuffed peppers with purslane, fermented beetroot, and sunflower seeds on the side."
 "Chocolate PB Banana Muffin",Dessert,"Almond Flour:80 | Baking Soda:2.3 | Banana:120 | Cocoa Powder:20 | Egg Whites:50 | Maple Syrup:30 | Peanut Butter:15",135,5.2,13.3,8.5,807.8,31.3,79.99,50.73,true,6,Balanced,,"Eggs, Nuts",images/meals/choc_pb_banana_muffin.png,"Grain-free cocoa-banana muffin batch (6 muffins) with almond flour, peanut butter, maple syrup, and egg whites — one muffin per serving (~135 kcal).","1. Heat oven to 180°C. Line a 6-cup muffin tin.
 2. Mash banana. Whisk egg whites with peanut butter and maple syrup.
 3. Stir in almond flour, cocoa powder, baking soda, and sea salt until just combined.
@@ -360,11 +365,11 @@ Spoon the set pudding into a bowl or jar.
 Stir cinnamon, clove, and ginger through the pudding.
 Top with chopped almonds, black seeds, and sesame seeds.
 Serve chilled."
-"Sweet Potato Egg Hash",Breakfast,"Bell Pepper (Red):40 | Black Pepper:1 | Egg:100 | Fresh Coriander:3 | Olive Oil:4 | Rosemary (Fresh):2 | Sea Salt:1 | Sweet Potato:90 | Thyme (Fresh):2 | White Onion:25",350,35,35,7.8,,,,,false,1,Balanced,,"Eggs, Nightshades",images/meals/sweet_potato_egg_hash.png,"Rosemary-thyme roasted sweet potato hash with sautéed onion and pepper, finished with softly scrambled eggs.","1. Preheat oven to 200°C. Toss diced sweet potato with half the olive oil, rosemary, thyme, sea salt, and black pepper. Roast until tender (25–30 min).
+"Sweet Potato Egg Hash",Breakfast,"Bell Pepper (Red):40 | Black Pepper:1 | Egg:100 | Flaxseeds:5 | Fresh Coriander:3 | Olive Oil:4 | Rosemary (Fresh):2 | Sea Salt:1 | Sweet Potato:90 | Thyme (Fresh):2 | White Onion:25",324.7,15.98,27.03,17.15,,,,,false,1,Balanced,,"Eggs, Nightshades",images/meals/sweet_potato_egg_hash.png,"Rosemary-thyme roasted sweet potato hash with sautéed onion and pepper, finished with softly scrambled eggs and flaxseeds.","1. Preheat oven to 200°C. Toss diced sweet potato with half the olive oil, rosemary, thyme, sea salt, and black pepper. Roast until tender (25–30 min).
 2. Heat the remaining olive oil in a frying pan. Sauté diced onion and red bell pepper until softened (5–6 min).
 3. Add roasted sweet potato and toss to combine.
 4. Beat eggs, pour into the pan, and scramble gently over medium-low heat until just set.
-5. Finish with fresh coriander and serve hot."
+5. Finish with fresh coriander, flaxseeds, and serve hot."
 "Tandoori Chicken Salad",Meal,"Cashew Nuts:10 | Celery:20 | Cherry Tomatoes:45 | Cucumber:45 | Fresh Coriander:4 | Fresh Mint:4 | Mint Coconut Chutney Dressing (Base):16 | Pomegranate Seeds:12 | Red Onion:12 | Romaine Lettuce:55 | Tandoori Chicken (Base):150",350,35,35,7.8,,,,,false,1,,,"Nightshades, Nuts, Soy, Spicy",images/meals/tandoori_chicken_salad.png,"Lean chicken breast strips marinated in bold tandoori spices and grilled","Grill or pan-sear Tandoori Chicken (Base) until golden then in the oven for 20 minutes exactly, then Rest and slice.
 Toss romaine, cucumber, celery, tomatoes, onion, herbs, and pomegranate.
 Top with chicken and cashews.
@@ -459,9 +464,10 @@ Spoon the set pudding into a bowl or jar.
 Stir cinnamon, clove, and ginger through the pudding.
 Top with chopped almonds, black seeds, and sesame seeds.
 Serve chilled."
-"Strawberry Almond Greek Yogurt Chia Pudding",Dessert,"Almond whole:7 | Greek Yogurt Chia Pudding (Base):150 | Psyllium Husks:10 | Strawberries:40",187.21,17.18,16.43,6.7,,,,,false,,Balanced,,"Dairy, Nuts",images/meals/strawberry_almond_chia_pudding.png,"Greek yogurt chia pudding with fresh strawberries and almonds.","Prepare Greek Yogurt Chia Pudding (Base) ahead (chia, Greek yogurt, and honey) and chill until thick.
+"Strawberry Almond Greek Yogurt Chia Pudding",Dessert,"Almond whole:7 | Black Seeds:2 | Greek Yogurt Chia Pudding (Base):150 | Psyllium Husks:10 | Sesame Seeds:3 | Strawberries:40",249.7,18.03,26.91,8.63,,,,,false,,Balanced,,"Dairy, Nuts, Sesame",images/meals/strawberry_almond_chia_pudding.png,"Greek yogurt chia pudding with fresh strawberries, almonds, black seeds, and sesame.","Prepare Greek Yogurt Chia Pudding (Base) ahead (chia, Greek yogurt, and honey) and chill until thick.
 Spoon the set pudding into a bowl or jar.
 Fold in sliced strawberries and almonds.
+Top with black seeds and sesame seeds.
 Serve chilled."
 "Peach Pecan Greek Yogurt Chia Pudding",Dessert,"Cinnamon:0.5 | Fresh Mint:2 | Greek Yogurt Chia Pudding (Base):150 | Peach:35 | Pecans:8 | Psyllium Husks:10",205.44,16.57,16.97,8.98,,,,,false,,Balanced,,"Dairy, Nuts",images/meals/peach_pecan_chia_pudding.png,"Greek yogurt chia pudding with sweet peach, pecans, cinnamon, and mint.","Prepare Greek Yogurt Chia Pudding (Base) ahead (chia, Greek yogurt, and honey) and chill until thick.
 Spoon the set pudding into a bowl or jar.

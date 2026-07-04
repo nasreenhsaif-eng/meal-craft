@@ -17,6 +17,7 @@ final class NutrientDenseFermentedPortionCaps
             str_contains($normalized, 'miso') => (float) ($caps['miso_paste'] ?? 12.0),
             str_contains($normalized, 'kimchi') => (float) ($caps['kimchi'] ?? 40.0),
             str_contains($normalized, 'sauerkraut') => (float) ($caps['sauerkraut'] ?? 50.0),
+            str_contains($normalized, 'fermented beetroot') => (float) ($caps['fermented_beetroot'] ?? 60.0),
             $normalized === 'kefir' => (float) ($caps['kefir'] ?? 120.0),
             str_contains($normalized, 'fermented chimichurri') => (float) ($caps['fermented_chimichurri'] ?? 25.0),
             default => null,

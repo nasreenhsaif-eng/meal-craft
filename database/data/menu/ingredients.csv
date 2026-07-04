@@ -47,6 +47,7 @@ Basil,Herbs,172232,23,3.15,2.65,0.64,0.15,68,0,3.17,64,1.6,0.3,177,295,4,0.81,18
 "Beef Sirloin",Proteins,173322,244,27,0,15,0.51,7,1.8,1.9,24,0,0,25,385,58,4.8,0,0,0.2,0.1,1.5,1,0,,,,,0
 "Beef Topside",Proteins,174677,162,28,0,5,0.58,10,2.1,2.5,27,0,0,5,390,50,5.2,0,0,0.2,0.1,1.5,1,0,,,,,0
 Beetroot,Vegetables,169145,43,1.6,9.6,0.2,0.07,109,0,0.8,23,2.8,6.8,16,325,78,0.4,4.9,2,0,0,0,1,0,,,,,0
+"Fermented Beetroot (Base)","Base Ingredient",,37,1.4,8.3,0.17,0.08,95,0,1.1,22,2.6,6.2,15,310,650,0.35,4.5,1.8,0,0,0,1,1,"Beetroot (700g) | Turnip (300g) | Garlic (Raw) (40g) | Black Pepper (3g) | Bay Leaves (1g) | Sea Salt (50g)","Homemade lacto-fermented beetroot and turnip with garlic, black peppercorns, and bay — tart, probiotic, and packed in brine.","Step 1: Peel and cut 1 kg beetroot and turnip into batons or wedges (mixed together).\nStep 2: Pack into a sterile glass jar with 10 garlic cloves, 3 bay leaves, and black peppercorns.\nStep 3: Dissolve 50 g sea salt in enough filtered water to cover the vegetables.\nStep 4: Pour brine over the vegetables until fully submerged. Seal with an airtight fermentation lid.\nStep 5: Ferment in a cool, dark place for 2 weeks, burping the jar daily if needed.\nStep 6: Store refrigerated once fermented. Serve chilled as a probiotic side.",1200,0
 "Bell Pepper (Red)",Vegetables,170497,31,1,6,0.3,0.29,46,0,0.4,12,2.1,4.2,7,211,4,0.3,127.7,157,1.6,0,0,1,0,,,,,0
 "Black Beans",Legumes,,132,8.9,23.7,0.5,0.1,149,0,2.1,70,8.7,0.3,27,355,1,0.9,0,0,0,0,0,0.8,0,,,,,1
 "Black Beans (Cooked)",Proteins/Legumes,173735,132,8.9,23.7,0.5,0.07,149,0,2.1,70,8.7,0.3,27,355,1,1.1,0,0,0,0,0,1,0,,,,,0
@@ -400,6 +401,7 @@ Tempeh,Proteins,174272,192,20.3,7.6,10.8,0.3,52,0.1,2.7,81,0,0,111,412,9,1.1,0,0
 Thyme,Herbs,,276,9.1,63.9,7.4,0.35,56,0,123.6,220,37,0,1890,814,55,5.5,50,380,0,0,0,1,0,,"Dried thyme leaves — earthy herb for rubs, roasts, and spice blends.",,,0
 "Thyme (Fresh)","Vegetables / Herbs",170940,101,5.6,24.5,1.7,0.3,45,0,17.5,160,14,0,405,609,9,1.8,160,238,0,0,0,1,0,,"Fresh sprigs of thyme, deeply aromatic and wood-sy.",,,0
 "Tofu (Firm)",Proteins,172448,83,10,2.3,4.8,0.08,15,0,1.6,58,1,0.6,350,148,9,1.1,0,9,0.1,0,1.5,1,0,,,,,0
+Turnip,Vegetables,170465,28,0.9,6.4,0.1,0.07,15,0,0.3,11,1.8,3.8,30,191,67,0.27,21,0,0,0,0,1,0,,"Fresh turnip root — mild and crisp for roasts, ferments, and stews.",,,0
 "Tomato (Raw)",Vegetables,170457,18,0.9,3.9,0.2,0.08,15,0,0.3,11,1.2,2.6,10,237,5,0.2,13.7,42,0.5,0,0,1,0,,,,,0
 "Tomato Paste",Pantry,170458,82,4.3,18.9,0.5,0.22,15,0,3,35,4.1,11.3,36,1014,59,0.6,21.9,76,4.3,0,0,1,0,,,,,0
 "Tomato Sauce",Pantry,170054,29,1.3,6.6,0.2,0.05,9,0,0.6,12,1.5,4.2,8,200,350,0.2,6,15,0.5,0,0,1,0,,,,,0

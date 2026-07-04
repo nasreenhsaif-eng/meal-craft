@@ -237,6 +237,8 @@ final class BalancedChiaDessertRecipeRefiner
      * @param  array{
      *     toppings: array<string, float>,
      *     instruction_suffix?: list<string>,
+     *     greek_toppings?: array<string, float>,
+     *     greek_instruction_suffix?: list<string>,
      *     custom_instructions?: list<string>,
      *     short_description_coconut: string,
      *     short_description_greek: string
@@ -254,11 +256,19 @@ final class BalancedChiaDessertRecipeRefiner
 
         if (isset($flavor['custom_instructions'])) {
             $instructions = $this->instructionsForBase($flavor['custom_instructions'], $baseName);
+        } elseif ($baseName === self::GREEK_YOGURT_CHIA_BASE_NAME && isset($flavor['greek_instruction_suffix'])) {
+            $instructions = array_merge($basePrep, $flavor['greek_instruction_suffix']);
         } else {
             $instructions = array_merge($basePrep, $flavor['instruction_suffix'] ?? []);
         }
 
-        $ingredients = array_merge([$baseName => $baseGrams], $flavor['toppings']);
+        $toppings = $flavor['toppings'];
+
+        if ($baseName === self::GREEK_YOGURT_CHIA_BASE_NAME && isset($flavor['greek_toppings'])) {
+            $toppings = array_merge($toppings, $flavor['greek_toppings']);
+        }
+
+        $ingredients = array_merge([$baseName => $baseGrams], $toppings);
 
         if ($baseName === self::GREEK_YOGURT_CHIA_BASE_NAME) {
             $ingredients[self::PSYLLIUM_HUSKS_NAME] = self::GREEK_YOGURT_CHIA_PSYLLIUM_HUSK_GRAMS;
@@ -334,6 +344,8 @@ final class BalancedChiaDessertRecipeRefiner
      * @return array<string, array{
      *     toppings: array<string, float>,
      *     instruction_suffix?: list<string>,
+     *     greek_toppings?: array<string, float>,
+     *     greek_instruction_suffix?: list<string>,
      *     custom_instructions?: list<string>,
      *     short_description_coconut: string,
      *     short_description_greek: string
@@ -390,12 +402,21 @@ final class BalancedChiaDessertRecipeRefiner
                     'Strawberries' => 40,
                     'Almond whole' => 7,
                 ],
+                'greek_toppings' => [
+                    'Black Seeds' => 2,
+                    'Sesame Seeds' => 3,
+                ],
                 'instruction_suffix' => [
                     'Fold in sliced strawberries and almonds.',
                     'Serve chilled.',
                 ],
+                'greek_instruction_suffix' => [
+                    'Fold in sliced strawberries and almonds.',
+                    'Top with black seeds and sesame seeds.',
+                    'Serve chilled.',
+                ],
                 'short_description_coconut' => 'Coconut chia pudding with fresh strawberries and almonds.',
-                'short_description_greek' => 'Greek yogurt chia pudding with fresh strawberries and almonds.',
+                'short_description_greek' => 'Greek yogurt chia pudding with fresh strawberries, almonds, black seeds, and sesame.',
             ],
             'Peach Pecan Chia Pudding' => [
                 'toppings' => [

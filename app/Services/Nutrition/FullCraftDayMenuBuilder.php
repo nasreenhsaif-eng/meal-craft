@@ -406,6 +406,63 @@ final class FullCraftDayMenuBuilder
         ];
     }
 
+    /**
+     * Default tier-preview picks: 1 breakfast, 2 mains, 1 side salad, 1 dessert (no soup).
+     * Uses scheduled meal ids so admin tier preview selections match UI meal cards.
+     *
+     * @param  Collection<int, MealPlanDayMeal>  $dayRows
+     * @return array<string, list<int>>
+     */
+    public static function defaultDaySelectionForRows(CustomerProfile $profile, Collection $dayRows): array
+    {
+        /** @var array<string, list<int>> $selection */
+        $selection = [
+            'breakfasts' => [],
+            'meals' => [],
+            'sideSalads' => [],
+            'desserts' => [],
+            'soup' => [],
+        ];
+
+        foreach ($dayRows as $row) {
+            if (! $row instanceof MealPlanDayMeal || ! $row->meal instanceof Meal) {
+                continue;
+            }
+
+            $slotType = $row->slot_type instanceof MealPlanSlotType
+                ? $row->slot_type
+                : MealPlanSlotType::tryFrom((string) $row->slot_type);
+
+            if (! $slotType instanceof MealPlanSlotType) {
+                continue;
+            }
+
+            $mealId = (int) $row->meal_id;
+
+            if ($mealId <= 0) {
+                continue;
+            }
+
+            match ($slotType) {
+                MealPlanSlotType::Breakfast => count($selection['breakfasts']) < 1
+                    ? $selection['breakfasts'][] = $mealId
+                    : null,
+                MealPlanSlotType::Main => count($selection['meals']) < 2
+                    ? $selection['meals'][] = $mealId
+                    : null,
+                MealPlanSlotType::Salad => count($selection['sideSalads']) < 1
+                    ? $selection['sideSalads'][] = $mealId
+                    : null,
+                MealPlanSlotType::Dessert => count($selection['desserts']) < 1
+                    ? $selection['desserts'][] = $mealId
+                    : null,
+                default => null,
+            };
+        }
+
+        return $selection;
+    }
+
     private static function resolveMealForProfile(Meal $meal, MealPlanSlotType $slotType, CustomerProfile $profile): Meal
     {
         if ($slotType === MealPlanSlotType::Breakfast) {

@@ -125,6 +125,48 @@ test('user plan includes day macro tolerance config', function () {
     ]);
 });
 
+test('day macro reconciliation totals only count selected fixed carousel meals', function () {
+    $user = User::factory()->create();
+    $profile = CustomerProfile::factory()->for($user)->create([
+        'daily_calorie_target' => 1500,
+    ]);
+
+    $dayMenu = [
+        'breakfasts' => [['id' => 1, 'calories' => 300, 'macros' => ['protein_g' => 20, 'carbs_g' => 10, 'fat_g' => 15]]],
+        'meals' => [
+            ['id' => 10, 'calories' => 450, 'macros' => ['protein_g' => 40, 'carbs_g' => 30, 'fat_g' => 20]],
+            ['id' => 11, 'calories' => 450, 'macros' => ['protein_g' => 40, 'carbs_g' => 30, 'fat_g' => 20]],
+        ],
+        'sideSalads' => [
+            ['id' => 20, 'calories' => 150, 'macros' => ['protein_g' => 4, 'carbs_g' => 10, 'fat_g' => 8]],
+            ['id' => 21, 'calories' => 350, 'macros' => ['protein_g' => 6, 'carbs_g' => 20, 'fat_g' => 12]],
+        ],
+        'desserts' => [
+            ['id' => 30, 'calories' => 150, 'macros' => ['protein_g' => 5, 'carbs_g' => 15, 'fat_g' => 6]],
+            ['id' => 31, 'calories' => 350, 'macros' => ['protein_g' => 8, 'carbs_g' => 25, 'fat_g' => 10]],
+        ],
+        'soup' => [],
+    ];
+
+    $options = [
+        'selected_breakfast_meal_ids' => [1],
+        'selected_main_meal_ids' => [10, 11],
+        'selected_side_salad_meal_ids' => [20],
+        'selected_dessert_meal_ids' => [30],
+    ];
+
+    $method = (new ReflectionClass(DayMacroReconciliation::class))->getMethod('dayMenuForMacroTotals');
+    $method->setAccessible(true);
+    /** @var array<string, mixed> $filtered */
+    $filtered = $method->invoke(null, $dayMenu, $options);
+
+    $allTotals = DayMacroReconciliation::sumDayMacros($dayMenu);
+    $selectedTotals = DayMacroReconciliation::sumDayMacros($filtered);
+
+    expect($allTotals['calories'])->toBeGreaterThan($selectedTotals['calories'])
+        ->and($selectedTotals['calories'])->toBe(1500.0);
+});
+
 test('day macro reconciliation boosts carbs when protein is on target but day calories are short', function () {
     $user = User::factory()->create();
     $profile = CustomerProfile::factory()->for($user)->create([

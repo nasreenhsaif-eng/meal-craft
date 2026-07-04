@@ -65,8 +65,8 @@ class DayMacroReconciliation
                     $plan,
                     $mainMeals,
                     $proteinDeficit,
-                    self::fixedPortionCalories($dayMenu),
-                    self::scalableNonMainCalories($dayMenu),
+                    self::fixedPortionCalories($dayMenuForTotals),
+                    self::scalableNonMainCalories($dayMenuForTotals),
                 );
 
                 $dayMenu['meals'] = self::mergeAdaptedMainsById($dayMenu['meals'], $balancedPrimary);
@@ -355,27 +355,76 @@ class DayMacroReconciliation
      */
     private static function dayMenuForMacroTotals(array $dayMenu, array $options): array
     {
-        $selectedIds = $options['selected_main_meal_ids'] ?? null;
-        $requiredMainCount = max(1, (int) config('customer_nutrition.scalable_slots.main', 2));
+        /** @var array<string, string> $bucketOptionKeys */
+        $bucketOptionKeys = [
+            'breakfasts' => 'selected_breakfast_meal_ids',
+            'meals' => 'selected_main_meal_ids',
+            'sideSalads' => 'selected_side_salad_meal_ids',
+            'desserts' => 'selected_dessert_meal_ids',
+            'soup' => 'selected_soup_meal_ids',
+        ];
 
-        if (! is_array($selectedIds) || count($selectedIds) < $requiredMainCount) {
-            return $dayMenu;
+        $filtered = $dayMenu;
+        /** @var list<string>|null $selectedFixedSlots */
+        $selectedFixedSlots = is_array($options['selected_fixed_slots'] ?? null)
+            ? $options['selected_fixed_slots']
+            : null;
+
+        foreach ($bucketOptionKeys as $bucket => $optionKey) {
+            $fixedSlot = match ($bucket) {
+                'sideSalads' => 'side_salad',
+                'desserts' => 'dessert',
+                'soup' => 'soup',
+                default => null,
+            };
+
+            if ($fixedSlot !== null && $selectedFixedSlots !== null && ! in_array($fixedSlot, $selectedFixedSlots, true)) {
+                $filtered[$bucket] = [];
+
+                continue;
+            }
+
+            $selectedIds = self::normalizeSelectedMealIds($options[$optionKey] ?? null);
+
+            if ($selectedIds === []) {
+                continue;
+            }
+
+            $filtered[$bucket] = array_values(array_filter(
+                $dayMenu[$bucket] ?? [],
+                static function (mixed $meal) use ($selectedIds): bool {
+                    if (! is_array($meal)) {
+                        return false;
+                    }
+
+                    return in_array((int) ($meal['id'] ?? 0), $selectedIds, true);
+                },
+            ));
         }
 
-        $normalizedIds = array_values(array_unique(array_map(static fn (mixed $id): int => (int) $id, $selectedIds)));
+        return $filtered;
+    }
 
-        $dayMenu['meals'] = array_values(array_filter(
-            $dayMenu['meals'] ?? [],
-            static function (mixed $meal) use ($normalizedIds): bool {
-                if (! is_array($meal)) {
-                    return false;
-                }
+    /**
+     * @return list<int>
+     */
+    private static function normalizeSelectedMealIds(mixed $raw): array
+    {
+        if (! is_array($raw) || $raw === []) {
+            return [];
+        }
 
-                return in_array((int) ($meal['id'] ?? 0), $normalizedIds, true);
-            },
-        ));
+        $ids = [];
 
-        return $dayMenu;
+        foreach ($raw as $id) {
+            $normalized = (int) $id;
+
+            if ($normalized > 0) {
+                $ids[] = $normalized;
+            }
+        }
+
+        return array_values(array_unique($ids));
     }
 
     /**

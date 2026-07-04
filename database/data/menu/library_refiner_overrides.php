@@ -497,26 +497,30 @@ Serve dressing on the side.',
         ],
     ],
     'Chili Beef Stuffed Peppers' => [
-        'synced_at' => '2026-07-01T09:21:23+00:00',
+        'synced_at' => '2026-07-04T12:00:00+00:00',
         'ingredients' => [
             'Beef Ground Lean' => 130.0,
             'Beef Liver' => 20.0,
             'Bell Pepper (Red)' => 105.0,
             'Chili Powder' => 2.0,
-            'Cooked Brown Basmati Rice (Base)' => 138.0,
+            'Cooked Quinoa (Base)' => 80.0,
+            'Fermented Beetroot (Base)' => 50.0,
             'Garlic (Raw)' => 4.0,
             'Olive Oil' => 2.0,
+            'Parsley' => 8.0,
+            'Purslane' => 40.0,
             'Spinach (Fresh)' => 35.0,
+            'Sunflower Seeds' => 10.0,
             'Tomato (Raw)' => 55.0,
             'White Onion' => 28.0,
         ],
-        'highlight' => 'Sweet bell peppers stuffed with a savory',
-        'short_description' => 'Sweet bell peppers stuffed with a savory',
-        'instructions' => '1. Prepare Cooked Brown Basmati Rice (Base) per base recipe instructions.
-2. Brown ground beef with onion and garlic. Stir in chili powder and diced tomato.
-3. Mix beef with cooked brown basmati rice.
-4. Halve peppers, remove seeds. Fill with beef mixture.
-5. Bake at 190°C for 25–30 minutes until peppers are soft.',
+        'highlight' => 'Sweet bell peppers stuffed with beef, liver, quinoa, parsley, and spinach — served with purslane, fermented beetroot, and sunflower seeds.',
+        'short_description' => 'Sweet bell peppers stuffed with beef, liver, quinoa, parsley, and spinach — served with purslane, fermented beetroot, and sunflower seeds.',
+        'instructions' => '1. Prepare Cooked Quinoa (Base) and Fermented Beetroot (Base) per base recipe instructions.
+2. Brown ground beef and beef liver with onion and garlic. Stir in chili powder, diced tomato, parsley, and spinach until wilted.
+3. Fold in cooked quinoa. Halve peppers, remove seeds, and stuff with the mixture.
+4. Bake at 190°C for 25–30 minutes until peppers are soft.
+5. Plate stuffed peppers with purslane, fermented beetroot, and sunflower seeds on the side.',
         'diet_tags' => [
             0 => 'Dairy-free',
             1 => 'Gluten-free',
@@ -1953,15 +1957,18 @@ Serve chilled.',
         'synced_at' => '2026-07-01T09:21:23+00:00',
         'ingredients' => [
             'Almond whole' => 7.0,
+            'Black Seeds' => 2.0,
             'Greek Yogurt Chia Pudding (Base)' => 150.0,
             'Psyllium Husks' => 10.0,
+            'Sesame Seeds' => 3.0,
             'Strawberries' => 40.0,
         ],
-        'highlight' => 'Greek yogurt chia pudding with fresh strawberries and almonds.',
-        'short_description' => 'Greek yogurt chia pudding with fresh strawberries and almonds.',
+        'highlight' => 'Greek yogurt chia pudding with fresh strawberries, almonds, black seeds, and sesame.',
+        'short_description' => 'Greek yogurt chia pudding with fresh strawberries, almonds, black seeds, and sesame.',
         'instructions' => 'Prepare Greek Yogurt Chia Pudding (Base) ahead (chia, Greek yogurt, and honey) and chill until thick.
 Spoon the set pudding into a bowl or jar.
 Fold in sliced strawberries and almonds.
+Top with black seeds and sesame seeds.
 Serve chilled.',
         'diet_tags' => [
             0 => 'Dairy-free',
@@ -1971,6 +1978,7 @@ Serve chilled.',
         'food_filter_tags' => [
             0 => 'dairy',
             1 => 'nuts',
+            2 => 'sesame',
         ],
     ],
     'Sweet Potato Egg Hash' => [
@@ -1979,6 +1987,7 @@ Serve chilled.',
             'Bell Pepper (Red)' => 30.0,
             'Black Pepper' => 1.0,
             'Egg' => 100.0,
+            'Flaxseeds' => 5.0,
             'Fresh Coriander' => 3.0,
             'Olive Oil' => 10.0,
             'Rosemary (Fresh)' => 2.0,
@@ -1987,13 +1996,13 @@ Serve chilled.',
             'Thyme (Fresh)' => 2.0,
             'White Onion' => 25.0,
         ],
-        'highlight' => 'Rosemary-thyme roasted sweet potato hash with sautéed onion and pepper, finished with softly scrambled eggs.',
-        'short_description' => 'Rosemary-thyme roasted sweet potato hash with sautéed onion and pepper, finished with softly scrambled eggs.',
+        'highlight' => 'Rosemary-thyme roasted sweet potato hash with sautéed onion and pepper, finished with softly scrambled eggs and flaxseeds.',
+        'short_description' => 'Rosemary-thyme roasted sweet potato hash with sautéed onion and pepper, finished with softly scrambled eggs and flaxseeds.',
         'instructions' => '1. Preheat oven to 200°C. Toss diced sweet potato with half the olive oil, rosemary, thyme, sea salt, and black pepper. Roast until tender (25–30 min).
 2. Heat the remaining olive oil in a frying pan. Sauté diced onion and red bell pepper until softened (5–6 min).
 3. Add roasted sweet potato and toss to combine.
 4. Beat eggs, pour into the pan, and scramble gently over medium-low heat until just set.
-5. Finish with fresh coriander and serve hot.',
+5. Finish with fresh coriander, flaxseeds, and serve hot.',
         'diet_tags' => [
             0 => 'Dairy-free',
             1 => 'Gluten-free',

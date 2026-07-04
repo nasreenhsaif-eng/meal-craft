@@ -38,6 +38,12 @@ final class NutrientDenseFermentedRecipeRefiner
 
     public const SAUERKRAUT_ROCCA_SALAD_IMAGE = 'images/meals/sauerkraut_rocca_salad.png';
 
+    public const KEFIR_TURKISH_EGGS_NAME = 'Kefir Turkish Eggs w Zucchini Bread';
+
+    public const KEFIR_TURKISH_EGGS_LEGACY_NAME = 'Kefir Herb Egg Bowl';
+
+    public const KEFIR_TURKISH_EGGS_IMAGE = 'images/meals/kefir_turkish_eggs_zucchini_bread.png';
+
     /**
      * @return list<string>
      */
@@ -88,6 +94,10 @@ final class NutrientDenseFermentedRecipeRefiner
                 $existing->update(['name' => self::SARDINE_MAIN_NAME]);
             }
 
+            if ($mealName === self::KEFIR_TURKISH_EGGS_NAME && $existing->name === self::KEFIR_TURKISH_EGGS_LEGACY_NAME) {
+                $existing->update(['name' => self::KEFIR_TURKISH_EGGS_NAME]);
+            }
+
             return $existing->fresh() ?? $existing;
         }
 
@@ -112,6 +122,10 @@ final class NutrientDenseFermentedRecipeRefiner
 
         if ($mealName === self::SARDINE_MAIN_NAME) {
             return $query->whereIn('name', [self::SARDINE_MAIN_NAME, self::SARDINE_MAIN_LEGACY_NAME])->first();
+        }
+
+        if ($mealName === self::KEFIR_TURKISH_EGGS_NAME) {
+            return $query->whereIn('name', [self::KEFIR_TURKISH_EGGS_NAME, self::KEFIR_TURKISH_EGGS_LEGACY_NAME])->first();
         }
 
         return $query->where('name', $mealName)->first();
@@ -243,19 +257,28 @@ final class NutrientDenseFermentedRecipeRefiner
                 'image_path' => self::SAUERKRAUT_ROCCA_SALAD_IMAGE,
                 'instructions' => "1. Prepare Sauerkraut (Base) per base recipe instructions.\n2. Toss sauerkraut, rocca, halved cherry tomatoes, diced avocado, and peeled chopped almonds in a bowl.\n3. Serve with Cilantro Lime Dressing (Base) on the side.",
             ],
-            'Kefir Herb Egg Bowl' => [
+            self::KEFIR_TURKISH_EGGS_NAME => [
                 'category' => RecipeCategory::Breakfast,
                 'meal_type' => MealType::Breakfast,
                 'ingredients' => [
                     'Egg' => 110,
-                    'Kefir' => 100,
-                    'Spinach (Fresh)' => 40,
-                    'Rocca' => 20,
-                    'Olive Oil' => 8,
+                    'Greek Yogurt' => 240,
+                    'Kefir' => 30,
+                    'Grass Fed Butter' => 10,
+                    'Zucchini Almond Bread (Base)' => 100,
+                    'Dill (Fresh)' => 5,
+                    'Fresh Mint' => 4,
+                    'Pumpkin Seeds' => 15,
+                    'Garlic (Raw)' => 1.5,
+                    'Chili Flakes' => 2,
+                    'Smoked Paprika' => 1,
+                    'Sea Salt' => 1,
                     'Black Pepper' => 1,
                 ],
                 'diet_tags' => $breakfastTags,
-                'highlight' => 'Whole eggs with kefir, greens, and herbs — daily fermented breakfast anchor.',
+                'highlight' => 'Soft-boiled eggs on kefir-spiked Greek yogurt with spiced butter, dill, mint, and pumpkin seeds — served with toasted zucchini almond bread.',
+                'image_path' => self::KEFIR_TURKISH_EGGS_IMAGE,
+                'instructions' => "1. Place eggs in a pot and add enough cold water to cover them (do not fill the pot to the top). Cover the pot, bring to a boil, and cook for exactly 12 minutes.\n2. Transfer the eggs to an ice water bath until chilled; peel when ready — this keeps the yolks creamy and makes peeling easy.\n3. Prepare Zucchini Almond Bread (Base) per base recipe instructions. Toast 2 slices.\n4. Warm the butter in a small pan with minced garlic, smoked paprika, and chili flakes until fragrant.\n5. Whisk Greek yogurt, kefir, chopped dill, torn mint leaves, sea salt, and black pepper until smooth. Spread on a plate and drizzle with the warm spiced butter.\n6. Halve the soft-boiled eggs and nestle them on the yogurt. Scatter pumpkin seeds over the top and serve with toasted zucchini almond bread.",
             ],
             self::SARDINE_MAIN_NAME => [
                 'ingredients' => [

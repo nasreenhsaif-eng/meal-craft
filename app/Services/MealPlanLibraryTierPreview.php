@@ -72,9 +72,15 @@ final class MealPlanLibraryTierPreview
             $dayRows = $rowsByDay->get($dayNumber, collect());
 
             $daySelection = $daySelectionsByDay[$dayNumber] ?? [];
-            $buildOptions = $this->buildOptionsForDay($planTier, $dayNumber, $daySelection);
 
             $uiMealMaps = FullCraftDayMenuBuilder::uiMealMapsForDay($profile, $dayRows);
+
+            if ($daySelection === []) {
+                $daySelection = FullCraftDayMenuBuilder::defaultDaySelectionForRows($profile, $dayRows);
+            }
+
+            $adaptedSelection = $this->translateSelectionToAdaptedIds($daySelection, $uiMealMaps);
+            $buildOptions = $this->buildOptionsForDay($planTier, $dayNumber, $adaptedSelection);
             $resolvedMealsById = $uiMealMaps['resolved'];
             $scheduledMealsByAdaptedId = $uiMealMaps['scheduled'];
 
@@ -146,10 +152,20 @@ final class MealPlanLibraryTierPreview
             'day_of_week' => $dayNumber,
         ];
 
-        $mainIds = $this->normalizeMealIds($daySelection['meals'] ?? []);
+        $selectionKeys = [
+            'breakfasts' => 'selected_breakfast_meal_ids',
+            'meals' => 'selected_main_meal_ids',
+            'sideSalads' => 'selected_side_salad_meal_ids',
+            'desserts' => 'selected_dessert_meal_ids',
+            'soup' => 'selected_soup_meal_ids',
+        ];
 
-        if ($mainIds !== []) {
-            $options['selected_main_meal_ids'] = $mainIds;
+        foreach ($selectionKeys as $categoryKey => $optionKey) {
+            $mealIds = $this->normalizeMealIds($daySelection[$categoryKey] ?? []);
+
+            if ($mealIds !== []) {
+                $options[$optionKey] = $mealIds;
+            }
         }
 
         $fixedSlots = [];
@@ -171,6 +187,39 @@ final class MealPlanLibraryTierPreview
         }
 
         return $options;
+    }
+
+    /**
+     * Map UI / scheduled meal ids to adapted ids used in reconciled day menus.
+     *
+     * @param  array<string, list<int|string>>  $daySelection
+     * @param  array{resolved: array<int, Meal>, scheduled: array<int, Meal>}  $uiMealMaps
+     * @return array<string, list<int>>
+     */
+    private function translateSelectionToAdaptedIds(array $daySelection, array $uiMealMaps): array
+    {
+        /** @var array<int, Meal> $resolvedBySelectionId */
+        $resolvedBySelectionId = $uiMealMaps['resolved'];
+
+        /** @var array<string, list<int>> $adaptedSelection */
+        $adaptedSelection = [];
+
+        foreach ($daySelection as $categoryKey => $mealIds) {
+            if (! is_array($mealIds)) {
+                continue;
+            }
+
+            $adaptedSelection[$categoryKey] = [];
+
+            foreach ($this->normalizeMealIds($mealIds) as $mealId) {
+                $resolved = $resolvedBySelectionId[$mealId] ?? null;
+                $adaptedSelection[$categoryKey][] = $resolved instanceof Meal
+                    ? (int) $resolved->id
+                    : $mealId;
+            }
+        }
+
+        return $adaptedSelection;
     }
 
     /**

@@ -33,11 +33,11 @@ final class NutrientDenseMealLibraryConfigurator
     {
         return [
             [
-                'name' => 'Kefir Herb Egg Bowl',
+                'name' => NutrientDenseFermentedRecipeRefiner::KEFIR_TURKISH_EGGS_NAME,
                 'sort' => 0,
                 'slot' => 'breakfast',
                 'meal_plan_tags' => ['NutrientDense'],
-                'diet_tags' => ['Vegetarian', 'Dairy-free', 'Gluten-free'],
+                'diet_tags' => ['Vegetarian', 'Gluten-free'],
             ],
             [
                 'name' => BalancedCanonicalMealRecipeRefiner::BAKED_SALMON_NAME,

@@ -79,7 +79,7 @@ final class NutrientDenseWeeklyRotationSchedule
         'Mediterranean Omelet',
         'Deconstructed Shakshuka Skillet',
         'Hummus Egg Stack',
-        'Kefir Herb Egg Bowl',
+        NutrientDenseFermentedRecipeRefiner::KEFIR_TURKISH_EGGS_NAME,
         'Sweet Potato Egg Hash',
         'Butternut Squash Fritters & Eggs',
         'Smashed Beans & Eggs',
