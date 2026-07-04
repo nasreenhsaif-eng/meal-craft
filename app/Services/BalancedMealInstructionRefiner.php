@@ -180,7 +180,7 @@ final class BalancedMealInstructionRefiner
             ]),
             'Sweet Potato Egg Hash' => $this->steps([
                 'Preheat oven to 200°C. Toss diced sweet potato with half the olive oil, rosemary, thyme, sea salt, and black pepper. Roast until tender (25–30 min).',
-                'Heat the remaining olive oil in a frying pan. Sauté diced onion and red bell pepper until softened (5–6 min).',
+                'Heat the remaining olive oil in a frying pan. Sauté diced onion, red bell pepper, and chopped spinach until softened (5–6 min).',
                 'Add roasted sweet potato and toss to combine.',
                 'Beat eggs, pour into the pan, and scramble gently over medium-low heat until just set.',
                 'Finish with fresh coriander, flaxseeds, and serve hot.',

@@ -1992,14 +1992,15 @@ Serve chilled.',
             'Olive Oil' => 10.0,
             'Rosemary (Fresh)' => 2.0,
             'Sea Salt' => 1.0,
+            'Spinach (Fresh)' => 45.0,
             'Sweet Potato' => 90.0,
             'Thyme (Fresh)' => 2.0,
             'White Onion' => 25.0,
         ],
-        'highlight' => 'Rosemary-thyme roasted sweet potato hash with sautéed onion and pepper, finished with softly scrambled eggs and flaxseeds.',
-        'short_description' => 'Rosemary-thyme roasted sweet potato hash with sautéed onion and pepper, finished with softly scrambled eggs and flaxseeds.',
+        'highlight' => 'Rosemary-thyme roasted sweet potato hash with sautéed onion, pepper, and spinach, finished with softly scrambled eggs and flaxseeds.',
+        'short_description' => 'Rosemary-thyme roasted sweet potato hash with sautéed onion, pepper, and spinach, finished with softly scrambled eggs and flaxseeds.',
         'instructions' => '1. Preheat oven to 200°C. Toss diced sweet potato with half the olive oil, rosemary, thyme, sea salt, and black pepper. Roast until tender (25–30 min).
-2. Heat the remaining olive oil in a frying pan. Sauté diced onion and red bell pepper until softened (5–6 min).
+2. Heat the remaining olive oil in a frying pan. Sauté diced onion, red bell pepper, and chopped spinach until softened (5–6 min).
 3. Add roasted sweet potato and toss to combine.
 4. Beat eggs, pour into the pan, and scramble gently over medium-low heat until just set.
 5. Finish with fresh coriander, flaxseeds, and serve hot.',

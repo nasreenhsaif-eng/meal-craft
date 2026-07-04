@@ -68,3 +68,29 @@ test('merge trigger into safety labels adds g6pd trigger once', function () {
     expect($labels)->toContain('Contains: Peanuts')
         ->and($labels)->toContain(IngredientG6pdSafety::TRIGGER_SAFETY_LABEL);
 });
+
+test('base recipes without legumes do not propagate g6pd trigger after refresh', function () {
+    $napa = Ingredient::factory()->create([
+        'name' => 'Napa Cabbage',
+        'is_verified' => true,
+        'is_g6pd_trigger' => false,
+    ]);
+    Ingredient::factory()->create([
+        'name' => 'Cannellini Beans',
+        'is_verified' => true,
+        'is_g6pd_trigger' => true,
+    ]);
+
+    $base = Ingredient::factory()->create([
+        'name' => 'Kimchi (Base)',
+        'usda_food_category' => IngredientLibraryCategory::BaseIngredient,
+        'is_verified' => true,
+        'is_g6pd_trigger' => false,
+    ]);
+    $base->components()->attach($napa->id, ['amount_grams' => 500]);
+    $base->load('components');
+
+    expect(IngredientG6pdSafety::refreshStoredTriggerFlag($base))->toBeFalse()
+        ->and($base->components->pluck('name')->all())->toContain('Napa Cabbage')
+        ->and($base->components->pluck('name')->all())->not->toContain('Cannellini Beans');
+});

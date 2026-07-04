@@ -245,6 +245,7 @@ final class BalancedDairyFreeManualRecipeAdjustments
             'Olive Oil' => 4.0,
             'Rosemary (Fresh)' => 2.0,
             'Sea Salt' => 1.0,
+            'Spinach (Fresh)' => 45.0,
             'Sweet Potato' => 90.0,
             'Thyme (Fresh)' => 2.0,
             'White Onion' => 25.0,

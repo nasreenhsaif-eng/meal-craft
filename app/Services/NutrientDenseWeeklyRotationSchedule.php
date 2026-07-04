@@ -113,7 +113,7 @@ final class NutrientDenseWeeklyRotationSchedule
         'Grilled Mackerel w Roasted Vegetables',
         NutrientDenseFermentedRecipeRefiner::SARDINE_MAIN_NAME,
         'Citrus Herb Salmon with Asparagus & Sweet Potato',
-        'Grilled Mackerel w Lemon Herb Quinoa',
+        'Salmon Cashew Cream & Roasted Mixed Vegetables',
         NutrientDenseFermentedRecipeRefiner::SARDINE_MAIN_NAME,
         'Grilled Salmon Mango Salsa',
     ];
