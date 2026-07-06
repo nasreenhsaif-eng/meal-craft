@@ -183,7 +183,7 @@ Serve dressing on the side.',
             'Black Seeds' => 8.0,
             'Blueberries' => 7.09,
             'Cinnamon' => 1.0,
-            'Coconut Chia Pudding (Base)' => 75.0,
+            'Coconut Chia Pudding (Base)' => 120.0,
             'Fresh Mint' => 1.0,
             'Walnuts' => 5.0,
         ],
@@ -269,31 +269,31 @@ Serve chilled.',
             1 => 'eggs',
         ],
     ],
-    'Butternut Squash Fritters & Eggs' => [
-        'synced_at' => '2026-07-01T09:21:23+00:00',
+    'Butternut Squash Frittata' => [
+        'synced_at' => '2026-07-06T12:30:00+00:00',
         'ingredients' => [
             'Butternut Squash' => 200.0,
-            'Chili Flakes' => 0.5,
-            'Coriander Seeds' => 0.5,
-            'Cumin Seeds' => 0.5,
-            'Egg' => 100.0,
-            'Fennel Seeds' => 0.5,
-            'Fresh Coriander' => 10.0,
-            'Garlic (Raw)' => 1.5,
-            'Lemon Juice' => 30.0,
+            'Chickpea Flour' => 15.0,
+            'Dill (Fresh)' => 8.0,
+            'Eggs (Large)' => 200.0,
+            'Greek Yogurt' => 40.0,
+            'Gruyere Cheese' => 35.0,
             'Marinara Sauce (Base)' => 80.0,
-            'Olive Oil' => 5.0,
-            'Quinoa Flour' => 10.0,
+            'Olive Oil' => 10.0,
+            'Paprika' => 1.0,
+            'Red Onion' => 35.0,
             'Sea Salt' => 1.0,
         ],
-        'highlight' => 'Spiced roasted butternut squash fritters bound with eggs, fresh coriander, and lemon — served with warm marinara on the side.',
-        'short_description' => 'Spiced roasted butternut squash fritters bound with eggs, fresh coriander, and lemon — served with warm marinara on the side.',
-        'instructions' => '1. Preheat the oven to 200°C.
-2. Cut the butternut squash into 2–3 cm chunks. Place in a roasting tin, drizzle with olive oil, and season with sea salt, chili flakes, and fennel seeds. Roast for about 20 minutes, then leave to cool.
-3. When cool, place the butternut squash in a blender with any roasting juices. Add eggs, garlic, fresh coriander, lemon juice, cumin seeds, and coriander seeds. Blend to a rough paste and season to taste.
-4. Transfer the mixture to a bowl and stir in enough quinoa flour to make a smooth mix. Refrigerate for 1 hour to firm up. The mix should be sticky rather than wet — add a little more flour if needed.
-5. With wet hands, shape into ping-pong-ball-sized fritters. Bake at 200°C until golden and set through, or pan-fry in olive oil until crisp.
-6. Prepare Marinara Sauce (Base) per base recipe instructions. Warm and serve on the side.',
+        'highlight' => 'Roasted butternut squash frittata with gruyère, chickpea flour, dill, and Greek yogurt — topped with fried eggs and warm marinara on the side.',
+        'short_description' => 'Roasted butternut squash frittata with gruyère, chickpea flour, dill, and Greek yogurt — topped with fried eggs and warm marinara on the side.',
+        'instructions' => '1. Preheat the oven to 180°C (350°F).
+2. Cut butternut squash into 2 cm cubes. Toss with half the olive oil, paprika, and sea salt. Roast on a tray until tender and lightly golden (25–30 min).
+3. Dice red onion (or thinly slice spring onion). Sauté in the remaining olive oil in an oven-safe skillet until softened (4–5 min).
+4. Whisk two large eggs with Greek yogurt, chickpea flour, chopped dill, and half the shredded gruyère. Fold in roasted squash and sautéed onion.
+5. Pour into the skillet, scatter the remaining gruyère on top, and bake until the centre is just set (15–18 min).
+6. Fry two large eggs in a little olive oil until whites are crisp and yolks are runny.
+7. Prepare Marinara Sauce (Base) per base recipe instructions. Warm and serve on the side.
+8. Top the frittata with fried eggs and serve with marinara.',
         'diet_tags' => [
             0 => 'Dairy-free',
             1 => 'Gluten-free',
@@ -301,7 +301,10 @@ Serve chilled.',
             3 => 'Gluten-Free',
         ],
         'food_filter_tags' => [
-            0 => 'eggs',
+            0 => 'beans',
+            1 => 'dairy',
+            2 => 'eggs',
+            3 => 'nightshades',
         ],
     ],
     'Butternut Squash Soup' => [
@@ -337,7 +340,7 @@ Serve chilled.',
             'Almond Butter' => 2.25,
             'Almond whole' => 5.0,
             'Cocoa Powder' => 2.0,
-            'Coconut Chia Pudding (Base)' => 75.0,
+            'Coconut Chia Pudding (Base)' => 120.0,
         ],
         'highlight' => 'Rich cacao coconut chia pudding swirled with almond butter and almonds.',
         'short_description' => 'Rich cacao coconut chia pudding swirled with almond butter and almonds.',

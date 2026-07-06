@@ -73,7 +73,7 @@ final class BalancedWeeklyRotationSchedule
         'Hummus Egg Stack',
         'Kuku Sabzi Egg Muffins',
         'Sweet Potato Egg Hash',
-        'Butternut Squash Fritters & Eggs',
+        'Butternut Squash & Eggs',
         'Smashed Beans & Eggs',
     ];
 
@@ -84,7 +84,7 @@ final class BalancedWeeklyRotationSchedule
         'Feta & Herb Open Omelet',
         'Brie & Mushroom Skillet Eggs',
         'Parmesan Shakshuka',
-        'Halloumi Egg Stack',
+        'Butternut Squash Frittata',
         'Feta & Dill Egg Muffins',
     ];
 

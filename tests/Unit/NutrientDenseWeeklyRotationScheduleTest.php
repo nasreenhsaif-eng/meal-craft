@@ -63,6 +63,11 @@ test('sardine main is in fish rotation', function (): void {
         ->toContain(NutrientDenseFermentedRecipeRefiner::SARDINE_MAIN_NAME);
 });
 
+test('friday fish main is pan seared hamour', function (): void {
+    expect(NutrientDenseWeeklyRotationSchedule::mealNameForDay(6, MealPlanSlotType::Main, 3))
+        ->toBe('Pan Seared Hamour');
+});
+
 test('micro-dense side salads rotate daily without repeating within the week', function (): void {
     $salads = [];
 

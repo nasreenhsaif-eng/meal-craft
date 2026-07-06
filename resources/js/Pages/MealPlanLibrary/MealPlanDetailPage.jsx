@@ -23,6 +23,7 @@ import MealDetailView from '../../Components/Molecules/MealDetailView/MealDetail
 import MealPlanMealEditSheet from '../../Components/MealPlan/MealPlanMealEditSheet.jsx';
 import { SCHEDULER_SLOT_SECTIONS } from '../../meal-library/mealSearch.ts';
 import { updateMealInPlanDays } from './mealPlanMealEdit.js';
+import { useMealDetailModal } from '../../meal-library/useMealDetailModal.js';
 
 const PAGE_BG = 'bg-[#F8F9F6]';
 
@@ -158,11 +159,19 @@ export default function MealPlanDetailPage({
     const [tierError, setTierError] = useState(/** @type {string | null} */ (null));
     const [activeDay, setActiveDay] = useState(() => days[0]?.dayNumber ?? 1);
     const [daySelections, setDaySelections] = useState(() => buildInitialDaySelections(days));
-    const [mealDetailModal, setMealDetailModal] = useState(
-        /** @type {{ title: string; detailView: object } | null} */ (null),
-    );
     const [mealEditModal, setMealEditModal] = useState(
         /** @type {{ dayNumber: number; categoryKey: string; meal: object } | null} */ (null),
+    );
+    const { mealDetailModal, detailLoading, openMealDetail, closeMealDetail } = useMealDetailModal(
+        '/api/meals/{id}/detail-view',
+        () => {
+            const params = new URLSearchParams();
+            params.set('plan_tier', String(selectedTier));
+            params.set('craft_key', 'full');
+            params.set('day_of_week', String(activeDay));
+
+            return params.toString();
+        },
     );
 
     useEffect(() => {
@@ -253,16 +262,6 @@ export default function MealPlanDetailPage({
     }, [activeDayData, activeDaySelections]);
 
     const backUrl = resolveUrl(libraryUrl, '/admin/meal-plan-library');
-
-    const openMealDetail = useCallback((meal) => {
-        if (!meal?.detailView) {
-            return;
-        }
-        setMealDetailModal({
-            title: meal.title ?? 'Meal details',
-            detailView: meal.detailView,
-        });
-    }, []);
 
     const openMealEdit = useCallback((meal, categoryKey) => {
         const hasKitchenRows = Array.isArray(meal?.kitchenIngredientRows) && meal.kitchenIngredientRows.length > 0;
@@ -526,7 +525,7 @@ export default function MealPlanDetailPage({
                           <button
                               type="button"
                               className="absolute inset-0 bg-black/40"
-                              onClick={() => setMealDetailModal(null)}
+                              onClick={closeMealDetail}
                               aria-label="Close meal details"
                           />
                           <div
@@ -548,10 +547,13 @@ export default function MealPlanDetailPage({
                                       label="Close"
                                       variant="ghost"
                                       type="button"
-                                      onClick={() => setMealDetailModal(null)}
+                                      onClick={closeMealDetail}
                                   />
                               </div>
                               <MealDetailView meal={mealDetailModal.detailView} embedded />
+                              {detailLoading ? (
+                                  <p className="px-5 pb-4 text-sm text-stone-500">Loading meal details…</p>
+                              ) : null}
                           </div>
                       </div>,
                       document.body,

@@ -81,7 +81,7 @@ final class NutrientDenseWeeklyRotationSchedule
         'Hummus Egg Stack',
         NutrientDenseFermentedRecipeRefiner::KEFIR_TURKISH_EGGS_NAME,
         'Sweet Potato Egg Hash',
-        'Butternut Squash Fritters & Eggs',
+        'Butternut Squash & Eggs',
         'Smashed Beans & Eggs',
     ];
 
@@ -114,7 +114,7 @@ final class NutrientDenseWeeklyRotationSchedule
         NutrientDenseFermentedRecipeRefiner::SARDINE_MAIN_NAME,
         'Citrus Herb Salmon with Asparagus & Sweet Potato',
         'Salmon Cashew Cream & Roasted Mixed Vegetables',
-        NutrientDenseFermentedRecipeRefiner::SARDINE_MAIN_NAME,
+        'Pan Seared Hamour',
         'Grilled Salmon Mango Salsa',
     ];
 

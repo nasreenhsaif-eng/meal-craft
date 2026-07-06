@@ -58,6 +58,7 @@ final class WholeFoodDietPolicy
         'Brie',
         'Halloumi',
         'Gouda',
+        'Gruyere Cheese',
     ];
 
     /** @var list<string> */
