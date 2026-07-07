@@ -28,12 +28,17 @@ final class NutrientDenseEggBreakfastRecipeRefiner
     /**
      * @return list<string>
      */
-    public function refine(): array
+    public function refine(?array $onlyMealNames = null): array
     {
-        return DB::transaction(function (): array {
+        return DB::transaction(function () use ($onlyMealNames): array {
             $updated = [];
+            $only = $onlyMealNames !== null ? array_flip($onlyMealNames) : null;
 
             foreach ($this->recipeDefinitions() as $mealName => $definition) {
+                if ($only !== null && ! isset($only[$mealName])) {
+                    continue;
+                }
+
                 $meal = $this->ensureMealExists($mealName, $definition);
 
                 if (MealLibraryEditGuard::shouldSkipMealRefinement($meal)) {
@@ -52,6 +57,35 @@ final class NutrientDenseEggBreakfastRecipeRefiner
 
             return $updated;
         });
+    }
+
+    /**
+     * @param  list<string>  $mealNames
+     * @return list<string>
+     */
+    public function ensureMealsExist(array $mealNames): array
+    {
+        if ($mealNames === []) {
+            return [];
+        }
+
+        $only = array_flip($mealNames);
+        $created = [];
+
+        foreach ($this->recipeDefinitions() as $mealName => $definition) {
+            if (! isset($only[$mealName])) {
+                continue;
+            }
+
+            if (Meal::queryForMealLibrary()->where('name', $mealName)->exists()) {
+                continue;
+            }
+
+            $this->ensureMealExists($mealName, $definition);
+            $created[] = $mealName;
+        }
+
+        return $created;
     }
 
     /**

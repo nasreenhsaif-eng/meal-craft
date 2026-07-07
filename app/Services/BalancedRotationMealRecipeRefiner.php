@@ -446,7 +446,7 @@ final class BalancedRotationMealRecipeRefiner
             ],
             'Chocolate PB Banana Muffin' => [
                 'ingredients' => [
-                    'Almond Flour' => 80,
+                    'Almond Flour (Base)' => 80,
                     'Banana' => 120,
                     'Cocoa Powder' => 20,
                     'Maple Syrup' => 30,

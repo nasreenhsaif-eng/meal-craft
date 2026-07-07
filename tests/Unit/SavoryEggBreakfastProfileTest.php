@@ -13,6 +13,17 @@ test('dairy-forward and dairy-free breakfast names pair by day index', function 
     }
 });
 
+test('resolveMealNameForProfile keeps nutrient-dense breakfast unchanged when dairy is not filtered', function (): void {
+    $profile = new CustomerProfile([
+        'food_filters' => [],
+        'allergies' => [],
+        'diet_protocol' => 'nutrient_dense',
+    ]);
+
+    expect(SavoryEggBreakfastMeals::resolveMealNameForProfile('Smashed Beans & Eggs', $profile))
+        ->toBe('Smashed Beans & Eggs');
+});
+
 test('resolveMealNameForProfile returns dairy-forward breakfast when dairy is not filtered', function (): void {
     $profile = new CustomerProfile([
         'food_filters' => [],

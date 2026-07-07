@@ -570,7 +570,7 @@ Cool completely, then cut into 16 equal squares. One square is one serving.',
     'Chocolate PB Banana Muffin' => [
         'synced_at' => '2026-07-01T09:21:23+00:00',
         'ingredients' => [
-            'Almond Flour' => 80.0,
+            'Almond Flour (Base)' => 80.0,
             'Baking Soda' => 2.3,
             'Banana' => 120.0,
             'Cocoa Powder' => 20.0,

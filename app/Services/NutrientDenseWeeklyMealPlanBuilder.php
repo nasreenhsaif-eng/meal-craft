@@ -51,6 +51,10 @@ final class NutrientDenseWeeklyMealPlanBuilder
         return DB::transaction(function () use ($refineRecipes, $refined): array {
             app(NutrientDenseMealLibraryConfigurator::class)->configure();
 
+            if (! $refineRecipes) {
+                $this->ensureMissingScheduledMealsExist();
+            }
+
             [$dailyProtein, $dailyCarbs, $dailyFat] = $this->referenceDailyMacros();
 
             $slots = $this->buildSlotPayload();
@@ -230,6 +234,49 @@ final class NutrientDenseWeeklyMealPlanBuilder
             'carb_percentage' => 28.0,
             'fat_percentage' => 40.0,
         ]);
+    }
+
+    private function ensureMissingScheduledMealsExist(): void
+    {
+        $scheduled = NutrientDenseWeeklyRotationSchedule::allScheduledMealNames();
+        $existing = Meal::queryForMealLibrary()
+            ->whereIn('name', $scheduled)
+            ->pluck('name')
+            ->all();
+
+        $missing = array_values(array_diff($scheduled, $existing));
+
+        if ($missing === []) {
+            return;
+        }
+
+        $missingEggBreakfasts = array_values(array_intersect(
+            $missing,
+            NutrientDenseEggBreakfastRecipeRefiner::refinedMealNames(),
+        ));
+
+        if ($missingEggBreakfasts !== []) {
+            $refiner = app(NutrientDenseEggBreakfastRecipeRefiner::class);
+
+            try {
+                $refiner->refine($missingEggBreakfasts);
+            } catch (InvalidArgumentException) {
+                $refiner->ensureMealsExist($missingEggBreakfasts);
+            }
+        }
+
+        $existing = Meal::queryForMealLibrary()
+            ->whereIn('name', $scheduled)
+            ->pluck('name')
+            ->all();
+
+        $stillMissing = array_values(array_diff($scheduled, $existing));
+
+        if ($stillMissing !== []) {
+            throw new InvalidArgumentException(
+                'Scheduled meals missing from library: '.implode(', ', $stillMissing),
+            );
+        }
     }
 
     /**

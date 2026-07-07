@@ -185,7 +185,7 @@ final class BalancedChiaDessertRecipeRefiner
                 'meal_type' => MealType::Dessert,
                 'category' => RecipeCategory::Dessert,
                 'nutrition_aggregates_synced' => true,
-                'diet_tags' => array_merge($dietTags, $isVegan ? ['Vegan'] : ['Vegetarian']),
+                'diet_tags' => $this->resolveDietTags($dietTags, $isVegan, $ingredientGrams),
                 'instructions' => MealInstructionsText::normalizeForStorage(implode("\n", $instructionLines)),
             ],
         );
@@ -203,6 +203,36 @@ final class BalancedChiaDessertRecipeRefiner
         if ($violations !== []) {
             throw new InvalidArgumentException(implode('; ', $violations));
         }
+    }
+
+    /**
+     * @param  list<string>  $dietTags
+     * @param  array<string, float>  $ingredientGrams
+     * @return list<string>
+     */
+    private function resolveDietTags(array $dietTags, bool $isVegan, array $ingredientGrams): array
+    {
+        $hasGreekBase = array_key_exists(self::GREEK_YOGURT_CHIA_BASE_NAME, $ingredientGrams);
+
+        $tags = array_values(array_unique(array_merge(
+            $dietTags,
+            $isVegan ? ['Vegan'] : ['Vegetarian'],
+        )));
+
+        if (! in_array('Gluten-free', $tags, true)) {
+            $tags[] = 'Gluten-free';
+        }
+
+        if ($hasGreekBase) {
+            $tags = array_values(array_filter(
+                $tags,
+                static fn (string $tag): bool => strcasecmp($tag, 'Dairy-free') !== 0,
+            ));
+        } elseif (! in_array('Dairy-free', $tags, true)) {
+            $tags[] = 'Dairy-free';
+        }
+
+        return $tags;
     }
 
     /**

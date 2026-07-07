@@ -90,3 +90,14 @@ test('rebuilding nutrient dense weekly plan replaces existing plan with same nam
     expect(MealPlan::query()->where('name', NutrientDenseWeeklyMealPlanBuilder::PLAN_NAME)->count())->toBe(1)
         ->and($second['plan']->id)->toBe($first['plan']->id);
 });
+
+test('nutrient dense weekly plan build with skip refine creates missing egg breakfasts', function (): void {
+    seedNutrientDenseWeeklyPlanDeck();
+
+    Meal::query()->where('name', 'Butternut Squash & Eggs')->delete();
+
+    $result = app(NutrientDenseWeeklyMealPlanBuilder::class)->build(refineRecipes: false);
+
+    expect(Meal::queryForMealLibrary()->where('name', 'Butternut Squash & Eggs')->exists())->toBeTrue()
+        ->and($result['slots'])->toBeGreaterThan(0);
+});

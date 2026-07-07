@@ -13,6 +13,7 @@ use App\Services\Nutrition\UserPlanCalculator;
 /**
  * Balanced rotation savory (egg-based) breakfasts scale egg count by plan tier.
  * Dairy-forward breakfasts swap to dairy-free when the customer filters dairy.
+ * Nutrient-dense breakfasts use the scheduled rotation meal as-is (no dairy swap).
  */
 final class SavoryEggBreakfastMeals
 {
@@ -149,6 +150,10 @@ final class SavoryEggBreakfastMeals
         $mealName = self::canonicalMealName($mealName);
 
         if (! self::isSavoryEggBreakfast($mealName)) {
+            return $mealName;
+        }
+
+        if (DietProtocol::tryFromStored($profile->diet_protocol) === DietProtocol::NutrientDense) {
             return $mealName;
         }
 

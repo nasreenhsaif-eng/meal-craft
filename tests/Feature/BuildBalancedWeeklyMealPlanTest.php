@@ -246,6 +246,61 @@ test('chia dessert refiner standardizes deck meals on coconut chia base', functi
         ->and($meal->total_calories)->toBeGreaterThanOrEqual(BalancedChiaDessertRecipeRefiner::MIN_CALORIES);
 });
 
+test('greek yogurt chia dessert refiner keeps gluten free without dairy free tag', function (): void {
+    $base = Ingredient::query()->create([
+        'name' => 'Greek Yogurt Chia Pudding (Base)',
+        'usda_food_category' => 'Base Ingredient',
+        'calories' => 120,
+        'protein' => 8,
+        'carbs' => 12,
+        'fat' => 5,
+        'b6' => 0,
+        'b9_folate' => 0,
+        'b12' => 0,
+        'iron' => 0,
+        'magnesium' => 0,
+        'micronutrients' => [],
+    ]);
+
+    foreach (['Blueberries', 'Walnuts', 'Fresh Mint', 'Cinnamon', 'Psyllium Husks'] as $name) {
+        Ingredient::query()->create([
+            'name' => $name,
+            'usda_food_category' => 'Pantry',
+            'calories' => 50,
+            'protein' => 2,
+            'carbs' => 5,
+            'fat' => 2,
+            'b6' => 0,
+            'b9_folate' => 0,
+            'b12' => 0,
+            'iron' => 0,
+            'magnesium' => 0,
+            'micronutrients' => [],
+        ]);
+    }
+
+    $meal = Meal::query()->create([
+        'name' => 'Blueberry Walnut Greek Yogurt Chia Pudding',
+        'category' => RecipeCategory::Dessert,
+        'meal_type' => MealType::Dessert,
+        'diet_tags' => ['Vegetarian'],
+        'library_sort_order' => 1,
+    ]);
+
+    $meal->ingredients()->sync([
+        $base->id => ['amount_grams' => 150],
+    ]);
+
+    app(BalancedChiaDessertRecipeRefiner::class)->refine('Blueberry Walnut Greek Yogurt Chia Pudding');
+
+    $meal->refresh();
+
+    expect($meal->diet_tags)->toContain('Gluten-free')
+        ->and($meal->diet_tags)->toContain('Vegetarian')
+        ->and($meal->diet_tags)->not->toContain('Dairy-free')
+        ->and(WholeFoodDietPolicy::violationsForMeal($meal->fresh(['ingredients'])))->toBe([]);
+});
+
 test('whole food policy flags meals with banned ingredients or missing tags', function (): void {
     $oats = Ingredient::query()->create([
         'name' => 'Oats (Rolled)',

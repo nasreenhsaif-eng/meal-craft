@@ -50,6 +50,11 @@ final class WholeFoodDietPolicy
         'Sardines (Canned)',
     ];
 
+    /** @var list<string> */
+    public const OPTIONAL_DAIRY_BASE_NAMES = [
+        'Greek Yogurt Chia Pudding (Base)',
+    ];
+
     /** @var list<string> Dairy used only in customer-opt-in meals (food filter: dairy not selected). */
     public const OPTIONAL_DAIRY_INGREDIENT_NAMES = [
         'Greek Yogurt',
@@ -244,7 +249,15 @@ final class WholeFoodDietPolicy
         $meal->loadMissing('ingredients');
 
         foreach ($meal->ingredients as $ingredient) {
+            if (in_array($ingredient->name, self::OPTIONAL_DAIRY_BASE_NAMES, true)) {
+                return false;
+            }
+
             if (in_array($ingredient->name, ['Butter (Unsalted)', 'Grass Fed Butter', 'Ghee', 'Ghee (Clarified)'], true)) {
+                return false;
+            }
+
+            if (in_array($ingredient->name, self::OPTIONAL_DAIRY_INGREDIENT_NAMES, true)) {
                 return false;
             }
         }
