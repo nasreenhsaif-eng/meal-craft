@@ -70,7 +70,7 @@ test('nutrient dense weekly plan builder creates seven day rotating menus with f
     $dayOneBeef = $plan->dayMeals()
         ->where('day_number', 1)
         ->where('slot_type', MealPlanSlotType::Main->value)
-        ->where('slot_index', 6)
+        ->where('slot_index', 4)
         ->where('is_option_b', false)
         ->first()
         ?->meal?->name;

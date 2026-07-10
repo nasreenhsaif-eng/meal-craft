@@ -10,8 +10,8 @@ use InvalidArgumentException;
  *
  * Breakfast — savory egg (rotates). Dessert 1 — chia pudding (rotates).
  * Main 1 — chicken + carbs/veg. Main 2 — chicken salad. Main 3 — fish (mixed; rotates daily).
- * Main 4 — vegan main (includes former legume-heavy side salads). Main 5 — liver (dedicated or liver-blend; rotates daily).
- * Main 6 — plain beef meal (no liver; rotates daily).
+ * Main 4 — plain beef meal (no liver; rotates daily). Main 5 — liver (dedicated or liver-blend; rotates daily).
+ * Main 6 — vegan main (includes former legume-heavy side salads).
  * Salad 1 — legume-free vegan side (rotates). Salad 2 — Classic Garden Salad.
  * Dessert 1 — dessert (rotates). Dessert 2 — Fruit Salad Bowl.
  * Soup 1 — rotating soup. Soup 2 — Bone Broth Cup (fixed every day).
@@ -129,7 +129,7 @@ final class BalancedWeeklyRotationSchedule
         'Grilled Salmon Mango Salsa',
     ];
 
-    /** @var list<string> Plain beef mains — main slot 6, one per weekday. */
+    /** @var list<string> Plain beef mains — main slot 4, one per weekday. */
     public const BEEF_MAINS = [
         'Grilled Beef Steak Ratatouille & Saffron rice',
         'Beef Bibimbap',
@@ -147,8 +147,8 @@ final class BalancedWeeklyRotationSchedule
         'Beef & Liver Kefta w Herb Salad & Tahini',
         'Chili Beef Stuffed Peppers',
         'Eggplant & Ground Beef Stew w Quinoa Bread',
+        NutrientDenseLiverMealRecipeRefiner::PERI_PERI_CHICKEN_LIVER_NAME,
         'Spiced Beef & Liver Meatballs w Roasted Tomato Couscous',
-        'Beef & Liver Stuffed Zucchini w Marinara & Basil',
     ];
 
     /** @var list<string> Legume-free vegan side salads (slot 1). */
@@ -159,10 +159,10 @@ final class BalancedWeeklyRotationSchedule
         'Shaved Fennel Rocca Salad',
         'Roasted Eggplant Rocca Salad',
         'Marinated Strawberry Beet Salad',
-        'Coconut Grapefruit Salad',
+        'Thai Rainbow Peanut Salad',
     ];
 
-    /** @var list<string> Vegan mains — includes legume-forward dishes moved from side rotation. */
+    /** @var list<string> Vegan mains — legume-forward plant meals. */
     public const VEGAN_MAINS = [
         BalancedCanonicalMealRecipeRefiner::VEGAN_BUTTERNUT_PEANUT_STEW_NAME,
         'Vegan Smoky Cauliflower & Lentil Stew w Quinoa Bread & Tahini',
@@ -170,7 +170,7 @@ final class BalancedWeeklyRotationSchedule
         'Vegan Harissa Roasted Cauliflower & Chickpea Salad w Tahini Dressing',
         'Vegan Curry Lentil Salad',
         'Spiced Cauliflower Chickpea Salad',
-        'Thai Rainbow Peanut Salad',
+        'Vegan Mushroom Bowl',
     ];
 
     /** @var list<string> */
@@ -208,9 +208,9 @@ final class BalancedWeeklyRotationSchedule
                 1 => self::CHICKEN_PLATE_MAINS[$index],
                 2 => self::CHICKEN_SALAD_MAINS[$index],
                 3 => self::FISH_MAINS[$index],
-                4 => self::VEGAN_MAINS[$index],
+                4 => self::BEEF_MAINS[$index],
                 5 => self::LIVER_MAINS[$index],
-                6 => self::BEEF_MAINS[$index],
+                6 => self::VEGAN_MAINS[$index],
                 default => throw new InvalidArgumentException("Invalid main slot index {$slotIndex}"),
             },
             MealPlanSlotType::Salad => match ($slotIndex) {

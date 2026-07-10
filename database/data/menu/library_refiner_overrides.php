@@ -1520,6 +1520,48 @@ Serve sliced chicken and creamy Cajun sauce over roasted potatoes.',
             1 => 'spicy',
         ],
     ],
+    'Peri Peri Chicken Liver w Zucchini Bread' => [
+        'synced_at' => '2026-07-10T15:40:27+00:00',
+        'ingredients' => [
+            'Bay Leaves' => 0.3,
+            'Bell Pepper (Red)' => 25.0,
+            'Black Pepper' => 0.5,
+            'Cashew Cream (Base)' => 50.0,
+            'Chicken Liver' => 150.0,
+            'cumin powder' => 1.0,
+            'Fire Roasted Tomatoes (Base)' => 30.0,
+            'Fresh Parsley' => 4.0,
+            'Garlic (Raw)' => 3.0,
+            'Grass Fed Butter' => 5.0,
+            'Lemon Juice' => 20.0,
+            'Olive Oil (Extra Virgin)' => 5.0,
+            'Oregano' => 1.0,
+            'Red Chili' => 2.0,
+            'Sea Salt' => 1.0,
+            'Smoked Paprika' => 1.0,
+            'White Onion' => 50.0,
+            'Worcestershire' => 2.5,
+            'Zucchini Almond Bread (Base)' => 45.0,
+        ],
+        'highlight' => 'Creamy peri peri chicken livers with smoked paprika, chili, and lemon, served with warm zucchini almond bread.',
+        'short_description' => 'Creamy peri peri chicken livers with smoked paprika, chili, and lemon, served with warm zucchini almond bread.',
+        'instructions' => 'Prepare Zucchini Almond Bread (Base) per base recipe instructions; keep warm.
+Pat Chicken Liver dry and season with Sea Salt and Black Pepper.
+Warm Grass Fed Butter and Olive Oil (Extra Virgin) in a wide pan. Soften White Onion, then add Garlic (Raw), Bell Pepper (Red), and Red Chili until fragrant.
+Sear the livers until browned outside but still pink in the center; remove to a plate.
+Stir in Fire Roasted Tomatoes (Base), cumin powder, Smoked Paprika, Oregano, Bay Leaves, and Worcestershire. Deglaze with Lemon Juice (optional splash of brandy).
+Return livers to the pan, stir in Cashew Cream (Base), and simmer gently until the sauce thickens and livers are just cooked through. Discard bay leaves.
+Finish with Fresh Parsley and serve with warm Zucchini Almond Bread (Base).',
+        'diet_tags' => [
+            0 => 'Dairy-free',
+            1 => 'Gluten-free',
+        ],
+        'food_filter_tags' => [
+            0 => 'fish',
+            1 => 'nightshades',
+            2 => 'nuts',
+        ],
+    ],
     'Persian Herb Beef Stew' => [
         'synced_at' => '2026-07-08T14:25:51+00:00',
         'ingredients' => [

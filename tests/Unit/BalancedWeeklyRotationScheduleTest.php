@@ -89,8 +89,8 @@ test('balanced weekly rotation uses legume-free vegan side salads in slot one', 
 
     expect($salads)->not->toContain('Vegan Curry Lentil Salad')
         ->and($salads)->not->toContain('Spiced Cauliflower Chickpea Salad')
-        ->and($salads)->not->toContain('Thai Rainbow Peanut Salad')
-        ->and($salads[6])->toBe('Coconut Grapefruit Salad');
+        ->and($salads)->not->toContain('Vegan Mushroom Bowl')
+        ->and($salads[6])->toBe('Thai Rainbow Peanut Salad');
 });
 
 test('balanced weekly rotation assigns a unique liver main in slot five each weekday', function (): void {
@@ -102,7 +102,8 @@ test('balanced weekly rotation assigns a unique liver main in slot five each wee
 
     expect($liverMains[0])->toBe('Seared Beef Liver w Roasted Beetroot, Chard & Chimichurri')
         ->and($liverMains[1])->toBe(NutrientDenseLiverMealRecipeRefiner::SAUTEED_CHICKEN_LIVER_NAME)
-        ->and($liverMains[6])->toBe('Beef & Liver Stuffed Zucchini w Marinara & Basil')
+        ->and($liverMains[5])->toBe(NutrientDenseLiverMealRecipeRefiner::PERI_PERI_CHICKEN_LIVER_NAME)
+        ->and($liverMains[6])->toBe('Spiced Beef & Liver Meatballs w Roasted Tomato Couscous')
         ->and(count(array_unique($liverMains)))->toBe(7);
 });
 
@@ -125,15 +126,26 @@ test('balanced weekly rotation keeps plain beef out of main slot three', functio
     }
 });
 
-test('balanced weekly rotation assigns a unique plain beef main in slot six each weekday', function (): void {
+test('balanced weekly rotation assigns a unique plain beef main in slot four each weekday', function (): void {
     $beefMains = [];
 
     foreach (range(1, 7) as $day) {
-        $beefMains[] = BalancedWeeklyRotationSchedule::mealNameForDay($day, MealPlanSlotType::Main, 6);
+        $beefMains[] = BalancedWeeklyRotationSchedule::mealNameForDay($day, MealPlanSlotType::Main, 4);
     }
 
     expect($beefMains)->toHaveCount(7)
         ->and(array_unique($beefMains))->toHaveCount(7)
         ->and($beefMains)->toBe(BalancedWeeklyRotationSchedule::BEEF_MAINS)
         ->and(str_contains(strtolower(implode(' ', $beefMains)), 'liver'))->toBeFalse();
+});
+
+test('balanced weekly rotation assigns a unique vegan main in slot six each weekday', function (): void {
+    $veganMains = [];
+
+    foreach (range(1, 7) as $day) {
+        $veganMains[] = BalancedWeeklyRotationSchedule::mealNameForDay($day, MealPlanSlotType::Main, 6);
+    }
+
+    expect($veganMains)->toBe(BalancedWeeklyRotationSchedule::VEGAN_MAINS)
+        ->and(array_unique($veganMains))->toHaveCount(7);
 });

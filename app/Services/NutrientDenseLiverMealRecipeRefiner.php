@@ -25,6 +25,8 @@ final class NutrientDenseLiverMealRecipeRefiner
 
     public const BEEF_LIVER_STUFFED_ZUCCHINI_NAME = 'Beef & Liver Stuffed Zucchini w Marinara & Basil';
 
+    public const PERI_PERI_CHICKEN_LIVER_NAME = 'Peri Peri Chicken Liver w Zucchini Bread';
+
     /**
      * @return list<string>
      */
@@ -57,6 +59,8 @@ final class NutrientDenseLiverMealRecipeRefiner
                     $definition['ingredients'],
                     $definition['diet_tags'] ?? WholeFoodDietPolicy::REQUIRED_MEAL_DIET_TAGS,
                     $definition['short_description'] ?? null,
+                    $definition['instructions'] ?? null,
+                    $definition['food_filter_tags'] ?? null,
                 );
 
                 $updated[] = $mealName;
@@ -99,12 +103,15 @@ final class NutrientDenseLiverMealRecipeRefiner
     /**
      * @param  array<string, float>  $ingredientGrams
      * @param  list<string>  $dietTags
+     * @param  list<string>|null  $foodFilterTags
      */
     private function syncMeal(
         Meal $meal,
         array $ingredientGrams,
         array $dietTags,
         ?string $shortDescription = null,
+        ?string $instructions = null,
+        ?array $foodFilterTags = null,
     ): void {
         $sync = [];
 
@@ -137,12 +144,22 @@ final class NutrientDenseLiverMealRecipeRefiner
 
         $meal->ingredients()->sync($sync);
 
-        $meal->update([
+        $attrs = [
             'diet_tags' => $dietTags,
             'short_description' => $shortDescription ?? $meal->short_description,
             'nutrition_aggregates_synced' => true,
             ...Meal::nutritionSummaryToPersistedAttributes(RecipeNutritionCalculator::fromMeal($meal->fresh(['ingredients']))),
-        ]);
+        ];
+
+        if ($instructions !== null && trim($instructions) !== '') {
+            $attrs['instructions'] = trim($instructions);
+        }
+
+        if ($foodFilterTags !== null) {
+            $attrs['food_filter_tags'] = $foodFilterTags;
+        }
+
+        $meal->update($attrs);
     }
 
     /**
@@ -221,6 +238,39 @@ final class NutrientDenseLiverMealRecipeRefiner
                 ],
                 'diet_tags' => $tags,
                 'short_description' => 'Spiced beef and liver meatballs simmered in marinara over fluffy couscous with roasted cherry tomatoes.',
+            ],
+            self::PERI_PERI_CHICKEN_LIVER_NAME => [
+                'ingredients' => [
+                    'Bay Leaves' => 0.3,
+                    'Bell Pepper (Red)' => 25.0,
+                    'Black Pepper' => 0.5,
+                    'Cashew Cream (Base)' => 50.0,
+                    'Chicken Liver' => StandardMeatPortion::GRAMS,
+                    'cumin powder' => 1.0,
+                    'Fire Roasted Tomatoes (Base)' => 30.0,
+                    'Fresh Parsley' => 4.0,
+                    'Garlic (Raw)' => 3.0,
+                    'Grass Fed Butter' => 5.0,
+                    'Lemon Juice' => 20.0,
+                    'Olive Oil (Extra Virgin)' => 5.0,
+                    'Oregano' => 1.0,
+                    'Red Chili' => 2.0,
+                    'Sea Salt' => 1.0,
+                    'Smoked Paprika' => 1.0,
+                    'White Onion' => 50.0,
+                    'Worcestershire' => 2.5,
+                    'Zucchini Almond Bread (Base)' => 45.0,
+                ],
+                'diet_tags' => array_values(array_unique(array_merge($tags, ['Gluten-free']))),
+                'food_filter_tags' => ['fish', 'nightshades', 'nuts'],
+                'short_description' => 'Creamy peri peri chicken livers with smoked paprika, chili, and lemon, served with warm zucchini almond bread.',
+                'instructions' => "Prepare Zucchini Almond Bread (Base) per base recipe instructions; keep warm.\n"
+                    ."Pat Chicken Liver dry and season with Sea Salt and Black Pepper.\n"
+                    ."Warm Grass Fed Butter and Olive Oil (Extra Virgin) in a wide pan. Soften White Onion, then add Garlic (Raw), Bell Pepper (Red), and Red Chili until fragrant.\n"
+                    ."Sear the livers until browned outside but still pink in the center; remove to a plate.\n"
+                    ."Stir in Fire Roasted Tomatoes (Base), cumin powder, Smoked Paprika, Oregano, Bay Leaves, and Worcestershire. Deglaze with Lemon Juice (optional splash of brandy).\n"
+                    ."Return livers to the pan, stir in Cashew Cream (Base), and simmer gently until the sauce thickens and livers are just cooked through. Discard bay leaves.\n"
+                    .'Finish with Fresh Parsley and serve with warm Zucchini Almond Bread (Base).',
             ],
             self::BEEF_LIVER_STUFFED_ZUCCHINI_NAME => [
                 'ingredients' => [

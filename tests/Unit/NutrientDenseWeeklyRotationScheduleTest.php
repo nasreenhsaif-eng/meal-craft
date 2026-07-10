@@ -85,11 +85,11 @@ test('day slot template includes six main meal slots', function (): void {
         ->and(array_column($mainSlots, 1))->toBe([1, 2, 3, 4, 5, 6]);
 });
 
-test('nutrient dense beef mains are unique once per week on slot six', function (): void {
+test('nutrient dense beef mains are unique once per week on slot four', function (): void {
     $beefMains = [];
 
     foreach (range(1, 7) as $day) {
-        $beefMains[] = NutrientDenseWeeklyRotationSchedule::mealNameForDay($day, MealPlanSlotType::Main, 6);
+        $beefMains[] = NutrientDenseWeeklyRotationSchedule::mealNameForDay($day, MealPlanSlotType::Main, 4);
     }
 
     expect($beefMains)->toHaveCount(7)
@@ -98,15 +98,26 @@ test('nutrient dense beef mains are unique once per week on slot six', function 
         ->and($beefMains[0])->toBe('Grilled Beef Steak Ratatouille & Saffron rice');
 });
 
-test('nutrient dense main slot six stays liver-free while slot five keeps liver rotation', function (): void {
+test('nutrient dense main slot four stays liver-free while slot five keeps liver rotation', function (): void {
     foreach (range(1, 7) as $day) {
         $liver = NutrientDenseWeeklyRotationSchedule::mealNameForDay($day, MealPlanSlotType::Main, 5);
-        $beef = NutrientDenseWeeklyRotationSchedule::mealNameForDay($day, MealPlanSlotType::Main, 6);
+        $beef = NutrientDenseWeeklyRotationSchedule::mealNameForDay($day, MealPlanSlotType::Main, 4);
 
         expect($liver)->toBeIn(NutrientDenseWeeklyRotationSchedule::LIVER_MAINS)
             ->and($beef)->toBeIn(NutrientDenseWeeklyRotationSchedule::BEEF_MAINS)
             ->and(str_contains(strtolower($beef), 'liver'))->toBeFalse();
     }
+});
+
+test('nutrient dense vegan mains rotate daily on slot six', function (): void {
+    $veganMains = [];
+
+    foreach (range(1, 7) as $day) {
+        $veganMains[] = NutrientDenseWeeklyRotationSchedule::mealNameForDay($day, MealPlanSlotType::Main, 6);
+    }
+
+    expect($veganMains)->toBe(NutrientDenseWeeklyRotationSchedule::VEGAN_MAINS)
+        ->and(array_unique($veganMains))->toHaveCount(7);
 });
 
 test('sardine main is in fish rotation', function (): void {

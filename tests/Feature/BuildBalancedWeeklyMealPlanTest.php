@@ -129,12 +129,24 @@ test('balanced weekly plan builder creates seven day rotating menus with fourtee
         $beefMain = $plan->dayMeals()
             ->where('day_number', $day)
             ->where('slot_type', MealPlanSlotType::Main->value)
-            ->where('slot_index', 6)
+            ->where('slot_index', 4)
             ->where('is_option_b', false)
             ->first()
             ?->meal?->name;
 
         expect($beefMain)->toBe(
+            BalancedWeeklyRotationSchedule::mealNameForDay($day, MealPlanSlotType::Main, 4),
+        );
+
+        $veganMain = $plan->dayMeals()
+            ->where('day_number', $day)
+            ->where('slot_type', MealPlanSlotType::Main->value)
+            ->where('slot_index', 6)
+            ->where('is_option_b', false)
+            ->first()
+            ?->meal?->name;
+
+        expect($veganMain)->toBe(
             BalancedWeeklyRotationSchedule::mealNameForDay($day, MealPlanSlotType::Main, 6),
         );
     }

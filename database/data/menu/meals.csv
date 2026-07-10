@@ -1,4 +1,39 @@
 meal_name,meal_type,ingredients_string,target_calories,target_protein,target_carbs,target_fat,batch_calories,batch_protein,batch_carbs,batch_fat,is_bulk,servings_count,meal_plan_tag,cycle_phase,safety_alerts,image_url,short_description,instructions
+"Kefir Turkish Eggs w Zucchini Bread",Breakfast,"Black Pepper:1 | Chili Flakes:2 | Dill (Fresh):5 | Egg:166 | Fresh Mint:4 | Garlic (Raw):1.5 | Grass Fed Butter:3.7629 | Greek Yogurt:12.6102 | Kefir:10.3175 | Pumpkin Seeds:33.6908 | Sea Salt:1 | Smoked Paprika:1 | Zucchini Almond Bread (Base):100",,,,,,,,,false,,NutrientDense,,"Dairy, Eggs, Gluten, Nightshades, Nuts",images/meals/kefir_turkish_eggs_zucchini_bread.png,"Soft-boiled eggs on kefir-spiked Greek yogurt with spiced butter, dill, mint, and pumpkin seeds — served with toasted zucchini almond bread.","1. Place eggs in a pot and add enough cold water to cover them (do not fill the pot to the top). Cover the pot, bring to a boil, and cook for exactly 12 minutes.
+2. Transfer the eggs to an ice water bath until chilled; peel when ready — this keeps the yolks creamy and makes peeling easy.
+3. Prepare Zucchini Almond Bread (Base) per base recipe instructions. Toast 2 slices.
+4. Warm the butter in a small pan with minced garlic, smoked paprika, and chili flakes until fragrant.
+5. Whisk Greek yogurt, kefir, chopped dill, torn mint leaves, sea salt, and black pepper until smooth. Spread on a plate and drizzle with the warm spiced butter.
+6. Halve the soft-boiled eggs and nestle them on the yogurt. Scatter pumpkin seeds over the top and serve with toasted zucchini almond bread."
+"Baked Salmon with Fermented Chimichurri & Roasted Vegetables",Meal,"Bell Pepper (Red):55 | Broccoli:60 | Carrots:45 | Fermented Chimichurri (Base):25 | Olive Oil (Extra Virgin):5 | Pumpkin:90 | Pumpkin Seeds:7.0233 | Salmon:158 | Zucchini:55",360,36,27,12,,,,,false,,NutrientDense,,"Fish, Nightshades",images/meals/salmon_fermented_chimichurri.png,"Premium baked salmon with fermented chimichurri over roasted pumpkin, vegetables, and broccoli.","Toss pumpkin, bell pepper, zucchini, and carrots with olive oil. Roast at 200°C until tender and lightly caramelised.
+Coat salmon generously with Fermented Chimichurri (Base).
+Bake at 190°C for 12–15 minutes until flaky.
+Steam or roast broccoli until bright green and tender.
+Plate roasted vegetables and broccoli. Top with salmon, pumpkin seeds, and extra chimichurri if desired."
+"Sardine Pate w Zucchini Bread",Meal,"Avocado:3.8 | Capers:3.0435 | Dijon Mustard:8 | Garlic (Raw):3 | Lemon Juice:2.7273 | Purslane:344 | Radish:5 | Roasted Red Bell Peppers (Base):50 | Sardines (Canned):97.8472 | Spring Onion:15 | Zucchini Almond Bread (Base):100",,,,,,,,,false,,NutrientDense,,"Dairy, Eggs, Fish, G6PD Trigger, Gluten, Nightshades, Nuts",images/meals/sardine_pate_zucchini_bread.png,"Sardine pâté with lemon, mustard, radish, and capers on toasted zucchini almond bread — topped with purslane, avocado, and roasted peppers.","1. Drain the sardines. In a food processor, blend with lemon juice, Dijon mustard, grated radish, capers, chopped spring onion, and garlic until smooth.
+2. Prepare Zucchini Almond Bread (Base) per base recipe instructions. Toast 2 slices.
+3. Spread the sardine pâté on the toasted bread.
+4. Top with purslane, sliced avocado, and Roasted Red Bell Peppers (Base). Serve immediately."
+"Kimchi Purslane Side Salad","Side Salad","Bok Choy:56 | Kimchi (Base):30 | Purslane:49.6 | Sesame Seeds:8 | Tahini Miso Garlic Ginger Rice Vinegar Dressing (Base):12",,,,,,,,,false,,NutrientDense,,"Sesame, Soy",images/meals/kimchi_purslane_side_salad.png,"Homemade fermented kimchi with purslane and bok choy, sesame seeds, and tahini-miso dressing.","Toss purslane and bok choy in a bowl.
+Add two spoons of homemade Kimchi (Base).
+Drizzle with Tahini Miso Garlic Ginger Rice Vinegar Dressing (Base) and toss to coat."
+"Classic Garden Salad","Side Salad","Carrots:40 | Classic Lemon Garlic Dressing (Base):15 | Cucumber:60 | Romaine Lettuce:50 | Tomato (Raw):60",350,35,35,7.8,,,,,false,,NutrientDense,,Nightshades,images/meals/classic_garden_salad.png,"A crisp classic garden salad with lettuce, tomato, cucumber, and carrots.","Wash and chop the lettuce, tomato, cucumber, and carrots.
+Toss the vegetables together in a large bowl.
+Serve immediately.
+Serve dressing on the side."
+"Chocolate Orange Brownie",Dessert,"Almond Flour (Base):96 | Baking Powder:1.25 | Cocoa Powder:75 | Eggs (Large):150 | Grass Fed Butter:119.3888 | Medjool Dates:267 | Orange Juice:31 | Orange Zest:12 | Psyllium Husks:336 | Tapioca Starch:30 | Water (Filtered):79",189.59,3.8,18.68,13.19,3940.68,60.29,597.56,169.97,true,16,NutrientDense,Luteal,"Dairy, Eggs, Nuts",images/meals/Chocolate-Orange-Brownie-(N).png,"Rich grain-free cocoa-orange brownie batch (16 small squares) with date-orange sweetener, Dutch cocoa, grass-fed butter, blanched almond flour, tapioca, and psyllium husks for fiber.","Make the citrus & date sweetener. Pour boiling water over the pitted dates and soak 10 minutes. Blend with the orange zest and fresh orange juice until completely smooth.
+Build the rich chocolate base. Melt the grass-fed butter, then whisk in the Dutch-process cocoa until glossy. Beat in the room-temperature eggs one at a time.
+Whisk the grain-free flours. In a bowl, combine the super-fine blanched almond flour, tapioca starch, psyllium husks, baking powder, and fine sea salt.
+Fold the batters together. Stir the date-orange puree into the chocolate base, then fold in the dry ingredients just until no dry streaks remain.
+Bake at 175°C. Spread into a lined tin and bake until a skewer from the center comes out mostly clean with moist crumbs.
+Cool completely, then cut into 16 equal squares. One square is one serving."
+"Fruit Salad Bowl",Dessert,"Apple Green:40 | Blueberries:40 | Fresh Mint:3 | Honey (Raw):1 | Lemon Juice:5 | Pear:3 | Pineapple:40 | Pomegranate Seeds:30 | Strawberries:50",350,35,35,7.8,,,,,false,,NutrientDense,,,images/meals/fruit_salad_bowl.png,"A clean refreshing side array of sliced strawberries","Wash and chop all fruit into bite-size pieces.
+Toss gently with lemon juice and honey if using.
+Chill 15 minutes. Serve cold."
+"Miso Mushroom Soup",Soup,"Ginger (Raw):50 | Miso Paste:100 | Mushrooms:1200 | Psyllium Husks:150 | Spring Onion:100 | Water (Filtered):2000",,,,,1102,51.63,215.69,10.19,true,10,NutrientDense,,Soy,,"Silky miso broth with mushrooms — fermented mineral anchor with psyllium husks for fiber.",
+"Bone Broth Cup",Soup,"Bone Broth (Base):5000 | Psyllium Husks:150",,,,,1050.5,21.5,188.35,20,true,10,NutrientDense,,,images/meals/bone_broth_cup.png,"500 ml cup of defatted house bone broth — long-simmered, gelatin-rich, with psyllium husks for fiber.","1. Heat the full batch of defatted Bone Broth (Base) gently (do not boil hard).
+2. Whisk psyllium husks into the batch (1 tablespoon / 15 g per serving).
+3. Portion 500 ml per cup and serve hot."
 "Hummus Egg Stack",Breakfast,"Black Pepper:1 | Cherry Tomatoes:45 | Creamy Cumin Hummus (Base):100 | Cucumber:40 | Egg:100 | Olive Oil:5 | Spinach (Fresh):45",350,35,35,7.8,,,,,false,,Balanced,,"Beans, Eggs, G6PD Trigger, Nightshades, Sesame",images/meals/hummus_egg_stack.png,"Soft-boiled eggs stacked over sautéed spinach and cherry tomatoes on a bed of creamy house cumin hummus.","1. Prepare Creamy Cumin Hummus (Base) per base recipe instructions. Warm and spread a generous layer in a shallow bowl.
 2. Halve the cherry tomatoes. Sauté spinach and tomatoes in olive oil over medium heat until the spinach is wilted and the tomatoes are softened (3–4 min).
 3. Spoon the spinach and tomato layer over the hummus.
@@ -13,11 +48,6 @@ Serve with steamed broccoli, cucumber pickle, and Garlicky Green Beans (Base) sp
 2. Grill or pan-sear Rosemary Garlic Chicken (Base) until golden then in the oven for 20 minutes exactly, then Rest and slice.
 3. Sauté mushrooms in remaining olive oil until golden. Wilt spinach briefly in the same pan.
 4. Plate roasted sweet potato, spinach, and mushrooms. Top with sliced chicken and serve warm."
-"Baked Salmon with Fermented Chimichurri & Roasted Vegetables",Meal,"Bell Pepper (Red):55 | Broccoli:60 | Carrots:45 | Fermented Chimichurri (Base):25 | Olive Oil (Extra Virgin):5 | Pumpkin:90 | Pumpkin Seeds:7.0233 | Salmon:158 | Zucchini:55",360,36,27,12,,,,,false,,Balanced,,"Fish, Nightshades",images/meals/salmon_fermented_chimichurri.png,"Premium baked salmon with fermented chimichurri over roasted pumpkin, vegetables, and broccoli.","Toss pumpkin, bell pepper, zucchini, and carrots with olive oil. Roast at 200°C until tender and lightly caramelised.
-Coat salmon generously with Fermented Chimichurri (Base).
-Bake at 190°C for 12–15 minutes until flaky.
-Steam or roast broccoli until bright green and tender.
-Plate roasted vegetables and broccoli. Top with salmon, pumpkin seeds, and extra chimichurri if desired."
 "Vegan Butternut Squash, Lentil & Peanut Stew w Brown Rice",Meal,"Basmati Rice (Brown):39.3704 | Bell Pepper (Red):30 | Black Pepper:0.5 | Butternut Squash:60 | Cabbage (Purple):16 | Cherry Tomatoes:10 | Chili Flakes:0.5 | Fresh Coriander:4 | Garlic (Raw):2 | Lentils (Red):37.6816 | Lime Juice:3 | Mushrooms:40 | Olive Oil:5 | Peanut Butter:10 | Peanuts (Crushed):15 | Red Onion:30 | Spinach (Fresh):48 | Tomato (Raw):80 | Vegetable Stock:3 | Water (Filtered):153 | Zucchini:120",360,36,27,12,,,,,false,,Balanced,,"Beans, G6PD Trigger, Nightshades, Nuts",images/meals/vegan_butternut_squash_lentil_peanut_stew_brown_rice.png,"A rich plant-based stew with red lentils, peanut butter, and crushed peanuts over brown rice.","1. Prepare Cooked Brown Basmati Rice (Base) per base recipe instructions; keep warm.
 2. Fry finely chopped onion in olive oil for 5 minutes until soft. Grate in garlic and stir.
 3. Add chopped tomatoes and cook for a couple of minutes. Add water, rinsed red lentils, chopped red pepper, and butternut squash cubes. Bring to the boil, then reduce to a simmer.
@@ -29,10 +59,6 @@ Toss with thinly sliced cabbage and fresh coriander.
 Refrigerate 15–30 minutes so the vegetables soften slightly.
 Add chilli just before serving.
 Serve dressing on the side."
-"Classic Garden Salad","Side Salad","Carrots:40 | Classic Lemon Garlic Dressing (Base):15 | Cucumber:60 | Romaine Lettuce:50 | Tomato (Raw):60",350,35,35,7.8,,,,,false,,Balanced,,Nightshades,images/meals/classic_garden_salad.png,"A crisp classic garden salad with lettuce, tomato, cucumber, and carrots.","Wash and chop the lettuce, tomato, cucumber, and carrots.
-Toss the vegetables together in a large bowl.
-Serve immediately.
-Serve dressing on the side."
 "Carrot Walnut Raisin Spice Cake",Dessert,"Almond Flour (Base):240 | Baking Powder:7.2 | Baking Soda:6.4 | Carrots:304 | Cinnamon:8 | Eggs (Large):152 | Grass Fed Butter:112 | Ground Ginger:2 | Medjool Dates:360 | Nutmeg:0.8 | Pumpkin Puree:120 | Sea Salt:3.2 | Vanilla Pods:4 | Walnuts:64 | Water (Filtered):176",350,35,35,7.8,4037.2,91.73,381.58,268.92,true,16,Balanced,,"Dairy, Eggs, Nuts",images/meals/carrot_oatmeal_cake.png,"Moist gluten-free carrot cake batch (16 slices) with house-milled almond flour, dates, pumpkin puree, walnuts, warm spices, grass-fed butter, and vanilla bean.","1. Create the sweet date paste (15 min). Soak the pitted dates in boiling water for 10 minutes. Blend the dates and all the soaking water in a food processor until entirely smooth. Let it cool slightly so it does not cook the eggs.
 2. Prep your oven and vanilla bean (5 min). Preheat your oven to 350°F (175°C) and grease a 9×13-inch pan. Split the vanilla bean pod lengthwise and scrape out all the tiny black seeds.
 3. Whisk the dry base (2 min). In a large bowl, thoroughly whisk together the almond flour, cinnamon, ginger, nutmeg, baking soda, baking powder, and salt.
@@ -40,9 +66,6 @@ Serve dressing on the side."
 5. Combine and fold textures (2 min). Pour the wet mixture into the dry flour blend. Stir gently with a spatula just until combined, then fold in the grated carrots and chopped walnuts.
 6. Bake to perfection (38–42 min). Spread the batter evenly into your pan. Bake for 38 to 42 minutes. Because pumpkin holds excellent moisture, it needs those extra few minutes. Test the center with a toothpick—it should come out clean.
 7. Cool completely, then cut into 16 equal slices. One slice is one serving."
-"Fruit Salad Bowl",Dessert,"Apple Green:40 | Blueberries:40 | Fresh Mint:3 | Honey (Raw):1 | Lemon Juice:5 | Pear:3 | Pineapple:40 | Pomegranate Seeds:30 | Strawberries:50",350,35,35,7.8,,,,,false,,Balanced,,,images/meals/fruit_salad_bowl.png,"A clean refreshing side array of sliced strawberries","Wash and chop all fruit into bite-size pieces.
-Toss gently with lemon juice and honey if using.
-Chill 15 minutes. Serve cold."
 "Blueberry Walnut Chia Pudding",Dessert,"Black Seeds:8 | Blueberries:7.09 | Cinnamon:1 | Coconut Chia Pudding (Base):120 | Fresh Mint:1 | Walnuts:5",350,35,35,7.8,,,,,false,,Balanced,,Nuts,images/meals/blueberry_walnut_chia_pudding.png,"Creamy coconut chia pudding with blueberries, walnuts, cinnamon, and mint.","Prepare Coconut Chia Pudding (Base) ahead (chia, coconut milk, and date syrup) and chill until thick.
 Spoon the set pudding into a bowl or jar.
 Fold in blueberries, walnuts, cinnamon, and mint.
@@ -52,29 +75,6 @@ Serve chilled."
 3. Pour in stock and coconut milk. Simmer 15 minutes.
 4. Blend partially for a creamy texture, or leave chunky.
 5. Whisk in psyllium husks (1 tablespoon / 15 g per serving). Reheat gently and portion."
-"Kefir Turkish Eggs w Zucchini Bread",Breakfast,"Black Pepper:1 | Chili Flakes:2 | Dill (Fresh):5 | Egg:166 | Fresh Mint:4 | Garlic (Raw):1.5 | Grass Fed Butter:3.7629 | Greek Yogurt:12.6102 | Kefir:10.3175 | Pumpkin Seeds:33.6908 | Sea Salt:1 | Smoked Paprika:1 | Zucchini Almond Bread (Base):100",,,,,,,,,false,,NutrientDense,,"Dairy, Eggs, Gluten, Nightshades, Nuts",images/meals/kefir_turkish_eggs_zucchini_bread.png,"Soft-boiled eggs on kefir-spiked Greek yogurt with spiced butter, dill, mint, and pumpkin seeds — served with toasted zucchini almond bread.","1. Place eggs in a pot and add enough cold water to cover them (do not fill the pot to the top). Cover the pot, bring to a boil, and cook for exactly 12 minutes.
-2. Transfer the eggs to an ice water bath until chilled; peel when ready — this keeps the yolks creamy and makes peeling easy.
-3. Prepare Zucchini Almond Bread (Base) per base recipe instructions. Toast 2 slices.
-4. Warm the butter in a small pan with minced garlic, smoked paprika, and chili flakes until fragrant.
-5. Whisk Greek yogurt, kefir, chopped dill, torn mint leaves, sea salt, and black pepper until smooth. Spread on a plate and drizzle with the warm spiced butter.
-6. Halve the soft-boiled eggs and nestle them on the yogurt. Scatter pumpkin seeds over the top and serve with toasted zucchini almond bread."
-"Sardine Pate w Zucchini Bread",Meal,"Avocado:3.8 | Capers:3.0435 | Dijon Mustard:8 | Garlic (Raw):3 | Lemon Juice:2.7273 | Purslane:344 | Radish:5 | Roasted Red Bell Peppers (Base):50 | Sardines (Canned):97.8472 | Spring Onion:15 | Zucchini Almond Bread (Base):100",,,,,,,,,false,,NutrientDense,,"Dairy, Eggs, Fish, G6PD Trigger, Gluten, Nightshades, Nuts",images/meals/sardine_pate_zucchini_bread.png,"Sardine pâté with lemon, mustard, radish, and capers on toasted zucchini almond bread — topped with purslane, avocado, and roasted peppers.","1. Drain the sardines. In a food processor, blend with lemon juice, Dijon mustard, grated radish, capers, chopped spring onion, and garlic until smooth.
-2. Prepare Zucchini Almond Bread (Base) per base recipe instructions. Toast 2 slices.
-3. Spread the sardine pâté on the toasted bread.
-4. Top with purslane, sliced avocado, and Roasted Red Bell Peppers (Base). Serve immediately."
-"Kimchi Purslane Side Salad","Side Salad","Bok Choy:56 | Kimchi (Base):30 | Purslane:49.6 | Sesame Seeds:8 | Tahini Miso Garlic Ginger Rice Vinegar Dressing (Base):12",,,,,,,,,false,,NutrientDense,,"Sesame, Soy",images/meals/kimchi_purslane_side_salad.png,"Homemade fermented kimchi with purslane and bok choy, sesame seeds, and tahini-miso dressing.","Toss purslane and bok choy in a bowl.
-Add two spoons of homemade Kimchi (Base).
-Drizzle with Tahini Miso Garlic Ginger Rice Vinegar Dressing (Base) and toss to coat."
-"Chocolate Orange Brownie",Dessert,"Almond Flour (Base):96 | Baking Powder:1.25 | Cocoa Powder:75 | Eggs (Large):150 | Grass Fed Butter:119.3888 | Medjool Dates:267 | Orange Juice:31 | Orange Zest:12 | Psyllium Husks:336 | Tapioca Starch:30 | Water (Filtered):79",189.59,3.8,18.68,13.19,3940.68,60.29,597.56,169.97,true,16,NutrientDense,Luteal,"Dairy, Eggs, Nuts",images/meals/Chocolate-Orange-Brownie-(N).png,"Rich grain-free cocoa-orange brownie batch (16 small squares) with date-orange sweetener, Dutch cocoa, grass-fed butter, blanched almond flour, tapioca, and psyllium husks for fiber.","Make the citrus & date sweetener. Pour boiling water over the pitted dates and soak 10 minutes. Blend with the orange zest and fresh orange juice until completely smooth.
-Build the rich chocolate base. Melt the grass-fed butter, then whisk in the Dutch-process cocoa until glossy. Beat in the room-temperature eggs one at a time.
-Whisk the grain-free flours. In a bowl, combine the super-fine blanched almond flour, tapioca starch, psyllium husks, baking powder, and fine sea salt.
-Fold the batters together. Stir the date-orange puree into the chocolate base, then fold in the dry ingredients just until no dry streaks remain.
-Bake at 175°C. Spread into a lined tin and bake until a skewer from the center comes out mostly clean with moist crumbs.
-Cool completely, then cut into 16 equal squares. One square is one serving."
-"Miso Mushroom Soup",Soup,"Ginger (Raw):50 | Miso Paste:100 | Mushrooms:1200 | Psyllium Husks:150 | Spring Onion:100 | Water (Filtered):2000",,,,,1102,51.63,215.69,10.19,true,10,NutrientDense,,Soy,,"Silky miso broth with mushrooms — fermented mineral anchor with psyllium husks for fiber.",
-"Bone Broth Cup",Soup,"Bone Broth (Base):5000 | Psyllium Husks:150",,,,,1050.5,21.5,188.35,20,true,10,NutrientDense,,,images/meals/bone_broth_cup.png,"500 ml cup of defatted house bone broth — long-simmered, gelatin-rich, with psyllium husks for fiber.","1. Heat the full batch of defatted Bone Broth (Base) gently (do not boil hard).
-2. Whisk psyllium husks into the batch (1 tablespoon / 15 g per serving).
-3. Portion 500 ml per cup and serve hot."
 "Mediterranean Omelet",Breakfast,"Avocado:7.55 | Basil:5 | Bell Pepper (Red):18 | Black Pepper:1 | Egg:124 | Olive Oil (Extra Virgin):6 | Parsley:10 | Shallots:10 | Spinach:30 | Thyme (Fresh):2 | Tomato (Raw):20",,,,,,,,,false,,,,"Eggs, Nightshades",,"Earthy and rich in B-vitamins for morning mental clarity.","Beat eggs in a bowl.
 Sauté diced pepper, tomato, and shallot in olive oil for 3 minutes.
 Pour in eggs. Cook over medium heat until almost set.
@@ -567,3 +567,10 @@ Prepare Cooked Quinoa (Base). Plate quinoa, roasted vegetables, and greens. Top 
 6. Fry two large eggs in a little olive oil until whites are crisp and yolks are runny.
 7. Prepare Marinara Sauce (Base) per base recipe instructions. Warm and serve on the side.
 8. Top the bake with fried eggs and serve with marinara."
+"Peri Peri Chicken Liver w Zucchini Bread",Meal,"Bay Leaves:0.3 | Bell Pepper (Red):25 | Black Pepper:0.5 | Cashew Cream (Base):50 | Chicken Liver:150 | Fire Roasted Tomatoes (Base):30 | Fresh Parsley:4 | Garlic (Raw):3 | Grass Fed Butter:5 | Lemon Juice:20 | Olive Oil (Extra Virgin):5 | Oregano:1 | Red Chili:2 | Sea Salt:1 | Smoked Paprika:1 | White Onion:50 | Worcestershire:2.5 | Zucchini Almond Bread (Base):45 | cumin powder:1",,,,,,,,,false,,"Balanced, NutrientDense",,,,"Creamy peri peri chicken livers with smoked paprika, chili, and lemon, served with warm zucchini almond bread.","Prepare Zucchini Almond Bread (Base) per base recipe instructions; keep warm.
+Pat Chicken Liver dry and season with Sea Salt and Black Pepper.
+Warm Grass Fed Butter and Olive Oil (Extra Virgin) in a wide pan. Soften White Onion, then add Garlic (Raw), Bell Pepper (Red), and Red Chili until fragrant.
+Sear the livers until browned outside but still pink in the center; remove to a plate.
+Stir in Fire Roasted Tomatoes (Base), cumin powder, Smoked Paprika, Oregano, Bay Leaves, and Worcestershire. Deglaze with Lemon Juice (optional splash of brandy).
+Return livers to the pan, stir in Cashew Cream (Base), and simmer gently until the sauce thickens and livers are just cooked through. Discard bay leaves.
+Finish with Fresh Parsley and serve with warm Zucchini Almond Bread (Base)."
