@@ -362,25 +362,26 @@ final class SaladDressingMealRefiner
             ],
             'Turmeric Chicken Kale Salad' => [
                 'salad_ingredients' => [
-                    'Chicken Breast' => StandardMeatPortion::GRAMS,
-                    'Kale' => 50,
-                    'Carrots' => 40,
-                    'Cucumber' => 40,
-                    'Cherry Tomatoes' => 35,
-                    'Red Onion' => 15,
-                    'Pomegranate Seeds' => 12,
-                    'Garlic (Raw)' => 2,
+                    'Turmeric Chicken (Base)' => StandardMeatPortion::GRAMS,
+                    'Kale' => 80,
+                    'Avocado' => 40,
+                    'Broccoli' => 60,
+                    'Pumpkin Seeds' => 10,
+                    'Sesame Seeds' => 6,
+                    'Fresh Coriander' => 8,
                 ],
                 'dressing_ingredients' => [
                     'Turmeric Lemon Dressing (Base)' => 14,
                 ],
                 'salad_instructions' => [
-                    'Rub chicken with half the turmeric dressing as a marinade. Grill or pan-sear chicken until golden then in the oven for 20 minutes exactly, then Rest and slice.',
-                    'Massage kale until tender.',
-                    'Add cucumber, carrots, tomatoes, onion, and pomegranate. Top with warm chicken.',
-                    'Serve remaining dressing on the side.',
+                    'Grill or pan-sear Turmeric Chicken (Base) until golden then in the oven for 20 minutes exactly, then Rest and slice.',
+                    'Massage kale until tender; lightly steam or blanch broccoli until bright green.',
+                    'Toss kale, broccoli, avocado, coriander, pumpkin seeds, and sesame seeds.',
+                    'Top with warm turmeric chicken.',
+                    self::SERVE_DRESSING_ON_THE_SIDE,
                 ],
                 'diet_tags' => $wholeFoodTags,
+                'short_description' => 'Golden turmeric chicken over massaged kale with avocado, broccoli, seeds, and turmeric lemon dressing.',
             ],
             'Chicken Thai Mango Salad' => [
                 'salad_ingredients' => [

@@ -6,7 +6,8 @@ test('primary meat ingredients include beef chicken and fish', function () {
     expect(StandardMeatPortion::isPrimaryMeatIngredient('Chicken Breast', 'Rosemary Chicken Rocca Salad'))->toBeTrue()
         ->and(StandardMeatPortion::isPrimaryMeatIngredient('Beef Chuck Roast', 'Slow Cooked Beef and Mint Basil Koosa'))->toBeTrue()
         ->and(StandardMeatPortion::isPrimaryMeatIngredient('Salmon (Raw)', 'Salmon Turmeric Rice'))->toBeTrue()
-        ->and(StandardMeatPortion::isPrimaryMeatIngredient('Tandoori Chicken (Base)', 'Tandoori Chicken Salad'))->toBeTrue();
+        ->and(StandardMeatPortion::isPrimaryMeatIngredient('Tandoori Chicken (Base)', 'Tandoori Chicken Salad'))->toBeTrue()
+        ->and(StandardMeatPortion::isPrimaryMeatIngredient('Turmeric Chicken (Base)', 'Turmeric Chicken Kale Salad'))->toBeTrue();
 });
 
 test('liver blend ingredients are not primary unless the meal is a liver main', function () {

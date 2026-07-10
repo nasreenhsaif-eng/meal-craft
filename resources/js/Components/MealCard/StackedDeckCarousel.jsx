@@ -10,6 +10,12 @@ const RIBBON_NEIGHBOR_SCALE = 1;
 const RIBBON_FOCUS_OPACITY = 1;
 const RIBBON_NEIGHBOR_OPACITY = 0.88;
 
+/** Overlaid nav buttons — track peeks underneath. */
+const RIBBON_ARROW_ZONE_CLASS = 'w-10 lg:w-11';
+
+/** Gradual edge blur strips — wider than arrow zone so peek softens into center cards. */
+const RIBBON_EDGE_BLUR_WIDTH_CLASS = 'w-12 md:w-14 lg:w-16';
+
 /** Desktop row slide — direction follows arrow, not index wrap */
 function netflixSlideTransition() {
     return { type: 'tween', duration: 0.4, ease: [0.22, 1, 0.36, 1] };
@@ -85,7 +91,7 @@ function useMinWidth(minWidthPx) {
  */
 function ribbonStageMaxWidthClass(itemCount) {
     if (itemCount >= 4) {
-        return 'w-full max-w-[960px]';
+        return 'w-full max-w-[1040px]';
     }
 
     if (itemCount === 3) {
@@ -565,11 +571,87 @@ export default function StackedDeckCarousel({ title: _title, items: itemsProp, m
     const ribbonArrowButtonClass =
         'pointer-events-auto flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-0 bg-white/90 text-[#262A22] shadow-sm shadow-[#262A22]/10 outline-none ring-0 backdrop-blur-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5A6B44]/35 focus-visible:ring-offset-0 disabled:pointer-events-none disabled:opacity-30';
 
+    const ribbonEdgeBlurClass = [
+        'pointer-events-none absolute inset-y-4 z-[100]',
+        RIBBON_EDGE_BLUR_WIDTH_CLASS,
+        'bg-white/20 backdrop-blur-[6px] md:backdrop-blur-[8px]',
+    ].join(' ');
+
     return (
         <div className="group relative w-full">
             <div className="relative w-full overflow-y-visible pb-2 pt-4 outline-none ring-0">
-                <div className="flex w-full items-center justify-center gap-1 md:gap-2">
-                    <div className="hidden w-10 shrink-0 items-center justify-center md:flex lg:w-11">
+                <div className={`relative mx-auto min-w-0 ${stageMaxW}`}>
+                    <div
+                        ref={galleryRef}
+                        className="relative min-h-[10rem] w-full min-w-0 overflow-x-clip px-1 py-4 outline-none ring-0 md:px-2 md:py-5"
+                    >
+                        <motion.div
+                            ref={trackRef}
+                            style={{ x: trackX }}
+                            className="relative z-0 flex w-max shrink-0 flex-nowrap items-stretch gap-3 will-change-transform transform-gpu md:gap-6"
+                        >
+                            {Array.from({ length: copies }, (_, copy) =>
+                                items.map((item, idx) => {
+                                    const physicalIdx = copy * itemCount + idx;
+                                    const isRibbonFocus =
+                                        physicalIdx === focusedPhysicalIndex(ribbonActiveIndex, itemCount, copies);
+
+                                    return (
+                                        <div
+                                            key={`ribbon-${copy}-${getKey(item, idx)}`}
+                                            ref={(el) => {
+                                                cardRefs.current[physicalIdx] = el;
+                                            }}
+                                            data-ribbon-card=""
+                                            className={`${RIBBON_CARD_SHELL} ${isRibbonFocus ? 'z-[5]' : 'z-0'}`}
+                                        >
+                                            <motion.div
+                                                className={`flex min-h-0 flex-1 flex-col rounded-[12px] ${isRibbonFocus ? 'shadow-md shadow-[#262A22]/10' : ''}`}
+                                                style={{ transformOrigin: 'center center' }}
+                                                animate={{
+                                                    scale: isRibbonFocus ? RIBBON_FOCUS_SCALE : RIBBON_NEIGHBOR_SCALE,
+                                                    opacity: isRibbonFocus
+                                                        ? RIBBON_FOCUS_OPACITY
+                                                        : RIBBON_NEIGHBOR_OPACITY,
+                                                }}
+                                                transition={netflixSlideTransition()}
+                                                whileHover={
+                                                    isRibbonFocus
+                                                        ? {
+                                                              scale: 1.02,
+                                                              transition: {
+                                                                  duration: 0.2,
+                                                                  ease: [0.22, 1, 0.36, 1],
+                                                              },
+                                                          }
+                                                        : undefined
+                                                }
+                                            >
+                                                {renderMealCard(item, idx, {
+                                                    isFront: true,
+                                                    stackPos: null,
+                                                    deckLayout: 'ribbon',
+                                                })}
+                                            </motion.div>
+                                        </div>
+                                    );
+                                }),
+                            ).flat()}
+                        </motion.div>
+                    </div>
+
+                    <div
+                        className={`${ribbonEdgeBlurClass} left-0 [mask-image:linear-gradient(to_right,black_0%,transparent_100%)] [-webkit-mask-image:linear-gradient(to_right,black_0%,transparent_100%)]`}
+                        aria-hidden="true"
+                    />
+                    <div
+                        className={`${ribbonEdgeBlurClass} right-0 [mask-image:linear-gradient(to_left,black_0%,transparent_100%)] [-webkit-mask-image:linear-gradient(to_left,black_0%,transparent_100%)]`}
+                        aria-hidden="true"
+                    />
+
+                    <div
+                        className={`pointer-events-none absolute inset-y-0 left-0 z-[110] flex ${RIBBON_ARROW_ZONE_CLASS} items-center justify-center`}
+                    >
                         <button
                             type="button"
                             aria-label="Previous meal"
@@ -577,106 +659,20 @@ export default function StackedDeckCarousel({ title: _title, items: itemsProp, m
                             disabled={itemCount <= 1}
                             className={ribbonArrowButtonClass}
                         >
-                            <svg className="h-8 w-8 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                            <svg
+                                className="h-7 w-7 shrink-0 md:h-8 md:w-8"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                aria-hidden="true"
+                            >
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.25} d="M15 18l-6-6 6-6" />
                             </svg>
                         </button>
                     </div>
-
-                    <div className={`relative mx-auto min-w-0 flex-1 ${stageMaxW}`}>
-                        <div
-                            ref={galleryRef}
-                            className="relative min-h-[10rem] w-full min-w-0 px-1 py-4 outline-none ring-0 md:px-2 md:py-5"
-                        >
-                            <div className="relative overflow-x-clip">
-                                <motion.div
-                                    ref={trackRef}
-                                    style={{ x: trackX }}
-                                    className="relative z-0 flex w-max shrink-0 flex-nowrap items-stretch gap-3 will-change-transform transform-gpu md:gap-6"
-                                >
-                                    {Array.from({ length: copies }, (_, copy) =>
-                                        items.map((item, idx) => {
-                                            const physicalIdx = copy * itemCount + idx;
-                                            const isRibbonFocus =
-                                                physicalIdx ===
-                                                focusedPhysicalIndex(ribbonActiveIndex, itemCount, copies);
-
-                                            return (
-                                                <div
-                                                    key={`ribbon-${copy}-${getKey(item, idx)}`}
-                                                    ref={(el) => {
-                                                        cardRefs.current[physicalIdx] = el;
-                                                    }}
-                                                    data-ribbon-card=""
-                                                    className={`${RIBBON_CARD_SHELL} ${isRibbonFocus ? 'z-[5]' : 'z-0'}`}
-                                                >
-                                                    <motion.div
-                                                        className={`flex min-h-0 flex-1 flex-col rounded-[12px] ${isRibbonFocus ? 'shadow-md shadow-[#262A22]/10' : ''}`}
-                                                        style={{ transformOrigin: 'center center' }}
-                                                        animate={{
-                                                            scale: isRibbonFocus
-                                                                ? RIBBON_FOCUS_SCALE
-                                                                : RIBBON_NEIGHBOR_SCALE,
-                                                            opacity: isRibbonFocus
-                                                                ? RIBBON_FOCUS_OPACITY
-                                                                : RIBBON_NEIGHBOR_OPACITY,
-                                                        }}
-                                                        transition={netflixSlideTransition()}
-                                                        whileHover={
-                                                            isRibbonFocus
-                                                                ? {
-                                                                      scale: 1.02,
-                                                                      transition: {
-                                                                          duration: 0.2,
-                                                                          ease: [0.22, 1, 0.36, 1],
-                                                                      },
-                                                                  }
-                                                                : undefined
-                                                        }
-                                                    >
-                                                        {renderMealCard(item, idx, {
-                                                            isFront: true,
-                                                            stackPos: null,
-                                                            deckLayout: 'ribbon',
-                                                        })}
-                                                    </motion.div>
-                                                </div>
-                                            );
-                                        }),
-                                    ).flat()}
-                                </motion.div>
-                            </div>
-                        </div>
-
-                        <div className="pointer-events-none absolute inset-y-0 left-0 z-[110] flex w-10 items-center justify-center md:hidden">
-                            <button
-                                type="button"
-                                aria-label="Previous meal"
-                                onClick={() => void prevRibbon()}
-                                disabled={itemCount <= 1}
-                                className={ribbonArrowButtonClass}
-                            >
-                                <svg className="h-7 w-7 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.25} d="M15 18l-6-6 6-6" />
-                                </svg>
-                            </button>
-                        </div>
-                        <div className="pointer-events-none absolute inset-y-0 right-0 z-[110] flex w-10 items-center justify-center md:hidden">
-                            <button
-                                type="button"
-                                aria-label="Next meal"
-                                onClick={() => void nextRibbon()}
-                                disabled={itemCount <= 1}
-                                className={ribbonArrowButtonClass}
-                            >
-                                <svg className="h-7 w-7 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.25} d="M9 18l6-6-6-6" />
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-
-                    <div className="hidden w-10 shrink-0 items-center justify-center md:flex lg:w-11">
+                    <div
+                        className={`pointer-events-none absolute inset-y-0 right-0 z-[110] flex ${RIBBON_ARROW_ZONE_CLASS} items-center justify-center`}
+                    >
                         <button
                             type="button"
                             aria-label="Next meal"
@@ -684,7 +680,13 @@ export default function StackedDeckCarousel({ title: _title, items: itemsProp, m
                             disabled={itemCount <= 1}
                             className={ribbonArrowButtonClass}
                         >
-                            <svg className="h-8 w-8 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                            <svg
+                                className="h-7 w-7 shrink-0 md:h-8 md:w-8"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                aria-hidden="true"
+                            >
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.25} d="M9 18l6-6-6-6" />
                             </svg>
                         </button>

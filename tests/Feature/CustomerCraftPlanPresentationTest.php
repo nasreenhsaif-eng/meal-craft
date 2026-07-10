@@ -90,11 +90,22 @@ test('craft plan summary protein-balances non-vegan mains when paired with a veg
         'fat_percentage' => 30,
     ]);
 
-    $ingredient = Ingredient::factory()->create([
+    $veganIngredient = Ingredient::factory()->create([
+        'name' => 'Zucchini',
+        'calories' => 17,
+        'protein' => 1.2,
+        'carbs' => 3.1,
+        'fat' => 0.3,
+        'usda_food_category' => 'Vegetables',
+    ]);
+
+    $chickenIngredient = Ingredient::factory()->create([
+        'name' => 'Chicken Breast',
         'calories' => 100,
         'protein' => 10,
         'carbs' => 10,
         'fat' => 5,
+        'usda_food_category' => 'Proteins',
     ]);
 
     $veganMain = Meal::factory()->create([
@@ -109,7 +120,7 @@ test('craft plan summary protein-balances non-vegan mains when paired with a veg
         'nutrition_aggregates_synced' => true,
         'library_sort_order' => 1,
     ]);
-    $veganMain->ingredients()->attach($ingredient->id, ['amount_grams' => 200]);
+    $veganMain->ingredients()->attach($veganIngredient->id, ['amount_grams' => 200]);
 
     $chickenMain = Meal::factory()->create([
         'name' => 'Summary Chicken Main',
@@ -122,7 +133,7 @@ test('craft plan summary protein-balances non-vegan mains when paired with a veg
         'nutrition_aggregates_synced' => true,
         'library_sort_order' => 2,
     ]);
-    $chickenMain->ingredients()->attach($ingredient->id, ['amount_grams' => 200]);
+    $chickenMain->ingredients()->attach($chickenIngredient->id, ['amount_grams' => 200]);
 
     $plan = CustomerCraftPlan::query()->create([
         'customer_profile_id' => $profile->id,

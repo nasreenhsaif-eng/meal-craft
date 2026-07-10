@@ -130,7 +130,7 @@ final class MealPlanSlotBasedDayNutrition
     public static function coreBudgetNutrition(callable $resolveMeal): array
     {
         $bf = self::averageGroup($resolveMeal, MealPlanSlotType::Breakfast->value, [1]);
-        $mainAvg = self::averageGroup($resolveMeal, MealPlanSlotType::Main->value, [1, 2, 3, 4, 5]);
+        $mainAvg = self::averageGroup($resolveMeal, MealPlanSlotType::Main->value, [1, 2, 3, 4, 5, 6]);
         $mainScaled = self::scaleShape($mainAvg, 2.0);
         $salad = self::averageGroup($resolveMeal, MealPlanSlotType::Salad->value, [1, 2]);
         $dessert = self::averageGroup($resolveMeal, MealPlanSlotType::Dessert->value, [1, 2]);

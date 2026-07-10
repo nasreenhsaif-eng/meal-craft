@@ -45,7 +45,7 @@ function seedNutrientDenseWeeklyPlanDeck(): void
     }
 }
 
-test('nutrient dense weekly plan builder creates seven day rotating menus with twelve slots per day', function (): void {
+test('nutrient dense weekly plan builder creates seven day rotating menus with fourteen slots per day', function (): void {
     seedNutrientDenseWeeklyPlanDeck();
 
     $result = app(NutrientDenseWeeklyMealPlanBuilder::class)->build(refineRecipes: false);
@@ -55,6 +55,7 @@ test('nutrient dense weekly plan builder creates seven day rotating menus with t
 
     expect($plan->schema_type)->toBe(MealPlanSchemaType::WeeklyStructured)
         ->and($plan->name)->toBe(NutrientDenseWeeklyMealPlanBuilder::PLAN_NAME)
+        ->and($slotsPerDay)->toBe(14)
         ->and($result['slots'])->toBe(7 * $slotsPerDay)
         ->and($plan->dayMeals()->count())->toBe($result['slots'] * 2);
 
@@ -66,7 +67,16 @@ test('nutrient dense weekly plan builder creates seven day rotating menus with t
         ->first()
         ?->meal?->name;
 
-    expect($dayOneBreakfast)->toBe('Mediterranean Omelet');
+    $dayOneBeef = $plan->dayMeals()
+        ->where('day_number', 1)
+        ->where('slot_type', MealPlanSlotType::Main->value)
+        ->where('slot_index', 6)
+        ->where('is_option_b', false)
+        ->first()
+        ?->meal?->name;
+
+    expect($dayOneBreakfast)->toBe('Mediterranean Omelet')
+        ->and($dayOneBeef)->toBe('Grilled Beef Steak Ratatouille & Saffron rice');
 });
 
 test('nutrient dense weekly plan stores 32/28/40 macro targets at reference tier', function (): void {

@@ -7,6 +7,9 @@ use InvalidArgumentException;
 
 /**
  * Seven-day Nutrient Density weekly plan: micro-first rotation with daily fish, fermented anchors, and whole-egg breakfasts.
+ *
+ * Main 1 — chicken plate. Main 2 — chicken/beef salad. Main 3 — fish (mixed).
+ * Main 4 — vegan. Main 5 — liver (dedicated or blend). Main 6 — plain beef meal.
  */
 final class NutrientDenseWeeklyRotationSchedule
 {
@@ -43,15 +46,15 @@ final class NutrientDenseWeeklyRotationSchedule
         ],
     ];
 
-    /** @var list<string> Daily rotating baked desserts (slot 1) — one per weekday. */
+    /** @var list<string> Daily rotating baked desserts (slot 1) — one unique meal per weekday. */
     public const NUTRIENT_DENSE_DESSERTS = [
         'Chocolate Orange Brownie',
         BalancedCanonicalMealRecipeRefiner::CARROT_DESSERT_NAME,
         BalancedRotationMealRecipeRefiner::SALTED_TAHINI_CARAMEL_CHOCOLATE_BAR_NAME,
         'Saffron Pumpkin Muffin',
         'Chocolate PB Banana Muffin',
-        BalancedRotationMealRecipeRefiner::SALTED_TAHINI_CARAMEL_CHOCOLATE_BAR_NAME,
-        'Chocolate Orange Brownie',
+        'Apple Pie Balls',
+        'Banana Blueberry Balls',
     ];
 
     /** @var list<string> Greek yogurt chia desserts — dessert slot 3 (one per weekday). */
@@ -72,6 +75,8 @@ final class NutrientDenseWeeklyRotationSchedule
         BalancedRotationMealRecipeRefiner::SALTED_TAHINI_CARAMEL_CHOCOLATE_BAR_NAME,
         'Saffron Pumpkin Muffin',
         'Chocolate PB Banana Muffin',
+        'Apple Pie Balls',
+        'Banana Blueberry Balls',
     ];
 
     /** @var list<string> Whole-egg breakfasts — min 2 eggs per serving. */
@@ -127,6 +132,17 @@ final class NutrientDenseWeeklyRotationSchedule
         'Eggplant & Ground Beef Stew w Quinoa Bread',
         'Spiced Beef & Liver Meatballs w Roasted Tomato Couscous',
         'Beef & Liver Stuffed Zucchini w Marinara & Basil',
+    ];
+
+    /** @var list<string> Plain beef mains (no liver) — main slot 6, one per weekday. */
+    public const BEEF_MAINS = [
+        'Grilled Beef Steak Ratatouille & Saffron rice',
+        'Beef Bibimbap',
+        'Persian Herb Beef Stew',
+        'Beef Shawarma Platter',
+        'Sumac Beef Baba Ghanoush',
+        'Eggplant Beef Stew Quinoa Bread',
+        'Okra Beef Curry',
     ];
 
     /** @var list<string> Micro-dense side salads — tahini + purslane/rocco + pepper. */
@@ -191,6 +207,7 @@ final class NutrientDenseWeeklyRotationSchedule
                 3 => self::FISH_MAINS[$index],
                 4 => self::VEGAN_MAINS[$index],
                 5 => self::LIVER_MAINS[$index],
+                6 => self::BEEF_MAINS[$index],
                 default => throw new InvalidArgumentException("Invalid main slot index {$slotIndex}"),
             },
             MealPlanSlotType::Salad => match ($slotIndex) {
@@ -241,6 +258,7 @@ final class NutrientDenseWeeklyRotationSchedule
             self::CHICKEN_SALAD_MAINS,
             self::FISH_MAINS,
             self::LIVER_MAINS,
+            self::BEEF_MAINS,
             self::VEGAN_MAINS,
             self::MICRO_DENSE_SIDE_SALADS,
         ] as $list) {

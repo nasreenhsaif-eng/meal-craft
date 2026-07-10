@@ -39,7 +39,7 @@ final class BalancedCanonicalMealRecipeRefiner
 
     public const CARROT_DESSERT_NAME = 'Carrot Walnut Raisin Spice Cake';
 
-    public const CARROT_DESSERT_SERVINGS_COUNT = 8;
+    public const CARROT_DESSERT_SERVINGS_COUNT = 16;
 
     public const BUTTERNUT_SQUASH_SOUP_NAME = 'Butternut Squash Soup';
 
@@ -86,7 +86,7 @@ final class BalancedCanonicalMealRecipeRefiner
                 if ($mealName === self::CARROT_DESSERT_NAME && in_array($meal->name, self::CARROT_DESSERT_PREVIOUS_NAMES, true)) {
                     $meal->update([
                         'name' => self::CARROT_DESSERT_NAME,
-                        'short_description' => 'Moist gluten-free carrot cake batch (8 slices) with house-milled almond flour, dates, pumpkin puree, walnuts, warm spices, grass-fed butter, and vanilla bean.',
+                        'short_description' => 'Moist gluten-free carrot cake batch ('.self::CARROT_DESSERT_SERVINGS_COUNT.' slices) with house-milled almond flour, dates, pumpkin puree, walnuts, warm spices, grass-fed butter, and vanilla bean.',
                     ]);
                 }
 
@@ -368,7 +368,7 @@ final class BalancedCanonicalMealRecipeRefiner
                 'is_bulk' => true,
                 'servings_count' => self::CARROT_DESSERT_SERVINGS_COUNT,
                 'diet_tags' => ['Vegetarian', 'Gluten-free'],
-                'short_description' => 'Moist gluten-free carrot cake batch (8 slices) with house-milled almond flour, dates, pumpkin puree, walnuts, warm spices, grass-fed butter, and vanilla bean.',
+                'short_description' => 'Moist gluten-free carrot cake batch ('.self::CARROT_DESSERT_SERVINGS_COUNT.' slices) with house-milled almond flour, dates, pumpkin puree, walnuts, warm spices, grass-fed butter, and vanilla bean.',
             ],
             'Fruit Salad Bowl' => [
                 'ingredients' => [
@@ -531,13 +531,15 @@ final class BalancedCanonicalMealRecipeRefiner
     }
 
     /**
+     * Full pan batch originally portioned as 8 thick slices; now cut into 16 servings.
+     *
      * @return array<string, float>
      */
     private function carrotDessertBatchIngredients(): array
     {
         return $this->scalePerServingToBatch(
             $this->carrotDessertPerServingIngredients(),
-            self::CARROT_DESSERT_SERVINGS_COUNT,
+            8.0,
         );
     }
 

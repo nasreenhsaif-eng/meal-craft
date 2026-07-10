@@ -38,7 +38,7 @@ class StoreMealPlanFromLibraryRequest extends FormRequest
             'slots' => ['required', 'array', 'size:'.(7 * count(MealPlanSlotType::daySlotTemplate()))],
             'slots.*.day_number' => ['required', 'integer', 'min:1', 'max:7'],
             'slots.*.slot_type' => ['required', 'string', Rule::enum(MealPlanSlotType::class)],
-            'slots.*.slot_index' => ['required', 'integer', 'min:1', 'max:5'],
+            'slots.*.slot_index' => ['required', 'integer', 'min:1', 'max:6'],
             'slots.*.meal_id' => ['required', 'integer', 'exists:meals,id'],
         ];
     }

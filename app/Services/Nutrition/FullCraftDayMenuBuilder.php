@@ -196,7 +196,7 @@ final class FullCraftDayMenuBuilder
                 }
 
                 $dayMenu['breakfasts'][] = $adapted;
-            } elseif ($slotType === MealPlanSlotType::Main && in_array($slotIndex, [1, 2, 3, 4, 5], true)) {
+            } elseif ($slotType === MealPlanSlotType::Main && in_array($slotIndex, [1, 2, 3, 4, 5, 6], true)) {
                 $carouselMainsBySlot[$slotIndex] = $row->meal;
 
                 if (in_array($slotIndex, [1, 3], true)) {

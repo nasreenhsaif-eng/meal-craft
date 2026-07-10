@@ -97,7 +97,7 @@ test('repaired base recipes declare instruction-aligned components in master csv
         ],
         'Sumac Za\'atar Dressing (Base)' => [
             'must_include' => ['Sumac', 'Za\'atar', 'Olive Oil (Extra Virgin)', 'Lemon Juice'],
-            'must_exclude' => ['Mackerel', 'Panko / GF Crumbs'],
+            'must_exclude' => ['Mackerel', 'Panko / GF Crumbs', 'Fresh Basil'],
         ],
         'Pomegranate Sumac Sauce (Base)' => [
             'must_include' => ['Pomegranate Juice', 'Sumac', 'Tomato Paste', 'Garlic (Raw)'],
@@ -112,12 +112,12 @@ test('repaired base recipes declare instruction-aligned components in master csv
             'must_exclude' => ['Black Beans', 'Jasmine Rice'],
         ],
         'Peanut Butter Dressing (Base)' => [
-            'must_include' => ['Peanut Butter', 'Tamari Sauce', 'Sesame Oil', 'Date Syrup'],
-            'must_exclude' => ['Kiwi', 'Grapefruit Sections', 'Artichokes'],
+            'must_include' => ['Peanut Butter', 'Tamari', 'Sesame Oil', 'Date Syrup'],
+            'must_exclude' => ['Kiwi', 'Grapefruit Sections', 'Artichokes', 'Olive Oil'],
         ],
         'Thai Peanut Dressing (Base)' => [
-            'must_include' => ['Peanut Butter', 'Lime Juice', 'Tamari Sauce'],
-            'must_exclude' => ['Kiwi', 'Fresh Basil'],
+            'must_include' => ['Peanut Butter', 'Lime Juice', 'Tamari Sauce', 'Sesame Oil'],
+            'must_exclude' => ['Kiwi', 'Fresh Basil', 'Olive Oil'],
         ],
         'Mexican Beans (Base)' => [
             'must_include' => ['Cooked Black Beans (Base)', 'cumin powder', 'Cocoa Powder', 'Tomato Sauce'],
@@ -144,12 +144,12 @@ test('repaired base recipes declare instruction-aligned components in master csv
             'must_exclude' => ['French Lentils', 'Grapefruit Sections', 'Garam Masala'],
         ],
         'Mint Coconut Chutney Dressing (Base)' => [
-            'must_include' => ['Fresh Mint', 'Coconut Milk', 'Lime Juice', 'Fresh Coriander'],
-            'must_exclude' => ['Baking Powder', 'Quinoa (White)'],
+            'must_include' => ['Fresh Mint', 'Homemade Coconut Milk', 'Lime Juice', 'Fresh Coriander', 'Olive Oil (Extra Virgin)'],
+            'must_exclude' => ['Baking Powder', 'Quinoa (White)', 'Fresh Basil'],
         ],
         'Tahini Miso Garlic Ginger Rice Vinegar Dressing (Base)' => [
             'must_include' => ['Tahini', 'Rice Vinegar', 'Miso', 'Ground Ginger'],
-            'must_exclude' => ['Eggplant', 'Grapefruit Sections', 'Chia Seeds'],
+            'must_exclude' => ['Eggplant', 'Grapefruit Sections', 'Chia Seeds', 'Olive Oil'],
         ],
         'Zesty Lime Chili Salad Dressing (Base)' => [
             'must_include' => ['Lime Juice', 'Olive Oil (Extra Virgin)', 'Apple Cider Vinegar', 'Chili Flakes'],
@@ -185,23 +185,23 @@ test('repaired base recipes declare instruction-aligned components in master csv
         ],
         'Grapefruit Lime Dressing (Base)' => [
             'must_include' => ['Grapefruit Sections', 'Lime Juice', 'Olive Oil (Extra Virgin)'],
-            'must_exclude' => ['Black Beans', 'Lemon Juice (12g)'],
+            'must_exclude' => ['Black Beans', 'Lemon Juice', 'Fresh Basil'],
         ],
         'Homemade Coconut Milk' => [
             'must_include' => ['Coconut Meat', 'Water (Filtered)'],
             'must_exclude' => ['Baking Powder', 'Basmati Rice (White)'],
         ],
         'Honey Mustard Dressing (Base)' => [
-            'must_include' => ['Dijon Mustard', 'Date Syrup', 'Lemon Juice'],
-            'must_exclude' => ['Fresh Basil (25g)', 'Dill (Fresh)'],
+            'must_include' => ['Mustard Oil', 'Date Syrup', 'Lemon Juice', 'Olive Oil (Extra Virgin)'],
+            'must_exclude' => ['Fresh Basil', 'Dill (Fresh)'],
         ],
         'Mango Chutney Dressing' => [
             'must_include' => ['Mango', 'Apple Cider Vinegar', 'Ginger (Raw)'],
             'must_exclude' => ['Black Beans', 'Basmati Rice (White)'],
         ],
         'Miso Tahini Dressing (Base)' => [
-            'must_include' => ['Miso', 'Tahini', 'Rice Vinegar'],
-            'must_exclude' => ['Grapefruit Sections', 'Chia Seeds'],
+            'must_include' => ['Miso Paste', 'Tahini', 'Rice Vinegar', 'Sesame Oil'],
+            'must_exclude' => ['Grapefruit Sections', 'Chia Seeds', 'Olive Oil'],
         ],
         'Mustard Dressing (Base)' => [
             'must_include' => ['Dijon Mustard', 'Lemon Juice', 'Olive Oil (Extra Virgin)'],
@@ -218,6 +218,42 @@ test('repaired base recipes declare instruction-aligned components in master csv
         'Tandoori Chicken (Base)' => [
             'must_include' => ['Chicken Breast', 'Tandoori Spice Mix (Base)', 'Coconut Milk'],
             'must_exclude' => ['Fire Roasted Tomatoes (Base) (500g)', 'Quinoa (White)'],
+        ],
+        'Turmeric Chicken (Base)' => [
+            'must_include' => ['Chicken Breast', 'Turmeric', 'Ginger (Raw)', 'Garlic (Raw)', 'Lemon Zest', 'Sea Salt', 'White Peppercorns'],
+            'must_exclude' => ['Cherry Tomatoes', 'Pomegranate Seeds', 'Carrots'],
+        ],
+        'Turmeric Lemon Dressing (Base)' => [
+            'must_include' => ['Turmeric (Ground)', 'Lemon Juice', 'Garlic (Raw)', 'Olive Oil (Extra Virgin)', 'Sea Salt'],
+            'must_exclude' => ['Fresh Basil', 'Lavender (Ground)', 'Ginger (Raw)'],
+        ],
+        'Classic Lemon Garlic Dressing (Base)' => [
+            'must_include' => ['Olive Oil (Extra Virgin)', 'Lemon Juice', 'Garlic (Raw)'],
+            'must_exclude' => ['Fresh Basil'],
+        ],
+        'Cilantro Lime Dressing (Base)' => [
+            'must_include' => ['Olive Oil (Extra Virgin)', 'Lime Juice', 'Fresh Coriander'],
+            'must_exclude' => ['Fresh Basil'],
+        ],
+        'Lemon-Tahini Dressing (Base)' => [
+            'must_include' => ['Tahini', 'Olive Oil (Extra Virgin)', 'Lemon Juice'],
+            'must_exclude' => ['Fresh Basil'],
+        ],
+        'Spiced Lemon Dressing (Base)' => [
+            'must_include' => ['Olive Oil (Extra Virgin)', 'Lemon Juice', 'Cumin Seeds', 'Smoked Paprika'],
+            'must_exclude' => ['Fresh Basil'],
+        ],
+        'Lemon Olive Dressing (Base)' => [
+            'must_include' => ['Olive Oil (Extra Virgin)', 'Lemon Juice'],
+            'must_exclude' => ['Fresh Basil'],
+        ],
+        'Lime Herb Dressing (Base)' => [
+            'must_include' => ['Olive Oil (Extra Virgin)', 'Lime Juice', 'Fresh Coriander'],
+            'must_exclude' => ['Fresh Basil'],
+        ],
+        'Mediterranean Lemon Dressing (Base)' => [
+            'must_include' => ['Olive Oil (Extra Virgin)', 'Lemon Juice'],
+            'must_exclude' => ['Fresh Basil'],
         ],
         'Tandoori Coconut Mint Dressing (Base)' => [
             'must_include' => ['Coconut Milk', 'Fresh Mint', 'Tandoori Spice Mix (Base)'],
@@ -247,4 +283,31 @@ test('repaired base recipes declare instruction-aligned components in master csv
             expect($componentsCell)->not->toContain($ingredientName);
         }
     }
+});
+
+test('classic lemon garlic dressing macros reflect olive oil vinaigrette range', function (): void {
+    $path = MenuDevelopmentCsv::ingredientsPath();
+    $handle = fopen($path, 'r');
+    expect($handle)->not->toBeFalse();
+
+    $header = fgetcsv($handle);
+    $index = array_flip($header);
+    $row = null;
+
+    while (($candidate = fgetcsv($handle)) !== false) {
+        if (trim((string) ($candidate[$index['name']] ?? '')) === 'Classic Lemon Garlic Dressing (Base)') {
+            $row = $candidate;
+            break;
+        }
+    }
+
+    fclose($handle);
+
+    expect($row)->not->toBeNull();
+
+    $calories = (float) ($row[$index['calories']] ?? 0);
+    $fat = (float) ($row[$index['fat']] ?? 0);
+
+    expect($calories)->toBeGreaterThan(400.0)
+        ->and($fat)->toBeGreaterThan(40.0);
 });

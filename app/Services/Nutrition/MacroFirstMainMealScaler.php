@@ -12,6 +12,8 @@ use App\Support\StandardMeatPortion;
 
 /**
  * Scales main-meal ingredients to slot macro targets before calorie trim.
+ *
+ * Vegan mains keep library protein portions; paired non-vegan mains absorb the protein gap.
  */
 final class MacroFirstMainMealScaler
 {
@@ -39,13 +41,16 @@ final class MacroFirstMainMealScaler
         $baselineGrams = AdaptedMenuBuilder::baselineGramsByIngredientId($meal);
         $grams = $baselineGrams;
 
-        $proteinMultiplier = self::macroMultiplierForRole(
-            $meal,
-            $baselineGrams,
-            MealScalingRoleEnum::Protein,
-            'protein',
-            $targetProtein,
-        );
+        // Vegan mains keep library protein portions; non-vegan mains cover the day protein gap.
+        $proteinMultiplier = $meal->isVegan()
+            ? 1.0
+            : self::macroMultiplierForRole(
+                $meal,
+                $baselineGrams,
+                MealScalingRoleEnum::Protein,
+                'protein',
+                $targetProtein,
+            );
         $carbMultiplier = self::macroMultiplierForRole(
             $meal,
             $baselineGrams,
@@ -55,7 +60,8 @@ final class MacroFirstMainMealScaler
             (float) ($config['carb_baseline_floor_ratio'] ?? 0.6),
         );
 
-        $proteinBalanced = abs($proteinMultiplier - 1.0) > 0.0001 || abs($carbMultiplier - 1.0) > 0.0001;
+        $proteinBalanced = ! $meal->isVegan()
+            && (abs($proteinMultiplier - 1.0) > 0.0001 || abs($carbMultiplier - 1.0) > 0.0001);
 
         foreach ($meal->ingredients as $ingredient) {
             $role = MealScalingRole::roleForIngredient($ingredient, $meal);
@@ -83,8 +89,8 @@ final class MacroFirstMainMealScaler
             };
         }
 
-        $grams = self::trimToCalorieTarget($meal, $grams, $targetCalories);
-        $grams = self::recoverCarbTargetAfterTrim($meal, $grams, $targetCarbs, $targetCalories);
+        $grams = self::trimToCalorieTarget($meal, $grams, $targetCalories, $baselineGrams);
+        $grams = self::recoverCarbTargetAfterTrim($meal, $grams, $targetCarbs, $targetCalories, $baselineGrams);
         $grams = KitchenPortionRounding::snapFatRoleGramsForMeal($meal, $grams);
 
         return [
@@ -201,12 +207,14 @@ final class MacroFirstMainMealScaler
 
     /**
      * @param  array<int, float>  $grams
+     * @param  array<int, float>  $baselineGrams
      * @return array<int, float>
      */
     private static function trimToCalorieTarget(
         Meal $meal,
         array $grams,
         float $targetCalories,
+        array $baselineGrams = [],
     ): array {
         if ($targetCalories <= 0) {
             return $grams;
@@ -223,7 +231,7 @@ final class MacroFirstMainMealScaler
                 break;
             }
 
-            $adjusted = self::trimRoleCalories($meal, $adjusted, $targetCalories, $roles);
+            $adjusted = self::trimRoleCalories($meal, $adjusted, $targetCalories, $roles, $baselineGrams);
         }
 
         return $adjusted;
@@ -232,6 +240,7 @@ final class MacroFirstMainMealScaler
     /**
      * @param  array<int, float>  $grams
      * @param  list<MealScalingRoleEnum>  $roles
+     * @param  array<int, float>  $baselineGrams
      * @return array<int, float>
      */
     private static function trimRoleCalories(
@@ -239,6 +248,7 @@ final class MacroFirstMainMealScaler
         array $grams,
         float $targetCalories,
         array $roles,
+        array $baselineGrams = [],
     ): array {
         $currentCalories = self::totalCalories($meal, $grams);
 
@@ -250,6 +260,10 @@ final class MacroFirstMainMealScaler
         $trimCalories = 0.0;
         /** @var list<int> $trimIds */
         $trimIds = [];
+        /** @var array<int, float> $floors */
+        $floors = [];
+        $config = self::config();
+        $carbFloorRatio = (float) ($config['carb_baseline_floor_ratio'] ?? 0.6);
 
         foreach ($meal->ingredients as $ingredient) {
             $ingredientGrams = (float) ($grams[$ingredient->id] ?? 0);
@@ -262,27 +276,94 @@ final class MacroFirstMainMealScaler
             $role = MealScalingRole::roleForIngredient($ingredient, $meal);
 
             if (in_array($role, $roles, true)) {
-                $trimCalories += $rowCalories;
+                $floorGrams = self::trimFloorGramsForRole(
+                    $meal,
+                    $ingredient,
+                    $role,
+                    $baselineGrams,
+                    $carbFloorRatio,
+                );
+                $floorGrams = min($ingredientGrams, $floorGrams);
+                $floors[$ingredient->id] = $floorGrams;
+
+                if ($floorGrams >= $ingredientGrams - 0.0001) {
+                    $fixedCalories += $rowCalories;
+
+                    continue;
+                }
+
+                if ($floorGrams > 0.0) {
+                    $floorCalories = self::macroForGrams($ingredient, $floorGrams, 'calories');
+                    $fixedCalories += $floorCalories;
+                    $trimCalories += max(0.0, $rowCalories - $floorCalories);
+                } else {
+                    $trimCalories += $rowCalories;
+                }
+
                 $trimIds[] = $ingredient->id;
             } else {
                 $fixedCalories += $rowCalories;
             }
         }
 
-        $trimBudget = max(0.0, $targetCalories - $fixedCalories);
-
-        if ($trimCalories <= 0 || $trimBudget <= 0) {
+        if ($trimCalories <= 0 || $trimIds === []) {
             return $grams;
         }
 
-        $ratio = round($trimBudget / $trimCalories, 4);
+        $trimBudget = max(0.0, $targetCalories - $fixedCalories);
         $adjusted = $grams;
 
+        if ($trimBudget <= 0) {
+            foreach ($trimIds as $ingredientId) {
+                $adjusted[$ingredientId] = round($floors[$ingredientId] ?? 0.0, 4);
+            }
+
+            return $adjusted;
+        }
+
+        $ratio = round($trimBudget / $trimCalories, 4);
+
         foreach ($trimIds as $ingredientId) {
-            $adjusted[$ingredientId] = round((float) ($grams[$ingredientId] ?? 0) * $ratio, 4);
+            $current = (float) ($grams[$ingredientId] ?? 0);
+            $floor = (float) ($floors[$ingredientId] ?? 0.0);
+            $trimmable = max(0.0, $current - $floor);
+            $adjusted[$ingredientId] = round($floor + ($trimmable * $ratio), 4);
         }
 
         return $adjusted;
+    }
+
+    /**
+     * @param  array<int, float>  $baselineGrams
+     */
+    private static function trimFloorGramsForRole(
+        Meal $meal,
+        Ingredient $ingredient,
+        MealScalingRoleEnum $role,
+        array $baselineGrams,
+        float $carbFloorRatio,
+    ): float {
+        if ($role === MealScalingRoleEnum::Protein) {
+            return self::primaryMeatTrimFloorGrams($meal, $ingredient);
+        }
+
+        if ($role === MealScalingRoleEnum::Carb && $carbFloorRatio > 0) {
+            return round(max(0.0, (float) ($baselineGrams[$ingredient->id] ?? 0) * $carbFloorRatio), 4);
+        }
+
+        return 0.0;
+    }
+
+    /**
+     * Primary meat must not be calorie-trimmed below the standard portion.
+     */
+    private static function primaryMeatTrimFloorGrams(Meal $meal, Ingredient $ingredient): float
+    {
+        if (! StandardMeatPortion::isPrimaryMeatIngredient($ingredient->name, $meal->name)) {
+            return 0.0;
+        }
+
+        return StandardMeatPortion::targetPrimaryBeefGrams($meal->ingredients, $meal->name);
     }
 
     /**
@@ -298,7 +379,9 @@ final class MacroFirstMainMealScaler
         $boosted = $grams;
 
         foreach ($meal->ingredients as $ingredient) {
-            if (MealScalingRole::roleForIngredient($ingredient, $meal) !== MealScalingRoleEnum::Protein) {
+            $role = MealScalingRole::roleForIngredient($ingredient, $meal);
+
+            if (! in_array($role, [MealScalingRoleEnum::Protein, MealScalingRoleEnum::HerbSpice], true)) {
                 continue;
             }
 
@@ -409,11 +492,41 @@ final class MacroFirstMainMealScaler
      * @param  array<int, float>  $grams
      * @return array<int, float>
      */
+    public static function trimNonProteinRolesToCalorieTarget(Meal $meal, array $grams, float $targetCalories): array
+    {
+        if ($targetCalories <= 0) {
+            return $grams;
+        }
+
+        $baselineGrams = AdaptedMenuBuilder::baselineGramsByIngredientId($meal);
+        $adjusted = $grams;
+
+        foreach ([
+            [MealScalingRoleEnum::Fat, MealScalingRoleEnum::Sauce],
+            [MealScalingRoleEnum::Carb],
+            [MealScalingRoleEnum::Vegetable, MealScalingRoleEnum::Other],
+        ] as $roles) {
+            if (self::totalCalories($meal, $adjusted) <= $targetCalories + 0.5) {
+                break;
+            }
+
+            $adjusted = self::trimRoleCalories($meal, $adjusted, $targetCalories, $roles, $baselineGrams);
+        }
+
+        return $adjusted;
+    }
+
+    /**
+     * @param  array<int, float>  $grams
+     * @param  array<int, float>  $baselineGrams
+     * @return array<int, float>
+     */
     private static function recoverCarbTargetAfterTrim(
         Meal $meal,
         array $grams,
         float $targetCarbs,
         float $targetCalories,
+        array $baselineGrams = [],
     ): array {
         if ($targetCarbs <= 0) {
             return $grams;
@@ -446,7 +559,7 @@ final class MacroFirstMainMealScaler
         }
 
         if (self::totalCalories($meal, $adjusted) > $targetCalories + 0.5) {
-            return self::trimToCalorieTarget($meal, $adjusted, $targetCalories);
+            return self::trimToCalorieTarget($meal, $adjusted, $targetCalories, $baselineGrams);
         }
 
         return $adjusted;
@@ -462,7 +575,8 @@ final class MacroFirstMainMealScaler
             return $grams;
         }
 
-        $trimmed = self::trimToCalorieTarget($meal, $grams, $targetCalories);
+        $baselineGrams = AdaptedMenuBuilder::baselineGramsByIngredientId($meal);
+        $trimmed = self::trimToCalorieTarget($meal, $grams, $targetCalories, $baselineGrams);
 
         return KitchenPortionRounding::snapFatRoleGramsForMeal($meal, $trimmed);
     }

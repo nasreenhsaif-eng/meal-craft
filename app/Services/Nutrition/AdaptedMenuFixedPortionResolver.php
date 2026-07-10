@@ -3,6 +3,7 @@
 namespace App\Services\Nutrition;
 
 use App\Enums\MealPlanSlotType;
+use App\Models\CustomerProfile;
 use App\Models\Meal;
 use App\Models\MealPlan;
 use App\Models\MealPlanDayMeal;
@@ -58,6 +59,69 @@ final class AdaptedMenuFixedPortionResolver
         }
 
         return $merged;
+    }
+
+    /**
+     * @param  array<string, list<int|string>>  $daySelection
+     * @param  array<int, Meal>  $mealsById
+     * @param  array<string, mixed>  $baseOptions
+     * @return array{
+     *     side_salad_calories?: float,
+     *     dessert_calories?: float,
+     *     soup_calories?: float,
+     * }
+     */
+    public static function fromSelectedCarouselMeals(
+        CustomerProfile $profile,
+        array $daySelection,
+        array $mealsById,
+        array $baseOptions = [],
+    ): array {
+        /** @var array<string, array{optionKey: string, slot: string}> $categoryMap */
+        $categoryMap = [
+            'sideSalads' => ['optionKey' => 'side_salad_calories', 'slot' => 'side_salad'],
+            'desserts' => ['optionKey' => 'dessert_calories', 'slot' => 'dessert'],
+            'soup' => ['optionKey' => 'soup_calories', 'slot' => 'soup'],
+        ];
+
+        $out = [];
+
+        foreach ($categoryMap as $categoryKey => $mapping) {
+            $mealIds = $daySelection[$categoryKey] ?? [];
+
+            if (! is_array($mealIds) || $mealIds === []) {
+                continue;
+            }
+
+            $mealId = (int) ($mealIds[0] ?? 0);
+            $meal = $mealsById[$mealId] ?? null;
+
+            if (! $meal instanceof Meal) {
+                continue;
+            }
+
+            $adapted = AdaptedMenuBuilder::adaptMealForProfile($profile, $meal, array_merge(
+                $baseOptions,
+                ['schedule_slot' => $mapping['slot']],
+            ));
+
+            if (! is_array($adapted)) {
+                continue;
+            }
+
+            $adaptedNutrition = is_array($adapted['adapted_nutrition'] ?? null)
+                ? $adapted['adapted_nutrition']
+                : [];
+            $calories = (float) ($adaptedNutrition['calories'] ?? 0);
+
+            if ($calories <= 0) {
+                continue;
+            }
+
+            $out[$mapping['optionKey']] = round($calories, 2);
+        }
+
+        return $out;
     }
 
     /**

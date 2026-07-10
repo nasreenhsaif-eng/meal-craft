@@ -445,10 +445,7 @@ final class AdaptedMenuBuilder
                 $maxCalories = max($maxCalories, $slotTargetCaloriesEach);
             }
 
-            $maxBoostFromCalories = $maxCalories / $currentCalories;
-            $effectiveBoost = min($boostMultiplier, $maxBoostFromCalories);
-
-            if ($effectiveBoost <= 1.0001) {
+            if ($boostMultiplier <= 1.0001) {
                 continue;
             }
 
@@ -456,7 +453,7 @@ final class AdaptedMenuBuilder
                 $meal,
                 $plan,
                 $adapted,
-                $effectiveBoost,
+                $boostMultiplier,
                 $maxCalories,
             );
         }
@@ -545,64 +542,109 @@ final class AdaptedMenuBuilder
             return $adaptedMains;
         }
 
+        $tolerance = UserPlanCalculator::dayCalorieTolerance();
         $balanced = $adaptedMains;
         $remainingCalorieSurplus = $calorieSurplus;
+        $remainingCarbSurplus = max(0.0, $carbSurplus);
+        $remainingFatSurplus = max(0.0, $fatSurplus);
+        $maxPasses = 8;
 
-        if ($carbSurplus > 0.25) {
-            $bestCarbIndex = null;
-            $bestCarbs = 0.0;
+        for ($pass = 0; $pass < $maxPasses && $remainingCalorieSurplus > $tolerance; $pass++) {
+            $beforePassCalories = self::sumAdaptedMainCalories($balanced);
 
-            foreach ($balanced as $index => $adapted) {
-                $carbs = (float) ($adapted['adapted_nutrition']['carbs'] ?? 0);
+            if ($remainingCarbSurplus > 0.25) {
+                $bestCarbIndex = null;
+                $bestCarbs = 0.0;
 
-                if ($carbs > $bestCarbs) {
-                    $bestCarbs = $carbs;
-                    $bestCarbIndex = $index;
+                foreach ($balanced as $index => $adapted) {
+                    $carbs = (float) ($adapted['adapted_nutrition']['carbs'] ?? 0);
+
+                    if ($carbs > $bestCarbs) {
+                        $bestCarbs = $carbs;
+                        $bestCarbIndex = $index;
+                    }
+                }
+
+                if ($bestCarbIndex !== null && $bestCarbs > 0) {
+                    $carbReduction = min($remainingCarbSurplus, $remainingCalorieSurplus / 4);
+                    $carbMultiplier = max(0.0, ($bestCarbs - $carbReduction) / $bestCarbs);
+
+                    if ($carbMultiplier < 0.9999) {
+                        $balanced[$bestCarbIndex] = self::trimMainMealWithCarbMultiplier(
+                            $meals[$bestCarbIndex],
+                            $plan,
+                            $balanced[$bestCarbIndex],
+                            $carbMultiplier,
+                        );
+                        $remainingCarbSurplus = max(0.0, round($remainingCarbSurplus - $carbReduction, 2));
+                    }
                 }
             }
 
-            if ($bestCarbIndex !== null && $bestCarbs > 0) {
-                $carbReduction = min($carbSurplus, $remainingCalorieSurplus / 4);
-                $carbMultiplier = max(0.0, ($bestCarbs - $carbReduction) / $bestCarbs);
+            if ($remainingFatSurplus > 0.25 && $remainingCalorieSurplus > $tolerance) {
+                $bestFatIndex = null;
+                $bestFat = 0.0;
 
-                if ($carbMultiplier < 0.9999) {
-                    $balanced[$bestCarbIndex] = self::trimMainMealWithCarbMultiplier(
-                        $meals[$bestCarbIndex],
-                        $plan,
-                        $balanced[$bestCarbIndex],
-                        $carbMultiplier,
-                    );
-                    $remainingCalorieSurplus = max(0.0, round($remainingCalorieSurplus - ($carbReduction * 4), 2));
+                foreach ($balanced as $index => $adapted) {
+                    $fat = (float) ($adapted['adapted_nutrition']['fat'] ?? 0);
+
+                    if ($fat > $bestFat) {
+                        $bestFat = $fat;
+                        $bestFatIndex = $index;
+                    }
+                }
+
+                if ($bestFatIndex !== null && $bestFat > 0) {
+                    $fatReduction = min($remainingFatSurplus, $remainingCalorieSurplus / 9);
+                    $fatMultiplier = max(0.0, ($bestFat - $fatReduction) / $bestFat);
+
+                    if ($fatMultiplier < 0.9999) {
+                        $balanced[$bestFatIndex] = self::trimMainMealWithFatMultiplier(
+                            $meals[$bestFatIndex],
+                            $plan,
+                            $balanced[$bestFatIndex],
+                            $fatMultiplier,
+                        );
+                        $remainingFatSurplus = max(0.0, round($remainingFatSurplus - $fatReduction, 2));
+                    }
                 }
             }
-        }
 
-        if ($fatSurplus > 0.25 && $remainingCalorieSurplus > 0.5) {
-            $bestFatIndex = null;
-            $bestFat = 0.0;
+            if ($remainingCalorieSurplus > $tolerance) {
+                $bestCalorieIndex = null;
+                $bestCalories = 0.0;
 
-            foreach ($balanced as $index => $adapted) {
-                $fat = (float) ($adapted['adapted_nutrition']['fat'] ?? 0);
+                foreach ($balanced as $index => $adapted) {
+                    $calories = (float) ($adapted['adapted_nutrition']['calories'] ?? 0);
 
-                if ($fat > $bestFat) {
-                    $bestFat = $fat;
-                    $bestFatIndex = $index;
+                    if ($calories > $bestCalories) {
+                        $bestCalories = $calories;
+                        $bestCalorieIndex = $index;
+                    }
+                }
+
+                if ($bestCalorieIndex !== null && $bestCalories > 0) {
+                    $targetCalories = max(0.0, $bestCalories - ($remainingCalorieSurplus - $tolerance));
+
+                    if ($targetCalories < $bestCalories - 0.5) {
+                        $balanced[$bestCalorieIndex] = self::trimMainMealToCalorieTarget(
+                            $meals[$bestCalorieIndex],
+                            $plan,
+                            $balanced[$bestCalorieIndex],
+                            $targetCalories,
+                        );
+                    }
                 }
             }
 
-            if ($bestFatIndex !== null && $bestFat > 0) {
-                $fatReduction = min($fatSurplus, $remainingCalorieSurplus / 9);
-                $fatMultiplier = max(0.0, ($bestFat - $fatReduction) / $bestFat);
+            $afterPassCalories = self::sumAdaptedMainCalories($balanced);
+            $removed = round($beforePassCalories - $afterPassCalories, 2);
 
-                if ($fatMultiplier < 0.9999) {
-                    $balanced[$bestFatIndex] = self::trimMainMealWithFatMultiplier(
-                        $meals[$bestFatIndex],
-                        $plan,
-                        $balanced[$bestFatIndex],
-                        $fatMultiplier,
-                    );
-                }
+            if ($removed < 0.5) {
+                break;
             }
+
+            $remainingCalorieSurplus = max(0.0, round($remainingCalorieSurplus - $removed, 2));
         }
 
         return $balanced;
@@ -635,24 +677,20 @@ final class AdaptedMenuBuilder
             }
 
             $boostMultiplier = $proteinTargetEach / $currentProtein;
-            $maxBoostFromCalories = $slotTargetCaloriesEach > 0
-                ? $slotTargetCaloriesEach / $currentCalories
-                : $boostMultiplier;
-            $effectiveBoost = min($boostMultiplier, $maxBoostFromCalories);
 
-            if ($effectiveBoost <= 1.0001) {
+            if ($boostMultiplier <= 1.0001) {
                 continue;
             }
 
             $maxCalories = $slotTargetCaloriesEach > 0
                 ? $slotTargetCaloriesEach
-                : $currentCalories * $effectiveBoost;
+                : $currentCalories * $boostMultiplier;
 
             $balanced[$index] = self::boostMainMealWithProteinMultiplier(
                 $meal,
                 $plan,
                 $adapted,
-                $effectiveBoost,
+                $boostMultiplier,
                 $maxCalories,
             );
         }
@@ -699,31 +737,21 @@ final class AdaptedMenuBuilder
             $addedProtein = round($shortfall * $proteinShare, 2);
             $targetProtein = $currentProtein + $addedProtein;
             $boostMultiplier = $targetProtein / $currentProtein;
-            $currentScale = (float) ($adapted['scaling_multiplier'] ?? 1.0);
             $currentCalories = (float) ($adapted['adapted_nutrition']['calories'] ?? 0);
 
-            if ($currentCalories <= 0) {
-                continue;
-            }
-
-            $maxBoostFromCalories = $slotTargetCaloriesEach > 0
-                ? $slotTargetCaloriesEach / $currentCalories
-                : $boostMultiplier;
-            $effectiveBoost = min($boostMultiplier, $maxBoostFromCalories);
-
-            if ($effectiveBoost <= 1.0001) {
+            if ($currentCalories <= 0 || $boostMultiplier <= 1.0001) {
                 continue;
             }
 
             $maxCalories = $slotTargetCaloriesEach > 0
                 ? $slotTargetCaloriesEach
-                : $currentCalories * $effectiveBoost;
+                : $currentCalories * $boostMultiplier;
 
             $balanced[$index] = self::boostMainMealWithProteinMultiplier(
                 $meal,
                 $plan,
                 $adapted,
-                $effectiveBoost,
+                $boostMultiplier,
                 $maxCalories,
             );
         }
@@ -775,7 +803,8 @@ final class AdaptedMenuBuilder
             $meal->loadMissing('ingredients');
             $grams = self::adaptedGramsFromSerializedMain($adapted, $meal);
             $grams = MacroFirstMainMealScaler::boostProteinRoleGrams($meal, $grams, $effectiveBoost);
-            $grams = MacroFirstMainMealScaler::capToCalorieTarget($meal, $grams, $maxCalories);
+            // Keep the protein/seasoning boost; trim carbs/fat/veg if the slot is over calories.
+            $grams = MacroFirstMainMealScaler::trimNonProteinRolesToCalorieTarget($meal, $grams, $maxCalories);
 
             return self::serializeScaledMealFromGrams($meal, 'main', $plan, $grams, proteinBalanced: true);
         }
@@ -876,6 +905,42 @@ final class AdaptedMenuBuilder
             'main',
             $plan,
             round($currentScale * $fatMultiplier, 4),
+            proteinBalanced: false,
+        );
+    }
+
+    /**
+     * @param  array<string, mixed>  $adapted
+     * @return array<string, mixed>
+     */
+    private static function trimMainMealToCalorieTarget(
+        Meal $meal,
+        array $plan,
+        array $adapted,
+        float $targetCalories,
+    ): array {
+        if (MacroFirstMainMealScaler::isEnabled()) {
+            $meal->loadMissing('ingredients');
+            $grams = self::adaptedGramsFromSerializedMain($adapted, $meal);
+            $grams = MacroFirstMainMealScaler::trimNonProteinRolesToCalorieTarget($meal, $grams, $targetCalories);
+
+            return self::serializeScaledMealFromGrams($meal, 'main', $plan, $grams, proteinBalanced: false);
+        }
+
+        $currentCalories = (float) ($adapted['adapted_nutrition']['calories'] ?? 0);
+
+        if ($currentCalories <= 0 || $targetCalories >= $currentCalories - 0.5) {
+            return $adapted;
+        }
+
+        $currentScale = (float) ($adapted['scaling_multiplier'] ?? 1.0);
+        $scale = max(0.0, round($currentScale * ($targetCalories / $currentCalories), 4));
+
+        return self::serializeScaledMeal(
+            $meal,
+            'main',
+            $plan,
+            $scale,
             proteinBalanced: false,
         );
     }

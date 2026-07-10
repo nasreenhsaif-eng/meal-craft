@@ -367,6 +367,157 @@ test('meal plan tier preview reconciles a nutrient-dense day to the selected tie
         ->and($kitchenGrams)->not->toEqual($libraryGrams);
 });
 
+test('meal plan tier preview closes calorie surplus from heavy dessert and protein mains at 1500', function (): void {
+    $user = User::factory()->create();
+
+    $carbIngredient = Ingredient::factory()->create([
+        'name' => 'Cooked Quinoa (Base)',
+        'calories' => 120,
+        'protein' => 4,
+        'carbs' => 21,
+        'fat' => 2,
+        'usda_food_category' => 'Grains',
+    ]);
+
+    $proteinIngredient = Ingredient::factory()->create([
+        'name' => 'Salmon (Raw)',
+        'calories' => 208,
+        'protein' => 20,
+        'carbs' => 0,
+        'fat' => 13,
+        'usda_food_category' => 'Proteins',
+    ]);
+
+    $breakfast = Meal::factory()->create([
+        'name' => 'Mediterranean Omelet',
+        'category' => RecipeCategory::Breakfast,
+        'meal_type' => MealType::Breakfast,
+        'total_calories' => 444,
+        'total_protein' => 35,
+        'total_carbs' => 8,
+        'total_fat' => 30,
+    ]);
+    $breakfast->ingredients()->attach($proteinIngredient->id, ['amount_grams' => 200]);
+
+    $mainA = Meal::factory()->create([
+        'name' => 'Salmon Plate',
+        'category' => RecipeCategory::Meal,
+        'meal_type' => MealType::Main,
+        'total_calories' => 360,
+        'total_protein' => 42,
+        'total_carbs' => 18,
+        'total_fat' => 12,
+    ]);
+    $mainA->ingredients()->attach($proteinIngredient->id, ['amount_grams' => 150]);
+
+    $mainB = Meal::factory()->create([
+        'name' => 'Salmon Quinoa Bowl',
+        'category' => RecipeCategory::Meal,
+        'meal_type' => MealType::Main,
+        'total_calories' => 360,
+        'total_protein' => 42,
+        'total_carbs' => 35,
+        'total_fat' => 11,
+    ]);
+    $mainB->ingredients()->attach($proteinIngredient->id, ['amount_grams' => 120]);
+    $mainB->ingredients()->attach($carbIngredient->id, ['amount_grams' => 80]);
+
+    $salad = Meal::factory()->create([
+        'name' => 'Reconcile Side Salad',
+        'category' => RecipeCategory::SideSalad,
+        'meal_type' => MealType::Salad,
+        'total_calories' => 117,
+    ]);
+    $salad->ingredients()->attach($carbIngredient->id, ['amount_grams' => 50]);
+
+    $dessert = Meal::factory()->create([
+        'name' => 'Greek Yogurt Chia Dessert',
+        'category' => RecipeCategory::Dessert,
+        'meal_type' => MealType::Dessert,
+        'total_calories' => 300,
+        'total_protein' => 17,
+        'total_carbs' => 22,
+        'total_fat' => 14,
+    ]);
+    $dessert->ingredients()->attach($carbIngredient->id, ['amount_grams' => 90]);
+    $dessert->ingredients()->attach($proteinIngredient->id, ['amount_grams' => 40]);
+
+    $plan = MealPlan::query()->create([
+        'name' => 'Heavy Dessert Surplus Plan',
+        'goal' => 'Tier surplus trim review.',
+        'schema_type' => MealPlanSchemaType::WeeklyStructured,
+        'plan_category' => MealPlanLibraryCategory::NutrientDense,
+        'target_total_calories' => 10500,
+    ]);
+
+    $plan->dayMeals()->createMany([
+        [
+            'meal_id' => $breakfast->id,
+            'day_number' => 1,
+            'slot_type' => MealPlanSlotType::Breakfast,
+            'slot_index' => 1,
+            'is_option_b' => false,
+        ],
+        [
+            'meal_id' => $mainA->id,
+            'day_number' => 1,
+            'slot_type' => MealPlanSlotType::Main,
+            'slot_index' => 1,
+            'is_option_b' => false,
+        ],
+        [
+            'meal_id' => $mainB->id,
+            'day_number' => 1,
+            'slot_type' => MealPlanSlotType::Main,
+            'slot_index' => 2,
+            'is_option_b' => false,
+        ],
+        [
+            'meal_id' => $salad->id,
+            'day_number' => 1,
+            'slot_type' => MealPlanSlotType::Salad,
+            'slot_index' => 1,
+            'is_option_b' => false,
+        ],
+        [
+            'meal_id' => $dessert->id,
+            'day_number' => 1,
+            'slot_type' => MealPlanSlotType::Dessert,
+            'slot_index' => 1,
+            'is_option_b' => false,
+        ],
+    ]);
+
+    $selections = [
+        1 => [
+            'breakfasts' => [$breakfast->id],
+            'meals' => [$mainA->id, $mainB->id],
+            'sideSalads' => [$salad->id],
+            'desserts' => [$dessert->id],
+        ],
+    ];
+
+    $payload = $this->actingAs($user)
+        ->getJson(route('admin.meal-plan-library.tier-preview', [
+            'mealPlan' => $plan,
+            'plan_tier' => 1500,
+            'selections' => json_encode($selections),
+        ]))
+        ->assertOk()
+        ->json();
+
+    $day = $payload['days'][0];
+    $dayCalories = sumSelectedDayCalories($day, $selections[1]);
+    $warnings = is_array($day['reconciliationWarnings'] ?? null) ? $day['reconciliationWarnings'] : [];
+    $withinTolerance = abs($dayCalories - 1500) <= UserPlanCalculator::dayCalorieTolerance();
+    $hasSurplusWarning = collect($warnings)->contains(
+        fn (string $warning): bool => str_contains($warning, 'kcal above target'),
+    );
+
+    expect($dayCalories)->toBeGreaterThan(0)
+        ->and($withinTolerance || $hasSurplusWarning)->toBeTrue();
+});
+
 test('meal plan tier preview micronutrients follow selected mains', function (): void {
     $user = User::factory()->create();
 

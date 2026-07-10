@@ -9,8 +9,9 @@ use InvalidArgumentException;
  * Seven-day Balanced weekly plan: same slot roles every day, different meals per weekday.
  *
  * Breakfast — savory egg (rotates). Dessert 1 — chia pudding (rotates).
- * Main 1 — chicken + carbs/veg. Main 2 — chicken salad. Main 3 — salmon and beef alternate daily.
+ * Main 1 — chicken + carbs/veg. Main 2 — chicken salad. Main 3 — fish (mixed; rotates daily).
  * Main 4 — vegan main (includes former legume-heavy side salads). Main 5 — liver (dedicated or liver-blend; rotates daily).
+ * Main 6 — plain beef meal (no liver; rotates daily).
  * Salad 1 — legume-free vegan side (rotates). Salad 2 — Classic Garden Salad.
  * Dessert 1 — dessert (rotates). Dessert 2 — Fruit Salad Bowl.
  * Soup 1 — rotating soup. Soup 2 — Bone Broth Cup (fixed every day).
@@ -110,18 +111,33 @@ final class BalancedWeeklyRotationSchedule
         'Blackened Chicken, Grilled Peppers & Onion Salad w Quinoa, Kale & Mustard Dressing',
     ];
 
-    /** @var list<string> */
+    /** @var list<string> Salmon subset — still used by micronutrient refiners. */
     public const SALMON_MAINS = [
         BalancedCanonicalMealRecipeRefiner::BAKED_SALMON_NAME,
         'Citrus Herb Salmon with Asparagus & Sweet Potato',
         'Grilled Salmon Mango Salsa',
     ];
 
-    /** @var list<string> Pure beef mains — slot 3 on even days only. */
+    /** @var list<string> Fish daily — salmon, mackerel, sardine rotation (main slot 3). */
+    public const FISH_MAINS = [
+        BalancedCanonicalMealRecipeRefiner::BAKED_SALMON_NAME,
+        'Grilled Mackerel w Roasted Vegetables',
+        NutrientDenseFermentedRecipeRefiner::SARDINE_MAIN_NAME,
+        'Citrus Herb Salmon with Asparagus & Sweet Potato',
+        'Salmon Cashew Cream & Roasted Mixed Vegetables',
+        'Pan Seared Hamour',
+        'Grilled Salmon Mango Salsa',
+    ];
+
+    /** @var list<string> Plain beef mains — main slot 6, one per weekday. */
     public const BEEF_MAINS = [
         'Grilled Beef Steak Ratatouille & Saffron rice',
         'Beef Bibimbap',
         'Persian Herb Beef Stew',
+        'Beef Shawarma Platter',
+        'Sumac Beef Baba Ghanoush',
+        'Eggplant Beef Stew Quinoa Bread',
+        'Okra Beef Curry',
     ];
 
     /** @var list<string> Liver mains — slot 5, one per weekday. */
@@ -191,9 +207,10 @@ final class BalancedWeeklyRotationSchedule
             MealPlanSlotType::Main => match ($slotIndex) {
                 1 => self::CHICKEN_PLATE_MAINS[$index],
                 2 => self::CHICKEN_SALAD_MAINS[$index],
-                3 => self::alternatingFishOrBeefMainForDay($dayNumber),
+                3 => self::FISH_MAINS[$index],
                 4 => self::VEGAN_MAINS[$index],
                 5 => self::LIVER_MAINS[$index],
+                6 => self::BEEF_MAINS[$index],
                 default => throw new InvalidArgumentException("Invalid main slot index {$slotIndex}"),
             },
             MealPlanSlotType::Salad => match ($slotIndex) {
@@ -210,20 +227,6 @@ final class BalancedWeeklyRotationSchedule
                 default => throw new InvalidArgumentException("Invalid soup slot index {$slotIndex}; slot 2 is fixed in FIXED_SLOT_MEALS"),
             },
         };
-    }
-
-    /**
-     * Odd days salmon, even days beef — alternating through the week.
-     */
-    public static function alternatingFishOrBeefMainForDay(int $dayNumber): string
-    {
-        $pairIndex = intdiv($dayNumber - 1, 2);
-
-        if ($dayNumber % 2 === 1) {
-            return self::SALMON_MAINS[$pairIndex % count(self::SALMON_MAINS)];
-        }
-
-        return self::BEEF_MAINS[$pairIndex % count(self::BEEF_MAINS)];
     }
 
     /**
@@ -247,6 +250,7 @@ final class BalancedWeeklyRotationSchedule
             self::EGG_BREAKFASTS,
             self::CHICKEN_PLATE_MAINS,
             self::CHICKEN_SALAD_MAINS,
+            self::FISH_MAINS,
             self::SALMON_MAINS,
             self::BEEF_MAINS,
             self::LIVER_MAINS,

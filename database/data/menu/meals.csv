@@ -1,39 +1,4 @@
 meal_name,meal_type,ingredients_string,target_calories,target_protein,target_carbs,target_fat,batch_calories,batch_protein,batch_carbs,batch_fat,is_bulk,servings_count,meal_plan_tag,cycle_phase,safety_alerts,image_url,short_description,instructions
-"Kefir Turkish Eggs w Zucchini Bread",Breakfast,"Black Pepper:1 | Chili Flakes:2 | Dill (Fresh):5 | Egg:166 | Fresh Mint:4 | Garlic (Raw):1.5 | Grass Fed Butter:3.7629 | Greek Yogurt:12.6102 | Kefir:10.3175 | Pumpkin Seeds:33.6908 | Sea Salt:1 | Smoked Paprika:1 | Zucchini Almond Bread (Base):100",,,,,,,,,false,,NutrientDense,,"Dairy, Eggs, Gluten, Nightshades, Nuts",images/meals/kefir_turkish_eggs_zucchini_bread.png,"Soft-boiled eggs on kefir-spiked Greek yogurt with spiced butter, dill, mint, and pumpkin seeds — served with toasted zucchini almond bread.","1. Place eggs in a pot and add enough cold water to cover them (do not fill the pot to the top). Cover the pot, bring to a boil, and cook for exactly 12 minutes.
-2. Transfer the eggs to an ice water bath until chilled; peel when ready — this keeps the yolks creamy and makes peeling easy.
-3. Prepare Zucchini Almond Bread (Base) per base recipe instructions. Toast 2 slices.
-4. Warm the butter in a small pan with minced garlic, smoked paprika, and chili flakes until fragrant.
-5. Whisk Greek yogurt, kefir, chopped dill, torn mint leaves, sea salt, and black pepper until smooth. Spread on a plate and drizzle with the warm spiced butter.
-6. Halve the soft-boiled eggs and nestle them on the yogurt. Scatter pumpkin seeds over the top and serve with toasted zucchini almond bread."
-"Baked Salmon with Fermented Chimichurri & Roasted Vegetables",Meal,"Bell Pepper (Red):55 | Broccoli:60 | Carrots:45 | Fermented Chimichurri (Base):25 | Olive Oil (Extra Virgin):5 | Pumpkin:90 | Pumpkin Seeds:7.0233 | Salmon:158 | Zucchini:55",360,36,27,12,,,,,false,,NutrientDense,,"Fish, Nightshades",images/meals/salmon_fermented_chimichurri.png,"Premium baked salmon with fermented chimichurri over roasted pumpkin, vegetables, and broccoli.","Toss pumpkin, bell pepper, zucchini, and carrots with olive oil. Roast at 200°C until tender and lightly caramelised.
-Coat salmon generously with Fermented Chimichurri (Base).
-Bake at 190°C for 12–15 minutes until flaky.
-Steam or roast broccoli until bright green and tender.
-Plate roasted vegetables and broccoli. Top with salmon, pumpkin seeds, and extra chimichurri if desired."
-"Sardine Pate w Zucchini Bread",Meal,"Avocado:3.8 | Capers:3.0435 | Dijon Mustard:8 | Garlic (Raw):3 | Lemon Juice:2.7273 | Purslane:344 | Radish:5 | Roasted Red Bell Peppers (Base):50 | Sardines (Canned):97.8472 | Spring Onion:15 | Zucchini Almond Bread (Base):100",,,,,,,,,false,,NutrientDense,,"Dairy, Eggs, Fish, G6PD Trigger, Gluten, Nightshades, Nuts",images/meals/sardine_pate_zucchini_bread.png,"Sardine pâté with lemon, mustard, radish, and capers on toasted zucchini almond bread — topped with purslane, avocado, and roasted peppers.","1. Drain the sardines. In a food processor, blend with lemon juice, Dijon mustard, grated radish, capers, chopped spring onion, and garlic until smooth.
-2. Prepare Zucchini Almond Bread (Base) per base recipe instructions. Toast 2 slices.
-3. Spread the sardine pâté on the toasted bread.
-4. Top with purslane, sliced avocado, and Roasted Red Bell Peppers (Base). Serve immediately."
-"Kimchi Purslane Side Salad","Side Salad","Bok Choy:56 | Kimchi (Base):30 | Purslane:49.6 | Sesame Seeds:8 | Tahini Miso Garlic Ginger Rice Vinegar Dressing (Base):12",,,,,,,,,false,,NutrientDense,,"Sesame, Soy",images/meals/kimchi_purslane_side_salad.png,"Homemade fermented kimchi with purslane and bok choy, sesame seeds, and tahini-miso dressing.","Toss purslane and bok choy in a bowl.
-Add two spoons of homemade Kimchi (Base).
-Drizzle with Tahini Miso Garlic Ginger Rice Vinegar Dressing (Base) and toss to coat."
-"Classic Garden Salad","Side Salad","Carrots:40 | Classic Lemon Garlic Dressing (Base):15 | Cucumber:60 | Romaine Lettuce:50 | Tomato (Raw):60",350,35,35,7.8,,,,,false,,NutrientDense,,Nightshades,images/meals/classic_garden_salad.png,"A crisp classic garden salad with lettuce, tomato, cucumber, and carrots.","Wash and chop the lettuce, tomato, cucumber, and carrots.
-Toss the vegetables together in a large bowl.
-Serve immediately.
-Serve dressing on the side."
-"Chocolate Orange Brownie",Dessert,"Almond Flour (Base):96 | Baking Powder:1.25 | Cocoa Powder:75 | Eggs (Large):150 | Grass Fed Butter:119.3888 | Medjool Dates:267 | Orange Juice:31 | Orange Zest:12 | Psyllium Husks:336 | Tapioca Starch:30 | Water (Filtered):79",189.59,3.8,18.68,13.19,3940.68,60.29,597.56,169.97,true,16,NutrientDense,Luteal,"Dairy, Eggs, Nuts",images/meals/Chocolate-Orange-Brownie-(N).png,"Rich grain-free cocoa-orange brownie batch (16 small squares) with date-orange sweetener, Dutch cocoa, grass-fed butter, blanched almond flour, tapioca, and psyllium husks for fiber.","Make the citrus & date sweetener. Pour boiling water over the pitted dates and soak 10 minutes. Blend with the orange zest and fresh orange juice until completely smooth.
-Build the rich chocolate base. Melt the grass-fed butter, then whisk in the Dutch-process cocoa until glossy. Beat in the room-temperature eggs one at a time.
-Whisk the grain-free flours. In a bowl, combine the super-fine blanched almond flour, tapioca starch, psyllium husks, baking powder, and fine sea salt.
-Fold the batters together. Stir the date-orange puree into the chocolate base, then fold in the dry ingredients just until no dry streaks remain.
-Bake at 175°C. Spread into a lined tin and bake until a skewer from the center comes out mostly clean with moist crumbs.
-Cool completely, then cut into 16 equal squares. One square is one serving."
-"Fruit Salad Bowl",Dessert,"Apple Green:40 | Blueberries:40 | Fresh Mint:3 | Honey (Raw):1 | Lemon Juice:5 | Pear:3 | Pineapple:40 | Pomegranate Seeds:30 | Strawberries:50",350,35,35,7.8,,,,,false,,NutrientDense,,,images/meals/fruit_salad_bowl.png,"A clean refreshing side array of sliced strawberries","Wash and chop all fruit into bite-size pieces.
-Toss gently with lemon juice and honey if using.
-Chill 15 minutes. Serve cold."
-"Miso Mushroom Soup",Soup,"Ginger (Raw):50 | Miso Paste:100 | Mushrooms:1200 | Psyllium Husks:150 | Spring Onion:100 | Water (Filtered):2000",,,,,1102,51.63,215.69,10.19,true,10,NutrientDense,,Soy,,"Silky miso broth with mushrooms — fermented mineral anchor with psyllium husks for fiber.",
-"Bone Broth Cup",Soup,"Bone Broth (Base):5000 | Psyllium Husks:150",,,,,1050.5,21.5,188.35,20,true,10,NutrientDense,,,images/meals/bone_broth_cup.png,"500 ml cup of defatted house bone broth — long-simmered, gelatin-rich, with psyllium husks for fiber.","1. Heat the full batch of defatted Bone Broth (Base) gently (do not boil hard).
-2. Whisk psyllium husks into the batch (1 tablespoon / 15 g per serving).
-3. Portion 500 ml per cup and serve hot."
 "Hummus Egg Stack",Breakfast,"Black Pepper:1 | Cherry Tomatoes:45 | Creamy Cumin Hummus (Base):100 | Cucumber:40 | Egg:100 | Olive Oil:5 | Spinach (Fresh):45",350,35,35,7.8,,,,,false,,Balanced,,"Beans, Eggs, G6PD Trigger, Nightshades, Sesame",images/meals/hummus_egg_stack.png,"Soft-boiled eggs stacked over sautéed spinach and cherry tomatoes on a bed of creamy house cumin hummus.","1. Prepare Creamy Cumin Hummus (Base) per base recipe instructions. Warm and spread a generous layer in a shallow bowl.
 2. Halve the cherry tomatoes. Sauté spinach and tomatoes in olive oil over medium heat until the spinach is wilted and the tomatoes are softened (3–4 min).
 3. Spoon the spinach and tomato layer over the hummus.
@@ -48,25 +13,37 @@ Serve with steamed broccoli, cucumber pickle, and Garlicky Green Beans (Base) sp
 2. Grill or pan-sear Rosemary Garlic Chicken (Base) until golden then in the oven for 20 minutes exactly, then Rest and slice.
 3. Sauté mushrooms in remaining olive oil until golden. Wilt spinach briefly in the same pan.
 4. Plate roasted sweet potato, spinach, and mushrooms. Top with sliced chicken and serve warm."
+"Baked Salmon with Fermented Chimichurri & Roasted Vegetables",Meal,"Bell Pepper (Red):55 | Broccoli:60 | Carrots:45 | Fermented Chimichurri (Base):25 | Olive Oil (Extra Virgin):5 | Pumpkin:90 | Pumpkin Seeds:7.0233 | Salmon:158 | Zucchini:55",360,36,27,12,,,,,false,,Balanced,,"Fish, Nightshades",images/meals/salmon_fermented_chimichurri.png,"Premium baked salmon with fermented chimichurri over roasted pumpkin, vegetables, and broccoli.","Toss pumpkin, bell pepper, zucchini, and carrots with olive oil. Roast at 200°C until tender and lightly caramelised.
+Coat salmon generously with Fermented Chimichurri (Base).
+Bake at 190°C for 12–15 minutes until flaky.
+Steam or roast broccoli until bright green and tender.
+Plate roasted vegetables and broccoli. Top with salmon, pumpkin seeds, and extra chimichurri if desired."
 "Vegan Butternut Squash, Lentil & Peanut Stew w Brown Rice",Meal,"Basmati Rice (Brown):39.3704 | Bell Pepper (Red):30 | Black Pepper:0.5 | Butternut Squash:60 | Cabbage (Purple):16 | Cherry Tomatoes:10 | Chili Flakes:0.5 | Fresh Coriander:4 | Garlic (Raw):2 | Lentils (Red):37.6816 | Lime Juice:3 | Mushrooms:40 | Olive Oil:5 | Peanut Butter:10 | Peanuts (Crushed):15 | Red Onion:30 | Spinach (Fresh):48 | Tomato (Raw):80 | Vegetable Stock:3 | Water (Filtered):153 | Zucchini:120",360,36,27,12,,,,,false,,Balanced,,"Beans, G6PD Trigger, Nightshades, Nuts",images/meals/vegan_butternut_squash_lentil_peanut_stew_brown_rice.png,"A rich plant-based stew with red lentils, peanut butter, and crushed peanuts over brown rice.","1. Prepare Cooked Brown Basmati Rice (Base) per base recipe instructions; keep warm.
 2. Fry finely chopped onion in olive oil for 5 minutes until soft. Grate in garlic and stir.
 3. Add chopped tomatoes and cook for a couple of minutes. Add water, rinsed red lentils, chopped red pepper, and butternut squash cubes. Bring to the boil, then reduce to a simmer.
 4. Stir in vegetable stock and peanut butter until combined. Add zucchini and simmer for 20 minutes.
 5. Add mushrooms and spinach–cabbage greens. Simmer a couple of minutes until wilted. Season with sea salt, black pepper, and chilli flakes.
 6. Serve stew over cooked brown basmati rice. Top with fresh coriander, cherry tomatoes, crushed peanuts, and lime juice."
-"Marinated Pineapple, Peppers, Red Onion & Cilantro Side Salad","Side Salad","Bell Pepper (Red):55.0968 | Cabbage (Purple):6.1936 | Cashew Nuts:7.8298 | Cucumber:1.3334 | Fresh Coriander:1.3043 | Pineapple:7 | Red Onion:5 | Red Thai Chillies:2 | Rocca:152.48 | Zesty Lime Chili Salad Dressing (Base):3.5",150,1.8,19.5,8.2,,,,,false,,Balanced,,"Nightshades, Sesame, Spicy",images/meals/marinated_pineapple_peppers_salad.png,"A tropical side salad combining pineapple chunks","Dice pineapple, pepper, cucumber, and red onion.
+"Marinated Pineapple, Peppers, Red Onion & Cilantro Side Salad","Side Salad","Bell Pepper (Red):55.0968 | Cabbage (Purple):6.1936 | Cashew Nuts:7.8298 | Cucumber:1.3334 | Fresh Coriander:1.3043 | Pineapple:7 | Red Onion:5 | Red Thai Chillies:2 | Rocca:152.48 | Zesty Lime Chili Salad Dressing (Base):3.5",150,1.8,19.5,8.2,,,,,false,,Balanced,,"Nightshades, Nuts, Spicy",images/meals/marinated_pineapple_peppers_salad.png,"A tropical side salad combining pineapple chunks","Dice pineapple, pepper, cucumber, and red onion.
 Toss with thinly sliced cabbage and fresh coriander.
 Refrigerate 15–30 minutes so the vegetables soften slightly.
 Add chilli just before serving.
 Serve dressing on the side."
-"Carrot Walnut Raisin Spice Cake",Dessert,"Almond Flour (Base):240 | Baking Powder:7.2 | Baking Soda:6.4 | Carrots:304 | Cinnamon:8 | Eggs (Large):152 | Grass Fed Butter:24.4348 | Ground Ginger:2 | Medjool Dates:360 | Nutmeg:0.8 | Pumpkin Puree:120 | Vanilla Pods:4 | Walnuts:160 | Water (Filtered):176",350,35,35,7.8,4037.19,105.54,394.65,260.5,true,8,"Balanced, NutrientDense",,"Dairy, Eggs, Nuts",images/meals/carrot_oatmeal_cake.png,"Moist gluten-free carrot cake batch (8 slices) with house-milled almond flour, dates, pumpkin puree, walnuts, warm spices, grass-fed butter, and vanilla bean.","Create the sweet date paste (15 min). Soak the pitted dates in boiling water for 10 minutes. Blend the dates and all the soaking water in a food processor until entirely smooth. Let it cool slightly so it does not cook the eggs.
-Prep your oven and vanilla bean (5 min). Preheat your oven to 350°F (175°C) and grease a 9×13-inch pan. Split the vanilla bean pod lengthwise and scrape out all the tiny black seeds.
-Whisk the dry base (2 min). In a large bowl, thoroughly whisk together the almond flour, cinnamon, ginger, nutmeg, baking soda, baking powder, and salt.
-Emulsify the wet ingredients (3 min). In a separate bowl, whisk the room-temperature eggs, homemade date paste, pumpkin puree, and scraped vanilla seeds until unified. Slowly drizzle in the melted grass-fed butter while whisking constantly.
-Combine and fold textures (2 min). Pour the wet mixture into the dry flour blend. Stir gently with a spatula just until combined, then fold in the grated carrots and chopped walnuts.
-Bake to perfection (38–42 min). Spread the batter evenly into your pan. Bake for 38 to 42 minutes. Because pumpkin holds excellent moisture, it needs those extra few minutes. Test the center with a toothpick—it should come out clean.
-Cool completely, then cut into 8 equal slices. One slice is one serving."
-"Blueberry Walnut Chia Pudding",Dessert,"Black Seeds:8 | Blueberries:7.09 | Cinnamon:1 | Coconut Chia Pudding (Base):120 | Fresh Mint:1 | Walnuts:5",350,35,35,7.8,,,,,false,,Balanced,,"Nuts, Sesame",images/meals/blueberry_walnut_chia_pudding.png,"Creamy coconut chia pudding with blueberries, walnuts, cinnamon, and mint.","Prepare Coconut Chia Pudding (Base) ahead (chia, coconut milk, and date syrup) and chill until thick.
+"Classic Garden Salad","Side Salad","Carrots:40 | Classic Lemon Garlic Dressing (Base):15 | Cucumber:60 | Romaine Lettuce:50 | Tomato (Raw):60",350,35,35,7.8,,,,,false,,Balanced,,Nightshades,images/meals/classic_garden_salad.png,"A crisp classic garden salad with lettuce, tomato, cucumber, and carrots.","Wash and chop the lettuce, tomato, cucumber, and carrots.
+Toss the vegetables together in a large bowl.
+Serve immediately.
+Serve dressing on the side."
+"Carrot Walnut Raisin Spice Cake",Dessert,"Almond Flour (Base):240 | Baking Powder:7.2 | Baking Soda:6.4 | Carrots:304 | Cinnamon:8 | Eggs (Large):152 | Grass Fed Butter:112 | Ground Ginger:2 | Medjool Dates:360 | Nutmeg:0.8 | Pumpkin Puree:120 | Sea Salt:3.2 | Vanilla Pods:4 | Walnuts:64 | Water (Filtered):176",350,35,35,7.8,4037.2,91.73,381.58,268.92,true,16,Balanced,,"Dairy, Eggs, Nuts",images/meals/carrot_oatmeal_cake.png,"Moist gluten-free carrot cake batch (16 slices) with house-milled almond flour, dates, pumpkin puree, walnuts, warm spices, grass-fed butter, and vanilla bean.","1. Create the sweet date paste (15 min). Soak the pitted dates in boiling water for 10 minutes. Blend the dates and all the soaking water in a food processor until entirely smooth. Let it cool slightly so it does not cook the eggs.
+2. Prep your oven and vanilla bean (5 min). Preheat your oven to 350°F (175°C) and grease a 9×13-inch pan. Split the vanilla bean pod lengthwise and scrape out all the tiny black seeds.
+3. Whisk the dry base (2 min). In a large bowl, thoroughly whisk together the almond flour, cinnamon, ginger, nutmeg, baking soda, baking powder, and salt.
+4. Emulsify the wet ingredients (3 min). In a separate bowl, whisk the room-temperature eggs, homemade date paste, pumpkin puree, and scraped vanilla seeds until unified. Slowly drizzle in the melted grass-fed butter while whisking constantly.
+5. Combine and fold textures (2 min). Pour the wet mixture into the dry flour blend. Stir gently with a spatula just until combined, then fold in the grated carrots and chopped walnuts.
+6. Bake to perfection (38–42 min). Spread the batter evenly into your pan. Bake for 38 to 42 minutes. Because pumpkin holds excellent moisture, it needs those extra few minutes. Test the center with a toothpick—it should come out clean.
+7. Cool completely, then cut into 16 equal slices. One slice is one serving."
+"Fruit Salad Bowl",Dessert,"Apple Green:40 | Blueberries:40 | Fresh Mint:3 | Honey (Raw):1 | Lemon Juice:5 | Pear:3 | Pineapple:40 | Pomegranate Seeds:30 | Strawberries:50",350,35,35,7.8,,,,,false,,Balanced,,,images/meals/fruit_salad_bowl.png,"A clean refreshing side array of sliced strawberries","Wash and chop all fruit into bite-size pieces.
+Toss gently with lemon juice and honey if using.
+Chill 15 minutes. Serve cold."
+"Blueberry Walnut Chia Pudding",Dessert,"Black Seeds:8 | Blueberries:7.09 | Cinnamon:1 | Coconut Chia Pudding (Base):120 | Fresh Mint:1 | Walnuts:5",350,35,35,7.8,,,,,false,,Balanced,,Nuts,images/meals/blueberry_walnut_chia_pudding.png,"Creamy coconut chia pudding with blueberries, walnuts, cinnamon, and mint.","Prepare Coconut Chia Pudding (Base) ahead (chia, coconut milk, and date syrup) and chill until thick.
 Spoon the set pudding into a bowl or jar.
 Fold in blueberries, walnuts, cinnamon, and mint.
 Serve chilled."
@@ -75,7 +52,30 @@ Serve chilled."
 3. Pour in stock and coconut milk. Simmer 15 minutes.
 4. Blend partially for a creamy texture, or leave chunky.
 5. Whisk in psyllium husks (1 tablespoon / 15 g per serving). Reheat gently and portion."
-"Mediterranean Omelet",Breakfast,"Avocado:7.55 | Basil:5 | Bell Pepper (Red):18 | Black Pepper:1 | Egg:124 | Olive Oil (Extra Virgin):6 | Parsley:10 | Shallots:10 | Spinach:30 | Thyme (Fresh):2 | Tomato (Raw):20",,,,,,,,,false,,,,Fish,,"Earthy and rich in B-vitamins for morning mental clarity.","Beat eggs in a bowl.
+"Kefir Turkish Eggs w Zucchini Bread",Breakfast,"Black Pepper:1 | Chili Flakes:2 | Dill (Fresh):5 | Egg:166 | Fresh Mint:4 | Garlic (Raw):1.5 | Grass Fed Butter:3.7629 | Greek Yogurt:12.6102 | Kefir:10.3175 | Pumpkin Seeds:33.6908 | Sea Salt:1 | Smoked Paprika:1 | Zucchini Almond Bread (Base):100",,,,,,,,,false,,NutrientDense,,"Dairy, Eggs, Gluten, Nightshades, Nuts",images/meals/kefir_turkish_eggs_zucchini_bread.png,"Soft-boiled eggs on kefir-spiked Greek yogurt with spiced butter, dill, mint, and pumpkin seeds — served with toasted zucchini almond bread.","1. Place eggs in a pot and add enough cold water to cover them (do not fill the pot to the top). Cover the pot, bring to a boil, and cook for exactly 12 minutes.
+2. Transfer the eggs to an ice water bath until chilled; peel when ready — this keeps the yolks creamy and makes peeling easy.
+3. Prepare Zucchini Almond Bread (Base) per base recipe instructions. Toast 2 slices.
+4. Warm the butter in a small pan with minced garlic, smoked paprika, and chili flakes until fragrant.
+5. Whisk Greek yogurt, kefir, chopped dill, torn mint leaves, sea salt, and black pepper until smooth. Spread on a plate and drizzle with the warm spiced butter.
+6. Halve the soft-boiled eggs and nestle them on the yogurt. Scatter pumpkin seeds over the top and serve with toasted zucchini almond bread."
+"Sardine Pate w Zucchini Bread",Meal,"Avocado:3.8 | Capers:3.0435 | Dijon Mustard:8 | Garlic (Raw):3 | Lemon Juice:2.7273 | Purslane:344 | Radish:5 | Roasted Red Bell Peppers (Base):50 | Sardines (Canned):97.8472 | Spring Onion:15 | Zucchini Almond Bread (Base):100",,,,,,,,,false,,NutrientDense,,"Dairy, Eggs, Fish, G6PD Trigger, Gluten, Nightshades, Nuts",images/meals/sardine_pate_zucchini_bread.png,"Sardine pâté with lemon, mustard, radish, and capers on toasted zucchini almond bread — topped with purslane, avocado, and roasted peppers.","1. Drain the sardines. In a food processor, blend with lemon juice, Dijon mustard, grated radish, capers, chopped spring onion, and garlic until smooth.
+2. Prepare Zucchini Almond Bread (Base) per base recipe instructions. Toast 2 slices.
+3. Spread the sardine pâté on the toasted bread.
+4. Top with purslane, sliced avocado, and Roasted Red Bell Peppers (Base). Serve immediately."
+"Kimchi Purslane Side Salad","Side Salad","Bok Choy:56 | Kimchi (Base):30 | Purslane:49.6 | Sesame Seeds:8 | Tahini Miso Garlic Ginger Rice Vinegar Dressing (Base):12",,,,,,,,,false,,NutrientDense,,"Sesame, Soy",images/meals/kimchi_purslane_side_salad.png,"Homemade fermented kimchi with purslane and bok choy, sesame seeds, and tahini-miso dressing.","Toss purslane and bok choy in a bowl.
+Add two spoons of homemade Kimchi (Base).
+Drizzle with Tahini Miso Garlic Ginger Rice Vinegar Dressing (Base) and toss to coat."
+"Chocolate Orange Brownie",Dessert,"Almond Flour (Base):96 | Baking Powder:1.25 | Cocoa Powder:75 | Eggs (Large):150 | Grass Fed Butter:119.3888 | Medjool Dates:267 | Orange Juice:31 | Orange Zest:12 | Psyllium Husks:336 | Tapioca Starch:30 | Water (Filtered):79",189.59,3.8,18.68,13.19,3940.68,60.29,597.56,169.97,true,16,NutrientDense,Luteal,"Dairy, Eggs, Nuts",images/meals/Chocolate-Orange-Brownie-(N).png,"Rich grain-free cocoa-orange brownie batch (16 small squares) with date-orange sweetener, Dutch cocoa, grass-fed butter, blanched almond flour, tapioca, and psyllium husks for fiber.","Make the citrus & date sweetener. Pour boiling water over the pitted dates and soak 10 minutes. Blend with the orange zest and fresh orange juice until completely smooth.
+Build the rich chocolate base. Melt the grass-fed butter, then whisk in the Dutch-process cocoa until glossy. Beat in the room-temperature eggs one at a time.
+Whisk the grain-free flours. In a bowl, combine the super-fine blanched almond flour, tapioca starch, psyllium husks, baking powder, and fine sea salt.
+Fold the batters together. Stir the date-orange puree into the chocolate base, then fold in the dry ingredients just until no dry streaks remain.
+Bake at 175°C. Spread into a lined tin and bake until a skewer from the center comes out mostly clean with moist crumbs.
+Cool completely, then cut into 16 equal squares. One square is one serving."
+"Miso Mushroom Soup",Soup,"Ginger (Raw):50 | Miso Paste:100 | Mushrooms:1200 | Psyllium Husks:150 | Spring Onion:100 | Water (Filtered):2000",,,,,1102,51.63,215.69,10.19,true,10,NutrientDense,,Soy,,"Silky miso broth with mushrooms — fermented mineral anchor with psyllium husks for fiber.",
+"Bone Broth Cup",Soup,"Bone Broth (Base):5000 | Psyllium Husks:150",,,,,1050.5,21.5,188.35,20,true,10,NutrientDense,,,images/meals/bone_broth_cup.png,"500 ml cup of defatted house bone broth — long-simmered, gelatin-rich, with psyllium husks for fiber.","1. Heat the full batch of defatted Bone Broth (Base) gently (do not boil hard).
+2. Whisk psyllium husks into the batch (1 tablespoon / 15 g per serving).
+3. Portion 500 ml per cup and serve hot."
+"Mediterranean Omelet",Breakfast,"Avocado:7.55 | Basil:5 | Bell Pepper (Red):18 | Black Pepper:1 | Egg:124 | Olive Oil (Extra Virgin):6 | Parsley:10 | Shallots:10 | Spinach:30 | Thyme (Fresh):2 | Tomato (Raw):20",,,,,,,,,false,,,,"Eggs, Nightshades",,"Earthy and rich in B-vitamins for morning mental clarity.","Beat eggs in a bowl.
 Sauté diced pepper, tomato, and shallot in olive oil for 3 minutes.
 Pour in eggs. Cook over medium heat until almost set.
 Add olives and avocado on one half. Fold omelet in half.
@@ -95,7 +95,7 @@ Finish with fresh herbs. Serve warm."
 Spoon the set pudding into a bowl or jar.
 Fold in blueberries, walnuts, cinnamon, and mint.
 Serve chilled."
-"Cacao & Almond Chia",Dessert,"Almond Butter:2.25 | Almond whole:5 | Cocoa Powder:2 | Coconut Chia Pudding (Base):120",150,4,15,9,,,,,false,,,,"Nuts, Sesame",images/meals/cacao_almond_chia.png,"Rich cacao coconut chia pudding swirled with almond butter and almonds.","Prepare Coconut Chia Pudding (Base) ahead (chia, coconut milk, and date syrup) and chill until thick.
+"Cacao & Almond Chia",Dessert,"Almond Butter:2.25 | Almond whole:5 | Cocoa Powder:2 | Coconut Chia Pudding (Base):120",150,4,15,9,,,,,false,,,,Nuts,images/meals/cacao_almond_chia.png,"Rich cacao coconut chia pudding swirled with almond butter and almonds.","Prepare Coconut Chia Pudding (Base) ahead (chia, coconut milk, and date syrup) and chill until thick.
 Spoon the set pudding into a bowl or jar.
 Swirl in almond butter and cocoa powder. Top with chopped almonds.
 Serve chilled."
@@ -124,7 +124,7 @@ Simmer lentils with aromatics and stock until tender.
 Combine roasted cauliflower with lentils. Season with smoked paprika.
 Warm quinoa flatbread. Drizzle tahini over stew.
 Serve hot."
-"Salted Tahini Caramel Chocolate Bar",Dessert,"Almond Flour (Base):144 | Cocoa Powder:19.0456 | Coconut Oil:3.882 | Date Syrup:1.1997 | Tahini:360 | Vanilla Pods:1.6",300,6,32,16,3060.85,95.47,119.7,272.17,true,16,"Balanced, NutrientDense","Ovulatory | Luteal","Nuts, Sesame",meals/U0uHuLR58OAn2jSfxBkKq39aDXVbMafkUnLcvp1z.png,"Three-layer 8x8 no-bake bar (16 squares): almond shortbread, salted tahini-date caramel, and dark cocoa topping.","1. Heat oven to 175°C. Line an 8x8 inch pan with parchment paper.
+"Salted Tahini Caramel Chocolate Bar",Dessert,"Almond Flour (Base):144 | Cocoa Powder:60.8 | Coconut Oil:108.8 | Date Syrup:144 | Sea Salt:9.6 | Tahini:120 | Vanilla Pods:1.6",300,6,32,16,3060.85,64.29,200.09,253.83,true,16,"Balanced, NutrientDense","Ovulatory | Luteal","Nuts, Sesame",meals/U0uHuLR58OAn2jSfxBkKq39aDXVbMafkUnLcvp1z.png,"Three-layer 8x8 no-bake bar (16 squares): almond shortbread, salted tahini-date caramel, and dark cocoa topping.","1. Heat oven to 175°C. Line an 8x8 inch pan with parchment paper.
 2. Mix almond flour, 3 tablespoons coconut oil, 2 tablespoons date syrup, vanilla, and salt into a crumb. Press evenly into the pan and bake 10 minutes. Cool 10 minutes.
 3. Warm tahini, date syrup, coconut oil, vanilla, and sea salt in a saucepan over medium-low heat for about 2 minutes, stirring often. Pour over the crust.
 4. Refrigerate 30 to 60 minutes until the caramel layer sets.
@@ -155,7 +155,7 @@ Cube sweet potato and zucchini. Toss with oil. Roast at 200°C for 25 minutes.
 Grill or pan-sear chicken until golden then in the oven for 20 minutes exactly, then Rest and slice.
 Rest, slice, and serve over roasted vegetables.
 Garnish with fresh chopped mint."
-"Grilled Beef Steak Ratatouille & Saffron rice",Meal,"Beef Sirloin:150 | Bell Pepper (Red):20 | Black Pepper:1 | Chard:30 | Eggplant:40 | Fresh Basil:5 | Garlic (Raw):3 | Lemon Juice:10 | Olive Oil (Extra Virgin):10 | Parsley:10 | Saffron Rice (Base):92 | Tomato (Raw):50 | Zucchini:40",360,36,27,12,,,,,false,,Balanced,,Nightshades,images/meals/grilled_beef_steak_ratatouille.png,"Seared lean sirloin steak over slow-simmered ratatouille and aromatic golden saffron basmati rice.","Prepare Saffron Rice (Base) per base recipe instructions; keep warm.
+"Grilled Beef Steak Ratatouille & Saffron rice",Meal,"Beef Sirloin:150 | Bell Pepper (Red):20 | Black Pepper:1 | Chard:30 | Eggplant:40 | Fresh Basil:5 | Garlic (Raw):3 | Lemon Juice:10 | Olive Oil (Extra Virgin):10 | Parsley:10 | Saffron Rice (Base):92 | Tomato (Raw):50 | Zucchini:40",360,36,27,12,,,,,false,,"Balanced, NutrientDense",,Nightshades,images/meals/grilled_beef_steak_ratatouille.png,"Seared lean sirloin steak over slow-simmered ratatouille and aromatic golden saffron basmati rice.","Prepare Saffron Rice (Base) per base recipe instructions; keep warm.
 Sauté diced eggplant, zucchini, pepper, and tomato with garlic in olive oil until soft (12–15 min). Stir in basil, chard, and parsley.
 Season steak with black pepper. Sear in a hot pan 3–4 minutes per side for medium-rare (adjust to taste).
 Rest steak 5 minutes. Slice against the grain.
@@ -175,7 +175,7 @@ Halve or wedge the tomatoes; slice cucumber and thinly slice red onion.
 Roughly chop the parsley and mint; tear rocca into bite-sized pieces.
 Combine tomatoes, cucumber, onion, rocca, herbs, and pomegranate seeds in a bowl.
 Serve at room temperature with dressing on the side."
-"Apple Pie Balls",Dessert,"Almond Butter:5 | Almond Flour:7 | Apple Green:10 | Cinnamon:1 | Dates (Khelas):16 | Walnuts:4",150,3.6,17.2,9,,,,,false,,Balanced,,Nuts,images/meals/apple_pie_balls.png,"No-bake apple-cinnamon balls with khelas dates, almond flour, walnuts, and almond butter — 3 small bites per serving (~150 kcal).","1. Pulse khelas dates, almond flour, chopped apple, walnuts, cinnamon, and almond butter in a food processor until the mixture holds together.
+"Apple Pie Balls",Dessert,"Almond Butter:5 | Almond Flour:7 | Apple Green:10 | Cinnamon:1 | Dates (Khelas):16 | Walnuts:4",150,3.6,17.2,9,,,,,false,,"Balanced, NutrientDense",,Nuts,images/meals/apple_pie_balls.png,"No-bake apple-cinnamon balls with khelas dates, almond flour, walnuts, and almond butter — 3 small bites per serving (~150 kcal).","1. Pulse khelas dates, almond flour, chopped apple, walnuts, cinnamon, and almond butter in a food processor until the mixture holds together.
 2. Roll into 3 small bite-size balls (~14g each). One serving is all 3 balls.
 3. Chill 30 minutes until firm. Serve cold."
 "Garlic Lemon Salmon, Dill Tarragon Rice & Spicy Green Chilli Sauce",Meal,"Black Pepper:1 | Dill (Fresh):15 | Fresh Parsley:3 | Garlic (Raw):20 | Lemon Juice:25 | Lemon Zest:4 | Olive Oil (Extra Virgin):12 | Oregano:2 | Paprika:2 | Roasted Mixed Vegetables (Base):100 | Salmon (Raw):150 | Spicy Green Chilli Sauce (Base):20 | Steamed Basmati Rice (Base):50 | Tarragon:2",350,35,35,7.7,,,,,false,,Balanced,,"Fish, Nightshades, Spicy",images/meals/garlic_lemon_salmon_dill_tarragon_rice.png,"Tender garlic-lemon salmon over fluffy dill-tarragon basmati rice with roasted mixed vegetables and spicy green chilli sauce on the side.","Prepare Steamed Basmati Rice (Base) per base recipe instructions; fluff and fold in chopped fresh dill and dried tarragon.
@@ -195,7 +195,7 @@ Grill pepper strips and onion until charred and soft.
 Massage kale until tender.
 Toss quinoa, kale, and vegetables. Top with chicken.
 Serve dressing on the side."
-"Mango Pumpkin Seed Chia Pudding",Dessert,"Coconut Chia Pudding (Base):120 | Mango:35 | Pumpkin Seeds:5",350,35,35,7.8,,,,,false,,Balanced,,Sesame,images/meals/mango_pumpkin_seed_chia_pudding.png,"Tropical coconut chia pudding topped with fresh mango and pumpkin seeds.","Prepare Coconut Chia Pudding (Base) ahead (chia, coconut milk, and date syrup) and chill until thick.
+"Mango Pumpkin Seed Chia Pudding",Dessert,"Coconut Chia Pudding (Base):120 | Mango:35 | Pumpkin Seeds:5",350,35,35,7.8,,,,,false,,Balanced,,,images/meals/mango_pumpkin_seed_chia_pudding.png,"Tropical coconut chia pudding topped with fresh mango and pumpkin seeds.","Prepare Coconut Chia Pudding (Base) ahead (chia, coconut milk, and date syrup) and chill until thick.
 Spoon the set pudding into a bowl or jar.
 Top with diced mango and pumpkin seeds.
 Serve chilled."
@@ -229,7 +229,7 @@ Serve dressing on the side."
 "Pan Seared Hamour",Meal,"Cumin Seeds:1 | Garlic (Raw):3 | Hamour Fillet:150 | Lemon Juice:10 | Olive Oil:3 | Roasted Mixed Vegetables (Base):100",350,35,35,7.8,,,,,false,,Balanced,,"Fish, Nightshades",images/meals/pan_seared_hamour.png,"Pan-seared hamour with cumin and garlic, served over steamed basmati rice and roasted mixed vegetables.","Prepare Roasted Mixed Vegetables (Base) and Steamed Basmati Rice (Base) per base recipe instructions.
 Season hamour with cumin, garlic, lemon juice, and olive oil. Pan-sear until golden and cooked through.
 Serve hamour over rice with roasted mixed vegetables on the side."
-"Persian Herb Beef Stew",Meal,"Basmati Rice (White):50 | Beef Chuck Roast:150 | Cannellini Beans:70 | Chard:50 | Dill (Fresh):50 | Fresh Coriander:50 | Lemon Juice:15 | Olive Oil:10 | Spinach (Fresh):50 | White Onion:28",360,36,27,12,,,,,false,,,,"Beans, G6PD Trigger",images/meals/persian_herb_beef_stew.png,"A fragrant traditional stew of slow-simmered beef chuck packed with minced cilantro","Brown beef cubes in olive oil. Set aside.
+"Persian Herb Beef Stew",Meal,"Basmati Rice (White):50 | Beef Chuck Roast:150 | Cannellini Beans:70 | Chard:50 | Dill (Fresh):50 | Fresh Coriander:50 | Lemon Juice:15 | Olive Oil:10 | Spinach (Fresh):50 | White Onion:28",360,36,27,12,,,,,false,,NutrientDense,,"Beans, G6PD Trigger",images/meals/persian_herb_beef_stew.png,"A fragrant traditional stew of slow-simmered beef chuck packed with minced cilantro","Brown beef cubes in olive oil. Set aside.
 Sauté onion until golden. Return beef with water to cover.
 Simmer low 60–90 minutes until beef is tender.
 Add beans, herbs, and spinach in the last 10 minutes.
@@ -247,21 +247,22 @@ Toss rocca, purslane, cucumber, and cherry tomatoes in a bowl.
 Top with chicken and walnuts.
 Serve dressing on the side."
 "Salmon Cashew Cream & Roasted Vegetabls",Meal,"Garlic:2 | Lemon Juice:5 | Roasted Mixed Vegetables (Base):100 | Salmon (Raw):150",350,35,35,7.8,,,,,false,,Balanced,,"Fish, Nightshades",images/meals/salmon_cashew_cream.png,"A premium pan-roasted salmon fillet smothered in a rich","dairy-free garlic cashew cream reduction"
-"Turmeric Chicken Kale Salad",Meal,"Carrots:40 | Cherry Tomatoes:3.8888 | Chicken Breast:150 | Cucumber:2.6666 | Garlic (Raw):2 | Kale:106 | Pomegranate Seeds:5.253 | Red Onion:8 | Turmeric Lemon Dressing (Base):14",350,35,35,7.8,,,,,false,1,,,Nightshades,images/meals/turmeric_chicken_kale_salad.png,"Lean chicken breast seasoned with golden turmeric and garlic","Rub chicken with half the turmeric dressing as a marinade. Grill or pan-sear chicken until golden then in the oven for 20 minutes exactly, then Rest and slice.
-Massage kale until tender.
-Add cucumber, carrots, tomatoes, onion, and pomegranate. Top with warm chicken.
-Serve remaining dressing on the side."
+"Turmeric Chicken Kale Salad",Meal,"Avocado:40 | Broccoli:60 | Fresh Coriander:8 | Kale:80 | Pumpkin Seeds:10 | Sesame Seeds:6 | Turmeric Chicken (Base):150 | Turmeric Lemon Dressing (Base):14",350,35,35,7.8,,,,,false,1,,,Sesame,images/meals/turmeric_chicken_kale_salad.png,"Golden turmeric chicken over massaged kale with avocado, broccoli, seeds, and turmeric lemon dressing.","Grill or pan-sear Turmeric Chicken (Base) until golden then in the oven for 20 minutes exactly, then Rest and slice.
+Massage kale until tender; lightly steam or blanch broccoli until bright green.
+Toss kale, broccoli, avocado, coriander, pumpkin seeds, and sesame seeds.
+Top with warm turmeric chicken.
+Serve dressing on the side."
 "Baked Eggplant Lentils Hummus",Meal,"Creamy Cumin Hummus (Base):80 | Eggplant:150 | French Lentils:80 | Olive Oil:5 | Roasted Cherry Tomato (Base):30 | Rocca:20 | Sea Salt:1 | Wild Rice (Cooked):120 | cumin powder:5",350,35,35,7.8,,,,,false,,,,"Beans, G6PD Trigger, Nightshades, Sesame",images/meals/baked_eggplant_lentils_hummus.png,"Tender baked globe eggplant slices paired with seasoned fiber-rich brown lentils over a bed of silky house hummus.","Preheat oven to 200°C and line a tray with parchment paper.
 Slice eggplant into uniform rounds, brush with olive oil, season with salt, and bake for 20-25 minutes until tender.
 Warm the pre-cooked brown lentils with a touch of cumin and sea salt.
 Spread the Creamy Cumin Hummus base evenly across the bottom of the container shell.
 Top neatly with the baked eggplant rounds and layer the seasoned lentils over the center."
-"Beef Bibimbap",Meal,"Beef Ground:150 | Bok Choy:50 | Carrots:40 | Chard:15 | Egg:55 | Garlic (Raw):3 | Quinoa (White):30 | Sesame Seeds:12 | Spring Onion:18 | Zucchini:40",360,36,27,12,,,,,false,,Balanced,,"Eggs, Sesame",images/meals/beef_bibimbap.png,"A clean macronutrient-balanced Korean-style bowl with seasoned lean ground beef","Cook quinoa and keep warm.
+"Beef Bibimbap",Meal,"Beef Ground:150 | Bok Choy:50 | Carrots:40 | Chard:15 | Egg:55 | Garlic (Raw):3 | Quinoa (White):30 | Sesame Seeds:12 | Spring Onion:18 | Zucchini:40",360,36,27,12,,,,,false,,"Balanced, NutrientDense",,"Eggs, Sesame",images/meals/beef_bibimbap.png,"A clean macronutrient-balanced Korean-style bowl with seasoned lean ground beef","Cook quinoa and keep warm.
 Brown ground beef with garlic in a pan. Season lightly.
 Sauté spinach, carrots, and zucchini separately until tender.
 Fry eggs sunny-side up.
 Layer quinoa, vegetables, and beef in a bowl. Top with egg and sesame seeds."
-"Beef Shawarma Platter",Meal,"Beef Chuck Roast:150 | Cucumber:50 | Lemon Juice:5 | Shawarma Spice Blend:3 | Tahini:10 | Tomato (Raw):50 | White Onion:40",350,35,35,7.8,,,,,false,1,,,"Nightshades, Sesame",images/meals/beef_shawarma_platter.png,"Shredded slow-cooked beef chuck infused with traditional shawarma aromatics","served alongside a crisp cucumber-tomato salad and tahini drizzle."
+"Beef Shawarma Platter",Meal,"Beef Chuck Roast:150 | Cucumber:50 | Lemon Juice:5 | Shawarma Spice Blend:3 | Tahini:10 | Tomato (Raw):50 | White Onion:40",350,35,35,7.8,,,,,false,1,NutrientDense,,"Nightshades, Sesame",images/meals/beef_shawarma_platter.png,"Shredded slow-cooked beef chuck infused with traditional shawarma aromatics","served alongside a crisp cucumber-tomato salad and tahini drizzle."
 "Beef White Bean Stew",Meal,"Beef Chuck Roast:150 | Carrots:30 | Celery:20 | Cooked Cannellini Beans (Base):110 | Dill (Fresh):8 | Fresh Coriander:10 | Garlic:2 | Marinara Sauce (Base):80 | Olive Oil:2 | Parsley:10",350,35,35,7.8,,,,,false,1,,,"Beans, G6PD Trigger, Nightshades",images/meals/beef_white_bean_stew.png,"A rich, thick slow-simmered stew of tender beef chuck, cooked cannellini beans, carrots, celery, garlic, dill, coriander, and parsley in a savory marinara base.","Prepare Cooked Cannellini Beans (Base) per base recipe instructions; set aside.
 Sear cubed beef chuck roast in olive oil until deeply browned; transfer to a heavy pot.
 Sauté diced carrots, celery, and minced garlic until softened.
@@ -277,8 +278,8 @@ Drizzle with tamari. Serve with garlicky green beans."
 3. Make small wells in the sauce. Crack eggs into the wells.
 4. Cover and cook on low until whites are set (5–7 min).
 5. Serve straight from the pan."
-"Eggplant Beef Stew Quinoa Bread",Meal,"Beef Chuck Roast:150 | Eggplant:120 | Garlic:2 | Marinara Sauce (Base):80 | Olive Oil:2 | Quinoa Bread (Base):45 | White Onion:30",350,35,35,7.8,,,,,false,1,,,Nightshades,images/meals/eggplant_beef_stew_quinoa_bread.png,"A rustic slow-cooked stew of tender cubed beef chuck and melting globe eggplants in a savory tomato reduction","served with a dense slice of quinoa bread."
-"Sumac Beef Baba Ghanoush",Meal,"Beef Ground Lean:150 | Eggplant:150 | Garlic:2 | Lemon Juice:10 | Olive Oil:3 | Sumac:3 | Tahini:10 | White Onion:20",350,35,35,7.8,,,,,false,1,,,"Nightshades, Sesame",images/meals/sumac_beef_baba_ghanoush.png,"Pan-seared ground beef seasoned with tart sumac over a bed of smoky","roasted globe eggplant dip mixed with creamy tahini and garlic."
+"Eggplant Beef Stew Quinoa Bread",Meal,"Beef Chuck Roast:150 | Eggplant:120 | Garlic:2 | Marinara Sauce (Base):80 | Olive Oil:2 | Quinoa Bread (Base):45 | White Onion:30",350,35,35,7.8,,,,,false,1,NutrientDense,,Nightshades,images/meals/eggplant_beef_stew_quinoa_bread.png,"A rustic slow-cooked stew of tender cubed beef chuck and melting globe eggplants in a savory tomato reduction","served with a dense slice of quinoa bread."
+"Sumac Beef Baba Ghanoush",Meal,"Beef Ground Lean:150 | Eggplant:150 | Garlic:2 | Lemon Juice:10 | Olive Oil:3 | Sumac:3 | Tahini:10 | White Onion:20",350,35,35,7.8,,,,,false,1,NutrientDense,,"Nightshades, Sesame",images/meals/sumac_beef_baba_ghanoush.png,"Pan-seared ground beef seasoned with tart sumac over a bed of smoky","roasted globe eggplant dip mixed with creamy tahini and garlic."
 "Thai Rainbow Peanut Salad","Side Salad","Bell Pepper (Red):8.8388 | Cabbage (Purple):2.097 | Carrots:112 | Cucumber:18.1333 | Fresh Coriander:5 | Peanut Butter Dressing (Base):25 | Peanuts (Crushed):8 | Red Onion:3.8",350,35,35,7.8,,,,,false,1,,,"Nightshades, Nuts, Sesame, Soy",images/meals/thai_rainbow_peanut_salad.png,"A colorful crunchy crunch bowl of shredded purple cabbage","Shred cabbage and julienne carrots, cucumber, and red onion.
 Toss vegetables with coriander and crushed peanuts.
 Serve chilled.
@@ -323,15 +324,15 @@ Serve dressing on the side."
 4. Fold in the minced herbs, spring onion, chopped walnuts, and barberries (zereshk).
 5. Divide between muffin cups, filling about three-quarters full. Bake 18–22 minutes until set in the centre.
 6. Cool 5 minutes before removing. Serve warm or at room temperature."
-"Strawberry Almond Chia Pudding",Dessert,"Almond whole:4 | Coconut Chia Pudding (Base):120 | Strawberries:40",350,35,35,7.8,,,,,false,1,,,"Nuts, Sesame",images/meals/strawberry_almond_chia_pudding.png,"Coconut chia pudding with fresh strawberries and almonds.","Prepare Coconut Chia Pudding (Base) ahead (chia, coconut milk, and date syrup) and chill until thick.
+"Strawberry Almond Chia Pudding",Dessert,"Almond whole:4 | Coconut Chia Pudding (Base):120 | Strawberries:40",350,35,35,7.8,,,,,false,1,,,Nuts,images/meals/strawberry_almond_chia_pudding.png,"Coconut chia pudding with fresh strawberries and almonds.","Prepare Coconut Chia Pudding (Base) ahead (chia, coconut milk, and date syrup) and chill until thick.
 Spoon the set pudding into a bowl or jar.
 Fold in sliced strawberries and almonds.
 Serve chilled."
-"Peach Pecan Chia Pudding",Dessert,"Cinnamon:0.5 | Coconut Chia Pudding (Base):120 | Fresh Mint:2 | Peach:35 | Pecans:5",350,35,35,7.8,,,,,false,1,,,"Nuts, Sesame",images/meals/peach_pecan_chia_pudding.png,"Coconut chia pudding with sweet peach, pecans, cinnamon, and mint.","Prepare Coconut Chia Pudding (Base) ahead (chia, coconut milk, and date syrup) and chill until thick.
+"Peach Pecan Chia Pudding",Dessert,"Cinnamon:0.5 | Coconut Chia Pudding (Base):120 | Fresh Mint:2 | Peach:35 | Pecans:5",350,35,35,7.8,,,,,false,1,,,Nuts,images/meals/peach_pecan_chia_pudding.png,"Coconut chia pudding with sweet peach, pecans, cinnamon, and mint.","Prepare Coconut Chia Pudding (Base) ahead (chia, coconut milk, and date syrup) and chill until thick.
 Spoon the set pudding into a bowl or jar.
 Top with sliced peach, pecans, cinnamon, and mint.
 Serve chilled."
-"Raspberry Cacao Chia Pudding",Dessert,"Cacao Nibs:4 | Cocoa Powder:2 | Coconut Chia Pudding (Base):120 | Pumpkin Seeds:4 | Raspberries:35",350,35,35,7.8,,,,,false,1,,,Sesame,images/meals/raspberry_cacao_chia_pudding.png,"Dark cacao coconut chia pudding with raspberries and cacao nibs.","Prepare Coconut Chia Pudding (Base) ahead (chia, coconut milk, and date syrup) and chill until thick.
+"Raspberry Cacao Chia Pudding",Dessert,"Cacao Nibs:4 | Cocoa Powder:2 | Coconut Chia Pudding (Base):120 | Pumpkin Seeds:4 | Raspberries:35",350,35,35,7.8,,,,,false,1,,,,images/meals/raspberry_cacao_chia_pudding.png,"Dark cacao coconut chia pudding with raspberries and cacao nibs.","Prepare Coconut Chia Pudding (Base) ahead (chia, coconut milk, and date syrup) and chill until thick.
 Spoon the set pudding into a bowl or jar.
 Fold in raspberries, cacao nibs, and cocoa powder.
 Serve chilled."
@@ -353,7 +354,7 @@ Serve hummus belaham with beet salad and quinoa bread."
 "Moroccan Meatballs",Meal,"Beef Ground Lean:150 | Garlic (Raw):3 | Marinara Sauce (Base):100 | Olive Oil:2 | Ras El Hanout (Base):3 | White Onion:30",350,35,35,7.8,,,,,false,1,,,Nightshades,images/meals/moroccan_meatballs.png,"Hand-rolled lean ground beef meatballs spiced with warm North African cumin","Mix ground beef with garlic, grated onion, and Ras El Hanout (Base); roll into meatballs.
 Brown meatballs in olive oil until golden all over. Set aside.
 Prepare Marinara Sauce (Base) per base recipe instructions. Return meatballs to the sauce and simmer until cooked through."
-"Okra Beef Curry",Meal,"Beef Chuck Roast:150 | Coriander Seeds:2 | Garlic:2 | Marinara Sauce (Base):60 | Okra:120 | Olive Oil:2 | White Onion:35",350,35,35,7.8,,,,,false,,,,Nightshades,images/meals/okra_beef_curry.png,"A rich traditional stew uniting tender slow-cooked beef chuck with whole fresh okra pods in an aromatic garlic-ginger tomato curry base.","Sear cubed beef chuck roast in a hot pan with a drop of olive oil until deeply browned; transfer to slow cooker.
+"Okra Beef Curry",Meal,"Beef Chuck Roast:150 | Coriander Seeds:2 | Garlic:2 | Marinara Sauce (Base):60 | Okra:120 | Olive Oil:2 | White Onion:35",350,35,35,7.8,,,,,false,,NutrientDense,,Nightshades,images/meals/okra_beef_curry.png,"A rich traditional stew uniting tender slow-cooked beef chuck with whole fresh okra pods in an aromatic garlic-ginger tomato curry base.","Sear cubed beef chuck roast in a hot pan with a drop of olive oil until deeply browned; transfer to slow cooker.
 Sauté chopped white onion, minced garlic, and grated ginger with curry spices until fragrant; add to slow cooker.
 Add your house tomato sauce base and a splash of water; cover and cook on low for 6 to 8 hours until beef fibers easily separate.
 Gently fold in clean, trimmed whole okra pods during the final 45 minutes of cooking to ensure they soften without bursting.
@@ -466,7 +467,7 @@ Add sliced red pepper and cook 2–3 minutes. Stir in minced garlic and oregano.
 Add chicken liver pieces. Sear 3 minutes per side until just cooked through.
 Finish with pomegranate molasses, sea salt, black pepper, and a pinch of nutmeg.
 Serve with warm quinoa flatbread, rocca, and sliced raw tomato."
-"Banana Blueberry Balls",Dessert,"Almond Butter:7 | Almond Flour:16 | Banana:11 | Blueberries:9 | Cinnamon:0.1 | Flaxseeds:2 | Maple Syrup:12",193,5.4,17.3,12.8,,,,,false,,Balanced,,Nuts,images/meals/banana_blueberry_balls.png,"No-bake banana-blueberry energy balls with almond flour, flaxseed, maple syrup, and almond butter — 3 bites per serving (~193 kcal).","1. Pulse almond flour, flaxseeds, cinnamon, maple syrup, almond butter, banana, and blueberries in a food processor until the mixture holds together.
+"Banana Blueberry Balls",Dessert,"Almond Butter:7 | Almond Flour:16 | Banana:11 | Blueberries:9 | Cinnamon:0.1 | Flaxseeds:2 | Maple Syrup:12",193,5.4,17.3,12.8,,,,,false,,"Balanced, NutrientDense",,Nuts,images/meals/banana_blueberry_balls.png,"No-bake banana-blueberry energy balls with almond flour, flaxseed, maple syrup, and almond butter — 3 bites per serving (~193 kcal).","1. Pulse almond flour, flaxseeds, cinnamon, maple syrup, almond butter, banana, and blueberries in a food processor until the mixture holds together.
 2. Roll into 3 bite-size balls (~19g each). One serving is all 3 balls.
 3. Chill 30 minutes until firm. Serve cold."
 "Mango Pumpkin Seed Greek Yogurt Chia Pudding",Dessert,"Greek Yogurt Chia Pudding (Base):150 | Mango:35 | Psyllium Husks:10 | Pumpkin Seeds:10",210.78,18.72,18.16,8.14,,,,,false,,Balanced,,Dairy,images/meals/mango_pumpkin_seed_chia_pudding.png,"Tropical Greek yogurt chia pudding topped with fresh mango and pumpkin seeds.","Prepare Greek Yogurt Chia Pudding (Base) ahead (chia, Greek yogurt, and honey) and chill until thick.
@@ -558,7 +559,7 @@ Prepare Cooked Quinoa (Base). Plate quinoa, roasted vegetables, and greens. Top 
 2. Dice gouda and melt it in the remaining butter over medium-low heat until just beginning to soften.
 3. Beat eggs, add to the skillet with a little more butter if the pan looks dry, and scramble gently until just set.
 4. Fold gouda and spinach through the eggs. Season with black pepper and serve warm."
-"Butternut Squash & Eggs",Breakfast,"Butternut Squash:47.4668 | Chickpea Flour:15 | Dill (Fresh):8 | Eggs (Large):248 | Marinara Sauce (Base):80 | Olive Oil:10 | Paprika:1 | Red Onion:35",,,,,,,,,false,,NutrientDense,,,,"Roasted butternut squash baked with eggs, chickpea flour, and dill — topped with fried eggs and warm marinara on the side.","1. Preheat the oven to 180°C (350°F).
+"Butternut Squash & Eggs",Breakfast,"Butternut Squash:47.4668 | Chickpea Flour:15 | Dill (Fresh):8 | Eggs (Large):248 | Marinara Sauce (Base):80 | Olive Oil:10 | Paprika:1 | Red Onion:35",,,,,,,,,false,,NutrientDense,,"Beans, Eggs, G6PD Trigger, Nightshades",,"Roasted butternut squash baked with eggs, chickpea flour, and dill — topped with fried eggs and warm marinara on the side.","1. Preheat the oven to 180°C (350°F).
 2. Cut butternut squash into 2 cm cubes. Toss with half the olive oil, paprika, and sea salt. Roast on a tray until tender and lightly golden (25–30 min).
 3. Dice red onion (or thinly slice spring onion). Sauté in the remaining olive oil in an oven-safe skillet until softened (4–5 min).
 4. Whisk two large eggs with chickpea flour and chopped dill. Fold in roasted squash and sautéed onion.

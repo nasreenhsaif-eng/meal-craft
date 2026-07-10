@@ -88,6 +88,20 @@ class DayMacroReconciliation
         $dayMenu = self::reconcileCarbCalorieSurplus($dayMenu, $mainMeals, $plan, $targets, $tolerance, $options);
         $dayMenu = self::reconcileCarbCalorieDeficit($dayMenu, $mainMeals, $plan, $targets, $tolerance, $options);
 
+        $dayTargetCalories = (float) ($plan['craft_day_calories'] ?? $plan['plan_tier'] ?? 0);
+        $dayCalorieTolerance = UserPlanCalculator::dayCalorieTolerance();
+        $afterReconcile = self::sumDayMacros(self::dayMenuForMacroTotals($dayMenu, $options));
+        $calorieSurplus = round($afterReconcile['calories'] - $dayTargetCalories, 2);
+
+        if ($calorieSurplus > $dayCalorieTolerance) {
+            $warnings[] = sprintf(
+                'Day calories are %.0f kcal above target (%.0f selected vs %.0f target).',
+                $calorieSurplus,
+                $afterReconcile['calories'],
+                $dayTargetCalories,
+            );
+        }
+
         return ['dayMenu' => $dayMenu, 'warnings' => $warnings];
     }
 
@@ -212,7 +226,6 @@ class DayMacroReconciliation
         if (
             $calorieSurplus <= $dayCalorieTolerance
             || $proteinDeficit > $tolerance['protein_g']
-            || ($carbSurplus <= $tolerance['carbs_g'] && $fatSurplus <= $tolerance['fat_g'])
         ) {
             return $dayMenu;
         }

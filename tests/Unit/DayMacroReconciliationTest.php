@@ -7,6 +7,7 @@ use App\Models\Ingredient;
 use App\Models\Meal;
 use App\Models\User;
 use App\Services\Nutrition\AdaptedMenuBuilder;
+use App\Services\Nutrition\CraftCaloriePlanner;
 use App\Services\Nutrition\DayMacroReconciliation;
 use App\Services\Nutrition\UserPlanCalculator;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -274,4 +275,157 @@ test('day macro reconciliation boosts carbs when protein is on target but day ca
     } else {
         expect($after['calories'])->toBeGreaterThanOrEqual($before['calories']);
     }
+});
+
+test('day macro reconciliation trims calorie surplus when carbs and fat are already within tolerance', function () {
+    $user = User::factory()->create();
+    $profile = CustomerProfile::factory()->for($user)->create([
+        'daily_calorie_target' => 1500,
+        'diet_protocol' => 'nutrient_dense',
+        'protein_percentage' => 32,
+        'carb_percentage' => 28,
+        'fat_percentage' => 40,
+    ]);
+
+    $carbIngredient = Ingredient::factory()->create([
+        'name' => 'Cooked Quinoa (Base)',
+        'calories' => 120,
+        'protein' => 4,
+        'carbs' => 21,
+        'fat' => 2,
+        'usda_food_category' => 'Grains',
+    ]);
+
+    $proteinIngredient = Ingredient::factory()->create([
+        'name' => 'Chicken Breast',
+        'calories' => 120,
+        'protein' => 12,
+        'carbs' => 8,
+        'fat' => 6,
+        'usda_food_category' => 'Proteins',
+    ]);
+
+    $fatIngredient = Ingredient::factory()->create([
+        'name' => 'Olive Oil',
+        'calories' => 884,
+        'protein' => 0,
+        'carbs' => 0,
+        'fat' => 100,
+        'usda_food_category' => 'Fats',
+    ]);
+
+    $breakfast = Meal::factory()->create([
+        'name' => 'Savory Egg Breakfast',
+        'meal_type' => MealType::Breakfast,
+        'category' => RecipeCategory::Breakfast,
+        'total_calories' => 444,
+        'total_protein' => 35,
+        'total_carbs' => 8,
+        'total_fat' => 30,
+    ]);
+    $breakfast->ingredients()->attach($proteinIngredient->id, ['amount_grams' => 200]);
+
+    $mainA = Meal::factory()->create([
+        'name' => 'Chicken Plate',
+        'meal_type' => MealType::Main,
+        'category' => RecipeCategory::Meal,
+        'total_calories' => 420,
+        'total_protein' => 45,
+        'total_carbs' => 12,
+        'total_fat' => 18,
+    ]);
+    $mainA->ingredients()->attach($proteinIngredient->id, ['amount_grams' => 250]);
+    $mainA->ingredients()->attach($fatIngredient->id, ['amount_grams' => 8]);
+
+    $mainB = Meal::factory()->create([
+        'name' => 'Chicken Quinoa Bowl',
+        'meal_type' => MealType::Main,
+        'category' => RecipeCategory::Meal,
+        'total_calories' => 400,
+        'total_protein' => 42,
+        'total_carbs' => 28,
+        'total_fat' => 14,
+    ]);
+    $mainB->ingredients()->attach($proteinIngredient->id, ['amount_grams' => 200]);
+    $mainB->ingredients()->attach($carbIngredient->id, ['amount_grams' => 70]);
+    $mainB->ingredients()->attach($fatIngredient->id, ['amount_grams' => 5]);
+
+    $salad = Meal::factory()->create([
+        'name' => 'Side Salad',
+        'meal_type' => MealType::Salad,
+        'category' => RecipeCategory::SideSalad,
+        'total_calories' => 117,
+        'total_protein' => 4,
+        'total_carbs' => 10,
+        'total_fat' => 6,
+    ]);
+    $salad->ingredients()->attach($carbIngredient->id, ['amount_grams' => 40]);
+
+    $dessert = Meal::factory()->create([
+        'name' => 'Heavy Chia Dessert',
+        'meal_type' => MealType::Dessert,
+        'category' => RecipeCategory::Dessert,
+        'total_calories' => 300,
+        'total_protein' => 12,
+        'total_carbs' => 22,
+        'total_fat' => 16,
+    ]);
+    $dessert->ingredients()->attach($carbIngredient->id, ['amount_grams' => 80]);
+    $dessert->ingredients()->attach($fatIngredient->id, ['amount_grams' => 12]);
+
+    $options = [
+        'craft_key' => 'full',
+        'plan_tier' => 1500.0,
+        'day_of_week' => 1,
+        'selected_fixed_slots' => ['dessert', 'side_salad'],
+        'dessert_calories' => 150,
+        'side_salad_calories' => 117,
+        'selected_main_meal_ids' => [$mainA->id, $mainB->id],
+        'selected_breakfast_meal_ids' => [$breakfast->id],
+        'selected_side_salad_meal_ids' => [$salad->id],
+        'selected_dessert_meal_ids' => [$dessert->id],
+    ];
+
+    $dayMenu = [
+        'breakfasts' => [AdaptedMenuBuilder::adaptMealForProfile($profile, $breakfast, $options)],
+        'meals' => AdaptedMenuBuilder::adaptMainMealsForProfile($profile, [$mainA, $mainB], $options),
+        'sideSalads' => [AdaptedMenuBuilder::adaptMealForProfile($profile, $salad, $options)],
+        'desserts' => [AdaptedMenuBuilder::adaptMealForProfile($profile, $dessert, array_merge($options, [
+            'dessert_calories' => 300,
+        ]))],
+        'soup' => [],
+    ];
+
+    foreach ($dayMenu['meals'] as $index => $adaptedMain) {
+        $inflatedCalories = (float) ($adaptedMain['adapted_nutrition']['calories'] ?? 0) + 60;
+        $dayMenu['meals'][$index]['calories'] = $inflatedCalories;
+        $dayMenu['meals'][$index]['adapted_nutrition']['calories'] = $inflatedCalories;
+    }
+
+    $plan = UserPlanCalculator::calculateUserPlan($profile, $options);
+    $plan = CraftCaloriePlanner::applyCraftToPlan($plan, 'full');
+    $targets = $plan['daily_macros'];
+    $tolerance = UserPlanCalculator::dayMacroTolerance();
+    $dayTargetCalories = (float) ($plan['craft_day_calories'] ?? $plan['plan_tier'] ?? 0);
+    $before = DayMacroReconciliation::sumDayMacros($dayMenu);
+
+    $carbSurplus = $before['carbs_g'] - (float) $targets['carbs_g'];
+    $fatSurplus = $before['fat_g'] - (float) $targets['fat_g'];
+    $calorieSurplus = $before['calories'] - $dayTargetCalories;
+
+    expect($calorieSurplus)->toBeGreaterThan(UserPlanCalculator::dayCalorieTolerance())
+        ->and($carbSurplus)->toBeLessThanOrEqual($tolerance['carbs_g'])
+        ->and($fatSurplus)->toBeLessThanOrEqual($tolerance['fat_g']);
+
+    $reconciled = DayMacroReconciliation::reconcile($profile, $dayMenu, [$mainA, $mainB], $options);
+    $after = DayMacroReconciliation::sumDayMacros($reconciled['dayMenu']);
+    $remainingSurplus = $after['calories'] - $dayTargetCalories;
+
+    expect($after['calories'])->toBeLessThan($before['calories'])
+        ->and(
+            abs($remainingSurplus) <= UserPlanCalculator::dayCalorieTolerance()
+            || collect($reconciled['warnings'])->contains(
+                fn (string $warning): bool => str_contains($warning, 'kcal above target'),
+            ),
+        )->toBeTrue();
 });

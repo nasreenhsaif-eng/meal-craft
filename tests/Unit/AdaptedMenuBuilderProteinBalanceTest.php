@@ -39,6 +39,15 @@ test('adaptMainMealsForProfile boosts non-vegan mains when a vegan choice lowers
         'usda_food_category' => 'Proteins',
     ]);
 
+    $herbIngredient = Ingredient::factory()->create([
+        'name' => 'Fresh Rosemary',
+        'calories' => 131,
+        'protein' => 3.3,
+        'carbs' => 21,
+        'fat' => 5.9,
+        'usda_food_category' => 'Herbs',
+    ]);
+
     $veganMain = Meal::factory()->create([
         'name' => 'Vegan Test Stew',
         'meal_type' => MealType::Main,
@@ -64,6 +73,7 @@ test('adaptMainMealsForProfile boosts non-vegan mains when a vegan choice lowers
         'library_sort_order' => 2,
     ]);
     $chickenMain->ingredients()->attach($chickenIngredient->id, ['amount_grams' => 200]);
+    $chickenMain->ingredients()->attach($herbIngredient->id, ['amount_grams' => 2]);
 
     $plan = UserPlanCalculator::calculateUserPlan($profile);
     $proteinTargetEach = (float) $plan['scalable_slot_targets']['main_each']['macros']['protein_g'];
@@ -75,14 +85,18 @@ test('adaptMainMealsForProfile boosts non-vegan mains when a vegan choice lowers
     $veganAdapted = collect($adapted)->firstWhere('name', 'Vegan Test Stew');
     $chickenAdapted = collect($adapted)->firstWhere('name', 'Chicken Test Plate');
 
-    $combinedProtein = (float) $veganAdapted['adapted_nutrition']['protein']
-        + (float) $chickenAdapted['adapted_nutrition']['protein'];
+    $veganZucchini = collect($veganAdapted['ingredients'])->firstWhere('name', 'Zucchini');
+    $chickenHerb = collect($chickenAdapted['ingredients'])->firstWhere('name', 'Fresh Rosemary');
+    $chickenProtein = collect($chickenAdapted['ingredients'])->firstWhere('name', 'Chicken Breast');
 
     expect($veganAdapted['is_vegan'])->toBeTrue()
+        ->and((float) ($veganZucchini['adapted_amount_grams'] ?? 0))->toEqual(200.0)
         ->and((float) $chickenAdapted['adapted_nutrition']['protein'])->toBeGreaterThanOrEqual($proteinTargetEach - 6)
         ->and((float) $chickenAdapted['adapted_nutrition']['protein'])->toBeGreaterThan(
             (float) $veganAdapted['adapted_nutrition']['protein'],
         )
+        ->and((float) ($chickenProtein['adapted_amount_grams'] ?? 0))->toBeGreaterThan(200.0)
+        ->and((float) ($chickenHerb['adapted_amount_grams'] ?? 0))->toBeGreaterThan(2.0)
         ->and($chickenAdapted['protein_balanced'] ?? false)->toBeTrue();
 });
 

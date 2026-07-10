@@ -52,7 +52,7 @@ function seedBalancedWeeklyPlanDeck(): void
     }
 }
 
-test('balanced weekly plan builder creates seven day rotating menus with twelve slots per day', function (): void {
+test('balanced weekly plan builder creates seven day rotating menus with fourteen slots per day', function (): void {
     seedBalancedWeeklyPlanDeck();
 
     $result = app(BalancedWeeklyMealPlanBuilder::class)->build(refineRecipes: false);
@@ -62,6 +62,7 @@ test('balanced weekly plan builder creates seven day rotating menus with twelve 
 
     expect($plan->schema_type)->toBe(MealPlanSchemaType::WeeklyStructured)
         ->and($plan->name)->toBe(BalancedWeeklyMealPlanBuilder::PLAN_NAME)
+        ->and($slotsPerDay)->toBe(14)
         ->and($result['slots'])->toBe(7 * $slotsPerDay)
         ->and($plan->dayMeals()->count())->toBe($result['slots'] * 2);
 
@@ -123,6 +124,18 @@ test('balanced weekly plan builder creates seven day rotating menus with twelve 
 
         expect($liverMain)->toBe(
             BalancedWeeklyRotationSchedule::mealNameForDay($day, MealPlanSlotType::Main, 5),
+        );
+
+        $beefMain = $plan->dayMeals()
+            ->where('day_number', $day)
+            ->where('slot_type', MealPlanSlotType::Main->value)
+            ->where('slot_index', 6)
+            ->where('is_option_b', false)
+            ->first()
+            ?->meal?->name;
+
+        expect($beefMain)->toBe(
+            BalancedWeeklyRotationSchedule::mealNameForDay($day, MealPlanSlotType::Main, 6),
         );
     }
 });

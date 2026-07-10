@@ -10,6 +10,7 @@ use App\Models\Meal;
 use App\Models\MealPlan;
 use App\Models\MealPlanDayMeal;
 use App\Models\User;
+use App\Services\Nutrition\AdaptedMenuFixedPortionResolver;
 use App\Services\Nutrition\FullCraftDayMenuBuilder;
 use Illuminate\Support\Collection;
 
@@ -80,7 +81,7 @@ final class MealPlanLibraryTierPreview
             }
 
             $adaptedSelection = $this->translateSelectionToAdaptedIds($daySelection, $uiMealMaps);
-            $buildOptions = $this->buildOptionsForDay($planTier, $dayNumber, $adaptedSelection);
+            $buildOptions = $this->buildOptionsForDay($planTier, $dayNumber, $adaptedSelection, $profile, $mealsById);
             $resolvedMealsById = $uiMealMaps['resolved'];
             $scheduledMealsByAdaptedId = $uiMealMaps['scheduled'];
 
@@ -142,10 +143,16 @@ final class MealPlanLibraryTierPreview
 
     /**
      * @param  array<string, list<int|string>>  $daySelection
+     * @param  array<int, Meal>  $mealsById
      * @return array<string, mixed>
      */
-    private function buildOptionsForDay(int $planTier, int $dayNumber, array $daySelection): array
-    {
+    private function buildOptionsForDay(
+        int $planTier,
+        int $dayNumber,
+        array $daySelection,
+        CustomerProfile $profile,
+        array $mealsById,
+    ): array {
         $options = [
             'plan_tier' => (float) $planTier,
             'craft_key' => 'full',
@@ -186,7 +193,14 @@ final class MealPlanLibraryTierPreview
             $options['selected_fixed_slots'] = $fixedSlots;
         }
 
-        return $options;
+        $selectedFixedCalories = AdaptedMenuFixedPortionResolver::fromSelectedCarouselMeals(
+            $profile,
+            $daySelection,
+            $mealsById,
+            $options,
+        );
+
+        return array_merge($options, $selectedFixedCalories);
     }
 
     /**
