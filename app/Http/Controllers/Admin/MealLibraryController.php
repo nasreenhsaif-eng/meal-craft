@@ -24,6 +24,7 @@ use App\Support\EggIngredientPresentation;
 use App\Support\IngredientAllergenCatalog;
 use App\Support\IngredientG6pdSafety;
 use App\Support\IngredientLibraryNameMatcher;
+use App\Support\KitchenPortionRounding;
 use App\Support\LiquidIngredientPresentation;
 use App\Support\MealFoodFilterCatalog;
 use App\Support\MealImagePath;
@@ -380,7 +381,10 @@ class MealLibraryController extends Controller
         $meal->ingredients()->detach();
 
         foreach ($byIngredientGrams as $ingredientId => $grams) {
-            $rounded = round($grams, 2);
+            $rounded = KitchenPortionRounding::snapGramsForIngredient(
+                Ingredient::query()->findOrFail($ingredientId),
+                $grams,
+            );
             $meal->ingredients()->attach($ingredientId, [
                 'amount_grams' => $rounded,
                 'amount' => $rounded,

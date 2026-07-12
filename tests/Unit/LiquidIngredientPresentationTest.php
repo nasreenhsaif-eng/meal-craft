@@ -11,7 +11,7 @@ test('liquid ingredients display milliliters converted from grams', function () 
     ]);
 
     expect(LiquidIngredientPresentation::isLiquidIngredient($oil))->toBeTrue()
-        ->and(LiquidIngredientPresentation::formatLine(6.0, $oil))->toBe('6ml Olive Oil (Extra Virgin)');
+        ->and(LiquidIngredientPresentation::formatLine(6.0, $oil))->toBe('5ml Olive Oil (Extra Virgin)');
 });
 
 test('liquid ingredients use density when converting grams to milliliters', function () {
@@ -21,6 +21,12 @@ test('liquid ingredients use density when converting grams to milliliters', func
     ]);
 
     expect(LiquidIngredientPresentation::formatLine(9.2, $oil))->toBe('10ml Avocado Oil');
+});
+
+test('liquid milliliters snap to kitchen spoon steps', function () {
+    expect(LiquidIngredientPresentation::snapKitchenMilliliters(7.52))->toBe(10.0)
+        ->and(LiquidIngredientPresentation::snapKitchenMilliliters(8.09))->toBe(10.0)
+        ->and(LiquidIngredientPresentation::snapKitchenMilliliters(2.4))->toBe(2.0);
 });
 
 test('liquid ingredients convert volume recipe units to milliliters', function () {

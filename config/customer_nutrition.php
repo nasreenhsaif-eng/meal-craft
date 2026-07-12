@@ -174,6 +174,7 @@ return [
     'main_meal_plate_vegetable_canonical_grams' => [
         'Tamarind Honey & Sesame Chicken w Garlicky Green Beans' => [
             'Broccoli' => 60.0,
+            'Bok Choy' => 80.0,
         ],
     ],
 

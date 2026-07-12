@@ -91,7 +91,7 @@ final class MacroFirstMainMealScaler
 
         $grams = self::trimToCalorieTarget($meal, $grams, $targetCalories, $baselineGrams);
         $grams = self::recoverCarbTargetAfterTrim($meal, $grams, $targetCarbs, $targetCalories, $baselineGrams);
-        $grams = KitchenPortionRounding::snapFatRoleGramsForMeal($meal, $grams);
+        $grams = KitchenPortionRounding::snapAllGramsForMeal($meal, $grams);
 
         return [
             'grams' => $grams,
@@ -485,7 +485,7 @@ final class MacroFirstMainMealScaler
             $trimmed[$ingredient->id] = round($baseline * $multiplier, 4);
         }
 
-        return KitchenPortionRounding::snapFatRoleGramsForMeal($meal, $trimmed);
+        return KitchenPortionRounding::snapAllGramsForMeal($meal, $trimmed);
     }
 
     /**
@@ -578,7 +578,7 @@ final class MacroFirstMainMealScaler
         $baselineGrams = AdaptedMenuBuilder::baselineGramsByIngredientId($meal);
         $trimmed = self::trimToCalorieTarget($meal, $grams, $targetCalories, $baselineGrams);
 
-        return KitchenPortionRounding::snapFatRoleGramsForMeal($meal, $trimmed);
+        return KitchenPortionRounding::snapAllGramsForMeal($meal, $trimmed);
     }
 
     /**

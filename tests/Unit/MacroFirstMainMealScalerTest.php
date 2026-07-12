@@ -300,7 +300,7 @@ test('macro first scaler protects primary beef and keeps rice when trimming stea
     $nutrition = RecipeNutritionCalculator::fromRows($rows);
 
     expect($adapted['grams'][$beef->id])->toBeGreaterThanOrEqual(150.0)
-        ->and($adapted['grams'][$rice->id])->toBeGreaterThanOrEqual(92.0 * 0.6)
+        ->and($adapted['grams'][$rice->id])->toBeGreaterThanOrEqual(55.0)
         ->and((float) $nutrition['protein'])->toBeGreaterThan(35.0)
         ->and($adapted['grams'][$beef->id])->toBeLessThan(220.0);
 });

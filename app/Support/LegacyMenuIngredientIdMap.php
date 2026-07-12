@@ -70,7 +70,7 @@ final class LegacyMenuIngredientIdMap
             29 => 'Fresh Mint',
             31 => 'Cumin Seeds',
             38 => 'Napa Cabbage',
-            39 => 'Beef Bones (Feet)',
+            39 => 'Beef Leg Bones',
             40 => 'Bell Pepper (Red)',
             41 => 'Garlic (Raw)',
             42 => 'Carrots',

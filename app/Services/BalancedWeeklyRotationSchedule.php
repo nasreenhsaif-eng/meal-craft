@@ -8,12 +8,12 @@ use InvalidArgumentException;
 /**
  * Seven-day Balanced weekly plan: same slot roles every day, different meals per weekday.
  *
- * Breakfast — savory egg (rotates). Dessert 1 — chia pudding (rotates).
+ * Breakfast — savory egg (rotates).
  * Main 1 — chicken + carbs/veg. Main 2 — chicken salad. Main 3 — fish (mixed; rotates daily).
  * Main 4 — plain beef meal (no liver; rotates daily). Main 5 — liver (dedicated or liver-blend; rotates daily).
  * Main 6 — vegan main (includes former legume-heavy side salads).
  * Salad 1 — legume-free vegan side (rotates). Salad 2 — Classic Garden Salad.
- * Dessert 1 — dessert (rotates). Dessert 2 — Fruit Salad Bowl.
+ * Dessert 1 — baked dessert (rotates). Dessert 2 — Fruit Salad Bowl. Dessert 3 — chia pudding (rotates; dairy profile may swap Greek yogurt ↔ coconut).
  * Soup 1 — rotating soup. Soup 2 — Bone Broth Cup (fixed every day).
  */
 final class BalancedWeeklyRotationSchedule
@@ -173,14 +173,13 @@ final class BalancedWeeklyRotationSchedule
         'Vegan Mushroom Bowl',
     ];
 
-    /** @var list<string> */
+    /** @var list<string> Daily rotating baked desserts (slot 1) — one unique meal per weekday. */
     public const DESSERTS = [
         BalancedCanonicalMealRecipeRefiner::CARROT_DESSERT_NAME,
         'Chocolate Orange Brownie',
         BalancedRotationMealRecipeRefiner::SALTED_TAHINI_CARAMEL_CHOCOLATE_BAR_NAME,
         'Apple Pie Balls',
         'Banana Blueberry Balls',
-        'Cinnamon Raisin Balls',
         'Saffron Pumpkin Muffin',
         'Chocolate PB Banana Muffin',
     ];
@@ -218,8 +217,8 @@ final class BalancedWeeklyRotationSchedule
                 default => throw new InvalidArgumentException("Invalid salad slot index {$slotIndex}"),
             },
             MealPlanSlotType::Dessert => match ($slotIndex) {
-                1 => self::CHIA_DESSERTS[$index],
-                3 => self::GREEK_YOGURT_CHIA_DESSERTS[$index],
+                1 => self::DESSERTS[$index],
+                3 => self::CHIA_DESSERTS[$index],
                 default => throw new InvalidArgumentException("Invalid dessert slot index {$slotIndex}"),
             },
             MealPlanSlotType::Soup => match ($slotIndex) {

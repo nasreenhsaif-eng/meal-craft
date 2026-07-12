@@ -1326,7 +1326,7 @@ final class AdaptedMenuBuilder
 
         $trimmed = self::trimBreakfastFlexibleGramsToTarget($meal, $withMinimums, $targetCalories, $planTier);
 
-        return KitchenPortionRounding::snapFatRoleGramsForMeal($meal, $trimmed);
+        return KitchenPortionRounding::snapAllGramsForMeal($meal, $trimmed);
     }
 
     /**
@@ -1583,7 +1583,11 @@ final class AdaptedMenuBuilder
                 $unitRaw,
                 (float) ($pivot->amount_grams ?? 0),
             );
-            $adaptedGrams = round((float) ($adaptedGramsByIngredientId[$ingredient->id] ?? $baselineGrams), 2);
+            $adaptedGrams = KitchenPortionRounding::snapGramsForIngredient(
+                $ingredient,
+                (float) ($adaptedGramsByIngredientId[$ingredient->id] ?? $baselineGrams),
+            );
+            $adaptedGrams = round($adaptedGrams, 2);
 
             $per100 = RecipeNutritionCalculator::per100gNutritionForIngredient($ingredient);
             $factor = $adaptedGrams / 100.0;

@@ -18,13 +18,14 @@ test('balanced weekly rotation rejects a second breakfast slot', function (): vo
         ->toThrow(InvalidArgumentException::class);
 });
 
-test('balanced weekly rotation assigns chia desserts in dessert slot one', function (): void {
+test('balanced weekly rotation assigns baked desserts in dessert slot one', function (): void {
     $dayOne = BalancedWeeklyRotationSchedule::mealNameForDay(1, MealPlanSlotType::Dessert, 1);
     $dayTwo = BalancedWeeklyRotationSchedule::mealNameForDay(2, MealPlanSlotType::Dessert, 1);
 
-    expect($dayOne)->toBe('Blueberry Walnut Chia Pudding')
-        ->and($dayTwo)->toBe('Mango Pumpkin Seed Chia Pudding')
-        ->and($dayOne)->not->toBe($dayTwo);
+    expect($dayOne)->toBe(BalancedWeeklyRotationSchedule::DESSERTS[0])
+        ->and($dayTwo)->toBe(BalancedWeeklyRotationSchedule::DESSERTS[1])
+        ->and($dayOne)->not->toBe($dayTwo)
+        ->and(BalancedWeeklyRotationSchedule::DESSERTS)->toHaveCount(7);
 });
 
 test('balanced weekly rotation keeps fixed second choices per slot pattern', function (): void {
@@ -38,14 +39,14 @@ test('balanced weekly rotation keeps fixed second choices per slot pattern', fun
     }
 });
 
-test('balanced weekly rotation assigns greek yogurt chia desserts in dessert slot three', function (): void {
+test('balanced weekly rotation assigns chia desserts in dessert slot three', function (): void {
     $dayOne = BalancedWeeklyRotationSchedule::mealNameForDay(1, MealPlanSlotType::Dessert, 3);
     $dayTwo = BalancedWeeklyRotationSchedule::mealNameForDay(2, MealPlanSlotType::Dessert, 3);
 
-    expect($dayOne)->toBe('Blueberry Walnut Greek Yogurt Chia Pudding')
-        ->and($dayTwo)->toBe('Mango Pumpkin Seed Greek Yogurt Chia Pudding')
-        ->and($dayOne)->toBeIn(BalancedWeeklyRotationSchedule::GREEK_YOGURT_CHIA_DESSERTS)
-        ->and($dayTwo)->toBeIn(BalancedWeeklyRotationSchedule::GREEK_YOGURT_CHIA_DESSERTS);
+    expect($dayOne)->toBe('Blueberry Walnut Chia Pudding')
+        ->and($dayTwo)->toBe('Mango Pumpkin Seed Chia Pudding')
+        ->and($dayOne)->toBeIn(BalancedWeeklyRotationSchedule::CHIA_DESSERTS)
+        ->and($dayTwo)->toBeIn(BalancedWeeklyRotationSchedule::CHIA_DESSERTS);
 });
 
 test('balanced weekly rotation assigns a different rotating soup in slot 1 each weekday', function (): void {
