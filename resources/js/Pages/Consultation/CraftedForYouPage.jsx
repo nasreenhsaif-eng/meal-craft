@@ -1819,7 +1819,7 @@ export default function CraftedForYouPage({
                                 totalKcal={dayCaloriesTotal}
                                 dayMacroTotals={dayMacroTotals}
                                 dayMacroTargets={dayMacroTargets}
-                                showFooterMacroTargets={isAdminPreview}
+                                showFooterMacroTargets={false}
                                 dayMacroTolerance={dayMacroTolerance}
                                 nutritionPlan={nutritionPlan}
                                 summaryLabel={`${WEEKDAY_LABELS[curationDay - 1]} selections`}

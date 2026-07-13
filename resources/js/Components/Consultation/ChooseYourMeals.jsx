@@ -1420,7 +1420,7 @@ export default function ChooseYourMeals({
     totalKcal = 0,
     dayMacroTotals = null,
     dayMacroTargets = null,
-    showFooterMacroTargets = true,
+    showFooterMacroTargets = false,
     dayMacroTolerance = null,
     nutritionPlan = null,
     summaryLabel,
@@ -1802,15 +1802,15 @@ export default function ChooseYourMeals({
                             </span>
                         </p>
                     </div>
-                    {dayMacroTotals || dayMacroTargets ? (
-                        <div className={showFooterMacroTargets ? 'mt-2 min-h-[4.75rem]' : 'mt-2'}>
+                    {showFooterMacroTargets && (dayMacroTotals || dayMacroTargets) ? (
+                        <div className="mt-2 min-h-[4.75rem]">
                             <ConsultationDayMacroFooterGrid
                                 totals={
                                     dayMacroTotals && dayMacroTotals.calories > 0
                                         ? dayMacroTotals
                                         : { calories: 0, protein: 0, carbs: 0, fat: 0 }
                                 }
-                                targets={showFooterMacroTargets ? dayMacroTargets : null}
+                                targets={dayMacroTargets}
                                 nutritionPlan={nutritionPlan}
                                 highlightKeys={
                                     dayMacroTotals && dayMacroTotals.calories > 0 ? macroHighlightKeys : []
