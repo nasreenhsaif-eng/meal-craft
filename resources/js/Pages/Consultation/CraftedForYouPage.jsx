@@ -1462,7 +1462,7 @@ export default function CraftedForYouPage({
                 PAGE_BG,
                 'font-sans',
                 isCurationScreen
-                    ? 'flex h-[100dvh] min-h-0 flex-col overflow-hidden max-md:px-0 max-md:py-0 md:px-4 md:py-4'
+                    ? 'flex h-[100dvh] min-h-0 flex-col overflow-hidden max-md:px-0 max-md:py-0 md:min-h-screen md:overflow-visible md:px-4 md:py-4 md:pb-4'
                     : 'min-h-screen px-4 py-4 pb-24 sm:pb-4 md:px-4',
             ].join(' ')}
         >
@@ -1800,8 +1800,8 @@ export default function CraftedForYouPage({
                             };
 
                             return (
-                            <div className="flex min-h-0 w-full flex-1 flex-col overflow-hidden">
-                            <div className="mb-3 max-h-[min(32dvh,280px)] shrink-0 overflow-y-auto px-4 md:mb-4 md:px-5">
+                            <div className="flex min-h-0 w-full flex-1 flex-col">
+                            <div className="mb-4 shrink-0 px-4 md:px-5">
                                 <DayMacroMicroTabPanel
                                     categories={curationNutritionCategories}
                                     dayLabel={WEEKDAY_LONG[curationDay - 1] ?? 'Day'}
@@ -1813,13 +1813,12 @@ export default function CraftedForYouPage({
                                 />
                             </div>
                             <ChooseYourMeals
-                                panelClassName="min-h-0 flex-1"
+                                panelClassName="h-full min-h-0"
                                 soupCatalogMeals={catalogMeals}
                                 dayName={WEEKDAY_LONG[curationDay - 1] ?? ''}
                                 totalKcal={dayCaloriesTotal}
                                 dayMacroTotals={dayMacroTotals}
                                 dayMacroTargets={dayMacroTargets}
-                                showFooterMacroTargets={false}
                                 dayMacroTolerance={dayMacroTolerance}
                                 nutritionPlan={nutritionPlan}
                                 summaryLabel={`${WEEKDAY_LABELS[curationDay - 1]} selections`}
