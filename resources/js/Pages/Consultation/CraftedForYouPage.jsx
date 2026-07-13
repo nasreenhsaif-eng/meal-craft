@@ -38,7 +38,6 @@ import {
     saveConsultationDraft,
 } from '../../consultation/consultationDraft.js';
 import MealDetailModalPortal from '../../Components/Molecules/MealDetailModalPortal.jsx';
-import { DayMacroMicroTabPanel } from '../../Components/Consultation/DayNutritionalSummaryPanel.jsx';
 import { useMealDetailModal } from '../../meal-library/useMealDetailModal.js';
 
 const PAGE_BG = 'bg-[#F8F9F6]';
@@ -1336,11 +1335,6 @@ export default function CraftedForYouPage({
         [reconciledMealCardsForDay],
     );
 
-    const curationNutritionCategories = useMemo(
-        () => groupConsultationMealsByCategory(reconciledMealCardsForDay),
-        [reconciledMealCardsForDay],
-    );
-
     const progressPercent = totalScreens <= 1 ? 0 : ((screen - 1) / (totalScreens - 1)) * 100;
 
     const canGoNextFromCraftDuration =
@@ -1462,7 +1456,7 @@ export default function CraftedForYouPage({
                 PAGE_BG,
                 'font-sans',
                 isCurationScreen
-                    ? 'min-h-screen max-md:px-0 max-md:py-0 md:px-4 md:py-4'
+                    ? 'flex h-[100dvh] min-h-0 flex-col overflow-hidden max-md:px-0 max-md:py-0 md:min-h-screen md:overflow-visible md:px-4 md:py-4 md:pb-4'
                     : 'min-h-screen px-4 py-4 pb-24 sm:pb-4 md:px-4',
             ].join(' ')}
         >
@@ -1479,7 +1473,7 @@ export default function CraftedForYouPage({
             <div
                 className={[
                     'mx-auto w-full max-w-[1100px]',
-                    isCurationScreen ? 'max-md:space-y-0 md:space-y-4' : 'space-y-4',
+                    isCurationScreen ? 'flex min-h-0 flex-1 flex-col max-md:space-y-0 md:space-y-4' : 'space-y-4',
                 ].join(' ')}
             >
                 <div
@@ -1800,20 +1794,9 @@ export default function CraftedForYouPage({
                             };
 
                             return (
-                            <div className="w-full">
-                            <div className="mb-4 px-4 md:px-5">
-                                <DayMacroMicroTabPanel
-                                    categories={curationNutritionCategories}
-                                    dayLabel={WEEKDAY_LONG[curationDay - 1] ?? 'Day'}
-                                    planCategoryLabel={`${craft?.title ?? 'Craft'} · ${planTierCalories} kcal`}
-                                    craftKey={craft?.key ?? 'full'}
-                                    planTierCalories={planTierCalories}
-                                    nutritionPlan={nutritionPlan}
-                                    dietProtocol={dietProtocol}
-                                />
-                            </div>
+                            <div className="flex min-h-0 w-full flex-1 flex-col">
                             <ChooseYourMeals
-                                panelClassName="min-h-[min(78dvh,720px)]"
+                                panelClassName="h-full min-h-0"
                                 soupCatalogMeals={catalogMeals}
                                 dayName={WEEKDAY_LONG[curationDay - 1] ?? ''}
                                 totalKcal={dayCaloriesTotal}
