@@ -13,7 +13,7 @@ use InvalidArgumentException;
  * Main 4 — plain beef meal (no liver; rotates daily). Main 5 — liver (dedicated or liver-blend; rotates daily).
  * Main 6 — vegan main (includes former legume-heavy side salads).
  * Salad 1 — legume-free vegan side (rotates). Salad 2 — Classic Garden Salad.
- * Dessert 1 — baked dessert (rotates). Dessert 2 — Fruit Salad Bowl. Dessert 3 — chia pudding (rotates; dairy profile may swap Greek yogurt ↔ coconut).
+ * Dessert 1 — baked dessert (rotates). Dessert 2 — Fruit Salad Bowl. Dessert 3 — Greek yogurt chia pudding (rotates; dairy-free customers resolve to coconut chia).
  * Soup 1 — rotating soup. Soup 2 — Bone Broth Cup (fixed every day).
  */
 final class BalancedWeeklyRotationSchedule
@@ -218,7 +218,7 @@ final class BalancedWeeklyRotationSchedule
             },
             MealPlanSlotType::Dessert => match ($slotIndex) {
                 1 => self::DESSERTS[$index],
-                3 => self::CHIA_DESSERTS[$index],
+                3 => self::GREEK_YOGURT_CHIA_DESSERTS[$index],
                 default => throw new InvalidArgumentException("Invalid dessert slot index {$slotIndex}"),
             },
             MealPlanSlotType::Soup => match ($slotIndex) {

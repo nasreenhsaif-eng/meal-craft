@@ -10,7 +10,7 @@ function dessert(id, title) {
 }
 
 describe('consultationDessertDeckForDay', () => {
-    it('includes one Greek yogurt chia option alongside baked desserts for nutrient dense', () => {
+    it('includes one Greek yogurt chia option alongside baked desserts', () => {
         const catalog = [
             dessert('brownie', 'Chocolate Orange Brownie'),
             dessert('fruit', 'Fruit Salad Bowl'),
@@ -21,9 +21,24 @@ describe('consultationDessertDeckForDay', () => {
 
         const scheduled = [dessert('brownie', 'Chocolate Orange Brownie'), dessert('fruit', 'Fruit Salad Bowl')];
 
-        const deck = consultationDessertDeckForDay(catalog, scheduled, { preferBakedDesserts: true });
+        const deck = consultationDessertDeckForDay(catalog, scheduled);
 
         expect(deck).toHaveLength(3);
+        expect(deck.map((meal) => meal.id)).toEqual(['brownie', 'fruit', 'chia-blueberry']);
+    });
+
+    it('prefers Greek yogurt chia over coconut chia when filling the deck', () => {
+        const catalog = [
+            dessert('brownie', 'Chocolate Orange Brownie'),
+            dessert('fruit', 'Fruit Salad Bowl'),
+            dessert('chia-coconut', 'Blueberry Walnut Chia Pudding'),
+            dessert('chia-blueberry', 'Blueberry Walnut Greek Yogurt Chia Pudding'),
+        ];
+
+        const scheduled = [dessert('brownie', 'Chocolate Orange Brownie'), dessert('fruit', 'Fruit Salad Bowl')];
+
+        const deck = consultationDessertDeckForDay(catalog, scheduled);
+
         expect(deck.map((meal) => meal.id)).toEqual(['brownie', 'fruit', 'chia-blueberry']);
     });
 
@@ -36,7 +51,7 @@ describe('consultationDessertDeckForDay', () => {
 
         const scheduled = [dessert('chia-blueberry', 'Blueberry Walnut Greek Yogurt Chia Pudding')];
 
-        const deck = consultationDessertDeckForDay(catalog, scheduled, { preferBakedDesserts: true });
+        const deck = consultationDessertDeckForDay(catalog, scheduled);
 
         expect(deck.map((meal) => meal.id)).toEqual(['chia-blueberry', 'brownie']);
     });

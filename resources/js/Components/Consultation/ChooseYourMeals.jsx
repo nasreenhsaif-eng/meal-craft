@@ -99,7 +99,7 @@ export function soupOfTheDayMeals(source) {
 export const CONSULTATION_DECK_OPTION_LIMITS = Object.freeze({
     breakfast: 1,
     meal: 4,
-    sidesalad: 3,
+    sidesalad: 2,
     dessert: 3,
     soup: 2,
 });
@@ -173,6 +173,7 @@ export function isBakedDessertMeal(meal) {
 
 /**
  * Dessert deck: today's rotated dessert (from schedule) first, then fill to 3 from the catalog.
+ * When filling a chia slot, prefer the Greek yogurt rotation over coconut chia.
  *
  * @param {ConsultationMeal[]} source
  * @param {ConsultationMeal[]} [scheduledDesserts]
@@ -206,12 +207,12 @@ export function consultationDessertDeckForDay(source, scheduledDesserts = [], op
 
     const catalogDesserts = source.filter((meal) => meal.mealType === 'Dessert');
 
-    if (preferBakedDesserts && hasBaked && !hasChia) {
+    if (!hasChia) {
         const greekYogurtChia = catalogDesserts.find(
             (meal) => meal?.id && !seen.has(meal.id) && isGreekYogurtChiaDessertMeal(meal),
         );
 
-        if (greekYogurtChia) {
+        if (greekYogurtChia && (!preferBakedDesserts || hasBaked || deck.length > 0)) {
             seen.add(greekYogurtChia.id);
             deck.push(greekYogurtChia);
             hasChia = true;
@@ -232,7 +233,7 @@ export function consultationDessertDeckForDay(source, scheduledDesserts = [], op
                 continue;
             }
 
-            if (preferBakedDesserts && hasBaked && !isGreekYogurtChiaDessertMeal(meal)) {
+            if (!isGreekYogurtChiaDessertMeal(meal)) {
                 continue;
             }
         }

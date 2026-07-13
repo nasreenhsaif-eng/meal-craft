@@ -12,7 +12,7 @@ export const FIXED_CHOICE_REQUIRED_COUNT = FIXED_CHOICE_MAX_COUNT;
 
 export const FIXED_CHOICE_MIN_COUNT = 2;
 
-/** Display order for the horizontal toggle bar. */
+/** Display order for the horizontal toggle bar — soup is always last. */
 export const FIXED_CHOICE_TOGGLE_OPTIONS = Object.freeze([
     {
         selectionKey: 'sideSalads',
@@ -22,18 +22,18 @@ export const FIXED_CHOICE_TOGGLE_OPTIONS = Object.freeze([
         mealTypeLabel: 'Side salad',
     },
     {
-        selectionKey: 'soup',
-        label: 'Soup',
-        deckSuffix: 'soup',
-        header: 'Soups',
-        mealTypeLabel: 'Soup',
-    },
-    {
         selectionKey: 'desserts',
         label: 'Dessert',
         deckSuffix: 'dessert',
         header: 'Desserts',
         mealTypeLabel: 'Dessert',
+    },
+    {
+        selectionKey: 'soup',
+        label: 'Soup',
+        deckSuffix: 'soup',
+        header: 'Soups',
+        mealTypeLabel: 'Soup',
     },
 ]);
 

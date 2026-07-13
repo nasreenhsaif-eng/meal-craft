@@ -1928,9 +1928,9 @@ export default function CraftedForYouPage({
                                                             </p>
                                                             <div className="mt-3 flex flex-wrap gap-2">
                                                                 {[
-                                                                    { key: 'soup', label: 'Soup' },
                                                                     { key: 'sidesalad', label: 'Side Salad' },
                                                                     { key: 'dessert', label: 'Dessert' },
+                                                                    { key: 'soup', label: 'Soup' },
                                                                 ].map((opt) => {
                                                                     const on = side === opt.key;
                                                                     return (
