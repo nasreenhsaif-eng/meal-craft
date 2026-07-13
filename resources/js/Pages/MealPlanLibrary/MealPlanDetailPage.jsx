@@ -372,6 +372,33 @@ export default function MealPlanDetailPage({
                     ) : null}
                 </div>
 
+                <div className="mb-6 rounded-[12px] border border-gray-200 bg-white p-3 sm:p-4">
+                    <div className="overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                        <div
+                            className="flex w-max min-w-full items-center gap-2 px-1 py-2"
+                            role="tablist"
+                            aria-label="Meal plan days"
+                        >
+                            {planDays.map((day) => {
+                                const selected = day.dayNumber === activeDay;
+                                return (
+                                    <PillButton
+                                        key={day.dayNumber}
+                                        type="button"
+                                        role="tab"
+                                        aria-selected={selected}
+                                        label={day.label}
+                                        variant={selected ? 'primary' : 'tab'}
+                                        size="sm"
+                                        onClick={() => setActiveDay(day.dayNumber)}
+                                        className="shrink-0"
+                                    />
+                                );
+                            })}
+                        </div>
+                    </div>
+                </div>
+
                 {tierPreviewUrl ? (
                     <div className="mb-6">
                         <AdminPreviewTierPicker
@@ -409,33 +436,6 @@ export default function MealPlanDetailPage({
                     />
                 </div>
 
-                <div className="sticky top-0 z-30 overflow-visible rounded-[12px] border border-gray-200 bg-[#F8F9F6]/95 p-3 backdrop-blur-sm sm:p-4">
-                    <div className="overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                        <div
-                            className="flex w-max min-w-full items-center gap-2 px-1 py-2"
-                            role="tablist"
-                            aria-label="Meal plan days"
-                        >
-                            {planDays.map((day) => {
-                                const selected = day.dayNumber === activeDay;
-                                return (
-                                    <PillButton
-                                        key={day.dayNumber}
-                                        type="button"
-                                        role="tab"
-                                        aria-selected={selected}
-                                        label={day.label}
-                                        variant={selected ? 'primary' : 'tab'}
-                                        size="sm"
-                                        onClick={() => setActiveDay(day.dayNumber)}
-                                        className="shrink-0"
-                                    />
-                                );
-                            })}
-                        </div>
-                    </div>
-                </div>
-
                 <AnimatePresence mode="wait" initial={false}>
                     <motion.div
                         key={`${activeDayData?.dayNumber ?? 'empty'}-${selectedTier}`}
@@ -443,12 +443,12 @@ export default function MealPlanDetailPage({
                         animate={{ x: 0, opacity: tierLoading ? 0.6 : 1 }}
                         exit={{ x: -24, opacity: 0 }}
                         transition={{ type: 'spring', stiffness: 260, damping: 30, mass: 0.85 }}
-                        className={`mt-8 space-y-10 overflow-visible pb-12 ${tierLoading ? 'pointer-events-none' : ''}`}
+                        className={`mt-6 space-y-10 overflow-visible pb-12 ${tierLoading ? 'pointer-events-none' : ''}`}
                         aria-busy={tierLoading}
                     >
                         {activeDayData ? (
                             <>
-                                {coreSections.map((section, idx) => {
+                                {coreSections.map((section) => {
                                     const cards = activeDayData.categories?.[section.categoryKey] ?? [];
                                     const selectedIds = activeDaySelections[section.categoryKey] ?? [];
 
@@ -458,7 +458,7 @@ export default function MealPlanDetailPage({
                                             title={section.header}
                                             deckScopeKey={`plan-${mealPlan?.id ?? 'x'}-day-${activeDayData.dayNumber}-${section.deckSuffix}`}
                                             sectionKey={section.categoryKey}
-                                            sectionStackOrder={idx}
+                                            sectionStackOrder={0}
                                             cards={cards}
                                             selectedIds={selectedIds}
                                             maxSelected={defaultSelectionCapForCategory(section.categoryKey)}
@@ -485,7 +485,7 @@ export default function MealPlanDetailPage({
                                                 Side salad, soup, or dessert • {selectedSideCount}/{FIXED_CHOICE_MAX_COUNT} selected
                                             </p>
                                         </div>
-                                        {sideSections.map((section, idx) => {
+                                        {sideSections.map((section) => {
                                             const cards = activeDayData.categories?.[section.categoryKey] ?? [];
                                             const selectedIds = activeDaySelections[section.categoryKey] ?? [];
 
@@ -495,7 +495,7 @@ export default function MealPlanDetailPage({
                                                     title={section.header}
                                                     deckScopeKey={`plan-${mealPlan?.id ?? 'x'}-day-${activeDayData.dayNumber}-${section.deckSuffix}`}
                                                     sectionKey={section.categoryKey}
-                                                    sectionStackOrder={coreSections.length + idx}
+                                                    sectionStackOrder={0}
                                                     cards={cards}
                                                     selectedIds={selectedIds}
                                                     maxSelected={1}
