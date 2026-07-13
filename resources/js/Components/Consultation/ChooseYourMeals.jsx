@@ -1801,18 +1801,17 @@ export default function ChooseYourMeals({
                             </span>
                         </p>
                     </div>
-                    {dayMacroTargets ? (
-                        <div className="mt-2 min-h-[4.75rem]">
+                    {dayMacroTotals ? (
+                        <div className="mt-2">
                             <ConsultationDayMacroFooterGrid
                                 totals={
-                                    dayMacroTotals && dayMacroTotals.calories > 0
+                                    dayMacroTotals.calories > 0
                                         ? dayMacroTotals
                                         : { calories: 0, protein: 0, carbs: 0, fat: 0 }
                                 }
-                                targets={dayMacroTargets}
                                 nutritionPlan={nutritionPlan}
                                 highlightKeys={
-                                    dayMacroTotals && dayMacroTotals.calories > 0 ? macroHighlightKeys : []
+                                    dayMacroTotals.calories > 0 ? macroHighlightKeys : []
                                 }
                             />
                         </div>
