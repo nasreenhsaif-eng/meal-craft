@@ -1763,12 +1763,12 @@ export default function ChooseYourMeals({
             <div className="flex min-h-0 flex-1 flex-col overflow-x-clip">
                 <div
                     ref={scrollContainerRef}
-                    className="mc-choose-meals-scroll min-h-0 flex-1 overflow-y-auto overscroll-y-contain [scrollbar-gutter:stable] pt-2 max-md:px-0 max-md:pb-4 md:px-5 md:pb-8 md:pt-4 [-webkit-overflow-scrolling:touch]"
+                    className="mc-choose-meals-scroll min-h-[min(42dvh,360px)] flex-1 overflow-y-auto overscroll-y-contain [scrollbar-gutter:stable] pt-2 max-md:px-0 max-md:pb-4 md:min-h-[min(48dvh,420px)] md:px-5 md:pb-8 md:pt-4 [-webkit-overflow-scrolling:touch]"
                 >
                     <div className="relative z-0 min-w-0 space-y-0">{mainScrollable}</div>
                 </div>
 
-                <div className="z-[120] shrink-0 border-t border-gray-200 bg-white p-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-[0_-4px_24px_rgba(15,23,42,0.06)] max-md:px-4 md:sticky md:bottom-0 md:px-6">
+                <div className="z-[40] shrink-0 border-t border-gray-200 bg-white p-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-[0_-4px_24px_rgba(15,23,42,0.06)] max-md:px-4 md:px-6">
                     {incompleteWarning ? (
                         <div
                             className="mb-3 rounded-[12px] border border-red-200 bg-red-50 px-4 py-3"
