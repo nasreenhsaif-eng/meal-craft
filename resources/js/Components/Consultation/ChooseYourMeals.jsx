@@ -1740,7 +1740,7 @@ export default function ChooseYourMeals({
 
     return (
         <section
-            className={`box-border flex w-full flex-col overflow-x-clip border border-gray-200 bg-white shadow-sm max-md:rounded-none max-md:border-x-0 max-md:shadow-none md:rounded-[12px] ${panelClassName}`.trim()}
+            className={`box-border flex w-full min-h-0 flex-col overflow-hidden border border-gray-200 bg-white shadow-sm max-md:rounded-none max-md:border-x-0 max-md:shadow-none md:rounded-[12px] ${panelClassName}`.trim()}
         >
             <div className="shrink-0 border-b border-gray-200 px-4 py-3 text-left max-md:px-4 sm:px-5 sm:py-4 md:p-6">
                 <div className="min-w-0 space-y-1 sm:space-y-1.5">
@@ -1760,10 +1760,10 @@ export default function ChooseYourMeals({
                 </div>
             </div>
 
-            <div className="flex min-h-0 flex-1 flex-col overflow-x-clip">
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
                 <div
                     ref={scrollContainerRef}
-                    className="mc-choose-meals-scroll min-h-[min(38dvh,320px)] flex-1 overflow-y-auto overscroll-y-contain [scrollbar-gutter:stable] pt-2 max-md:px-0 max-md:pb-4 md:min-h-[min(42dvh,360px)] md:px-5 md:pb-8 md:pt-4 [-webkit-overflow-scrolling:touch]"
+                    className="mc-choose-meals-scroll min-h-0 flex-1 overflow-y-auto overscroll-y-contain [scrollbar-gutter:stable] pt-2 max-md:px-0 max-md:pb-4 md:px-5 md:pb-8 md:pt-4 [-webkit-overflow-scrolling:touch]"
                 >
                     <div className="relative z-0 min-w-0 space-y-0">{mainScrollable}</div>
                 </div>

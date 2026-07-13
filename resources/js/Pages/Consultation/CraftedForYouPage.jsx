@@ -1801,7 +1801,7 @@ export default function CraftedForYouPage({
 
                             return (
                             <div className="flex min-h-0 w-full flex-1 flex-col overflow-hidden">
-                            <div className="mb-3 max-h-[min(34dvh,260px)] shrink-0 overflow-y-auto px-4 md:mb-4 md:px-5">
+                            <div className="mb-3 max-h-[min(26dvh,200px)] shrink-0 overflow-y-auto px-4 md:mb-4 md:px-5">
                                 <DayMacroMicroTabPanel
                                     categories={curationNutritionCategories}
                                     dayLabel={WEEKDAY_LONG[curationDay - 1] ?? 'Day'}
@@ -1813,7 +1813,7 @@ export default function CraftedForYouPage({
                                 />
                             </div>
                             <ChooseYourMeals
-                                panelClassName="min-h-0 flex-1"
+                                panelClassName="min-h-0 flex-1 overflow-hidden"
                                 soupCatalogMeals={catalogMeals}
                                 dayName={WEEKDAY_LONG[curationDay - 1] ?? ''}
                                 totalKcal={dayCaloriesTotal}
