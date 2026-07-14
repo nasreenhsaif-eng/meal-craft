@@ -4,26 +4,18 @@ import { animate, motion, useMotionValue } from 'framer-motion';
 /** Triplicate ribbon for seamless wrap in both directions. */
 const RIBBON_COPIES = 3;
 
-/** Focus vs neighbor scale — keep 1:1 so side cards match height; opacity carries focus. */
-const RIBBON_FOCUS_SCALE = 1;
-const RIBBON_NEIGHBOR_SCALE = 1;
-const RIBBON_FOCUS_OPACITY = 1;
-const RIBBON_NEIGHBOR_OPACITY = 0.88;
-
 /** Overlaid nav buttons — track peeks underneath. */
 const RIBBON_ARROW_ZONE_CLASS = 'w-10 lg:w-11';
 
 /** Gradual edge blur strips — wider than arrow zone so peek softens into center cards. */
 const RIBBON_EDGE_BLUR_WIDTH_CLASS = 'w-12 md:w-14 lg:w-16';
 
-/** Desktop row slide — direction follows arrow, not index wrap */
-function netflixSlideTransition() {
-    return { type: 'tween', duration: 0.4, ease: [0.22, 1, 0.36, 1] };
-}
-
-/** Gentle end settle when a 2-card step lands slightly off-center. */
-function ribbonSettleTransition() {
-    return { type: 'tween', duration: 0.28, ease: [0.22, 1, 0.36, 1] };
+/**
+ * Ribbon slide — gentle start (aggressive ease-out felt like a jump on arrow click).
+ * Edge blur + dots carry focus; card chrome stays uniform so index changes don't pop.
+ */
+function ribbonSlideTransition() {
+    return { type: 'tween', duration: 0.42, ease: [0.4, 0, 0.2, 1] };
 }
 
 /**
@@ -331,26 +323,49 @@ export default function StackedDeckCarousel({ title: _title, items: itemsProp, m
     );
 
     /**
-     * Nudge track onto the centered target — instant for long ribbons, eased for 2-card decks.
+     * Snap track onto the centered target without a second visible tween (that felt like a jump after the slide).
      *
-     * @param {number} targetX
+     * @param {number} logicalIdx
+     * @param {{ force?: boolean }} [options]
      */
-    const settleTrackTo = useCallback(
-        async (targetX) => {
-            const drift = Math.abs(trackX.get() - targetX);
-            if (drift <= 0.5) {
+    const snapTrackToLogical = useCallback(
+        (logicalIdx, { force = false } = {}) => {
+            const tx = alignTrackToLogical(logicalIdx);
+            if (tx === undefined) {
                 return;
             }
 
-            if (itemCount === 2) {
-                await animate(trackX, targetX, ribbonSettleTransition()).finished;
-
+            const drift = Math.abs(trackX.get() - tx);
+            if (!force && drift <= 2) {
                 return;
             }
 
-            trackX.set(targetX);
+            trackX.set(tx);
         },
-        [itemCount, trackX],
+        [alignTrackToLogical, trackX],
+    );
+
+    /**
+     * After sliding onto a clone at the loop seam, instantly re-home to the matching middle-copy card
+     * without a visible jump (offsetLeft delta keeps the same pixels on screen).
+     *
+     * @param {number} logicalIdx
+     * @param {number} physicalShown
+     */
+    const rehomeInfiniteRibbonToMiddle = useCallback(
+        (logicalIdx, physicalShown) => {
+            const physicalMiddle = focusedPhysicalIndex(logicalIdx, itemCount, copies);
+            const middle = cardRefs.current[physicalMiddle];
+            const shown = cardRefs.current[physicalShown];
+            if (!middle || !shown) {
+                snapTrackToLogical(logicalIdx, { force: true });
+
+                return;
+            }
+
+            trackX.set(trackX.get() + (shown.offsetLeft - middle.offsetLeft));
+        },
+        [copies, itemCount, snapTrackToLogical, trackX],
     );
 
     /**
@@ -369,6 +384,9 @@ export default function StackedDeckCarousel({ title: _title, items: itemsProp, m
                 const n = itemCount;
                 const from = ribbonActiveIndexRef.current;
                 const to = direction === 1 ? (from + 1) % n : (from - 1 + n) % n;
+                const wraps =
+                    usesInfiniteRibbon &&
+                    ((from === n - 1 && to === 0) || (from === 0 && to === n - 1));
 
                 let stepPx = getStepBetweenLogical(from, to);
                 if (stepPx === 0) {
@@ -379,30 +397,34 @@ export default function StackedDeckCarousel({ title: _title, items: itemsProp, m
                     return;
                 }
 
-                if (itemCount === 2) {
-                    setRibbonActiveIndex(to);
-                    ribbonActiveIndexRef.current = to;
-                    await new Promise((r) => requestAnimationFrame(r));
-                }
-
                 const cur = trackX.get();
+                await animate(trackX, cur - stepPx, ribbonSlideTransition()).finished;
 
-                await animate(trackX, cur - stepPx, netflixSlideTransition()).finished;
-
-                const tx = alignTrackToLogical(to);
-                if (tx !== undefined) {
-                    await settleTrackTo(tx);
+                if (wraps) {
+                    const physicalShown = to === 0 ? 2 * n : n - 1;
+                    rehomeInfiniteRibbonToMiddle(to, physicalShown);
+                } else {
+                    snapTrackToLogical(to);
                 }
 
-                if (itemCount !== 2) {
-                    setRibbonActiveIndex(to);
-                    ribbonActiveIndexRef.current = to;
-                }
+                // Update active index only after the slide — never before (focus chrome pop felt like a jump).
+                setRibbonActiveIndex(to);
+                ribbonActiveIndexRef.current = to;
+
+                // Hold busy one frame so resize/align layout work cannot fight the snap.
+                await new Promise((r) => requestAnimationFrame(r));
             } finally {
                 navBusyRef.current = false;
             }
         },
-        [alignTrackToLogical, getStepBetweenLogical, itemCount, settleTrackTo, trackX],
+        [
+            getStepBetweenLogical,
+            itemCount,
+            rehomeInfiniteRibbonToMiddle,
+            snapTrackToLogical,
+            trackX,
+            usesInfiniteRibbon,
+        ],
     );
 
     const prevRibbon = useCallback(() => moveRibbon(-1), [moveRibbon]);
@@ -425,6 +447,11 @@ export default function StackedDeckCarousel({ title: _title, items: itemsProp, m
             navBusyRef.current = true;
             try {
                 const from = ribbonActiveIndexRef.current;
+                const n = itemCount;
+                const wraps =
+                    usesInfiniteRibbon &&
+                    ((from === n - 1 && bounded === 0) || (from === 0 && bounded === n - 1));
+
                 let stepPx = getStepBetweenLogical(from, bounded);
                 if (stepPx === 0) {
                     await new Promise((r) => requestAnimationFrame(r));
@@ -432,30 +459,33 @@ export default function StackedDeckCarousel({ title: _title, items: itemsProp, m
                 }
 
                 if (stepPx !== 0) {
-                    if (itemCount === 2) {
-                        setRibbonActiveIndex(bounded);
-                        ribbonActiveIndexRef.current = bounded;
-                        await new Promise((r) => requestAnimationFrame(r));
-                    }
-
                     const cur = trackX.get();
-                    await animate(trackX, cur - stepPx, netflixSlideTransition()).finished;
+                    await animate(trackX, cur - stepPx, ribbonSlideTransition()).finished;
                 }
 
-                const tx = alignTrackToLogical(bounded);
-                if (tx !== undefined) {
-                    await settleTrackTo(tx);
+                if (wraps) {
+                    const physicalShown = bounded === 0 ? 2 * n : n - 1;
+                    rehomeInfiniteRibbonToMiddle(bounded, physicalShown);
+                } else {
+                    snapTrackToLogical(bounded, { force: stepPx === 0 });
                 }
 
-                if (itemCount !== 2) {
-                    setRibbonActiveIndex(bounded);
-                    ribbonActiveIndexRef.current = bounded;
-                }
+                setRibbonActiveIndex(bounded);
+                ribbonActiveIndexRef.current = bounded;
+
+                await new Promise((r) => requestAnimationFrame(r));
             } finally {
                 navBusyRef.current = false;
             }
         },
-        [alignTrackToLogical, getStepBetweenLogical, itemCount, settleTrackTo, trackX],
+        [
+            getStepBetweenLogical,
+            itemCount,
+            rehomeInfiniteRibbonToMiddle,
+            snapTrackToLogical,
+            trackX,
+            usesInfiniteRibbon,
+        ],
     );
 
     useEffect(() => {
@@ -593,8 +623,6 @@ export default function StackedDeckCarousel({ title: _title, items: itemsProp, m
                             {Array.from({ length: copies }, (_, copy) =>
                                 items.map((item, idx) => {
                                     const physicalIdx = copy * itemCount + idx;
-                                    const isRibbonFocus =
-                                        physicalIdx === focusedPhysicalIndex(ribbonActiveIndex, itemCount, copies);
 
                                     return (
                                         <div
@@ -603,36 +631,15 @@ export default function StackedDeckCarousel({ title: _title, items: itemsProp, m
                                                 cardRefs.current[physicalIdx] = el;
                                             }}
                                             data-ribbon-card=""
-                                            className={`${RIBBON_CARD_SHELL} ${isRibbonFocus ? 'z-[5]' : 'z-0'}`}
+                                            className={RIBBON_CARD_SHELL}
                                         >
-                                            <motion.div
-                                                className={`flex min-h-0 flex-1 flex-col rounded-[12px] ${isRibbonFocus ? 'shadow-md shadow-[#262A22]/10' : ''}`}
-                                                style={{ transformOrigin: 'center center' }}
-                                                animate={{
-                                                    scale: isRibbonFocus ? RIBBON_FOCUS_SCALE : RIBBON_NEIGHBOR_SCALE,
-                                                    opacity: isRibbonFocus
-                                                        ? RIBBON_FOCUS_OPACITY
-                                                        : RIBBON_NEIGHBOR_OPACITY,
-                                                }}
-                                                transition={netflixSlideTransition()}
-                                                whileHover={
-                                                    isRibbonFocus
-                                                        ? {
-                                                              scale: 1.02,
-                                                              transition: {
-                                                                  duration: 0.2,
-                                                                  ease: [0.22, 1, 0.36, 1],
-                                                              },
-                                                          }
-                                                        : undefined
-                                                }
-                                            >
+                                            <div className="flex min-h-0 flex-1 flex-col rounded-[12px]">
                                                 {renderMealCard(item, idx, {
                                                     isFront: true,
                                                     stackPos: null,
                                                     deckLayout: 'ribbon',
                                                 })}
-                                            </motion.div>
+                                            </div>
                                         </div>
                                     );
                                 }),
@@ -655,6 +662,7 @@ export default function StackedDeckCarousel({ title: _title, items: itemsProp, m
                         <button
                             type="button"
                             aria-label="Previous meal"
+                            onMouseDown={(e) => e.preventDefault()}
                             onClick={() => void prevRibbon()}
                             disabled={itemCount <= 1}
                             className={ribbonArrowButtonClass}
@@ -676,6 +684,7 @@ export default function StackedDeckCarousel({ title: _title, items: itemsProp, m
                         <button
                             type="button"
                             aria-label="Next meal"
+                            onMouseDown={(e) => e.preventDefault()}
                             onClick={() => void nextRibbon()}
                             disabled={itemCount <= 1}
                             className={ribbonArrowButtonClass}

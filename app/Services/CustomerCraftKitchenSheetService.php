@@ -7,6 +7,7 @@ use App\Models\CustomerCraftPlanDay;
 use App\Models\CustomerCraftPlanDayMeal;
 use App\Models\Meal;
 use App\Services\Nutrition\AdaptedMenuBuilder;
+use App\Services\Nutrition\DayMacroReconciliation;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
@@ -71,6 +72,7 @@ final class CustomerCraftKitchenSheetService
             $adaptOptions = [
                 'include_soup' => $planDay->include_soup,
                 'craft_key' => $planDay->craftPlan->craft_key,
+                'day_of_week' => (int) $planDay->day_of_week,
             ];
 
             if ($planDay->include_soup) {
@@ -108,15 +110,27 @@ final class CustomerCraftKitchenSheetService
                 }
             }
 
-            $breakfastMeal = $planDay->meals
-                ->first(fn (CustomerCraftPlanDayMeal $row): bool => $row->slot === CustomerCraftMealSlot::Breakfast)?->meal;
-
             /** @var list<Meal> $mainMeals */
             $mainMeals = [];
             /** @var list<int> $mainPositions */
             $mainPositions = [];
-            /** @var list<CustomerCraftPlanDayMeal> $nonMainDayMeals */
-            $nonMainDayMeals = [];
+            /** @var array{
+             *     breakfasts: list<array<string, mixed>>,
+             *     meals: list<array<string, mixed>>,
+             *     sideSalads: list<array<string, mixed>>,
+             *     desserts: list<array<string, mixed>>,
+             *     soup: list<array<string, mixed>>
+             * } $dayMenu
+             */
+            $dayMenu = [
+                'breakfasts' => [],
+                'meals' => [],
+                'sideSalads' => [],
+                'desserts' => [],
+                'soup' => [],
+            ];
+            /** @var list<string> $fixedSlots */
+            $fixedSlots = [];
 
             foreach ($planDay->meals->sortBy('position') as $dayMeal) {
                 if ($dayMeal->meal === null) {
@@ -126,16 +140,92 @@ final class CustomerCraftKitchenSheetService
                 if ($dayMeal->slot === CustomerCraftMealSlot::Main) {
                     $mainMeals[] = $dayMeal->meal;
                     $mainPositions[] = (int) $dayMeal->position;
-
-                    continue;
                 }
-
-                $nonMainDayMeals[] = $dayMeal;
             }
 
             $balancedMains = AdaptedMenuBuilder::adaptMainMealsForProfile($profile, $mainMeals, $adaptOptions);
+            $dayMenu['meals'] = $balancedMains;
 
-            foreach ($balancedMains as $index => $adapted) {
+            foreach ($planDay->meals->sortBy('position') as $dayMeal) {
+                $meal = $dayMeal->meal;
+                if ($meal === null || $dayMeal->slot === CustomerCraftMealSlot::Main) {
+                    continue;
+                }
+
+                $adapted = AdaptedMenuBuilder::adaptMealForProfile($profile, $meal, $adaptOptions);
+
+                if ($adapted === null) {
+                    continue;
+                }
+
+                match ($dayMeal->slot) {
+                    CustomerCraftMealSlot::Breakfast => $dayMenu['breakfasts'][] = $adapted,
+                    CustomerCraftMealSlot::SideSalad => $dayMenu['sideSalads'][] = $adapted,
+                    CustomerCraftMealSlot::Dessert => $dayMenu['desserts'][] = $adapted,
+                    CustomerCraftMealSlot::Soup => $dayMenu['soup'][] = $adapted,
+                    default => null,
+                };
+
+                $fixedSlot = match ($dayMeal->slot) {
+                    CustomerCraftMealSlot::SideSalad => 'side_salad',
+                    CustomerCraftMealSlot::Dessert => 'dessert',
+                    CustomerCraftMealSlot::Soup => 'soup',
+                    default => null,
+                };
+
+                if ($fixedSlot !== null) {
+                    $fixedSlots[] = $fixedSlot;
+                }
+            }
+
+            $reconcileOptions = $adaptOptions;
+
+            if ($fixedSlots !== []) {
+                $reconcileOptions['selected_fixed_slots'] = array_values(array_unique($fixedSlots));
+            }
+
+            foreach (
+                [
+                    'breakfasts' => 'selected_breakfast_meal_ids',
+                    'meals' => 'selected_main_meal_ids',
+                    'sideSalads' => 'selected_side_salad_meal_ids',
+                    'desserts' => 'selected_dessert_meal_ids',
+                    'soup' => 'selected_soup_meal_ids',
+                ] as $bucket => $optionKey
+            ) {
+                $ids = [];
+
+                foreach ($dayMenu[$bucket] as $adapted) {
+                    $id = (int) ($adapted['id'] ?? 0);
+
+                    if ($id > 0) {
+                        $ids[] = $id;
+                    }
+                }
+
+                if ($ids !== []) {
+                    $reconcileOptions[$optionKey] = array_values(array_unique($ids));
+                }
+            }
+
+            $reconciled = DayMacroReconciliation::reconcile(
+                $profile,
+                $dayMenu,
+                $mainMeals,
+                $reconcileOptions,
+            );
+
+            $balancedMainsById = collect($reconciled['dayMenu']['meals'])->keyBy(
+                static fn (array $adapted): int => (int) ($adapted['id'] ?? 0),
+            );
+
+            foreach ($mainMeals as $index => $mainMeal) {
+                $adapted = $balancedMainsById->get((int) $mainMeal->id);
+
+                if (! is_array($adapted)) {
+                    continue;
+                }
+
                 $adaptedMeals[] = $adapted;
                 $label = self::mealLabelWithPortion($adapted);
                 $position = $mainPositions[$index] ?? ($index + 1);
@@ -147,28 +237,29 @@ final class CustomerCraftKitchenSheetService
                 }
             }
 
-            foreach ($nonMainDayMeals as $dayMeal) {
-                $meal = $dayMeal->meal;
-                if ($meal === null) {
-                    continue;
+            foreach (
+                [
+                    'breakfasts' => CustomerCraftMealSlot::Breakfast,
+                    'sideSalads' => CustomerCraftMealSlot::SideSalad,
+                    'desserts' => CustomerCraftMealSlot::Dessert,
+                    'soup' => CustomerCraftMealSlot::Soup,
+                ] as $bucket => $slot
+            ) {
+                foreach ($reconciled['dayMenu'][$bucket] as $adapted) {
+                    if (! is_array($adapted)) {
+                        continue;
+                    }
+
+                    $adaptedMeals[] = $adapted;
+                    $label = self::mealLabelWithPortion($adapted);
+
+                    match ($slot) {
+                        CustomerCraftMealSlot::Breakfast => $slotLabels['breakfast'] = $label,
+                        CustomerCraftMealSlot::Soup => $slotLabels['soup'] = $label,
+                        CustomerCraftMealSlot::SideSalad => $slotLabels['sideSalad'] = $label,
+                        CustomerCraftMealSlot::Dessert => $slotLabels['dessert'] = $label,
+                    };
                 }
-
-                $adapted = AdaptedMenuBuilder::adaptMealForProfile($profile, $meal, $adaptOptions);
-
-                if ($adapted === null) {
-                    continue;
-                }
-
-                $adaptedMeals[] = $adapted;
-                $label = self::mealLabelWithPortion($adapted);
-
-                match ($dayMeal->slot) {
-                    CustomerCraftMealSlot::Breakfast => $slotLabels['breakfast'] = $label,
-                    CustomerCraftMealSlot::Soup => $slotLabels['soup'] = $label,
-                    CustomerCraftMealSlot::SideSalad => $slotLabels['sideSalad'] = $label,
-                    CustomerCraftMealSlot::Dessert => $slotLabels['dessert'] = $label,
-                    default => null,
-                };
             }
 
             $allergies = is_array($profile->allergies) ? implode(', ', $profile->allergies) : '';
