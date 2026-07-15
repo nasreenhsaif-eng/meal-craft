@@ -95,19 +95,25 @@ final class ProductionWeeklyMenuSchedule
             return [];
         }
 
-        $rows = MealPlanDayMeal::query()
+        $daysToBuild = self::daysToBuildFromAdaptOptions($adaptOptions);
+
+        $rowsQuery = MealPlanDayMeal::query()
             ->where('meal_plan_id', $plan->id)
             ->where('is_option_b', false)
             ->with(['meal.ingredients'])
             ->orderBy('day_number')
             ->orderBy('slot_type')
-            ->orderBy('slot_index')
-            ->get()
-            ->groupBy('day_number');
+            ->orderBy('slot_index');
+
+        if (count($daysToBuild) === 1) {
+            $rowsQuery->where('day_number', $daysToBuild[0]);
+        }
+
+        $rows = $rowsQuery->get()->groupBy('day_number');
 
         $out = [];
 
-        foreach (range(1, 7) as $dayNumber) {
+        foreach ($daysToBuild as $dayNumber) {
             /** @var Collection<int, MealPlanDayMeal> $dayRows */
             $dayRows = $rows->get($dayNumber, collect());
 
@@ -134,6 +140,23 @@ final class ProductionWeeklyMenuSchedule
         }
 
         return $out;
+    }
+
+    /**
+     * When day_of_week is set (1–7), only that weekday is adapted; otherwise Sun–Sat.
+     *
+     * @param  array<string, mixed>  $adaptOptions
+     * @return list<int>
+     */
+    public static function daysToBuildFromAdaptOptions(array $adaptOptions): array
+    {
+        $requestedDay = isset($adaptOptions['day_of_week']) ? (int) $adaptOptions['day_of_week'] : 0;
+
+        if ($requestedDay >= 1 && $requestedDay <= 7) {
+            return [$requestedDay];
+        }
+
+        return range(1, 7);
     }
 
     /**
@@ -244,19 +267,25 @@ final class ProductionWeeklyMenuSchedule
             return [];
         }
 
-        $rows = MealPlanDayMeal::query()
+        $daysToBuild = self::daysToBuildFromAdaptOptions($adaptOptions);
+
+        $rowsQuery = MealPlanDayMeal::query()
             ->where('meal_plan_id', $plan->id)
             ->where('is_option_b', false)
             ->where('slot_type', MealPlanSlotType::Soup->value)
             ->with(['meal.ingredients'])
             ->orderBy('day_number')
-            ->orderBy('slot_index')
-            ->get()
-            ->groupBy('day_number');
+            ->orderBy('slot_index');
+
+        if (count($daysToBuild) === 1) {
+            $rowsQuery->where('day_number', $daysToBuild[0]);
+        }
+
+        $rows = $rowsQuery->get()->groupBy('day_number');
 
         $out = [];
 
-        foreach (range(1, 7) as $dayNumber) {
+        foreach ($daysToBuild as $dayNumber) {
             /** @var Collection<int, MealPlanDayMeal> $dayRows */
             $dayRows = $rows->get($dayNumber, collect());
 

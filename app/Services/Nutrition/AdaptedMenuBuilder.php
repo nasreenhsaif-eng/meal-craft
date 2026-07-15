@@ -411,7 +411,6 @@ final class AdaptedMenuBuilder
         $currentMainCalories = self::sumAdaptedMainCalories($adaptedMains);
         $maxMainCalories = max(0.0, round($maxDayCalories - $nonMainCalories, 2));
         $remainingCalorieBudget = max(0.0, round($maxMainCalories - $currentMainCalories, 2));
-        $slotTargetCaloriesEach = (float) ($plan['scalable_slot_targets']['main_each']['calories'] ?? 0);
 
         $compensatingProtein = 0.0;
 
@@ -439,11 +438,8 @@ final class AdaptedMenuBuilder
             $proteinShare = $currentProtein / $compensatingProtein;
             $addedProtein = round($proteinDeficit * $proteinShare, 2);
             $boostMultiplier = ($currentProtein + $addedProtein) / $currentProtein;
+            // Day calorie headroom is the only hard ceiling (fixed overshoot already shrank slot targets).
             $maxCalories = $currentCalories + $extraCaloriesPerCompensator;
-
-            if ($slotTargetCaloriesEach > 0) {
-                $maxCalories = max($maxCalories, $slotTargetCaloriesEach);
-            }
 
             if ($boostMultiplier <= 1.0001) {
                 continue;
@@ -505,7 +501,8 @@ final class AdaptedMenuBuilder
 
         $carbMultiplier = ($bestCarbs + $carbDeficit) / $bestCarbs;
         $maxMealCalories = $currentCalories + $calorieDeficit;
-        $effectiveBoost = min($carbMultiplier, $maxMealCalories / $currentCalories);
+        // Only carb roles scale — do not treat this like a whole-meal calorie multiplier.
+        $effectiveBoost = $carbMultiplier;
 
         if ($effectiveBoost <= 1.0001) {
             return $adaptedMains;
@@ -524,7 +521,73 @@ final class AdaptedMenuBuilder
     }
 
     /**
-     * Day-level trim — reduces carbs and fat on the highest-carb / highest-fat mains when the day runs over target.
+     * Trim protein roles on the highest-protein mains until day protein surplus is closed.
+     *
+     * @param  list<array<string, mixed>>  $adaptedMains
+     * @param  list<Meal>  $meals
+     * @return list<array<string, mixed>>
+     */
+    public static function trimMainMealsForProteinSurplus(
+        array $adaptedMains,
+        array $plan,
+        array $meals,
+        float $proteinSurplus,
+    ): array {
+        if ($adaptedMains === [] || count($adaptedMains) !== count($meals) || $proteinSurplus <= 0.25) {
+            return $adaptedMains;
+        }
+
+        $balanced = $adaptedMains;
+        $remainingProteinSurplus = $proteinSurplus;
+        $maxPasses = 8;
+
+        for ($pass = 0; $pass < $maxPasses && $remainingProteinSurplus > 0.25; $pass++) {
+            $bestProteinIndex = null;
+            $bestProtein = 0.0;
+
+            foreach ($balanced as $index => $adapted) {
+                $protein = (float) ($adapted['adapted_nutrition']['protein'] ?? 0);
+
+                if ($protein > $bestProtein) {
+                    $bestProtein = $protein;
+                    $bestProteinIndex = $index;
+                }
+            }
+
+            if ($bestProteinIndex === null || $bestProtein <= 0) {
+                break;
+            }
+
+            $proteinReduction = min($remainingProteinSurplus, $bestProtein * 0.35);
+            $proteinMultiplier = max(0.0, ($bestProtein - $proteinReduction) / $bestProtein);
+
+            if ($proteinMultiplier >= 0.9999) {
+                break;
+            }
+
+            $beforeProtein = $bestProtein;
+            $balanced[$bestProteinIndex] = self::trimMainMealWithProteinMultiplier(
+                $meals[$bestProteinIndex],
+                $plan,
+                $balanced[$bestProteinIndex],
+                $proteinMultiplier,
+            );
+            $afterProtein = (float) ($balanced[$bestProteinIndex]['adapted_nutrition']['protein'] ?? 0);
+            $removed = round($beforeProtein - $afterProtein, 2);
+
+            if ($removed < 0.25) {
+                break;
+            }
+
+            $remainingProteinSurplus = max(0.0, round($remainingProteinSurplus - $removed, 2));
+        }
+
+        return $balanced;
+    }
+
+    /**
+     * Day-level trim — reduces starchy carbs (then protein when over target) on mains.
+     * Cooking fat and vegetables are never trimmed.
      *
      * @param  list<array<string, mixed>>  $adaptedMains
      * @param  list<Meal>  $meals
@@ -535,7 +598,7 @@ final class AdaptedMenuBuilder
         array $plan,
         array $meals,
         float $carbSurplus,
-        float $fatSurplus,
+        float $proteinSurplus,
         float $calorieSurplus,
     ): array {
         if ($adaptedMains === [] || count($adaptedMains) !== count($meals) || $calorieSurplus <= 0.5) {
@@ -546,7 +609,7 @@ final class AdaptedMenuBuilder
         $balanced = $adaptedMains;
         $remainingCalorieSurplus = $calorieSurplus;
         $remainingCarbSurplus = max(0.0, $carbSurplus);
-        $remainingFatSurplus = max(0.0, $fatSurplus);
+        $remainingProteinSurplus = max(0.0, $proteinSurplus);
         $maxPasses = 8;
 
         for ($pass = 0; $pass < $maxPasses && $remainingCalorieSurplus > $tolerance; $pass++) {
@@ -581,31 +644,31 @@ final class AdaptedMenuBuilder
                 }
             }
 
-            if ($remainingFatSurplus > 0.25 && $remainingCalorieSurplus > $tolerance) {
-                $bestFatIndex = null;
-                $bestFat = 0.0;
+            if ($remainingProteinSurplus > 0.25 && $remainingCalorieSurplus > $tolerance) {
+                $bestProteinIndex = null;
+                $bestProtein = 0.0;
 
                 foreach ($balanced as $index => $adapted) {
-                    $fat = (float) ($adapted['adapted_nutrition']['fat'] ?? 0);
+                    $protein = (float) ($adapted['adapted_nutrition']['protein'] ?? 0);
 
-                    if ($fat > $bestFat) {
-                        $bestFat = $fat;
-                        $bestFatIndex = $index;
+                    if ($protein > $bestProtein) {
+                        $bestProtein = $protein;
+                        $bestProteinIndex = $index;
                     }
                 }
 
-                if ($bestFatIndex !== null && $bestFat > 0) {
-                    $fatReduction = min($remainingFatSurplus, $remainingCalorieSurplus / 9);
-                    $fatMultiplier = max(0.0, ($bestFat - $fatReduction) / $bestFat);
+                if ($bestProteinIndex !== null && $bestProtein > 0) {
+                    $proteinReduction = min($remainingProteinSurplus, $remainingCalorieSurplus / 4);
+                    $proteinMultiplier = max(0.0, ($bestProtein - $proteinReduction) / $bestProtein);
 
-                    if ($fatMultiplier < 0.9999) {
-                        $balanced[$bestFatIndex] = self::trimMainMealWithFatMultiplier(
-                            $meals[$bestFatIndex],
+                    if ($proteinMultiplier < 0.9999) {
+                        $balanced[$bestProteinIndex] = self::trimMainMealWithProteinMultiplier(
+                            $meals[$bestProteinIndex],
                             $plan,
-                            $balanced[$bestFatIndex],
-                            $fatMultiplier,
+                            $balanced[$bestProteinIndex],
+                            $proteinMultiplier,
                         );
-                        $remainingFatSurplus = max(0.0, round($remainingFatSurplus - $fatReduction, 2));
+                        $remainingProteinSurplus = max(0.0, round($remainingProteinSurplus - $proteinReduction, 2));
                     }
                 }
             }
@@ -627,11 +690,14 @@ final class AdaptedMenuBuilder
                     $targetCalories = max(0.0, $bestCalories - ($remainingCalorieSurplus - $tolerance));
 
                     if ($targetCalories < $bestCalories - 0.5) {
+                        // Day calorie close uses starch only; protein surplus is handled above
+                        // (bounded) so we never wipe plate protein to chase kcal.
                         $balanced[$bestCalorieIndex] = self::trimMainMealToCalorieTarget(
                             $meals[$bestCalorieIndex],
                             $plan,
                             $balanced[$bestCalorieIndex],
                             $targetCalories,
+                            allowProteinTrim: false,
                         );
                     }
                 }
@@ -803,8 +869,13 @@ final class AdaptedMenuBuilder
             $meal->loadMissing('ingredients');
             $grams = self::adaptedGramsFromSerializedMain($adapted, $meal);
             $grams = MacroFirstMainMealScaler::boostProteinRoleGrams($meal, $grams, $effectiveBoost);
-            // Keep the protein/seasoning boost; trim carbs/fat/veg if the slot is over calories.
-            $grams = MacroFirstMainMealScaler::trimNonProteinRolesToCalorieTarget($meal, $grams, $maxCalories);
+            // Keep the protein boost; free starch (day-surplus floor) so protein can land under maxCalories.
+            $grams = MacroFirstMainMealScaler::trimStarchRolesToCalorieTarget(
+                $meal,
+                $grams,
+                $maxCalories,
+                daySurplusFloor: true,
+            );
 
             return self::serializeScaledMealFromGrams($meal, 'main', $plan, $grams, proteinBalanced: true);
         }
@@ -835,7 +906,14 @@ final class AdaptedMenuBuilder
             $meal->loadMissing('ingredients');
             $grams = self::adaptedGramsFromSerializedMain($adapted, $meal);
             $grams = MacroFirstMainMealScaler::boostCarbRoleGrams($meal, $grams, $effectiveBoost);
-            $grams = MacroFirstMainMealScaler::capToCalorieTarget($meal, $grams, $maxCalories);
+            // Cap with starch-only trim so protein already on the plate is preserved.
+            $grams = MacroFirstMainMealScaler::trimStarchRolesToCalorieTarget(
+                $meal,
+                $grams,
+                $maxCalories,
+                daySurplusFloor: true,
+            );
+            $grams = MacroFirstMainMealScaler::syncHerbSpiceToDishScale($meal, $grams);
 
             return self::serializeScaledMealFromGrams($meal, 'main', $plan, $grams, proteinBalanced: false);
         }
@@ -884,16 +962,16 @@ final class AdaptedMenuBuilder
      * @param  array<string, mixed>  $adapted
      * @return array<string, mixed>
      */
-    private static function trimMainMealWithFatMultiplier(
+    private static function trimMainMealWithProteinMultiplier(
         Meal $meal,
         array $plan,
         array $adapted,
-        float $fatMultiplier,
+        float $proteinMultiplier,
     ): array {
         if (MacroFirstMainMealScaler::isEnabled()) {
             $meal->loadMissing('ingredients');
             $grams = self::adaptedGramsFromSerializedMain($adapted, $meal);
-            $grams = MacroFirstMainMealScaler::trimFatRoleGrams($meal, $grams, $fatMultiplier);
+            $grams = MacroFirstMainMealScaler::trimProteinRoleGrams($meal, $grams, $proteinMultiplier);
 
             return self::serializeScaledMealFromGrams($meal, 'main', $plan, $grams, proteinBalanced: false);
         }
@@ -904,7 +982,7 @@ final class AdaptedMenuBuilder
             $meal,
             'main',
             $plan,
-            round($currentScale * $fatMultiplier, 4),
+            round($currentScale * $proteinMultiplier, 4),
             proteinBalanced: false,
         );
     }
@@ -918,11 +996,24 @@ final class AdaptedMenuBuilder
         array $plan,
         array $adapted,
         float $targetCalories,
+        bool $allowProteinTrim = true,
     ): array {
         if (MacroFirstMainMealScaler::isEnabled()) {
             $meal->loadMissing('ingredients');
             $grams = self::adaptedGramsFromSerializedMain($adapted, $meal);
-            $grams = MacroFirstMainMealScaler::trimNonProteinRolesToCalorieTarget($meal, $grams, $targetCalories);
+            $grams = $allowProteinTrim
+                ? MacroFirstMainMealScaler::trimProteinAndStarchRolesToCalorieTarget(
+                    $meal,
+                    $grams,
+                    $targetCalories,
+                    daySurplusFloor: true,
+                )
+                : MacroFirstMainMealScaler::trimStarchRolesToCalorieTarget(
+                    $meal,
+                    $grams,
+                    $targetCalories,
+                    daySurplusFloor: true,
+                );
 
             return self::serializeScaledMealFromGrams($meal, 'main', $plan, $grams, proteinBalanced: false);
         }

@@ -97,19 +97,19 @@ function removeCarbsFromConsultationMeal(meal, carbReduction) {
 
 /**
  * @param {ConsultationMealCard} meal
- * @param {number} fatReduction
+ * @param {number} proteinReduction
  */
-function removeFatFromConsultationMeal(meal, fatReduction) {
-    if (fatReduction <= 0) {
+function removeProteinFromConsultationMeal(meal, proteinReduction) {
+    if (proteinReduction <= 0) {
         return meal;
     }
 
-    const protein = parseMacro(meal.macros?.protein);
     const carbs = parseMacro(meal.macros?.carbs);
-    const currentFat = parseMacro(meal.macros?.fat);
-    const removed = Math.min(fatReduction, Math.max(0, currentFat - 1));
-    const fat = currentFat - removed;
-    const calories = (meal.caloriesNumber ?? parseMacro(meal.macros?.calories)) - removed * 9;
+    const fat = parseMacro(meal.macros?.fat);
+    const currentProtein = parseMacro(meal.macros?.protein);
+    const removed = Math.min(proteinReduction, Math.max(0, currentProtein - 1));
+    const protein = currentProtein - removed;
+    const calories = (meal.caloriesNumber ?? parseMacro(meal.macros?.calories)) - removed * 4;
 
     return {
         ...meal,
@@ -158,15 +158,15 @@ function indexOfHighestCarbMain(meals) {
 /**
  * @param {ConsultationMealCard[]} meals
  */
-function indexOfHighestFatMain(meals) {
+function indexOfHighestProteinMain(meals) {
     let bestIndex = -1;
-    let bestFat = 0;
+    let bestProtein = 0;
 
     meals.forEach((meal, index) => {
-        const fat = parseMacro(meal.macros?.fat);
+        const protein = parseMacro(meal.macros?.protein);
 
-        if (fat > bestFat) {
-            bestFat = fat;
+        if (protein > bestProtein) {
+            bestProtein = protein;
             bestIndex = index;
         }
     });
@@ -175,14 +175,17 @@ function indexOfHighestFatMain(meals) {
 }
 
 /**
+ * Kitchen-real day surplus: trim starchy carbs, then protein. Never cooking fat.
+ *
  * @param {ConsultationMealCard[]} meals
  * @param {number} carbSurplus
- * @param {number} fatSurplus
+ * @param {number} proteinTrimRoom
  * @param {number} calorieSurplus
  */
-function trimMainMealsForDaySurplus(meals, carbSurplus, fatSurplus, calorieSurplus) {
+function trimMainMealsForDaySurplus(meals, carbSurplus, proteinTrimRoom, calorieSurplus) {
     let balanced = [...meals];
     let remainingCalorieSurplus = calorieSurplus;
+    let remainingProteinTrim = Math.max(0, proteinTrimRoom);
 
     if (carbSurplus > 0) {
         const carbMainIndex = indexOfHighestCarbMain(balanced);
@@ -196,13 +199,15 @@ function trimMainMealsForDaySurplus(meals, carbSurplus, fatSurplus, calorieSurpl
         }
     }
 
-    if (fatSurplus > 0 && remainingCalorieSurplus > 0) {
-        const fatMainIndex = indexOfHighestFatMain(balanced);
+    if (remainingProteinTrim > 0 && remainingCalorieSurplus > 0) {
+        const proteinMainIndex = indexOfHighestProteinMain(balanced);
 
-        if (fatMainIndex >= 0) {
-            const fatReduction = Math.min(fatSurplus, remainingCalorieSurplus / 9);
+        if (proteinMainIndex >= 0) {
+            const proteinReduction = Math.min(remainingProteinTrim, remainingCalorieSurplus / 4);
             balanced = balanced.map((meal, index) =>
-                index === fatMainIndex ? removeFatFromConsultationMeal(meal, fatReduction) : meal,
+                index === proteinMainIndex
+                    ? removeProteinFromConsultationMeal(meal, proteinReduction)
+                    : meal,
             );
         }
     }
@@ -371,7 +376,68 @@ function sumCategoryMacros(categories) {
 }
 
 /**
- * Mirror backend day-level protein reconciliation for live consultation footer totals.
+ * Calories shown on a consultation meal card (MacroGrid uses `macros.calories`).
+ *
+ * @param {{ caloriesNumber?: number; macros?: { calories?: number | string } } | null | undefined} meal
+ */
+export function consultationMealCardCalories(meal) {
+    const fromMacros = parseMacro(meal?.macros?.calories);
+    if (fromMacros > 0) {
+        return Math.round(fromMacros);
+    }
+
+    const fromNumber = meal?.caloriesNumber;
+
+    return typeof fromNumber === 'number' && Number.isFinite(fromNumber) ? Math.round(fromNumber) : 0;
+}
+
+/**
+ * Honest day calorie total for the consultation footer — sum adapted meal-card calories.
+ * Must match the cards on screen (never invent a lower total via surplus math alone).
+ *
+ * @param {Array<{ caloriesNumber?: number; macros?: { calories?: number | string } } | null | undefined>} meals
+ */
+export function sumConsultationMealCardCalories(meals) {
+    if (!Array.isArray(meals) || meals.length === 0) {
+        return 0;
+    }
+
+    return meals.reduce((acc, meal) => acc + consultationMealCardCalories(meal), 0);
+}
+
+/**
+ * Honest day macro totals for the consultation footer — flat sum of selected card macros.
+ * Avoids dropping meals that lack `slot` when grouping by category.
+ *
+ * @param {Array<ConsultationMealCard | null | undefined>} meals
+ * @returns {{ calories: number; protein: number; carbs: number; fat: number }}
+ */
+export function sumConsultationMealCardMacros(meals) {
+    if (!Array.isArray(meals) || meals.length === 0) {
+        return { calories: 0, protein: 0, carbs: 0, fat: 0 };
+    }
+
+    return meals.reduce(
+        (totals, meal) => {
+            if (!meal) {
+                return totals;
+            }
+
+            return {
+                calories: totals.calories + consultationMealCardCalories(meal),
+                protein: totals.protein + parseMacro(meal.macros?.protein),
+                carbs: totals.carbs + parseMacro(meal.macros?.carbs),
+                fat: totals.fat + parseMacro(meal.macros?.fat),
+            };
+        },
+        { calories: 0, protein: 0, carbs: 0, fat: 0 },
+    );
+}
+
+/**
+ * Close day macros for consultation — protein boost / carb refill / protein+starch trim.
+ * Cooking fat is never trimmed (kitchen-real). Prefer {@link sumConsultationMealCardCalories}
+ * for footer totals so the UI matches adapted meal cards.
  *
  * @param {Partial<Record<'breakfasts' | 'meals' | 'sideSalads' | 'desserts' | 'soup', ConsultationMealCard[]>>} categories
  * @param {{ calories: number; protein: number; carbs: number; fat: number }} targets
@@ -399,13 +465,9 @@ export function reconcileConsultationDayMacros(
     const proteinDeficit = Math.round((targets.protein - totals.protein) * 10) / 10;
     const proteinTolerance = tolerance.protein ?? 15;
     const carbDeficit = Math.round((targets.carbs - totals.carbs) * 10) / 10;
-    const carbTolerance = tolerance.carbs ?? 20;
-    const fatGap = Math.abs(Math.round((targets.fat - totals.fat) * 10) / 10);
-    const fatTolerance = tolerance.fat ?? 15;
     const calorieDeficit = Math.round((dayCalorieTarget - totals.calories) * 10) / 10;
     const calorieSurplus = Math.round((totals.calories - dayCalorieTarget) * 10) / 10;
     const carbSurplus = Math.round((totals.carbs - targets.carbs) * 10) / 10;
-    const fatSurplus = Math.round((totals.fat - targets.fat) * 10) / 10;
 
     if (proteinDeficit > proteinTolerance) {
         const fixedCalories =
@@ -455,7 +517,8 @@ export function reconcileConsultationDayMacros(
             const proteinShare = currentProtein / compensatingProtein;
             const addedProtein = proteinDeficit * proteinShare;
             let boostMultiplier = (currentProtein + addedProtein) / currentProtein;
-            const maxCalories = Math.max(currentCalories + extraCaloriesPerCompensator, mainSlotTargetCalories);
+            // Day calorie headroom only — never expand past leftovers using the slot target.
+            const maxCalories = currentCalories + extraCaloriesPerCompensator;
             boostMultiplier = Math.min(boostMultiplier, maxCalories / currentCalories);
 
             if (boostMultiplier <= 1.0001) {
@@ -474,15 +537,14 @@ export function reconcileConsultationDayMacros(
         ];
     }
 
-    if (
-        calorieSurplus > dayCalorieTolerance &&
-        proteinDeficit <= proteinTolerance &&
-        (carbSurplus > carbTolerance || fatSurplus > fatTolerance)
-    ) {
+    if (calorieSurplus > dayCalorieTolerance) {
+        // Prefer starch; protein may trim while staying at/above target − tol. Never trim fat.
+        const proteinDayFloor = targets.protein - proteinTolerance;
+        const proteinTrimRoom = Math.max(0, totals.protein - proteinDayFloor);
         const balancedMains = trimMainMealsForDaySurplus(
             meals,
             Math.max(0, carbSurplus),
-            Math.max(0, fatSurplus),
+            proteinTrimRoom,
             calorieSurplus,
         );
 
@@ -495,18 +557,14 @@ export function reconcileConsultationDayMacros(
         ];
     }
 
-    if (
-        calorieDeficit > dayCalorieTolerance &&
-        carbDeficit > carbTolerance &&
-        proteinDeficit <= proteinTolerance &&
-        fatGap <= fatTolerance
-    ) {
+    // Fat may sit outside tolerance when cooking oil is frozen — still refill starch for calories.
+    if (calorieDeficit > dayCalorieTolerance && proteinDeficit <= proteinTolerance) {
         const carbMainIndex = indexOfHighestCarbMain(meals);
+        const carbFillGrams = Math.max(carbDeficit, calorieDeficit / 4);
 
-        if (carbMainIndex >= 0) {
-            const extraCarbs = Math.min(carbDeficit, calorieDeficit / 4);
+        if (carbMainIndex >= 0 && carbFillGrams > 0.25) {
             const balancedMains = meals.map((meal, index) =>
-                index === carbMainIndex ? addCarbsToConsultationMeal(meal, extraCarbs) : meal,
+                index === carbMainIndex ? addCarbsToConsultationMeal(meal, carbFillGrams) : meal,
             );
 
             return [

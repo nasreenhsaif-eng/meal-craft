@@ -6,7 +6,9 @@ use App\Models\CustomerProfile;
 use App\Models\Meal;
 
 /**
- * Closes day-level macro gaps by boosting scalable slots (breakfast + mains) after fixed picks are set.
+ * Closes day-level macro gaps on mains after fixed picks and tier-fixed breakfast are set.
+ *
+ * Order: surplus trim (protein/starch) → protein boost → surplus trim again → carb fill.
  */
 class DayMacroReconciliation
 {
@@ -50,10 +52,13 @@ class DayMacroReconciliation
         $targets = is_array($plan['daily_macros'] ?? null) ? $plan['daily_macros'] : [];
         $tolerance = UserPlanCalculator::dayMacroTolerance();
         $warnings = [];
+        $targetProtein = (float) ($targets['protein_g'] ?? 0);
+
+        // Free calorie headroom first (starch/protein only) before protein boost.
+        $dayMenu = self::reconcileCarbCalorieSurplus($dayMenu, $mainMeals, $plan, $targets, $tolerance, $options);
 
         $dayMenuForTotals = self::dayMenuForMacroTotals($dayMenu, $options);
         $actual = self::sumDayMacros($dayMenuForTotals);
-        $targetProtein = (float) ($targets['protein_g'] ?? 0);
         $proteinDeficit = round($targetProtein - $actual['protein_g'], 2);
 
         if ($proteinDeficit > $tolerance['protein_g']) {
@@ -85,8 +90,11 @@ class DayMacroReconciliation
             }
         }
 
+        // Close leftover calorie / protein surplus after protein work, then refill carbs if short.
         $dayMenu = self::reconcileCarbCalorieSurplus($dayMenu, $mainMeals, $plan, $targets, $tolerance, $options);
+        $dayMenu = self::reconcileProteinSurplus($dayMenu, $mainMeals, $plan, $targets, $tolerance, $options);
         $dayMenu = self::reconcileCarbCalorieDeficit($dayMenu, $mainMeals, $plan, $targets, $tolerance, $options);
+        $dayMenu = self::reconcileCarbCalorieSurplus($dayMenu, $mainMeals, $plan, $targets, $tolerance, $options);
 
         $dayTargetCalories = (float) ($plan['craft_day_calories'] ?? $plan['plan_tier'] ?? 0);
         $dayCalorieTolerance = UserPlanCalculator::dayCalorieTolerance();
@@ -126,6 +134,66 @@ class DayMacroReconciliation
      *     soup: list<array<string, mixed>>
      * }
      */
+    /**
+     * Trim main protein when day protein sits above target + tolerance (independent of calorie surplus).
+     *
+     * @param  array{
+     *     breakfasts: list<array<string, mixed>>,
+     *     meals: list<array<string, mixed>>,
+     *     sideSalads: list<array<string, mixed>>,
+     *     desserts: list<array<string, mixed>>,
+     *     soup: list<array<string, mixed>>
+     * }  $dayMenu
+     * @param  list<Meal>  $mainMeals
+     * @param  array<string, mixed>  $plan
+     * @param  array<string, float>  $targets
+     * @param  array<string, float>  $tolerance
+     * @return array{
+     *     breakfasts: list<array<string, mixed>>,
+     *     meals: list<array<string, mixed>>,
+     *     sideSalads: list<array<string, mixed>>,
+     *     desserts: list<array<string, mixed>>,
+     *     soup: list<array<string, mixed>>
+     * }
+     */
+    private static function reconcileProteinSurplus(
+        array $dayMenu,
+        array $mainMeals,
+        array $plan,
+        array $targets,
+        array $tolerance,
+        array $options,
+    ): array {
+        if ($mainMeals === []) {
+            return $dayMenu;
+        }
+
+        $actual = self::sumDayMacros(self::dayMenuForMacroTotals($dayMenu, $options));
+        $targetProtein = (float) ($targets['protein_g'] ?? 0);
+        $proteinSurplus = round($actual['protein_g'] - $targetProtein, 2);
+
+        if ($proteinSurplus <= $tolerance['protein_g']) {
+            return $dayMenu;
+        }
+
+        $primaryAdaptedMains = self::adaptedMainsForMeals($dayMenu['meals'], $mainMeals);
+
+        if ($primaryAdaptedMains === []) {
+            return $dayMenu;
+        }
+
+        $trimmedPrimary = AdaptedMenuBuilder::trimMainMealsForProteinSurplus(
+            $primaryAdaptedMains,
+            $plan,
+            $mainMeals,
+            $proteinSurplus,
+        );
+
+        $dayMenu['meals'] = self::mergeAdaptedMainsById($dayMenu['meals'], $trimmedPrimary);
+
+        return $dayMenu;
+    }
+
     private static function reconcileCarbCalorieDeficit(
         array $dayMenu,
         array $mainMeals,
@@ -144,18 +212,26 @@ class DayMacroReconciliation
         $dayCalorieTolerance = UserPlanCalculator::dayCalorieTolerance();
         $targetProtein = (float) ($targets['protein_g'] ?? 0);
         $targetCarbs = (float) ($targets['carbs_g'] ?? 0);
-        $targetFat = (float) ($targets['fat_g'] ?? 0);
         $calorieDeficit = round($dayTargetCalories - $actual['calories'], 2);
         $carbDeficit = round($targetCarbs - $actual['carbs_g'], 2);
         $proteinDeficit = round($targetProtein - $actual['protein_g'], 2);
-        $fatGap = abs(round($targetFat - $actual['fat_g'], 2));
 
+        // Fat may sit outside tolerance when cooking oil is frozen — still refill starch for calories.
+        // When carb macros are already met but calories remain short, push starch from the calorie gap.
         if (
             $calorieDeficit <= $dayCalorieTolerance
             || $proteinDeficit > $tolerance['protein_g']
-            || $fatGap > $tolerance['fat_g']
-            || $carbDeficit <= $tolerance['carbs_g']
         ) {
+            return $dayMenu;
+        }
+
+        $carbFillGrams = max($carbDeficit, $calorieDeficit / 4);
+
+        if ($carbFillGrams <= $tolerance['carbs_g'] && $calorieDeficit <= $dayCalorieTolerance) {
+            return $dayMenu;
+        }
+
+        if ($carbFillGrams <= 0.25) {
             return $dayMenu;
         }
 
@@ -169,7 +245,7 @@ class DayMacroReconciliation
             $primaryAdaptedMains,
             $plan,
             $mainMeals,
-            $carbDeficit,
+            $carbFillGrams,
             $calorieDeficit,
         );
 
@@ -217,16 +293,10 @@ class DayMacroReconciliation
         $dayCalorieTolerance = UserPlanCalculator::dayCalorieTolerance();
         $targetProtein = (float) ($targets['protein_g'] ?? 0);
         $targetCarbs = (float) ($targets['carbs_g'] ?? 0);
-        $targetFat = (float) ($targets['fat_g'] ?? 0);
         $calorieSurplus = round($actual['calories'] - $dayTargetCalories, 2);
         $carbSurplus = round($actual['carbs_g'] - $targetCarbs, 2);
-        $fatSurplus = round($actual['fat_g'] - $targetFat, 2);
-        $proteinDeficit = round($targetProtein - $actual['protein_g'], 2);
 
-        if (
-            $calorieSurplus <= $dayCalorieTolerance
-            || $proteinDeficit > $tolerance['protein_g']
-        ) {
+        if ($calorieSurplus <= $dayCalorieTolerance) {
             return $dayMenu;
         }
 
@@ -236,12 +306,17 @@ class DayMacroReconciliation
             return $dayMenu;
         }
 
+        // Prefer starch for calorie close. Protein may also trim while staying at/above
+        // the day protein floor (target − tol) so mains can absorb fixed overshoot.
+        $proteinDayFloor = $targetProtein - $tolerance['protein_g'];
+        $trimProteinSurplus = max(0.0, round($actual['protein_g'] - $proteinDayFloor, 2));
+
         $trimmedPrimary = AdaptedMenuBuilder::trimMainMealsForDaySurplus(
             $primaryAdaptedMains,
             $plan,
             $mainMeals,
             max(0.0, $carbSurplus),
-            max(0.0, $fatSurplus),
+            max(0.0, $trimProteinSurplus),
             $calorieSurplus,
         );
 

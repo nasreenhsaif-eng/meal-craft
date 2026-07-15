@@ -102,7 +102,10 @@ final class UserPlanCalculator
     }
 
     /**
-     * Split the scalable calorie budget across breakfast and mains using tier-table proportions.
+     * Split the remaining day calories after fixed picks.
+     *
+     * Breakfast stays at the tier-table value (changes only with plan tier).
+     * Mains absorb any overshoot/undershoot when actual fixed kcal ≠ the 2×150 budget.
      *
      * @return array{breakfast: float, main_each: float, scalable_budget: float}
      */
@@ -111,27 +114,14 @@ final class UserPlanCalculator
         $tierTargets = self::tierSlotCalories($planTier);
         $mainCount = max(1, (int) config('customer_nutrition.scalable_slots.main', 2));
 
-        $referenceScalableBudget = round(
-            $tierTargets['breakfast'] + ($tierTargets['main_each'] * $mainCount),
-            2,
-        );
-
+        $breakfast = round((float) $tierTargets['breakfast'], 2);
         $scalableBudget = max(0.0, round($planTier - $fixedPortionTotal, 2));
-
-        if ($referenceScalableBudget <= 0) {
-            return [
-                'breakfast' => 0.0,
-                'main_each' => 0.0,
-                'scalable_budget' => $scalableBudget,
-            ];
-        }
-
-        $breakfastShare = $tierTargets['breakfast'] / $referenceScalableBudget;
-        $mainEachShare = $tierTargets['main_each'] / $referenceScalableBudget;
+        $mainsBudget = max(0.0, round($scalableBudget - $breakfast, 2));
+        $mainEach = $mainCount > 0 ? round($mainsBudget / $mainCount, 2) : 0.0;
 
         return [
-            'breakfast' => round($scalableBudget * $breakfastShare, 2),
-            'main_each' => round($scalableBudget * $mainEachShare, 2),
+            'breakfast' => $breakfast,
+            'main_each' => $mainEach,
             'scalable_budget' => $scalableBudget,
         ];
     }

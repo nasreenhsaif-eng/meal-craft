@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import CraftedForYouPage, { consultationMeals } from './CraftedForYouPage.jsx';
+import CraftedForYouPage from './CraftedForYouPage.jsx';
+import { consultationMeals } from '../../consultation/consultationMockMeals.js';
 import { consultationDeckOptionsForSlotKey } from '../../Components/Consultation/ChooseYourMeals.jsx';
 import StackedDeckCarousel from '../../Components/MealCard/StackedDeckCarousel.jsx';
 import MealCardClientViewNano from '../../Components/MealCardClientViewNano.jsx';
@@ -41,7 +42,7 @@ export const StackedDeckConsultationMeals = {
         return (
             <div className="min-h-screen bg-[#F8F9F6] p-6">
                 <p className="mb-4 font-montserrat text-sm font-bold text-[#262A22]">
-                    Meals of the Day deck — 4 options, select exactly 2 (mock fixtures)
+                    Meals of the Day deck — 6 options, select exactly 2 (mock fixtures)
                 </p>
                 <div className="max-w-5xl rounded-[12px] border border-gray-200 bg-white p-6 shadow-sm">
                     <StackedDeckCarousel

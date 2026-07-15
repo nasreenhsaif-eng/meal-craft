@@ -83,19 +83,20 @@ export function visibleFixedChoiceCategoriesFromSelections(categorySelections) {
  * @returns {{ next: Partial<Record<FixedChoiceCategoryKey, string[]>>; blocked: boolean }}
  */
 export function applyFixedChoiceToggle(current, categoryKey, mealId) {
-    const existing = current[categoryKey] ?? [];
-    const isOn = existing.includes(mealId);
+    const normalizedId = String(mealId);
+    const existing = (current[categoryKey] ?? []).map((id) => String(id));
+    const isOn = existing.includes(normalizedId);
 
     if (isOn) {
         return {
-            next: { ...current, [categoryKey]: existing.filter((id) => id !== mealId) },
+            next: { ...current, [categoryKey]: existing.filter((id) => id !== normalizedId) },
             blocked: false,
         };
     }
 
     if (existing.length >= 1) {
         return {
-            next: { ...current, [categoryKey]: [mealId] },
+            next: { ...current, [categoryKey]: [normalizedId] },
             blocked: false,
         };
     }
@@ -110,7 +111,7 @@ export function applyFixedChoiceToggle(current, categoryKey, mealId) {
     }
 
     return {
-        next: { ...current, [categoryKey]: [...existing, mealId] },
+        next: { ...current, [categoryKey]: [...existing, normalizedId] },
         blocked: false,
     };
 }

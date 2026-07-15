@@ -17,6 +17,10 @@ import {
     macroCaloriePercentsFromGrams,
     macroSplitPercentagesFromPlan,
 } from '../../consultation/craftCalorieTargets.js';
+import {
+    consultationMealCardCalories,
+    sumConsultationMealCardMacros,
+} from '../../consultation/balanceMainMealProtein.ts';
 
 export {
     FIXED_CHOICE_CATEGORY_KEYS,
@@ -95,14 +99,181 @@ export function soupOfTheDayMeals(source) {
     return soups.length > 0 ? soups.slice(0, 2) : [];
 }
 
-/** Max cards shown per category deck in consultation (matches fixture / product caps). */
+/** Max cards shown per category deck in consultation (matches weekly main carousel: 6 mains). */
 export const CONSULTATION_DECK_OPTION_LIMITS = Object.freeze({
     breakfast: 1,
-    meal: 4,
+    meal: 6,
     sidesalad: 2,
     dessert: 3,
     soup: 2,
 });
+
+/**
+ * Prefer scheduled/assigned cards first, then fill from the catalog up to the deck limit.
+ *
+ * @param {ConsultationMeal[]} preferred
+ * @param {ConsultationMeal[]} filler
+ * @param {number} limit
+ * @returns {ConsultationMeal[]}
+ */
+export function padConsultationDeckOptions(preferred, filler, limit) {
+    /** @type {ConsultationMeal[]} */
+    const deck = [];
+    const seen = new Set();
+
+    for (const list of [preferred, filler]) {
+        for (const meal of list ?? []) {
+            const id = normalizeConsultationMealId(meal?.id);
+            if (id === '' || seen.has(id)) {
+                continue;
+            }
+
+            seen.add(id);
+            deck.push(meal);
+
+            if (deck.length >= limit) {
+                return deck;
+            }
+        }
+    }
+
+    return deck;
+}
+
+/**
+ * @param {unknown} id
+ */
+export function normalizeConsultationMealId(id) {
+    if (id === null || id === undefined) {
+        return '';
+    }
+
+    return String(id);
+}
+
+/**
+ * Card arrays shown in weekly category carousels (same objects MacroGrid reads).
+ *
+ * @param {{
+ *   meals?: ConsultationMeal[];
+ *   assignedMealsByCategory?: Partial<Record<SelectionCategoryKey, ConsultationMeal[]>> | null;
+ *   scheduledSoupMeals?: ConsultationMeal[];
+ *   soupCatalogMeals?: ConsultationMeal[];
+ *   dietProtocol?: string | null;
+ *   includeBreakfast?: boolean;
+ * }} options
+ * @returns {Record<SelectionCategoryKey, ConsultationMeal[]>}
+ */
+export function buildWeeklyConsultationDisplayDecks({
+    meals = [],
+    assignedMealsByCategory = null,
+    scheduledSoupMeals = [],
+    soupCatalogMeals = [],
+    dietProtocol = null,
+    includeBreakfast = true,
+} = {}) {
+    /** @type {Record<SelectionCategoryKey, ConsultationMeal[]>} */
+    const decks = {
+        breakfasts: [],
+        meals: [],
+        sideSalads: [],
+        desserts: [],
+        soup: [],
+    };
+
+    const catalogMains = filterMealsByCategory(meals ?? [], 'Meal');
+
+    if (includeBreakfast) {
+        const assignedBreakfasts = assignedMealsByCategory?.breakfasts ?? [];
+        decks.breakfasts =
+            assignedBreakfasts.length > 0
+                ? assignedBreakfasts
+                : consultationDeckOptionsForSlotKey(meals ?? [], 'breakfast');
+    }
+
+    decks.meals = padConsultationDeckOptions(
+        assignedMealsByCategory?.meals ?? [],
+        catalogMains,
+        CONSULTATION_DECK_OPTION_LIMITS.meal,
+    );
+
+    const catalogSource = (soupCatalogMeals.length > 0 ? soupCatalogMeals : meals) ?? [];
+    decks.desserts = consultationDessertDeckForDay(catalogSource, assignedMealsByCategory?.desserts ?? [], {
+        preferBakedDesserts: dietProtocol === 'nutrient_dense',
+    });
+    decks.sideSalads = consultationSideSaladDeckForDay(meals ?? [], assignedMealsByCategory?.sideSalads ?? []);
+
+    const assignedSoups = assignedMealsByCategory?.soup ?? [];
+    if (assignedSoups.length > 0) {
+        decks.soup = assignedSoups;
+    } else if (scheduledSoupMeals.length > 0) {
+        decks.soup = scheduledSoupMeals;
+    } else {
+        decks.soup = soupOfTheDayMeals(catalogSource);
+    }
+
+    return decks;
+}
+
+/**
+ * Selected meal cards in on-screen deck order (breakfast → meals → sides → dessert → soup).
+ * Only cards that appear in `displayDecks` are returned — same objects the carousels render.
+ *
+ * @param {Partial<Record<SelectionCategoryKey, string[]>> | null | undefined} categorySelections
+ * @param {Partial<Record<SelectionCategoryKey, ConsultationMeal[]>>} displayDecks
+ * @returns {ConsultationMeal[]}
+ */
+export function selectedMealsFromDisplayDecks(categorySelections, displayDecks) {
+    /** @type {Map<string, ConsultationMeal>} */
+    const byId = new Map();
+
+    for (const cards of Object.values(displayDecks ?? {})) {
+        for (const meal of cards ?? []) {
+            const id = normalizeConsultationMealId(meal?.id);
+            if (id !== '') {
+                byId.set(id, meal);
+            }
+        }
+    }
+
+    const selections = categorySelections ?? {};
+    /** @type {ConsultationMeal[]} */
+    const selectedCards = [];
+    const seen = new Set();
+
+    for (const id of [
+        ...(selections.breakfasts ?? []),
+        ...(selections.meals ?? []),
+        ...(selections.sideSalads ?? []),
+        ...(selections.desserts ?? []),
+        ...(selections.soup ?? []),
+    ]) {
+        const key = normalizeConsultationMealId(id);
+        if (key === '' || seen.has(key)) {
+            continue;
+        }
+
+        const meal = byId.get(key);
+        if (!meal) {
+            continue;
+        }
+
+        seen.add(key);
+        selectedCards.push(meal);
+    }
+
+    return selectedCards;
+}
+
+/**
+ * Footer totals from selected ids resolved against the decks currently on screen.
+ *
+ * @param {Partial<Record<SelectionCategoryKey, string[]>> | null | undefined} categorySelections
+ * @param {Partial<Record<SelectionCategoryKey, ConsultationMeal[]>>} displayDecks
+ */
+export function sumSelectedMacrosFromDisplayDecks(categorySelections, displayDecks) {
+    return sumConsultationMealCardMacros(selectedMealsFromDisplayDecks(categorySelections, displayDecks));
+}
 
 const CONSULTATION_SLOT_MEAL_TYPE_LABELS = Object.freeze({
     breakfast: 'Breakfast',
@@ -313,19 +484,20 @@ export function buildConsultationDeckCatalog(source) {
  * @returns {string[]}
  */
 export function applyDeckSelectionToggle(existingIds, mealId, max) {
-    const existing = existingIds ?? [];
-    const isOn = existing.includes(mealId);
+    const normalizedId = normalizeConsultationMealId(mealId);
+    const existing = (existingIds ?? []).map((id) => normalizeConsultationMealId(id));
+    const isOn = existing.includes(normalizedId);
 
     if (isOn) {
-        return existing.filter((id) => id !== mealId);
+        return existing.filter((id) => id !== normalizedId);
     }
 
     if (existing.length < max) {
-        return [...existing, mealId];
+        return [...existing, normalizedId];
     }
 
     if (max === 1) {
-        return [mealId];
+        return [normalizedId];
     }
 
     return existing;
@@ -865,81 +1037,138 @@ export function PlanMacroSummaryPanel({
 }
 
 /**
- * Full Craft: breakfasts ×1, meals ×2, and exactly 2 fixed picks across side / dessert / soup.
+ * @param {Partial<Record<SelectionCategoryKey, number>> | null | undefined} maxSelectionsByCategory
+ * @returns {Record<SelectionCategoryKey, number>}
+ */
+export function resolveCategoryMaxSelections(maxSelectionsByCategory = null) {
+    return {
+        ...DEFAULT_FULL_CRAFT_MAX_SELECTIONS,
+        ...(maxSelectionsByCategory ?? {}),
+    };
+}
+
+/**
+ * Weekly-schedule crafts: breakfast (when required), mains, and exactly 2 fixed picks.
  *
  * @param {Partial<Record<SelectionCategoryKey, string[]>> | null | undefined} categorySelections
+ * @param {Partial<Record<SelectionCategoryKey, number>> | null | undefined} [maxSelectionsByCategory]
+ * @param {{ requireFixedChoice?: boolean }} [options]
  */
-export function isFullCraftCategoriesComplete(categorySelections) {
+export function isFullCraftCategoriesComplete(
+    categorySelections,
+    maxSelectionsByCategory = null,
+    options = {},
+) {
     if (!categorySelections) {
         return false;
     }
 
-    const autoAssignedComplete = AUTO_ASSIGNED_SELECTION_KEYS.every((key) => {
-        const need = DEFAULT_FULL_CRAFT_MAX_SELECTIONS[key];
-        const have = categorySelections[key]?.length ?? 0;
+    const max = resolveCategoryMaxSelections(maxSelectionsByCategory);
+    const requireFixedChoice = options.requireFixedChoice !== false;
 
-        return have === need;
-    });
+    if ((max.breakfasts ?? 0) > 0) {
+        if ((categorySelections.breakfasts?.length ?? 0) !== max.breakfasts) {
+            return false;
+        }
+    }
 
     const coreComplete = FULL_CRAFT_REQUIRED_SELECTION_KEYS.every((key) => {
-        const need = DEFAULT_FULL_CRAFT_MAX_SELECTIONS[key];
+        const need = max[key] ?? 0;
         const have = categorySelections[key]?.length ?? 0;
 
         return have === need;
     });
 
-    return autoAssignedComplete && coreComplete && isFixedChoiceComplete(categorySelections);
+    if (!coreComplete) {
+        return false;
+    }
+
+    return !requireFixedChoice || isFixedChoiceComplete(categorySelections);
 }
 
 /**
  * @param {Partial<Record<SelectionCategoryKey, string[]>> | null | undefined} categorySelections
- * @returns {SelectionCategoryKey[]}
+ * @param {Partial<Record<SelectionCategoryKey, number>> | null | undefined} [maxSelectionsByCategory]
+ * @param {{ requireFixedChoice?: boolean }} [options]
+ * @returns {Array<SelectionCategoryKey | 'fixedChoice'>}
  */
-export function getIncompleteFullCraftCategoryKeys(categorySelections) {
+export function getIncompleteFullCraftCategoryKeys(
+    categorySelections,
+    maxSelectionsByCategory = null,
+    options = {},
+) {
+    const max = resolveCategoryMaxSelections(maxSelectionsByCategory);
+    const requireFixedChoice = options.requireFixedChoice !== false;
+
     if (!categorySelections) {
-        return [...FULL_CRAFT_REQUIRED_SELECTION_KEYS, 'fixedChoice'];
+        /** @type {Array<SelectionCategoryKey | 'fixedChoice'>} */
+        const emptyMissing = [];
+        if ((max.breakfasts ?? 0) > 0) {
+            emptyMissing.push('breakfasts');
+        }
+        emptyMissing.push(...FULL_CRAFT_REQUIRED_SELECTION_KEYS);
+        if (requireFixedChoice) {
+            emptyMissing.push('fixedChoice');
+        }
+
+        return emptyMissing;
     }
 
-    /** @type {(SelectionCategoryKey | 'fixedChoice')[]} */
-    const missing = [
-        ...AUTO_ASSIGNED_SELECTION_KEYS.filter((key) => {
-            const need = DEFAULT_FULL_CRAFT_MAX_SELECTIONS[key];
-            const have = categorySelections[key]?.length ?? 0;
+    /** @type {Array<SelectionCategoryKey | 'fixedChoice'>} */
+    const missing = [];
 
-            return have !== need;
-        }),
-        ...FULL_CRAFT_REQUIRED_SELECTION_KEYS.filter((key) => {
-        const need = DEFAULT_FULL_CRAFT_MAX_SELECTIONS[key];
+    if ((max.breakfasts ?? 0) > 0 && (categorySelections.breakfasts?.length ?? 0) !== max.breakfasts) {
+        missing.push('breakfasts');
+    }
+
+    for (const key of FULL_CRAFT_REQUIRED_SELECTION_KEYS) {
+        const need = max[key] ?? 0;
         const have = categorySelections[key]?.length ?? 0;
 
-        return have !== need;
-        }),
-    ];
+        if (have !== need) {
+            missing.push(key);
+        }
+    }
 
-    if (!isFixedChoiceComplete(categorySelections)) {
+    if (requireFixedChoice && !isFixedChoiceComplete(categorySelections)) {
         missing.push('fixedChoice');
     }
 
     return missing;
 }
 
-const INCOMPLETE_SELECTION_LABELS = Object.freeze({
-    breakfasts: 'breakfast',
-    meals: '2 main meals',
-    sideSalads: 'side salad',
-    desserts: 'dessert',
-    fixedChoice: '2 sides (pick from side salad, dessert, or soup)',
-});
+/**
+ * @param {SelectionCategoryKey | 'fixedChoice'} key
+ * @param {Partial<Record<SelectionCategoryKey, number>> | null | undefined} [maxSelectionsByCategory]
+ */
+function incompleteSelectionLabelForKey(key, maxSelectionsByCategory = null) {
+    if (key === 'meals') {
+        const need = resolveCategoryMaxSelections(maxSelectionsByCategory).meals;
+
+        return need === 1 ? '1 main meal' : `${need} main meals`;
+    }
+
+    const labels = {
+        breakfasts: 'breakfast',
+        sideSalads: 'side salad',
+        desserts: 'dessert',
+        soup: 'soup',
+        fixedChoice: '2 sides (pick from side salad, dessert, or soup)',
+    };
+
+    return labels[key] ?? key;
+}
 
 /**
- * @param {SelectionCategoryKey[]} missingKeys
+ * @param {Array<SelectionCategoryKey | 'fixedChoice'>} missingKeys
+ * @param {Partial<Record<SelectionCategoryKey, number>> | null | undefined} [maxSelectionsByCategory]
  */
-export function incompleteSelectionWarningMessage(missingKeys) {
+export function incompleteSelectionWarningMessage(missingKeys, maxSelectionsByCategory = null) {
     if (missingKeys.length === 0) {
         return 'Select all required meals before continuing.';
     }
 
-    const parts = missingKeys.map((key) => INCOMPLETE_SELECTION_LABELS[key] ?? key);
+    const parts = missingKeys.map((key) => incompleteSelectionLabelForKey(key, maxSelectionsByCategory));
 
     if (parts.length === 1) {
         return `Please select a ${parts[0]} before continuing.`;
@@ -1011,7 +1240,7 @@ export function MealSlotCarousel({
     onEditMeal,
     isLoading = false,
 }) {
-    const selectedSet = new Set(selectedIds);
+    const selectedSet = new Set(selectedIds.map((id) => normalizeConsultationMealId(id)));
     const atLimit = selectedIds.length >= maxSelected;
     const stackZ = 35 + sectionStackOrder * 6;
     const isDesktopViewport = useMinWidth(768);
@@ -1043,8 +1272,8 @@ export function MealSlotCarousel({
 
     const handleSelect = useCallback(
         (meal) => {
-            const mealId = /** @type {ConsultationMeal} */ (meal).id;
-            const isSelected = selectedIds.includes(mealId);
+            const mealId = normalizeConsultationMealId(/** @type {ConsultationMeal} */ (meal).id);
+            const isSelected = selectedSet.has(mealId);
 
             if (!readOnly && !isSelected && atLimit && maxSelected > 1) {
                 showSelectionLimitWarning();
@@ -1053,7 +1282,7 @@ export function MealSlotCarousel({
 
             onSelect?.(/** @type {ConsultationMeal} */ (meal));
         },
-        [atLimit, maxSelected, onSelect, readOnly, selectedIds, showSelectionLimitWarning],
+        [atLimit, maxSelected, onSelect, readOnly, selectedSet, showSelectionLimitWarning],
     );
 
     const deckSubheader = (() => {
@@ -1068,11 +1297,12 @@ export function MealSlotCarousel({
         if (readOnly) {
             return showSwipeHint ? `${cards.length} assigned • Swipe the deck to browse` : `${cards.length} assigned`;
         }
+        const optionsPart = `${cards.length} option${cards.length === 1 ? '' : 's'}`;
         const selectionPart = maxSelected === 1 ? 'Select 1' : `Select exactly ${maxSelected}`;
         const countPart = `${selectedIds.length}/${maxSelected} selected`;
         return showSwipeHint
-            ? `${selectionPart} • ${countPart} • Swipe the deck to browse`
-            : `${selectionPart} • ${countPart}`;
+            ? `${optionsPart} • ${selectionPart} • ${countPart} • Swipe the deck to browse`
+            : `${optionsPart} • ${selectionPart} • ${countPart}`;
     })();
 
     return (
@@ -1159,7 +1389,7 @@ export function MealSlotCarousel({
                                 getKey={(m) => /** @type {ConsultationMeal} */ (m).id}
                                 renderCard={(m, _idx, { isFront, deckLayout }) => {
                                     const meal = /** @type {ConsultationMeal} */ (m);
-                                    const isSelected = selectedSet.has(meal.id);
+                                    const isSelected = selectedSet.has(normalizeConsultationMealId(meal.id));
                                     const atSelectionLimit =
                                         !readOnly && !isSelected && atLimit && maxSelected > 1;
 
@@ -1203,6 +1433,7 @@ export function MealSlotCarousel({
  * @param {string} [props.deckScopePrefix]
  * @param {ConsultationMeal[]} [props.meals]
  * @param {Partial<Record<SelectionCategoryKey, ConsultationMeal[]>>} [props.assignedMealsByCategory]
+ * @param {Partial<Record<SelectionCategoryKey, ConsultationMeal[]>>} [props.displayDecks] Exact decks shown elsewhere — prefer over rebuilding.
  * @param {ConsultationMeal[]} [props.scheduledSoupMeals]
  * @param {ConsultationMeal[]} [props.soupCatalogMeals]
  * @param {string | null} [props.dietProtocol]
@@ -1217,6 +1448,7 @@ export function FixedChoicePicker({
     deckScopePrefix = '',
     meals = [],
     assignedMealsByCategory = null,
+    displayDecks = null,
     scheduledSoupMeals = [],
     soupCatalogMeals = [],
     dietProtocol = null,
@@ -1289,6 +1521,11 @@ export function FixedChoicePicker({
 
     const cardsForSection = useCallback(
         (def) => {
+            const fromDisplayDecks = displayDecks?.[def.selectionKey];
+            if (Array.isArray(fromDisplayDecks) && fromDisplayDecks.length > 0) {
+                return fromDisplayDecks;
+            }
+
             if (typeof resolveCards === 'function') {
                 const resolved = resolveCards([], def.selectionKey);
 
@@ -1329,7 +1566,15 @@ export function FixedChoicePicker({
 
             return filterMealsByCategory(meals ?? [], def.mealTypeLabel);
         },
-        [assignedMealsByCategory, meals, resolveCards, soupDeckMeals, dietProtocol, soupCatalogMeals],
+        [
+            displayDecks,
+            assignedMealsByCategory,
+            meals,
+            resolveCards,
+            soupDeckMeals,
+            dietProtocol,
+            soupCatalogMeals,
+        ],
     );
 
     const prefix = deckScopePrefix ? `${deckScopePrefix}-` : '';
@@ -1465,6 +1710,72 @@ export default function ChooseYourMeals({
 
     const scrollContainerRef = useRef(/** @type {HTMLDivElement | null} */ (null));
 
+    const categoryMaxForDisplay = useMemo(
+        () => resolveCategoryMaxSelections(maxSelectionsByCategory),
+        [maxSelectionsByCategory],
+    );
+
+    const weeklyDisplayDecks = useMemo(() => {
+        if (layout !== 'categories') {
+            return null;
+        }
+
+        return buildWeeklyConsultationDisplayDecks({
+            meals,
+            assignedMealsByCategory,
+            scheduledSoupMeals,
+            soupCatalogMeals,
+            dietProtocol,
+            includeBreakfast: (categoryMaxForDisplay.breakfasts ?? 0) > 0,
+        });
+    }, [
+        layout,
+        meals,
+        assignedMealsByCategory,
+        scheduledSoupMeals,
+        soupCatalogMeals,
+        dietProtocol,
+        categoryMaxForDisplay.breakfasts,
+    ]);
+
+    const selectedFooterMeals = useMemo(() => {
+        if (!weeklyDisplayDecks || !categorySelections) {
+            return [];
+        }
+
+        return selectedMealsFromDisplayDecks(categorySelections, weeklyDisplayDecks);
+    }, [weeklyDisplayDecks, categorySelections]);
+
+    const displayFooterMacros = useMemo(() => {
+        if (layout === 'categories' && categorySelections) {
+            return sumConsultationMealCardMacros(selectedFooterMeals);
+        }
+
+        return null;
+    }, [layout, categorySelections, selectedFooterMeals]);
+
+    // Categories layout: only sum cards currently on-screen (never parent catalog reconcile).
+    const footerTotalKcal =
+        layout === 'categories' ? (displayFooterMacros?.calories ?? 0) : totalKcal;
+    const footerMacroTotals =
+        layout === 'categories' ? (displayFooterMacros ?? { calories: 0, protein: 0, carbs: 0, fat: 0 }) : dayMacroTotals;
+
+    const footerSelectedPlatesLabel = useMemo(() => {
+        if (layout !== 'categories' || selectedFooterMeals.length === 0) {
+            return null;
+        }
+
+        return selectedFooterMeals
+            .map((meal) => {
+                const kcal = consultationMealCardCalories(meal);
+                const title = String(meal.title ?? 'Meal').trim() || 'Meal';
+                const short = title.length > 28 ? `${title.slice(0, 26)}…` : title;
+
+                return `${short} ${kcal}`;
+            })
+            .join(' · ');
+    }, [layout, selectedFooterMeals]);
+
     useLayoutEffect(() => {
         const scroller = scrollContainerRef.current;
         if (scroller) {
@@ -1535,11 +1846,15 @@ export default function ChooseYourMeals({
     }, [forwardWheelToMealScroller]);
 
     useEffect(() => {
-        if (layout === 'categories' && categorySelections && isFullCraftCategoriesComplete(categorySelections)) {
+        if (
+            layout === 'categories' &&
+            categorySelections &&
+            isFullCraftCategoriesComplete(categorySelections, maxSelectionsByCategory)
+        ) {
             setValidationFlashKeys([]);
             setIncompleteWarning(null);
         }
-    }, [layout, categorySelections]);
+    }, [layout, categorySelections, maxSelectionsByCategory]);
 
     useEffect(() => {
         if (layout !== 'categories' && !footerNextDisabled) {
@@ -1548,31 +1863,27 @@ export default function ChooseYourMeals({
     }, [layout, footerNextDisabled]);
 
     const categoriesComplete = useMemo(
-        () => (layout === 'categories' ? isFullCraftCategoriesComplete(categorySelections) : true),
-        [layout, categorySelections],
+        () =>
+            layout === 'categories'
+                ? isFullCraftCategoriesComplete(categorySelections, maxSelectionsByCategory)
+                : true,
+        [layout, categorySelections, maxSelectionsByCategory],
     );
 
-    /** Full Craft: gate only on required slot counts; other layouts defer to `footerNextDisabled`. */
+    /** Weekly category crafts: gate on slot counts; other layouts defer to `footerNextDisabled`. */
     const craftFooterDisabled = layout === 'categories' ? !categoriesComplete : footerNextDisabled;
 
     const showIncompleteValidation = useCallback(() => {
         if (layout === 'categories') {
-            if (!categorySelections) {
-                setValidationFlashKeys([...FULL_CRAFT_REQUIRED_SELECTION_KEYS]);
-                setIncompleteWarning(incompleteSelectionWarningMessage([...FULL_CRAFT_REQUIRED_SELECTION_KEYS]));
-                window.setTimeout(() => setValidationFlashKeys([]), 2200);
-                return;
-            }
-
-            const missing = getIncompleteFullCraftCategoryKeys(categorySelections);
+            const missing = getIncompleteFullCraftCategoryKeys(categorySelections, maxSelectionsByCategory);
             setValidationFlashKeys(missing);
-            setIncompleteWarning(incompleteSelectionWarningMessage(missing));
+            setIncompleteWarning(incompleteSelectionWarningMessage(missing, maxSelectionsByCategory));
             window.setTimeout(() => setValidationFlashKeys([]), 2200);
             return;
         }
 
         setIncompleteWarning(footerIncompleteMessage);
-    }, [layout, categorySelections, footerIncompleteMessage]);
+    }, [layout, categorySelections, maxSelectionsByCategory, footerIncompleteMessage]);
 
     const handleFooterNextClick = useCallback(() => {
         if (craftFooterDisabled) {
@@ -1596,28 +1907,32 @@ export default function ChooseYourMeals({
             return null;
         }
 
-        const coreSections = FULL_CRAFT_CATEGORY_SECTIONS.filter(
-            (def) => def.selectionKey === 'breakfasts' || def.selectionKey === 'meals',
-        );
+        const categoryMax = resolveCategoryMaxSelections(maxSelectionsByCategory);
+
+        const coreSections = FULL_CRAFT_CATEGORY_SECTIONS.filter((def) => {
+            if (def.selectionKey === 'breakfasts') {
+                return (categoryMax.breakfasts ?? 0) > 0;
+            }
+
+            return def.selectionKey === 'meals';
+        });
 
         return coreSections.map((def, idx) => {
             const isAutoAssigned = AUTO_ASSIGNED_SELECTION_KEYS.includes(def.selectionKey);
-            const assignedCards = assignedMealsByCategory?.[def.selectionKey];
+            const cardsFromDecks = weeklyDisplayDecks?.[def.selectionKey] ?? [];
             const cards =
-                assignedCards && assignedCards.length > 0
-                    ? assignedCards
-                    : isAutoAssigned && isMenuPending
-                      ? []
-                      : def.selectionKey === 'breakfasts'
-                        ? consultationDeckOptionsForSlotKey(meals ?? [], 'breakfast')
-                        : filterMealsByCategory(meals ?? [], def.mealTypeLabel);
+                isAutoAssigned && isMenuPending && cardsFromDecks.length === 0 ? [] : cardsFromDecks;
             const max =
                 maxSelectionsByCategory?.[def.selectionKey] !== undefined
                     ? /** @type {number} */ (maxSelectionsByCategory[def.selectionKey])
                     : def.defaultMax;
-            const selectedIds = categorySelections[def.selectionKey] ?? [];
+            const selectedIds = (categorySelections[def.selectionKey] ?? []).map((id) =>
+                normalizeConsultationMealId(id),
+            );
             const prefix = deckScopePrefix ? `${deckScopePrefix}-` : '';
             const flash = validationFlashKeys.includes(def.selectionKey);
+            const mealTitle =
+                def.selectionKey === 'meals' && max === 1 ? 'Choose Your Meal of the Day' : def.header;
 
             return (
                 <MealSlotCarousel
@@ -1625,7 +1940,7 @@ export default function ChooseYourMeals({
                     sectionKey={def.selectionKey}
                     validationFlash={flash}
                     sectionStackOrder={idx}
-                    title={def.header}
+                    title={mealTitle}
                     deckScopeKey={`${prefix}${def.deckSuffix}`}
                     cards={cards}
                     selectedIds={selectedIds}
@@ -1651,6 +1966,7 @@ export default function ChooseYourMeals({
         categoryPickEnabled,
         onViewDetails,
         isMenuPending,
+        weeklyDisplayDecks,
     ]);
 
     const fixedChoiceBlock =
@@ -1663,6 +1979,7 @@ export default function ChooseYourMeals({
                     deckScopePrefix={deckScopePrefix}
                     meals={meals}
                     assignedMealsByCategory={assignedMealsByCategory ?? undefined}
+                    displayDecks={weeklyDisplayDecks ?? undefined}
                     scheduledSoupMeals={scheduledSoupMeals}
                     soupCatalogMeals={soupCatalogMeals}
                     dietProtocol={dietProtocol}
@@ -1707,7 +2024,7 @@ export default function ChooseYourMeals({
     const showLegacyNavigation = typeof onFooterNext !== 'function' && navigation;
 
     const macroHighlightKeys = useMemo(() => {
-        if (!dayMacroTotals || !dayMacroTargets) {
+        if (!footerMacroTotals || !dayMacroTargets) {
             return [];
         }
 
@@ -1720,24 +2037,42 @@ export default function ChooseYourMeals({
         /** @type {Array<'calories' | 'protein' | 'carbs' | 'fat'>} */
         const keys = [];
 
-        if (Math.abs(Math.round(dayMacroTotals.calories) - Math.round(dayMacroTargets.calories)) > dayCalorieTolerance) {
+        if (Math.abs(Math.round(footerMacroTotals.calories) - Math.round(dayMacroTargets.calories)) > dayCalorieTolerance) {
             keys.push('calories');
         }
 
-        if (Math.abs(Math.round(dayMacroTotals.protein) - Math.round(dayMacroTargets.protein)) > tolerance.protein) {
+        if (Math.abs(Math.round(footerMacroTotals.protein) - Math.round(dayMacroTargets.protein)) > tolerance.protein) {
             keys.push('protein');
         }
 
-        if (Math.abs(Math.round(dayMacroTotals.carbs) - Math.round(dayMacroTargets.carbs)) > tolerance.carbs) {
+        if (Math.abs(Math.round(footerMacroTotals.carbs) - Math.round(dayMacroTargets.carbs)) > tolerance.carbs) {
             keys.push('carbs');
         }
 
-        if (Math.abs(Math.round(dayMacroTotals.fat) - Math.round(dayMacroTargets.fat)) > tolerance.fat) {
+        if (Math.abs(Math.round(footerMacroTotals.fat) - Math.round(dayMacroTargets.fat)) > tolerance.fat) {
             keys.push('fat');
         }
 
         return keys;
-    }, [dayMacroTotals, dayMacroTargets, dayMacroTolerance, dayCalorieTolerance]);
+    }, [footerMacroTotals, dayMacroTargets, dayMacroTolerance, dayCalorieTolerance]);
+
+    const calorieBandWarning = useMemo(() => {
+        if (!Number.isFinite(footerTotalKcal) || !Number.isFinite(targetCalories) || footerTotalKcal <= 0) {
+            return null;
+        }
+
+        const delta = Math.round(footerTotalKcal) - Math.round(targetCalories);
+
+        if (Math.abs(delta) <= dayCalorieTolerance) {
+            return null;
+        }
+
+        if (delta > 0) {
+            return `Day calories are ${delta} kcal above target (${Math.round(footerTotalKcal)} selected vs ${Math.round(targetCalories)} target). Plate portions keep kitchen floors (cooking fat, vegetables, and standard meat sizes), so this day may stay over the ${Math.round(targetCalories)} ±${dayCalorieTolerance} band.`;
+        }
+
+        return `Day calories are ${Math.abs(delta)} kcal below target (${Math.round(footerTotalKcal)} selected vs ${Math.round(targetCalories)} target).`;
+    }, [footerTotalKcal, targetCalories, dayCalorieTolerance]);
 
     return (
         <section
@@ -1753,9 +2088,26 @@ export default function ChooseYourMeals({
                     ) : null}
                     {craftTitle ? (
                         <p className="min-w-0 truncate whitespace-nowrap font-montserrat text-[10px] font-bold leading-none tracking-[0.1em] text-[#555555] sm:text-[11px] sm:tracking-[0.12em] md:text-xs md:tracking-[0.14em]">
-                            <span className="uppercase">{craftTitle}</span>{' '}
-                            <span className="font-normal normal-case tracking-normal text-[#6B7280]">of</span>{' '}
-                            <span className="tabular-nums tracking-normal text-[#6B7280]">{Math.round(targetCalories)} CAL</span>
+                            <span className="uppercase">{craftTitle}</span>
+                            {Number.isFinite(footerTotalKcal) && footerTotalKcal > 0 ? (
+                                <>
+                                    {' '}
+                                    <span className="tabular-nums tracking-normal text-[#262A22]">
+                                        {Math.round(footerTotalKcal)} kcal
+                                    </span>{' '}
+                                    <span className="font-normal normal-case tracking-normal text-[#6B7280]">
+                                        selected · target {Math.round(targetCalories)}
+                                    </span>
+                                </>
+                            ) : (
+                                <>
+                                    {' '}
+                                    <span className="font-normal normal-case tracking-normal text-[#6B7280]">of</span>{' '}
+                                    <span className="tabular-nums tracking-normal text-[#6B7280]">
+                                        {Math.round(targetCalories)} CAL
+                                    </span>
+                                </>
+                            )}
                         </p>
                     ) : null}
                 </div>
@@ -1780,6 +2132,16 @@ export default function ChooseYourMeals({
                         </div>
                     ) : null}
 
+                    {calorieBandWarning ? (
+                        <div
+                            className="mb-3 rounded-[12px] border border-amber-200 bg-amber-50 px-4 py-3"
+                            role="status"
+                            aria-live="polite"
+                        >
+                            <p className="font-body text-sm font-semibold text-amber-900">{calorieBandWarning}</p>
+                        </div>
+                    ) : null}
+
                     <div className="flex flex-wrap items-center justify-between gap-3">
                         {summaryLabel ? (
                             <p className="font-montserrat text-sm font-bold text-[#262A22]">{summaryLabel}</p>
@@ -1789,33 +2151,40 @@ export default function ChooseYourMeals({
                         <p
                             className={[
                                 'font-montserrat text-sm font-bold tabular-nums',
-                                Math.abs(Math.round(totalKcal) - Math.round(targetCalories)) > dayCalorieTolerance
+                                Math.abs(Math.round(footerTotalKcal) - Math.round(targetCalories)) > dayCalorieTolerance
                                     ? 'text-amber-800'
                                     : 'text-[#1F2937]',
                             ]
                                 .join(' ')
                                 .trim()}
                         >
-                            Total: {Math.round(totalKcal)} kcal
+                            Total: {Math.round(footerTotalKcal)} kcal
                             <span className="ml-1.5 font-body text-xs font-normal text-[#555555]">
                                 (target {Math.round(targetCalories)} ±{dayCalorieTolerance})
                             </span>
                         </p>
                     </div>
-                    {dayMacroTotals ? (
+                    {footerMacroTotals ? (
                         <div className="mt-2">
                             <ConsultationDayMacroFooterGrid
                                 totals={
-                                    dayMacroTotals.calories > 0
-                                        ? dayMacroTotals
+                                    footerMacroTotals.calories > 0
+                                        ? footerMacroTotals
                                         : { calories: 0, protein: 0, carbs: 0, fat: 0 }
                                 }
+                                targets={dayMacroTargets}
                                 nutritionPlan={nutritionPlan}
                                 highlightKeys={
-                                    dayMacroTotals.calories > 0 ? macroHighlightKeys : []
+                                    footerMacroTotals.calories > 0 ? macroHighlightKeys : []
                                 }
                             />
                         </div>
+                    ) : null}
+                    {footerSelectedPlatesLabel ? (
+                        <p className="mt-1.5 font-body text-[11px] leading-snug text-[#6B7280]">
+                            Sum of {selectedFooterMeals.length} selected plate
+                            {selectedFooterMeals.length === 1 ? '' : 's'}: {footerSelectedPlatesLabel}
+                        </p>
                     ) : null}
                     {hintText ? <p className="mt-1.5 font-body text-xs text-[#555555]">{hintText}</p> : null}
 

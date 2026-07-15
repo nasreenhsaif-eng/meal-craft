@@ -3,6 +3,8 @@ import { Component, StrictMode } from 'react';
 import CraftedForYouPage from './Pages/Consultation/CraftedForYouPage.jsx';
 import { syncCsrfMetaTag } from './lib/csrfToken.js';
 
+// Bump when consultation curation shell changes so stale Fast Refresh clients reload.
+
 const rootEl = document.getElementById('mc-consultation-crafted-root');
 const configEl = document.getElementById('mc-consultation-crafted-config');
 

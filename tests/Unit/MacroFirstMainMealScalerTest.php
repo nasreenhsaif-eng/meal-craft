@@ -192,11 +192,16 @@ test('macro first protein boost scales protein and herb roles only', function ()
 
     $plan = UserPlanCalculator::calculateUserPlan($profile);
     $adapted = MacroFirstMainMealScaler::adapt($meal->fresh(['ingredients']), $plan);
-    $boosted = MacroFirstMainMealScaler::boostProteinRoleGrams($meal->fresh(['ingredients']), $adapted['grams'], 1.2);
+    // Re-sync herbs onto the dish scale so portion snap doesn't inflate the baseline comparison.
+    $adaptedGrams = MacroFirstMainMealScaler::syncHerbSpiceToDishScale(
+        $meal->fresh(['ingredients']),
+        $adapted['grams'],
+    );
+    $boosted = MacroFirstMainMealScaler::boostProteinRoleGrams($meal->fresh(['ingredients']), $adaptedGrams, 1.2);
 
-    expect($boosted[$chicken->id])->toBeGreaterThan($adapted['grams'][$chicken->id])
-        ->and($boosted[$rosemary->id])->toBeGreaterThan($adapted['grams'][$rosemary->id])
-        ->and($boosted[$rice->id])->toEqual($adapted['grams'][$rice->id]);
+    expect($boosted[$chicken->id])->toBeGreaterThan($adaptedGrams[$chicken->id])
+        ->and($boosted[$rosemary->id])->toBeGreaterThan($adaptedGrams[$rosemary->id])
+        ->and($boosted[$rice->id])->toEqual($adaptedGrams[$rice->id]);
 });
 
 test('macro first scaler keeps vegan protein at baseline and caps calories', function () {

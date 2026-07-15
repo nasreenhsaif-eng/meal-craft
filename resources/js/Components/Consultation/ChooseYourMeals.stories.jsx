@@ -5,7 +5,7 @@ import ChooseYourMeals, {
     buildConsultationDeckCatalog,
     soupOfTheDayMeals,
 } from './ChooseYourMeals.jsx';
-import { consultationMeals } from '../../Pages/Consultation/CraftedForYouPage.jsx';
+import { consultationMeals } from '../../consultation/consultationMockMeals.js';
 
 const consultationDeckMeals = buildConsultationDeckCatalog(consultationMeals);
 const mealRowDemo = consultationDeckMeals.filter((m) => m.mealType === 'Meal');
@@ -92,7 +92,7 @@ export const SingleDeckPropsApi = {
 };
 
 /**
- * Full Craft category flow — capped deck catalog (2 / 4 / 2 / 2), optional soup, sticky footer nav.
+ * Full Craft category flow — capped deck catalog (1 / 6 / 2 / 3), optional soup, sticky footer nav.
  */
 export const VerticalFullCraftCategories = {
     render: () => {

@@ -82,6 +82,10 @@ function useMinWidth(minWidthPx) {
  * @param {number} itemCount
  */
 function ribbonStageMaxWidthClass(itemCount) {
+    if (itemCount >= 6) {
+        return 'w-full max-w-[1480px]';
+    }
+
     if (itemCount >= 4) {
         return 'w-full max-w-[1040px]';
     }

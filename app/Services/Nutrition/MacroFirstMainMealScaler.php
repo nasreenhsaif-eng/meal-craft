@@ -51,13 +51,16 @@ final class MacroFirstMainMealScaler
                 'protein',
                 $targetProtein,
             );
+        $carbFloorRatio = $targetCalories > 0 && $targetCalories < 400.0
+            ? (float) ($config['carb_day_surplus_floor_ratio'] ?? $config['carb_baseline_floor_ratio'] ?? 0.25)
+            : (float) ($config['carb_baseline_floor_ratio'] ?? 0.6);
         $carbMultiplier = self::macroMultiplierForRole(
             $meal,
             $baselineGrams,
             MealScalingRoleEnum::Carb,
             'carbs',
             $targetCarbs,
-            (float) ($config['carb_baseline_floor_ratio'] ?? 0.6),
+            $carbFloorRatio,
         );
 
         $proteinBalanced = ! $meal->isVegan()
@@ -89,8 +92,17 @@ final class MacroFirstMainMealScaler
             };
         }
 
-        $grams = self::trimToCalorieTarget($meal, $grams, $targetCalories, $baselineGrams);
+        // Protein stays at the slot protein target. Close calories with starch only
+        // (fat/veg frozen); use the lower day-surplus carb floor on tight main slots.
+        $tightSlot = $targetCalories > 0 && $targetCalories < 400.0;
+        $grams = self::trimStarchRolesToCalorieTarget(
+            $meal,
+            $grams,
+            $targetCalories,
+            daySurplusFloor: $tightSlot,
+        );
         $grams = self::recoverCarbTargetAfterTrim($meal, $grams, $targetCarbs, $targetCalories, $baselineGrams);
+        $grams = self::syncHerbSpiceToDishScale($meal, $grams, $baselineGrams);
         $grams = KitchenPortionRounding::snapAllGramsForMeal($meal, $grams);
 
         return [
@@ -222,8 +234,8 @@ final class MacroFirstMainMealScaler
 
         $adjusted = $grams;
 
+        // Kitchen-safe: never trim cooking fat/sauce or vegetables — only starch then protein.
         foreach ([
-            [MealScalingRoleEnum::Fat, MealScalingRoleEnum::Sauce],
             [MealScalingRoleEnum::Carb],
             [MealScalingRoleEnum::Protein],
         ] as $roles) {
@@ -234,7 +246,7 @@ final class MacroFirstMainMealScaler
             $adjusted = self::trimRoleCalories($meal, $adjusted, $targetCalories, $roles, $baselineGrams);
         }
 
-        return $adjusted;
+        return self::syncHerbSpiceToDishScale($meal, $adjusted, $baselineGrams);
     }
 
     /**
@@ -249,6 +261,7 @@ final class MacroFirstMainMealScaler
         float $targetCalories,
         array $roles,
         array $baselineGrams = [],
+        ?float $carbFloorRatio = null,
     ): array {
         $currentCalories = self::totalCalories($meal, $grams);
 
@@ -263,7 +276,7 @@ final class MacroFirstMainMealScaler
         /** @var array<int, float> $floors */
         $floors = [];
         $config = self::config();
-        $carbFloorRatio = (float) ($config['carb_baseline_floor_ratio'] ?? 0.6);
+        $carbFloorRatio ??= (float) ($config['carb_baseline_floor_ratio'] ?? 0.6);
 
         foreach ($meal->ingredients as $ingredient) {
             $ingredientGrams = (float) ($grams[$ingredient->id] ?? 0);
@@ -379,9 +392,7 @@ final class MacroFirstMainMealScaler
         $boosted = $grams;
 
         foreach ($meal->ingredients as $ingredient) {
-            $role = MealScalingRole::roleForIngredient($ingredient, $meal);
-
-            if (! in_array($role, [MealScalingRoleEnum::Protein, MealScalingRoleEnum::HerbSpice], true)) {
+            if (MealScalingRole::roleForIngredient($ingredient, $meal) !== MealScalingRoleEnum::Protein) {
                 continue;
             }
 
@@ -394,7 +405,7 @@ final class MacroFirstMainMealScaler
             $boosted[$ingredient->id] = round($baseline * $multiplier, 4);
         }
 
-        return $boosted;
+        return self::syncHerbSpiceToDishScale($meal, $boosted);
     }
 
     /**
@@ -453,14 +464,14 @@ final class MacroFirstMainMealScaler
             $trimmed[$ingredient->id] = round($baseline * $multiplier, 4);
         }
 
-        return $trimmed;
+        return self::syncHerbSpiceToDishScale($meal, $trimmed);
     }
 
     /**
      * @param  array<int, float>  $grams
      * @return array<int, float>
      */
-    public static function trimFatRoleGrams(Meal $meal, array $grams, float $multiplier): array
+    public static function trimProteinRoleGrams(Meal $meal, array $grams, float $multiplier): array
     {
         if ($multiplier >= 0.9999) {
             return $grams;
@@ -468,52 +479,200 @@ final class MacroFirstMainMealScaler
 
         $multiplier = max(0.0, $multiplier);
         $trimmed = $grams;
+        $baselineGrams = AdaptedMenuBuilder::baselineGramsByIngredientId($meal);
 
         foreach ($meal->ingredients as $ingredient) {
-            $role = MealScalingRole::roleForIngredient($ingredient, $meal);
-
-            if (! in_array($role, [MealScalingRoleEnum::Fat, MealScalingRoleEnum::Sauce], true)) {
+            if (MealScalingRole::roleForIngredient($ingredient, $meal) !== MealScalingRoleEnum::Protein) {
                 continue;
             }
 
-            $baseline = (float) ($grams[$ingredient->id] ?? 0);
+            $current = (float) ($grams[$ingredient->id] ?? 0);
 
-            if ($baseline <= 0) {
+            if ($current <= 0) {
                 continue;
             }
 
-            $trimmed[$ingredient->id] = round($baseline * $multiplier, 4);
+            $floor = self::primaryMeatTrimFloorGrams($meal, $ingredient);
+            $scaled = round($current * $multiplier, 4);
+            $trimmed[$ingredient->id] = max($floor, $scaled);
         }
 
-        return KitchenPortionRounding::snapAllGramsForMeal($meal, $trimmed);
+        return self::syncHerbSpiceToDishScale($meal, $trimmed, $baselineGrams);
     }
 
     /**
+     * Cooking fats must stay at kitchen baselines — kept for call-site compatibility (no-op).
+     *
      * @param  array<int, float>  $grams
      * @return array<int, float>
      */
-    public static function trimNonProteinRolesToCalorieTarget(Meal $meal, array $grams, float $targetCalories): array
+    public static function trimFatRoleGrams(Meal $meal, array $grams, float $multiplier): array
     {
+        return $grams;
+    }
+
+    /**
+     * Close calorie surplus by trimming starchy carbs only. Never Fat/Sauce/Vegetable/Protein.
+     *
+     * @param  array<int, float>  $grams
+     * @return array<int, float>
+     */
+    public static function trimStarchRolesToCalorieTarget(
+        Meal $meal,
+        array $grams,
+        float $targetCalories,
+        bool $daySurplusFloor = false,
+    ): array {
+        if ($targetCalories <= 0) {
+            return $grams;
+        }
+
+        $baselineGrams = AdaptedMenuBuilder::baselineGramsByIngredientId($meal);
+        $adjusted = self::trimRoleCalories(
+            $meal,
+            $grams,
+            $targetCalories,
+            [MealScalingRoleEnum::Carb],
+            $baselineGrams,
+            self::carbFloorRatioForTrim($daySurplusFloor),
+        );
+
+        return self::syncHerbSpiceToDishScale($meal, $adjusted, $baselineGrams);
+    }
+
+    /**
+     * Close calorie surplus by trimming starchy carbs, then protein. Never Fat/Sauce/Vegetable.
+     *
+     * @param  array<int, float>  $grams
+     * @return array<int, float>
+     */
+    public static function trimProteinAndStarchRolesToCalorieTarget(
+        Meal $meal,
+        array $grams,
+        float $targetCalories,
+        bool $daySurplusFloor = false,
+    ): array {
         if ($targetCalories <= 0) {
             return $grams;
         }
 
         $baselineGrams = AdaptedMenuBuilder::baselineGramsByIngredientId($meal);
         $adjusted = $grams;
+        $carbFloorRatio = self::carbFloorRatioForTrim($daySurplusFloor);
 
         foreach ([
-            [MealScalingRoleEnum::Fat, MealScalingRoleEnum::Sauce],
             [MealScalingRoleEnum::Carb],
-            [MealScalingRoleEnum::Vegetable, MealScalingRoleEnum::Other],
+            [MealScalingRoleEnum::Protein],
         ] as $roles) {
             if (self::totalCalories($meal, $adjusted) <= $targetCalories + 0.5) {
                 break;
             }
 
-            $adjusted = self::trimRoleCalories($meal, $adjusted, $targetCalories, $roles, $baselineGrams);
+            $adjusted = self::trimRoleCalories(
+                $meal,
+                $adjusted,
+                $targetCalories,
+                $roles,
+                $baselineGrams,
+                $carbFloorRatio,
+            );
         }
 
-        return $adjusted;
+        return self::syncHerbSpiceToDishScale($meal, $adjusted, $baselineGrams);
+    }
+
+    private static function carbFloorRatioForTrim(bool $daySurplusFloor): float
+    {
+        $config = self::config();
+
+        if ($daySurplusFloor) {
+            return (float) ($config['carb_day_surplus_floor_ratio'] ?? $config['carb_baseline_floor_ratio'] ?? 0.25);
+        }
+
+        return (float) ($config['carb_baseline_floor_ratio'] ?? 0.6);
+    }
+
+    /**
+     * @deprecated Use {@see trimProteinAndStarchRolesToCalorieTarget()} — fat/veg are never trimmed.
+     *
+     * @param  array<int, float>  $grams
+     * @return array<int, float>
+     */
+    public static function trimNonProteinRolesToCalorieTarget(Meal $meal, array $grams, float $targetCalories): array
+    {
+        return self::trimProteinAndStarchRolesToCalorieTarget($meal, $grams, $targetCalories);
+    }
+
+    /**
+     * Scale herbs/spices with the geometric mean of protein + carb scale vs library baseline.
+     *
+     * @param  array<int, float>  $grams
+     * @param  array<int, float>  $baselineGrams
+     * @return array<int, float>
+     */
+    public static function syncHerbSpiceToDishScale(Meal $meal, array $grams, array $baselineGrams = []): array
+    {
+        $meal->loadMissing('ingredients');
+        $baselineGrams = $baselineGrams !== []
+            ? $baselineGrams
+            : AdaptedMenuBuilder::baselineGramsByIngredientId($meal);
+
+        $proteinMultiplier = self::roleScaleVersusBaseline($meal, $grams, $baselineGrams, MealScalingRoleEnum::Protein);
+        $carbMultiplier = self::roleScaleVersusBaseline($meal, $grams, $baselineGrams, MealScalingRoleEnum::Carb);
+        $flavor = self::flavorMultiplier($proteinMultiplier, $carbMultiplier, self::config());
+        $synced = $grams;
+
+        foreach ($meal->ingredients as $ingredient) {
+            if (MealScalingRole::roleForIngredient($ingredient, $meal) !== MealScalingRoleEnum::HerbSpice) {
+                continue;
+            }
+
+            $baseline = (float) ($baselineGrams[$ingredient->id] ?? 0);
+
+            if ($baseline <= 0) {
+                continue;
+            }
+
+            $synced[$ingredient->id] = round($baseline * $flavor, 4);
+        }
+
+        return $synced;
+    }
+
+    /**
+     * @param  array<int, float>  $grams
+     * @param  array<int, float>  $baselineGrams
+     */
+    private static function roleScaleVersusBaseline(
+        Meal $meal,
+        array $grams,
+        array $baselineGrams,
+        MealScalingRoleEnum $role,
+    ): float {
+        $baselineTotal = 0.0;
+        $currentTotal = 0.0;
+
+        foreach ($meal->ingredients as $ingredient) {
+            if (MealScalingRole::roleForIngredient($ingredient, $meal) !== $role) {
+                continue;
+            }
+
+            $baseline = (float) ($baselineGrams[$ingredient->id] ?? 0);
+            $current = (float) ($grams[$ingredient->id] ?? 0);
+
+            if ($baseline <= 0) {
+                continue;
+            }
+
+            $baselineTotal += $baseline;
+            $currentTotal += max(0.0, $current);
+        }
+
+        if ($baselineTotal <= 0) {
+            return 1.0;
+        }
+
+        return max(0.0, $currentTotal / $baselineTotal);
     }
 
     /**

@@ -16,6 +16,14 @@ return [
     |
     | Full Craft day = breakfast + 2× main_each + fixed_choice_count × fixed_choice_calories.
     |
+    | Breakfast is tier-fixed: it only changes with the plan tier (1000/1200/…/2000),
+    | never when the customer picks a heavier/lighter side, dessert, or soup.
+    | Fixed-pick overshoot/undershoot vs the 2×150 budget is absorbed by mains only.
+    |
+    | Main scaling levers: protein + starchy carbs. Cooking fat (olive oil / butter)
+    | and vegetables are kitchen floors and are not trimmed. Herbs/spices follow the
+    | whole-dish scale (protein × carb geometric mean).
+    |
     */
     'tier_slot_calories' => [
         1000 => ['breakfast' => 200.0, 'main_each' => 250.0],
@@ -92,6 +100,9 @@ return [
         'herb_flavor_multiplier_max' => 2.0,
         'max_primary_meat_grams' => 200.0,
         'carb_baseline_floor_ratio' => 0.6,
+        // Day surplus may trim starch further toward this ratio of library baseline
+        // so mains can absorb fixed-pick overshoot without cutting fat/veg.
+        'carb_day_surplus_floor_ratio' => 0.25,
     ],
 
     /*
@@ -183,7 +194,8 @@ return [
     | Slot behaviour
     |--------------------------------------------------------------------------
     |
-    | scalable      — portion scales to hit slot target within the plan tier
+    | scalable      — portion scales to the slot target for the plan tier
+    |                 (breakfast: tier table only; mains: also absorb fixed overshoot)
     | fixed_portion — standard kitchen portion; calories count toward tier
     |
     */

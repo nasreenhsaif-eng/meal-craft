@@ -27,6 +27,18 @@ const MEALS = [
         imageUrl: 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=1400&q=80',
         macros: { calories: 640, protein: '46g', carbs: '62g', fat: '20g' },
     },
+    {
+        id: 'm5',
+        title: 'Mediterranean lamb mince bowls',
+        imageUrl: 'https://images.unsplash.com/photo-1529042410759-befb1204b468?auto=format&fit=crop&w=1400&q=80',
+        macros: { calories: 590, protein: '42g', carbs: '36g', fat: '28g' },
+    },
+    {
+        id: 'm6',
+        title: 'Citrus prawn quinoa salad plate',
+        imageUrl: 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?auto=format&fit=crop&w=1400&q=80',
+        macros: { calories: 505, protein: '38g', carbs: '48g', fat: '16g' },
+    },
 ];
 
 const DESSERTS = [
@@ -73,7 +85,7 @@ export default {
 };
 
 /**
- * Consultation “Meals of the Day” ribbon — 4 capped options.
+ * Consultation “Meals of the Day” ribbon — 6 capped options.
  */
 export const ConsultationMealsRibbon = {
     render: () => {
@@ -82,7 +94,7 @@ export const ConsultationMealsRibbon = {
         return (
             <div className="max-w-5xl bg-white p-6">
                 <p className="mb-4 font-montserrat text-sm font-bold text-[#262A22]">
-                    Choose Your Meals of the Day — select exactly 2
+                    Choose Your Meals of the Day — 6 options, select exactly 2
                 </p>
                 <StackedDeckCarousel
                     title=""
