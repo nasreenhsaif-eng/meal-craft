@@ -36,6 +36,40 @@ function mealTypeLabelForSlot(slot) {
 import { buildNutritionalDataFromNutrition } from '../meal-library/buildNutritionalDataFromNutrition.js';
 
 /**
+ * @param {Array<{ name?: string; adapted_amount_grams?: number; unit?: string; adapted_amount?: number | null }>} [ingredients]
+ * @returns {string[]}
+ */
+function buildAdaptedIngredientLines(ingredients) {
+    if (!Array.isArray(ingredients) || ingredients.length === 0) {
+        return [];
+    }
+
+    return ingredients
+        .map((row) => {
+            const name = String(row?.name ?? '').trim();
+            if (!name) {
+                return null;
+            }
+
+            const grams = Number(row.adapted_amount_grams ?? 0);
+            if (Number.isFinite(grams) && grams > 0) {
+                const formatted = Math.round(grams * 100) / 100;
+
+                return `${formatted}g ${name}`;
+            }
+
+            const amount = row.adapted_amount;
+            const unit = String(row.unit ?? '').trim();
+            if (amount != null && unit !== '') {
+                return `${amount} ${unit} ${name}`;
+            }
+
+            return name;
+        })
+        .filter((line) => typeof line === 'string' && line !== '');
+}
+
+/**
  * @param {Record<string, unknown>} apiMeal
  */
 export function mapAdaptedApiMealToConsultationMeal(apiMeal) {
@@ -44,6 +78,9 @@ export function mapAdaptedApiMealToConsultationMeal(apiMeal) {
     const adapted = /** @type {Record<string, number>} */ (apiMeal.adapted_nutrition ?? {});
     const calories = Number(adapted.calories ?? 0);
     const nutritionalData = buildNutritionalDataFromNutrition(adapted);
+    const ingredientLines = buildAdaptedIngredientLines(
+        Array.isArray(apiMeal.ingredients) ? apiMeal.ingredients : [],
+    );
 
     return {
         id: String(apiMeal.id ?? ''),
@@ -76,6 +113,14 @@ export function mapAdaptedApiMealToConsultationMeal(apiMeal) {
         detailView: {
             nutritionalData,
             nutritionSubheading: 'Adapted for your plan',
+            macros: {
+                calories: Math.round(calories),
+                protein: Math.round(Number(adapted.protein ?? 0) * 10) / 10,
+                carbs: Math.round(Number(adapted.carbs ?? 0) * 10) / 10,
+                fat: Math.round(Number(adapted.fat ?? 0) * 10) / 10,
+            },
+            nutrition: adapted,
+            ...(ingredientLines.length > 0 ? { ingredients: ingredientLines } : {}),
         },
     };
 }

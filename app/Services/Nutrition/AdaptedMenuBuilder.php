@@ -181,6 +181,32 @@ final class AdaptedMenuBuilder
     }
 
     /**
+     * Resolve the adapted meal payload for detail views, preferring reconciled weekday schedule data.
+     *
+     * @param  array<string, mixed>  $options
+     * @return array<string, mixed>|null
+     */
+    public static function adaptedMealForDetailView(CustomerProfile $profile, Meal $meal, array $options = []): ?array
+    {
+        $dayOfWeek = isset($options['day_of_week']) ? (int) $options['day_of_week'] : 0;
+        $craftKey = isset($options['craft_key']) ? (string) $options['craft_key'] : '';
+
+        if ($dayOfWeek >= 1 && $dayOfWeek <= 7 && $craftKey !== '') {
+            $scheduled = ProductionWeeklyMenuSchedule::adaptedMealFromScheduledDay(
+                $profile,
+                (int) $meal->id,
+                $options,
+            );
+
+            if ($scheduled !== null) {
+                return $scheduled;
+            }
+        }
+
+        return self::adaptMealForProfile($profile, $meal, $options);
+    }
+
+    /**
      * Calorie-scale each main, then boost non-vegan mains when a vegan choice lowers combined protein.
      *
      * @param  list<Meal>  $meals

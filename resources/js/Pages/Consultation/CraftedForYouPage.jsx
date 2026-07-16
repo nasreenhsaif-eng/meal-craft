@@ -14,11 +14,10 @@ import ChooseYourMeals, {
     consultationDeckOptionsForSlotKey,
     consultationDessertDeckForDay,
     consultationSideSaladDeckForDay,
-    filterMealsByCategory,
     isFixedChoiceComplete,
     normalizeConsultationMealId,
-    selectedMealsFromDisplayDecks,
     soupOfTheDayMeals,
+    sumSelectedMacrosFromDisplayDecks,
 } from '../../Components/Consultation/ChooseYourMeals.jsx';
 import SquareCheckbox from '../../Components/Atoms/Icons/SquareCheckbox.jsx';
 import { MealCraftLogoAnimatedIdentity } from '../../Components/Atoms/Logo/MealCraftLogoAnimated.jsx';
@@ -32,10 +31,6 @@ import {
 } from '../../consultation/mapAdaptedMenuMeals.js';
 import { buildCraftPlanSubmissionPayload, submitCraftPlan } from '../../consultation/submitCraftPlan.js';
 import { craftDayCaloriesForKey, dailyMacroTargetsFromPlan, dayMacroToleranceFromPlan, fixedPortionCaloriesForAdapt, nutritionPlanMatchesTier, selectedFixedSlotsFromSelections } from '../../consultation/craftCalorieTargets.js';
-import {
-    sumConsultationMealCardCalories,
-    sumConsultationMealCardMacros,
-} from '../../consultation/balanceMainMealProtein.ts';
 import {
     resolveInitialConsultationRestoreDraft,
     saveConsultationDraft,
@@ -1057,8 +1052,6 @@ export default function CraftedForYouPage({
         adaptedMenuDay,
     ]);
 
-    const catalogMealsWithBalancedMains = useMemo(() => catalogMeals, [catalogMeals]);
-
     useEffect(() => {
         if (!craft) {
             return;
@@ -1134,92 +1127,6 @@ export default function CraftedForYouPage({
         return scheduledFullCraftCategoryMealsForDay(scheduledFullCraftByWeekday, calorieDay);
     }, [calorieDay, scheduledFullCraftByWeekday]);
 
-    /**
-     * Footer totals must use the same meal objects shown on the carousels.
-     * Catalog (scalable_meals) and weekday schedule often share IDs with different adapted macros —
-     * prefer schedule / on-screen decks over the flat catalog.
-     */
-    const selectedMealCardsForDay = useMemo(() => {
-        if (!calorieDay) {
-            return [];
-        }
-
-        const s = selectedByDay[calorieDay] ?? {
-            breakfasts: [],
-            meals: [],
-            sideSalads: [],
-            desserts: [],
-            soup: [],
-        };
-
-        const assigned = assignedMealsForCalorieDay;
-        /** @type {Map<string, (typeof catalogMealsWithBalancedMains)[number]>} */
-        const byId = new Map();
-
-        for (const meal of catalogMealsWithBalancedMains) {
-            const id = normalizeConsultationMealId(meal?.id);
-            if (id !== '') {
-                byId.set(id, meal);
-            }
-        }
-
-        if (assigned) {
-            for (const meal of [
-                ...(assigned.breakfasts ?? []),
-                ...(assigned.meals ?? []),
-                ...(assigned.sideSalads ?? []),
-                ...(assigned.desserts ?? []),
-                ...(assigned.soup ?? []),
-            ]) {
-                const id = normalizeConsultationMealId(meal?.id);
-                if (id !== '') {
-                    byId.set(id, meal);
-                }
-            }
-        }
-
-        const dessertDeck = consultationDessertDeckForDay(catalogMealsWithBalancedMains, assigned?.desserts ?? [], {
-            preferBakedDesserts: dietProtocol === 'nutrient_dense',
-        });
-        for (const meal of dessertDeck) {
-            const id = normalizeConsultationMealId(meal?.id);
-            if (id !== '') {
-                byId.set(id, meal);
-            }
-        }
-
-        const sideDeck = consultationSideSaladDeckForDay(
-            catalogMealsWithBalancedMains,
-            assigned?.sideSalads ?? [],
-        );
-        for (const meal of sideDeck) {
-            const id = normalizeConsultationMealId(meal?.id);
-            if (id !== '') {
-                byId.set(id, meal);
-            }
-        }
-
-        for (const meal of scheduledSoupConsultationMealsForDay(scheduledSoupsByWeekday, calorieDay)) {
-            const id = normalizeConsultationMealId(meal?.id);
-            if (id !== '') {
-                byId.set(id, meal);
-            }
-        }
-
-        const ids = [...s.breakfasts, ...s.meals, ...s.sideSalads, ...s.desserts, ...s.soup];
-
-        return ids
-            .map((id) => byId.get(normalizeConsultationMealId(id)))
-            .filter(Boolean);
-    }, [
-        calorieDay,
-        selectedByDay,
-        catalogMealsWithBalancedMains,
-        assignedMealsForCalorieDay,
-        dietProtocol,
-        scheduledSoupsByWeekday,
-    ]);
-
     const dayMacroTargets = useMemo(
         () =>
             dailyMacroTargetsFromPlan(
@@ -1233,18 +1140,6 @@ export default function CraftedForYouPage({
     const dayMacroTolerance = useMemo(
         () => dayMacroToleranceFromPlan(nutritionPlan),
         [nutritionPlan],
-    );
-
-    // Footer totals must match adapted meal cards (kitchen-real plate grams). Do not invent
-    // a lower day total via client surplus math that never updates the cards.
-    const dayMacroTotals = useMemo(
-        () => sumConsultationMealCardMacros(selectedMealCardsForDay),
-        [selectedMealCardsForDay],
-    );
-
-    const dayCaloriesTotal = useMemo(
-        () => sumConsultationMealCardCalories(selectedMealCardsForDay),
-        [selectedMealCardsForDay],
     );
 
     const progressPercent = totalScreens <= 1 ? 0 : ((screen - 1) / (totalScreens - 1)) * 100;
@@ -1273,6 +1168,68 @@ export default function CraftedForYouPage({
             meals: mealSlot?.count ?? DEFAULT_FULL_CRAFT_MAX_SELECTIONS.meals,
         };
     }, [craft]);
+
+    /**
+     * Single source of truth for weekly category carousels + footer totals.
+     * Catalog and weekday schedule often share IDs with different adapted macros —
+     * prefer schedule / assigned cards first (see buildWeeklyConsultationDisplayDecks).
+     */
+    const weeklyDisplayDecks = useMemo(() => {
+        if (!usesWeeklyCategoryLayout || !calorieDay) {
+            return null;
+        }
+
+        return buildWeeklyConsultationDisplayDecks({
+            meals: catalogMeals,
+            assignedMealsByCategory: assignedMealsForCalorieDay,
+            scheduledSoupMeals: scheduledSoupForDay(calorieDay),
+            soupCatalogMeals: catalogMeals,
+            dietProtocol,
+            includeBreakfast: (categoryMaxSelections.breakfasts ?? 0) > 0,
+        });
+    }, [
+        usesWeeklyCategoryLayout,
+        calorieDay,
+        catalogMeals,
+        assignedMealsForCalorieDay,
+        scheduledSoupForDay,
+        dietProtocol,
+        categoryMaxSelections.breakfasts,
+    ]);
+
+    const daySelectionsForCalorieDay = useMemo(() => {
+        if (!calorieDay) {
+            return {
+                breakfasts: [],
+                meals: [],
+                sideSalads: [],
+                desserts: [],
+                soup: [],
+            };
+        }
+
+        return (
+            selectedByDay[calorieDay] ?? {
+                breakfasts: [],
+                meals: [],
+                sideSalads: [],
+                desserts: [],
+                soup: [],
+            }
+        );
+    }, [calorieDay, selectedByDay]);
+
+    // Footer totals must match adapted meal cards (kitchen-real plate grams). Do not invent
+    // a lower day total via client surplus math that never updates the cards.
+    const dayMacroTotals = useMemo(() => {
+        if (!weeklyDisplayDecks) {
+            return { calories: 0, protein: 0, carbs: 0, fat: 0 };
+        }
+
+        return sumSelectedMacrosFromDisplayDecks(daySelectionsForCalorieDay, weeklyDisplayDecks);
+    }, [weeklyDisplayDecks, daySelectionsForCalorieDay]);
+
+    const dayCaloriesTotal = dayMacroTotals.calories;
 
     useEffect(() => {
         if (!usesWeeklyCategoryLayout) {
@@ -1781,6 +1738,9 @@ export default function CraftedForYouPage({
                                     usesWeeklyCategoryLayout
                                         ? assignedMealsForCalorieDay ?? undefined
                                         : undefined
+                                }
+                                displayDecks={
+                                    usesWeeklyCategoryLayout ? weeklyDisplayDecks ?? undefined : undefined
                                 }
                                 categorySelections={usesWeeklyCategoryLayout ? daySelections : undefined}
                                 onToggleCategory={

@@ -316,6 +316,77 @@ final class ProductionWeeklyMenuSchedule
     }
 
     /**
+     * Find a reconciled adapted meal payload from the production weekday schedule.
+     *
+     * @param  array<string, mixed>  $adaptOptions
+     * @return array<string, mixed>|null
+     */
+    public static function adaptedMealFromScheduledDay(
+        CustomerProfile $profile,
+        int $mealId,
+        array $adaptOptions = [],
+    ): ?array {
+        $dayOfWeek = isset($adaptOptions['day_of_week']) ? (int) $adaptOptions['day_of_week'] : 0;
+        $craftKey = isset($adaptOptions['craft_key']) ? (string) $adaptOptions['craft_key'] : '';
+
+        if ($dayOfWeek < 1 || $dayOfWeek > 7) {
+            return null;
+        }
+
+        if ($craftKey === '' || ! in_array($craftKey, CraftCaloriePlanner::keys(), true)) {
+            return null;
+        }
+
+        $scheduleOptions = array_filter([
+            'craft_key' => $craftKey,
+            'include_soup' => ($adaptOptions['include_soup'] ?? false) ? true : null,
+            'soup_calories' => isset($adaptOptions['soup_calories']) ? (float) $adaptOptions['soup_calories'] : null,
+            'side_salad_calories' => isset($adaptOptions['side_salad_calories']) ? (float) $adaptOptions['side_salad_calories'] : null,
+            'dessert_calories' => isset($adaptOptions['dessert_calories']) ? (float) $adaptOptions['dessert_calories'] : null,
+            'plan_tier' => isset($adaptOptions['plan_tier']) ? (float) $adaptOptions['plan_tier'] : null,
+            'selected_fixed_slots' => isset($adaptOptions['selected_fixed_slots']) ? $adaptOptions['selected_fixed_slots'] : null,
+            'day_of_week' => $dayOfWeek,
+            'selected_main_meal_ids' => isset($adaptOptions['selected_main_meal_ids']) ? $adaptOptions['selected_main_meal_ids'] : null,
+        ], static fn ($value): bool => $value !== null && $value !== '' && $value !== []);
+
+        $scheduled = self::scheduledFullCraftByWeekday($profile, null, $scheduleOptions);
+        $dayMenu = $scheduled[$dayOfWeek] ?? null;
+
+        if (! is_array($dayMenu)) {
+            return null;
+        }
+
+        return self::findAdaptedMealInDayMenu($dayMenu, $mealId);
+    }
+
+    /**
+     * @param  array{
+     *     breakfasts?: list<array<string, mixed>>,
+     *     meals?: list<array<string, mixed>>,
+     *     sideSalads?: list<array<string, mixed>>,
+     *     desserts?: list<array<string, mixed>>,
+     *     soup?: list<array<string, mixed>>
+     * }  $dayMenu
+     * @return array<string, mixed>|null
+     */
+    public static function findAdaptedMealInDayMenu(array $dayMenu, int $mealId): ?array
+    {
+        foreach (['breakfasts', 'meals', 'sideSalads', 'desserts', 'soup'] as $bucket) {
+            foreach ($dayMenu[$bucket] ?? [] as $meal) {
+                if (! is_array($meal)) {
+                    continue;
+                }
+
+                if ((int) ($meal['id'] ?? 0) === $mealId) {
+                    return $meal;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * @return list<int>
      */
     public static function normalizeSelectedMainMealIds(mixed $raw): array

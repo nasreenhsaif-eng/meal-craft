@@ -4,9 +4,14 @@ import CraftedForYouPage from './Pages/Consultation/CraftedForYouPage.jsx';
 import { syncCsrfMetaTag } from './lib/csrfToken.js';
 
 // Bump when consultation curation shell changes so stale Fast Refresh clients reload.
+export const CONSULTATION_CURATION_BUNDLE_EPOCH = '2026-07-16-honest-footer';
 
 const rootEl = document.getElementById('mc-consultation-crafted-root');
 const configEl = document.getElementById('mc-consultation-crafted-config');
+
+if (typeof window !== 'undefined') {
+    window.__MC_CONSULTATION_CURATION_BUNDLE_EPOCH__ = CONSULTATION_CURATION_BUNDLE_EPOCH;
+}
 
 /** @type {{ closeHref?: string; homeHref?: string; backHref?: string; summaryHref?: string; loginUrl?: string; signOutUrl?: string; csrfToken?: string; isCustomerAccount?: boolean; isAdminPreview?: boolean; pageEyebrow?: string; adaptedMenuUrl?: string; planTier?: number | null; planTiers?: number[]; editDraft?: object | null }} */
 let config = {};

@@ -1655,6 +1655,7 @@ export function FixedChoicePicker({
  * @param {ConsultationMeal[]} [props.scheduledSoupMeals]
  * @param {ConsultationMeal[]} [props.soupCatalogMeals] Full menu catalog for soup fallback (deck meals omit soup).
  * @param {Partial<Record<SelectionCategoryKey, ConsultationMeal[]>>} [props.assignedMealsByCategory]
+ * @param {Partial<Record<SelectionCategoryKey, ConsultationMeal[]>>} [props.displayDecks] Parent-built decks — prefer over rebuilding so footer matches carousels.
  * @param {boolean} [props.categoriesReadOnly]
  * @param {(categoryKey: SelectionCategoryKey) => void} [props.onClearFixedChoiceCategory]
  * @param {(meal: ConsultationMeal) => void} [props.onViewDetails]
@@ -1694,6 +1695,7 @@ export default function ChooseYourMeals({
     scheduledSoupMeals = [],
     soupCatalogMeals = [],
     assignedMealsByCategory = null,
+    displayDecks = null,
     categoriesReadOnly = false,
     onClearFixedChoiceCategory,
     onViewDetails,
@@ -1720,6 +1722,10 @@ export default function ChooseYourMeals({
             return null;
         }
 
+        if (displayDecks && typeof displayDecks === 'object') {
+            return displayDecks;
+        }
+
         return buildWeeklyConsultationDisplayDecks({
             meals,
             assignedMealsByCategory,
@@ -1730,6 +1736,7 @@ export default function ChooseYourMeals({
         });
     }, [
         layout,
+        displayDecks,
         meals,
         assignedMealsByCategory,
         scheduledSoupMeals,
