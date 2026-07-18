@@ -6,6 +6,8 @@ import StackedDeckCarousel from '../MealCard/StackedDeckCarousel.jsx';
 import MealCardClientViewNano from '../MealCardClientViewNano.jsx';
 import {
     FIXED_CHOICE_CATEGORY_KEYS,
+    FIXED_CHOICE_MAX_COUNT,
+    FIXED_CHOICE_MIN_COUNT,
     FIXED_CHOICE_REQUIRED_COUNT,
     FIXED_CHOICE_SECTIONS,
     FIXED_CHOICE_TOGGLE_OPTIONS,
@@ -24,6 +26,8 @@ import {
 
 export {
     FIXED_CHOICE_CATEGORY_KEYS,
+    FIXED_CHOICE_MAX_COUNT,
+    FIXED_CHOICE_MIN_COUNT,
     FIXED_CHOICE_REQUIRED_COUNT,
     FIXED_CHOICE_SECTIONS,
     FIXED_CHOICE_TOGGLE_OPTIONS,
@@ -36,7 +40,7 @@ export {
 
 /** @typedef {'breakfasts' | 'meals' | 'sideSalads' | 'desserts' | 'soup'} SelectionCategoryKey */
 
-/** Required categories for Full Craft NEXT (breakfast is auto-assigned; pick 2 fixed slots separate). */
+/** Required categories for Full Craft NEXT (breakfast is auto-assigned; pick 1–2 fixed slots separate). */
 export const FULL_CRAFT_REQUIRED_SELECTION_KEYS = Object.freeze(
     /** @type {const} */ (['meals']),
 );
@@ -537,7 +541,7 @@ export function selectionLimitWarningMessage(maxSelected) {
     return `You can only select ${slotLabel}. Deselect one to choose a different meal.`;
 }
 
-/** Default slot caps for Full Craft (pick 2 of side / dessert / soup). */
+/** Default slot caps for Full Craft (pick 1–2 of side / dessert / soup). */
 export const DEFAULT_FULL_CRAFT_MAX_SELECTIONS = Object.freeze({
     breakfasts: 1,
     meals: 2,
@@ -1069,7 +1073,7 @@ export function resolveCategoryMaxSelections(maxSelectionsByCategory = null) {
 }
 
 /**
- * Weekly-schedule crafts: breakfast (when required), mains, and exactly 2 fixed picks.
+ * Weekly-schedule crafts: breakfast (when required), mains, and 1–2 fixed picks.
  *
  * @param {Partial<Record<SelectionCategoryKey, string[]>> | null | undefined} categorySelections
  * @param {Partial<Record<SelectionCategoryKey, number>> | null | undefined} [maxSelectionsByCategory]
@@ -1174,7 +1178,7 @@ function incompleteSelectionLabelForKey(key, maxSelectionsByCategory = null) {
         sideSalads: 'side salad',
         desserts: 'dessert',
         soup: 'soup',
-        fixedChoice: '2 sides (pick from side salad, dessert, or soup)',
+        fixedChoice: 'at least 1 side (up to 2 from side salad, dessert, or soup)',
     };
 
     return labels[key] ?? key;
@@ -1446,7 +1450,7 @@ export function MealSlotCarousel({
 }
 
 /**
- * Pick 2 of 3 side categories — side salad, soup, and dessert decks always visible (onboarding UX).
+ * Pick 1–2 of 3 side categories — side salad, soup, and dessert decks always visible (onboarding UX).
  *
  * @param {object} props
  * @param {Partial<Record<SelectionCategoryKey, string[]>> | null | undefined} props.categorySelections
@@ -1604,11 +1608,11 @@ export function FixedChoicePicker({
         <div className="relative isolate w-full overflow-x-clip overflow-y-visible py-0.5">
             <div className="mx-auto min-w-0 max-w-full px-4 text-center md:px-0">
                 <p className="font-montserrat text-[15px] font-bold leading-snug tracking-tight text-[#262A22] sm:text-base">
-                    Pick 2 of 3 sides
+                    Pick 1–2 of 3 sides
                 </p>
                 <p className="mt-0.5 font-body text-xs leading-snug text-[#555555] sm:text-sm">
                     {pickEnabled
-                        ? `Side salad, soup, or dessert • ${fixedChoiceCount}/${FIXED_CHOICE_REQUIRED_COUNT} selected`
+                        ? `Side salad, soup, or dessert • ${fixedChoiceCount}/${FIXED_CHOICE_MAX_COUNT} selected (min ${FIXED_CHOICE_MIN_COUNT})`
                         : `${fixedChoiceCount} selected (standard kitchen portion)`}
                 </p>
             </div>

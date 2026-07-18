@@ -4,7 +4,7 @@ import CraftedForYouPage from './Pages/Consultation/CraftedForYouPage.jsx';
 import { syncCsrfMetaTag } from './lib/csrfToken.js';
 
 // Bump when consultation curation shell changes so stale Fast Refresh clients reload.
-export const CONSULTATION_CURATION_BUNDLE_EPOCH = '2026-07-18-honest-footer-rebuild';
+export const CONSULTATION_CURATION_BUNDLE_EPOCH = '2026-07-18-sides-min1-max2';
 
 const rootEl = document.getElementById('mc-consultation-crafted-root');
 const configEl = document.getElementById('mc-consultation-crafted-config');

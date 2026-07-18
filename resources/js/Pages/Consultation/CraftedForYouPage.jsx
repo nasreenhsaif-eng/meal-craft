@@ -77,39 +77,39 @@ const CRAFTS = [
     {
         key: 'full',
         title: 'Full Craft',
-        description: '1 Breakfast, 2 Main Meals, pick 2 of side salad / dessert / soup (~150 kcal each)',
+        description: '1 Breakfast, 2 Main Meals, pick 1–2 of side salad / dessert / soup (~150 kcal each)',
         slots: [
             { id: 'breakfast', label: 'Breakfast', count: 1 },
             { id: 'meal', label: 'Meals', count: 2 },
-            { id: 'fixedChoice', label: 'Pick 2 of 3 sides', count: 2 },
+            { id: 'fixedChoice', label: 'Pick 1–2 of 3 sides', count: 2 },
         ],
     },
     {
         key: 'day',
         title: 'Day Craft',
-        description: 'Breakfast, 1 Meal, pick 2 of side salad / dessert / soup',
+        description: 'Breakfast, 1 Meal, pick 1–2 of side salad / dessert / soup',
         slots: [
             { id: 'breakfast', label: 'Breakfast', count: 1 },
             { id: 'meal', label: 'Meal', count: 1 },
-            { id: 'fixedChoice', label: 'Pick 2 of 3 sides', count: 2 },
+            { id: 'fixedChoice', label: 'Pick 1–2 of 3 sides', count: 2 },
         ],
     },
     {
         key: 'afternoon',
         title: 'Afternoon Craft',
-        description: '2 Meals, pick 2 of side salad / dessert / soup',
+        description: '2 Meals, pick 1–2 of side salad / dessert / soup',
         slots: [
             { id: 'meal', label: 'Meals', count: 2 },
-            { id: 'fixedChoice', label: 'Pick 2 of 3 sides', count: 2 },
+            { id: 'fixedChoice', label: 'Pick 1–2 of 3 sides', count: 2 },
         ],
     },
     {
         key: 'intermittent',
         title: 'Intermittent Craft',
-        description: '1 Meal, pick 2 of side salad / dessert / soup',
+        description: '1 Meal, pick 1–2 of side salad / dessert / soup',
         slots: [
             { id: 'meal', label: 'Meal', count: 1 },
-            { id: 'fixedChoice', label: 'Pick 2 of 3 sides', count: 2 },
+            { id: 'fixedChoice', label: 'Pick 1–2 of 3 sides', count: 2 },
         ],
     },
     {

@@ -307,7 +307,7 @@ export default function MealPlanDetailPage({
         });
     }, [activeDay]);
 
-    /** Side salad / dessert / soup behave as one "pick 2 of 3" group, matching the customer flow. */
+    /** Side salad / dessert / soup behave as one "pick 1–2 of 3" group, matching the customer flow. */
     const toggleFixedChoiceSide = useCallback((categoryKey, meal) => {
         const mealId = String(meal.id);
 
@@ -479,10 +479,10 @@ export default function MealPlanDetailPage({
                                     <div className="space-y-4">
                                         <div className="min-w-0">
                                             <h2 className="font-montserrat text-lg font-bold text-[#262A22]">
-                                                Pick 2 of 3 sides
+                                                Pick 1–2 of 3 sides
                                             </h2>
                                             <p className="mt-0.5 text-sm text-[#555555]">
-                                                Side salad, soup, or dessert • {selectedSideCount}/{FIXED_CHOICE_MAX_COUNT} selected
+                                                Side salad, soup, or dessert • {selectedSideCount}/{FIXED_CHOICE_MAX_COUNT} selected (min 1)
                                             </p>
                                         </div>
                                         {sideSections.map((section) => {

@@ -1,6 +1,6 @@
 /** @typedef {'sideSalads' | 'desserts' | 'soup'} FixedChoiceCategoryKey */
 
-/** Side salad / dessert / soup — pick exactly 2 total across these categories. */
+/** Side salad / dessert / soup — pick 1–2 total across these categories. */
 export const FIXED_CHOICE_CATEGORY_KEYS = Object.freeze(
     /** @type {const} */ (['sideSalads', 'desserts', 'soup']),
 );
@@ -10,7 +10,7 @@ export const FIXED_CHOICE_MAX_COUNT = 2;
 /** @deprecated Use {@link FIXED_CHOICE_MAX_COUNT} */
 export const FIXED_CHOICE_REQUIRED_COUNT = FIXED_CHOICE_MAX_COUNT;
 
-export const FIXED_CHOICE_MIN_COUNT = 2;
+export const FIXED_CHOICE_MIN_COUNT = 1;
 
 /** Display order for the horizontal toggle bar — soup is always last. */
 export const FIXED_CHOICE_TOGGLE_OPTIONS = Object.freeze([

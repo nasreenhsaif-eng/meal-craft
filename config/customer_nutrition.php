@@ -61,11 +61,12 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Fixed pick slots — customer picks exactly 2 of 3 per day (~150 kcal each)
+    | Fixed pick slots — customer picks 1–2 of 3 per day (~150 kcal each)
     |--------------------------------------------------------------------------
     */
     'fixed_choice_slots' => ['side_salad', 'dessert', 'soup'],
     'fixed_choice_count' => 2,
+    'fixed_choice_min_count' => 1,
     'fixed_choice_calories' => 150.0,
 
     /*
@@ -209,7 +210,7 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Slots eligible for the pick-2 fixed choice group
+    | Slots eligible for the pick 1–2 fixed choice group
     |--------------------------------------------------------------------------
     */
     'core_fixed_portion_slots' => ['side_salad', 'dessert', 'soup'],
