@@ -227,10 +227,25 @@ export function selectedMealsFromDisplayDecks(categorySelections, displayDecks) 
     /** @type {Map<string, ConsultationMeal>} */
     const byId = new Map();
 
-    for (const cards of Object.values(displayDecks ?? {})) {
+    // Prefer earlier deck slots (breakfast → meals → sides → dessert → soup). First write wins
+    // so a later catalog duplicate cannot replace an on-screen scheduled card.
+    for (const key of ['breakfasts', 'meals', 'sideSalads', 'desserts', 'soup']) {
+        for (const meal of displayDecks?.[key] ?? []) {
+            const id = normalizeConsultationMealId(meal?.id);
+            if (id !== '' && !byId.has(id)) {
+                byId.set(id, meal);
+            }
+        }
+    }
+
+    for (const [bucket, cards] of Object.entries(displayDecks ?? {})) {
+        if (['breakfasts', 'meals', 'sideSalads', 'desserts', 'soup'].includes(bucket)) {
+            continue;
+        }
+
         for (const meal of cards ?? []) {
             const id = normalizeConsultationMealId(meal?.id);
-            if (id !== '') {
+            if (id !== '' && !byId.has(id)) {
                 byId.set(id, meal);
             }
         }
@@ -360,11 +375,12 @@ export function consultationDessertDeckForDay(source, scheduledDesserts = [], op
     let hasBaked = false;
 
     for (const meal of scheduledDesserts) {
-        if (!meal?.id || seen.has(meal.id)) {
+        const id = normalizeConsultationMealId(meal?.id);
+        if (id === '' || seen.has(id)) {
             continue;
         }
 
-        seen.add(meal.id);
+        seen.add(id);
         deck.push(meal);
 
         if (isChiaDessertMeal(meal)) {
@@ -379,12 +395,14 @@ export function consultationDessertDeckForDay(source, scheduledDesserts = [], op
     const catalogDesserts = source.filter((meal) => meal.mealType === 'Dessert');
 
     if (!hasChia) {
-        const greekYogurtChia = catalogDesserts.find(
-            (meal) => meal?.id && !seen.has(meal.id) && isGreekYogurtChiaDessertMeal(meal),
-        );
+        const greekYogurtChia = catalogDesserts.find((meal) => {
+            const id = normalizeConsultationMealId(meal?.id);
+
+            return id !== '' && !seen.has(id) && isGreekYogurtChiaDessertMeal(meal);
+        });
 
         if (greekYogurtChia && (!preferBakedDesserts || hasBaked || deck.length > 0)) {
-            seen.add(greekYogurtChia.id);
+            seen.add(normalizeConsultationMealId(greekYogurtChia.id));
             deck.push(greekYogurtChia);
             hasChia = true;
         }
@@ -395,7 +413,8 @@ export function consultationDessertDeckForDay(source, scheduledDesserts = [], op
             break;
         }
 
-        if (seen.has(meal.id)) {
+        const id = normalizeConsultationMealId(meal?.id);
+        if (id === '' || seen.has(id)) {
             continue;
         }
 
@@ -409,7 +428,7 @@ export function consultationDessertDeckForDay(source, scheduledDesserts = [], op
             }
         }
 
-        seen.add(meal.id);
+        seen.add(id);
         deck.push(meal);
     }
 
@@ -429,11 +448,12 @@ export function consultationSideSaladDeckForDay(source, scheduledSideSalads = []
     const seen = new Set();
 
     for (const meal of scheduledSideSalads) {
-        if (!meal?.id || seen.has(meal.id)) {
+        const id = normalizeConsultationMealId(meal?.id);
+        if (id === '' || seen.has(id)) {
             continue;
         }
 
-        seen.add(meal.id);
+        seen.add(id);
         deck.push(meal);
     }
 
@@ -442,11 +462,12 @@ export function consultationSideSaladDeckForDay(source, scheduledSideSalads = []
             break;
         }
 
-        if (seen.has(meal.id)) {
+        const id = normalizeConsultationMealId(meal?.id);
+        if (id === '' || seen.has(id)) {
             continue;
         }
 
-        seen.add(meal.id);
+        seen.add(id);
         deck.push(meal);
     }
 
