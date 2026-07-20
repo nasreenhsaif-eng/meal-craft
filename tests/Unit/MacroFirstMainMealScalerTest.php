@@ -238,6 +238,73 @@ test('macro first scaler keeps vegan protein at baseline and caps calories', fun
     expect($adapted['protein_multiplier'])->toEqual(1.0)
         ->and($adapted['grams'][$lentil->id])->toEqual($baseline[$lentil->id])
         ->and((float) $nutrition['calories'])->toBeLessThanOrEqual($targetCalories + 1);
+
+    $rice = $meal->ingredients->first(
+        fn ($ingredient) => str_contains(strtolower((string) $ingredient->name), 'rice'),
+    );
+
+    expect($rice)->not->toBeNull()
+        ->and($adapted['grams'][$rice->id])->toBeGreaterThan(0);
+});
+
+test('macro first scaler does not wipe starch when non-carb ingredients already meet carb budget', function () {
+    $user = User::factory()->create();
+    $profile = CustomerProfile::factory()->for($user)->create([
+        'daily_calorie_target' => 1500,
+        'protein_percentage' => 30,
+        'carb_percentage' => 40,
+        'fat_percentage' => 30,
+    ]);
+
+    $lentils = Ingredient::factory()->create([
+        'name' => 'Lentils (Red)',
+        'calories' => 352,
+        'protein' => 24,
+        'carbs' => 63,
+        'fat' => 1,
+        'usda_food_category' => 'Proteins',
+    ]);
+    $rice = Ingredient::factory()->create([
+        'name' => 'Cooked Brown Basmati Rice (Base)',
+        'calories' => 64.8,
+        'protein' => 1.64,
+        'carbs' => 13.4,
+        'fat' => 0.44,
+    ]);
+    $peanutButter = Ingredient::factory()->create([
+        'name' => 'Peanut Butter',
+        'calories' => 588,
+        'protein' => 25,
+        'carbs' => 20,
+        'fat' => 50,
+    ]);
+    $zucchini = Ingredient::factory()->create([
+        'name' => 'Zucchini',
+        'calories' => 17,
+        'protein' => 1.2,
+        'carbs' => 3.1,
+        'fat' => 0.3,
+        'usda_food_category' => 'Vegetables',
+    ]);
+
+    $meal = Meal::factory()->create([
+        'name' => 'Peanut Lentil Rice Bowl',
+        'meal_type' => MealType::Main,
+        'category' => RecipeCategory::Meal,
+        'total_calories' => 400,
+        'total_protein' => 30,
+        'total_carbs' => 40,
+        'total_fat' => 18,
+    ]);
+    $meal->ingredients()->attach($lentils->id, ['amount_grams' => 40]);
+    $meal->ingredients()->attach($rice->id, ['amount_grams' => 113]);
+    $meal->ingredients()->attach($peanutButter->id, ['amount_grams' => 25]);
+    $meal->ingredients()->attach($zucchini->id, ['amount_grams' => 80]);
+
+    $plan = UserPlanCalculator::calculateUserPlan($profile);
+    $adapted = MacroFirstMainMealScaler::adapt($meal->fresh(['ingredients']), $plan);
+
+    expect($adapted['grams'][$rice->id])->toBeGreaterThan(0);
 });
 
 test('macro first scaler protects primary beef and keeps rice when trimming steak meal', function () {
@@ -251,18 +318,18 @@ test('macro first scaler protects primary beef and keeps rice when trimming stea
 
     $beef = Ingredient::factory()->create([
         'name' => 'Beef Sirloin',
-        'calories' => 244,
+        'calories' => 162,
         'protein' => 27,
         'carbs' => 0,
-        'fat' => 15,
+        'fat' => 6,
         'usda_food_category' => 'Proteins',
     ]);
     $rice = Ingredient::factory()->create([
         'name' => 'Saffron Rice (Base)',
-        'calories' => 118.27,
-        'protein' => 2.36,
-        'carbs' => 26.11,
-        'fat' => 0.23,
+        'calories' => 127.14,
+        'protein' => 2.54,
+        'carbs' => 28.07,
+        'fat' => 0.25,
     ]);
     $oil = Ingredient::factory()->create([
         'name' => 'Olive Oil (Extra Virgin)',

@@ -111,7 +111,7 @@ final class BalancedComplexCarbRecipeRefiner
         $tags = WholeFoodDietPolicy::REQUIRED_MEAL_DIET_TAGS;
 
         $definitions = [
-            'Citrus Herb Salmon' => [
+            'Citrus Herb Salmon with Asparagus & Sweet Potato' => [
                 'ingredients' => [
                     'Salmon (Raw)' => StandardMeatPortion::GRAMS,
                     'Sweet Potato' => 90,
@@ -128,7 +128,7 @@ final class BalancedComplexCarbRecipeRefiner
                     'Wild Rice (Cooked)' => 90,
                     'Mango' => 50,
                     'Bell Pepper (Red)' => 30,
-                    'Cucumber' => 35,
+                    'Cucumber' => 40,
                     'Lime Juice' => 10,
                     'Fresh Coriander' => 3,
                 ],
@@ -169,7 +169,7 @@ final class BalancedComplexCarbRecipeRefiner
                 'ingredients' => [
                     'Beef Chuck Roast' => StandardMeatPortion::GRAMS,
                     'Cannellini Beans' => 70,
-                    'Quinoa Bread (Base)' => 50,
+                    'Steamed Basmati Rice (Base)' => 75,
                     'Spinach (Fresh)' => 35,
                     'Fresh Coriander' => 8,
                     'Dill (Fresh)' => 4,

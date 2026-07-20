@@ -165,6 +165,11 @@ final class WholeFoodDietPolicy
             return false;
         }
 
+        if (in_array($ingredient->name, self::OPTIONAL_DAIRY_INGREDIENT_NAMES, true)
+            || in_array($ingredient->name, self::OPTIONAL_DAIRY_BASE_NAMES, true)) {
+            return false;
+        }
+
         if (self::isHouseBaseIngredient($ingredient)) {
             return false;
         }

@@ -34,6 +34,9 @@ final class BalancedSodiumRecipeRefiner
     /**
      * Ingredient name => multiplier applied to grams (0 removes).
      *
+     * Cooked carb / legume bases stay as cooked kitchen portions (lightly scaled for sodium).
+     * Do not swap them for dry grain — that produced uncookable 5–30g “Quinoa (White)” / “Couscous” rows.
+     *
      * @var array<string, float>
      */
     private const SODIUM_SCALE = [
@@ -43,18 +46,16 @@ final class BalancedSodiumRecipeRefiner
         'Sumac Za\'atar Dressing (Base)' => 0.35,
         'Zesty Lime Chili Salad Dressing (Base)' => 0.35,
         'Ratatouille (Base)' => 0.0,
-        'Turmeric Rice (Base)' => 0.0,
-        'Steamed Basmati Rice (Base)' => 0.0,
-        'Cooked Quinoa (Base)' => 0.0,
-        'Cooked Brown Basmati Rice (Base)' => 0.0,
-        'Cooked White Basmati Rice (Base)' => 0.0,
-        'Cooked Couscous (Base)' => 0.0,
-        'Cooked Chickpeas (Base)' => 0.0,
+        'Turmeric Rice (Base)' => 0.9,
+        'Steamed Basmati Rice (Base)' => 0.9,
+        'Cooked Quinoa (Base)' => 0.9,
+        'Cooked Brown Basmati Rice (Base)' => 0.9,
+        'Cooked White Basmati Rice (Base)' => 0.9,
+        'Cooked Couscous (Base)' => 0.9,
+        'Cooked Chickpeas (Base)' => 0.9,
         'Quinoa Bread (Base)' => 0.65,
         'Quinoa Flatbread (Base)' => 0.65,
         'Bone Broth (Base)' => 0.5,
-        'Vegetable Stock' => 0.25,
-        'Vegetable Broth (Base)' => 0.25,
         'Harissa Paste (Base)' => 0.35,
         'Pickled Red Onion (Base)' => 0.0,
         'Slaw (Base)' => 0.0,
@@ -66,13 +67,6 @@ final class BalancedSodiumRecipeRefiner
      * @var array<string, array<string, float>>
      */
     private const REPLACEMENTS = [
-        'Cooked Quinoa (Base)' => ['Quinoa (White)' => 30.0],
-        'Cooked Brown Basmati Rice (Base)' => ['Basmati Rice (Brown)' => 45.0],
-        'Cooked White Basmati Rice (Base)' => ['Basmati Rice (White)' => 45.0],
-        'Cooked Couscous (Base)' => ['Couscous' => 30.0],
-        'Cooked Chickpeas (Base)' => ['Chickpeas' => 75.0],
-        'Turmeric Rice (Base)' => ['Basmati Rice (Brown)' => 45.0, 'Turmeric Powder' => 1.0],
-        'Steamed Basmati Rice (Base)' => ['Basmati Rice (Brown)' => 45.0],
         'Ratatouille (Base)' => [
             'Zucchini' => 40.0,
             'Bell Pepper (Red)' => 35.0,
@@ -191,7 +185,8 @@ final class BalancedSodiumRecipeRefiner
             }
 
             $stockGrams = $ingredientGrams[$stockName];
-            $waterSwap = round($stockGrams * 0.75, 4);
+            // Half the stock volume becomes filtered water so flavor remains kitchen-usable.
+            $waterSwap = round($stockGrams * 0.5, 4);
             $ingredientGrams[$stockName] = round($stockGrams - $waterSwap, 4);
             $ingredientGrams['Water (Filtered)'] = ($ingredientGrams['Water (Filtered)'] ?? 0) + $waterSwap;
         }

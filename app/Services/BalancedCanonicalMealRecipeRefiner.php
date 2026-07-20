@@ -298,17 +298,13 @@ final class BalancedCanonicalMealRecipeRefiner
             self::BAKED_SALMON_NAME => [
                 'ingredients' => [
                     'Salmon' => StandardMeatPortion::GRAMS,
-                    'Pumpkin' => 90,
-                    'Bell Pepper (Red)' => 55,
-                    'Zucchini' => 55,
-                    'Carrots' => 45,
-                    'Olive Oil (Extra Virgin)' => 5,
+                    'Roasted Mixed Vegetables (Base)' => 100,
                     'Broccoli' => 60,
                     'Fermented Chimichurri (Base)' => 25,
                     'Pumpkin Seeds' => 10,
                 ],
                 'diet_tags' => $wholeFoodTags,
-                'short_description' => 'Premium baked salmon with fermented chimichurri over roasted pumpkin, vegetables, and broccoli.',
+                'short_description' => 'Premium baked salmon with fermented chimichurri over house roasted mixed vegetables and broccoli.',
             ],
             self::VEGAN_BUTTERNUT_PEANUT_STEW_NAME => [
                 'ingredients' => [

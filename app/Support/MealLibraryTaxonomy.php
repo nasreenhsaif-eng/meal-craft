@@ -19,6 +19,10 @@ final class MealLibraryTaxonomy
     public const DIETARY_TAGS = [
         'Vegan',
         'Vegetarian',
+        'Dairy-free',
+        'Gluten-free',
+        'Nut-free',
+        'Spicy',
         'High protein',
     ];
 

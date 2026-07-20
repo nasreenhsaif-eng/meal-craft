@@ -171,6 +171,7 @@ function slotId(dayIdx, slotKey, index) {
  *   pageEyebrow?: string;
  *   adaptedMenuUrl?: string;
  *   mealDetailViewUrlTemplate?: string;
+ *   mealLibraryRevision?: number;
  *   initialPlanTier?: number | null;
  *   initialPlanTiers?: number[];
  *   disableAdaptedMenuFetch?: boolean;
@@ -198,6 +199,7 @@ export default function CraftedForYouPage({
     pageEyebrow = 'Admin / Consultation',
     adaptedMenuUrl = '/api/menu/adapted',
     mealDetailViewUrlTemplate = '/api/meals/{id}/detail-view',
+    mealLibraryRevision = 0,
     initialPlanTier = null,
     initialPlanTiers = DEFAULT_PLAN_TIERS,
     disableAdaptedMenuFetch = false,
@@ -312,6 +314,8 @@ export default function CraftedForYouPage({
     const scheduleCacheIdentityRef = useRef('');
     /** When craft/tier changes, next successful payload replaces (does not merge) weekday caches. */
     const wipeScheduleCacheOnNextSuccessRef = useRef(false);
+    /** Craft key that produced the schedule currently shown on cards (may lag while a craft switch refetches). */
+    const displayedScheduleCraftKeyRef = useRef(/** @type {string | null} */ (null));
     /** @type {React.MutableRefObject<Record<string, string>>} */
     const lastAdaptedMenuFetchKeyByDayRef = useRef({});
     /** Snapshot of weekday schedules for skip-fetch checks without stale closures. */
@@ -817,6 +821,7 @@ export default function CraftedForYouPage({
 
         return JSON.stringify({
             craftKey,
+            mealLibraryRevision,
             includeSoup: includeSoupForAdaptedMenu,
             soupCalories: soupCaloriesForAdaptedMenu ?? null,
             selectedFixedSlots,
@@ -836,6 +841,7 @@ export default function CraftedForYouPage({
         });
     }, [
         craftKey,
+        mealLibraryRevision,
         includeSoupForAdaptedMenu,
         soupCaloriesForAdaptedMenu,
         dayFixedSelectionIds,
@@ -932,10 +938,15 @@ export default function CraftedForYouPage({
 
     const resolveMealDetailQueryString = useCallback(() => {
         const base = adaptedMenuFetchParams ?? {};
+        // While a craft/tier switch is in flight, cards still show the previous schedule —
+        // detail fetch must use that craft so API context matches on-screen cards.
+        const detailCraftKey = wipeScheduleCacheOnNextSuccessRef.current
+            ? (displayedScheduleCraftKeyRef.current ?? base.craftKey ?? craftKey ?? undefined)
+            : (base.craftKey ?? craftKey ?? undefined);
 
         return buildAdaptedMenuQueryString({
             ...base,
-            craftKey: base.craftKey ?? craftKey ?? undefined,
+            craftKey: detailCraftKey,
             dayOfWeek: base.dayOfWeek ?? calorieDay ?? undefined,
             planTier: base.planTier ?? (isAdminPreview ? previewPlanTier : undefined),
         });
@@ -946,12 +957,24 @@ export default function CraftedForYouPage({
         resolveMealDetailQueryString,
     );
 
+    const openMealDetailWhenScheduleReady = useCallback(
+        (meal) => {
+            // Avoid opening details against a half-switched craft while the new schedule loads.
+            if (wipeScheduleCacheOnNextSuccessRef.current && menuLoading) {
+                return;
+            }
+
+            openMealDetail(meal);
+        },
+        [menuLoading, openMealDetail],
+    );
+
     useEffect(() => {
         if (disableAdaptedMenuFetch || craftKey === null || adaptedMenuFetchParams === null) {
             return undefined;
         }
 
-        const cacheIdentity = `${craftKey}|${isAdminPreview ? previewPlanTier : 'profile'}`;
+        const cacheIdentity = `${craftKey}|${isAdminPreview ? previewPlanTier : 'profile'}|${mealLibraryRevision}`;
         const dayKey = adaptedMenuDay != null ? String(adaptedMenuDay) : '';
 
         if (scheduleCacheIdentityRef.current !== cacheIdentity) {
@@ -1018,6 +1041,10 @@ export default function CraftedForYouPage({
                             : { ...prev, ...incomingFullCraft },
                     );
 
+                    if (craftKey) {
+                        displayedScheduleCraftKeyRef.current = craftKey;
+                    }
+
                     setProductionMealPlanId(
                         typeof payload.production_meal_plan_id === 'number' ? payload.production_meal_plan_id : null,
                     );
@@ -1050,6 +1077,7 @@ export default function CraftedForYouPage({
         isAdminPreview,
         previewPlanTier,
         adaptedMenuDay,
+        mealLibraryRevision,
     ]);
 
     useEffect(() => {
@@ -1721,7 +1749,6 @@ export default function CraftedForYouPage({
                                 dayMacroTargets={dayMacroTargets}
                                 dayMacroTolerance={dayMacroTolerance}
                                 nutritionPlan={nutritionPlan}
-                                summaryLabel={`${WEEKDAY_LABELS[curationDay - 1]} selections`}
                                 craftTitle={craft ? craft.title : ''}
                                 targetCalories={planTierCalories}
                                 dayCalorieTolerance={
@@ -1780,7 +1807,7 @@ export default function CraftedForYouPage({
                                 footerNextDisabled={!isCurationDayComplete}
                                 footerIncompleteMessage={curationIncompleteMessage}
                                 scheduledSoupMeals={scheduledSoupForDay(curationDay)}
-                                onViewDetails={openMealDetail}
+                                onViewDetails={openMealDetailWhenScheduleReady}
                                 dietProtocol={dietProtocol}
                                 isMenuPending={isMenuPending}
                             >
@@ -1841,7 +1868,7 @@ export default function CraftedForYouPage({
                                                             selectedIds={selections.meals}
                                                             maxSelected={1}
                                                             onSelect={toggle('meals', 1)}
-                                                            onViewDetails={openMealDetail}
+                                                            onViewDetails={openMealDetailWhenScheduleReady}
                                                         />
 
                                                         <div className="rounded-[12px] border border-gray-200 bg-white p-4">
@@ -1881,7 +1908,7 @@ export default function CraftedForYouPage({
                                                                 selectedIds={selections.soup}
                                                                 maxSelected={1}
                                                                 onSelect={toggle('soup', 1)}
-                                                                onViewDetails={openMealDetail}
+                                                                onViewDetails={openMealDetailWhenScheduleReady}
                                                             />
                                                         ) : side === 'dessert' ? (
                                                             <MealSlotCarousel
@@ -1891,7 +1918,7 @@ export default function CraftedForYouPage({
                                                                 selectedIds={selections.desserts}
                                                                 maxSelected={1}
                                                                 onSelect={toggle('desserts', 1)}
-                                                                onViewDetails={openMealDetail}
+                                                                onViewDetails={openMealDetailWhenScheduleReady}
                                                             />
                                                         ) : (
                                                             <MealSlotCarousel
@@ -1901,7 +1928,7 @@ export default function CraftedForYouPage({
                                                                 selectedIds={selections.sideSalads}
                                                                 maxSelected={1}
                                                                 onSelect={toggle('sideSalads', 1)}
-                                                                onViewDetails={openMealDetail}
+                                                                onViewDetails={openMealDetailWhenScheduleReady}
                                                             />
                                                         )}
                                                     </>
@@ -1926,7 +1953,7 @@ export default function CraftedForYouPage({
                                                             readOnly
                                                             showSelectedState
                                                             onSelect={() => {}}
-                                                            onViewDetails={openMealDetail}
+                                                            onViewDetails={openMealDetailWhenScheduleReady}
                                                         />
                                                     ) : null}
 
@@ -1939,7 +1966,7 @@ export default function CraftedForYouPage({
                                                             selectedIds={selections[slot.selectionKey]}
                                                             maxSelected={slot.count}
                                                             onSelect={toggle(slot.selectionKey, slot.count)}
-                                                            onViewDetails={openMealDetail}
+                                                            onViewDetails={openMealDetailWhenScheduleReady}
                                                         />
                                                     ))}
 
@@ -1952,7 +1979,7 @@ export default function CraftedForYouPage({
                                                             soupCatalogMeals={catalogMeals}
                                                             dietProtocol={dietProtocol}
                                                             onSelectMeal={toggleFixedChoice}
-                                                            onViewDetails={openMealDetail}
+                                                            onViewDetails={openMealDetailWhenScheduleReady}
                                                             resolveCards={(_, selectionKey) => {
                                                                 if (selectionKey === 'soup') {
                                                                     return pickCards('soup');

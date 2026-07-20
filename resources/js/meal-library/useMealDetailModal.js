@@ -1,29 +1,57 @@
 import { useCallback, useState } from 'react';
 
 /**
+ * Merge API detail into the card's consultation detailView without overwriting
+ * adapted macros, nutritionalData, or ingredient grams already shown on the card.
+ *
  * @param {Record<string, unknown> | undefined | null} initial
  * @param {Record<string, unknown>} fromApi
  */
-function mergeDetailViews(initial, fromApi) {
+export function mergeDetailViews(initial, fromApi) {
     if (!initial || typeof initial !== 'object') {
         return fromApi;
+    }
+
+    const keepAdaptedNutrition =
+        initial.macros != null ||
+        initial.nutritionalData != null ||
+        (Array.isArray(initial.ingredients) && initial.ingredients.length > 0);
+
+    if (!keepAdaptedNutrition) {
+        return {
+            ...initial,
+            ...fromApi,
+            nutritionalData: fromApi.nutritionalData ?? initial.nutritionalData,
+            ingredients:
+                Array.isArray(fromApi.ingredients) && fromApi.ingredients.length > 0
+                    ? fromApi.ingredients
+                    : initial.ingredients,
+        };
     }
 
     return {
         ...initial,
         ...fromApi,
-        nutritionalData: fromApi.nutritionalData ?? initial.nutritionalData,
+        // Card-adapted nutrition + kitchen grams stay authoritative.
+        macros: initial.macros ?? fromApi.macros,
+        nutrition: initial.nutrition ?? fromApi.nutrition,
+        nutritionalData: initial.nutritionalData ?? fromApi.nutritionalData,
+        nutritionSubheading: initial.nutritionSubheading ?? fromApi.nutritionSubheading,
         ingredients:
-            Array.isArray(fromApi.ingredients) && fromApi.ingredients.length > 0
-                ? fromApi.ingredients
-                : initial.ingredients,
+            Array.isArray(initial.ingredients) && initial.ingredients.length > 0
+                ? initial.ingredients
+                : fromApi.ingredients,
+        ingredientSections:
+            Array.isArray(initial.ingredientSections) && initial.ingredientSections.length > 0
+                ? initial.ingredientSections
+                : fromApi.ingredientSections,
     };
 }
 
 /**
  * @param {Record<string, unknown> | undefined | null} detailView
  */
-function hasConsultationDetailView(detailView) {
+export function hasConsultationDetailView(detailView) {
     return (
         detailView &&
         typeof detailView === 'object' &&

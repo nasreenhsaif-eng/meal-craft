@@ -319,11 +319,11 @@ final class BalancedMealInstructionRefiner
 
             // Salmon mains
             BalancedCanonicalMealRecipeRefiner::BAKED_SALMON_NAME => $this->steps([
-                'Toss pumpkin, bell pepper, zucchini, and carrots with olive oil. Roast at 200°C until tender and lightly caramelised.',
+                'Prepare Roasted Mixed Vegetables (Base) per base recipe instructions; keep warm.',
                 'Coat salmon generously with Fermented Chimichurri (Base).',
                 'Bake at 190°C for 12–15 minutes until flaky.',
                 'Steam or roast broccoli until bright green and tender.',
-                'Plate roasted vegetables and broccoli. Top with salmon, pumpkin seeds, and extra chimichurri if desired.',
+                'Plate roasted mixed vegetables and broccoli. Top with salmon, pumpkin seeds, and extra chimichurri if desired.',
             ]),
             'Citrus Herb Salmon' => $this->steps([
                 'Roast sweet potato cubes at 200°C for 20 minutes.',
@@ -359,7 +359,8 @@ final class BalancedMealInstructionRefiner
                 'Sauté onion until golden. Return beef with water to cover.',
                 'Simmer low 60–90 minutes until beef is tender.',
                 'Add beans, herbs, and spinach in the last 10 minutes.',
-                'Warm quinoa bread separately. Serve stew with bread and lemon.',
+                'Prepare Steamed Basmati Rice (Base) per base recipe instructions; keep warm.',
+                'Serve stew over rice with lemon.',
             ]),
             'Chili Beef Stuffed Peppers' => $this->steps([
                 'Prepare Cooked Quinoa (Base) and Fermented Beetroot (Base) per base recipe instructions.',
@@ -448,8 +449,8 @@ final class BalancedMealInstructionRefiner
             ]),
             'Shaved Fennel Rocca Salad' => $this->steps([
                 'Shave fennel very thin (mandoline or sharp knife).',
-                'Toss fennel and rocca with orange segments.',
-                'Dress with lemon and olive oil. Serve immediately.',
+                'Toss fennel and rocca with orange segments, pomegranate, and walnuts.',
+                'Crumble goat feta over the top. Serve dressing on the side.',
             ]),
             'Roasted Eggplant Rocca Salad' => $this->steps([
                 'Cube eggplant. Roast at 200°C with oil until soft and golden (25 min).',

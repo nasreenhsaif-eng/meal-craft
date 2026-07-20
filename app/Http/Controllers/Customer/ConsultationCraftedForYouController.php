@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Customer;
 
 use App\Enums\OnboardingStep;
 use App\Http\Controllers\Controller;
+use App\Models\Meal;
 use App\Services\Nutrition\UserPlanCalculator;
 use App\Support\AdminConsultationPreviewProfile;
 use Illuminate\Contracts\View\View;
@@ -42,6 +43,7 @@ class ConsultationCraftedForYouController extends Controller
             'pageEyebrow' => $isCustomer ? 'Your plan' : 'Admin / Consultation',
             'adaptedMenuUrl' => route('api.menu.adapted', absolute: false),
             'mealDetailViewUrlTemplate' => '/api/meals/{id}/detail-view',
+            'mealLibraryRevision' => Meal::queryForMealLibrary()->max('updated_at')?->getTimestamp() ?? 0,
             'planTiers' => UserPlanCalculator::planTiers(),
             'planTier' => $profile?->daily_calorie_target !== null
                 ? (int) UserPlanCalculator::snapToPlanTier((float) $profile->daily_calorie_target)

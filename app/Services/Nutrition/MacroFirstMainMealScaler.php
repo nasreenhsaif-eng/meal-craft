@@ -700,6 +700,13 @@ final class MacroFirstMainMealScaler
         $totalCarbs = self::sumAllMacro($meal, $grams, 'carbs');
         $nonCarbRoleCarbs = max(0.0, $totalCarbs - $currentCarbs);
         $carbRoleTarget = max(0.0, $targetCarbs - $nonCarbRoleCarbs);
+
+        // Only boost starch toward the remaining carb budget. Never shrink (or wipe) carbs
+        // when vegetables/legumes already supply most of the slot carbs.
+        if ($carbRoleTarget <= $currentCarbs + 0.01) {
+            return $grams;
+        }
+
         $carbMultiplier = $carbRoleTarget / max(0.01, $currentCarbs);
         $adjusted = $grams;
 

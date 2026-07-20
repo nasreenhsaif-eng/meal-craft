@@ -864,23 +864,17 @@ export function PlanMacroColumnHeaderRow() {
 }
 
 /**
- * Selected vs target macros in the consultation footer — label left, values on same baseline.
+ * Selected macros in the consultation footer — label left, values on same baseline.
  *
  * @param {object} props
  * @param {MacroTotals} props.totals
- * @param {MacroTotals | null} [props.targets]
- * @param {Record<string, unknown> | null | undefined} [props.nutritionPlan]
  * @param {Array<'calories' | 'protein' | 'carbs' | 'fat'>} [props.highlightKeys]
  */
-function ConsultationDayMacroFooterGrid({ totals, targets = null, nutritionPlan = null, highlightKeys = [] }) {
+function ConsultationDayMacroFooterGrid({ totals, highlightKeys = [] }) {
     const selectedMacroPercents = useMemo(() => macroCaloriePercentsFromGrams(totals), [totals]);
-    const targetMacroPercents = useMemo(
-        () => macroSplitPercentagesFromPlan(nutritionPlan),
-        [nutritionPlan],
-    );
 
     return (
-        <div className="space-y-1.5" role="table" aria-label="Day macro comparison">
+        <div className="space-y-1.5" role="table" aria-label="Selected day macros">
             <div className={CONSULTATION_MACRO_FOOTER_ROW_GRID} role="row">
                 <span aria-hidden="true" />
                 {PLAN_MACRO_CELL_META.map((cell) => (
@@ -902,14 +896,6 @@ function ConsultationDayMacroFooterGrid({ totals, targets = null, nutritionPlan 
                     highlightKeys={highlightKeys}
                 />
             </div>
-            {targets ? (
-                <div className={CONSULTATION_MACRO_FOOTER_ROW_GRID} role="row">
-                    <p className="font-montserrat text-[10px] font-semibold uppercase leading-none tracking-[0.08em] text-[#555555]">
-                        Target
-                    </p>
-                    <PlanMacroValueCells macros={targets} macroPercents={targetMacroPercents} muted />
-                </div>
-            ) : null}
         </div>
     );
 }
@@ -1710,7 +1696,7 @@ export default function ChooseYourMeals({
     children,
     craftTitle,
     dayProgressLabel,
-    hintText = 'Fill every required slot to continue.',
+    hintText = '',
     navigation,
     onFooterBack,
     onFooterNext,
@@ -2088,24 +2074,6 @@ export default function ChooseYourMeals({
         return keys;
     }, [footerMacroTotals, dayMacroTargets, dayMacroTolerance, dayCalorieTolerance]);
 
-    const calorieBandWarning = useMemo(() => {
-        if (!Number.isFinite(footerTotalKcal) || !Number.isFinite(targetCalories) || footerTotalKcal <= 0) {
-            return null;
-        }
-
-        const delta = Math.round(footerTotalKcal) - Math.round(targetCalories);
-
-        if (Math.abs(delta) <= dayCalorieTolerance) {
-            return null;
-        }
-
-        if (delta > 0) {
-            return `Day calories are ${delta} kcal above target (${Math.round(footerTotalKcal)} selected vs ${Math.round(targetCalories)} target). Plate portions keep kitchen floors (cooking fat, vegetables, and standard meat sizes), so this day may stay over the ${Math.round(targetCalories)} ±${dayCalorieTolerance} band.`;
-        }
-
-        return `Day calories are ${Math.abs(delta)} kcal below target (${Math.round(footerTotalKcal)} selected vs ${Math.round(targetCalories)} target).`;
-    }, [footerTotalKcal, targetCalories, dayCalorieTolerance]);
-
     return (
         <section
             className={`box-border flex w-full flex-col overflow-x-clip border border-gray-200 bg-white shadow-sm max-md:rounded-none max-md:border-x-0 max-md:shadow-none md:rounded-[12px] ${panelClassName}`.trim()}
@@ -2117,30 +2085,6 @@ export default function ChooseYourMeals({
                     </p>
                     {dayProgressLabel ? (
                         <p className="font-body text-sm leading-snug text-[#555555]">{dayProgressLabel}</p>
-                    ) : null}
-                    {craftTitle ? (
-                        <p className="min-w-0 truncate whitespace-nowrap font-montserrat text-[10px] font-bold leading-none tracking-[0.1em] text-[#555555] sm:text-[11px] sm:tracking-[0.12em] md:text-xs md:tracking-[0.14em]">
-                            <span className="uppercase">{craftTitle}</span>
-                            {Number.isFinite(footerTotalKcal) && footerTotalKcal > 0 ? (
-                                <>
-                                    {' '}
-                                    <span className="tabular-nums tracking-normal text-[#262A22]">
-                                        {Math.round(footerTotalKcal)} kcal
-                                    </span>{' '}
-                                    <span className="font-normal normal-case tracking-normal text-[#6B7280]">
-                                        selected · target {Math.round(targetCalories)}
-                                    </span>
-                                </>
-                            ) : (
-                                <>
-                                    {' '}
-                                    <span className="font-normal normal-case tracking-normal text-[#6B7280]">of</span>{' '}
-                                    <span className="tabular-nums tracking-normal text-[#6B7280]">
-                                        {Math.round(targetCalories)} CAL
-                                    </span>
-                                </>
-                            )}
-                        </p>
                     ) : null}
                 </div>
             </div>
@@ -2164,26 +2108,35 @@ export default function ChooseYourMeals({
                         </div>
                     ) : null}
 
-                    {calorieBandWarning ? (
-                        <div
-                            className="mb-3 rounded-[12px] border border-amber-200 bg-amber-50 px-4 py-3"
-                            role="status"
-                            aria-live="polite"
-                        >
-                            <p className="font-body text-sm font-semibold text-amber-900">{calorieBandWarning}</p>
+                    {footerMacroTotals ? (
+                        <div>
+                            <ConsultationDayMacroFooterGrid
+                                totals={
+                                    footerMacroTotals.calories > 0
+                                        ? footerMacroTotals
+                                        : { calories: 0, protein: 0, carbs: 0, fat: 0 }
+                                }
+                                highlightKeys={
+                                    footerMacroTotals.calories > 0 ? macroHighlightKeys : []
+                                }
+                            />
                         </div>
                     ) : null}
 
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                        {summaryLabel ? (
-                            <p className="font-montserrat text-sm font-bold text-[#262A22]">{summaryLabel}</p>
+                    <div className="mt-1.5 flex min-h-[1.25rem] items-baseline justify-between gap-3">
+                        {footerSelectedPlatesLabel ? (
+                            <p className="min-w-0 flex-1 font-body text-[11px] leading-snug text-[#6B7280]">
+                                Sum of {selectedFooterMeals.length} selected plate
+                                {selectedFooterMeals.length === 1 ? '' : 's'}: {footerSelectedPlatesLabel}
+                            </p>
                         ) : (
-                            <span className="min-w-0 flex-1" />
+                            <span className="min-w-0 flex-1" aria-hidden="true" />
                         )}
                         <p
                             className={[
-                                'font-montserrat text-sm font-bold tabular-nums',
-                                Math.abs(Math.round(footerTotalKcal) - Math.round(targetCalories)) > dayCalorieTolerance
+                                'shrink-0 font-montserrat text-sm font-bold tabular-nums',
+                                Math.abs(Math.round(footerTotalKcal) - Math.round(targetCalories)) >
+                                dayCalorieTolerance
                                     ? 'text-amber-800'
                                     : 'text-[#1F2937]',
                             ]
@@ -2196,29 +2149,6 @@ export default function ChooseYourMeals({
                             </span>
                         </p>
                     </div>
-                    {footerMacroTotals ? (
-                        <div className="mt-2">
-                            <ConsultationDayMacroFooterGrid
-                                totals={
-                                    footerMacroTotals.calories > 0
-                                        ? footerMacroTotals
-                                        : { calories: 0, protein: 0, carbs: 0, fat: 0 }
-                                }
-                                targets={dayMacroTargets}
-                                nutritionPlan={nutritionPlan}
-                                highlightKeys={
-                                    footerMacroTotals.calories > 0 ? macroHighlightKeys : []
-                                }
-                            />
-                        </div>
-                    ) : null}
-                    {footerSelectedPlatesLabel ? (
-                        <p className="mt-1.5 font-body text-[11px] leading-snug text-[#6B7280]">
-                            Sum of {selectedFooterMeals.length} selected plate
-                            {selectedFooterMeals.length === 1 ? '' : 's'}: {footerSelectedPlatesLabel}
-                        </p>
-                    ) : null}
-                    {hintText ? <p className="mt-1.5 font-body text-xs text-[#555555]">{hintText}</p> : null}
 
                     {showStickyFooterNav ? (
                         <div

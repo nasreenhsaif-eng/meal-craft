@@ -18,25 +18,6 @@ function ribbonSlideTransition() {
     return { type: 'tween', duration: 0.42, ease: [0.4, 0, 0.2, 1] };
 }
 
-/**
- * Full scroll width of the horizontal ribbon. Uses first→last screen span so transform on the track cannot
- * shrink the measured extent; underestimating triggers `tw <= cw` centering and a massive empty band.
- *
- * @param {HTMLDivElement} track
- */
-function getDesktopTrackScrollExtent(track) {
-    const n = track.children.length;
-    if (n === 0) {
-        return Math.ceil(Math.max(track.scrollWidth, track.offsetWidth));
-    }
-
-    const first = /** @type {HTMLElement} */ (track.children[0]).getBoundingClientRect();
-    const last = /** @type {HTMLElement} */ (track.children[n - 1]).getBoundingClientRect();
-    const span = last.right - first.left;
-
-    return Math.ceil(Math.max(track.scrollWidth, track.offsetWidth, span));
-}
-
 /** Ribbon slide cell — consistent width on mobile and desktop */
 const RIBBON_CARD_SHELL =
     'flex min-h-[232px] w-[min(280px,calc(100vw-5.5rem))] shrink-0 flex-col items-stretch sm:min-h-[248px] md:w-[286px] lg:min-h-[264px] lg:w-[302px] transform-gpu';
@@ -133,6 +114,7 @@ function focusedPhysicalIndex(logicalIdx, itemCount, copies) {
 
 /**
  * Target track `x` to center a logical card.
+ * Uses offsetLeft (same space as step slides) so a post-slide snap cannot hitch from getBoundingClientRect drift.
  *
  * @param {number} logicalIdx
  * @param {HTMLDivElement} container
@@ -140,29 +122,28 @@ function focusedPhysicalIndex(logicalIdx, itemCount, copies) {
  * @param {(HTMLDivElement|null)[]} cards
  * @param {number} itemCount
  * @param {number} copies
- * @param {number} currentTrackX
  */
-function trackXForCenteredLogical(logicalIdx, container, track, cards, itemCount, copies, currentTrackX) {
+function trackXForCenteredLogical(logicalIdx, container, track, cards, itemCount, copies) {
     const physical = focusedPhysicalIndex(logicalIdx, itemCount, copies);
     const card = cards[physical];
     if (!card) {
         return undefined;
     }
 
-    const gr = container.getBoundingClientRect();
-    const cw = gr.width;
-    const tw = getDesktopTrackScrollExtent(track);
-    const cr = card.getBoundingClientRect();
-    const viewportCenterX = gr.left + cw / 2;
-    const cardCenterX = cr.left + cr.width / 2;
-    let x = currentTrackX - (cardCenterX - viewportCenterX);
+    const cw = container.clientWidth;
+    if (cw <= 0) {
+        return undefined;
+    }
 
-    if (tw > cw) {
-        const minX = cw - tw;
-        x = Math.max(minX, Math.min(0, x));
+    const cardCenter = card.offsetLeft + card.offsetWidth / 2;
+    let x = cw / 2 - cardCenter;
 
-        if (tw + x < cw - 1) {
-            x = minX;
+    // Finite ribbons may need edge clamping; infinite triplicate must not — clamp caused end-of-slide jumps.
+    if (copies < RIBBON_COPIES) {
+        const tw = Math.max(track.scrollWidth, track.offsetWidth);
+        if (tw > cw) {
+            const minX = cw - tw;
+            x = Math.max(minX, Math.min(0, x));
         }
     }
 
@@ -273,7 +254,7 @@ export default function StackedDeckCarousel({ title: _title, items: itemsProp, m
         (logicalIdx) => {
             const container = galleryRef.current;
             const track = trackRef.current;
-            if (!container || !track) {
+            if (!container || !track || itemCount === 0) {
                 return undefined;
             }
 
@@ -284,10 +265,9 @@ export default function StackedDeckCarousel({ title: _title, items: itemsProp, m
                 cardRefs.current,
                 itemCount,
                 copies,
-                trackX.get(),
             );
         },
-        [copies, itemCount, trackX],
+        [copies, itemCount],
     );
 
     const usesInfiniteRibbon = copies === RIBBON_COPIES;
@@ -404,18 +384,17 @@ export default function StackedDeckCarousel({ title: _title, items: itemsProp, m
                 const cur = trackX.get();
                 await animate(trackX, cur - stepPx, ribbonSlideTransition()).finished;
 
+                // Adjacent steps already land on the correct pixel; a post-slide snap hitch was the jump.
                 if (wraps) {
                     const physicalShown = to === 0 ? 2 * n : n - 1;
                     rehomeInfiniteRibbonToMiddle(to, physicalShown);
-                } else {
-                    snapTrackToLogical(to);
                 }
 
                 // Update active index only after the slide — never before (focus chrome pop felt like a jump).
                 setRibbonActiveIndex(to);
                 ribbonActiveIndexRef.current = to;
 
-                // Hold busy one frame so resize/align layout work cannot fight the snap.
+                // Hold busy one frame so resize/align layout work cannot fight the settle.
                 await new Promise((r) => requestAnimationFrame(r));
             } finally {
                 navBusyRef.current = false;
@@ -425,7 +404,6 @@ export default function StackedDeckCarousel({ title: _title, items: itemsProp, m
             getStepBetweenLogical,
             itemCount,
             rehomeInfiniteRibbonToMiddle,
-            snapTrackToLogical,
             trackX,
             usesInfiniteRibbon,
         ],
@@ -470,8 +448,9 @@ export default function StackedDeckCarousel({ title: _title, items: itemsProp, m
                 if (wraps) {
                     const physicalShown = bounded === 0 ? 2 * n : n - 1;
                     rehomeInfiniteRibbonToMiddle(bounded, physicalShown);
-                } else {
-                    snapTrackToLogical(bounded, { force: stepPx === 0 });
+                } else if (stepPx === 0) {
+                    // Refs not ready — snap once; never snap after a successful adjacent/multi-step slide.
+                    snapTrackToLogical(bounded, { force: true });
                 }
 
                 setRibbonActiveIndex(bounded);
@@ -534,7 +513,8 @@ export default function StackedDeckCarousel({ title: _title, items: itemsProp, m
                 }
 
                 const drift = Math.abs(trackX.get() - tx);
-                if (drift <= 4) {
+                // Ignore sub-pixel / font reflow drift — recentering mid-session felt like a jump.
+                if (drift <= 8) {
                     return;
                 }
 
@@ -627,6 +607,12 @@ export default function StackedDeckCarousel({ title: _title, items: itemsProp, m
                             {Array.from({ length: copies }, (_, copy) =>
                                 items.map((item, idx) => {
                                     const physicalIdx = copy * itemCount + idx;
+                                    const focusedPhysical = focusedPhysicalIndex(
+                                        ribbonActiveIndex,
+                                        itemCount,
+                                        copies,
+                                    );
+                                    const isNearFocus = Math.abs(physicalIdx - focusedPhysical) <= 1;
 
                                     return (
                                         <div
@@ -639,7 +625,7 @@ export default function StackedDeckCarousel({ title: _title, items: itemsProp, m
                                         >
                                             <div className="flex min-h-0 flex-1 flex-col rounded-[12px]">
                                                 {renderMealCard(item, idx, {
-                                                    isFront: true,
+                                                    isFront: isNearFocus,
                                                     stackPos: null,
                                                     deckLayout: 'ribbon',
                                                 })}

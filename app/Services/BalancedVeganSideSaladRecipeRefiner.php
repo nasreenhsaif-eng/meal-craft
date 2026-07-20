@@ -119,15 +119,6 @@ final class BalancedVeganSideSaladRecipeRefiner
                 ],
                 'diet_tags' => $veganTags,
             ],
-            'Shaved Fennel Rocca Salad' => [
-                'ingredients' => [
-                    'Fennel Bulb' => 70,
-                    'Rocca' => 45,
-                    'Orange Sections' => 40,
-                    'Lemon Juice' => 8,
-                ],
-                'diet_tags' => $veganTags,
-            ],
             'Roasted Eggplant Rocca Salad' => [
                 'ingredients' => [
                     'Eggplant' => 120,

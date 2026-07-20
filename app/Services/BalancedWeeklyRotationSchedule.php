@@ -151,7 +151,7 @@ final class BalancedWeeklyRotationSchedule
         'Spiced Beef & Liver Meatballs w Roasted Tomato Couscous',
     ];
 
-    /** @var list<string> Legume-free vegan side salads (slot 1). */
+    /** @var list<string> Legume-free side salads (slot 1). */
     public const VEGAN_SIDE_SALADS = [
         'Marinated Pineapple, Peppers, Red Onion & Cilantro Side Salad',
         'Tomato Parsely Salad w Sumac Za’ater Dressing',

@@ -41,6 +41,7 @@ test('consultation page uses a relative adapted menu url so https sessions stay 
     $config = json_decode($matches[1] ?? '{}', true);
 
     expect($config['adaptedMenuUrl'] ?? null)->toBe('/api/menu/adapted');
+    expect($config['mealLibraryRevision'] ?? null)->toBeInt();
 });
 
 test('admin users can preview the customer consultation page', function () {

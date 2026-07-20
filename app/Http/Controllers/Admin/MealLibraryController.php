@@ -1233,7 +1233,8 @@ class MealLibraryController extends Controller
             ['label' => __('Total calories'), 'value' => (string) (int) round($calories)],
             ['label' => __('Protein (g)'), 'value' => $this->formatTrimmedDecimal($protein, 1), 'valueClass' => 'text-[#916A00]'],
             ['label' => __('Fats (g)'), 'value' => $this->formatTrimmedDecimal($fat, 1), 'valueClass' => 'text-[#2F4C9B]'],
-            ['label' => __('Net carbs (g)'), 'value' => $this->formatTrimmedDecimal($netCarbs, 1), 'valueClass' => 'text-[#8F55A8]'],
+            ['label' => __('Carbs (g)'), 'value' => $this->formatTrimmedDecimal($carbs, 1), 'valueClass' => 'text-[#8F55A8]'],
+            ['label' => __('Net carbs (g)'), 'value' => $this->formatTrimmedDecimal($netCarbs, 1)],
             ['label' => __('Fiber (g)'), 'value' => $this->formatTrimmedDecimal($fiber, 1)],
             ['label' => __('Sugar (g)'), 'value' => $this->formatTrimmedDecimal($sugar, 1)],
         ];
