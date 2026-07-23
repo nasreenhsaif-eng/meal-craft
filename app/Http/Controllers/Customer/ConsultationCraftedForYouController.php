@@ -43,7 +43,7 @@ class ConsultationCraftedForYouController extends Controller
             'pageEyebrow' => $isCustomer ? 'Your plan' : 'Admin / Consultation',
             'adaptedMenuUrl' => route('api.menu.adapted', absolute: false),
             'mealDetailViewUrlTemplate' => '/api/meals/{id}/detail-view',
-            'mealLibraryRevision' => Meal::queryForMealLibrary()->max('updated_at')?->getTimestamp() ?? 0,
+            'mealLibraryRevision' => Meal::libraryRevisionTimestamp(),
             'planTiers' => UserPlanCalculator::planTiers(),
             'planTier' => $profile?->daily_calorie_target !== null
                 ? (int) UserPlanCalculator::snapToPlanTier((float) $profile->daily_calorie_target)

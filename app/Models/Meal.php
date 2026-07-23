@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
 
 class Meal extends Model
 {
@@ -162,6 +163,24 @@ class Meal extends Model
         $max = static::queryForMealLibrary()->max('library_sort_order');
 
         return $max !== null ? ((int) $max) + 1 : 0;
+    }
+
+    public static function libraryRevisionTimestamp(): int
+    {
+        $updatedAt = static::queryForMealLibrary()
+            ->reorder()
+            ->orderByDesc('updated_at')
+            ->value('updated_at');
+
+        if ($updatedAt === null) {
+            return 0;
+        }
+
+        if ($updatedAt instanceof \DateTimeInterface) {
+            return $updatedAt->getTimestamp();
+        }
+
+        return (int) Carbon::parse($updatedAt)->getTimestamp();
     }
 
     /**

@@ -1167,30 +1167,33 @@ Serve dressing on the side.',
         ],
     ],
     'Grilled Salmon Mango Salsa' => [
-        'synced_at' => '2026-07-20T08:20:00+00:00',
+        'synced_at' => '2026-07-22T15:59:48+00:00',
         'ingredients' => [
+            'Avocado' => 40.0,
             'Bell Pepper (Red)' => 30.0,
+            'Cashew Nuts' => 10.0,
             'Cucumber' => 40.0,
             'Fresh Coriander' => 3.0,
             'Lime Juice' => 10.0,
             'Mango' => 50.0,
+            'Pumpkin' => 90.0,
+            'Purslane' => 40.0,
             'Salmon (Raw)' => 150.0,
-            'Wild Rice (Cooked)' => 90.0,
         ],
-        'highlight' => 'Pan-seared salmon over wild rice with bright mango, cucumber, and pepper salsa.',
-        'short_description' => 'Pan-seared salmon over wild rice with bright mango, cucumber, and pepper salsa.',
-        'instructions' => 'Prepare Wild Rice (Cooked) per package or base instructions; keep warm.
-Dice mango, pepper, and cucumber. Mix with lime and coriander for salsa.
+        'highlight' => 'Pan-seared salmon over roasted pumpkin with mango salsa salad, avocado, purslane, and cashews.',
+        'short_description' => 'Pan-seared salmon over roasted pumpkin with mango salsa salad, avocado, purslane, and cashews.',
+        'instructions' => 'Cube pumpkin and roast at 200°C until tender and lightly caramelized at the edges.
+Dice mango, pepper, cucumber, and avocado. Toss with purslane, cashew nuts, lime juice, and coriander.
 Grill or pan-sear salmon until cooked through.
-Serve salmon over rice with mango salsa on top.',
+Serve salmon over roasted pumpkin with the mango salsa salad.',
         'diet_tags' => [
             0 => 'Dairy-free',
             1 => 'Gluten-free',
-            2 => 'Nut-free',
         ],
         'food_filter_tags' => [
             0 => 'fish',
             1 => 'nightshades',
+            2 => 'nuts',
         ],
     ],
     'Grilled Sumac Chicken Skewers w Zereshk & Turmeric Rice & Roasted Mixed Vegetables' => [
@@ -2163,7 +2166,7 @@ Serve immediately.',
         ],
     ],
     'Spiced Beef & Liver Meatballs w Roasted Tomato Couscous' => [
-        'synced_at' => '2026-07-20T08:00:00+00:00',
+        'synced_at' => '2026-07-22T16:08:07+00:00',
         'ingredients' => [
             'Beef Ground Lean' => 128.0,
             'Beef Liver' => 22.0,
@@ -2171,23 +2174,25 @@ Serve immediately.',
             'Cooked Couscous (Base)' => 90.0,
             'Fresh Basil' => 5.0,
             'Garlic (Raw)' => 4.0,
+            'Lemon-Tahini Dressing (Base)' => 15.0,
             'Marinara Sauce (Base)' => 90.0,
             'Olive Oil (Extra Virgin)' => 4.0,
             'Ras El Hanout (Base)' => 2.0,
+            'Sesame Seeds' => 10.0,
             'White Onion' => 28.0,
         ],
-        'highlight' => 'Spiced beef and liver meatballs simmered in marinara over fluffy couscous with roasted cherry tomatoes.',
-        'short_description' => 'Spiced beef and liver meatballs simmered in marinara over fluffy couscous with roasted cherry tomatoes.',
+        'highlight' => 'Spiced beef and liver meatballs simmered in marinara over fluffy couscous with roasted cherry tomatoes, lemon-tahini drizzle, and sesame seeds.',
+        'short_description' => 'Spiced beef and liver meatballs simmered in marinara over fluffy couscous with roasted cherry tomatoes, lemon-tahini drizzle, and sesame seeds.',
         'instructions' => 'Finely mince beef liver and mix with ground beef, grated onion, garlic, and Ras El Hanout (Base). Roll into small meatballs.
 Brown meatballs in olive oil; add Marinara Sauce (Base) and cherry tomatoes. Simmer 8–10 minutes until cooked through.
-Prepare Cooked Couscous (Base) per base recipe instructions. Plate couscous, top with meatballs and sauce, and finish with fresh basil.',
+Prepare Cooked Couscous (Base) per base recipe instructions. Plate couscous, top with meatballs and sauce, drizzle with Lemon-Tahini Dressing (Base), sprinkle sesame seeds over the top, and finish with fresh basil.',
         'diet_tags' => [
             0 => 'Dairy-free',
-            1 => 'Gluten-free',
         ],
         'food_filter_tags' => [
             0 => 'gluten',
             1 => 'nightshades',
+            2 => 'sesame',
         ],
     ],
     'Spiced Cauliflower Chickpea Salad' => [

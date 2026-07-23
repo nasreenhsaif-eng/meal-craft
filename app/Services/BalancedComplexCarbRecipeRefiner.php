@@ -125,10 +125,13 @@ final class BalancedComplexCarbRecipeRefiner
             'Grilled Salmon Mango Salsa' => [
                 'ingredients' => [
                     'Salmon (Raw)' => StandardMeatPortion::GRAMS,
-                    'Wild Rice (Cooked)' => 90,
+                    'Pumpkin' => 90,
                     'Mango' => 50,
                     'Bell Pepper (Red)' => 30,
                     'Cucumber' => 40,
+                    'Avocado' => 40,
+                    'Purslane' => 40,
+                    'Cashew Nuts' => 10,
                     'Lime Juice' => 10,
                     'Fresh Coriander' => 3,
                 ],

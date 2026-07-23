@@ -33,6 +33,9 @@ function seedComplexCarbRefinerFixtures(): void
         'Salmon (Raw)' => ['calories' => 208, 'protein' => 20.4, 'carbs' => 0, 'fat' => 13.4],
         'Sweet Potato' => ['calories' => 86, 'protein' => 1.6, 'carbs' => 20.1, 'fat' => 0.1],
         'Wild Rice (Cooked)' => ['calories' => 101, 'protein' => 4, 'carbs' => 21.3, 'fat' => 0.3],
+        'Pumpkin' => ['calories' => 26, 'protein' => 1, 'carbs' => 6.5, 'fat' => 0.1],
+        'Avocado' => ['calories' => 160, 'protein' => 2, 'carbs' => 8.5, 'fat' => 14.7],
+        'Cashew Nuts' => ['calories' => 553, 'protein' => 18.2, 'carbs' => 30.2, 'fat' => 43.8],
         'Turmeric Rice (Base)' => ['calories' => 15.62, 'protein' => 0.39, 'carbs' => 4.32, 'fat' => 0.03],
         'Cooked Quinoa (Base)' => ['calories' => 42.86, 'protein' => 1.57, 'carbs' => 7.61, 'fat' => 0.68],
         'Cooked Brown Basmati Rice (Base)' => ['calories' => 64.8, 'protein' => 1.64, 'carbs' => 13.4, 'fat' => 0.44],
@@ -116,7 +119,7 @@ test('balanced rotation mains use varied complex carbs instead of steamed white 
 
     $expectedCarbSources = [
         'Citrus Herb Salmon with Asparagus & Sweet Potato' => 'Sweet Potato',
-        'Grilled Salmon Mango Salsa' => 'Wild Rice (Cooked)',
+        'Grilled Salmon Mango Salsa' => 'Pumpkin',
         'Grilled Beef Steak Ratatouille & Saffron rice' => 'Saffron Rice (Base)',
         'Beef Bibimbap' => 'Cooked Quinoa (Base)',
         'Persian Herb Beef Stew' => 'Steamed Basmati Rice (Base)',

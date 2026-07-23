@@ -333,10 +333,10 @@ final class BalancedMealInstructionRefiner
                 'Serve salmon with sweet potato and asparagus.',
             ]),
             'Grilled Salmon Mango Salsa' => $this->steps([
-                'Cook wild rice according to package. Keep warm.',
-                'Dice mango, pepper, and cucumber. Mix with lime and coriander for salsa.',
+                'Cube pumpkin and roast at 200°C until tender and lightly caramelized at the edges.',
+                'Dice mango, pepper, cucumber, and avocado. Toss with purslane, cashew nuts, lime juice, and coriander.',
                 'Grill or pan-sear salmon until cooked through.',
-                'Serve salmon over rice with mango salsa on top.',
+                'Serve salmon over roasted pumpkin with the mango salsa salad.',
             ]),
 
             // Beef mains

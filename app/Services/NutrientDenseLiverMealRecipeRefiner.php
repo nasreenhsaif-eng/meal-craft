@@ -231,13 +231,15 @@ final class NutrientDenseLiverMealRecipeRefiner
                     'Cooked Couscous (Base)' => 90.0,
                     'Fresh Basil' => 5.0,
                     'Garlic (Raw)' => 4.0,
+                    'Lemon-Tahini Dressing (Base)' => 15.0,
                     'Marinara Sauce (Base)' => 90.0,
                     'Olive Oil (Extra Virgin)' => 4.0,
                     'Ras El Hanout (Base)' => 2.0,
+                    'Sesame Seeds' => 10.0,
                     'White Onion' => 28.0,
                 ],
                 'diet_tags' => $tags,
-                'short_description' => 'Spiced beef and liver meatballs simmered in marinara over fluffy couscous with roasted cherry tomatoes.',
+                'short_description' => 'Spiced beef and liver meatballs simmered in marinara over fluffy couscous with roasted cherry tomatoes, lemon-tahini drizzle, and sesame seeds.',
             ],
             self::PERI_PERI_CHICKEN_LIVER_NAME => [
                 'ingredients' => [
