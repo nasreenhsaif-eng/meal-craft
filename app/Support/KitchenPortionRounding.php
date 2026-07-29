@@ -178,14 +178,54 @@ final class KitchenPortionRounding
     }
 
     /**
+     * Potent woody/fresh sprigs — teaspoons at most, never five-gram vegetable steps.
+     */
+    public static function isWoodyFreshHerb(Ingredient $ingredient): bool
+    {
+        $name = strtolower(trim($ingredient->name));
+
+        foreach (['rosemary', 'thyme', 'oregano', 'sage', 'bay leaf', 'bay leaves', 'tarragon'] as $needle) {
+            if (str_contains($name, $needle)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Soft leafy herbs used as garnish/finish — whole grams, kitchen pinches.
+     */
+    public static function isSoftFreshHerb(Ingredient $ingredient): bool
+    {
+        if (self::isWoodyFreshHerb($ingredient)) {
+            return false;
+        }
+
+        $name = strtolower(trim($ingredient->name));
+
+        foreach (['coriander', 'cilantro', 'parsley', 'dill', 'mint', 'basil', 'chive'] as $needle) {
+            if (str_contains($name, $needle)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Dry powders / seasonings measured in pinches or teaspoons — whole grams only.
-     * Fresh aromatics (garlic, ginger, herbs) use five-gram steps instead.
+     * Fresh aromatics (garlic, ginger) use five-gram steps; fresh herbs use whole grams.
      */
     public static function isFineMeasureSpice(Ingredient $ingredient): bool
     {
         $name = strtolower(trim($ingredient->name));
 
         if (str_contains($name, '(base)')) {
+            return false;
+        }
+
+        if (self::isWoodyFreshHerb($ingredient) || self::isSoftFreshHerb($ingredient)) {
             return false;
         }
 
@@ -270,6 +310,14 @@ final class KitchenPortionRounding
 
         if (self::isCheeseIngredient($ingredient)) {
             return self::snapCheeseGrams($grams);
+        }
+
+        if (self::isWoodyFreshHerb($ingredient)) {
+            return self::snapFineSpiceGrams($grams);
+        }
+
+        if (self::isSoftFreshHerb($ingredient)) {
+            return self::snapFineSpiceGrams($grams);
         }
 
         if (self::isFineMeasureSpice($ingredient)) {

@@ -23,9 +23,18 @@ export default function MealDetailModalPortal({ mealDetailModal, onClose, loadin
             />
             <div className="relative flex max-h-[92dvh] w-full max-w-3xl flex-col overflow-hidden rounded-t-[16px] bg-white shadow-2xl sm:rounded-[16px]">
                 <div className="flex shrink-0 items-start justify-between gap-3 border-b border-gray-100 px-5 py-4 sm:px-6">
-                    <h2 className="min-w-0 flex-1 break-words font-montserrat text-lg font-bold text-[#262A22]">
-                        {mealDetailModal?.title ?? 'Meal details'}
-                    </h2>
+                    <div className="min-w-0 flex-1">
+                        <h2 className="break-words font-montserrat text-lg font-bold text-[#262A22]">
+                            {mealDetailModal?.title ?? 'Meal details'}
+                        </h2>
+                        {mealDetailModal?.detailView?.shortDescription ||
+                        mealDetailModal?.detailView?.description ? (
+                            <p className="mt-1 font-montserrat text-sm font-medium leading-snug text-[#555555]">
+                                {mealDetailModal.detailView.shortDescription ||
+                                    mealDetailModal.detailView.description}
+                            </p>
+                        ) : null}
+                    </div>
                     <button
                         type="button"
                         className="shrink-0 font-montserrat text-sm font-bold text-[#5A6B44]"

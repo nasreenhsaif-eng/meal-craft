@@ -281,7 +281,7 @@ new #[Title('Meal Plans')] class extends Component {
             return [];
         }
 
-        return RecipeNutritionCalculator::fromRows($this->inlineEditRows);
+        return RecipeNutritionCalculator::fromRows($this->inlineEditRows, applyMealCookingYield: true);
     }
 
     public function toggleInlineIngredientEditor(int $dayMealId): void
@@ -560,7 +560,7 @@ new #[Title('Meal Plans')] class extends Component {
             ]);
         }
 
-        $nutrition = RecipeNutritionCalculator::fromRows($rows);
+        $nutrition = RecipeNutritionCalculator::fromRows($rows, applyMealCookingYield: true);
         $meal->update(Meal::nutritionSummaryToPersistedAttributes($nutrition));
         $meal->ingredients()->sync($sync);
     }
@@ -739,7 +739,7 @@ new #[Title('Meal Plans')] class extends Component {
         }
 
         $key = $row->slot_type->value.'_'.$row->slot_index;
-        $preview = RecipeNutritionCalculator::fromRows($this->inlineEditRows);
+        $preview = RecipeNutritionCalculator::fromRows($this->inlineEditRows, applyMealCookingYield: true);
         $map[$key] = $this->mealWithPreviewTotals($row->meal, $preview);
 
         return $map;

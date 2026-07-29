@@ -410,7 +410,7 @@ final class NutrientDenseMicronutrientRecipeRefiner
             ];
         }
 
-        return RecipeNutritionCalculator::fromRows($rows);
+        return RecipeNutritionCalculator::fromRows($rows, applyMealCookingYield: true);
     }
 
     /**

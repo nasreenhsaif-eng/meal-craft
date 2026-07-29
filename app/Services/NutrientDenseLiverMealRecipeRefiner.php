@@ -225,8 +225,8 @@ final class NutrientDenseLiverMealRecipeRefiner
             ],
             self::SPICED_BEEF_LIVER_MEATBALLS_NAME => [
                 'ingredients' => [
-                    'Beef Ground Lean' => StandardMeatPortion::beefGramsForLiverBlendMeal(22.0),
-                    'Beef Liver' => 22.0,
+                    'Beef Ground Lean' => StandardMeatPortion::beefGramsForLiverBlendMeal(37.5),
+                    'Beef Liver' => 37.5,
                     'Cherry Tomatoes' => 80.0,
                     'Cooked Couscous (Base)' => 90.0,
                     'Fresh Basil' => 5.0,

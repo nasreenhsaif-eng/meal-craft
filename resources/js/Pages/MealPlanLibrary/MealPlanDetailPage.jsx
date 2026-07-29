@@ -535,13 +535,20 @@ export default function MealPlanDetailPage({
                               className="relative z-10 flex max-h-[min(92dvh,900px)] w-full max-w-2xl flex-col overflow-hidden rounded-t-[16px] bg-white shadow-2xl sm:rounded-[16px]"
                           >
                               <div className="flex shrink-0 items-start justify-between gap-4 border-b border-gray-100 px-5 py-4">
-                                  <div className="min-w-0">
+                                  <div className="min-w-0 flex-1">
                                       <h2
                                           id="meal-plan-detail-modal-title"
                                           className="break-words font-montserrat text-lg font-bold text-[#262A22]"
                                       >
                                           {mealDetailModal.title}
                                       </h2>
+                                      {mealDetailModal.detailView?.shortDescription ||
+                                      mealDetailModal.detailView?.description ? (
+                                          <p className="mt-1 font-montserrat text-sm font-medium leading-snug text-[#555555]">
+                                              {mealDetailModal.detailView.shortDescription ||
+                                                  mealDetailModal.detailView.description}
+                                          </p>
+                                      ) : null}
                                   </div>
                                   <Button
                                       label="Close"

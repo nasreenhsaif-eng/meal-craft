@@ -240,22 +240,59 @@ final class SavoryEggBreakfastMeals
 
     /**
      * Whole eggs in the library recipe (typically 100g = 2 large eggs).
+     * Prefer whole-egg rows; fall back to combined egg-family grams when whites are present.
      */
     public static function baselineEggGramsInMeal(Meal $meal): float
     {
+        $whole = 0.0;
+        $family = 0.0;
+
         foreach ($meal->ingredients as $ingredient) {
-            if (! EggIngredientPresentation::isEggIngredient($ingredient)) {
+            $grams = (float) ($ingredient->pivot->amount_grams ?? 0);
+
+            if ($grams <= 0) {
+                continue;
+            }
+
+            if (EggIngredientPresentation::isWholeEggIngredient($ingredient)) {
+                $whole += $grams;
+                $family += $grams;
+
+                continue;
+            }
+
+            if (EggIngredientPresentation::isEggWhiteIngredient($ingredient)) {
+                $family += $grams;
+            }
+        }
+
+        if ($whole > 0) {
+            return $whole;
+        }
+
+        return $family;
+    }
+
+    /**
+     * Total whole-egg + egg-white grams used for side scaling when whites rebalance fat.
+     */
+    public static function baselineEggFamilyGramsInMeal(Meal $meal): float
+    {
+        $total = 0.0;
+
+        foreach ($meal->ingredients as $ingredient) {
+            if (! EggIngredientPresentation::isEggFamilyIngredient($ingredient)) {
                 continue;
             }
 
             $grams = (float) ($ingredient->pivot->amount_grams ?? 0);
 
             if ($grams > 0) {
-                return $grams;
+                $total += $grams;
             }
         }
 
-        return 0.0;
+        return $total;
     }
 
     /**
@@ -263,7 +300,11 @@ final class SavoryEggBreakfastMeals
      */
     public static function sidePortionMultiplierForMeal(Meal $meal, float $planTier): float
     {
-        $baselineEggGrams = self::baselineEggGramsInMeal($meal);
+        $baselineEggGrams = self::baselineEggFamilyGramsInMeal($meal);
+
+        if ($baselineEggGrams <= 0) {
+            $baselineEggGrams = self::baselineEggGramsInMeal($meal);
+        }
 
         if ($baselineEggGrams <= 0) {
             return 1.0;

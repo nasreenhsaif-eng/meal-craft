@@ -457,7 +457,7 @@ final class MealCsvLibraryImportService
             ];
         }
 
-        $nutrition = RecipeNutritionCalculator::fromRows($rows);
+        $nutrition = RecipeNutritionCalculator::fromRows($rows, applyMealCookingYield: true);
         $healthScore = $this->computeMealHealthScore($nutrition);
 
         $calorieWarnings = [];

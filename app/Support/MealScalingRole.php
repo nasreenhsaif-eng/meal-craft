@@ -23,7 +23,7 @@ final class MealScalingRole
         if (
             $meal !== null
             && SavoryEggBreakfastMeals::isSavoryEggBreakfast($meal)
-            && EggIngredientPresentation::isEggIngredient($ingredient)
+            && EggIngredientPresentation::isEggFamilyIngredient($ingredient)
         ) {
             return MealScalingRoleEnum::Protein;
         }

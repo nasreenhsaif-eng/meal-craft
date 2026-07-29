@@ -41,6 +41,13 @@ test('every library soup is a bulk batch with fifteen grams psyllium husk per se
         'Butternut Squash',
         'Nutmeg',
         'Pumpkin Seeds',
+        'Garlic (Raw)',
+        'Seaweed (Nori)',
+        'Shichimi Togarashi (Base)',
+        'Sea Salt',
+        'Olive Oil (Extra Virgin)',
+        'Sesame Oil',
+        'Vegetable Broth (Base)',
     ];
 
     foreach ($ingredientNames as $name) {

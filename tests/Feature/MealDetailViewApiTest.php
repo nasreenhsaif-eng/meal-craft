@@ -14,7 +14,29 @@ use App\Services\Nutrition\AdaptedMenuBuilder;
 use App\Services\Nutrition\CraftCaloriePlanner;
 use App\Services\Nutrition\ProductionWeeklyMenuSchedule;
 use App\Services\Nutrition\UserPlanCalculator;
+use App\Services\RecipeNutritionCalculator;
 use App\Support\AdminConsultationPreviewProfile;
+use App\Support\KitchenPortionRounding;
+
+test('meal detail view api returns short description for the details modal', function () {
+    $user = User::factory()->customer()->create();
+
+    $ingredient = Ingredient::factory()->create(['name' => 'Lean Beef']);
+    $meal = Meal::factory()->create([
+        'name' => 'API Detail Bibimbap Style Bowl',
+        'short_description' => 'Korean-style bowl with seasoned lean ground beef over quinoa.',
+        'highlight' => 'Korean-style bowl with seasoned lean ground beef over quinoa.',
+    ]);
+    $meal->ingredients()->attach($ingredient->id, ['amount_grams' => 150, 'amount' => 150, 'unit' => 'g']);
+
+    $this->actingAs($user)
+        ->getJson(route('api.meals.detail-view', $meal))
+        ->assertOk()
+        ->assertJsonPath(
+            'detailView.shortDescription',
+            'Korean-style bowl with seasoned lean ground beef over quinoa.',
+        );
+});
 
 test('meal detail view api formats salmon with raw before cooking label', function () {
     $user = User::factory()->customer()->create();
@@ -69,7 +91,14 @@ test('meal detail view api scales ingredient amounts for customer plan and craft
         'fat_percentage' => 30,
     ]);
 
-    $ingredient = Ingredient::factory()->create(['name' => 'Scaled Rice']);
+    $ingredient = Ingredient::factory()->create([
+        'name' => 'Scaled Rice',
+        'calories' => 130,
+        'protein' => 2.5,
+        'carbs' => 28,
+        'fat' => 0.3,
+        'usda_food_category' => 'Grains',
+    ]);
     $meal = Meal::factory()->create([
         'name' => 'API Detail Scaled Breakfast',
         'meal_type' => MealType::Breakfast,
@@ -81,10 +110,24 @@ test('meal detail view api scales ingredient amounts for customer plan and craft
     ]);
     $meal->ingredients()->attach($ingredient->id, ['amount_grams' => 100, 'amount' => 100, 'unit' => 'g']);
 
+    // Keep stored totals aligned with live ingredient nutrition so scaling matches adaptation.
+    $live = RecipeNutritionCalculator::fromMeal($meal->fresh(['ingredients']));
+    $meal->update([
+        'total_calories' => $live['calories'],
+        'total_protein' => $live['protein'],
+        'total_carbs' => $live['carbs'],
+        'total_fat' => $live['fat'],
+    ]);
+    $meal->refresh();
+
     $profile = CustomerProfile::query()->where('user_id', $user->id)->first();
     $plan = UserPlanCalculator::calculateUserPlan($profile, ['craft_key' => CraftCaloriePlanner::CRAFT_FULL]);
     $multiplier = AdaptedMenuBuilder::mealScalingMultiplier($meal, 'breakfast', $plan);
-    $expectedGrams = round(100 * $multiplier, 2);
+    $expectedGrams = KitchenPortionRounding::snapGramsForIngredient(
+        $ingredient,
+        round(100 * $multiplier, 4),
+    );
+    $expectedGrams = round($expectedGrams, 2);
 
     $this->actingAs($user)
         ->getJson(route('api.meals.detail-view', $meal).'?'.http_build_query([
@@ -96,6 +139,7 @@ test('meal detail view api scales ingredient amounts for customer plan and craft
 });
 
 test('meal detail view api formats liquid ingredients in milliliters', function () {
+    // Non-admin without a calorie target so consultation adaptation does not snap portions.
     $user = User::factory()->customer()->create();
 
     $oil = Ingredient::factory()->create([
@@ -109,7 +153,7 @@ test('meal detail view api formats liquid ingredients in milliliters', function 
     $this->actingAs($user)
         ->getJson(route('api.meals.detail-view', $meal))
         ->assertOk()
-        ->assertJsonPath('detailView.ingredients.0', '6ml Olive Oil (Extra Virgin)');
+        ->assertJsonPath('detailView.ingredients.0', '5ml Olive Oil (Extra Virgin)');
 });
 
 test('meal detail view api matches scheduled savory breakfast calories for full craft day', function () {

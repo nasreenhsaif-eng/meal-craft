@@ -526,7 +526,7 @@ new #[Title('Meals')] class extends Component {
      */
     public function getCalculatedNutritionProperty(): array
     {
-        return RecipeNutritionCalculator::fromRows($this->recipeIngredients);
+        return RecipeNutritionCalculator::fromRows($this->recipeIngredients, applyMealCookingYield: true);
     }
 
     public function formatNutritionValue(float $value): string
@@ -1515,6 +1515,16 @@ new #[Title('Meals')] class extends Component {
                         <h2 class="font-serif text-2xl font-semibold leading-tight text-stone-800 dark:text-stone-100">
                             {{ $this->detailsMeal->name }}
                         </h2>
+                        @php
+                            $mealShortDescription = filled($this->detailsMeal->short_description)
+                                ? $this->detailsMeal->short_description
+                                : $this->detailsMeal->highlight;
+                        @endphp
+                        @if (filled($mealShortDescription))
+                            <p class="mt-1 text-sm leading-snug text-stone-600 dark:text-stone-300">
+                                {{ $mealShortDescription }}
+                            </p>
+                        @endif
                         <div class="mt-2 flex flex-wrap items-center gap-2">
                             @if ($this->detailsMeal->meal_type === \App\Enums\MealType::BaseRecipe)
                                 <flux:badge

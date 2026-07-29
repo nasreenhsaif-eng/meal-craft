@@ -5,32 +5,53 @@ namespace App\Support;
 use App\Models\Ingredient;
 
 /**
- * Customer-facing amounts for proteins weighed before cooking (USDA raw nutrition basis).
+ * Customer-facing amount labels for raw/dry prep weights and pre-cooked bases.
  */
 final class RawPrepIngredientPresentation
 {
-    /** @var list<string> */
-    private const RAW_PREP_INGREDIENT_NAMES = [
-        'Salmon',
-        'Salmon (Raw)',
-        ChickenBreastYield::RAW_INGREDIENT_NAME,
-    ];
-
     public static function isRawPrepIngredient(Ingredient $ingredient): bool
     {
-        return in_array($ingredient->name, self::RAW_PREP_INGREDIENT_NAMES, true);
+        $label = IngredientCookingYield::amountStateLabel($ingredient);
+
+        return $label === __('raw, before cooking');
+    }
+
+    public static function isDryWeightIngredient(Ingredient $ingredient): bool
+    {
+        return IngredientCookingYield::amountStateLabel($ingredient) === __('dry weight');
+    }
+
+    public static function isPreCookedBaseIngredient(Ingredient $ingredient): bool
+    {
+        return IngredientCookingYield::isFinishedBaseComponent($ingredient);
     }
 
     public static function formatLine(float $grams, string $formattedGrams, Ingredient $ingredient): string
     {
         $displayName = self::displayName($ingredient->name);
-        $suffix = __('raw, before cooking');
+        $suffix = IngredientCookingYield::amountStateLabel($ingredient) ?? __('raw, before cooking');
 
         if ($grams <= 0) {
             return $displayName.' ('.$suffix.')';
         }
 
         return sprintf('%sg %s (%s)', $formattedGrams, $displayName, $suffix);
+    }
+
+    public static function formatDryLine(float $grams, string $formattedGrams, Ingredient $ingredient): string
+    {
+        return self::formatLine($grams, $formattedGrams, $ingredient);
+    }
+
+    public static function formatBaseLine(float $grams, string $formattedGrams, Ingredient $ingredient): string
+    {
+        $suffix = __('pre-cooked base');
+
+        if ($grams <= 0) {
+            return $ingredient->name.' ('.$suffix.')';
+        }
+
+        return sprintf('%sg %s (%s)', $formattedGrams, $ingredient->name, $suffix);
     }
 
     private static function displayName(string $ingredientName): string

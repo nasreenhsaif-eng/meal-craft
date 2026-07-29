@@ -417,3 +417,44 @@ test('macro first adapted main reports protein balanced flag', function () {
     expect($adapted)->toHaveCount(1)
         ->and($adapted[0]['protein_balanced'] ?? false)->toBeTrue();
 });
+
+test('protein trim keeps liver blend at library grams while flooring primary beef', function () {
+    $beef = Ingredient::factory()->create([
+        'name' => 'Beef Ground Lean',
+        'calories' => 182,
+        'protein' => 26,
+        'carbs' => 0,
+        'fat' => 8,
+        'usda_food_category' => 'Proteins',
+    ]);
+    $liver = Ingredient::factory()->create([
+        'name' => 'Beef Liver',
+        'calories' => 135,
+        'protein' => 20.4,
+        'carbs' => 3.9,
+        'fat' => 3.6,
+        'usda_food_category' => 'Proteins',
+    ]);
+
+    $meal = Meal::factory()->create([
+        'name' => 'Spiced Beef & Liver Meatballs w Roasted Tomato Couscous',
+        'meal_type' => MealType::Main,
+        'category' => RecipeCategory::Meal,
+        'total_calories' => 450,
+        'total_protein' => 40,
+        'total_carbs' => 25,
+        'total_fat' => 20,
+    ]);
+    $meal->ingredients()->attach($beef->id, ['amount_grams' => 112.5]);
+    $meal->ingredients()->attach($liver->id, ['amount_grams' => 37.5]);
+
+    $grams = [
+        $beef->id => 112.5,
+        $liver->id => 37.5,
+    ];
+
+    $trimmed = MacroFirstMainMealScaler::trimProteinRoleGrams($meal->fresh(['ingredients']), $grams, 0.4);
+
+    expect($trimmed[$beef->id])->toBe(112.5)
+        ->and($trimmed[$liver->id])->toBe(37.5);
+});

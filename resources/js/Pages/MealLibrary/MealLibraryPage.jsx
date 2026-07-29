@@ -2300,7 +2300,7 @@ export function MealLibraryPageContent({
                                 </h2>
                                 {mealDetailModal.detailView?.shortDescription ||
                                 mealDetailModal.detailView?.description ? (
-                                    <p className="mt-1 line-clamp-2 font-montserrat text-sm font-medium text-[#555555] md:text-base">
+                                    <p className="mt-1 font-montserrat text-sm font-medium leading-snug text-[#555555] md:text-base">
                                         {mealDetailModal.detailView.shortDescription ||
                                             mealDetailModal.detailView.description}
                                     </p>

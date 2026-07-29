@@ -180,10 +180,10 @@ final class BalancedMealInstructionRefiner
             ]),
             'Sweet Potato Egg Hash' => $this->steps([
                 'Preheat oven to 200°C. Toss diced sweet potato with half the olive oil, rosemary, thyme, sea salt, and black pepper. Roast until tender (25–30 min).',
-                'Heat the remaining olive oil in a frying pan. Sauté diced onion, red bell pepper, and chopped spinach until softened (5–6 min).',
+                'Heat the remaining olive oil in a frying pan. Sauté diced onion and red bell pepper until softened (4–5 min), then wilt in the spinach (1–2 min).',
                 'Add roasted sweet potato and toss to combine.',
-                'Beat eggs, pour into the pan, and scramble gently over medium-low heat until just set.',
-                'Finish with fresh coriander, flaxseeds, and serve hot.',
+                'Beat the whole egg with the egg whites, pour into the pan, and scramble gently over medium-low heat until just set.',
+                'Finish with fresh coriander and flaxseeds, and serve hot.',
             ]),
             'Butternut Squash Frittata' => $this->steps([
                 'Preheat the oven to 180°C (350°F).',
@@ -210,6 +210,7 @@ final class BalancedMealInstructionRefiner
                 'Dice tomato and chop fresh coriander.',
                 'Heat olive oil in a non-stick pan over medium heat. Fry eggs until whites are crisp and yolks are runny.',
                 'Spoon warm smashed beans onto plates, top with eggs, tomato, and coriander.',
+                'Crumble feta over the top and finish with pumpkin seeds.',
                 'Serve immediately.',
             ]),
 
@@ -523,11 +524,12 @@ final class BalancedMealInstructionRefiner
                 'Cool before serving.',
             ]),
             'Chocolate PB Banana Muffin' => $this->steps([
-                'Heat oven to 180°C. Line a '.BalancedRotationMealRecipeRefiner::CHOCOLATE_PB_BANANA_MUFFIN_BATCH_SERVINGS_COUNT.'-cup muffin tin.',
-                'Mash banana. Whisk egg whites with peanut butter and maple syrup.',
-                'Stir in almond flour, cocoa powder, baking soda, and sea salt until just combined.',
-                'Divide among '.BalancedRotationMealRecipeRefiner::CHOCOLATE_PB_BANANA_MUFFIN_BATCH_SERVINGS_COUNT.' cups. Bake 18–22 minutes until set.',
-                'Cool on a rack. One muffin is one serving.',
+                'Prep time: 10 mins | Bake time: 18–20 mins | Equipment: 6-cup muffin tin, muffin liners.',
+                'Prep the oven: Preheat to 175°C (350°F) and line a '.BalancedRotationMealRecipeRefiner::CHOCOLATE_PB_BANANA_MUFFIN_BATCH_SERVINGS_COUNT.'-cup muffin tin with paper liners.',
+                'Mix the wets: In a medium bowl, vigorously whisk the mashed bananas (200g), eggs, peanut butter, and maple syrup together until smooth and completely combined.',
+                'Add the dries: Sift in the almond flour, cocoa powder, baking soda, and salt. Stir gently with a spatula just until the batter comes together and no dry pockets of flour remain.',
+                'Bake: Divide the batter evenly among the '.BalancedRotationMealRecipeRefiner::CHOCOLATE_PB_BANANA_MUFFIN_BATCH_SERVINGS_COUNT.' muffin cups. Bake for 18 to 20 minutes, or until the tops spring back when lightly touched and a toothpick inserted into the center comes out clean.',
+                'Cool: Let them cool in the pan for 5 minutes, then transfer to a wire rack to cool completely. One muffin is one serving.',
             ]),
             'Fruit Salad Bowl' => $this->steps([
                 'Wash and chop all fruit into bite-size pieces.',
@@ -594,9 +596,12 @@ final class BalancedMealInstructionRefiner
                 'Whisk in psyllium husks (1 tablespoon / 15 g per serving). Top with spring onion and portion.',
             ]),
             'Miso Carrot Ginger Soup' => $this->steps([
-                'Simmer carrots in water with ginger until very soft.',
-                'Remove from heat. Whisk miso paste into the broth until smooth (do not boil miso).',
-                'Whisk in psyllium husks (1 tablespoon / 15 g per serving). Top with spring onion and portion.',
+                'Heat olive oil over medium-high heat in a soup pot. Sauté onion, garlic, and carrot until the onion is translucent, about 10 minutes.',
+                'Add ginger and Vegetable Broth (Base). Mix well and bring to a boil. Reduce heat to a simmer, cover, and cook until the carrot is very tender, about 30 minutes.',
+                'Turn off the heat. Puree the soup with an immersion blender (or carefully in a blender, then return to the pot).',
+                'In a small bowl, whisk white miso paste with a ladle of the hot soup until fully dissolved. Stir the miso mixture back into the pot. Season with sea salt and black pepper if needed.',
+                'Whisk in psyllium husks (1 tablespoon / 15 g per serving). Reheat gently without boiling.',
+                'Serve hot. Garnish each bowl with spring onion, roasted nori, Shichimi Togarashi (Base), and a drizzle of sesame oil.',
             ]),
             BalancedMealLibraryConfigurator::BONE_BROTH_MEAL_NAME => $this->steps([
                 'Heat the full batch of defatted Bone Broth (Base) gently (do not boil hard).',

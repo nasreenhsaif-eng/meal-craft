@@ -4,15 +4,18 @@ namespace App\Services;
 
 use App\Models\Ingredient;
 use App\Models\Meal;
+use App\Support\IngredientCookingYield;
 use App\Support\SickleCellNutrientRdi;
 
 final class RecipeNutritionCalculator
 {
     /**
      * @param  array<int, array{ingredient_id: int|null, amount?: float|int|string|null, unit?: string|null, amount_grams?: float|int|string|null}>  $rows
+     * @param  bool  $applyMealCookingYield  When true, rescale dry-weighed cooked-macro staples for meal totals.
+     *                                       Leave false for base-recipe component rollups.
      * @return array<string, float>
      */
-    public static function fromRows(array $rows): array
+    public static function fromRows(array $rows, bool $applyMealCookingYield = false): array
     {
         $ingredientIds = collect($rows)
             ->map(fn (array $r): ?int => isset($r['ingredient_id']) && is_numeric($r['ingredient_id']) ? (int) $r['ingredient_id'] : null)
@@ -50,8 +53,6 @@ final class RecipeNutritionCalculator
             'vitamin_k2' => 0.0,
         ];
 
-        $jsonKeys = ['fiber', 'sugar', 'calcium', 'potassium', 'sodium', 'zinc', 'vitamin_c', 'vitamin_a', 'vitamin_e', 'vitamin_d', 'vitamin_k2'];
-
         foreach ($rows as $row) {
             $ingredientId = isset($row['ingredient_id']) && is_numeric($row['ingredient_id']) ? (int) $row['ingredient_id'] : null;
 
@@ -66,13 +67,21 @@ final class RecipeNutritionCalculator
                 continue;
             }
 
-            $grams = self::resolvedGramsForRow($row, $ingredient);
+            $inputGrams = self::resolvedGramsForRow($row, $ingredient);
 
-            if ($grams <= 0) {
+            if ($inputGrams <= 0) {
                 continue;
             }
 
-            $factor = $grams / 100.0;
+            $nutritionGrams = $applyMealCookingYield
+                ? IngredientCookingYield::nutritionMassGrams($ingredient, $inputGrams)
+                : $inputGrams;
+
+            if ($nutritionGrams <= 0) {
+                continue;
+            }
+
+            $factor = $nutritionGrams / 100.0;
             $per100 = self::per100gNutritionForIngredient($ingredient);
 
             foreach ($nutrition as $key => $_value) {
@@ -89,6 +98,9 @@ final class RecipeNutritionCalculator
 
     /**
      * Whole-meal nutrition from ingredient pivots (amount + unit when set, else grams).
+     * Applies cooked-yield mass corrections for dry-weighed staples with cooked macros.
+     *
+     * @return array<string, float>
      */
     public static function fromMeal(Meal $meal): array
     {
@@ -114,7 +126,7 @@ final class RecipeNutritionCalculator
             ];
         })->all();
 
-        return self::fromRows($rows);
+        return self::fromRows($rows, applyMealCookingYield: true);
     }
 
     /**
@@ -137,8 +149,9 @@ final class RecipeNutritionCalculator
     }
 
     /**
-     * Per-100 g nutrition for a library row. Prepared base ingredients prefer live rollup from
-     * {@see Ingredient::components()} when stored parent macros are empty or components exist.
+     * Per-100 g nutrition for a library row. Prepared base ingredients prefer stored finished
+     * product density; when empty, roll up components using {@see Ingredient::$finished_weight_grams}
+     * as the cooked yield divisor (matching {@see BaseIngredientService::upsert}).
      *
      * @return array<string, float>
      */
@@ -200,12 +213,15 @@ final class RecipeNutritionCalculator
     }
 
     /**
+     * Roll up child nutrition into per-100 g of finished product.
+     * Uses {@see Ingredient::$finished_weight_grams} when set (cooked yield), else raw component sum.
+     *
      * @return array<string, float>
      */
     private static function per100gFromComponentFormulation(Ingredient $parent): array
     {
         $rows = [];
-        $totalGrams = 0.0;
+        $componentGrams = 0.0;
 
         foreach ($parent->components as $child) {
             $grams = (float) ($child->pivot->amount_grams ?? 0);
@@ -217,15 +233,18 @@ final class RecipeNutritionCalculator
                 'ingredient_id' => (int) $child->getKey(),
                 'amount_grams' => $grams,
             ];
-            $totalGrams += $grams;
+            $componentGrams += $grams;
         }
 
-        if ($rows === [] || $totalGrams <= 0) {
+        if ($rows === [] || $componentGrams <= 0) {
             return self::per100gFromStoredColumns($parent);
         }
 
+        $finished = $parent->finished_weight_grams !== null ? (float) $parent->finished_weight_grams : 0.0;
+        $divisorGrams = $finished > 0 ? $finished : $componentGrams;
+
         $batch = self::fromRows($rows);
-        $factor = 100.0 / $totalGrams;
+        $factor = 100.0 / $divisorGrams;
 
         return self::scaleNutritionValues($batch, $factor);
     }

@@ -384,7 +384,7 @@ final class BalancedMicronutrientRecipeRefiner
             ];
         }
 
-        return RecipeNutritionCalculator::fromRows($rows);
+        return RecipeNutritionCalculator::fromRows($rows, applyMealCookingYield: true);
     }
 
     /**

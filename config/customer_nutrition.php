@@ -156,6 +156,55 @@ return [
     */
     'savory_egg_breakfast_minimum_side_grams' => [
         'Avocado' => 25.0,
+        'Sweet Potato' => 100.0,
+        'White Onion' => 40.0,
+        'Red Onion' => 40.0,
+        'Bell Pepper (Red)' => 40.0,
+        'Spinach (Fresh)' => 25.0,
+        'Olive Oil' => 5.0,
+        'Olive Oil (Extra Virgin)' => 5.0,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Culinary portion constraints — cookability over raw macro forcing
+    |--------------------------------------------------------------------------
+    |
+    | Structural floors keep named dish bases and sauté vegetables cookable.
+    | Herb/spice caps stop accent ingredients from matching vegetable volume.
+    |
+    */
+    'culinary_portion_constraints' => [
+        'title_structural_minimum_grams' => 100.0,
+        'default_woody_fresh_herb_maximum_grams' => 1.0,
+        'default_soft_fresh_herb_maximum_grams' => 8.0,
+        'default_dry_spice_maximum_grams' => 2.0,
+        'default_minimum_grams' => [
+            'White Onion' => 40.0,
+            'Red Onion' => 40.0,
+            'Bell Pepper (Red)' => 40.0,
+            'Spinach (Fresh)' => 25.0,
+            'Olive Oil' => 5.0,
+            'Olive Oil (Extra Virgin)' => 5.0,
+            'Sweet Potato' => 100.0,
+        ],
+        'per_meal_minimum_grams' => [
+            'Sweet Potato Egg Hash' => [
+                'Sweet Potato' => 120.0,
+                'White Onion' => 50.0,
+                'Bell Pepper (Red)' => 50.0,
+                'Spinach (Fresh)' => 30.0,
+                'Olive Oil' => 5.0,
+            ],
+        ],
+        'herb_spice_maximum_grams' => [
+            'Rosemary (Fresh)' => 1.0,
+            'Thyme (Fresh)' => 1.0,
+            'Fresh Coriander' => 5.0,
+            'Black Pepper' => 1.0,
+            'Sea Salt' => 1.0,
+            'Flaxseeds' => 5.0,
+        ],
     ],
 
     /*

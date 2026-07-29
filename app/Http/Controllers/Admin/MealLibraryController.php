@@ -22,6 +22,7 @@ use App\Services\Nutrition\AdaptedMenuBuilder;
 use App\Services\RecipeNutritionCalculator;
 use App\Support\EggIngredientPresentation;
 use App\Support\IngredientAllergenCatalog;
+use App\Support\IngredientCookingYield;
 use App\Support\IngredientG6pdSafety;
 use App\Support\IngredientLibraryNameMatcher;
 use App\Support\KitchenPortionRounding;
@@ -872,6 +873,24 @@ class MealLibraryController extends Controller
         $adaptedIngredients = is_array($adapted['ingredients'] ?? null) ? $adapted['ingredients'] : [];
         $detailView['ingredients'] = $this->adaptedIngredientLinesForDetailView($meal, $adaptedIngredients);
 
+        $adaptedGramsByIngredientId = [];
+        foreach ($adaptedIngredients as $row) {
+            if (! is_array($row)) {
+                continue;
+            }
+
+            $ingredientId = (int) ($row['id'] ?? 0);
+            if ($ingredientId <= 0) {
+                continue;
+            }
+
+            $adaptedGramsByIngredientId[$ingredientId] = (float) ($row['adapted_amount_grams'] ?? 0);
+        }
+
+        $meal->loadMissing('ingredients');
+        $yieldSummary = IngredientCookingYield::mealYieldSummary($meal->ingredients, $adaptedGramsByIngredientId);
+        $detailView['cookingYieldNote'] = $yieldSummary['note'] !== '' ? $yieldSummary['note'] : null;
+
         if (SaladMealPresentation::isSaladMeal($meal)) {
             $ingredientSections = SaladMealPresentation::ingredientSectionsForMeal(
                 $meal,
@@ -947,6 +966,14 @@ class MealLibraryController extends Controller
 
         if (RawPrepIngredientPresentation::isRawPrepIngredient($ingredient)) {
             return RawPrepIngredientPresentation::formatLine($grams, $formattedGrams, $ingredient);
+        }
+
+        if (RawPrepIngredientPresentation::isDryWeightIngredient($ingredient)) {
+            return RawPrepIngredientPresentation::formatDryLine($grams, $formattedGrams, $ingredient);
+        }
+
+        if (RawPrepIngredientPresentation::isPreCookedBaseIngredient($ingredient)) {
+            return RawPrepIngredientPresentation::formatBaseLine($grams, $formattedGrams, $ingredient);
         }
 
         if (is_array($adaptedRow)) {
@@ -1109,6 +1136,8 @@ class MealLibraryController extends Controller
             $ingredientLines = [__('No ingredients on file.')];
         }
 
+        $yieldSummary = IngredientCookingYield::mealYieldSummary($meal->ingredients);
+
         $payload = [
             'shortDescription' => $shortDescription,
             'cyclePhases' => $cyclePhases,
@@ -1118,6 +1147,7 @@ class MealLibraryController extends Controller
             'sickleCellHighlights' => $sickleCellHighlights,
             'nutritionalData' => $this->nutritionalDataForDetailView($nutrition),
             'ingredients' => $ingredientLines,
+            'cookingYieldNote' => $yieldSummary['note'] !== '' ? $yieldSummary['note'] : null,
             'instructions' => $instructions,
             'imageUrl' => $this->mealImageUrl($meal),
             'imageAlt' => $meal->name,

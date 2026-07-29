@@ -31,6 +31,7 @@ describe('mergeDetailViews', () => {
             ingredients: ['130g Beef Liver', '45g Cooked Quinoa (Base)'],
             instructions: ['API step one', 'API step two'],
             safetyAlerts: [{ label: 'SESAME', variant: 'allergy' }],
+            shortDescription: 'Quick-seared beef liver with fluffy quinoa.',
         };
 
         const merged = mergeDetailViews(initial, fromApi);
@@ -38,6 +39,7 @@ describe('mergeDetailViews', () => {
         expect(merged.macros).toEqual(initial.macros);
         expect(merged.ingredients).toEqual(initial.ingredients);
         expect(merged.nutritionalData).toEqual(initial.nutritionalData);
+        expect(merged.shortDescription).toBe('Quick-seared beef liver with fluffy quinoa.');
         expect(merged.instructions).toEqual(fromApi.instructions);
         expect(merged.safetyAlerts).toEqual(fromApi.safetyAlerts);
     });

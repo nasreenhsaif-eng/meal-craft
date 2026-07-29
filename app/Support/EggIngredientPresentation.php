@@ -13,7 +13,26 @@ final class EggIngredientPresentation
 
     public static function isEggIngredient(Ingredient $ingredient): bool
     {
-        return $ingredient->name === 'Egg';
+        return self::isWholeEggIngredient($ingredient);
+    }
+
+    public static function isWholeEggIngredient(Ingredient $ingredient): bool
+    {
+        $name = trim($ingredient->name);
+
+        return $name === 'Egg' || $name === 'Eggs (Large)';
+    }
+
+    public static function isEggWhiteIngredient(Ingredient $ingredient): bool
+    {
+        $name = trim($ingredient->name);
+
+        return $name === 'Egg White' || $name === 'Egg Whites';
+    }
+
+    public static function isEggFamilyIngredient(Ingredient $ingredient): bool
+    {
+        return self::isWholeEggIngredient($ingredient) || self::isEggWhiteIngredient($ingredient);
     }
 
     public static function formatLine(float $grams, string $formattedGrams): string

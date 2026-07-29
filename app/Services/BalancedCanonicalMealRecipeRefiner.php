@@ -482,14 +482,22 @@ final class BalancedCanonicalMealRecipeRefiner
             ),
             'Miso Carrot Ginger Soup' => $this->bulkSoupDefinition(
                 [
-                    'Carrots' => 100,
-                    'Water (Filtered)' => 200,
-                    'Miso Paste' => 10,
-                    'Ginger (Raw)' => 8,
+                    'Carrots' => 112.5,
+                    'Garlic (Raw)' => 3,
+                    'Ginger (Raw)' => 3,
+                    'Seaweed (Nori)' => 1,
+                    'White Onion' => 37.5,
                     'Spring Onion' => 8,
+                    'Miso Paste' => 11,
+                    'Shichimi Togarashi (Base)' => 2,
+                    'Sea Salt' => 0.5,
+                    'Black Pepper' => 0.3,
+                    'Olive Oil (Extra Virgin)' => 7,
+                    'Sesame Oil' => 1,
+                    'Vegetable Broth (Base)' => 200,
                 ],
                 array_merge($wholeFoodTags, ['Vegan']),
-                'Golden carrot miso soup with ginger warmth and psyllium husks for fiber.',
+                'Golden carrot-ginger miso soup with roasted nori, scallions, sesame oil, and shichimi togarashi.',
             ),
             BalancedMealLibraryConfigurator::BONE_BROTH_MEAL_NAME => $this->bulkSoupDefinition(
                 [

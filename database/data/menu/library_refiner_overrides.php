@@ -147,8 +147,8 @@ Spoon Marinara Sauce (Base) into a baking dish. Nestle stuffed zucchini in the s
             'Spring Onion' => 18.0,
             'Zucchini' => 40.0,
         ],
-        'highlight' => 'A clean macronutrient-balanced Korean-style bowl with seasoned lean ground beef over quinoa.',
-        'short_description' => 'A clean macronutrient-balanced Korean-style bowl with seasoned lean ground beef over quinoa.',
+        'highlight' => 'Korean-style bowl with seasoned lean ground beef, soft egg, and sautéed spinach, bok choy, carrots, and zucchini over quinoa, finished with sesame seeds.',
+        'short_description' => 'Korean-style bowl with seasoned lean ground beef, soft egg, and sautéed spinach, bok choy, carrots, and zucchini over quinoa, finished with sesame seeds.',
         'instructions' => 'Prepare Cooked Quinoa (Base) per base recipe instructions; keep warm.
 Brown ground beef with garlic in a pan. Season lightly.
 Sauté spinach, carrots, zucchini, and bok choy separately until tender.
@@ -175,8 +175,8 @@ Layer quinoa, vegetables, and beef in a bowl. Top with egg and sesame seeds.',
             'Tomato (Raw)' => 50.0,
             'White Onion' => 40.0,
         ],
-        'highlight' => 'Shredded slow-cooked beef chuck infused with traditional shawarma aromatics',
-        'short_description' => 'Shredded slow-cooked beef chuck infused with traditional shawarma aromatics',
+        'highlight' => 'Shredded slow-cooked beef chuck with shawarma spices, cucumber-tomato salad, and tahini drizzle.',
+        'short_description' => 'Shredded slow-cooked beef chuck with shawarma spices, cucumber-tomato salad, and tahini drizzle.',
         'instructions' => 'served alongside a crisp cucumber-tomato salad and tahini drizzle.',
         'food_filter_tags' => [
             0 => 'nightshades',
@@ -576,8 +576,8 @@ Pour the fruit smoothie over the chia layer. Serve chilled.',
             'Peanuts (Crushed)' => 10.0,
             'Red Onion' => 15.0,
         ],
-        'highlight' => 'Juicy sliced grilled chicken breast tossed with shredded red and white cabbage',
-        'short_description' => 'Juicy sliced grilled chicken breast tossed with shredded red and white cabbage',
+        'highlight' => 'Grilled chicken breast with mango, purple cabbage, cucumber, and cherry tomatoes in peanut butter dressing.',
+        'short_description' => 'Grilled chicken breast with mango, purple cabbage, cucumber, and cherry tomatoes in peanut butter dressing.',
         'instructions' => 'Grill or pan-sear chicken until golden then in the oven for 20 minutes exactly, then Rest and slice thinly.
 Shred cabbage; slice mango, cucumber, tomatoes, and red onion.
 Toss vegetables with coriander.
@@ -662,23 +662,26 @@ Cool completely, then cut into 16 equal squares. One square is one serving.',
         ],
     ],
     'Chocolate PB Banana Muffin' => [
-        'synced_at' => '2026-07-12T10:11:47+00:00',
+        'synced_at' => '2026-07-27T14:59:09+00:00',
         'ingredients' => [
-            'Almond Flour (Base)' => 80.0,
-            'Baking Soda' => 2.0,
-            'Banana' => 20.0,
-            'Cocoa Powder' => 115.0,
-            'Egg Whites' => 50.0,
-            'Maple Syrup' => 5.0,
-            'Peanut Butter' => 5.0,
+            'Almond Flour (Base)' => 72.0,
+            'Baking Soda' => 2.5,
+            'Banana' => 200.0,
+            'Cocoa Powder' => 20.0,
+            'Egg' => 100.0,
+            'Maple Syrup' => 40.0,
+            'Peanut Butter' => 85.0,
+            'Sea Salt' => 0.5,
         ],
-        'highlight' => 'Grain-free cocoa-banana muffin batch (6 muffins) with almond flour, peanut butter, maple syrup, and egg whites — one muffin per serving (~135 kcal).',
-        'short_description' => 'Grain-free cocoa-banana muffin batch (6 muffins) with almond flour, peanut butter, maple syrup, and egg whites — one muffin per serving (~135 kcal).',
-        'instructions' => '1. Heat oven to 180°C. Line a 6-cup muffin tin.
-2. Mash banana. Whisk egg whites with peanut butter and maple syrup.
-3. Stir in almond flour, cocoa powder, baking soda, and sea salt until just combined.
-4. Divide among 6 cups. Bake 18–22 minutes until set.
-5. Cool on a rack. One muffin is one serving.',
+        'highlight' => 'Realistic grain-free chocolate peanut-butter banana muffins (batch of 6) with almond flour, cocoa, maple syrup, and whole eggs — one muffin per serving (~233 kcal).',
+        'short_description' => 'Realistic grain-free chocolate peanut-butter banana muffins (batch of 6) with almond flour, cocoa, maple syrup, and whole eggs — one muffin per serving (~233 kcal).',
+        'instructions' => 'Prep time: 10 mins | Bake time: 18–20 mins | Equipment: 6-cup muffin tin, muffin liners.
+
+1. Prep the oven: Preheat to 175°C (350°F) and line a 6-cup muffin tin with paper liners.
+2. Mix the wets: In a medium bowl, vigorously whisk the mashed bananas (200g), eggs, peanut butter, and maple syrup together until smooth and completely combined.
+3. Add the dries: Sift in the almond flour, cocoa powder, baking soda, and salt. Stir gently with a spatula just until the batter comes together and no dry pockets of flour remain.
+4. Bake: Divide the batter evenly among the 6 muffin cups. Bake for 18 to 20 minutes, or until the tops spring back when lightly touched and a toothpick inserted into the center comes out clean.
+5. Cool: Let them cool in the pan for 5 minutes, then transfer to a wire rack to cool completely. One muffin is one serving.',
         'diet_tags' => [
             0 => 'Vegetarian',
             1 => 'Dairy-free',
@@ -699,8 +702,8 @@ Cool completely, then cut into 16 equal squares. One square is one serving.',
             'Raisins' => 10.0,
             'Walnuts' => 20.0,
         ],
-        'highlight' => 'No-bake snack bites blending soft Medjool dates',
-        'short_description' => 'No-bake snack bites blending soft Medjool dates',
+        'highlight' => 'No-bake snack bites blending soft Medjool dates, raisins, walnuts, almond butter, and cinnamon.',
+        'short_description' => 'No-bake snack bites blending soft Medjool dates, raisins, walnuts, almond butter, and cinnamon.',
         'instructions' => 'Combine dates or binder, raisins, nuts, and cinnamon in a food processor.
 Pulse until mixture holds together.
 Roll into balls. Refrigerate until firm.',
@@ -816,8 +819,8 @@ Serve dressing on the side.',
             'Tomato (Raw)' => 150.0,
             'White Onion' => 30.0,
         ],
-        'short_description' => 'Two soft-cooked eggs nestled within a rich',
-        'highlight' => 'Two soft-cooked eggs nestled within a rich',
+        'short_description' => 'Two soft-cooked eggs nestled in a rich tomato-pepper skillet with smoked paprika and fresh coriander.',
+        'highlight' => 'Two soft-cooked eggs nestled in a rich tomato-pepper skillet with smoked paprika and fresh coriander.',
         'instructions' => '1. Sauté onion and pepper in olive oil until soft (5 min).
 2. Add crushed tomato and spices. Simmer 8–10 minutes.
 3. Make small wells in the sauce. Crack eggs into the wells.
@@ -875,8 +878,8 @@ Serve hot with parsley, sesame seeds, and toasted Quinoa Bread (Base).',
             'Quinoa Bread (Base)' => 45.0,
             'White Onion' => 30.0,
         ],
-        'highlight' => 'A rustic slow-cooked stew of tender cubed beef chuck and melting globe eggplants in a savory tomato reduction',
-        'short_description' => 'A rustic slow-cooked stew of tender cubed beef chuck and melting globe eggplants in a savory tomato reduction',
+        'highlight' => 'A rustic slow-cooked stew of tender cubed beef chuck and melting globe eggplants in a savory tomato reduction, served with quinoa bread.',
+        'short_description' => 'A rustic slow-cooked stew of tender cubed beef chuck and melting globe eggplants in a savory tomato reduction, served with quinoa bread.',
         'instructions' => 'served with a dense slice of quinoa bread.',
         'food_filter_tags' => [
             0 => 'nightshades',
@@ -949,8 +952,8 @@ Serve hot with parsley, sesame seeds, and toasted Quinoa Bread (Base).',
             'Pomegranate Seeds' => 30.0,
             'Strawberries' => 50.0,
         ],
-        'highlight' => 'A clean refreshing side array of sliced strawberries',
-        'short_description' => 'A clean refreshing side array of sliced strawberries',
+        'highlight' => 'Fresh fruit salad of strawberries, pineapple, pear, apple, blueberries, and pomegranate with mint and honey-lemon.',
+        'short_description' => 'Fresh fruit salad of strawberries, pineapple, pear, apple, blueberries, and pomegranate with mint and honey-lemon.',
         'instructions' => 'Wash and chop all fruit into bite-size pieces.
 Toss gently with lemon juice and honey if using.
 Chill 15 minutes. Serve cold.',
@@ -1366,8 +1369,8 @@ Serve chilled.',
             'Red Thai Chillies' => 2.0,
             'Zesty Lime Chili Salad Dressing (Base)' => 12.0,
         ],
-        'short_description' => 'A tropical side salad combining pineapple chunks',
-        'highlight' => 'A tropical side salad combining pineapple chunks',
+        'short_description' => 'Tropical side salad of pineapple, peppers, red onion, cucumber, and cilantro with zesty lime-chili dressing.',
+        'highlight' => 'Tropical side salad of pineapple, peppers, red onion, cucumber, and cilantro with zesty lime-chili dressing.',
         'instructions' => 'Dice pineapple, pepper, cucumber, and red onion.
 Toss with thinly sliced cabbage and fresh coriander.
 Refrigerate 15–30 minutes so the vegetables soften slightly.
@@ -1427,8 +1430,8 @@ Serve dressing on the side.',
             'Rosemary Garlic Chicken (Base)' => 115.0,
             'Walnuts' => 10.0,
         ],
-        'highlight' => 'A highly hydrating salad of diced cucumbers',
-        'short_description' => 'A highly hydrating salad of diced cucumbers',
+        'highlight' => 'Mediterranean crunch salad with cucumber, romaine, rocca, olives, tomatoes, rosemary garlic chicken, and lemon-garlic dressing.',
+        'short_description' => 'Mediterranean crunch salad with cucumber, romaine, rocca, olives, tomatoes, rosemary garlic chicken, and lemon-garlic dressing.',
         'instructions' => 'Dice cucumber, cherry tomatoes, red pepper, and red onion.
 Grill or pan-sear Rosemary Garlic Chicken (Base) until golden then in the oven for 20 minutes exactly, then Rest and slice.
 Toss romaine, rocca, vegetables, basil, olives, walnuts, and pumpkin seeds. Top with chicken.
@@ -1911,20 +1914,26 @@ Serve dressing on the side.',
         ],
     ],
     'Salmon Cashew Cream & Roasted Mixed Vegetables' => [
-        'synced_at' => '2026-07-12T10:11:47+00:00',
+        'synced_at' => '2026-07-27T14:15:39+00:00',
         'ingredients' => [
             'Cashew Cream (Base)' => 20.0,
             'Garlic (Raw)' => 5.0,
             'Lemon Juice' => 5.0,
+            'Parsley' => 3.0,
             'Roasted Mixed Vegetables (Base)' => 90.0,
             'Salmon (Raw)' => 150.0,
         ],
-        'highlight' => 'Pan-roasted salmon smothered in dairy-free garlic cashew cream with house roasted mixed vegetables.',
-        'short_description' => 'Pan-roasted salmon smothered in dairy-free garlic cashew cream with house roasted mixed vegetables.',
+        'highlight' => 'Pan-roasted salmon smothered in dairy-free garlic cashew cream with house roasted mixed vegetables, finished with fresh parsley.',
+        'short_description' => 'Pan-roasted salmon smothered in dairy-free garlic cashew cream with house roasted mixed vegetables, finished with fresh parsley.',
         'instructions' => 'Prepare Roasted Mixed Vegetables (Base) per base recipe instructions.
 Pan-roast salmon fillet until cooked through, 4–5 minutes per side.
 Warm Cashew Cream (Base) with minced garlic and lemon juice until silky; spoon over salmon.
-Serve salmon with cashew cream and roasted mixed vegetables.',
+Serve salmon with cashew cream and roasted mixed vegetables.
+Garnish with chopped fresh parsley.',
+        'diet_tags' => [
+            0 => 'Dairy-free',
+            1 => 'Gluten-free',
+        ],
         'food_filter_tags' => [
             0 => 'fish',
             1 => 'nightshades',
@@ -2139,37 +2148,40 @@ Serve dressing on the side.',
         ],
     ],
     'Smashed Beans & Eggs' => [
-        'synced_at' => '2026-07-12T10:11:47+00:00',
+        'synced_at' => '2026-07-23T08:07:53+00:00',
         'ingredients' => [
             'Black Pepper' => 2.0,
             'Egg' => 100.0,
+            'Feta' => 15.0,
             'Fresh Coriander' => 10.0,
+            'Pumpkin Seeds' => 15.0,
             'Smashed White Beans (Base)' => 80.0,
             'Tomato (Raw)' => 50.0,
         ],
-        'highlight' => 'Creamy white beans topped with a perfectly crispy fried egg.',
-        'short_description' => 'Creamy white beans topped with a perfectly crispy fried egg.',
+        'highlight' => 'Creamy white beans topped with a crispy fried egg, crumbled feta, and pumpkin seeds.',
+        'short_description' => 'Creamy white beans topped with a crispy fried egg, crumbled feta, and pumpkin seeds.',
         'instructions' => 'Prepare Smashed White Beans (Base) per base recipe instructions.
 Dice tomato and chop fresh coriander.
 Fry or poach eggs until whites are set and yolks are runny.
 Spoon warm smashed beans onto plates, top with eggs, tomato, and coriander.
+Crumble feta over the top and finish with pumpkin seeds.
 Serve immediately.',
         'diet_tags' => [
-            0 => 'Dairy-free',
-            1 => 'Gluten-free',
-            2 => 'Vegetarian',
+            0 => 'Gluten-free',
+            1 => 'Vegetarian',
         ],
         'food_filter_tags' => [
             0 => 'eggs',
             1 => 'beans',
             2 => 'nightshades',
+            3 => 'dairy',
         ],
     ],
     'Spiced Beef & Liver Meatballs w Roasted Tomato Couscous' => [
-        'synced_at' => '2026-07-22T16:08:07+00:00',
+        'synced_at' => '2026-07-23T08:16:10+00:00',
         'ingredients' => [
-            'Beef Ground Lean' => 128.0,
-            'Beef Liver' => 22.0,
+            'Beef Ground Lean' => 112.5,
+            'Beef Liver' => 37.5,
             'Cherry Tomatoes' => 80.0,
             'Cooked Couscous (Base)' => 90.0,
             'Fresh Basil' => 5.0,
@@ -2364,51 +2376,66 @@ Serve chilled.',
         ],
     ],
     'Sumac Beef Baba Ghanoush' => [
-        'synced_at' => '2026-07-12T10:11:47+00:00',
+        'synced_at' => '2026-07-27T14:05:05+00:00',
         'ingredients' => [
-            'Beef Ground Lean' => 150.0,
-            'Eggplant' => 150.0,
-            'Garlic' => 5.0,
-            'Lemon Juice' => 10.0,
+            'Beef Ribeye' => 120.0,
+            'Cauliflower' => 80.0,
+            'Dill (Fresh)' => 3.0,
+            'Eggplant Dip (Mutabal) (Base)' => 90.0,
             'Olive Oil' => 5.0,
-            'Sumac' => 3.0,
-            'Tahini' => 10.0,
-            'White Onion' => 20.0,
+            'Parsley' => 5.0,
+            'Pickled Red Onion (Base)' => 25.0,
+            'Pomegranate Seeds' => 15.0,
+            'Sumac' => 2.0,
+            'Walnuts' => 8.0,
         ],
-        'highlight' => 'Pan-seared ground beef seasoned with tart sumac over a bed of smoky',
-        'short_description' => 'Pan-seared ground beef seasoned with tart sumac over a bed of smoky',
-        'instructions' => 'roasted globe eggplant dip mixed with creamy tahini and garlic.',
-        'food_filter_tags' => [
-            0 => 'nightshades',
-            1 => 'sesame',
-        ],
-    ],
-    'Sweet Potato Egg Hash' => [
-        'synced_at' => '2026-07-12T10:11:47+00:00',
-        'ingredients' => [
-            'Bell Pepper (Red)' => 40.0,
-            'Black Pepper' => 1.0,
-            'Egg' => 100.0,
-            'Flaxseeds' => 5.0,
-            'Fresh Coriander' => 5.0,
-            'Olive Oil' => 10.0,
-            'Rosemary (Fresh)' => 5.0,
-            'Spinach (Fresh)' => 45.0,
-            'Sweet Potato' => 120.0,
-            'Thyme (Fresh)' => 5.0,
-            'White Onion' => 10.0,
-        ],
-        'highlight' => 'Rosemary-thyme roasted sweet potato hash with sautéed onion, pepper, and spinach, finished with softly scrambled eggs and flaxseeds.',
-        'short_description' => 'Rosemary-thyme roasted sweet potato hash with sautéed onion, pepper, and spinach, finished with softly scrambled eggs and flaxseeds.',
-        'instructions' => '1. Preheat oven to 200°C. Toss diced sweet potato with half the olive oil, rosemary, thyme, sea salt, and black pepper. Roast until tender (25–30 min).
-2. Heat the remaining olive oil in a frying pan. Sauté diced onion, red bell pepper, and chopped spinach until softened (5–6 min).
-3. Add roasted sweet potato and toss to combine.
-4. Beat eggs, pour into the pan, and scramble gently over medium-low heat until just set.
-5. Finish with fresh coriander, flaxseeds, and serve hot.',
+        'highlight' => 'Sumac-seared beef ribeye over smoky eggplant mutabal with roasted cauliflower, pickled red onion, pomegranate, parsley, and dill.',
+        'short_description' => 'Sumac-seared beef ribeye over smoky eggplant mutabal with roasted cauliflower, pickled red onion, pomegranate, parsley, and dill.',
+        'instructions' => '1. Prepare Eggplant Dip (Mutabal) (Base) and Pickled Red Onion (Base) per base recipe instructions.
+2. Toss cauliflower florets with a little olive oil and roast at 200°C until tender and lightly charred (18–22 min).
+3. Season beef ribeye with sumac and salt. Sear in olive oil over high heat until browned outside and cooked to preferred doneness; rest, then slice.
+4. Spoon mutabal into a bowl. Add roasted cauliflower, pickled red onion, pomegranate seeds, parsley, dill, and walnuts.
+5. Top with sliced sumac-seared ribeye and serve.',
         'diet_tags' => [
             0 => 'Dairy-free',
             1 => 'Gluten-free',
-            2 => 'Vegetarian',
+            2 => 'Nut-free',
+        ],
+        'food_filter_tags' => [
+            0 => 'nightshades',
+            1 => 'sesame',
+            2 => 'nuts',
+        ],
+    ],
+    'Sweet Potato Egg Hash' => [
+        'synced_at' => '2026-07-27T15:49:49+00:00',
+        'ingredients' => [
+            'Bell Pepper (Red)' => 50.0,
+            'Black Pepper' => 1.0,
+            'Egg' => 50.0,
+            'Egg White' => 60.0,
+            'Flaxseeds' => 2.0,
+            'Fresh Coriander' => 3.0,
+            'Olive Oil' => 5.0,
+            'Rosemary (Fresh)' => 1.0,
+            'Sea Salt' => 1.0,
+            'Spinach (Fresh)' => 30.0,
+            'Sweet Potato' => 120.0,
+            'Thyme (Fresh)' => 1.0,
+            'White Onion' => 50.0,
+        ],
+        'highlight' => 'Rosemary-thyme roasted sweet potato hash with sautéed onion, pepper, and spinach, finished with softly scrambled egg and egg whites plus flaxseeds.',
+        'short_description' => 'Rosemary-thyme roasted sweet potato hash with sautéed onion, pepper, and spinach, finished with softly scrambled egg and egg whites plus flaxseeds.',
+        'instructions' => '1. Preheat oven to 200°C. Toss diced sweet potato with half the olive oil, rosemary, thyme, sea salt, and black pepper. Roast until tender (25–30 min).
+2. Heat the remaining olive oil in a frying pan. Sauté diced onion and red bell pepper until softened (4–5 min), then wilt in the spinach (1–2 min).
+3. Add roasted sweet potato and toss to combine.
+4. Beat the whole egg with the egg whites, pour into the pan, and scramble gently over medium-low heat until just set.
+5. Finish with fresh coriander and flaxseeds, and serve hot.',
+        'diet_tags' => [
+            0 => 'Vegetarian',
+            1 => 'Dairy-free',
+            2 => 'Gluten-free',
+            3 => 'Nut-free',
         ],
         'food_filter_tags' => [
             0 => 'eggs',
@@ -2554,8 +2581,8 @@ Serve dressing on the side.',
             'Peanuts (Crushed)' => 8.0,
             'Red Onion' => 12.0,
         ],
-        'short_description' => 'A colorful crunchy crunch bowl of shredded purple cabbage',
-        'highlight' => 'A colorful crunchy crunch bowl of shredded purple cabbage',
+        'short_description' => 'Crunchy rainbow salad of purple cabbage, carrots, cucumber, and peppers with peanut butter dressing and crushed peanuts.',
+        'highlight' => 'Crunchy rainbow salad of purple cabbage, carrots, cucumber, and peppers with peanut butter dressing and crushed peanuts.',
         'instructions' => 'Shred cabbage and julienne carrots, cucumber, and red onion.
 Toss vegetables with coriander and crushed peanuts.
 Serve chilled.
@@ -2701,25 +2728,30 @@ Serve dressing on the side.',
         ],
     ],
     'Vegan Curry Lentil Salad' => [
-        'synced_at' => '2026-07-20T08:00:00+00:00',
+        'synced_at' => '2026-07-27T14:32:52+00:00',
         'ingredients' => [
             'Bell Pepper (Red)' => 35.0,
+            'Black Pepper' => 1.0,
+            'Broccoli' => 50.0,
             'Carrots' => 40.0,
-            'Cucumber' => 40.0,
-            'Curry Vinaigrette (Base)' => 15.0,
+            'Cumin Ground' => 2.0,
             'French Lentils' => 60.0,
-            'Fresh Coriander' => 4.0,
-            'Red Onion' => 15.0,
-            'Spinach (Fresh)' => 40.0,
-            'Wild Rice (Cooked)' => 75.0,
+            'Fresh Coriander' => 5.0,
+            'Kale' => 40.0,
+            'Mint Coconut Chutney Dressing (Base)' => 20.0,
+            'Olive Oil' => 8.0,
+            'Pumpkin Seeds' => 10.0,
+            'Sea Salt' => 1.0,
+            'Sesame Seeds' => 5.0,
+            'White Onion' => 40.0,
         ],
-        'highlight' => 'Earthy lentils and wild rice tossed with spinach, vegetables, and curry vinaigrette.',
-        'short_description' => 'Earthy lentils and wild rice tossed with spinach, vegetables, and curry vinaigrette.',
-        'instructions' => 'Cook lentils until tender but not mushy. Drain and cool.
-Cook wild rice if needed. Cool slightly.
-Toss lentils, rice, spinach, carrots, pepper, cucumber, onion, and coriander.
-Serve at room temperature or chilled.
-Serve dressing on the side.',
+        'highlight' => 'French lentils simmered with caramelized onion, tossed with kale, sautéed broccoli, carrots, and red pepper, finished with mint coconut chutney, pumpkin seeds, and sesame.',
+        'short_description' => 'French lentils simmered with caramelized onion, tossed with kale, sautéed broccoli, carrots, and red pepper, finished with mint coconut chutney, pumpkin seeds, and sesame.',
+        'instructions' => '1. Cook French lentils with cumin, sea salt, and black pepper until tender but not mushy. Drain.
+2. Caramelize sliced white onion in olive oil over medium-low heat until deep golden; fold into the warm lentils and cool.
+3. Sauté broccoli florets with a little olive oil until tender-crisp; cool slightly.
+4. Toss lentils with kale, carrots, red pepper, coriander, pumpkin seeds, and sesame seeds.
+5. Serve with Mint Coconut Chutney Dressing (Base) on the side or lightly dressed.',
         'diet_tags' => [
             0 => 'Dairy-free',
             1 => 'Gluten-free',
@@ -2728,6 +2760,8 @@ Serve dressing on the side.',
         'food_filter_tags' => [
             0 => 'beans',
             1 => 'nightshades',
+            2 => 'sesame',
+            3 => 'spicy',
         ],
     ],
     'Vegan Harissa Roasted Cauliflower & Chickpea Salad w Tahini Dressing' => [

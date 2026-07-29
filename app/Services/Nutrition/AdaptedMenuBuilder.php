@@ -13,6 +13,8 @@ use App\Services\BalancedChiaDessertRecipeRefiner;
 use App\Services\RecipeIngredientUnitConverter;
 use App\Services\RecipeNutritionCalculator;
 use App\Support\ChiaDessertMeals;
+use App\Support\CulinaryBreakfastRebalancer;
+use App\Support\CulinaryPortionConstraints;
 use App\Support\EggIngredientPresentation;
 use App\Support\KitchenPortionRounding;
 use App\Support\MealPlanSlotBasedDayNutrition;
@@ -1205,7 +1207,7 @@ final class AdaptedMenuBuilder
         $meal->loadMissing('ingredients');
         $adaptedGramsByIngredientId = self::chiaDessertAdaptedGramsByIngredientId($meal);
         $scaledRows = self::scaledIngredientRowsFromAdaptedGrams($meal, $adaptedGramsByIngredientId);
-        $adaptedNutrition = RecipeNutritionCalculator::fromRows($scaledRows);
+        $adaptedNutrition = RecipeNutritionCalculator::fromRows($scaledRows, applyMealCookingYield: true);
         $baseline = $meal->nutritionForDisplay();
 
         return [
@@ -1336,7 +1338,7 @@ final class AdaptedMenuBuilder
     ): array {
         $baseline = $meal->nutritionForDisplay();
         $scaledRows = self::scaledIngredientRowsFromAdaptedGrams($meal, $adaptedGramsByIngredientId);
-        $adaptedNutrition = RecipeNutritionCalculator::fromRows($scaledRows);
+        $adaptedNutrition = RecipeNutritionCalculator::fromRows($scaledRows, applyMealCookingYield: true);
         $baselineCalories = (float) ($baseline['calories'] ?? 0);
         $adaptedCalories = (float) ($adaptedNutrition['calories'] ?? 0);
         $overallMultiplier = $baselineCalories > 0
@@ -1393,7 +1395,7 @@ final class AdaptedMenuBuilder
 
         for ($attempt = 0; $attempt < 6; $attempt++) {
             $scaledRows = self::scaledIngredientRowsFromAdaptedGrams($meal, $normalized);
-            $nutrition = RecipeNutritionCalculator::fromRows($scaledRows);
+            $nutrition = RecipeNutritionCalculator::fromRows($scaledRows, applyMealCookingYield: true);
             $adaptedCalories = (float) ($nutrition['calories'] ?? 0);
 
             if ($adaptedCalories <= 0) {
@@ -1424,7 +1426,7 @@ final class AdaptedMenuBuilder
     }
 
     /**
-     * Apply tier side minimums, then trim flexible ingredients if minimums pushed calories over target.
+     * Apply culinary floors/caps and volumetric rebalancing; never crush foundational sides.
      *
      * @param  array<int, float>  $adaptedGramsByIngredientId
      * @return array<int, float>
@@ -1436,14 +1438,12 @@ final class AdaptedMenuBuilder
         float $planTier,
     ): array {
         $withMinimums = self::applyBreakfastSideMinimums($meal, $adaptedGramsByIngredientId, $planTier);
+        $rebalanced = CulinaryBreakfastRebalancer::rebalance($meal, $withMinimums, $targetCalories, $planTier);
 
-        if ($targetCalories <= 0) {
-            return $withMinimums;
-        }
-
-        $trimmed = self::trimBreakfastFlexibleGramsToTarget($meal, $withMinimums, $targetCalories, $planTier);
-
-        return KitchenPortionRounding::snapAllGramsForMeal($meal, $trimmed);
+        return KitchenPortionRounding::snapAllGramsForMeal(
+            $meal,
+            CulinaryPortionConstraints::apply($meal, $rebalanced, $planTier),
+        );
     }
 
     /**
@@ -1456,74 +1456,13 @@ final class AdaptedMenuBuilder
         float $targetCalories,
         float $planTier,
     ): array {
-        $scaledRows = self::scaledIngredientRowsFromAdaptedGrams($meal, $adaptedGramsByIngredientId);
-        $adaptedCalories = (float) (RecipeNutritionCalculator::fromRows($scaledRows)['calories'] ?? 0);
-
-        if ($adaptedCalories <= $targetCalories + 0.5) {
-            return $adaptedGramsByIngredientId;
-        }
-
-        /** @var list<int> $fixedIngredientIds */
-        $fixedIngredientIds = [];
-
-        foreach ($meal->ingredients as $ingredient) {
-            if (
-                SavoryEggBreakfastMeals::isSavoryEggBreakfast($meal)
-                && EggIngredientPresentation::isEggIngredient($ingredient)
-            ) {
-                $fixedIngredientIds[] = $ingredient->id;
-
-                continue;
-            }
-
-            if ($planTier > 0 && SavoryEggBreakfastMeals::minimumSideGramsForPlanTier($ingredient, $planTier, $meal->name) !== null) {
-                $fixedIngredientIds[] = $ingredient->id;
-            }
-        }
-
-        $fixedCalories = 0.0;
-        $flexibleCalories = 0.0;
-
-        foreach ($meal->ingredients as $ingredient) {
-            $grams = (float) ($adaptedGramsByIngredientId[$ingredient->id] ?? 0);
-
-            if ($grams <= 0) {
-                continue;
-            }
-
-            $rowCalories = self::ingredientCaloriesForGrams($ingredient, $grams);
-
-            if (in_array($ingredient->id, $fixedIngredientIds, true)) {
-                $fixedCalories += $rowCalories;
-            } else {
-                $flexibleCalories += $rowCalories;
-            }
-        }
-
-        $flexibleBudget = max(0.0, $targetCalories - $fixedCalories);
-
-        if ($flexibleCalories <= 0 || $flexibleBudget <= 0) {
-            return $adaptedGramsByIngredientId;
-        }
-
-        $flexRatio = round($flexibleBudget / $flexibleCalories, 4);
-        $adjusted = $adaptedGramsByIngredientId;
-
-        foreach ($meal->ingredients as $ingredient) {
-            if (in_array($ingredient->id, $fixedIngredientIds, true)) {
-                continue;
-            }
-
-            $grams = (float) ($adaptedGramsByIngredientId[$ingredient->id] ?? 0);
-
-            if ($grams <= 0) {
-                continue;
-            }
-
-            $adjusted[$ingredient->id] = round($grams * $flexRatio, 4);
-        }
-
-        return $adjusted;
+        // Legacy entry point — cookability-first rebalancer owns breakfast calorie trim.
+        return CulinaryBreakfastRebalancer::rebalance(
+            $meal,
+            $adaptedGramsByIngredientId,
+            $targetCalories,
+            $planTier,
+        );
     }
 
     private static function ingredientCaloriesForGrams(Ingredient $ingredient, float $grams): float
@@ -1570,7 +1509,11 @@ final class AdaptedMenuBuilder
     private static function adaptedGramsForSavoryEggBreakfast(Meal $meal, float $planTier): array
     {
         $sideMultiplier = SavoryEggBreakfastMeals::sidePortionMultiplierForMeal($meal, $planTier);
-        $targetEggGrams = SavoryEggBreakfastMeals::eggGramsForPlanTier($planTier);
+        $targetEggFamilyGrams = SavoryEggBreakfastMeals::eggGramsForPlanTier($planTier);
+        $baselineEggFamilyGrams = SavoryEggBreakfastMeals::baselineEggFamilyGramsInMeal($meal);
+        $eggFamilyScale = $baselineEggFamilyGrams > 0
+            ? round($targetEggFamilyGrams / $baselineEggFamilyGrams, 4)
+            : 1.0;
         $gramsByIngredientId = [];
 
         foreach ($meal->ingredients as $ingredient) {
@@ -1586,8 +1529,16 @@ final class AdaptedMenuBuilder
                 continue;
             }
 
-            if (EggIngredientPresentation::isEggIngredient($ingredient)) {
-                $gramsByIngredientId[$ingredient->id] = $targetEggGrams;
+            if (EggIngredientPresentation::isEggFamilyIngredient($ingredient)) {
+                if ($baselineEggFamilyGrams > 0) {
+                    $gramsByIngredientId[$ingredient->id] = round($baselineGrams * $eggFamilyScale, 4);
+
+                    continue;
+                }
+
+                if (EggIngredientPresentation::isWholeEggIngredient($ingredient)) {
+                    $gramsByIngredientId[$ingredient->id] = $targetEggFamilyGrams;
+                }
 
                 continue;
             }
@@ -1601,7 +1552,7 @@ final class AdaptedMenuBuilder
             );
         }
 
-        return $gramsByIngredientId;
+        return CulinaryPortionConstraints::apply($meal, $gramsByIngredientId, $planTier);
     }
 
     /**

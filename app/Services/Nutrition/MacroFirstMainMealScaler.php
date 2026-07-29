@@ -6,6 +6,7 @@ use App\Enums\MealScalingRole as MealScalingRoleEnum;
 use App\Models\Ingredient;
 use App\Models\Meal;
 use App\Services\RecipeNutritionCalculator;
+use App\Support\CulinaryPortionConstraints;
 use App\Support\KitchenPortionRounding;
 use App\Support\MealScalingRole;
 use App\Support\StandardMeatPortion;
@@ -103,7 +104,9 @@ final class MacroFirstMainMealScaler
         );
         $grams = self::recoverCarbTargetAfterTrim($meal, $grams, $targetCarbs, $targetCalories, $baselineGrams);
         $grams = self::syncHerbSpiceToDishScale($meal, $grams, $baselineGrams);
+        $grams = CulinaryPortionConstraints::apply($meal, $grams);
         $grams = KitchenPortionRounding::snapAllGramsForMeal($meal, $grams);
+        $grams = CulinaryPortionConstraints::apply($meal, $grams);
 
         return [
             'grams' => $grams,
@@ -369,14 +372,20 @@ final class MacroFirstMainMealScaler
 
     /**
      * Primary meat must not be calorie-trimmed below the standard portion.
+     * Liver minced into a beef blend keeps its library grams so day protein trims
+     * cannot collapse the blend (e.g. 22 g → 5 g while beef stays floored).
      */
     private static function primaryMeatTrimFloorGrams(Meal $meal, Ingredient $ingredient): float
     {
-        if (! StandardMeatPortion::isPrimaryMeatIngredient($ingredient->name, $meal->name)) {
-            return 0.0;
+        if (StandardMeatPortion::isPrimaryMeatIngredient($ingredient->name, $meal->name)) {
+            return StandardMeatPortion::targetPrimaryBeefGrams($meal->ingredients, $meal->name);
         }
 
-        return StandardMeatPortion::targetPrimaryBeefGrams($meal->ingredients, $meal->name);
+        if (StandardMeatPortion::isLiverBlendIngredient($ingredient->name, $meal->name)) {
+            return round((float) ($ingredient->pivot->amount_grams ?? $ingredient->pivot->amount ?? 0), 4);
+        }
+
+        return 0.0;
     }
 
     /**
@@ -809,7 +818,7 @@ final class MacroFirstMainMealScaler
     private static function totalCalories(Meal $meal, array $grams): float
     {
         $rows = AdaptedMenuBuilder::scaledIngredientRowsFromAdaptedGramsPublic($meal, $grams);
-        $nutrition = RecipeNutritionCalculator::fromRows($rows);
+        $nutrition = RecipeNutritionCalculator::fromRows($rows, applyMealCookingYield: true);
 
         return (float) ($nutrition['calories'] ?? 0);
     }

@@ -19,6 +19,7 @@ test('liver blend ingredients are not primary unless the meal is a liver main', 
 test('liver blend meals target beef grams that sum to 150 g with liver', function () {
     expect(StandardMeatPortion::beefGramsForLiverBlendMeal(22.0))->toBe(128.0)
         ->and(StandardMeatPortion::beefGramsForLiverBlendMeal(20.0))->toBe(130.0)
+        ->and(StandardMeatPortion::beefGramsForLiverBlendMeal(37.5))->toBe(112.5)
         ->and(StandardMeatPortion::isLiverBlendIngredient('Beef Liver', 'Beef & Liver Kefta w Herb Salad & Tahini'))->toBeTrue();
 });
 
