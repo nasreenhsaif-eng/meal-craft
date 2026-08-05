@@ -8,6 +8,7 @@ use App\Services\MealRecipeAsIngredientSyncService;
 use App\Services\MenuDevelopmentCsvSync;
 use App\Services\RecipeNutritionCalculator;
 use App\Support\KitchenPortionRounding;
+use App\Support\PureCookingFatNutrition;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
@@ -72,8 +73,9 @@ class RoundMealIngredientPortionsCommand extends Command
                         continue;
                     }
 
+                    $plausible = PureCookingFatNutrition::applyVolumetricPlausibility($meal, $ingredient, $current);
                     $target = $overrides[$ingredient->name]
-                        ?? KitchenPortionRounding::snapGramsForIngredient($ingredient, $current);
+                        ?? KitchenPortionRounding::snapGramsForIngredient($ingredient, $plausible);
 
                     if (abs($current - $target) < 0.001) {
                         continue;

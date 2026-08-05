@@ -205,7 +205,14 @@ final class MacroFirstMainMealScaler
 
     private static function scaledCarbGrams(float $baseline, float $multiplier): float
     {
-        return round(max(0.0, $baseline * $multiplier), 4);
+        if ($baseline <= 0) {
+            return 0.0;
+        }
+
+        $scaled = round(max(0.0, $baseline * $multiplier), 4);
+        $kitchenFloor = (float) (self::config()['carb_kitchen_minimum_grams'] ?? 20.0);
+
+        return max(min($baseline, $kitchenFloor), $scaled);
     }
 
     /**
@@ -364,10 +371,17 @@ final class MacroFirstMainMealScaler
         }
 
         if ($role === MealScalingRoleEnum::Carb && $carbFloorRatio > 0) {
-            return round(max(0.0, (float) ($baselineGrams[$ingredient->id] ?? 0) * $carbFloorRatio), 4);
+            $baseline = (float) ($baselineGrams[$ingredient->id] ?? 0);
+            $ratioFloor = round(max(0.0, $baseline * $carbFloorRatio), 4);
+            $kitchenFloor = CulinaryPortionConstraints::kitchenPresentFloorGrams($ingredient, $baseline);
+
+            return max($ratioFloor, $kitchenFloor);
         }
 
-        return 0.0;
+        return CulinaryPortionConstraints::kitchenPresentFloorGrams(
+            $ingredient,
+            (float) ($baselineGrams[$ingredient->id] ?? 0),
+        );
     }
 
     /**
@@ -458,22 +472,34 @@ final class MacroFirstMainMealScaler
 
         $multiplier = max(0.0, $multiplier);
         $trimmed = $grams;
+        $libraryBaseline = AdaptedMenuBuilder::baselineGramsByIngredientId($meal);
+        $config = self::config();
+        $carbFloorRatio = (float) ($config['carb_day_surplus_floor_ratio'] ?? $config['carb_baseline_floor_ratio'] ?? 0.25);
 
         foreach ($meal->ingredients as $ingredient) {
             if (MealScalingRole::roleForIngredient($ingredient, $meal) !== MealScalingRoleEnum::Carb) {
                 continue;
             }
 
-            $baseline = (float) ($grams[$ingredient->id] ?? 0);
+            $current = (float) ($grams[$ingredient->id] ?? 0);
 
-            if ($baseline <= 0) {
+            if ($current <= 0) {
                 continue;
             }
 
-            $trimmed[$ingredient->id] = round($baseline * $multiplier, 4);
+            $baseline = (float) ($libraryBaseline[$ingredient->id] ?? $current);
+            $floor = self::trimFloorGramsForRole(
+                $meal,
+                $ingredient,
+                MealScalingRoleEnum::Carb,
+                $libraryBaseline,
+                $carbFloorRatio,
+            );
+
+            $trimmed[$ingredient->id] = round(max($floor, $current * $multiplier), 4);
         }
 
-        return self::syncHerbSpiceToDishScale($meal, $trimmed);
+        return self::syncHerbSpiceToDishScale($meal, $trimmed, $libraryBaseline);
     }
 
     /**
@@ -642,7 +668,9 @@ final class MacroFirstMainMealScaler
                 continue;
             }
 
-            $synced[$ingredient->id] = round($baseline * $flavor, 4);
+            $scaled = round($baseline * $flavor, 4);
+            $floor = CulinaryPortionConstraints::kitchenPresentFloorGrams($ingredient, $baseline);
+            $synced[$ingredient->id] = max($floor, $scaled);
         }
 
         return $synced;

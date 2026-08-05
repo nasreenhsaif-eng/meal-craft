@@ -6,9 +6,13 @@ use App\Enums\DietProtocol;
 use App\Enums\MealPlanSlotType;
 use App\Models\CustomerProfile;
 use App\Models\Meal;
+use App\Models\MealPlan;
 use App\Models\MealPlanDayMeal;
+use App\Services\MealPlanDefaultDaySelections;
 use App\Support\ChiaDessertMeals;
+use App\Support\NutrientDenseBreakfastOptions;
 use App\Support\NutrientDenseDessertMeals;
+use App\Support\PrimaryFullCraftMainSlots;
 use App\Support\SavoryEggBreakfastMeals;
 use Illuminate\Support\Collection;
 
@@ -91,30 +95,55 @@ final class FullCraftDayMenuBuilder
 
         ksort($carouselMainsBySlot);
 
-        /** @var list<Meal> $allMainMeals */
-        $allMainMeals = array_values($carouselMainsBySlot);
-
         $selectedMainMealIds = self::normalizeSelectedMainMealIds($adaptOptions['selected_main_meal_ids'] ?? null);
         $applySelection = $selectedMainMealIds !== [];
 
-        if (! $applySelection && $allMainMeals !== []) {
-            $selectedMainMealIds = array_slice(
-                array_map(static fn (Meal $meal): int => (int) $meal->id, $allMainMeals),
-                0,
-                2,
-            );
+        $mealPlan = self::mealPlanFromDayRows($dayRows);
+        $defaultMainIds = $mealPlan instanceof MealPlan
+            ? MealPlanDefaultDaySelections::mealIdsForCategory($mealPlan, $dayNumber, 'meals')
+            : [];
+
+        if (! $applySelection) {
+            $selectedMainMealIds = $defaultMainIds !== []
+                ? array_values(array_filter(
+                    $defaultMainIds,
+                    static fn (int $id): bool => self::carouselContainsMealId($carouselMainsBySlot, $id),
+                ))
+                : [];
+
+            if ($selectedMainMealIds === []) {
+                $selectedMainMealIds = self::defaultSelectedMainMealIdsFromCarousel($profile, $carouselMainsBySlot);
+            }
         }
 
         /** @var list<Meal> $selectedMealModels */
         $selectedMealModels = [];
 
-        foreach ($allMainMeals as $meal) {
+        foreach ($carouselMainsBySlot as $meal) {
             if (in_array((int) $meal->id, $selectedMainMealIds, true)) {
                 $selectedMealModels[] = $meal;
             }
         }
 
-        $primaryMainMeals = array_slice($allMainMeals, 0, 2);
+        $primaryMainMeals = self::primaryMainMealsFromCarousel($profile, $carouselMainsBySlot, $mealPlan, $dayNumber);
+
+        if (NutrientDenseBreakfastOptions::appliesTo($profile)) {
+            $dayMenu['breakfasts'] = self::buildNutrientDenseBreakfastDeck(
+                $profile,
+                $dayNumber,
+                $dayAdaptOptions,
+                $mealPlan,
+            );
+        } else {
+            $dayMenu['breakfasts'] = self::stampRecommendedFromPlanDefaults(
+                self::stampSlotMetadataOnAdaptedList($dayMenu['breakfasts'], 1, true),
+                $mealPlan,
+                $dayNumber,
+                'breakfasts',
+            );
+        }
+
+        $dayMenu = self::stampFixedSidesRecommendedFromPlanDefaults($dayMenu, $mealPlan, $dayNumber);
 
         return self::finalizeDayMenuWithMainReconciliation(
             $profile,
@@ -124,6 +153,8 @@ final class FullCraftDayMenuBuilder
             $primaryMainMeals,
             $dayAdaptOptions,
             $selectedMainMealIds,
+            $mealPlan,
+            $dayNumber,
         );
     }
 
@@ -161,8 +192,6 @@ final class FullCraftDayMenuBuilder
 
         /** @var array<int, Meal> $carouselMainsBySlot */
         $carouselMainsBySlot = [];
-        /** @var list<Meal> $primaryMainMeals */
-        $primaryMainMeals = [];
 
         foreach ($dayRows as $row) {
             if (! $row instanceof MealPlanDayMeal || ! $row->meal instanceof Meal) {
@@ -177,6 +206,18 @@ final class FullCraftDayMenuBuilder
                 continue;
             }
 
+            $slotIndex = (int) $row->slot_index;
+
+            if ($slotType === MealPlanSlotType::Main && in_array($slotIndex, [1, 2, 3, 4, 5, 6], true)) {
+                $carouselMainsBySlot[$slotIndex] = $row->meal;
+
+                continue;
+            }
+
+            if ($slotType === MealPlanSlotType::Breakfast && NutrientDenseBreakfastOptions::appliesTo($profile)) {
+                continue;
+            }
+
             $mealForAdaptation = self::resolveMealForProfile($row->meal, $slotType, $profile);
 
             $adapted = AdaptedMenuBuilder::adaptMealForProfile($profile, $mealForAdaptation, array_merge(
@@ -188,20 +229,12 @@ final class FullCraftDayMenuBuilder
                 continue;
             }
 
-            $slotIndex = (int) $row->slot_index;
-
             if ($slotType === MealPlanSlotType::Breakfast && $slotIndex === 1) {
                 if (ChiaDessertMeals::isChiaDessert($row->meal) || ! SavoryEggBreakfastMeals::isSavoryEggBreakfast($row->meal)) {
                     continue;
                 }
 
-                $dayMenu['breakfasts'][] = $adapted;
-            } elseif ($slotType === MealPlanSlotType::Main && in_array($slotIndex, [1, 2, 3, 4, 5, 6], true)) {
-                $carouselMainsBySlot[$slotIndex] = $row->meal;
-
-                if (in_array($slotIndex, [1, 3], true)) {
-                    $primaryMainMeals[] = $row->meal;
-                }
+                $dayMenu['breakfasts'][] = self::stampSlotMetadata($adapted, $slotIndex, true);
             } elseif ($slotType === MealPlanSlotType::Salad && in_array($slotIndex, [1, 2], true)) {
                 $dayMenu['sideSalads'][] = $adapted;
             } elseif ($slotType === MealPlanSlotType::Dessert && in_array($slotIndex, [1, 2], true)) {
@@ -211,7 +244,14 @@ final class FullCraftDayMenuBuilder
             }
         }
 
-        if ($dayMenu['breakfasts'] === []) {
+        if (NutrientDenseBreakfastOptions::appliesTo($profile)) {
+            $dayMenu['breakfasts'] = self::buildNutrientDenseBreakfastDeck(
+                $profile,
+                $dayNumber,
+                $dayAdaptOptions,
+                self::mealPlanFromDayRows($dayRows),
+            );
+        } elseif ($dayMenu['breakfasts'] === []) {
             $fallbackMeal = ProductionWeeklyMenuSchedule::resolveRotationBreakfastMeal($dayNumber, $profile);
 
             if ($fallbackMeal instanceof Meal) {
@@ -221,10 +261,19 @@ final class FullCraftDayMenuBuilder
                 ));
 
                 if ($adapted !== null) {
-                    $dayMenu['breakfasts'][] = $adapted;
+                    $dayMenu['breakfasts'][] = self::stampSlotMetadata($adapted, 1, true);
                 }
             }
         }
+
+        $mealPlan = self::mealPlanFromDayRows($dayRows);
+        $dayMenu = self::stampFixedSidesRecommendedFromPlanDefaults($dayMenu, $mealPlan, $dayNumber);
+        $dayMenu['breakfasts'] = self::stampRecommendedFromPlanDefaults(
+            $dayMenu['breakfasts'],
+            $mealPlan,
+            $dayNumber,
+            'breakfasts',
+        );
 
         if ($dayMenu['breakfasts'] === [] && $carouselMainsBySlot === []) {
             return null;
@@ -240,6 +289,9 @@ final class FullCraftDayMenuBuilder
         if ($carouselMainsBySlot === []) {
             return ['dayMenu' => $dayMenu, 'warnings' => []];
         }
+
+        ksort($carouselMainsBySlot);
+        $primaryMainMeals = self::primaryMainMealsFromCarousel($profile, $carouselMainsBySlot, $mealPlan, $dayNumber);
 
         $selectedMainMealIds = self::normalizeSelectedMainMealIds($adaptOptions['selected_main_meal_ids'] ?? null);
         $requestedDay = (int) ($adaptOptions['day_of_week'] ?? 0);
@@ -265,6 +317,8 @@ final class FullCraftDayMenuBuilder
             $primaryMainMeals,
             $dayAdaptOptions,
             $applySelectionToDay ? $selectedMainMealIds : [],
+            $mealPlan,
+            $dayNumber,
         );
     }
 
@@ -300,6 +354,8 @@ final class FullCraftDayMenuBuilder
         array $primaryMainMeals,
         array $dayAdaptOptions,
         array $selectedMainMealIds = [],
+        ?MealPlan $mealPlan = null,
+        int $dayNumber = 0,
     ): array {
         $mainAdaptOptions = array_merge($dayAdaptOptions, [
             'craft_key' => (string) ($dayAdaptOptions['craft_key'] ?? CraftCaloriePlanner::CRAFT_FULL),
@@ -339,11 +395,23 @@ final class FullCraftDayMenuBuilder
 
         $dayMenu['meals'] = [];
 
-        foreach ($carouselMainsBySlot as $meal) {
+        foreach ($carouselMainsBySlot as $slotIndex => $meal) {
             $adapted = $adaptedById[$meal->id] ?? null;
 
             if (is_array($adapted)) {
-                $dayMenu['meals'][] = $adapted;
+                $isRecommended = self::isMainMealRecommended(
+                    $profile,
+                    $mealPlan,
+                    $dayNumber,
+                    (int) $meal->id,
+                    (int) $slotIndex,
+                );
+
+                $dayMenu['meals'][] = self::stampSlotMetadata(
+                    $adapted,
+                    (int) $slotIndex,
+                    $isRecommended,
+                );
             }
         }
 
@@ -351,6 +419,31 @@ final class FullCraftDayMenuBuilder
 
         if ($selectedMainMealIds !== []) {
             $mainAdaptOptions['selected_main_meal_ids'] = $selectedMainMealIds;
+        }
+
+        $breakfastIds = self::normalizeSelectedMainMealIds($mainAdaptOptions['selected_breakfast_meal_ids'] ?? null);
+
+        if ($breakfastIds === [] && count($dayMenu['breakfasts'] ?? []) > 1) {
+            $recommendedId = null;
+
+            foreach ($dayMenu['breakfasts'] as $breakfast) {
+                if (! is_array($breakfast)) {
+                    continue;
+                }
+
+                if (! empty($breakfast['is_recommended'])) {
+                    $recommendedId = (int) ($breakfast['id'] ?? 0);
+                    break;
+                }
+            }
+
+            if ($recommendedId === null || $recommendedId <= 0) {
+                $recommendedId = (int) (($dayMenu['breakfasts'][0]['id'] ?? 0));
+            }
+
+            if ($recommendedId > 0) {
+                $mainAdaptOptions['selected_breakfast_meal_ids'] = [$recommendedId];
+            }
         }
 
         $reconciled = DayMacroReconciliation::reconcile(
@@ -415,6 +508,34 @@ final class FullCraftDayMenuBuilder
      */
     public static function defaultDaySelectionForRows(CustomerProfile $profile, Collection $dayRows): array
     {
+        $mealPlan = self::mealPlanFromDayRows($dayRows);
+        $dayNumber = 1;
+
+        foreach ($dayRows as $row) {
+            if ($row instanceof MealPlanDayMeal) {
+                $dayNumber = max($dayNumber, (int) $row->day_number);
+            }
+        }
+
+        if ($mealPlan instanceof MealPlan) {
+            $stored = MealPlanDefaultDaySelections::forDay($mealPlan, $dayNumber);
+
+            if ($stored !== null) {
+                return $stored;
+            }
+        }
+
+        return self::conventionDaySelectionForRows($profile, $dayRows);
+    }
+
+    /**
+     * Protocol convention defaults (ignores admin-saved picks).
+     *
+     * @param  Collection<int, MealPlanDayMeal>  $dayRows
+     * @return array<string, list<int>>
+     */
+    public static function conventionDaySelectionForRows(CustomerProfile $profile, Collection $dayRows): array
+    {
         /** @var array<string, list<int>> $selection */
         $selection = [
             'breakfasts' => [],
@@ -424,10 +545,16 @@ final class FullCraftDayMenuBuilder
             'soup' => [],
         ];
 
+        /** @var array<int, int> $mainIdsBySlot */
+        $mainIdsBySlot = [];
+        $dayNumber = 1;
+
         foreach ($dayRows as $row) {
             if (! $row instanceof MealPlanDayMeal || ! $row->meal instanceof Meal) {
                 continue;
             }
+
+            $dayNumber = max($dayNumber, (int) $row->day_number);
 
             $slotType = $row->slot_type instanceof MealPlanSlotType
                 ? $row->slot_type
@@ -444,12 +571,7 @@ final class FullCraftDayMenuBuilder
             }
 
             match ($slotType) {
-                MealPlanSlotType::Breakfast => count($selection['breakfasts']) < 1
-                    ? $selection['breakfasts'][] = $mealId
-                    : null,
-                MealPlanSlotType::Main => count($selection['meals']) < 2
-                    ? $selection['meals'][] = $mealId
-                    : null,
+                MealPlanSlotType::Main => $mainIdsBySlot[(int) $row->slot_index] = $mealId,
                 MealPlanSlotType::Salad => count($selection['sideSalads']) < 1
                     ? $selection['sideSalads'][] = $mealId
                     : null,
@@ -460,7 +582,172 @@ final class FullCraftDayMenuBuilder
             };
         }
 
+        if (NutrientDenseBreakfastOptions::appliesTo($profile)) {
+            $omelette = NutrientDenseBreakfastOptions::resolveOmeletteMeal($profile);
+
+            if ($omelette instanceof Meal) {
+                $selection['breakfasts'][] = (int) $omelette->id;
+            }
+        } else {
+            foreach ($dayRows as $row) {
+                if (! $row instanceof MealPlanDayMeal || ! $row->meal instanceof Meal) {
+                    continue;
+                }
+
+                $slotType = $row->slot_type instanceof MealPlanSlotType
+                    ? $row->slot_type
+                    : MealPlanSlotType::tryFrom((string) $row->slot_type);
+
+                if ($slotType === MealPlanSlotType::Breakfast && count($selection['breakfasts']) < 1) {
+                    $selection['breakfasts'][] = (int) $row->meal_id;
+                    break;
+                }
+            }
+        }
+
+        foreach (PrimaryFullCraftMainSlots::forProfile($profile) as $slotIndex) {
+            if (isset($mainIdsBySlot[$slotIndex]) && count($selection['meals']) < 2) {
+                $selection['meals'][] = $mainIdsBySlot[$slotIndex];
+            }
+        }
+
+        if ($selection['meals'] === [] && $mainIdsBySlot !== []) {
+            ksort($mainIdsBySlot);
+            $selection['meals'] = array_slice(array_values($mainIdsBySlot), 0, 2);
+        }
+
         return $selection;
+    }
+
+    /**
+     * @param  array<int, Meal>  $carouselMainsBySlot
+     * @return list<int>
+     */
+    private static function defaultSelectedMainMealIdsFromCarousel(CustomerProfile $profile, array $carouselMainsBySlot): array
+    {
+        $ids = [];
+
+        foreach (PrimaryFullCraftMainSlots::forProfile($profile) as $slotIndex) {
+            if (isset($carouselMainsBySlot[$slotIndex])) {
+                $ids[] = (int) $carouselMainsBySlot[$slotIndex]->id;
+            }
+        }
+
+        if ($ids !== []) {
+            return $ids;
+        }
+
+        ksort($carouselMainsBySlot);
+
+        return array_slice(
+            array_map(static fn (Meal $meal): int => (int) $meal->id, array_values($carouselMainsBySlot)),
+            0,
+            2,
+        );
+    }
+
+    /**
+     * @param  array<int, Meal>  $carouselMainsBySlot
+     * @return list<Meal>
+     */
+    private static function primaryMainMealsFromCarousel(
+        CustomerProfile $profile,
+        array $carouselMainsBySlot,
+        ?MealPlan $mealPlan = null,
+        int $dayNumber = 0,
+    ): array {
+        if ($mealPlan instanceof MealPlan && $dayNumber > 0) {
+            $defaultIds = MealPlanDefaultDaySelections::mealIdsForCategory($mealPlan, $dayNumber, 'meals');
+            $meals = [];
+
+            foreach ($defaultIds as $mealId) {
+                foreach ($carouselMainsBySlot as $meal) {
+                    if ((int) $meal->id === $mealId) {
+                        $meals[] = $meal;
+                        break;
+                    }
+                }
+            }
+
+            if ($meals !== []) {
+                return array_slice($meals, 0, 2);
+            }
+        }
+
+        $meals = [];
+
+        foreach (PrimaryFullCraftMainSlots::forProfile($profile) as $slotIndex) {
+            if (isset($carouselMainsBySlot[$slotIndex])) {
+                $meals[] = $carouselMainsBySlot[$slotIndex];
+            }
+        }
+
+        if ($meals !== []) {
+            return $meals;
+        }
+
+        ksort($carouselMainsBySlot);
+
+        return array_slice(array_values($carouselMainsBySlot), 0, 2);
+    }
+
+    /**
+     * @param  array<string, mixed>  $dayAdaptOptions
+     * @return list<array<string, mixed>>
+     */
+    private static function buildNutrientDenseBreakfastDeck(
+        CustomerProfile $profile,
+        int $dayNumber,
+        array $dayAdaptOptions,
+        ?MealPlan $mealPlan = null,
+    ): array {
+        $deck = [];
+        $recommendedIds = $mealPlan instanceof MealPlan
+            ? MealPlanDefaultDaySelections::mealIdsForCategory($mealPlan, $dayNumber, 'breakfasts')
+            : [];
+
+        foreach (NutrientDenseBreakfastOptions::optionMealsForDay($dayNumber, $profile, $recommendedIds) as $option) {
+            $adapted = AdaptedMenuBuilder::adaptMealForProfile($profile, $option['meal'], array_merge(
+                $dayAdaptOptions,
+                ['schedule_slot' => AdaptedMenuBuilder::adaptationSlotForMealPlanSlot(MealPlanSlotType::Breakfast)],
+            ));
+
+            if ($adapted === null) {
+                continue;
+            }
+
+            $deck[] = self::stampSlotMetadata(
+                $adapted,
+                $option['plan_slot_index'],
+                $option['is_recommended'],
+            );
+        }
+
+        return $deck;
+    }
+
+    /**
+     * @param  array<string, mixed>  $adapted
+     * @return array<string, mixed>
+     */
+    private static function stampSlotMetadata(array $adapted, int $planSlotIndex, bool $isRecommended): array
+    {
+        $adapted['plan_slot_index'] = $planSlotIndex;
+        $adapted['is_recommended'] = $isRecommended;
+
+        return $adapted;
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $adaptedList
+     * @return list<array<string, mixed>>
+     */
+    private static function stampSlotMetadataOnAdaptedList(array $adaptedList, int $planSlotIndex, bool $isRecommended): array
+    {
+        return array_map(
+            static fn (array $adapted): array => self::stampSlotMetadata($adapted, $planSlotIndex, $isRecommended),
+            $adaptedList,
+        );
     }
 
     private static function resolveMealForProfile(Meal $meal, MealPlanSlotType $slotType, CustomerProfile $profile): Meal
@@ -511,5 +798,140 @@ final class FullCraftDayMenuBuilder
         }
 
         return array_values(array_unique($ids));
+    }
+
+    /**
+     * @param  Collection<int, MealPlanDayMeal>  $dayRows
+     */
+    private static function mealPlanFromDayRows(Collection $dayRows): ?MealPlan
+    {
+        $first = $dayRows->first(static fn (mixed $row): bool => $row instanceof MealPlanDayMeal);
+
+        if (! $first instanceof MealPlanDayMeal) {
+            return null;
+        }
+
+        $first->loadMissing('mealPlan');
+
+        return $first->mealPlan instanceof MealPlan ? $first->mealPlan : null;
+    }
+
+    /**
+     * @param  array<int, Meal>  $carouselMainsBySlot
+     */
+    private static function carouselContainsMealId(array $carouselMainsBySlot, int $mealId): bool
+    {
+        foreach ($carouselMainsBySlot as $meal) {
+            if ((int) $meal->id === $mealId) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static function isMainMealRecommended(
+        CustomerProfile $profile,
+        ?MealPlan $mealPlan,
+        int $dayNumber,
+        int $mealId,
+        int $slotIndex,
+    ): bool {
+        if ($mealPlan instanceof MealPlan && $dayNumber > 0) {
+            $flag = MealPlanDefaultDaySelections::isRecommendedMealId($mealPlan, $dayNumber, 'meals', $mealId);
+
+            if ($flag !== null) {
+                return $flag;
+            }
+        }
+
+        return PrimaryFullCraftMainSlots::isPrimarySlot($slotIndex, $profile);
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $adaptedList
+     * @return list<array<string, mixed>>
+     */
+    private static function stampRecommendedFromPlanDefaults(
+        array $adaptedList,
+        ?MealPlan $mealPlan,
+        int $dayNumber,
+        string $categoryKey,
+    ): array {
+        if (! $mealPlan instanceof MealPlan || $dayNumber < 1) {
+            return $adaptedList;
+        }
+
+        $dayDefaults = MealPlanDefaultDaySelections::forDay($mealPlan, $dayNumber);
+
+        if ($dayDefaults === null) {
+            return $adaptedList;
+        }
+
+        $recommendedIds = $dayDefaults[$categoryKey] ?? [];
+
+        return array_map(static function (array $adapted) use ($recommendedIds): array {
+            $mealId = (int) ($adapted['id'] ?? 0);
+            $adapted['is_recommended'] = $mealId > 0 && in_array($mealId, $recommendedIds, true);
+
+            return $adapted;
+        }, $adaptedList);
+    }
+
+    /**
+     * @param  array{
+     *     breakfasts?: list<array<string, mixed>>,
+     *     meals?: list<array<string, mixed>>,
+     *     sideSalads?: list<array<string, mixed>>,
+     *     desserts?: list<array<string, mixed>>,
+     *     soup?: list<array<string, mixed>>
+     * }  $dayMenu
+     * @return array{
+     *     breakfasts?: list<array<string, mixed>>,
+     *     meals?: list<array<string, mixed>>,
+     *     sideSalads?: list<array<string, mixed>>,
+     *     desserts?: list<array<string, mixed>>,
+     *     soup?: list<array<string, mixed>>
+     * }
+     */
+    private static function stampFixedSidesRecommendedFromPlanDefaults(
+        array $dayMenu,
+        ?MealPlan $mealPlan,
+        int $dayNumber,
+    ): array {
+        foreach (['sideSalads', 'desserts', 'soup'] as $categoryKey) {
+            $bucket = $dayMenu[$categoryKey] ?? [];
+
+            if (! is_array($bucket) || $bucket === []) {
+                continue;
+            }
+
+            if ($mealPlan instanceof MealPlan && MealPlanDefaultDaySelections::forDay($mealPlan, $dayNumber) !== null) {
+                $dayMenu[$categoryKey] = self::stampRecommendedFromPlanDefaults(
+                    $bucket,
+                    $mealPlan,
+                    $dayNumber,
+                    $categoryKey,
+                );
+
+                continue;
+            }
+
+            // Convention: first salad + first dessert recommended when no admin defaults.
+            $dayMenu[$categoryKey] = array_map(
+                static function (array $adapted, int $index) use ($categoryKey): array {
+                    $adapted['is_recommended'] = match ($categoryKey) {
+                        'sideSalads', 'desserts' => $index === 0,
+                        default => false,
+                    };
+
+                    return $adapted;
+                },
+                $bucket,
+                array_keys($bucket),
+            );
+        }
+
+        return $dayMenu;
     }
 }

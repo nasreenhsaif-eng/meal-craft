@@ -104,6 +104,8 @@ return [
         // Day surplus may trim starch further toward this ratio of library baseline
         // so mains can absorb fixed-pick overshoot without cutting fat/veg.
         'carb_day_surplus_floor_ratio' => 0.25,
+        // Absolute cookable floor for starch lines — never wipe rice/quinoa to 0 g.
+        'carb_kitchen_minimum_grams' => 20.0,
     ],
 
     /*

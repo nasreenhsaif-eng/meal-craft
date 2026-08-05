@@ -438,3 +438,90 @@ test('day macro reconciliation trims calorie surplus when carbs and fat are alre
             ),
         )->toBeTrue();
 });
+
+test('day macro reconciliation preserves recommended slot metadata on merged mains', function (): void {
+    $user = User::factory()->create();
+    $profile = CustomerProfile::factory()->for($user)->create([
+        'daily_calorie_target' => 1500,
+        'protein_percentage' => 32,
+        'carb_percentage' => 28,
+        'fat_percentage' => 40,
+    ]);
+
+    $protein = Ingredient::factory()->create([
+        'name' => 'Chicken Breast',
+        'calories' => 165,
+        'protein' => 31,
+        'carbs' => 0,
+        'fat' => 3.6,
+        'usda_food_category' => 'Proteins',
+    ]);
+    $starch = Ingredient::factory()->create([
+        'name' => 'Cooked Quinoa',
+        'calories' => 120,
+        'protein' => 4,
+        'carbs' => 21,
+        'fat' => 2,
+        'usda_food_category' => 'Grains',
+    ]);
+
+    $breakfast = Meal::factory()->create([
+        'name' => 'Egg Breakfast',
+        'meal_type' => MealType::Breakfast,
+        'category' => RecipeCategory::Breakfast,
+    ]);
+    $breakfast->ingredients()->attach($protein->id, ['amount_grams' => 150]);
+
+    $mainA = Meal::factory()->create([
+        'name' => 'Primary Main A',
+        'meal_type' => MealType::Main,
+        'category' => RecipeCategory::Meal,
+    ]);
+    $mainA->ingredients()->attach([
+        $protein->id => ['amount_grams' => 180],
+        $starch->id => ['amount_grams' => 120],
+    ]);
+
+    $mainB = Meal::factory()->create([
+        'name' => 'Primary Main B',
+        'meal_type' => MealType::Main,
+        'category' => RecipeCategory::Meal,
+    ]);
+    $mainB->ingredients()->attach([
+        $protein->id => ['amount_grams' => 180],
+        $starch->id => ['amount_grams' => 120],
+    ]);
+
+    $options = [
+        'craft_key' => CraftCaloriePlanner::CRAFT_FULL,
+        'plan_tier' => 1500.0,
+    ];
+
+    $adaptedA = AdaptedMenuBuilder::adaptMealForProfile($profile, $mainA, $options);
+    $adaptedB = AdaptedMenuBuilder::adaptMealForProfile($profile, $mainB, $options);
+    expect($adaptedA)->not->toBeNull()->and($adaptedB)->not->toBeNull();
+
+    $adaptedA['plan_slot_index'] = 1;
+    $adaptedA['is_recommended'] = true;
+    $adaptedB['plan_slot_index'] = 5;
+    $adaptedB['is_recommended'] = true;
+
+    $breakfastAdapted = AdaptedMenuBuilder::adaptMealForProfile($profile, $breakfast, $options);
+    expect($breakfastAdapted)->not->toBeNull();
+
+    $dayMenu = [
+        'breakfasts' => [$breakfastAdapted],
+        'meals' => [$adaptedA, $adaptedB],
+        'sideSalads' => [],
+        'desserts' => [],
+        'soup' => [],
+    ];
+
+    $reconciled = DayMacroReconciliation::reconcile($profile, $dayMenu, [$mainA, $mainB], $options);
+    $byId = collect($reconciled['dayMenu']['meals'])->keyBy(fn (array $row): int => (int) ($row['id'] ?? 0));
+
+    expect($byId->get($mainA->id)['is_recommended'] ?? null)->toBeTrue()
+        ->and($byId->get($mainA->id)['plan_slot_index'] ?? null)->toBe(1)
+        ->and($byId->get($mainB->id)['is_recommended'] ?? null)->toBeTrue()
+        ->and($byId->get($mainB->id)['plan_slot_index'] ?? null)->toBe(5);
+});

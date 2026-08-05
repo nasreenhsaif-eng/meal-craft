@@ -74,7 +74,8 @@ final class CulinaryBreakfastRebalancer
                 break;
             }
 
-            $floor = CulinaryPortionConstraints::minimumGrams($meal, $ingredient, $planTier) ?? 0.0;
+            $floor = CulinaryPortionConstraints::minimumGrams($meal, $ingredient, $planTier)
+                ?? CulinaryPortionConstraints::kitchenPresentFloorGrams($ingredient, $current);
             $step = KitchenPortionRounding::isWoodyFreshHerb($ingredient)
                 || KitchenPortionRounding::isFineMeasureSpice($ingredient)
                 ? 0.5
@@ -110,7 +111,8 @@ final class CulinaryBreakfastRebalancer
                 continue;
             }
 
-            $floor = CulinaryPortionConstraints::minimumGrams($meal, $ingredient, $planTier) ?? 0.0;
+            $floor = CulinaryPortionConstraints::minimumGrams($meal, $ingredient, $planTier)
+                ?? CulinaryPortionConstraints::kitchenPresentFloorGrams($ingredient, $current);
 
             if ($current <= $floor + 0.05) {
                 continue;

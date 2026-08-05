@@ -4,6 +4,9 @@ import PillButton from '../Atoms/Button/Button.jsx';
 import SquareCheckbox from '../Atoms/Icons/SquareCheckbox.jsx';
 import StackedDeckCarousel from '../MealCard/StackedDeckCarousel.jsx';
 import MealCardClientViewNano from '../MealCardClientViewNano.jsx';
+import ProtocolMealSlotCard from './ProtocolMealSlotCard.jsx';
+import ProtocolMealOptionsScreen from './ProtocolMealOptionsScreen.jsx';
+import ProtocolFixedChoiceSides from './ProtocolFixedChoiceSides.jsx';
 import {
     FIXED_CHOICE_CATEGORY_KEYS,
     FIXED_CHOICE_MAX_COUNT,
@@ -1717,11 +1720,17 @@ export default function ChooseYourMeals({
     const craftingSubtitle = `CRAFTING YOUR ${String(dayName).trim().toUpperCase()}`;
     /** Daily option decks stay interactive whenever the parent wires selection (hides CRAFT THIS MEAL only in true read-only review). */
     const categoryPickEnabled = typeof onToggleCategory === 'function' && !categoriesReadOnly;
+    const useProtocolSelectedLayout = dietProtocol === 'nutrient_dense' && layout === 'categories';
 
     const [validationFlashKeys, setValidationFlashKeys] = useState(/** @type {(SelectionCategoryKey | 'fixedChoice')[]} */ ([]));
     const [incompleteWarning, setIncompleteWarning] = useState(/** @type {string | null} */ (null));
+    const [optionsSlotKey, setOptionsSlotKey] = useState(/** @type {SelectionCategoryKey | null} */ (null));
 
     const scrollContainerRef = useRef(/** @type {HTMLDivElement | null} */ (null));
+
+    useEffect(() => {
+        setOptionsSlotKey(null);
+    }, [dayName, deckScopePrefix]);
 
     const categoryMaxForDisplay = useMemo(
         () => resolveCategoryMaxSelections(maxSelectionsByCategory),
@@ -1936,7 +1945,8 @@ export default function ChooseYourMeals({
         });
 
         return coreSections.map((def, idx) => {
-            const isAutoAssigned = AUTO_ASSIGNED_SELECTION_KEYS.includes(def.selectionKey);
+            const isAutoAssigned =
+                !useProtocolSelectedLayout && AUTO_ASSIGNED_SELECTION_KEYS.includes(def.selectionKey);
             const cardsFromDecks = weeklyDisplayDecks?.[def.selectionKey] ?? [];
             const cards =
                 isAutoAssigned && isMenuPending && cardsFromDecks.length === 0 ? [] : cardsFromDecks;
@@ -1951,6 +1961,33 @@ export default function ChooseYourMeals({
             const flash = validationFlashKeys.includes(def.selectionKey);
             const mealTitle =
                 def.selectionKey === 'meals' && max === 1 ? 'Choose Your Meal of the Day' : def.header;
+
+            if (useProtocolSelectedLayout) {
+                const selectedSet = new Set(selectedIds);
+                const selectedMeals = cards.filter((meal) =>
+                    selectedSet.has(normalizeConsultationMealId(meal?.id)),
+                );
+                const slotTitle =
+                    def.selectionKey === 'meals'
+                        ? 'Main Meals'
+                        : def.selectionKey === 'breakfasts'
+                          ? 'Breakfast'
+                          : mealTitle;
+
+                return (
+                    <ProtocolMealSlotCard
+                        key={def.selectionKey}
+                        title={slotTitle}
+                        selectedMeals={selectedMeals}
+                        multiSelect={max > 1}
+                        onSeeOtherOptions={
+                            categoryPickEnabled ? () => setOptionsSlotKey(def.selectionKey) : undefined
+                        }
+                        onViewDetails={onViewDetails}
+                        className={flash ? 'ring-2 ring-red-300' : ''}
+                    />
+                );
+            }
 
             return (
                 <MealSlotCarousel
@@ -1985,9 +2022,30 @@ export default function ChooseYourMeals({
         onViewDetails,
         isMenuPending,
         weeklyDisplayDecks,
+        useProtocolSelectedLayout,
     ]);
 
+    const protocolFixedChoiceBlock =
+        useProtocolSelectedLayout &&
+        layout === 'categories' &&
+        categorySelections &&
+        (categoryPickEnabled || categoriesReadOnly) ? (
+            <ProtocolFixedChoiceSides
+                categorySelections={categorySelections}
+                displayDecks={weeklyDisplayDecks ?? {}}
+                readOnly={!categoryPickEnabled}
+                validationFlash={validationFlashKeys.includes('fixedChoice')}
+                onSelectMeal={categoryPickEnabled ? onToggleCategory : undefined}
+                onClearCategory={categoryPickEnabled ? onClearFixedChoiceCategory : undefined}
+                onSeeOtherOptions={
+                    categoryPickEnabled ? (key) => setOptionsSlotKey(key) : undefined
+                }
+                onViewDetails={onViewDetails}
+            />
+        ) : null;
+
     const fixedChoiceBlock =
+        !useProtocolSelectedLayout &&
         layout === 'categories' &&
         categorySelections &&
         (categoryPickEnabled || categoriesReadOnly) ? (
@@ -2016,10 +2074,58 @@ export default function ChooseYourMeals({
         meals?.length &&
         typeof onSelectMeal === 'function';
 
+    const optionsSectionDef = useMemo(() => {
+        if (!optionsSlotKey) {
+            return null;
+        }
+
+        return (
+            FULL_CRAFT_CATEGORY_SECTIONS.find((section) => section.selectionKey === optionsSlotKey) ??
+            FIXED_CHOICE_SECTIONS.find((section) => section.selectionKey === optionsSlotKey) ??
+            null
+        );
+    }, [optionsSlotKey]);
+
+    const optionsScreen =
+        useProtocolSelectedLayout && optionsSlotKey && optionsSectionDef && categorySelections ? (
+            <ProtocolMealOptionsScreen
+                dayLabel={dayName}
+                sectionTitle={
+                    optionsSlotKey === 'meals'
+                        ? 'Main Meals'
+                        : optionsSlotKey === 'breakfasts'
+                          ? 'Breakfast'
+                          : optionsSectionDef.header
+                }
+                options={weeklyDisplayDecks?.[optionsSlotKey] ?? []}
+                selectedIds={(categorySelections[optionsSlotKey] ?? []).map((id) =>
+                    normalizeConsultationMealId(id),
+                )}
+                maxSelected={
+                    FIXED_CHOICE_CATEGORY_KEYS.includes(optionsSlotKey)
+                        ? 1
+                        : maxSelectionsByCategory?.[optionsSlotKey] !== undefined
+                          ? /** @type {number} */ (maxSelectionsByCategory[optionsSlotKey])
+                          : (optionsSectionDef.defaultMax ?? 1)
+                }
+                onToggle={(meal) => {
+                    if (!categoryPickEnabled) {
+                        return;
+                    }
+
+                    onToggleCategory?.(optionsSlotKey, meal);
+                }}
+                onViewDetails={onViewDetails}
+                onBack={() => setOptionsSlotKey(null)}
+                onConfirm={() => setOptionsSlotKey(null)}
+            />
+        ) : null;
+
     const mainScrollable =
         layout === 'categories' ? (
-            <div className="flex flex-col gap-1.5 md:gap-2">
+            <div className={`flex flex-col ${useProtocolSelectedLayout ? 'gap-4 px-4 md:px-0' : 'gap-1.5 md:gap-2'}`}>
                 {categorySections}
+                {protocolFixedChoiceBlock}
                 {fixedChoiceBlock}
             </div>
         ) : children ? (
@@ -2078,6 +2184,10 @@ export default function ChooseYourMeals({
         <section
             className={`box-border flex w-full flex-col overflow-x-clip border border-gray-200 bg-white shadow-sm max-md:rounded-none max-md:border-x-0 max-md:shadow-none md:rounded-[12px] ${panelClassName}`.trim()}
         >
+            {optionsScreen ? (
+                optionsScreen
+            ) : (
+                <>
             <div className="shrink-0 border-b border-gray-200 px-4 py-3 text-left max-md:px-4 sm:px-5 sm:py-4 md:p-6">
                 <div className="min-w-0 space-y-1 sm:space-y-1.5">
                     <p className="font-montserrat text-[15px] font-bold leading-snug tracking-tight text-[#262A22] sm:text-[16px]">
@@ -2183,6 +2293,8 @@ export default function ChooseYourMeals({
                     <div className="relative z-[70] shrink-0 border-t border-gray-200/80 bg-white">{navigation}</div>
                 ) : null}
             </div>
+                </>
+            )}
         </section>
     );
 }

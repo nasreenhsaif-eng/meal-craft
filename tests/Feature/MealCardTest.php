@@ -31,8 +31,8 @@ test('fromMeal computes macros from pivot grams', function () {
     $ing = makeIngredientForMealCard([
         'calories' => 100,
         'protein' => 10,
-        'carbs' => 5,
-        'fat' => 2,
+        'carbs' => 10,
+        'fat' => 20 / 9, // Atwater-matched: 40 + 40 + 20 = 100
     ]);
     $meal = Meal::query()->create([
         'name' => 'Lunch',
@@ -45,8 +45,8 @@ test('fromMeal computes macros from pivot grams', function () {
 
     expect((float) $nut['calories'])->toBe(100.0)
         ->and((float) $nut['protein'])->toBe(10.0)
-        ->and((float) $nut['carbs'])->toBe(5.0)
-        ->and((float) $nut['fat'])->toBe(2.0);
+        ->and((float) $nut['carbs'])->toBe(10.0)
+        ->and((float) $nut['fat'])->toBe(2.2);
 
     expect((float) $meal->fresh()->load('ingredients')->nutritionForDisplay()['calories'])->toBe(100.0);
 });

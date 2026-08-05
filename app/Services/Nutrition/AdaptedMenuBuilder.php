@@ -10,7 +10,6 @@ use App\Models\CustomerProfile;
 use App\Models\Ingredient;
 use App\Models\Meal;
 use App\Services\BalancedChiaDessertRecipeRefiner;
-use App\Services\RecipeIngredientUnitConverter;
 use App\Services\RecipeNutritionCalculator;
 use App\Support\ChiaDessertMeals;
 use App\Support\CulinaryBreakfastRebalancer;
@@ -18,6 +17,7 @@ use App\Support\CulinaryPortionConstraints;
 use App\Support\EggIngredientPresentation;
 use App\Support\KitchenPortionRounding;
 use App\Support\MealPlanSlotBasedDayNutrition;
+use App\Support\PureCookingFatNutrition;
 use App\Support\SavoryEggBreakfastMeals;
 
 /**
@@ -1655,6 +1655,15 @@ final class AdaptedMenuBuilder
                 $ingredient,
                 (float) ($adaptedGramsByIngredientId[$ingredient->id] ?? $baselineGrams),
             );
+
+            // Never serialize a present library ingredient as 0 g — kitchen cannot apply that.
+            if ($adaptedGrams <= 0 && $baselineGrams > 0) {
+                $adaptedGrams = KitchenPortionRounding::snapGramsForIngredient(
+                    $ingredient,
+                    CulinaryPortionConstraints::kitchenPresentFloorGrams($ingredient, $baselineGrams),
+                );
+            }
+
             $adaptedGrams = round($adaptedGrams, 2);
 
             $per100 = RecipeNutritionCalculator::per100gNutritionForIngredient($ingredient);
@@ -1785,6 +1794,14 @@ final class AdaptedMenuBuilder
         $baseRow['isVegan'] = (bool) ($adapted['is_vegan'] ?? false);
         $baseRow['slot'] = (string) ($adapted['slot'] ?? '');
 
+        if (array_key_exists('plan_slot_index', $adapted)) {
+            $baseRow['plan_slot_index'] = (int) $adapted['plan_slot_index'];
+        }
+
+        if (array_key_exists('is_recommended', $adapted)) {
+            $baseRow['isRecommended'] = (bool) $adapted['is_recommended'];
+        }
+
         if (isset($baseRow['detailView']) && is_array($baseRow['detailView'])) {
             $detailView = $baseRow['detailView'];
             $detailView['macros'] = $macros;
@@ -1845,11 +1862,11 @@ final class AdaptedMenuBuilder
         $hasDisplayAmount = $pivotAmount !== null && $pivotAmount !== '' && (float) $pivotAmount > 0;
 
         if ($hasDisplayAmount && is_string($unitRaw) && $unitRaw !== '') {
-            return RecipeIngredientUnitConverter::toGrams(
-                max(0.0, (float) $pivotAmount),
-                (string) $unitRaw,
-                (float) ($ingredient->density ?? 1.0),
-            );
+            return PureCookingFatNutrition::resolvedGramsForRow([
+                'amount' => (float) $pivotAmount,
+                'unit' => (string) $unitRaw,
+                'amount_grams' => $amountGrams,
+            ], $ingredient);
         }
 
         return max(0.0, $amountGrams);

@@ -55,10 +55,14 @@ final class LiquidIngredientPresentation
             return 0.0;
         }
 
+        if (PureCookingFatNutrition::isPureCookingFat($ingredient)) {
+            return PureCookingFatNutrition::millilitersFromGrams($ingredient, $grams);
+        }
+
         $density = (float) ($ingredient->density ?? 0);
 
         if ($density <= 0) {
-            $density = preg_match('/\bOil\b/i', $ingredient->name) ? 0.92 : 1.0;
+            $density = preg_match('/\bOil\b/i', $ingredient->name) ? PureCookingFatNutrition::OIL_DENSITY_G_PER_ML : 1.0;
         }
 
         return $grams / $density;
@@ -84,7 +88,7 @@ final class LiquidIngredientPresentation
             $grams = RecipeIngredientUnitConverter::toGrams(
                 $amount,
                 $enum,
-                (float) ($ingredient->density ?? 0) > 0 ? (float) $ingredient->density : 1.0,
+                PureCookingFatNutrition::densityGramsPerMl($ingredient),
             );
 
             return self::millilitersFromGrams($grams, $ingredient);

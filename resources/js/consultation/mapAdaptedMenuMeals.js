@@ -110,6 +110,13 @@ export function mapAdaptedApiMealToConsultationMeal(apiMeal) {
         baselineCalories: Number(
             /** @type {Record<string, number>} */ (apiMeal.baseline_nutrition ?? {}).calories ?? 0,
         ),
+        plan_slot_index:
+            typeof apiMeal.plan_slot_index === 'number'
+                ? apiMeal.plan_slot_index
+                : typeof apiMeal.planSlotIndex === 'number'
+                  ? apiMeal.planSlotIndex
+                  : undefined,
+        isRecommended: Boolean(apiMeal.is_recommended ?? apiMeal.isRecommended),
         detailView: {
             nutritionalData,
             nutritionSubheading: 'Adapted for your plan',
@@ -272,7 +279,7 @@ export function scheduledFullCraftCategoryMealsForDay(schedule, dayOfWeek) {
 }
 
 /**
- * @param {{ includeSoup?: boolean; selectedFixedSlots?: string[]; craftKey?: string; soupCalories?: number; sideSaladCalories?: number; dessertCalories?: number; dayOfWeek?: number; planTier?: number; selectedMainMealIds?: string[] }} [options]
+ * @param {{ includeSoup?: boolean; selectedFixedSlots?: string[]; craftKey?: string; soupCalories?: number; sideSaladCalories?: number; dessertCalories?: number; dayOfWeek?: number; planTier?: number; selectedMainMealIds?: string[]; selectedBreakfastMealIds?: string[] }} [options]
  */
 export function buildAdaptedMenuQueryString(options = {}) {
     const params = new URLSearchParams();
@@ -289,6 +296,11 @@ export function buildAdaptedMenuQueryString(options = {}) {
     if (Array.isArray(options.selectedMainMealIds) && options.selectedMainMealIds.length > 0) {
         for (const mealId of options.selectedMainMealIds) {
             params.append('selected_main_meal_ids[]', String(mealId));
+        }
+    }
+    if (Array.isArray(options.selectedBreakfastMealIds) && options.selectedBreakfastMealIds.length > 0) {
+        for (const mealId of options.selectedBreakfastMealIds) {
+            params.append('selected_breakfast_meal_ids[]', String(mealId));
         }
     }
     if (typeof options.soupCalories === 'number' && options.soupCalories > 0) {

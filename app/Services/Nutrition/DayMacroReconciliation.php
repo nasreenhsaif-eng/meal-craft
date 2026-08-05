@@ -543,11 +543,34 @@ class DayMacroReconciliation
      */
     private static function mergeAdaptedMainsById(array $adaptedMains, array $balancedMains): array
     {
-        $balancedById = collect($balancedMains)->keyBy('id');
+        /** @var array<int, array<string, mixed>> $balancedById */
+        $balancedById = [];
 
-        return array_map(
-            static fn (array $adapted): array => $balancedById->get($adapted['id'] ?? null) ?? $adapted,
-            $adaptedMains,
-        );
+        foreach ($balancedMains as $balanced) {
+            $id = (int) ($balanced['id'] ?? 0);
+
+            if ($id > 0) {
+                $balancedById[$id] = $balanced;
+            }
+        }
+
+        return array_map(static function (array $adapted) use ($balancedById): array {
+            $id = (int) ($adapted['id'] ?? 0);
+            $balanced = $id > 0 ? ($balancedById[$id] ?? null) : null;
+
+            if (! is_array($balanced)) {
+                return $adapted;
+            }
+
+            // Rebalance replaces nutrition/portions but must keep carousel slot metadata
+            // used for ND recommended defaults (e.g. mains 1+5).
+            foreach (['plan_slot_index', 'is_recommended'] as $metaKey) {
+                if (array_key_exists($metaKey, $adapted) && ! array_key_exists($metaKey, $balanced)) {
+                    $balanced[$metaKey] = $adapted[$metaKey];
+                }
+            }
+
+            return $balanced;
+        }, $adaptedMains);
     }
 }

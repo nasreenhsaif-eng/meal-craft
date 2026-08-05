@@ -1,6 +1,6 @@
 import { createPortal } from 'react-dom';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link } from '@inertiajs/react';
+import { Link, router, usePage } from '@inertiajs/react';
 import { AnimatePresence, motion } from 'framer-motion';
 import adminInertiaLayout from '../../lib/adminInertiaLayout.jsx';
 import { resolveUrl } from '../../meal-craft/mealCraftPageProps.js';
@@ -104,6 +104,24 @@ function defaultSelectionCapForCategory(categoryKey) {
     return DEFAULT_FULL_CRAFT_MAX_SELECTIONS[categoryKey] ?? 1;
 }
 
+/**
+ * Prefer recommended / primary-slot meals when seeding admin preview selections.
+ *
+ * @param {Array<{ id?: string|number; isRecommended?: boolean; plan_slot_index?: number; planSlotIndex?: number }>} meals
+ * @param {number} cap
+ * @returns {string[]}
+ */
+function initialSelectedIdsForCategory(meals, cap) {
+    if (!Array.isArray(meals) || meals.length === 0 || cap <= 0) {
+        return [];
+    }
+
+    const recommended = meals.filter((meal) => meal?.isRecommended || meal?.is_recommended);
+    const source = recommended.length > 0 ? recommended : meals;
+
+    return source.slice(0, cap).map((meal) => String(meal.id));
+}
+
 /** @param {Array<{ dayNumber: number; categories?: Record<string, { id: string }[]> }>} planDays */
 function buildInitialDaySelections(planDays) {
     /** @type {Record<number, Record<string, string[]>>} */
@@ -119,7 +137,7 @@ function buildInitialDaySelections(planDays) {
 
             const meals = day.categories?.[section.categoryKey] ?? [];
             const cap = defaultSelectionCapForCategory(section.categoryKey);
-            out[day.dayNumber][section.categoryKey] = meals.slice(0, cap).map((meal) => String(meal.id));
+            out[day.dayNumber][section.categoryKey] = initialSelectedIdsForCategory(meals, cap);
         }
     }
 
@@ -127,24 +145,66 @@ function buildInitialDaySelections(planDays) {
 }
 
 /**
+ * @param {Record<number|string, Record<string, Array<number|string>>>|null|undefined} stored
+ * @param {Array<{ dayNumber: number; categories?: Record<string, { id: string }[]> }>} planDays
+ */
+function buildInitialDaySelectionsFromStored(stored, planDays) {
+    if (!stored || typeof stored !== 'object' || Object.keys(stored).length === 0) {
+        return null;
+    }
+
+    /** @type {Record<number, Record<string, string[]>>} */
+    const out = {};
+
+    for (const day of planDays) {
+        const dayKey = day.dayNumber;
+        const rawDay = stored[dayKey] ?? stored[String(dayKey)] ?? {};
+        out[dayKey] = {};
+
+        for (const section of DETAIL_SECTIONS) {
+            const ids = Array.isArray(rawDay?.[section.categoryKey])
+                ? rawDay[section.categoryKey].map((id) => String(id)).filter((id) => id !== '')
+                : [];
+            out[dayKey][section.categoryKey] = ids;
+        }
+    }
+
+    return out;
+}
+
+/**
+ * @param {Array<{ dayNumber: number; categories?: Record<string, { id: string }[]> }>} planDays
+ * @param {Record<number|string, Record<string, Array<number|string>>>|null|undefined} defaultDaySelections
+ */
+function resolveInitialDaySelections(planDays, defaultDaySelections) {
+    return buildInitialDaySelectionsFromStored(defaultDaySelections, planDays) ?? buildInitialDaySelections(planDays);
+}
+
+/**
  * @param {object} props
  * @param {object} props.mealPlan
  * @param {Array<{ dayNumber: number; label: string; categories: Record<string, unknown[]> }>} props.days
+ * @param {Record<number|string, Record<string, Array<number|string>>>} [props.defaultDaySelections]
  * @param {number[]} [props.planTiers]
  * @param {number} [props.defaultPlanTier]
  * @param {string} [props.tierPreviewUrl]
+ * @param {string} [props.saveDefaultSelectionsUrl]
  * @param {string} [props.libraryUrl]
  * @param {object[]} [props.ingredientProfiles]
  */
 export default function MealPlanDetailPage({
     mealPlan,
     days = [],
+    defaultDaySelections = null,
     planTiers = DEFAULT_PLAN_TIERS,
     defaultPlanTier = 1500,
     tierPreviewUrl = '',
+    saveDefaultSelectionsUrl = '',
     libraryUrl = '/admin/meal-plan-library',
     ingredientProfiles = [],
 }) {
+    const page = usePage();
+    const flashSuccess = page.props?.flash?.success ?? null;
     const availablePlanTiers = planTiers.length > 0 ? planTiers : DEFAULT_PLAN_TIERS;
     const mealPlanId = mealPlan?.id ?? 0;
     const initialTier = readStoredMealPlanTier(
@@ -158,7 +218,11 @@ export default function MealPlanDetailPage({
     const [tierLoading, setTierLoading] = useState(Boolean(tierPreviewUrl));
     const [tierError, setTierError] = useState(/** @type {string | null} */ (null));
     const [activeDay, setActiveDay] = useState(() => days[0]?.dayNumber ?? 1);
-    const [daySelections, setDaySelections] = useState(() => buildInitialDaySelections(days));
+    const [daySelections, setDaySelections] = useState(() =>
+        resolveInitialDaySelections(days, defaultDaySelections),
+    );
+    const [savingDefaults, setSavingDefaults] = useState(false);
+    const [saveDefaultsError, setSaveDefaultsError] = useState(/** @type {string | null} */ (null));
     const [mealEditModal, setMealEditModal] = useState(
         /** @type {{ dayNumber: number; categoryKey: string; meal: object } | null} */ (null),
     );
@@ -176,8 +240,8 @@ export default function MealPlanDetailPage({
 
     useEffect(() => {
         setPlanDays(days);
-        setDaySelections(buildInitialDaySelections(days));
-    }, [days]);
+        setDaySelections(resolveInitialDaySelections(days, defaultDaySelections));
+    }, [days, defaultDaySelections]);
 
     const daySelectionsJson = useMemo(() => JSON.stringify(daySelections), [daySelections]);
 
@@ -244,7 +308,7 @@ export default function MealPlanDetailPage({
         [activeDayData],
     );
 
-    const selectedCategoriesForMacros = useMemo(() => {
+    const selectedCategoriesForDayNutrition = useMemo(() => {
         if (!activeDayData?.categories) {
             return {};
         }
@@ -254,8 +318,11 @@ export default function MealPlanDetailPage({
 
         for (const section of DETAIL_SECTIONS) {
             const meals = activeDayData.categories?.[section.categoryKey] ?? [];
-            const selectedSet = new Set(activeDaySelections[section.categoryKey] ?? []);
-            out[section.categoryKey] = meals.filter((meal) => selectedSet.has(String(meal.id)));
+            const selectedSet = new Set(
+                (activeDaySelections[section.categoryKey] ?? []).map((id) => String(id)),
+            );
+
+            out[section.categoryKey] = meals.filter((meal) => selectedSet.has(String(meal?.id ?? '')));
         }
 
         return out;
@@ -326,23 +393,33 @@ export default function MealPlanDetailPage({
         });
     }, [activeDay]);
 
+    const saveDefaultSelections = useCallback(() => {
+        if (!saveDefaultSelectionsUrl) {
+            return;
+        }
+
+        setSavingDefaults(true);
+        setSaveDefaultsError(null);
+
+        router.put(
+            saveDefaultSelectionsUrl,
+            { selections: daySelections },
+            {
+                preserveScroll: true,
+                onFinish: () => setSavingDefaults(false),
+                onError: () => {
+                    setSaveDefaultsError('Could not save default selections. Please try again.');
+                },
+            },
+        );
+    }, [daySelections, saveDefaultSelectionsUrl]);
+
     const planCategoryLabel = String(mealPlan?.category ?? '').trim();
     const goalText = String(mealPlan?.goal ?? '').trim();
     const showGoalDescription =
         goalText !== '' &&
         goalText.toLowerCase() !== planCategoryLabel.toLowerCase() &&
         goalText.toLowerCase() !== 'balanced';
-
-    const dietProtocol =
-        planCategoryLabel.toLowerCase().includes('nutrient') ? 'nutrient_dense' : 'balanced';
-
-    const nutritionPlanForMacros = useMemo(
-        () =>
-            dietProtocol === 'nutrient_dense'
-                ? { protein_percentage: 32, carb_percentage: 28, fat_percentage: 40 }
-                : { protein_percentage: 35, carb_percentage: 35, fat_percentage: 30 },
-        [dietProtocol],
-    );
 
     const coreSections = DETAIL_SECTIONS.filter(
         (section) => !FIXED_CHOICE_CATEGORY_KEYS.includes(section.categoryKey),
@@ -370,6 +447,26 @@ export default function MealPlanDetailPage({
                             {goalText}
                         </p>
                     ) : null}
+                    <p className="mt-3 max-w-3xl font-body text-sm text-[#555555]">
+                        Select the default meals for each day, then save. Customers start with these picks and can still
+                        change them via SEE OTHER OPTIONS.
+                    </p>
+                    <div className="mt-4 flex flex-wrap items-center gap-3">
+                        <Button
+                            type="button"
+                            variant="primary"
+                            size="sm"
+                            label={savingDefaults ? 'Saving defaults…' : 'Save as customer defaults'}
+                            disabled={!saveDefaultSelectionsUrl || savingDefaults}
+                            onClick={saveDefaultSelections}
+                        />
+                        {flashSuccess ? (
+                            <p className="font-body text-sm text-[#5A6B44]">{String(flashSuccess)}</p>
+                        ) : null}
+                        {saveDefaultsError ? (
+                            <p className="font-body text-sm text-red-700">{saveDefaultsError}</p>
+                        ) : null}
+                    </div>
                 </div>
 
                 <div className="mb-6 rounded-[12px] border border-gray-200 bg-white p-3 sm:p-4">
@@ -424,17 +521,20 @@ export default function MealPlanDetailPage({
                     </div>
                 ) : null}
 
-                <div className="mb-6">
-                    <DayMacroMicroTabPanel
-                        categories={selectedCategoriesForMacros}
-                        dayLabel={activeDayData?.label ?? 'Day'}
-                        planCategoryLabel={`${planCategoryLabel} · ${selectedTier} kcal`.trim()}
-                        craftKey="full"
-                        planTierCalories={selectedTier}
-                        nutritionPlan={nutritionPlanForMacros}
-                        dietProtocol={dietProtocol}
-                    />
-                </div>
+                {activeDayData ? (
+                    <div className="mb-8">
+                        <DayMacroMicroTabPanel
+                            key={`day-nutrition-${activeDayData.dayNumber}-${selectedTier}`}
+                            categories={selectedCategoriesForDayNutrition}
+                            dayLabel={activeDayData.label ?? 'Day'}
+                            planCategoryLabel={planCategoryLabel}
+                            craftKey="full"
+                            planTierCalories={selectedTier}
+                            nutritionPlan={null}
+                            initialTab="micronutrients"
+                        />
+                    </div>
+                ) : null}
 
                 <AnimatePresence mode="wait" initial={false}>
                     <motion.div

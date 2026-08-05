@@ -9,6 +9,7 @@ use App\Enums\RecipeCategory;
 use App\Services\RecipeNutritionCalculator;
 use App\Support\MealImagePath;
 use App\Support\MealLibraryBulkNutrition;
+use App\Support\RecipeMacroRounding;
 use Database\Factories\MealFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -268,27 +269,29 @@ class Meal extends Model
      */
     public static function nutritionSummaryToPersistedAttributes(array $nutrition): array
     {
+        $finalized = RecipeMacroRounding::finalize($nutrition);
+
         return [
-            'total_calories' => round((float) ($nutrition['calories'] ?? 0), 2),
-            'total_protein' => round((float) ($nutrition['protein'] ?? 0), 2),
-            'total_carbs' => round((float) ($nutrition['carbs'] ?? 0), 2),
-            'total_fat' => round((float) ($nutrition['fat'] ?? 0), 2),
-            'total_b6' => round((float) ($nutrition['b6'] ?? 0), 4),
-            'total_folate' => round((float) ($nutrition['b9_folate'] ?? 0), 4),
-            'total_b12' => round((float) ($nutrition['b12'] ?? 0), 4),
-            'total_iron' => round((float) ($nutrition['iron'] ?? 0), 4),
-            'total_magnesium' => round((float) ($nutrition['magnesium'] ?? 0), 4),
-            'total_fiber' => round((float) ($nutrition['fiber'] ?? 0), 4),
-            'total_sugar' => round((float) ($nutrition['sugar'] ?? 0), 4),
-            'total_calcium' => round((float) ($nutrition['calcium'] ?? 0), 4),
-            'total_potassium' => round((float) ($nutrition['potassium'] ?? 0), 4),
-            'total_sodium' => round((float) ($nutrition['sodium'] ?? 0), 4),
-            'total_zinc' => round((float) ($nutrition['zinc'] ?? 0), 4),
-            'total_vitamin_c' => round((float) ($nutrition['vitamin_c'] ?? 0), 4),
-            'total_vitamin_a' => round((float) ($nutrition['vitamin_a'] ?? 0), 4),
-            'total_vitamin_e' => round((float) ($nutrition['vitamin_e'] ?? 0), 4),
-            'total_vitamin_d' => round((float) ($nutrition['vitamin_d'] ?? 0), 4),
-            'total_vitamin_k2' => round((float) ($nutrition['vitamin_k2'] ?? 0), 4),
+            'total_calories' => (float) ($finalized['calories'] ?? 0),
+            'total_protein' => (float) ($finalized['protein'] ?? 0),
+            'total_carbs' => (float) ($finalized['carbs'] ?? 0),
+            'total_fat' => (float) ($finalized['fat'] ?? 0),
+            'total_b6' => (float) ($finalized['b6'] ?? 0),
+            'total_folate' => (float) ($finalized['b9_folate'] ?? 0),
+            'total_b12' => (float) ($finalized['b12'] ?? 0),
+            'total_iron' => (float) ($finalized['iron'] ?? 0),
+            'total_magnesium' => (float) ($finalized['magnesium'] ?? 0),
+            'total_fiber' => (float) ($finalized['fiber'] ?? 0),
+            'total_sugar' => (float) ($finalized['sugar'] ?? 0),
+            'total_calcium' => (float) ($finalized['calcium'] ?? 0),
+            'total_potassium' => (float) ($finalized['potassium'] ?? 0),
+            'total_sodium' => (float) ($finalized['sodium'] ?? 0),
+            'total_zinc' => (float) ($finalized['zinc'] ?? 0),
+            'total_vitamin_c' => (float) ($finalized['vitamin_c'] ?? 0),
+            'total_vitamin_a' => (float) ($finalized['vitamin_a'] ?? 0),
+            'total_vitamin_e' => (float) ($finalized['vitamin_e'] ?? 0),
+            'total_vitamin_d' => (float) ($finalized['vitamin_d'] ?? 0),
+            'total_vitamin_k2' => (float) ($finalized['vitamin_k2'] ?? 0),
         ];
     }
 
@@ -332,20 +335,14 @@ class Meal extends Model
             );
         }
 
-        $stored = $this->persistedNutritionAsCalculatorShape();
-
-        $macrosEmpty = (float) $this->total_calories <= 0
-            && (float) $this->total_protein <= 0
-            && (float) $this->total_carbs <= 0
-            && (float) $this->total_fat <= 0;
-
-        if ($macrosEmpty && $this->ingredients()->exists()) {
+        // Prefer live ingredient rollup so cooking fats cannot be hidden behind stale totals.
+        if ($this->ingredients()->exists()) {
             return RecipeNutritionCalculator::fromMeal(
                 $this->relationLoaded('ingredients') ? $this : $this->load('ingredients')
             );
         }
 
-        return $stored;
+        return $this->persistedNutritionAsCalculatorShape();
     }
 
     /**

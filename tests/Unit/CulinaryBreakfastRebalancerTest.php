@@ -81,6 +81,7 @@ test('breakfast rebalancer keeps potato floor instead of crushing veggies for ca
 
     expect($rebalanced[$potato->id])->toBeGreaterThanOrEqual(120.0)
         ->and($rebalanced[$onion->id])->toBeGreaterThanOrEqual(50.0)
+        ->and($rebalanced[$rosemary->id])->toBeGreaterThanOrEqual(1.0)
         ->and($rebalanced[$rosemary->id])->toBeLessThanOrEqual(1.0)
         ->and($rebalanced[$oil->id])->toBeLessThanOrEqual(5.0);
 });
@@ -198,7 +199,79 @@ test('savory egg hash adaptation keeps cookable sides at 1000 tier', function ()
         ->and((float) $byName['Sweet Potato']['adapted_amount_grams'])->toBeGreaterThanOrEqual(120.0)
         ->and((float) $byName['White Onion']['adapted_amount_grams'])->toBeGreaterThanOrEqual(50.0)
         ->and((float) $byName['Bell Pepper (Red)']['adapted_amount_grams'])->toBeGreaterThanOrEqual(50.0)
+        ->and((float) $byName['Rosemary (Fresh)']['adapted_amount_grams'])->toBeGreaterThanOrEqual(1.0)
         ->and((float) $byName['Rosemary (Fresh)']['adapted_amount_grams'])->toBeLessThanOrEqual(1.0)
+        ->and((float) $byName['Thyme (Fresh)']['adapted_amount_grams'])->toBeGreaterThanOrEqual(1.0)
         ->and((float) $byName['Thyme (Fresh)']['adapted_amount_grams'])->toBeLessThanOrEqual(1.0)
         ->and((float) $byName['Olive Oil']['adapted_amount_grams'])->toBe(5.0);
+});
+
+test('breakfast adaptation never wipes herbs or spices to zero grams', function (): void {
+    $egg = Ingredient::factory()->create([
+        'name' => 'Egg',
+        'calories' => 155,
+        'protein' => 12.6,
+        'carbs' => 1.1,
+        'fat' => 10.6,
+    ]);
+    $pepper = Ingredient::factory()->create([
+        'name' => 'Black Pepper',
+        'calories' => 251,
+        'protein' => 10,
+        'carbs' => 64,
+        'fat' => 3,
+    ]);
+    $basil = Ingredient::factory()->create([
+        'name' => 'Basil',
+        'calories' => 23,
+        'protein' => 3,
+        'carbs' => 2.7,
+        'fat' => 0.6,
+    ]);
+    $oil = Ingredient::factory()->create([
+        'name' => 'Olive Oil',
+        'calories' => 884,
+        'protein' => 0,
+        'carbs' => 0,
+        'fat' => 100,
+    ]);
+    $avocado = Ingredient::factory()->create([
+        'name' => 'Avocado',
+        'calories' => 160,
+        'protein' => 2,
+        'carbs' => 9,
+        'fat' => 15,
+    ]);
+
+    $meal = Meal::factory()->create([
+        'name' => 'Mediterranean Omelet',
+        'meal_type' => MealType::Breakfast,
+        'category' => RecipeCategory::Breakfast,
+    ]);
+    $meal->ingredients()->attach([
+        $egg->id => ['amount_grams' => 100, 'amount' => 100, 'unit' => 'g'],
+        $pepper->id => ['amount_grams' => 1, 'amount' => 1, 'unit' => 'g'],
+        $basil->id => ['amount_grams' => 5, 'amount' => 5, 'unit' => 'g'],
+        $oil->id => ['amount_grams' => 5, 'amount' => 5, 'unit' => 'g'],
+        $avocado->id => ['amount_grams' => 30, 'amount' => 30, 'unit' => 'g'],
+    ]);
+
+    $profile = CustomerProfile::factory()->create([
+        'daily_calorie_target' => 1500,
+        'protein_percentage' => 32,
+        'carb_percentage' => 28,
+        'fat_percentage' => 40,
+    ]);
+
+    $adapted = AdaptedMenuBuilder::adaptMealForProfile($profile, $meal->fresh(['ingredients']), [
+        'plan_tier' => 1500,
+        'craft_key' => 'full',
+        'schedule_slot' => 'breakfast',
+    ]);
+
+    $byName = collect($adapted['ingredients'])->keyBy('name');
+
+    expect((float) $byName['Black Pepper']['adapted_amount_grams'])->toBeGreaterThanOrEqual(1.0)
+        ->and((float) $byName['Basil']['adapted_amount_grams'])->toBeGreaterThanOrEqual(1.0)
+        ->and((float) $byName['Olive Oil']['adapted_amount_grams'])->toBeGreaterThanOrEqual(5.0);
 });

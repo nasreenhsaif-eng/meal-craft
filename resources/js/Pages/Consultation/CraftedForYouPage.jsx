@@ -920,6 +920,7 @@ export default function CraftedForYouPage({
             dayOfWeek: adaptedMenuDay,
             planTier: isAdminPreview ? previewPlanTier : undefined,
             selectedMainMealIds: selectedByDay[adaptedMenuDay]?.meals ?? [],
+            selectedBreakfastMealIds: selectedByDay[adaptedMenuDay]?.breakfasts ?? [],
         };
     }, [
         adaptedMenuDay,
@@ -1127,25 +1128,204 @@ export default function CraftedForYouPage({
                 };
 
                 const assigned = scheduledFullCraftCategoryMealsForDay(scheduledFullCraftByWeekday, day);
-                const scheduledBreakfast = assigned?.breakfasts?.[0];
+                const breakfastDeck = assigned?.breakfasts ?? [];
+                const recommendedBreakfast =
+                    breakfastDeck.find((meal) => meal?.isRecommended) ?? breakfastDeck[0];
                 const deckBreakfast = consultationDeckOptionsForSlotKey(catalogMeals, 'breakfast')[0];
-                const breakfast = scheduledBreakfast ?? deckBreakfast;
+                const breakfast = recommendedBreakfast ?? deckBreakfast;
 
                 if (!breakfast?.id) {
                     continue;
                 }
 
-                if (current.breakfasts?.[0] === breakfast.id) {
+                const breakfastId = normalizeConsultationMealId(breakfast.id);
+
+                // Nutrient Density: seed once with the recommended omelette; never overwrite a customer swap.
+                if (dietProtocol === 'nutrient_dense') {
+                    if ((current.breakfasts?.length ?? 0) > 0) {
+                        continue;
+                    }
+
+                    next[day] = { ...current, breakfasts: [breakfastId] };
+                    changed = true;
                     continue;
                 }
 
-                next[day] = { ...current, breakfasts: [breakfast.id] };
+                if (current.breakfasts?.[0] === breakfastId) {
+                    continue;
+                }
+
+                next[day] = { ...current, breakfasts: [breakfastId] };
                 changed = true;
             }
 
             return changed ? next : prev;
         });
-    }, [craft, sortedSelectedDays, scheduledFullCraftByWeekday, catalogMeals]);
+    }, [craft, sortedSelectedDays, scheduledFullCraftByWeekday, catalogMeals, dietProtocol]);
+
+    useEffect(() => {
+        if (dietProtocol !== 'nutrient_dense' || !craft || sortedSelectedDays.length === 0) {
+            return;
+        }
+
+        setSelectedByDay((prev) => {
+            let changed = false;
+            /** @type {Record<number, import('../../consultation/consultationDraft.js').DaySelections>} */
+            const next = { ...prev };
+
+            for (const day of sortedSelectedDays) {
+                const current = next[day] ?? {
+                    breakfasts: [],
+                    meals: [],
+                    sideSalads: [],
+                    desserts: [],
+                    soup: [],
+                };
+
+                if ((current.meals?.length ?? 0) >= 2) {
+                    continue;
+                }
+
+                const assigned = scheduledFullCraftCategoryMealsForDay(scheduledFullCraftByWeekday, day);
+                const mains = assigned?.meals ?? [];
+                const recommended = mains.filter((meal) => meal?.isRecommended);
+                const byPrimarySlots = mains.filter((meal) => {
+                    const slot = Number(meal?.plan_slot_index ?? meal?.planSlotIndex ?? 0);
+
+                    return slot === 1 || slot === 5;
+                });
+                const seedSource =
+                    recommended.length >= 2
+                        ? recommended
+                        : byPrimarySlots.length >= 2
+                          ? byPrimarySlots
+                          : recommended.length > 0
+                            ? recommended
+                            : mains.slice(0, 2);
+
+                /** @type {string[]} */
+                const preferredIds = seedSource
+                    .map((meal) => normalizeConsultationMealId(meal?.id))
+                    .filter((id) => id !== '');
+
+                if (preferredIds.length === 0) {
+                    continue;
+                }
+
+                const existingIds = (current.meals ?? [])
+                    .map((id) => normalizeConsultationMealId(id))
+                    .filter((id) => id !== '');
+                const merged = [...existingIds];
+
+                for (const id of preferredIds) {
+                    if (merged.length >= 2) {
+                        break;
+                    }
+
+                    if (!merged.includes(id)) {
+                        merged.push(id);
+                    }
+                }
+
+                if (merged.length < 2 && preferredIds.length >= 2) {
+                    // Prefer the two recommended/primary ids over a stale single pick.
+                    merged.splice(0, merged.length, ...preferredIds.slice(0, 2));
+                }
+
+                if (merged.length === 0) {
+                    continue;
+                }
+
+                const same =
+                    merged.length === existingIds.length &&
+                    merged.every((id, index) => id === existingIds[index]);
+
+                if (same) {
+                    continue;
+                }
+
+                next[day] = { ...current, meals: merged.slice(0, 2) };
+                changed = true;
+            }
+
+            return changed ? next : prev;
+        });
+    }, [craft, dietProtocol, sortedSelectedDays, scheduledFullCraftByWeekday]);
+
+    useEffect(() => {
+        if (dietProtocol !== 'nutrient_dense' || !craft || sortedSelectedDays.length === 0) {
+            return;
+        }
+
+        setSelectedByDay((prev) => {
+            let changed = false;
+            /** @type {Record<number, import('../../consultation/consultationDraft.js').DaySelections>} */
+            const next = { ...prev };
+
+            for (const day of sortedSelectedDays) {
+                const current = next[day] ?? {
+                    breakfasts: [],
+                    meals: [],
+                    sideSalads: [],
+                    desserts: [],
+                    soup: [],
+                };
+
+                const hasSides =
+                    (current.sideSalads?.length ?? 0) > 0 ||
+                    (current.desserts?.length ?? 0) > 0 ||
+                    (current.soup?.length ?? 0) > 0;
+
+                if (hasSides) {
+                    continue;
+                }
+
+                const assigned = scheduledFullCraftCategoryMealsForDay(scheduledFullCraftByWeekday, day);
+                if (!assigned) {
+                    continue;
+                }
+
+                /** @type {import('../../consultation/consultationDraft.js').DaySelections} */
+                const sideSeed = {
+                    ...current,
+                    sideSalads: [],
+                    desserts: [],
+                    soup: [],
+                };
+
+                let remaining = 2;
+
+                for (const key of /** @type {const} */ (['sideSalads', 'desserts', 'soup'])) {
+                    if (remaining <= 0) {
+                        break;
+                    }
+
+                    const recommended = (assigned[key] ?? [])
+                        .filter((meal) => meal?.isRecommended)
+                        .map((meal) => normalizeConsultationMealId(meal?.id))
+                        .filter((id) => id !== '');
+
+                    if (recommended.length > 0) {
+                        sideSeed[key] = recommended.slice(0, 1);
+                        remaining -= 1;
+                    }
+                }
+
+                if (
+                    sideSeed.sideSalads.length === 0 &&
+                    sideSeed.desserts.length === 0 &&
+                    sideSeed.soup.length === 0
+                ) {
+                    continue;
+                }
+
+                next[day] = sideSeed;
+                changed = true;
+            }
+
+            return changed ? next : prev;
+        });
+    }, [craft, dietProtocol, sortedSelectedDays, scheduledFullCraftByWeekday]);
 
     const assignedMealsForCalorieDay = useMemo(() => {
         if (!calorieDay) {
@@ -1773,7 +1953,10 @@ export default function CraftedForYouPage({
                                 onToggleCategory={
                                     usesWeeklyCategoryLayout
                                         ? (categoryKey, meal) => {
-                                              if (categoryKey === 'breakfasts') {
+                                              if (
+                                                  categoryKey === 'breakfasts' &&
+                                                  dietProtocol !== 'nutrient_dense'
+                                              ) {
                                                   return;
                                               }
 

@@ -16,7 +16,7 @@ import RoundIconButton from '../../Components/Atoms/Icons/RoundIconButton.jsx';
 import { IconLayoutGrid, IconLayoutList } from '../../Components/Atoms/SvgIcons.jsx';
 import SquareCheckbox from '../../Components/Atoms/Icons/SquareCheckbox.jsx';
 import NutrientBadge from '../../Components/Atoms/MealSystem/NutrientBadge.jsx';
-import { aggregateNutritionFromIngredientRows, normalizeIngredientKey } from '../../meal-library/aggregateIngredientNutrition.ts';
+import { aggregateNutritionFromIngredientRows, isPureCookingFatName, isVegetableOilName, normalizeIngredientKey, PURE_OIL_DENSITY_G_PER_ML } from '../../meal-library/aggregateIngredientNutrition.ts';
 import { calculateMealNutrition, calorieWarningsForCategory, resolveMealLibraryCategory } from '../../meal-library/calculateMealNutrition.ts';
 import { resolveMealImageUrl } from '../../meal-library/resolveMealImageUrl.ts';
 import { gramsFromIngredientAmountAndUnit, parseIngredientQuantityString } from '../../meal-library/ingredientQuantityString.ts';
@@ -474,18 +474,27 @@ function batchMacroDisplayFromPerServing(perServingStr, servings) {
     return fmtMacroFromNutrition(per * servings);
 }
 
-function unitToGrams(amount, unit) {
+function unitToGrams(amount, unit, densityGramsPerMl = 1) {
     const n = Number(amount);
     if (!Number.isFinite(n) || n <= 0) {
         return 0;
     }
-    if (unit === 'kg') {
-        return n * 1000;
+    return gramsFromIngredientAmountAndUnit(n, unit, densityGramsPerMl);
+}
+
+function densityForIngredientLabel(name, profiles) {
+    const key = normalizeIngredientKey(name ?? '');
+    const profile = Array.isArray(profiles)
+        ? profiles.find((p) => normalizeIngredientKey(p?.name ?? '') === key)
+        : null;
+    const stored = typeof profile?.density === 'number' && profile.density > 0 ? profile.density : 0;
+    if (!isPureCookingFatName(name ?? '')) {
+        return stored > 0 ? stored : 1;
     }
-    if (unit === 'ltr') {
-        return n * 1000;
+    if (stored >= 0.85 && stored <= 0.98) {
+        return stored;
     }
-    return n;
+    return isVegetableOilName(name ?? '') ? PURE_OIL_DENSITY_G_PER_ML : 0.91;
 }
 
 /**
@@ -928,33 +937,6 @@ export function MealLibraryPageContent({
         setSelectedDietTags((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]));
     }
 
-    const canSave = useMemo(() => {
-        const nameOk = formName.trim().length > 0;
-        const svc = parseBulkServingsCount(bulkServingsCount);
-        const hasResolvedIngredientLines = ingredientRows.some((r) => {
-            const grams = unitToGrams(r.amount, r.unit);
-            const label = (r.selectedName || r.nameQuery || '').trim();
-            return grams > 0 && label.length > 0;
-        });
-        const ingredientBackedOk = hasResolvedIngredientLines && (!isBulkRecipe || svc != null);
-        const cal = Number(formCalories);
-        const batchCalOk = formCalories.trim() !== '' && Number.isFinite(cal) && cal >= 0;
-        const editingExisting = Boolean(mealToEdit?.editForm?.id);
-        if (!nameOk) {
-            return false;
-        }
-        if (editingExisting && batchCalOk && hasResolvedIngredientLines) {
-            return !isBulkRecipe || svc != null;
-        }
-        if (!batchCalOk && !ingredientBackedOk) {
-            return false;
-        }
-        if (!isBulkRecipe) {
-            return true;
-        }
-        return svc != null;
-    }, [formName, formCalories, isBulkRecipe, bulkServingsCount, ingredientRows, mealToEdit]);
-
     const ingredientDatabase = useMemo(
         () =>
             (ingredientProfiles ?? []).map((p) => ({
@@ -976,6 +958,33 @@ export function MealLibraryPageContent({
             })),
         [ingredientProfiles],
     );
+
+    const canSave = useMemo(() => {
+        const nameOk = formName.trim().length > 0;
+        const svc = parseBulkServingsCount(bulkServingsCount);
+        const hasResolvedIngredientLines = ingredientRows.some((r) => {
+            const label = (r.selectedName || r.nameQuery || '').trim();
+            const grams = unitToGrams(r.amount, r.unit, densityForIngredientLabel(label, ingredientDatabase));
+            return grams > 0 && label.length > 0;
+        });
+        const ingredientBackedOk = hasResolvedIngredientLines && (!isBulkRecipe || svc != null);
+        const cal = Number(formCalories);
+        const batchCalOk = formCalories.trim() !== '' && Number.isFinite(cal) && cal >= 0;
+        const editingExisting = Boolean(mealToEdit?.editForm?.id);
+        if (!nameOk) {
+            return false;
+        }
+        if (editingExisting && batchCalOk && hasResolvedIngredientLines) {
+            return !isBulkRecipe || svc != null;
+        }
+        if (!batchCalOk && !ingredientBackedOk) {
+            return false;
+        }
+        if (!isBulkRecipe) {
+            return true;
+        }
+        return svc != null;
+    }, [formName, formCalories, isBulkRecipe, bulkServingsCount, ingredientRows, mealToEdit, ingredientDatabase]);
 
     const [activeSuggestRow, setActiveSuggestRow] = useState(/** @type {number|null} */ (null));
     const ingredientSuggestRootRef = useRef(null);
@@ -1212,7 +1221,7 @@ export function MealLibraryPageContent({
         return ingredientRows
             .map((r) => {
                 const name = (r.selectedName || r.nameQuery || '').trim();
-                const grams = unitToGrams(r.amount, r.unit);
+                const grams = unitToGrams(r.amount, r.unit, densityForIngredientLabel(name, ingredientDatabase));
                 if (!name || grams <= 0) {
                     return null;
                 }
@@ -1468,7 +1477,7 @@ export function MealLibraryPageContent({
         const pairs = ingredientRows
             .map((r) => {
                 const name = (r.selectedName || r.nameQuery || '').trim();
-                const grams = unitToGrams(r.amount, r.unit);
+                const grams = unitToGrams(r.amount, r.unit, densityForIngredientLabel(name, ingredientDatabase));
                 if (!name || grams <= 0) {
                     return null;
                 }
@@ -1492,6 +1501,7 @@ export function MealLibraryPageContent({
         formType,
         formInstructions,
         formHighlight,
+        ingredientDatabase,
     ]);
 
     const nutritionResult = useMemo(

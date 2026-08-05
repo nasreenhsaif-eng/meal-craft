@@ -10,14 +10,17 @@ use App\Enums\MealPlanSchemaType;
 use App\Enums\MealPlanSlotType;
 use App\Enums\RecipeCategory;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\StoreMealPlanDefaultDaySelectionsRequest;
 use App\Http\Requests\SearchMealsForSchedulerRequest;
 use App\Http\Requests\StoreMealPlanFromLibraryRequest;
 use App\Models\Meal;
 use App\Models\MealPlan;
 use App\Models\MealPlanDayMeal;
+use App\Services\MealPlanDefaultDaySelections;
 use App\Services\MealPlanLibraryTierPreview;
 use App\Services\MealPlanService;
 use App\Services\Nutrition\UserPlanCalculator;
+use App\Support\PrimaryFullCraftMainSlots;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -132,6 +135,12 @@ class MealPlanLibraryController extends Controller
             ];
         }
 
+        $category = $mealPlan->plan_category;
+        $isNutrientDensePlan = $category === MealPlanLibraryCategory::NutrientDense
+            || str_contains(strtolower((string) ($mealPlan->name ?? '')), 'tbd');
+        $storedDefaults = MealPlanDefaultDaySelections::forPlan($mealPlan);
+        $hasStoredDefaults = $storedDefaults !== [];
+
         foreach ($mealPlan->dayMeals as $dayMeal) {
             if (! $dayMeal instanceof MealPlanDayMeal || $dayMeal->meal === null) {
                 continue;
@@ -143,11 +152,29 @@ class MealPlanLibraryController extends Controller
             }
 
             $categoryKey = $this->slotTypeToCategoryKey($dayMeal->slot_type);
-            $daysByNumber[$dayNumber]['categories'][$categoryKey][] = $this->mealLibrary->presentMealRowForUi($dayMeal->meal);
+            $row = $this->mealLibrary->presentMealRowForUi($dayMeal->meal);
+            $slotIndex = (int) $dayMeal->slot_index;
+            $row['plan_slot_index'] = $slotIndex;
+
+            if ($hasStoredDefaults) {
+                $row['isRecommended'] = in_array(
+                    (int) $dayMeal->meal_id,
+                    $storedDefaults[$dayNumber][$categoryKey] ?? [],
+                    true,
+                );
+            } elseif ($categoryKey === 'meals') {
+                $primarySlots = $isNutrientDensePlan
+                    ? PrimaryFullCraftMainSlots::NUTRIENT_DENSE
+                    : PrimaryFullCraftMainSlots::BALANCED;
+                $row['isRecommended'] = in_array($slotIndex, $primarySlots, true);
+            } else {
+                $row['isRecommended'] = $slotIndex === 1;
+            }
+
+            $daysByNumber[$dayNumber]['categories'][$categoryKey][] = $row;
         }
 
         $dailyMacros = $this->mealPlanService->averageDailyNutritionForOption($mealPlan, false);
-        $category = $mealPlan->plan_category;
         $tags = [$category instanceof MealPlanLibraryCategory ? $category->label() : __('Balanced')];
         if ($mealPlan->cycle_phase instanceof MealCyclePhaseTag) {
             $tags[] = $mealPlan->cycle_phase->label();
@@ -171,12 +198,25 @@ class MealPlanLibraryController extends Controller
                 ],
             ],
             'days' => array_values($daysByNumber),
+            'defaultDaySelections' => $storedDefaults,
             'planTiers' => $planTiers,
             'defaultPlanTier' => $defaultPlanTier,
             'tierPreviewUrl' => route('admin.meal-plan-library.tier-preview', $mealPlan),
+            'saveDefaultSelectionsUrl' => route('admin.meal-plan-library.default-selections', $mealPlan),
             'libraryUrl' => route('admin.meal-plan-library'),
             'ingredientProfiles' => $this->mealLibrary->verifiedIngredientProfilesForUi(),
         ]);
+    }
+
+    public function storeDefaultSelections(
+        StoreMealPlanDefaultDaySelectionsRequest $request,
+        MealPlan $mealPlan,
+    ): RedirectResponse {
+        MealPlanDefaultDaySelections::store($mealPlan, $request->normalizedSelections());
+
+        return redirect()
+            ->route('admin.meal-plan-library.show', $mealPlan)
+            ->with('success', __('Default meal selections saved. Customers will start with these picks and can still change them.'));
     }
 
     public function tierPreview(Request $request, MealPlan $mealPlan): JsonResponse

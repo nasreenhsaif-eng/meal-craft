@@ -53,7 +53,7 @@ test('base recipe formulation uses finished_weight_grams as per-100g divisor', f
     $per100 = RecipeNutritionCalculator::per100gNutritionForIngredient($base->fresh(['components']));
 
     // Batch from 100g dry rice = 356 kcal; finished cooked yield 260g → 356/260*100
-    expect($per100['calories'])->toBe(136.9231);
+    expect($per100['calories'])->toEqualWithDelta(136.9231, 0.0001);
 });
 
 test('meal using pre-cooked base pulls finished per-100g without dry yield rescale', function (): void {
@@ -76,6 +76,6 @@ test('meal using pre-cooked base pulls finished per-100g without dry yield resca
 
     $nutrition = RecipeNutritionCalculator::fromMeal($meal->fresh(['ingredients']));
 
-    expect($nutrition['calories'])->toBe(29.72)
-        ->and($nutrition['fat'])->toBe(2.86);
+    expect($nutrition['calories'])->toBe(30.0)
+        ->and($nutrition['fat'])->toBe(2.9);
 });

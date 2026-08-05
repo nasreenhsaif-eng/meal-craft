@@ -101,7 +101,11 @@ final class KitchenPortionRounding
             return false;
         }
 
-        foreach (['tahini', 'peanut butter', 'almond butter', 'cashew butter', 'butter'] as $needle) {
+        if (PureCookingFatNutrition::isPureCookingFat($ingredient)) {
+            return true;
+        }
+
+        foreach (['tahini', 'peanut butter', 'almond butter', 'cashew butter', 'butter', 'ghee'] as $needle) {
             if (str_contains($name, $needle)) {
                 return true;
             }

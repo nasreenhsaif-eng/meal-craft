@@ -79,6 +79,8 @@ final class NutrientDenseWeeklyMealPlanBuilder
                 $slots,
             );
 
+            MealPlanDefaultDaySelections::seedFromConvention($plan, self::auditReferenceProfile());
+
             return [
                 'plan' => $plan,
                 'slots' => count($slots),

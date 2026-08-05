@@ -159,6 +159,59 @@ final class CulinaryPortionConstraints
         return null;
     }
 
+    /**
+     * Minimum cookable grams for an ingredient that is present on the plate.
+     * Macro trims must never wipe a real line item to 0 g.
+     */
+    public static function kitchenPresentFloorGrams(Ingredient $ingredient, float $baselineGrams = 0.0): float
+    {
+        if ($baselineGrams <= 0) {
+            return 0.0;
+        }
+
+        if (KitchenPortionRounding::isOilIngredient($ingredient) || KitchenPortionRounding::isLiquidFatIngredient($ingredient)) {
+            return 5.0;
+        }
+
+        if (KitchenPortionRounding::isPourableCondiment($ingredient)) {
+            return 5.0;
+        }
+
+        if (KitchenPortionRounding::isWoodyFreshHerb($ingredient) || KitchenPortionRounding::isFineMeasureSpice($ingredient)) {
+            return 1.0;
+        }
+
+        if (KitchenPortionRounding::isSoftFreshHerb($ingredient)) {
+            return min($baselineGrams, 5.0);
+        }
+
+        if (KitchenPortionRounding::isNutOrSeedIngredient($ingredient) || KitchenPortionRounding::isCheeseIngredient($ingredient)) {
+            return 5.0;
+        }
+
+        $name = strtolower(trim($ingredient->name));
+
+        if (
+            str_contains($name, 'quinoa')
+            || str_contains($name, 'rice')
+            || str_contains($name, 'couscous')
+            || str_contains($name, 'potato')
+            || str_contains($name, 'oat')
+            || str_contains($name, 'bread')
+            || str_contains($name, 'pasta')
+            || str_contains($name, 'noodle')
+        ) {
+            $starchFloor = (float) config(
+                'customer_nutrition.macro_first_main_scaling.carb_kitchen_minimum_grams',
+                20.0,
+            );
+
+            return min($baselineGrams, max(5.0, $starchFloor));
+        }
+
+        return min($baselineGrams, 5.0);
+    }
+
     public static function isStructuralIngredient(Meal $meal, Ingredient $ingredient): bool
     {
         return self::minimumGrams($meal, $ingredient) !== null

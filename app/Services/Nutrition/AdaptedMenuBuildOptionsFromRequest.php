@@ -39,6 +39,8 @@ final class AdaptedMenuBuildOptionsFromRequest
             'fixed_slot_actual_macros.carbs_g' => ['sometimes', 'numeric', 'min:0'],
             'fixed_slot_actual_macros.fat_g' => ['sometimes', 'numeric', 'min:0'],
             'selected_main_meal_ids.*' => ['integer', 'min:1'],
+            'selected_breakfast_meal_ids' => ['sometimes', 'array'],
+            'selected_breakfast_meal_ids.*' => ['integer', 'min:1'],
         ]);
 
         $selectedFixedSlots = isset($validated['selected_fixed_slots'])
@@ -87,6 +89,13 @@ final class AdaptedMenuBuildOptionsFromRequest
             $buildOptions['selected_main_meal_ids'] = array_values(array_unique(array_map(
                 static fn (mixed $id): int => (int) $id,
                 $validated['selected_main_meal_ids'],
+            )));
+        }
+
+        if (isset($validated['selected_breakfast_meal_ids'])) {
+            $buildOptions['selected_breakfast_meal_ids'] = array_values(array_unique(array_map(
+                static fn (mixed $id): int => (int) $id,
+                $validated['selected_breakfast_meal_ids'],
             )));
         }
 

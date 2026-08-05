@@ -178,7 +178,7 @@ final class ReferenceFullCraftDaySimulator
             }
         }
 
-        $secondMainSlot = $withLiverSwap ? 5 : 3;
+        $secondMainSlot = $withLiverSwap || self::isNutrientDenseProfile($profile) ? 5 : 3;
 
         $schedule = self::rotationScheduleForProfile($profile);
 

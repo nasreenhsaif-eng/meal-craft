@@ -5,9 +5,9 @@ namespace App\Models;
 use App\Enums\MealCyclePhaseTag;
 use App\Enums\MealPlanLibraryCategory;
 use App\Enums\MealPlanSchemaType;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Model;
 
 class MealPlan extends Model
 {
@@ -21,6 +21,7 @@ class MealPlan extends Model
         'target_total_protein_g',
         'target_total_carbs_g',
         'target_total_fat_g',
+        'default_day_selections',
     ];
 
     protected function casts(): array
@@ -33,6 +34,7 @@ class MealPlan extends Model
             'target_total_protein_g' => 'float',
             'target_total_carbs_g' => 'float',
             'target_total_fat_g' => 'float',
+            'default_day_selections' => 'array',
         ];
     }
 
