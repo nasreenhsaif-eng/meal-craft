@@ -123,7 +123,7 @@ export default function ProtocolFixedChoiceSides({
                             <div className="flex items-start gap-3">
                                 <button
                                     type="button"
-                                    className="mt-0.5 shrink-0 disabled:opacity-50"
+                                    className="mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-[4px] border-0 bg-transparent p-0 outline-none focus-visible:ring-2 focus-visible:ring-[#5A6B44] focus-visible:ring-offset-1 disabled:opacity-50"
                                     disabled={!pickEnabled || cards.length === 0}
                                     onClick={() => toggleCategory(option.selectionKey, cards, isChecked)}
                                     aria-pressed={isChecked}
@@ -165,13 +165,26 @@ export default function ProtocolFixedChoiceSides({
                                     ) : null}
 
                                     {isChecked && selectedMeals.length > 0 ? (
-                                        <div className="mt-3 overflow-hidden rounded-[10px] border border-dashed border-[#8F55A8]">
+                                        <div
+                                            className={[
+                                                'mt-3 flex gap-3',
+                                                selectedMeals.length <= 2
+                                                    ? 'flex-wrap justify-center'
+                                                    : 'flex-col',
+                                            ].join(' ')}
+                                        >
                                             {selectedMeals.map((meal, index) => (
-                                                <div key={normalizeMealId(meal?.id) || index}>
-                                                    {index > 0 ? <div className="border-t border-gray-100" /> : null}
+                                                <div
+                                                    key={normalizeMealId(meal?.id) || index}
+                                                    className={[
+                                                        'overflow-hidden rounded-[10px] border border-gray-200 bg-[#F8F9F6]',
+                                                        selectedMeals.length <= 2
+                                                            ? 'w-full min-w-0 md:w-[calc(50%-0.375rem)] md:max-w-[calc(50%-0.375rem)]'
+                                                            : 'w-full',
+                                                    ].join(' ')}
+                                                >
                                                     <ProtocolMealRow
                                                         meal={meal}
-                                                        selected
                                                         compact
                                                         onViewDetails={
                                                             typeof onViewDetails === 'function'

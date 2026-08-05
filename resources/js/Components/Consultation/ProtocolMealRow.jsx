@@ -5,11 +5,13 @@ import SquareCheckbox from '../Atoms/Icons/SquareCheckbox.jsx';
 /**
  * Horizontal meal row for TBD Weekly Protocol day overview + options list.
  *
+ * Two frames: image (full row height) | short details (title, fluid MacroGrid, centered VIEW DETAILS).
+ *
  * @param {object} props
  * @param {{ id?: string; title?: string; imageUrl?: string; macros?: { calories?: string|number; protein?: string|number; carbs?: string|number; fat?: string|number } }} props.meal
  * @param {boolean} [props.selected]
  * @param {boolean} [props.showCheckbox]
- * @param {boolean} [props.compact] Tighter macros / image for dual-column overview cards.
+ * @param {boolean} [props.compact] Slightly tighter padding for dual-column overview cards.
  * @param {() => void} [props.onSelect]
  * @param {() => void} [props.onViewDetails]
  * @param {string} [props.className]
@@ -26,16 +28,19 @@ export default function ProtocolMealRow({
     const title = String(meal?.title ?? '').trim() || 'Meal';
     const imageUrl = typeof meal?.imageUrl === 'string' ? meal.imageUrl : '';
     const macros = meal?.macros ?? {};
-    const imageSize = compact
-        ? 'h-[72px] w-[72px] sm:h-[80px] sm:w-[80px]'
-        : 'h-[88px] w-[88px] sm:h-[96px] sm:w-[96px]';
+    const imageWidth = compact
+        ? 'w-[112px] sm:w-[128px]'
+        : 'w-[120px] sm:w-[140px]';
 
     return (
         <div
             className={[
-                'flex w-full items-start',
-                compact ? 'gap-2 px-2.5 py-2.5 sm:gap-2.5 sm:px-3' : 'gap-3 px-3 py-3 sm:gap-4 sm:px-4',
-                selected ? 'bg-[#6E8C47]/5' : 'bg-transparent',
+                'flex w-full items-stretch',
+                // Compact overview: shared soft fill so breakfast / mains / sides match.
+                compact ? 'gap-2.5 bg-[#F8F9F6] p-2 sm:gap-3 sm:p-2.5' : 'gap-3 px-3 py-3 sm:gap-3 sm:px-4',
+                // Selection wash only on the options list (checkbox rows), not overview cards.
+                !compact && selected ? 'bg-[#6E8C47]/5' : '',
+                !compact && !selected ? 'bg-transparent' : '',
                 className,
             ]
                 .join(' ')
@@ -44,7 +49,7 @@ export default function ProtocolMealRow({
             {showCheckbox ? (
                 <button
                     type="button"
-                    className="mt-1 shrink-0"
+                    className="mt-1 inline-flex size-5 shrink-0 self-start items-center justify-center rounded-[4px] border-0 bg-transparent p-0 outline-none focus-visible:ring-2 focus-visible:ring-[#5A6B44] focus-visible:ring-offset-1"
                     onClick={onSelect}
                     aria-pressed={selected}
                     aria-label={selected ? `Deselect ${title}` : `Select ${title}`}
@@ -55,26 +60,33 @@ export default function ProtocolMealRow({
 
             <button
                 type="button"
-                className="shrink-0 overflow-hidden rounded-[10px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5A6B44]"
+                className={[
+                    'shrink-0 self-stretch overflow-hidden rounded-[10px] border border-gray-200 bg-[#E8EFE0]',
+                    imageWidth,
+                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5A6B44]',
+                ].join(' ')}
                 onClick={onSelect}
                 aria-label={onSelect ? `Select ${title}` : title}
             >
                 {imageUrl ? (
-                    <img src={imageUrl} alt="" className={`${imageSize} object-cover`} />
+                    <img src={imageUrl} alt="" className="h-full w-full object-cover" />
                 ) : (
-                    <div
-                        className={`flex items-center justify-center bg-[#E8EFE0] font-montserrat text-xs font-semibold text-[#5A6B44] ${imageSize}`}
-                    >
+                    <div className="flex h-full w-full items-center justify-center font-montserrat text-xs font-semibold text-[#5A6B44]">
                         Meal
                     </div>
                 )}
             </button>
 
-            <div className="min-w-0 flex-1">
+            <div
+                className={[
+                    'flex min-w-0 flex-1 flex-col rounded-[10px] border border-gray-200 bg-white',
+                    compact ? 'px-2.5 py-2 sm:px-3 sm:py-2.5' : 'px-3 py-2.5 sm:px-3.5 sm:py-3',
+                ].join(' ')}
+            >
                 <p
                     className={[
                         'font-montserrat font-bold uppercase leading-snug tracking-tight text-[#262A22]',
-                        compact ? 'line-clamp-2 text-[11px] sm:text-[12px]' : 'text-[13px] sm:text-sm',
+                        compact ? 'line-clamp-2 text-[11px] sm:text-[12px]' : 'line-clamp-2 text-[13px] sm:text-sm',
                     ].join(' ')}
                 >
                     {title}
@@ -86,23 +98,23 @@ export default function ProtocolMealRow({
                     protein={macros.protein ?? 0}
                     carbs={macros.carbs ?? 0}
                     fat={macros.fat ?? 0}
-                    className={[
-                        compact ? 'mt-1.5 max-w-full gap-x-0' : 'mt-2 max-w-full',
-                    ].join(' ')}
+                    className="mt-1.5 w-full max-w-full"
                     ariaLabel={`${title} macros`}
                 />
                 {typeof onViewDetails === 'function' ? (
-                    <PillButton
-                        type="button"
-                        label="VIEW DETAILS"
-                        variant="secondary"
-                        size="sm"
-                        className="mt-2 !h-8 !min-h-8 px-3 text-[11px]"
-                        onClick={(event) => {
-                            event.stopPropagation();
-                            onViewDetails();
-                        }}
-                    />
+                    <div className="mt-2 flex justify-center">
+                        <PillButton
+                            type="button"
+                            label="VIEW DETAILS"
+                            variant="secondary"
+                            size="sm"
+                            className="!h-8 !min-h-8 px-3 text-[11px]"
+                            onClick={(event) => {
+                                event.stopPropagation();
+                                onViewDetails();
+                            }}
+                        />
+                    </div>
                 ) : null}
             </div>
         </div>

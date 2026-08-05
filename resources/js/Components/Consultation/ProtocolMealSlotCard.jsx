@@ -1,9 +1,13 @@
 import ProtocolMealRow from './ProtocolMealRow.jsx';
 
+/** Same footprint as one Main Meals column on desktop. */
+const MEAL_CARD_WIDTH =
+    'w-full min-w-0 max-w-full md:w-[calc(50%-0.375rem)] md:max-w-[calc(50%-0.375rem)]';
+
 /**
  * Day-overview slot card: olive border, SEE OTHER OPTIONS, selected meal rows.
  *
- * Multi-select (mains): two cards side-by-side on desktop; horizontal scroll stack on mobile.
+ * Cards share the Main Meals size. One or two selections are centered in the section.
  *
  * @param {object} props
  * @param {string} props.title
@@ -22,7 +26,7 @@ export default function ProtocolMealSlotCard({
     className = '',
 }) {
     const meals = Array.isArray(selectedMeals) ? selectedMeals : [];
-    const useDualLayout = multiSelect && meals.length > 1;
+    const centerPair = meals.length > 0 && meals.length <= 2;
 
     return (
         <section
@@ -55,41 +59,31 @@ export default function ProtocolMealSlotCard({
                     <p className="px-4 py-6 text-center font-body text-sm text-[#555555]">
                         No meal selected yet.
                     </p>
-                ) : useDualLayout ? (
+                ) : (
                     <div
                         className={[
-                            // Mobile: horizontal scroll of narrower cards
-                            'flex snap-x snap-mandatory gap-3 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
-                            // Desktop: both selections on one row
-                            'md:grid md:grid-cols-2 md:gap-3 md:overflow-visible md:pb-0',
-                        ].join(' ')}
+                            'flex gap-3',
+                            // Mobile: scroll when more than one card
+                            meals.length > 1
+                                ? 'snap-x snap-mandatory overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:overflow-visible md:pb-0'
+                                : '',
+                            // Desktop: center one or two cards at Main Meals width
+                            centerPair ? 'justify-center md:flex-wrap' : 'md:flex-wrap md:justify-start',
+                        ]
+                            .join(' ')
+                            .trim()}
                     >
                         {meals.map((meal, index) => (
                             <div
                                 key={String(meal?.id ?? index)}
                                 className={[
-                                    'min-w-[78%] shrink-0 snap-start overflow-hidden rounded-[10px] border border-gray-200 bg-white',
-                                    'md:min-w-0 md:shrink',
-                                    index > 0 ? 'md:border-l-2 md:border-l-gray-200' : '',
-                                ].join(' ')}
+                                    MEAL_CARD_WIDTH,
+                                    'overflow-hidden rounded-[10px] border border-gray-200 bg-[#F8F9F6]',
+                                    meals.length > 1 ? 'min-w-[78%] shrink-0 snap-start md:min-w-0 md:shrink' : '',
+                                ]
+                                    .join(' ')
+                                    .trim()}
                             >
-                                <ProtocolMealRow
-                                    meal={meal}
-                                    compact
-                                    onViewDetails={
-                                        typeof onViewDetails === 'function'
-                                            ? () => onViewDetails(meal)
-                                            : undefined
-                                    }
-                                />
-                            </div>
-                        ))}
-                    </div>
-                ) : (
-                    <div>
-                        {meals.map((meal, index) => (
-                            <div key={String(meal?.id ?? index)}>
-                                {index > 0 ? <div className="border-t-2 border-gray-200" /> : null}
                                 <ProtocolMealRow
                                     meal={meal}
                                     compact

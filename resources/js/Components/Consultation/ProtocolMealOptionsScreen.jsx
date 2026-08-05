@@ -1,8 +1,17 @@
 import PillButton from '../Atoms/Button/Button.jsx';
 import ProtocolMealRow from './ProtocolMealRow.jsx';
 
+/** Same footprint as one Main Meals / overview card. */
+const MEAL_CARD_SHELL =
+    'overflow-hidden rounded-[10px] border border-gray-200 bg-[#F8F9F6]';
+
+const MEAL_CARD_WIDTH =
+    'w-full min-w-0 max-w-full md:w-[calc(50%-0.375rem)] md:max-w-[calc(50%-0.375rem)]';
+
 /**
  * Full-screen “Choose Your Meals of the Day” list for SEE OTHER OPTIONS.
+ *
+ * Cards match the day-overview ProtocolMealRow chrome (soft fill, bordered shell).
  *
  * @param {object} props
  * @param {string} props.dayLabel e.g. "SUNDAY"
@@ -32,6 +41,7 @@ export default function ProtocolMealOptionsScreen({
     const optionCount = options.length;
     const selectedCount = selectedIds.length;
     const handleConfirm = typeof onConfirm === 'function' ? onConfirm : onBack;
+    const centerPair = optionCount > 0 && optionCount <= 2;
 
     return (
         <div
@@ -61,14 +71,27 @@ export default function ProtocolMealOptionsScreen({
                         <div className="mt-3 border-t border-dashed border-[#8F55A8]" aria-hidden />
                     </div>
 
-                    <ul className="m-0 list-none p-0">
+                    <ul
+                        className={[
+                            'm-0 flex list-none flex-wrap gap-3 px-3 pb-4',
+                            centerPair ? 'justify-center' : 'justify-start',
+                        ].join(' ')}
+                    >
                         {options.map((meal, index) => {
                             const id = String(meal?.id ?? index);
                             const selected = selectedSet.has(id);
 
                             return (
-                                <li key={id}>
-                                    {index > 0 ? <div className="border-t border-gray-100" /> : null}
+                                <li
+                                    key={id}
+                                    className={[
+                                        MEAL_CARD_WIDTH,
+                                        MEAL_CARD_SHELL,
+                                        selected ? 'ring-2 ring-inset ring-[#5A6B44]/35' : '',
+                                    ]
+                                        .join(' ')
+                                        .trim()}
+                                >
                                     <ProtocolMealRow
                                         meal={meal}
                                         selected={selected}
