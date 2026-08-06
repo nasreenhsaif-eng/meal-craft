@@ -55,6 +55,27 @@ describe('consultationDessertDeckForDay', () => {
 
         expect(deck.map((meal) => meal.id)).toEqual(['chia-blueberry', 'brownie']);
     });
+
+    it('keeps TBD Weekly Protocol desserts to baked + fruit only (chia is breakfast)', () => {
+        const catalog = [
+            dessert('brownie', 'Chocolate Orange Brownie'),
+            dessert('fruit', 'Fruit Salad Bowl'),
+            dessert('chia-blueberry', 'Blueberry Walnut Greek Yogurt Chia Pudding'),
+            dessert('muffin', 'Saffron Pumpkin Muffin'),
+        ];
+
+        const scheduled = [
+            dessert('brownie', 'Chocolate Orange Brownie'),
+            dessert('fruit', 'Fruit Salad Bowl'),
+            dessert('chia-blueberry', 'Blueberry Walnut Greek Yogurt Chia Pudding'),
+        ];
+
+        const deck = consultationDessertDeckForDay(catalog, scheduled, { preferBakedDesserts: true });
+
+        expect(deck).toHaveLength(2);
+        expect(deck.map((meal) => meal.id)).toEqual(['brownie', 'fruit']);
+        expect(deck.some((meal) => isGreekYogurtChiaDessertMeal(meal))).toBe(false);
+    });
 });
 
 describe('isGreekYogurtChiaDessertMeal', () => {

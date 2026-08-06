@@ -36,6 +36,14 @@ test('savory egg breakfast enforces minimum avocado portion scaled by plan tier'
         ->and(SavoryEggBreakfastMeals::adaptedSideGrams($avocado, 20.0, 2.0, 2000))->toBe(56.25);
 });
 
+test('savory egg breakfast keeps cooking oil at recipe baseline when eggs scale', function () {
+    $oil = Ingredient::factory()->create(['name' => 'Olive Oil (Extra Virgin)']);
+
+    expect(SavoryEggBreakfastMeals::adaptedSideGrams($oil, 5.0, 1.5, 1500, 'Mediterranean Omelet'))->toBe(5.0)
+        ->and(SavoryEggBreakfastMeals::adaptedSideGrams($oil, 5.0, 2.0, 2000, 'Mediterranean Omelet'))->toBe(5.0)
+        ->and(SavoryEggBreakfastMeals::adaptedSideGrams($oil, 10.0, 1.5, 1500, 'Feta & Herb Open Omelet'))->toBe(10.0);
+});
+
 test('savory egg breakfasts include balanced rotation meals', function () {
     expect(SavoryEggBreakfastMeals::isSavoryEggBreakfast('Hummus Egg Stack'))->toBeTrue()
         ->and(SavoryEggBreakfastMeals::isSavoryEggBreakfast('Blueberry Walnut Chia Pudding'))->toBeFalse();

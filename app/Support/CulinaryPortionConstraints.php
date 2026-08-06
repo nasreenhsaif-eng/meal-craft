@@ -92,6 +92,27 @@ final class CulinaryPortionConstraints
     {
         $name = $ingredient->name;
 
+        // Cooking-fat floors are a kitchen pour (≈1 tsp). Do not scale them with
+        // breakfast calorie tier — that turned 5 g oil into 7.5 g → snapped 10 g.
+        if (KitchenPortionRounding::isOilIngredient($ingredient)
+            || KitchenPortionRounding::isLiquidFatIngredient($ingredient)) {
+            /** @var array<string, array<string, float>> $perMeal */
+            $perMeal = config('customer_nutrition.culinary_portion_constraints.per_meal_minimum_grams', []);
+
+            if (isset($perMeal[$meal->name][$name]) && (float) $perMeal[$meal->name][$name] > 0) {
+                return (float) $perMeal[$meal->name][$name];
+            }
+
+            /** @var array<string, float> $defaults */
+            $defaults = config('customer_nutrition.culinary_portion_constraints.default_minimum_grams', []);
+
+            if (isset($defaults[$name]) && (float) $defaults[$name] > 0) {
+                return (float) $defaults[$name];
+            }
+
+            return 5.0;
+        }
+
         /** @var array<string, array<string, float>> $perMeal */
         $perMeal = config('customer_nutrition.culinary_portion_constraints.per_meal_minimum_grams', []);
 

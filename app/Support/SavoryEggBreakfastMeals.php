@@ -115,7 +115,13 @@ final class SavoryEggBreakfastMeals
 
     public static function isSavoryEggBreakfast(Meal|string $meal): bool
     {
-        return self::isDairyForwardBreakfast($meal) || self::isDairyFreeBreakfast($meal);
+        if (self::isDairyForwardBreakfast($meal) || self::isDairyFreeBreakfast($meal)) {
+            return true;
+        }
+
+        $name = self::canonicalMealName($meal instanceof Meal ? (string) $meal->name : $meal);
+
+        return in_array($name, NutrientDenseWeeklyRotationSchedule::EGG_BREAKFASTS, true);
     }
 
     public static function profileAvoidsDairy(CustomerProfile $profile): bool
@@ -366,6 +372,13 @@ final class SavoryEggBreakfastMeals
     ): float {
         if ($baselineGrams <= 0) {
             return 0.0;
+        }
+
+        // Pan fat is a kitchen pour, not an egg-scaled side — keep the recipe baseline
+        // so 5 ml olive oil stays 5 ml when eggs go from 2 → 3 (avoids 7.5 → snap 10).
+        if (KitchenPortionRounding::isOilIngredient($ingredient)
+            || PureCookingFatNutrition::isPureCookingFat($ingredient)) {
+            return round($baselineGrams, 4);
         }
 
         $grams = round($baselineGrams * $sideMultiplier, 4);

@@ -9,14 +9,18 @@ use App\Models\Meal;
 use App\Services\NutrientDenseWeeklyRotationSchedule;
 
 /**
- * TBD Weekly Protocol breakfast deck: Mediterranean Omelet (default) + day’s Greek yogurt chia.
+ * TBD Weekly Protocol breakfast deck: day’s egg breakfast (default) + day’s Greek yogurt chia.
  */
 final class NutrientDenseBreakfastOptions
 {
+    /** Day 1 egg breakfast name (Mediterranean Omelet). */
     public const OMELETTE_NAME = 'Mediterranean Omelet';
 
-    /** Plan slot index stamped on the omelette option. */
+    /** Plan slot index stamped on the rotating egg option. */
     public const OMELETTE_SLOT_INDEX = 1;
+
+    /** Alias for the egg breakfast slot index. */
+    public const EGG_SLOT_INDEX = self::OMELETTE_SLOT_INDEX;
 
     /** Plan slot index stamped on the chia Greek yoghurt option. */
     public const CHIA_SLOT_INDEX = 2;
@@ -26,9 +30,17 @@ final class NutrientDenseBreakfastOptions
         return DietProtocol::tryFromStored($profile->diet_protocol) === DietProtocol::NutrientDense;
     }
 
+    public static function eggBreakfastMealNameForDay(int $dayNumber, CustomerProfile $profile): string
+    {
+        return SavoryEggBreakfastMeals::scheduledBreakfastNameForDay($dayNumber, $profile);
+    }
+
+    /**
+     * @deprecated Use eggBreakfastMealNameForDay() — eggs rotate by weekday.
+     */
     public static function omeletteMealNameForProfile(CustomerProfile $profile): string
     {
-        return SavoryEggBreakfastMeals::resolveMealNameForProfile(self::OMELETTE_NAME, $profile);
+        return self::eggBreakfastMealNameForDay(1, $profile);
     }
 
     public static function chiaMealNameForDay(int $dayNumber, CustomerProfile $profile): string
@@ -42,9 +54,19 @@ final class NutrientDenseBreakfastOptions
         return ChiaDessertMeals::resolveMealNameForProfile($scheduled, $profile);
     }
 
+    public static function resolveEggBreakfastMeal(int $dayNumber, CustomerProfile $profile): ?Meal
+    {
+        return SavoryEggBreakfastMeals::findRotationMealByName(
+            self::eggBreakfastMealNameForDay($dayNumber, $profile),
+        );
+    }
+
+    /**
+     * @deprecated Use resolveEggBreakfastMeal() — eggs rotate by weekday.
+     */
     public static function resolveOmeletteMeal(CustomerProfile $profile): ?Meal
     {
-        return SavoryEggBreakfastMeals::findRotationMealByName(self::omeletteMealNameForProfile($profile));
+        return self::resolveEggBreakfastMeal(1, $profile);
     }
 
     public static function resolveChiaMeal(int $dayNumber, CustomerProfile $profile): ?Meal
@@ -70,15 +92,15 @@ final class NutrientDenseBreakfastOptions
     ): array {
         $options = [];
 
-        $omelette = self::resolveOmeletteMeal($profile);
+        $egg = self::resolveEggBreakfastMeal($dayNumber, $profile);
 
-        if ($omelette instanceof Meal) {
+        if ($egg instanceof Meal) {
             $options[] = [
-                'meal' => $omelette,
-                'plan_slot_index' => self::OMELETTE_SLOT_INDEX,
+                'meal' => $egg,
+                'plan_slot_index' => self::EGG_SLOT_INDEX,
                 'is_recommended' => $recommendedMealIds === []
                     ? true
-                    : in_array((int) $omelette->id, $recommendedMealIds, true),
+                    : in_array((int) $egg->id, $recommendedMealIds, true),
             ];
         }
 

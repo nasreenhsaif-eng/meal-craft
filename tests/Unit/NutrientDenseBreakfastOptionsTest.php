@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\CustomerProfile;
+use App\Services\NutrientDenseWeeklyRotationSchedule;
 use App\Support\NutrientDenseBreakfastOptions;
 
 test('nutrient dense breakfast options apply only to nutrient dense profiles', function (): void {
@@ -20,6 +21,17 @@ test('chia breakfast name rotates by weekday for nutrient dense', function (): v
         ->toBe('Mango Pumpkin Seed Greek Yogurt Chia Pudding');
 });
 
+test('egg breakfast name rotates by weekday for nutrient dense', function (): void {
+    $profile = new CustomerProfile(['diet_protocol' => 'nutrient_dense']);
+
+    expect(NutrientDenseBreakfastOptions::eggBreakfastMealNameForDay(1, $profile))
+        ->toBe(NutrientDenseWeeklyRotationSchedule::EGG_BREAKFASTS[0])
+        ->and(NutrientDenseBreakfastOptions::eggBreakfastMealNameForDay(2, $profile))
+        ->toBe(NutrientDenseWeeklyRotationSchedule::EGG_BREAKFASTS[1])
+        ->and(NutrientDenseBreakfastOptions::eggBreakfastMealNameForDay(1, $profile))
+        ->not->toBe(NutrientDenseBreakfastOptions::eggBreakfastMealNameForDay(2, $profile));
+});
+
 test('dairy avoid profiles resolve chia breakfast to coconut variant', function (): void {
     $profile = new CustomerProfile([
         'diet_protocol' => 'nutrient_dense',
@@ -30,11 +42,12 @@ test('dairy avoid profiles resolve chia breakfast to coconut variant', function 
         ->toBe('Blueberry Walnut Chia Pudding');
 });
 
-test('omelette is the recommended mediterranean omelet name', function (): void {
+test('day one egg breakfast is mediterranean omelet and slots stay stable', function (): void {
     $profile = new CustomerProfile(['diet_protocol' => 'nutrient_dense']);
 
-    expect(NutrientDenseBreakfastOptions::omeletteMealNameForProfile($profile))
+    expect(NutrientDenseBreakfastOptions::eggBreakfastMealNameForDay(1, $profile))
         ->toBe(NutrientDenseBreakfastOptions::OMELETTE_NAME)
+        ->and(NutrientDenseBreakfastOptions::EGG_SLOT_INDEX)->toBe(1)
         ->and(NutrientDenseBreakfastOptions::OMELETTE_SLOT_INDEX)->toBe(1)
         ->and(NutrientDenseBreakfastOptions::CHIA_SLOT_INDEX)->toBe(2);
 });

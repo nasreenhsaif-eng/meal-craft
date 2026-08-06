@@ -20,6 +20,8 @@ use App\Services\MealPlanDefaultDaySelections;
 use App\Services\MealPlanLibraryTierPreview;
 use App\Services\MealPlanService;
 use App\Services\Nutrition\UserPlanCalculator;
+use App\Support\ChiaDessertMeals;
+use App\Support\NutrientDenseBreakfastOptions;
 use App\Support\PrimaryFullCraftMainSlots;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -154,6 +156,17 @@ class MealPlanLibraryController extends Controller
             $categoryKey = $this->slotTypeToCategoryKey($dayMeal->slot_type);
             $row = $this->mealLibrary->presentMealRowForUi($dayMeal->meal);
             $slotIndex = (int) $dayMeal->slot_index;
+
+            // TBD Weekly Protocol: Greek yogurt chia lives on breakfast, not the dessert deck.
+            if (
+                $isNutrientDensePlan
+                && $categoryKey === 'desserts'
+                && ($slotIndex === 3 || ChiaDessertMeals::isChiaDessert($dayMeal->meal))
+            ) {
+                $categoryKey = 'breakfasts';
+                $slotIndex = NutrientDenseBreakfastOptions::CHIA_SLOT_INDEX;
+            }
+
             $row['plan_slot_index'] = $slotIndex;
 
             if ($hasStoredDefaults) {

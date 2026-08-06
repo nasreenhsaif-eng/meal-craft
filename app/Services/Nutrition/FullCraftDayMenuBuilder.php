@@ -77,6 +77,18 @@ final class FullCraftDayMenuBuilder
                 continue;
             }
 
+            // TBD Weekly Protocol: chia is a breakfast option — never surface it on the dessert deck.
+            if (
+                $slotType === MealPlanSlotType::Dessert
+                && NutrientDenseBreakfastOptions::appliesTo($profile)
+                && (
+                    (int) $row->slot_index === 3
+                    || ChiaDessertMeals::isChiaDessert($meal)
+                )
+            ) {
+                continue;
+            }
+
             $adapted = AdaptedMenuBuilder::adaptMealForProfile($profile, $meal, array_merge(
                 $dayAdaptOptions,
                 ['schedule_slot' => AdaptedMenuBuilder::adaptationSlotForMealPlanSlot($slotType)],
@@ -547,14 +559,13 @@ final class FullCraftDayMenuBuilder
 
         /** @var array<int, int> $mainIdsBySlot */
         $mainIdsBySlot = [];
-        $dayNumber = 1;
+        $firstRow = $dayRows->first();
+        $dayNumber = $firstRow instanceof MealPlanDayMeal ? max(1, (int) $firstRow->day_number) : 1;
 
         foreach ($dayRows as $row) {
             if (! $row instanceof MealPlanDayMeal || ! $row->meal instanceof Meal) {
                 continue;
             }
-
-            $dayNumber = max($dayNumber, (int) $row->day_number);
 
             $slotType = $row->slot_type instanceof MealPlanSlotType
                 ? $row->slot_type
@@ -583,10 +594,10 @@ final class FullCraftDayMenuBuilder
         }
 
         if (NutrientDenseBreakfastOptions::appliesTo($profile)) {
-            $omelette = NutrientDenseBreakfastOptions::resolveOmeletteMeal($profile);
+            $egg = NutrientDenseBreakfastOptions::resolveEggBreakfastMeal($dayNumber, $profile);
 
-            if ($omelette instanceof Meal) {
-                $selection['breakfasts'][] = (int) $omelette->id;
+            if ($egg instanceof Meal) {
+                $selection['breakfasts'][] = (int) $egg->id;
             }
         } else {
             foreach ($dayRows as $row) {

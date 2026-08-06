@@ -111,6 +111,7 @@ export const CONSULTATION_DECK_OPTION_LIMITS = Object.freeze({
     breakfast: 1,
     meal: 6,
     sidesalad: 2,
+    /** Balanced keeps 3 (baked + fruit + chia). TBD Weekly Protocol uses 2 via preferBakedDesserts. */
     dessert: 3,
     soup: 2,
 });
@@ -365,8 +366,9 @@ export function isBakedDessertMeal(meal) {
 }
 
 /**
- * Dessert deck: today's rotated dessert (from schedule) first, then fill to 3 from the catalog.
- * When filling a chia slot, prefer the Greek yogurt rotation over coconut chia.
+ * Dessert deck: today's rotated dessert (from schedule) first, then fill from the catalog.
+ * Balanced: up to 3 (baked + fruit + one Greek yogurt chia).
+ * TBD Weekly Protocol (`preferBakedDesserts`): up to 2 — chia is a breakfast option, not dessert.
  *
  * @param {ConsultationMeal[]} source
  * @param {ConsultationMeal[]} [scheduledDesserts]
@@ -374,7 +376,7 @@ export function isBakedDessertMeal(meal) {
  */
 export function consultationDessertDeckForDay(source, scheduledDesserts = [], options = {}) {
     const { preferBakedDesserts = false } = options;
-    const limit = CONSULTATION_DECK_OPTION_LIMITS.dessert;
+    const limit = preferBakedDesserts ? 2 : CONSULTATION_DECK_OPTION_LIMITS.dessert;
     /** @type {ConsultationMeal[]} */
     const deck = [];
     const seen = new Set();
@@ -384,6 +386,11 @@ export function consultationDessertDeckForDay(source, scheduledDesserts = [], op
     for (const meal of scheduledDesserts) {
         const id = normalizeConsultationMealId(meal?.id);
         if (id === '' || seen.has(id)) {
+            continue;
+        }
+
+        // Chia moved to breakfast on TBD Weekly Protocol — never surface it as a dessert option.
+        if (preferBakedDesserts && isChiaDessertMeal(meal)) {
             continue;
         }
 
@@ -397,18 +404,22 @@ export function consultationDessertDeckForDay(source, scheduledDesserts = [], op
         if (isBakedDessertMeal(meal)) {
             hasBaked = true;
         }
+
+        if (deck.length >= limit) {
+            return deck.slice(0, limit);
+        }
     }
 
     const catalogDesserts = source.filter((meal) => meal.mealType === 'Dessert');
 
-    if (!hasChia) {
+    if (!preferBakedDesserts && !hasChia) {
         const greekYogurtChia = catalogDesserts.find((meal) => {
             const id = normalizeConsultationMealId(meal?.id);
 
             return id !== '' && !seen.has(id) && isGreekYogurtChiaDessertMeal(meal);
         });
 
-        if (greekYogurtChia && (!preferBakedDesserts || hasBaked || deck.length > 0)) {
+        if (greekYogurtChia) {
             seen.add(normalizeConsultationMealId(greekYogurtChia.id));
             deck.push(greekYogurtChia);
             hasChia = true;
@@ -426,7 +437,7 @@ export function consultationDessertDeckForDay(source, scheduledDesserts = [], op
         }
 
         if (isChiaDessertMeal(meal)) {
-            if (hasChia) {
+            if (preferBakedDesserts || hasChia) {
                 continue;
             }
 

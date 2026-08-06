@@ -273,5 +273,5 @@ test('breakfast adaptation never wipes herbs or spices to zero grams', function 
 
     expect((float) $byName['Black Pepper']['adapted_amount_grams'])->toBeGreaterThanOrEqual(1.0)
         ->and((float) $byName['Basil']['adapted_amount_grams'])->toBeGreaterThanOrEqual(1.0)
-        ->and((float) $byName['Olive Oil']['adapted_amount_grams'])->toBeGreaterThanOrEqual(5.0);
+        ->and((float) $byName['Olive Oil']['adapted_amount_grams'])->toBe(5.0);
 });

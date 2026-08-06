@@ -1140,7 +1140,7 @@ export default function CraftedForYouPage({
 
                 const breakfastId = normalizeConsultationMealId(breakfast.id);
 
-                // Nutrient Density: seed once with the recommended omelette; never overwrite a customer swap.
+                // Nutrient Density: seed once with the recommended egg breakfast; never overwrite a customer swap.
                 if (dietProtocol === 'nutrient_dense') {
                     if ((current.breakfasts?.length ?? 0) > 0) {
                         continue;

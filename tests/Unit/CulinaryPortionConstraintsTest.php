@@ -49,3 +49,12 @@ test('egg in egg hash title is not treated as structural title base', function (
         ->and(CulinaryPortionConstraints::isTitleStructuralIngredient($meal, 'Sweet Potato'))->toBeTrue()
         ->and(CulinaryPortionConstraints::minimumGrams($meal, $egg))->toBeNull();
 });
+
+test('olive oil culinary floor stays five grams across breakfast tiers', function (): void {
+    $meal = new Meal(['name' => 'Mediterranean Omelet']);
+    $oil = new Ingredient(['name' => 'Olive Oil (Extra Virgin)']);
+
+    expect(CulinaryPortionConstraints::minimumGrams($meal, $oil, 1000.0))->toBe(5.0)
+        ->and(CulinaryPortionConstraints::minimumGrams($meal, $oil, 1500.0))->toBe(5.0)
+        ->and(CulinaryPortionConstraints::minimumGrams($meal, $oil, 2000.0))->toBe(5.0);
+});
