@@ -126,10 +126,9 @@ final class BalancedEggBreakfastRecipeRefiner
                     'Spinach (Fresh)' => 45,
                     'Cherry Tomatoes' => 45,
                     'Cucumber' => 40,
-                    'Olive Oil' => 3,
                     'Black Pepper' => 1,
                 ],
-                'highlight' => 'Soft-boiled eggs stacked over sautéed spinach and cherry tomatoes on a bed of creamy house cumin hummus.',
+                'highlight' => 'Soft-boiled eggs stacked over wilted spinach and cherry tomatoes on a bed of creamy house cumin hummus.',
                 'diet_tags' => $tags,
             ],
             'Kuku Sabzi Egg Muffins' => [

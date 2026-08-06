@@ -240,4 +240,16 @@ return [
         'very_active' => 1.725,
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Side salad packaging (500 ml paper cup + 20 ml dressing cup)
+    |--------------------------------------------------------------------------
+    */
+    'side_salad_packaging' => [
+        'max_fluffy_leaf_grams' => 60.0,
+        'max_dense_leaf_grams' => 70.0,
+        'max_combined_leaf_grams' => 70.0,
+        'max_dressing_grams' => 20.0,
+    ],
+
 ];
