@@ -228,7 +228,6 @@ final class BalancedDairyFreeManualRecipeAdjustments
             'Creamy Cumin Hummus (Base)' => 100.0,
             'Cucumber' => 40.0,
             'Egg' => 100.0,
-            'Olive Oil' => 3.0,
             'Spinach (Fresh)' => 45.0,
         ],
         'Sweet Potato Egg Hash' => [

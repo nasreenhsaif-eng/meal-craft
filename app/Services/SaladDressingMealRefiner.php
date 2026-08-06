@@ -198,7 +198,7 @@ final class SaladDressingMealRefiner
             ],
             'Classic Garden Salad' => [
                 'salad_ingredients' => [
-                    'Romaine Lettuce' => 50,
+                    'Romaine Lettuce' => 40,
                     'Tomato (Raw)' => 60,
                     'Cucumber' => 60,
                     'Bell Pepper (Red)' => 40,
@@ -227,7 +227,7 @@ final class SaladDressingMealRefiner
                     'Pomegranate Seeds' => 12,
                 ],
                 'dressing_ingredients' => [
-                    'Sumac Za\'atar Dressing (Base)' => 31,
+                    'Sumac Za\'atar Dressing (Base)' => 15,
                 ],
                 'salad_instructions' => [
                     'Prepare Sumac Za\'atar Dressing (Base) per base recipe instructions; rest 10 minutes.',
@@ -385,7 +385,7 @@ final class SaladDressingMealRefiner
             'Chicken Thai Mango Salad' => [
                 'salad_ingredients' => [
                     'Chicken Breast' => StandardMeatPortion::GRAMS,
-                    'Cabbage (Purple)' => 75,
+                    'Cabbage (Purple)' => 60,
                     'Cucumber' => 45,
                     'Mango' => 55,
                     'Cherry Tomatoes' => 40,
@@ -394,7 +394,7 @@ final class SaladDressingMealRefiner
                     'Peanuts (Crushed)' => 8,
                 ],
                 'dressing_ingredients' => [
-                    self::PEANUT_BUTTER_DRESSING => 25,
+                    self::PEANUT_BUTTER_DRESSING => 20,
                 ],
                 'salad_instructions' => [
                     'Grill or pan-sear chicken until golden then in the oven for 20 minutes exactly, then Rest and slice thinly.',
@@ -408,8 +408,8 @@ final class SaladDressingMealRefiner
             'Mediterranean Crunch Salad' => [
                 'salad_ingredients' => [
                     'Rosemary Garlic Chicken (Base)' => StandardMeatPortion::GRAMS,
-                    'Romaine Lettuce' => 45,
-                    'Rocca' => 45,
+                    'Romaine Lettuce' => 30,
+                    'Rocca' => 40,
                     'Cucumber' => 55,
                     'Cherry Tomatoes' => 45,
                     'Bell Pepper (Red)' => 35,
@@ -509,7 +509,7 @@ final class SaladDressingMealRefiner
                     'Peanuts (Crushed)' => 8,
                 ],
                 'dressing_ingredients' => [
-                    self::PEANUT_BUTTER_DRESSING => 25,
+                    self::PEANUT_BUTTER_DRESSING => 20,
                 ],
                 'salad_instructions' => [
                     'Shred cabbage and julienne carrots, cucumber, and red onion.',
@@ -533,7 +533,7 @@ final class SaladDressingMealRefiner
                     'Black Seeds' => 5,
                 ],
                 'dressing_ingredients' => [
-                    'Lemon-Tahini Dressing (Base)' => 35,
+                    'Lemon-Tahini Dressing (Base)' => 20,
                 ],
                 'salad_instructions' => [
                     'Prepare Cooked Chickpeas (Base) per base recipe instructions.',

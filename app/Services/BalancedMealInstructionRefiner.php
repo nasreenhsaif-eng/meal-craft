@@ -124,7 +124,7 @@ final class BalancedMealInstructionRefiner
             ]),
             'Hummus Egg Stack' => $this->steps([
                 'Prepare Creamy Cumin Hummus (Base) per base recipe instructions. Warm and spread a generous layer in a shallow bowl.',
-                'Halve the cherry tomatoes. Sauté spinach and tomatoes in olive oil over medium heat until the spinach is wilted and the tomatoes are softened (3–4 min).',
+                'Halve the cherry tomatoes. Wilt spinach with the tomatoes in a non-stick pan over medium heat until the spinach is wilted and the tomatoes are softened (3–4 min).',
                 'Spoon the spinach and tomato layer over the hummus.',
                 'Soft-boil eggs until the whites are set and yolks are jammy (6–7 min). Halve and place on top.',
                 'Add cucumber slices and finish with cracked black pepper. Serve immediately.',
