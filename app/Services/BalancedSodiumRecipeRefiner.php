@@ -133,7 +133,12 @@ final class BalancedSodiumRecipeRefiner
         return DB::transaction(function (): array {
             $updated = [];
 
-            foreach (BalancedWeeklyRotationSchedule::allScheduledMealNames() as $mealName) {
+            $mealNames = array_values(array_unique(array_merge(
+                BalancedWeeklyRotationSchedule::allScheduledMealNames(),
+                $this->libraryMealNamesWithCollapsedPrimaryMeat(),
+            )));
+
+            foreach ($mealNames as $mealName) {
                 if (in_array($mealName, self::MEALS_SKIP_SODIUM_ADJUSTMENT, true)) {
                     continue;
                 }
@@ -177,6 +182,22 @@ final class BalancedSodiumRecipeRefiner
 
             return $updated;
         });
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function libraryMealNamesWithCollapsedPrimaryMeat(): array
+    {
+        $names = [];
+
+        foreach (Meal::queryForMealLibrary()->with('ingredients')->cursor() as $meal) {
+            if (MealLibraryEditGuard::mealHasCollapsedPrimaryMeat($meal)) {
+                $names[] = $meal->name;
+            }
+        }
+
+        return $names;
     }
 
     /**
