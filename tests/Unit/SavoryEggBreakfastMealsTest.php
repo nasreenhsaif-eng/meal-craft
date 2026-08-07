@@ -10,9 +10,10 @@ uses(RefreshDatabase::class);
 test('savory egg breakfast tier counts follow plan tiers', function () {
     expect(SavoryEggBreakfastMeals::eggCountForPlanTier(1000))->toBe(2)
         ->and(SavoryEggBreakfastMeals::eggCountForPlanTier(1200))->toBe(2)
-        ->and(SavoryEggBreakfastMeals::eggCountForPlanTier(1500))->toBe(4)
+        ->and(SavoryEggBreakfastMeals::eggCountForPlanTier(1500))->toBe(3)
         ->and(SavoryEggBreakfastMeals::eggCountForPlanTier(1800))->toBe(4)
         ->and(SavoryEggBreakfastMeals::eggCountForPlanTier(2000))->toBe(5)
+        ->and(SavoryEggBreakfastMeals::eggGramsForPlanTier(1500))->toBe(150.0)
         ->and(SavoryEggBreakfastMeals::eggGramsForPlanTier(2000))->toBe(250.0);
 });
 
