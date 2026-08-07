@@ -145,7 +145,8 @@ final class BalancedSodiumRecipeRefiner
                     continue;
                 }
 
-                if (MealLibraryEditGuard::shouldSkipMealRefinement($meal)) {
+                if (MealLibraryEditGuard::shouldSkipMealRefinement($meal)
+                    && ! MealLibraryEditGuard::mealHasCollapsedPrimaryMeat($meal)) {
                     continue;
                 }
 
