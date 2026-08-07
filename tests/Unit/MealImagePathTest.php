@@ -2,9 +2,6 @@
 
 use App\Support\MealImagePath;
 use Illuminate\Support\Facades\Http;
-use Tests\TestCase;
-
-uses(TestCase::class);
 
 test('normalize treats NO_PHOTO_URL export placeholder as null', function () {
     expect(MealImagePath::normalizeForDatabase('NO_PHOTO_URL'))->toBeNull()
@@ -64,6 +61,22 @@ test('resolve url discovers image from meal title when stored path is null', fun
     );
 
     expect($url)->toContain('marinated_pineapple_peppers_salad.png');
+});
+
+test('peri peri chicken liver meal title discovers zucchini bread photo when image path is empty', function () {
+    $file = public_path('images/meals/peri_peri_chicken_liver_w_zucchini_bread.png');
+    if (! is_file($file)) {
+        $this->markTestSkipped('peri_peri_chicken_liver_w_zucchini_bread.png not in public/images/meals.');
+    }
+
+    MealImagePath::resetPublicMealsSlugIndex();
+
+    $relative = MealImagePath::discoverRelativePathForMealTitle('Peri Peri Chicken Liver w Zucchini Bread');
+    $url = MealImagePath::resolveUrl(null, 'Peri Peri Chicken Liver w Zucchini Bread');
+
+    expect($relative)->toBe('images/meals/peri_peri_chicken_liver_w_zucchini_bread.png')
+        ->and($url)->toContain('peri_peri_chicken_liver_w_zucchini_bread.png')
+        ->and($url)->not->toContain('placeholder.svg');
 });
 
 test('normalize strips public prefix slashes and storage url segment', function () {
