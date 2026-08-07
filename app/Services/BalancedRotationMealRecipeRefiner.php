@@ -239,11 +239,11 @@ final class BalancedRotationMealRecipeRefiner
     {
         return [
             'Almond Flour (Base)' => 9,
-            'Coconut Oil' => 6.8,
-            'Date Syrup' => 9,
+            'Coconut Oil' => 6.9,
+            'Date Syrup' => 8.53125,
             'Tahini' => 7.5,
-            'Cocoa Powder' => 3.8,
-            'Sea Salt' => 0.6,
+            'Cocoa Powder' => 3.75,
+            'Sea Salt' => 0.25,
             'Vanilla Pods' => 0.1,
         ];
     }
@@ -432,7 +432,7 @@ final class BalancedRotationMealRecipeRefiner
                 'is_bulk' => true,
                 'servings_count' => self::SALTED_CARAMEL_CHOCOLATE_BAR_SERVINGS_COUNT,
                 'diet_tags' => $vegetarianTags,
-                'short_description' => 'Three-layer 8x8 no-bake bar (16 squares): almond shortbread, salted tahini-date caramel, and dark cocoa topping.',
+                'short_description' => 'Three-layer 8x8 bar (16 squares): baked almond crust, chilled salted tahini-date caramel, and dark cocoa topping.',
             ],
         ];
     }
