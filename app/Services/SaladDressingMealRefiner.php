@@ -57,7 +57,7 @@ final class SaladDressingMealRefiner
                 }
 
                 if (MealLibraryEditGuard::shouldSkipMealRefinement($meal)
-                    && ! MealLibraryEditGuard::mealHasCollapsedPrimaryMeat($meal)) {
+                    && ! MealLibraryEditGuard::mealHasCollapsedOrMissingPrimaryMeat($meal)) {
                     continue;
                 }
 
