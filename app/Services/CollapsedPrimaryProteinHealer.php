@@ -3,22 +3,39 @@
 namespace App\Services;
 
 use App\Enums\MealPlanSlotType;
+use App\Models\Ingredient;
 use App\Models\Meal;
 use App\Support\MealLibraryEditGuard;
+use App\Support\MenuDevelopmentCsv;
 use App\Support\StandardMeatPortion;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
 
 /**
  * Library-wide heal for primary beef/chicken/fish portions crushed below half of
- * {@see StandardMeatPortion::GRAMS} (e.g. sodium-refiner collapse to 1–2 g).
- *
- * Does not invent missing protein lines — meals that lost chicken entirely are restored
- * by recipe refiners once {@see MealLibraryEditGuard::mealHasCollapsedOrMissingPrimaryMeat()}
- * bypasses the UI edit lock.
+ * {@see StandardMeatPortion::GRAMS} (e.g. sodium-refiner collapse to 1–2 g), and
+ * restore missing primary protein lines from the master meals CSV when present.
  */
 final class CollapsedPrimaryProteinHealer
 {
     public const COLLAPSED_FRACTION = 0.5;
+
+    /**
+     * Heal collapsed portions, restore missing primary protein from CSV, and rewrite
+     * known salad recipes that still lack primary meat.
+     *
+     * @return list<string> Updated meal names
+     */
+    public function healAll(): array
+    {
+        // Salads first: rewrite known recipes when chicken is collapsed or missing entirely
+        // (e.g. Turmeric Chicken Kale Salad stripped to greens only).
+        $updated = $this->refineSaladsMissingPrimaryMeat();
+        $updated = array_values(array_unique(array_merge($updated, $this->heal())));
+        $updated = array_values(array_unique(array_merge($updated, $this->restoreMissingPrimaryProteinFromMasterCsv())));
+
+        return $updated;
+    }
 
     /**
      * @return list<array{meal: string, ingredient: string, from: float, to: float}>
@@ -181,22 +198,203 @@ final class CollapsedPrimaryProteinHealer
                     ]);
                 }
 
-                $fresh = $meal->fresh(['ingredients']);
-
-                if ($fresh->ingredients->isNotEmpty() && ! $fresh->is_bulk) {
-                    $nutrition = RecipeNutritionCalculator::fromMeal($fresh);
-                    $fresh->update(array_merge(
-                        Meal::nutritionSummaryToPersistedAttributes($nutrition),
-                        ['nutrition_aggregates_synced' => true],
-                    ));
-                }
-
-                MealRecipeAsIngredientSyncService::syncFromPersistedMeal($fresh->fresh(['ingredients']), false);
+                $this->resyncMealNutrition($meal->fresh(['ingredients']));
                 $updated[] = (string) $meal->name;
             }
 
             return $updated;
         });
+    }
+
+    /**
+     * Attach missing primary meat/fish lines using grams from {@see MenuDevelopmentCsv::mealsPath()}.
+     *
+     * @return list<string>
+     */
+    public function restoreMissingPrimaryProteinFromMasterCsv(): array
+    {
+        $csvPortions = $this->primaryMeatPortionsByMealFromCsv();
+
+        if ($csvPortions === []) {
+            return [];
+        }
+
+        return DB::transaction(function () use ($csvPortions): array {
+            $updated = [];
+
+            foreach (Meal::queryForMealLibrary()->with('ingredients')->cursor() as $meal) {
+                if (! MealLibraryEditGuard::mealHasCollapsedOrMissingPrimaryMeat($meal)) {
+                    continue;
+                }
+
+                if ($this->collapsedLinesOnMeal($meal) !== []) {
+                    continue;
+                }
+
+                $portions = $csvPortions[$meal->name] ?? null;
+
+                if ($portions === null || $portions === []) {
+                    continue;
+                }
+
+                $attached = false;
+
+                foreach ($portions as $ingredientName => $grams) {
+                    if ($meal->ingredients->contains(fn (Ingredient $ingredient): bool => $ingredient->name === $ingredientName)) {
+                        continue;
+                    }
+
+                    $ingredient = Ingredient::query()->where('name', $ingredientName)->first();
+
+                    if ($ingredient === null) {
+                        continue;
+                    }
+
+                    $rounded = round((float) $grams, 2);
+                    $meal->ingredients()->attach($ingredient->id, [
+                        'amount_grams' => $rounded,
+                        'amount' => $rounded,
+                        'unit' => 'g',
+                    ]);
+                    $attached = true;
+                }
+
+                if (! $attached) {
+                    continue;
+                }
+
+                $this->resyncMealNutrition($meal->fresh(['ingredients']));
+                $updated[] = (string) $meal->name;
+            }
+
+            return $updated;
+        });
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function refineSaladsMissingPrimaryMeat(): array
+    {
+        $updated = [];
+        $refiner = app(SaladDressingMealRefiner::class);
+
+        foreach (SaladDressingMealRefiner::refinedMealNames() as $mealName) {
+            $meal = Meal::queryForMealLibrary()->with('ingredients')->where('name', $mealName)->first();
+
+            if ($meal === null) {
+                continue;
+            }
+
+            if (! MealLibraryEditGuard::mealHasCollapsedOrMissingPrimaryMeat($meal)) {
+                continue;
+            }
+
+            try {
+                $refined = $refiner->refine($mealName);
+            } catch (\InvalidArgumentException) {
+                // Incomplete ingredient libraries (tests / partial imports) skip full salad rewrite.
+                continue;
+            }
+
+            if ($refined !== []) {
+                $updated = array_merge($updated, $refined);
+            }
+        }
+
+        return array_values(array_unique($updated));
+    }
+
+    /**
+     * @return array<string, array<string, float>>
+     */
+    private function primaryMeatPortionsByMealFromCsv(): array
+    {
+        $path = MenuDevelopmentCsv::mealsPath();
+
+        if (! File::exists($path)) {
+            return [];
+        }
+
+        $handle = fopen($path, 'rb');
+
+        if ($handle === false) {
+            return [];
+        }
+
+        $headers = fgetcsv($handle);
+
+        if ($headers === false) {
+            fclose($handle);
+
+            return [];
+        }
+
+        $nameIndex = array_search('meal_name', $headers, true);
+        $ingredientsIndex = array_search('ingredients_string', $headers, true);
+
+        if ($nameIndex === false || $ingredientsIndex === false) {
+            fclose($handle);
+
+            return [];
+        }
+
+        $byMeal = [];
+
+        while (($row = fgetcsv($handle)) !== false) {
+            if (! isset($row[$nameIndex], $row[$ingredientsIndex])) {
+                continue;
+            }
+
+            $mealName = trim((string) $row[$nameIndex]);
+            $ingredientsString = trim((string) $row[$ingredientsIndex]);
+
+            if ($mealName === '' || $ingredientsString === '') {
+                continue;
+            }
+
+            foreach (explode('|', $ingredientsString) as $segment) {
+                $segment = trim($segment);
+
+                if ($segment === '' || ! str_contains($segment, ':')) {
+                    continue;
+                }
+
+                [$ingredientName, $gramsRaw] = array_map('trim', explode(':', $segment, 2));
+                $grams = (float) $gramsRaw;
+
+                if ($grams <= 0.0) {
+                    continue;
+                }
+
+                if (! StandardMeatPortion::isPrimaryMeatIngredient($ingredientName, $mealName)) {
+                    continue;
+                }
+
+                if (StandardMeatPortion::isLiverBlendIngredient($ingredientName, $mealName)) {
+                    continue;
+                }
+
+                $byMeal[$mealName][$ingredientName] = max($byMeal[$mealName][$ingredientName] ?? 0.0, $grams);
+            }
+        }
+
+        fclose($handle);
+
+        return $byMeal;
+    }
+
+    private function resyncMealNutrition(Meal $meal): void
+    {
+        if ($meal->ingredients->isNotEmpty() && ! $meal->is_bulk) {
+            $nutrition = RecipeNutritionCalculator::fromMeal($meal);
+            $meal->update(array_merge(
+                Meal::nutritionSummaryToPersistedAttributes($nutrition),
+                ['nutrition_aggregates_synced' => true],
+            ));
+        }
+
+        MealRecipeAsIngredientSyncService::syncFromPersistedMeal($meal->fresh(['ingredients']), false);
     }
 
     /**

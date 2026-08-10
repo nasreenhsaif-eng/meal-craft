@@ -111,7 +111,7 @@ test('heal-collapsed-protein --weekly fails while any weekday chicken slot is tw
     expect(Artisan::call('menu:heal-collapsed-protein', ['--weekly' => true, '--dry-run' => true]))
         ->toBe(1);
 
-    expect(Artisan::call('menu:heal-collapsed-protein', ['--weekly' => true]))
+    expect(Artisan::call('menu:heal-collapsed-protein', ['--weekly' => true, '--sync-csv' => true]))
         ->toBe(0);
 
     foreach (app(CollapsedPrimaryProteinHealer::class)->auditWeeklyChickenSlots() as $row) {

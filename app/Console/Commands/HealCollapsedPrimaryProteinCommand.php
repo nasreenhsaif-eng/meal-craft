@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Services\CollapsedPrimaryProteinHealer;
+use App\Services\MenuDevelopmentCsvSync;
 use App\Support\StandardMeatPortion;
 use Illuminate\Console\Command;
 
@@ -10,11 +11,12 @@ class HealCollapsedPrimaryProteinCommand extends Command
 {
     protected $signature = 'menu:heal-collapsed-protein
                             {--dry-run : List collapsed primary meat/fish portions without writing}
-                            {--weekly : Also print the 7-day Balanced chicken plate/salad portion report}';
+                            {--weekly : Also print the 7-day Balanced chicken plate/salad portion report}
+                            {--sync-csv : Rewrite database/data/menu/meals.csv after healing}';
 
-    protected $description = 'Heal primary beef/chicken/fish portions crushed below 75 g (e.g. 1–2 g sodium-refiner collapse) back to 150 g across the whole meal library';
+    protected $description = 'Heal primary beef/chicken/fish portions crushed below 75 g (and restore missing chicken lines) back to 150 g across the whole meal library';
 
-    public function handle(CollapsedPrimaryProteinHealer $healer): int
+    public function handle(CollapsedPrimaryProteinHealer $healer, MenuDevelopmentCsvSync $csvSync): int
     {
         $findings = $healer->audit();
 
@@ -35,9 +37,16 @@ class HealCollapsedPrimaryProteinCommand extends Command
 
             if ($this->option('dry-run')) {
                 $this->warn('Dry run — '.count($findings).' collapsed portion(s) would be healed.');
-            } else {
-                $updated = $healer->heal();
-                $this->info('Healed '.count($updated).' meal(s).');
+            }
+        }
+
+        if (! $this->option('dry-run')) {
+            $updated = $healer->healAll();
+            $this->info('Healed/restored '.count($updated).' meal(s).');
+
+            if ($this->option('sync-csv') && $updated !== []) {
+                $count = $csvSync->syncMealsFromDatabase();
+                $this->info("Synced {$count} meal row(s) to master CSV.");
             }
         }
 
