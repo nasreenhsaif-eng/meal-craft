@@ -21,17 +21,28 @@ test('sodium adjust does not shrink rosemary garlic chicken base', function () {
         ->and($adjusted)->not->toHaveKey('Sea Salt');
 });
 
-test('sodium adjust restores collapsed primary chicken to the standard portion', function () {
+test('sodium adjust restores collapsed primary chicken to the standard portion', function (float $collapsedGrams) {
     $refiner = app(BalancedSodiumRecipeRefiner::class);
 
     $adjusted = $refiner->adjustIngredientGrams([
-        'Rosemary Garlic Chicken (Base)' => 2.0,
+        'Rosemary Garlic Chicken (Base)' => $collapsedGrams,
         'Sweet Potato' => 100.0,
         'Spinach (Fresh)' => 100.0,
         'Mushrooms' => 45.0,
     ], BalancedCanonicalMealRecipeRefiner::ROSEMARY_GARLIC_CHICKEN_PLATE_NAME);
 
     expect($adjusted['Rosemary Garlic Chicken (Base)'])->toBe(StandardMeatPortion::GRAMS);
+})->with([1.0, 2.0, 5.0, 20.0, 74.9]);
+
+test('sodium adjust restores one-gram chicken breast as primary meat', function () {
+    $refiner = app(BalancedSodiumRecipeRefiner::class);
+
+    $adjusted = $refiner->adjustIngredientGrams([
+        'Chicken Breast' => 1.0,
+        'Broccoli' => 80.0,
+    ], 'Grilled Chicken Chimichurri');
+
+    expect($adjusted['Chicken Breast'])->toBe(StandardMeatPortion::GRAMS);
 });
 
 test('sodium adjust is idempotent for dressings and chicken', function () {
