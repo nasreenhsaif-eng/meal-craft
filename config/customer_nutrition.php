@@ -27,6 +27,65 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Plated primary protein grams per plan tier (any chicken/beef/liver/fish)
+    |--------------------------------------------------------------------------
+    |
+    | protein_g ≈ daily_tier / 10. Applied at craft/serve time only — library
+    | recipes stay at the 150 g kitchen baseline.
+    |
+    */
+    'tier_primary_protein_grams' => [
+        1000 => 100.0,
+        1200 => 120.0,
+        1500 => 150.0,
+        1800 => 180.0,
+        2000 => 200.0,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Baseline complex-carb (starch) grams per plan tier when protein is lean
+    |--------------------------------------------------------------------------
+    |
+    | ≈ daily_tier / 12, kitchen-rounded to 5 g. Potato / rice / sweet potato /
+    | quinoa / couscous. Fatty fish or beef cuts reduce this via
+    | fatty_protein_starch_policy and raise non-starchy vegetables instead.
+    |
+    */
+    'tier_complex_carb_grams' => [
+        1000 => 85.0,
+        1200 => 100.0,
+        1500 => 125.0,
+        1800 => 150.0,
+        2000 => 165.0,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Kitchen-realistic plating
+    |--------------------------------------------------------------------------
+    */
+    'kitchen_portion_round_to_grams' => 5.0,
+    'kitchen_aromatic_min_grams' => 1.0,
+
+    /*
+    |--------------------------------------------------------------------------
+    | Fat-aware starch cut for denser fish / beef (kcal per 100 g)
+    |--------------------------------------------------------------------------
+    |
+    | Compare primary protein kcal/100g to the lean reference. Denser protein
+    | → lower starch factor (clamped) → more non-starchy vegetables so the
+    | main still hits main_each calories without dropping seasonings.
+    |
+    */
+    'fatty_protein_starch_policy' => [
+        'reference_lean_kcal_per_100g' => 165.0,
+        'min_starch_factor' => 0.35,
+        'max_starch_factor' => 1.0,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Fixed pick slots — customer picks exactly 2 of 3 per day (~150 kcal each)
     |--------------------------------------------------------------------------
     */

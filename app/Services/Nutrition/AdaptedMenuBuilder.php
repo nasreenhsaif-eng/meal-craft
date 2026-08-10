@@ -12,8 +12,12 @@ use App\Models\Meal;
 use App\Services\RecipeIngredientUnitConverter;
 use App\Services\RecipeNutritionCalculator;
 use App\Support\ChiaBreakfastMeals;
+use App\Support\ComplexCarbPortion;
+use App\Support\KitchenProtectedFlavorPortion;
 use App\Support\MealPlanSlotBasedDayNutrition;
+use App\Support\NonStarchyVegetablePortion;
 use App\Support\SavoryEggBreakfastMeals;
+use App\Support\StandardMeatPortion;
 
 /**
  * Builds the customer-facing menu with per-meal scaling for breakfast and mains,
@@ -425,6 +429,15 @@ final class AdaptedMenuBuilder
         $targetCalories = self::slotTargetCalories($slot, $plan);
         $adaptedGramsByIngredientId = self::adaptedGramsFromMultiplier($meal, $multiplier);
 
+        if ($slot === 'main') {
+            $adaptedGramsByIngredientId = self::applyTierProteinMainPlating(
+                $meal,
+                $adaptedGramsByIngredientId,
+                $plan,
+                $targetCalories,
+            );
+        }
+
         if ($slot === 'breakfast' && $targetCalories > 0) {
             $adaptedGramsByIngredientId = self::normalizeAdaptedGramsToCalorieTarget(
                 $meal,
@@ -470,6 +483,367 @@ final class AdaptedMenuBuilder
         }
 
         return $serialized;
+    }
+
+    /**
+     * Plate protein mains to tier protein/starch targets without dropping ingredients
+     * or shrinking seasonings. Fatty fish/beef cut starch and raise non-starchy veg.
+     *
+     * @param  array<int, float>  $adaptedGramsByIngredientId
+     * @param  array<string, mixed>  $plan
+     * @return array<int, float>
+     */
+    private static function applyTierProteinMainPlating(
+        Meal $meal,
+        array $adaptedGramsByIngredientId,
+        array $plan,
+        float $targetCalories,
+    ): array {
+        $planTier = (float) ($plan['plan_tier'] ?? 0);
+
+        if ($planTier <= 0) {
+            return $adaptedGramsByIngredientId;
+        }
+
+        $libraryGrams = self::adaptedGramsFromMultiplier($meal, 1.0);
+
+        $hasPrimaryProtein = false;
+
+        foreach ($meal->ingredients as $ingredient) {
+            $class = StandardMeatPortion::primaryProteinClass($ingredient->name, $meal->name);
+
+            if ($class !== null && ! StandardMeatPortion::isLiverBlendIngredient($ingredient->name, $meal->name)) {
+                $hasPrimaryProtein = true;
+
+                break;
+            }
+        }
+
+        // Vegan / non-meat mains keep uniform calorie scaling (including protein-balance boosts).
+        if (! $hasPrimaryProtein) {
+            return $adaptedGramsByIngredientId;
+        }
+
+        // Preserve every library ingredient line (never drop).
+        foreach ($libraryGrams as $ingredientId => $grams) {
+            if (! isset($adaptedGramsByIngredientId[$ingredientId])) {
+                $adaptedGramsByIngredientId[$ingredientId] = $grams;
+            }
+        }
+
+        $proteinLines = [];
+        $starchLines = [];
+        $vegLines = [];
+        $protectedIds = [];
+        $proteinKcalPer100 = 0.0;
+        $proteinKcalWeight = 0.0;
+
+        foreach ($meal->ingredients as $ingredient) {
+            $id = (int) $ingredient->id;
+            $library = (float) ($libraryGrams[$id] ?? 0);
+
+            if ($library <= 0) {
+                continue;
+            }
+
+            if (KitchenProtectedFlavorPortion::matches($ingredient->name)) {
+                $protectedIds[$id] = true;
+                $adaptedGramsByIngredientId[$id] = $library;
+
+                continue;
+            }
+
+            $class = StandardMeatPortion::primaryProteinClass($ingredient->name, $meal->name);
+
+            if ($class !== null && ! StandardMeatPortion::isLiverBlendIngredient($ingredient->name, $meal->name)) {
+                $proteinLines[$id] = $library;
+                $kcal = (float) ($ingredient->calories ?? 0);
+                if ($kcal > 0) {
+                    $proteinKcalPer100 += $kcal * $library;
+                    $proteinKcalWeight += $library;
+                }
+
+                continue;
+            }
+
+            if (ComplexCarbPortion::matches($ingredient->name)) {
+                $starchLines[$id] = $library;
+
+                continue;
+            }
+
+            if (NonStarchyVegetablePortion::matches($ingredient->name)) {
+                $vegLines[$id] = $library;
+            }
+        }
+
+        if ($proteinLines === []) {
+            return $adaptedGramsByIngredientId;
+        }
+
+        $targetProtein = UserPlanCalculator::tierPrimaryProteinGrams($planTier);
+        $adaptedGramsByIngredientId = self::scaleLinesToTotalGrams(
+            $adaptedGramsByIngredientId,
+            $proteinLines,
+            $targetProtein,
+        );
+
+        $baselineStarch = UserPlanCalculator::tierComplexCarbGrams($planTier);
+        $avgProteinKcal = $proteinKcalWeight > 0
+            ? $proteinKcalPer100 / $proteinKcalWeight
+            : UserPlanCalculator::fattyProteinStarchPolicy()['reference_lean_kcal_per_100g'];
+        $starchFactor = UserPlanCalculator::fattyProteinStarchFactor($avgProteinKcal);
+        $targetStarch = UserPlanCalculator::roundToKitchenPortion($baselineStarch * $starchFactor);
+
+        if ($starchLines !== []) {
+            $adaptedGramsByIngredientId = self::scaleLinesToTotalGrams(
+                $adaptedGramsByIngredientId,
+                $starchLines,
+                max(UserPlanCalculator::kitchenPortionRoundToGrams(), $targetStarch),
+            );
+        }
+
+        // Freeze protected flavors again after any prior scaling.
+        foreach ($protectedIds as $id => $_true) {
+            $adaptedGramsByIngredientId[$id] = (float) ($libraryGrams[$id] ?? $adaptedGramsByIngredientId[$id] ?? 0);
+        }
+
+        // Keep non-starchy vegetables at least at library plate amounts (never collapse sides).
+        foreach ($vegLines as $id => $library) {
+            $adaptedGramsByIngredientId[$id] = max(
+                (float) ($adaptedGramsByIngredientId[$id] ?? 0),
+                $library,
+            );
+        }
+
+        if ($targetCalories > 0) {
+            $adaptedGramsByIngredientId = self::balanceStarchAndVegetablesToCalorieTarget(
+                $meal,
+                $adaptedGramsByIngredientId,
+                $starchLines,
+                $vegLines,
+                $baselineStarch,
+                $targetStarch,
+                $starchFactor,
+                $targetCalories,
+                array_merge(array_keys($proteinLines), array_keys($protectedIds)),
+            );
+        }
+
+        return $adaptedGramsByIngredientId;
+    }
+
+    /**
+     * Prefer cutting starch (for fatty protein only) and boosting vegetables to hit
+     * main_each — never shrink vegetables below their library grams, and never cut
+     * lean-protein starch below the tier starch table.
+     *
+     * @param  array<int, float>  $adaptedGramsByIngredientId
+     * @param  array<int, float>  $starchLibraryGrams
+     * @param  array<int, float>  $vegLibraryGrams
+     * @param  list<int>  $frozenIngredientIds
+     * @return array<int, float>
+     */
+    private static function balanceStarchAndVegetablesToCalorieTarget(
+        Meal $meal,
+        array $adaptedGramsByIngredientId,
+        array $starchLibraryGrams,
+        array $vegLibraryGrams,
+        float $baselineStarchGrams,
+        float $densityTargetStarchGrams,
+        float $starchFactor,
+        float $targetCalories,
+        array $frozenIngredientIds,
+    ): array {
+        $absoluteMinStarch = UserPlanCalculator::roundToKitchenPortion(
+            $baselineStarchGrams * UserPlanCalculator::fattyProteinStarchPolicy()['min_starch_factor'],
+        );
+
+        // Lean protein keeps the full tier starch table; fatty protein may cut toward the absolute min.
+        $starchFloor = $starchFactor >= 0.98
+            ? $densityTargetStarchGrams
+            : max($absoluteMinStarch, UserPlanCalculator::kitchenPortionRoundToGrams());
+
+        for ($attempt = 0; $attempt < 8; $attempt++) {
+            $scaledRows = self::scaledIngredientRowsFromAdaptedGrams($meal, $adaptedGramsByIngredientId);
+            $currentCalories = (float) (RecipeNutritionCalculator::fromRows($scaledRows)['calories'] ?? 0);
+            $calorieGap = $targetCalories - $currentCalories;
+
+            if (abs($calorieGap) <= 2.0) {
+                break;
+            }
+
+            if ($calorieGap > 0 && $vegLibraryGrams !== []) {
+                $adaptedGramsByIngredientId = self::boostVegetableLinesTowardCalorieTarget(
+                    $meal,
+                    $adaptedGramsByIngredientId,
+                    $vegLibraryGrams,
+                    $targetCalories,
+                    $frozenIngredientIds,
+                );
+
+                continue;
+            }
+
+            if ($calorieGap < 0 && $starchLibraryGrams !== [] && $starchFactor < 0.98) {
+                $currentStarch = 0.0;
+                foreach (array_keys($starchLibraryGrams) as $id) {
+                    $currentStarch += (float) ($adaptedGramsByIngredientId[$id] ?? 0);
+                }
+
+                if ($currentStarch > $starchFloor + 0.5) {
+                    $starchCalories = 0.0;
+                    foreach ($meal->ingredients as $ingredient) {
+                        if (! isset($starchLibraryGrams[$ingredient->id])) {
+                            continue;
+                        }
+                        $starchCalories += self::ingredientCaloriesForGrams(
+                            $ingredient,
+                            (float) ($adaptedGramsByIngredientId[$ingredient->id] ?? 0),
+                        );
+                    }
+
+                    if ($starchCalories > 0) {
+                        $desiredStarchCalories = max(0.0, $starchCalories + $calorieGap);
+                        $ratio = $desiredStarchCalories / $starchCalories;
+                        $nextTotal = max($starchFloor, UserPlanCalculator::roundToKitchenPortion($currentStarch * $ratio));
+                        $adaptedGramsByIngredientId = self::scaleLinesToTotalGrams(
+                            $adaptedGramsByIngredientId,
+                            $starchLibraryGrams,
+                            $nextTotal,
+                        );
+
+                        continue;
+                    }
+                }
+            }
+
+            break;
+        }
+
+        $scaledRows = self::scaledIngredientRowsFromAdaptedGrams($meal, $adaptedGramsByIngredientId);
+        $currentCalories = (float) (RecipeNutritionCalculator::fromRows($scaledRows)['calories'] ?? 0);
+
+        if ($currentCalories < $targetCalories - 2.0 && $vegLibraryGrams !== []) {
+            $adaptedGramsByIngredientId = self::boostVegetableLinesTowardCalorieTarget(
+                $meal,
+                $adaptedGramsByIngredientId,
+                $vegLibraryGrams,
+                $targetCalories,
+                $frozenIngredientIds,
+            );
+        }
+
+        foreach ($vegLibraryGrams as $id => $library) {
+            $adaptedGramsByIngredientId[$id] = max(
+                (float) ($adaptedGramsByIngredientId[$id] ?? 0),
+                $library,
+            );
+        }
+
+        return $adaptedGramsByIngredientId;
+    }
+
+    /**
+     * @param  array<int, float>  $adaptedGramsByIngredientId
+     * @param  array<int, float>  $lineLibraryGrams  ingredient id => library grams (for ratio)
+     * @return array<int, float>
+     */
+    private static function scaleLinesToTotalGrams(
+        array $adaptedGramsByIngredientId,
+        array $lineLibraryGrams,
+        float $targetTotalGrams,
+    ): array {
+        $currentTotal = array_sum($lineLibraryGrams);
+
+        if ($currentTotal <= 0 || $targetTotalGrams <= 0) {
+            return $adaptedGramsByIngredientId;
+        }
+
+        $ids = array_values(array_keys($lineLibraryGrams));
+
+        if (count($ids) === 1) {
+            $adaptedGramsByIngredientId[$ids[0]] = UserPlanCalculator::roundToKitchenPortion($targetTotalGrams);
+
+            return $adaptedGramsByIngredientId;
+        }
+
+        $assigned = 0.0;
+        $lastIndex = count($ids) - 1;
+
+        foreach ($ids as $index => $id) {
+            if ($index === $lastIndex) {
+                $adaptedGramsByIngredientId[$id] = max(
+                    UserPlanCalculator::kitchenPortionRoundToGrams(),
+                    round($targetTotalGrams - $assigned, 2),
+                );
+
+                continue;
+            }
+
+            $share = $lineLibraryGrams[$id] / $currentTotal;
+            $grams = UserPlanCalculator::roundToKitchenPortion($targetTotalGrams * $share);
+            $adaptedGramsByIngredientId[$id] = $grams;
+            $assigned += $grams;
+        }
+
+        return $adaptedGramsByIngredientId;
+    }
+
+    /**
+     * @param  array<int, float>  $adaptedGramsByIngredientId
+     * @param  array<int, float>  $vegLibraryGrams
+     * @param  list<int>  $frozenIngredientIds
+     * @return array<int, float>
+     */
+    private static function boostVegetableLinesTowardCalorieTarget(
+        Meal $meal,
+        array $adaptedGramsByIngredientId,
+        array $vegLibraryGrams,
+        float $targetCalories,
+        array $frozenIngredientIds,
+    ): array {
+        $scaledRows = self::scaledIngredientRowsFromAdaptedGrams($meal, $adaptedGramsByIngredientId);
+        $currentCalories = (float) (RecipeNutritionCalculator::fromRows($scaledRows)['calories'] ?? 0);
+        $calorieGap = $targetCalories - $currentCalories;
+
+        if (abs($calorieGap) <= 1.0) {
+            return $adaptedGramsByIngredientId;
+        }
+
+        $vegCalories = 0.0;
+
+        foreach ($meal->ingredients as $ingredient) {
+            if (! isset($vegLibraryGrams[$ingredient->id])) {
+                continue;
+            }
+
+            $grams = (float) ($adaptedGramsByIngredientId[$ingredient->id] ?? 0);
+            $vegCalories += self::ingredientCaloriesForGrams($ingredient, $grams);
+        }
+
+        if ($vegCalories <= 0) {
+            return $adaptedGramsByIngredientId;
+        }
+
+        // Scale veg to close the calorie gap while keeping relative mix.
+        $desiredVegCalories = max(0.0, $vegCalories + $calorieGap);
+        $ratio = $desiredVegCalories / $vegCalories;
+
+        foreach ($vegLibraryGrams as $id => $_library) {
+            if (in_array($id, $frozenIngredientIds, true)) {
+                continue;
+            }
+
+            $grams = (float) ($adaptedGramsByIngredientId[$id] ?? 0);
+            $libraryFloor = (float) ($vegLibraryGrams[$id] ?? UserPlanCalculator::kitchenPortionRoundToGrams());
+            $adaptedGramsByIngredientId[$id] = max(
+                $libraryFloor,
+                UserPlanCalculator::roundToKitchenPortion($grams * $ratio),
+            );
+        }
+
+        return $adaptedGramsByIngredientId;
     }
 
     /**
