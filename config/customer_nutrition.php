@@ -90,7 +90,9 @@ return [
     'savory_egg_breakfast_tier_counts' => [
         1000 => 2,
         1200 => 2,
-        1500 => 4,
+        // 3 whole eggs (~233 kcal) fits the 300 kcal breakfast slot with room for sides.
+        // Four eggs alone (~310 kcal) forced calorie scaling to crush eggs to fractions.
+        1500 => 3,
         1800 => 4,
         2000 => 5,
     ],

@@ -12,6 +12,7 @@ use App\Models\Meal;
 use App\Services\RecipeIngredientUnitConverter;
 use App\Services\RecipeNutritionCalculator;
 use App\Support\ChiaBreakfastMeals;
+use App\Support\EggIngredientPresentation;
 use App\Support\MealPlanSlotBasedDayNutrition;
 use App\Support\SavoryEggBreakfastMeals;
 
@@ -423,15 +424,21 @@ final class AdaptedMenuBuilder
         $multiplier = $overrideMultiplier ?? self::mealScalingMultiplier($meal, $slot, $plan);
         $baseline = $meal->nutritionForDisplay();
         $targetCalories = self::slotTargetCalories($slot, $plan);
-        $adaptedGramsByIngredientId = self::adaptedGramsFromMultiplier($meal, $multiplier);
+        $planTier = (float) ($plan['plan_tier'] ?? 0);
 
-        if ($slot === 'breakfast' && $targetCalories > 0) {
-            $adaptedGramsByIngredientId = self::normalizeAdaptedGramsToCalorieTarget(
-                $meal,
-                $adaptedGramsByIngredientId,
-                $targetCalories,
-                (float) ($plan['plan_tier'] ?? 0),
-            );
+        if ($slot === 'breakfast' && SavoryEggBreakfastMeals::isSavoryEggBreakfast($meal) && $planTier > 0) {
+            $adaptedGramsByIngredientId = self::adaptedGramsForSavoryEggBreakfast($meal, $planTier, $targetCalories);
+        } else {
+            $adaptedGramsByIngredientId = self::adaptedGramsFromMultiplier($meal, $multiplier);
+
+            if ($slot === 'breakfast' && $targetCalories > 0) {
+                $adaptedGramsByIngredientId = self::normalizeAdaptedGramsToCalorieTarget(
+                    $meal,
+                    $adaptedGramsByIngredientId,
+                    $targetCalories,
+                    $planTier,
+                );
+            }
         }
 
         $scaledRows = self::scaledIngredientRowsFromAdaptedGrams($meal, $adaptedGramsByIngredientId);
@@ -470,6 +477,184 @@ final class AdaptedMenuBuilder
         }
 
         return $serialized;
+    }
+
+    /**
+     * Egg-count-first breakfast scaling: lock whole eggs to the plan tier count, scale sides
+     * with the egg multiplier, then trim only non-egg ingredients toward the calorie target.
+     *
+     * @return array<int, float>
+     */
+    private static function adaptedGramsForSavoryEggBreakfast(
+        Meal $meal,
+        float $planTier,
+        float $targetCalories,
+    ): array {
+        $targetEggGrams = SavoryEggBreakfastMeals::eggGramsForPlanTier($planTier);
+        $sideMultiplier = SavoryEggBreakfastMeals::sidePortionMultiplierForMeal($meal, $planTier);
+        $gramsByIngredientId = [];
+        $wholeEggIngredientIds = [];
+
+        foreach ($meal->ingredients as $ingredient) {
+            $pivot = $ingredient->pivot;
+            $baselineGrams = self::baselineGramsForPivot(
+                $ingredient,
+                $pivot->amount,
+                $pivot->unit ?? '',
+                (float) ($pivot->amount_grams ?? 0),
+            );
+
+            if ($baselineGrams <= 0) {
+                continue;
+            }
+
+            if (EggIngredientPresentation::isEggIngredient($ingredient)) {
+                $wholeEggIngredientIds[] = $ingredient->id;
+                $gramsByIngredientId[$ingredient->id] = $targetEggGrams;
+
+                continue;
+            }
+
+            $gramsByIngredientId[$ingredient->id] = SavoryEggBreakfastMeals::adaptedSideGrams(
+                $ingredient,
+                $baselineGrams,
+                $sideMultiplier,
+                $planTier,
+            );
+        }
+
+        // Multiple whole-egg rows (rare): split the tier grams across them by baseline share.
+        if (count($wholeEggIngredientIds) > 1) {
+            $baselineEggTotal = 0.0;
+
+            foreach ($wholeEggIngredientIds as $eggId) {
+                $ingredient = $meal->ingredients->firstWhere('id', $eggId);
+                if ($ingredient === null) {
+                    continue;
+                }
+                $baselineEggTotal += self::baselineGramsForPivot(
+                    $ingredient,
+                    $ingredient->pivot->amount,
+                    $ingredient->pivot->unit ?? '',
+                    (float) ($ingredient->pivot->amount_grams ?? 0),
+                );
+            }
+
+            if ($baselineEggTotal > 0) {
+                foreach ($wholeEggIngredientIds as $eggId) {
+                    $ingredient = $meal->ingredients->firstWhere('id', $eggId);
+                    if ($ingredient === null) {
+                        continue;
+                    }
+                    $baseline = self::baselineGramsForPivot(
+                        $ingredient,
+                        $ingredient->pivot->amount,
+                        $ingredient->pivot->unit ?? '',
+                        (float) ($ingredient->pivot->amount_grams ?? 0),
+                    );
+                    $gramsByIngredientId[$eggId] = round($targetEggGrams * ($baseline / $baselineEggTotal), 4);
+                }
+            }
+        }
+
+        $gramsByIngredientId = self::applyBreakfastSideMinimums($meal, $gramsByIngredientId, $planTier);
+
+        if ($targetCalories <= 0) {
+            return $gramsByIngredientId;
+        }
+
+        return self::fitSavoryEggBreakfastToCalorieTarget(
+            $meal,
+            $gramsByIngredientId,
+            $targetCalories,
+            $planTier,
+        );
+    }
+
+    /**
+     * Grow or trim non-egg sides so breakfast lands on the slot calorie target without
+     * changing the locked whole-egg portion.
+     *
+     * @param  array<int, float>  $adaptedGramsByIngredientId
+     * @return array<int, float>
+     */
+    private static function fitSavoryEggBreakfastToCalorieTarget(
+        Meal $meal,
+        array $adaptedGramsByIngredientId,
+        float $targetCalories,
+        float $planTier,
+    ): array {
+        $scaledRows = self::scaledIngredientRowsFromAdaptedGrams($meal, $adaptedGramsByIngredientId);
+        $adaptedCalories = (float) (RecipeNutritionCalculator::fromRows($scaledRows)['calories'] ?? 0);
+
+        if ($adaptedCalories <= 0) {
+            return $adaptedGramsByIngredientId;
+        }
+
+        if ($adaptedCalories > $targetCalories + 0.5) {
+            return self::trimBreakfastFlexibleGramsToTarget(
+                $meal,
+                $adaptedGramsByIngredientId,
+                $targetCalories,
+                $planTier,
+                protectWholeEggs: true,
+            );
+        }
+
+        if ($adaptedCalories >= $targetCalories - 0.5) {
+            return $adaptedGramsByIngredientId;
+        }
+
+        /** @var list<int> $fixedIngredientIds */
+        $fixedIngredientIds = [];
+        $fixedCalories = 0.0;
+        $flexibleCalories = 0.0;
+
+        foreach ($meal->ingredients as $ingredient) {
+            $grams = (float) ($adaptedGramsByIngredientId[$ingredient->id] ?? 0);
+
+            if ($grams <= 0) {
+                continue;
+            }
+
+            $rowCalories = self::ingredientCaloriesForGrams($ingredient, $grams);
+
+            if (EggIngredientPresentation::isEggIngredient($ingredient)) {
+                $fixedIngredientIds[] = $ingredient->id;
+                $fixedCalories += $rowCalories;
+
+                continue;
+            }
+
+            $flexibleCalories += $rowCalories;
+        }
+
+        $flexibleBudget = max(0.0, $targetCalories - $fixedCalories);
+
+        if ($flexibleCalories <= 0 || $flexibleBudget <= 0) {
+            return $adaptedGramsByIngredientId;
+        }
+
+        $flexRatio = round($flexibleBudget / $flexibleCalories, 4);
+        $adjusted = $adaptedGramsByIngredientId;
+
+        foreach ($meal->ingredients as $ingredient) {
+            if (in_array($ingredient->id, $fixedIngredientIds, true)) {
+                continue;
+            }
+
+            $grams = (float) ($adaptedGramsByIngredientId[$ingredient->id] ?? 0);
+
+            if ($grams <= 0) {
+                continue;
+            }
+
+            $grown = round($grams * $flexRatio, 4);
+            $minimum = SavoryEggBreakfastMeals::minimumSideGramsForPlanTier($ingredient, $planTier);
+            $adjusted[$ingredient->id] = $minimum !== null ? max($minimum, $grown) : $grown;
+        }
+
+        return $adjusted;
     }
 
     /**
@@ -552,6 +737,7 @@ final class AdaptedMenuBuilder
         array $adaptedGramsByIngredientId,
         float $targetCalories,
         float $planTier,
+        bool $protectWholeEggs = false,
     ): array {
         $scaledRows = self::scaledIngredientRowsFromAdaptedGrams($meal, $adaptedGramsByIngredientId);
         $adaptedCalories = (float) (RecipeNutritionCalculator::fromRows($scaledRows)['calories'] ?? 0);
@@ -564,6 +750,12 @@ final class AdaptedMenuBuilder
         $fixedIngredientIds = [];
 
         foreach ($meal->ingredients as $ingredient) {
+            if ($protectWholeEggs && EggIngredientPresentation::isEggIngredient($ingredient)) {
+                $fixedIngredientIds[] = $ingredient->id;
+
+                continue;
+            }
+
             if ($planTier > 0 && SavoryEggBreakfastMeals::minimumSideGramsForPlanTier($ingredient, $planTier) !== null) {
                 $fixedIngredientIds[] = $ingredient->id;
             }
@@ -590,8 +782,25 @@ final class AdaptedMenuBuilder
 
         $flexibleBudget = max(0.0, $targetCalories - $fixedCalories);
 
-        if ($flexibleCalories <= 0 || $flexibleBudget <= 0) {
+        if ($flexibleCalories <= 0) {
             return $adaptedGramsByIngredientId;
+        }
+
+        // Whole eggs already fill (or exceed) the breakfast budget — keep eggs, drop flexible sides.
+        if ($flexibleBudget <= 0) {
+            $adjusted = $adaptedGramsByIngredientId;
+
+            foreach ($meal->ingredients as $ingredient) {
+                if (in_array($ingredient->id, $fixedIngredientIds, true)) {
+                    continue;
+                }
+
+                if (isset($adjusted[$ingredient->id])) {
+                    $adjusted[$ingredient->id] = 0.0;
+                }
+            }
+
+            return $adjusted;
         }
 
         $flexRatio = round($flexibleBudget / $flexibleCalories, 4);
