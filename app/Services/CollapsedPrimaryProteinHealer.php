@@ -38,6 +38,105 @@ final class CollapsedPrimaryProteinHealer
     }
 
     /**
+     * Persist a single-meal heal when craft/adapt is about to serialize a crushed recipe.
+     * No-ops when the meal already has a healthy primary protein line.
+     */
+    public function ensureMeal(Meal $meal): Meal
+    {
+        $meal->loadMissing('ingredients');
+
+        if (! MealLibraryEditGuard::mealHasCollapsedOrMissingPrimaryMeat($meal)) {
+            return $meal;
+        }
+
+        if ($this->collapsedLinesOnMeal($meal) !== []) {
+            $this->healSingleMealCollapsedLines($meal);
+
+            return $meal->fresh(['ingredients']) ?? $meal;
+        }
+
+        if (in_array($meal->name, SaladDressingMealRefiner::refinedMealNames(), true)) {
+            try {
+                app(SaladDressingMealRefiner::class)->refine($meal->name);
+            } catch (\InvalidArgumentException) {
+                // Incomplete ingredient libraries skip full salad rewrite.
+            }
+
+            $fresh = $meal->fresh(['ingredients']);
+
+            if ($fresh !== null && ! MealLibraryEditGuard::mealHasCollapsedOrMissingPrimaryMeat($fresh)) {
+                return $fresh;
+            }
+        }
+
+        $this->restoreMissingPrimaryProteinForMeal($meal);
+
+        return $meal->fresh(['ingredients']) ?? $meal;
+    }
+
+    private function healSingleMealCollapsedLines(Meal $meal): void
+    {
+        DB::transaction(function () use ($meal): void {
+            $changes = $this->collapsedLinesOnMeal($meal);
+
+            foreach ($changes as $change) {
+                $ingredient = $meal->ingredients->firstWhere('name', $change['ingredient']);
+
+                if ($ingredient === null) {
+                    continue;
+                }
+
+                $grams = round((float) $change['to'], 2);
+                $meal->ingredients()->updateExistingPivot($ingredient->id, [
+                    'amount_grams' => $grams,
+                    'amount' => $grams,
+                    'unit' => 'g',
+                ]);
+            }
+
+            $this->resyncMealNutrition($meal->fresh(['ingredients']));
+        });
+    }
+
+    private function restoreMissingPrimaryProteinForMeal(Meal $meal): void
+    {
+        $portions = $this->primaryMeatPortionsByMealFromCsv()[$meal->name] ?? [];
+
+        if ($portions === []) {
+            return;
+        }
+
+        DB::transaction(function () use ($meal, $portions): void {
+            $meal->loadMissing('ingredients');
+            $attached = false;
+
+            foreach ($portions as $ingredientName => $grams) {
+                if ($meal->ingredients->contains(fn (Ingredient $ingredient): bool => $ingredient->name === $ingredientName)) {
+                    continue;
+                }
+
+                $ingredient = Ingredient::query()->where('name', $ingredientName)->first();
+
+                if ($ingredient === null) {
+                    continue;
+                }
+
+                $rounded = round((float) $grams, 2);
+                $meal->ingredients()->attach($ingredient->id, [
+                    'amount_grams' => $rounded,
+                    'amount' => $rounded,
+                    'unit' => 'g',
+                ]);
+                $attached = true;
+            }
+
+            if ($attached) {
+                $this->resyncMealNutrition($meal->fresh(['ingredients']));
+            }
+        });
+    }
+
+    /**
      * @return list<array{meal: string, ingredient: string, from: float, to: float}>
      */
     public function audit(): array
