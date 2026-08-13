@@ -15,6 +15,7 @@ use App\Http\Requests\StoreMealPlanFromLibraryRequest;
 use App\Models\Meal;
 use App\Models\MealPlan;
 use App\Models\MealPlanDayMeal;
+use App\Services\CollapsedPrimaryProteinHealer;
 use App\Services\MealPlanService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -29,6 +30,7 @@ class MealPlanLibraryController extends Controller
     public function __construct(
         private MealPlanService $mealPlanService,
         private MealLibraryController $mealLibrary,
+        private CollapsedPrimaryProteinHealer $collapsedPrimaryProteinHealer,
     ) {}
 
     public function index(): Response
@@ -103,6 +105,9 @@ class MealPlanLibraryController extends Controller
 
     public function show(MealPlan $mealPlan): Response
     {
+        // Admin meal-plan cards use stored meal macros — heal 1g chicken before presenting.
+        $this->collapsedPrimaryProteinHealer->healAll();
+
         $mealPlan->load([
             'dayMeals' => static function ($query): void {
                 $query->where('is_option_b', false)
@@ -138,7 +143,8 @@ class MealPlanLibraryController extends Controller
             }
 
             $categoryKey = $this->slotTypeToCategoryKey($dayMeal->slot_type);
-            $daysByNumber[$dayNumber]['categories'][$categoryKey][] = $this->mealLibrary->presentMealRowForUi($dayMeal->meal);
+            $meal = $this->collapsedPrimaryProteinHealer->ensureMeal($dayMeal->meal);
+            $daysByNumber[$dayNumber]['categories'][$categoryKey][] = $this->mealLibrary->presentMealRowForUi($meal);
         }
 
         $dailyMacros = $this->mealPlanService->averageDailyNutritionForOption($mealPlan, false);
