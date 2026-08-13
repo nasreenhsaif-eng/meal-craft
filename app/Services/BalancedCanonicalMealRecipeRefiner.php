@@ -269,9 +269,12 @@ final class BalancedCanonicalMealRecipeRefiner
                     'Spinach (Fresh)' => 55,
                     'Mushrooms' => 45,
                     'Olive Oil (Extra Virgin)' => 4,
+                    'Garlic (Raw)' => 5,
+                    'Rosemary (Fresh)' => 3,
                     'Black Pepper' => 0.5,
                 ],
                 'diet_tags' => $wholeFoodTags,
+                'short_description' => 'Grilled rosemary garlic chicken with sautéed mushrooms and spinach over roasted sweet potato wedges.',
             ],
             self::BAKED_SALMON_NAME => [
                 'ingredients' => [

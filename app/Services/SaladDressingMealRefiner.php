@@ -56,7 +56,8 @@ final class SaladDressingMealRefiner
                     continue;
                 }
 
-                if (MealLibraryEditGuard::shouldSkipMealRefinement($meal)) {
+                if (MealLibraryEditGuard::shouldSkipMealRefinement($meal)
+                    && ! MealLibraryEditGuard::mealHasCollapsedOrMissingPrimaryMeat($meal)) {
                     continue;
                 }
 
@@ -363,23 +364,22 @@ final class SaladDressingMealRefiner
             'Turmeric Chicken Kale Salad' => [
                 'salad_ingredients' => [
                     'Chicken Breast' => StandardMeatPortion::GRAMS,
-                    'Kale' => 50,
-                    'Carrots' => 40,
-                    'Cucumber' => 40,
-                    'Cherry Tomatoes' => 35,
-                    'Red Onion' => 15,
-                    'Pomegranate Seeds' => 12,
-                    'Garlic (Raw)' => 2,
+                    'Kale' => 55,
+                    'Broccoli' => 60,
+                    'Avocado' => 40,
+                    'Fresh Coriander' => 5,
+                    'Pumpkin Seeds' => 10,
                 ],
                 'dressing_ingredients' => [
-                    'Turmeric Lemon Dressing (Base)' => 14,
+                    'Turmeric Lemon Dressing (Base)' => 20,
                 ],
                 'salad_instructions' => [
-                    'Rub chicken with half the turmeric dressing as a marinade. Grill or pan-sear chicken until golden then in the oven for 20 minutes exactly, then Rest and slice.',
-                    'Massage kale until tender.',
-                    'Add cucumber, carrots, tomatoes, onion, and pomegranate. Top with warm chicken.',
-                    'Serve remaining dressing on the side.',
+                    'Rub chicken with half the turmeric lemon dressing as a marinade. Grill or pan-sear chicken until golden then in the oven for 20 minutes exactly, then Rest and slice.',
+                    'Massage kale until tender. Blanch or lightly steam broccoli until bright and just tender.',
+                    'Toss kale and broccoli with avocado, coriander, and pumpkin seeds. Top with warm turmeric chicken.',
+                    self::SERVE_DRESSING_ON_THE_SIDE,
                 ],
+                'short_description' => 'Golden turmeric chicken over massaged kale with avocado, broccoli, seeds, and turmeric lemon dressing.',
                 'diet_tags' => $wholeFoodTags,
             ],
             'Chicken Thai Mango Salad' => [

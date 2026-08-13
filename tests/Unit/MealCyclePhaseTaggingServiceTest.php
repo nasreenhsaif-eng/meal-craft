@@ -2,9 +2,6 @@
 
 use App\Enums\MealCyclePhaseTag;
 use App\Services\MealCyclePhaseTaggingService;
-use Tests\TestCase;
-
-uses(TestCase::class);
 
 test('menstrual phase requires iron over 4mg and vitamin c over 20mg', function () {
     $svc = new MealCyclePhaseTaggingService;

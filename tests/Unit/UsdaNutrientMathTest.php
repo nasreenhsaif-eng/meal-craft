@@ -1,9 +1,6 @@
 <?php
 
 use App\Support\UsdaNutrientMath;
-use Tests\TestCase;
-
-uses(TestCase::class);
 
 test('map by nutrient indexes fdc nutrient id and ndb number', function (): void {
     $foodNutrients = [

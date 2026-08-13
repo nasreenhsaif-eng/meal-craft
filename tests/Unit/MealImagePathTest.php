@@ -2,9 +2,6 @@
 
 use App\Support\MealImagePath;
 use Illuminate\Support\Facades\Http;
-use Tests\TestCase;
-
-uses(TestCase::class);
 
 test('normalize treats NO_PHOTO_URL export placeholder as null', function () {
     expect(MealImagePath::normalizeForDatabase('NO_PHOTO_URL'))->toBeNull()

@@ -149,8 +149,8 @@ Sauté sliced bell pepper, red onion, and garlic in olive oil until softened.
 Add Cajun Spice (Base) and cherry tomatoes. Cook 2 minutes.
 Stir in homemade coconut milk and lime juice. Simmer until the sauce thickens.
 Serve sliced chicken and creamy Cajun sauce over roasted potatoes."
-"Blackened Chicken, Grilled Peppers & Onion Salad w Quinoa, Kale & Mustard Dressing",Meal,"Bell Pepper (Red):40 | Blackened Seasoning (Base):5 | Chicken Breast:150 | Cooked Quinoa (Base):84 | Honey Mustard Dressing (Base):15 | Kale:40 | Red Onion:20",350,35,35,7.7,,,,,false,,Balanced,,,images/meals/blackened_chicken_quinoa_kale_salad.png,"Warm salad featuring sliced blackened chicken","Cook quinoa and let cool slightly.
-Rub chicken with Blackened Spice (Base). Grill or pan-sear chicken until golden then in the oven for 20 minutes exactly, then Rest and slice.
+"Blackened Chicken, Grilled Peppers & Onion Salad w Quinoa, Kale & Mustard Dressing",Meal,"Bell Pepper (Red):40 | Blackened Seasoning (Base):5 | Chicken Breast:150 | Cooked Quinoa (Base):84 | Honey Mustard Dressing (Base):15 | Kale:40 | Red Onion:20",350,35,35,7.7,,,,,false,,Balanced,,,images/meals/blackened_chicken_quinoa_kale_salad.png,"Warm salad featuring sliced blackened chicken","Prepare Cooked Quinoa (Base) per base recipe instructions; let cool slightly.
+Rub chicken with Blackened Seasoning (Base). Grill or pan-sear chicken until golden then in the oven for 20 minutes exactly, then Rest and slice.
 Grill pepper strips and onion until charred and soft.
 Massage kale until tender.
 Toss quinoa, kale, and vegetables. Top with chicken.
@@ -207,10 +207,10 @@ Toss rocca, cucumber, and cherry tomatoes in a bowl.
 Top with chicken and walnuts.
 Serve dressing on the side."
 "Salmon Cashew Cream & Roasted Vegetabls",Meal,"Garlic:2 | Lemon Juice:5 | Roasted Mixed Vegetables (Base):100 | Salmon (Raw):150",350,35,35,7.8,,,,,false,,Balanced,,,images/meals/salmon_cashew_cream.png,"A premium pan-roasted salmon fillet smothered in a rich","dairy-free garlic cashew cream reduction"
-"Turmeric Chicken Kale Salad",Meal,"Carrots:40 | Cherry Tomatoes:35 | Chicken Breast:150 | Cucumber:40 | Garlic (Raw):2 | Kale:50 | Pomegranate Seeds:12 | Red Onion:15 | Turmeric Lemon Dressing (Base):14",350,35,35,7.8,,,,,false,1,,,,images/meals/turmeric_chicken_kale_salad.png,"Lean chicken breast seasoned with golden turmeric and garlic","Rub chicken with half the turmeric dressing as a marinade. Grill or pan-sear chicken until golden then in the oven for 20 minutes exactly, then Rest and slice.
-Massage kale until tender.
-Add cucumber, carrots, tomatoes, onion, and pomegranate. Top with warm chicken.
-Serve remaining dressing on the side."
+"Turmeric Chicken Kale Salad",Meal,"Avocado:40 | Broccoli:60 | Chicken Breast:150 | Fresh Coriander:5 | Kale:55 | Pumpkin Seeds:10 | Turmeric Lemon Dressing (Base):20",350,35,35,7.8,,,,,false,1,,,,images/meals/turmeric_chicken_kale_salad.png,"Golden turmeric chicken over massaged kale with avocado, broccoli, seeds, and turmeric lemon dressing.","Rub chicken with half the turmeric lemon dressing as a marinade. Grill or pan-sear chicken until golden then in the oven for 20 minutes exactly, then Rest and slice.
+Massage kale until tender. Blanch or lightly steam broccoli until bright and just tender.
+Toss kale and broccoli with avocado, coriander, and pumpkin seeds. Top with warm turmeric chicken.
+Serve dressing on the side."
 "Baked Eggplant Lentils Hummus",Meal,"Creamy Cumin Hummus (Base):80 | Eggplant:150 | French Lentils:80 | Olive Oil:5 | Roasted Cherry Tomato (Base):30 | Rocca:20 | Sea Salt:1 | Wild Rice (Cooked):120 | cumin powder:5",350,35,35,7.8,,,,,false,,,,"G6PD Trigger",images/meals/baked_eggplant_lentils_hummus.png,"Tender baked globe eggplant slices paired with seasoned fiber-rich brown lentils over a bed of silky house hummus.","Preheat oven to 200°C and line a tray with parchment paper.
 Slice eggplant into uniform rounds, brush with olive oil, season with salt, and bake for 20-25 minutes until tender.
 Warm the pre-cooked brown lentils with a touch of cumin and sea salt.
@@ -387,15 +387,12 @@ Season chicken breast with salt and pepper. Sear in a hot pan until golden and c
 Warm Red Thai Curry Paste (Base) with a splash of coconut milk, then whisk in the remaining coconut milk and simmer until smooth.
 Add roasted pumpkin and palm sugar; simmer 2–3 minutes until fragrant.
 Fold in sliced chicken and warm through. Garnish with fresh coriander and serve."
-"aut unde consectetur",Meal,,,,,,,,,,false,,,,,,,
-"consequatur saepe dolore",Dessert,,,,,,,,,,false,,,,,,,
 "Rosemary Garlic Chicken w Pomegranate Glaze, Beetroot & Rocca",Meal,"Beetroot:70 | Bell Pepper (Red):38 | Black Pepper:0.5 | Garlic (Raw):3 | Nutmeg:0.2 | Olive Oil (Extra Virgin):4 | Oregano:1 | Pomegranate Molasses:10 | Quinoa Flatbread (Base):32 | Red Onion:32 | Rocca:48 | Rosemary Garlic Chicken (Base):150 | Tomato (Raw):48",360,36,27,12,,,,,false,,Balanced,,,images/meals/rosemary_garlic_chicken_pomegranate_beetroot_rocca.png,"Rosemary garlic chicken over warm quinoa flatbread with sautéed peppers and onion in pomegranate molasses, roasted beetroot, rocca, and raw tomato.","Prepare Rosemary Garlic Chicken (Base) and Quinoa Flatbread (Base) per base recipe instructions; keep the flatbread warm.
 Roast or boil beetroot until tender. Cool, peel, and slice.
 Sauté diced onion in olive oil until softened (4–5 min). Add sliced red pepper; cook 2–3 minutes. Stir in garlic and oregano.
 Grill or pan-sear the rosemary garlic chicken until golden, then finish in the oven for 20 minutes exactly. Rest and slice.
 Finish the sautéed vegetables with pomegranate molasses, black pepper, and a pinch of nutmeg.
 Serve sliced chicken with warm quinoa flatbread, pomegranate vegetables, beetroot, rocca, and sliced raw tomato."
-"dolor accusantium earum",Breakfast,,,,,,,,,,false,,,,,,,
 "Italian Meatballs in Marinara w Buckwheat Spaghetti",Meal,"Buckwheat Spaghetti (Cooked):150 | Italian Meatballs (Base):150 | Marinara Sauce (Base):130 | Olive Oil:4",350,35,35,7.8,,,,,false,1,Balanced,,,images/meals/italian_meatballs_buckwheat_spaghetti.png,"Classic Italian-style lean beef meatballs simmered in house marinara over buckwheat spaghetti.","Prepare Italian Meatballs (Base) per base recipe instructions; brown and set aside.
 Cook buckwheat spaghetti in boiling salted water until al dente. Drain, reserving a splash of pasta water.
 Prepare Marinara Sauce (Base) per base recipe instructions. Return meatballs to the sauce and simmer 10–15 minutes until cooked through.
@@ -409,12 +406,12 @@ Return salmon to the skillet and cook briefly to heat through. Taste and adjust 
 Pan-roast salmon fillet until cooked through, 4–5 minutes per side.
 Warm Cashew Cream (Base) with minced garlic and lemon juice until silky; spoon over salmon.
 Serve salmon with cashew cream and roasted mixed vegetables."
-"Power Breakfast Bowl",Breakfast,"Avocado:50 | Cherry Tomatoes:30 | Cooked Quinoa (Base):50 | Eggs (Large):150 | Marinara Sauce (Base):15 | Mexican Beans (Base):50",,,,,,,,,false,,,,"G6PD Trigger",meals/gcuOdRHctyDiXXnQ8fg7YHqJ5dNJ8OO3nBxP8Bqr.jpg,"Cooked quinoa, warm Mexican beans and marinara, avocado, cherry tomatoes, and sunny-side-up eggs.","1. Prepare Cooked Quinoa (Base) per base recipe instructions.
-2. Warm Mexican Beans (Base) with Marinara Sauce (Base) in a small pot until heated through.
-3. Halve the cherry tomatoes. Dice the avocado.
-4. Perfect sunny-side-up eggs (cast iron or stainless steel, no sticking): place a clean cast iron or stainless steel pan over medium-low heat for 2 minutes. Add enough olive oil to coat the bottom and swirl to cover. For stainless steel, wait until the oil shimmers and moves easily across the pan. Crack the eggs gently into the pan, spaced apart. Cook without moving until the whites turn opaque at the edges and lift easily from the pan (2–3 minutes). Cover with a lid and cook 1 minute more until the whites are fully set and the yolks stay runny. Slide onto a plate with a thin spatula.
-5. Spoon quinoa into a bowl. Top with warm beans and marinara, cherry tomatoes, and avocado.
-6. Lay the sunny-side-up eggs on top. Serve immediately."
+"Power Breakfast Bowl",Breakfast,"Avocado:50 | Cherry Tomatoes:30 | Cooked Quinoa (Base):50 | Eggs (Large):150 | Marinara Sauce (Base):15 | Mexican Beans (Base):50",,,,,,,,,false,,,,"G6PD Trigger",meals/gcuOdRHctyDiXXnQ8fg7YHqJ5dNJ8OO3nBxP8Bqr.jpg,"Cooked quinoa, warm Mexican beans and marinara, avocado, cherry tomatoes, and sunny-side-up eggs.","Prepare Cooked Quinoa (Base) per base recipe instructions.
+Warm Mexican Beans (Base) with Marinara Sauce (Base) in a small pot until heated through.
+Halve the cherry tomatoes. Dice the avocado.
+Perfect sunny-side-up eggs (cast iron or stainless steel, no sticking): place a clean cast iron or stainless steel pan over medium-low heat for 2 minutes. Add enough olive oil to coat the bottom and swirl to cover. For stainless steel, wait until the oil shimmers and moves easily across the pan. Crack the eggs gently into the pan, spaced apart. Cook without moving until the whites turn opaque at the edges and lift easily from the pan (2–3 minutes). Cover with a lid and cook 1 minute more until the whites are fully set and the yolks stay runny. Slide onto a plate with a thin spatula.
+Spoon quinoa into a bowl. Top with warm beans and marinara, cherry tomatoes, and avocado.
+Lay the sunny-side-up eggs on top. Serve immediately."
 "Seared Beef Liver w Caramelized Onion, Spinach & Chimichurri",Meal,"Beef Liver:150 | Black Pepper:1 | Fermented Chimichurri (Base):20 | Garlic (Raw):4 | Lemon Juice:10 | Olive Oil (Extra Virgin):5 | Spinach (Fresh):90 | Steamed Basmati Rice (Base):65 | White Onion:45",360,36,27,12,,,,,false,1,Balanced,,,images/meals/seared_beef_liver_chimichurri.png,"Quick-seared beef liver with sweet caramelized onion, wilted spinach, steamed basmati, and fermented chimichurri.","Slice liver into thin strips. Season with black pepper.
 Slow-cook sliced onion in olive oil over medium-low heat 12–15 minutes until golden and sweet.
 Push onion aside. Sear liver strips 1–2 minutes per side until just cooked through. Remove from heat.
@@ -430,3 +427,11 @@ Add sliced red pepper and cook 2–3 minutes. Stir in minced garlic and oregano.
 Add chicken liver pieces. Sear 3 minutes per side until just cooked through.
 Finish with pomegranate molasses, sea salt, black pepper, and a pinch of nutmeg.
 Serve with warm quinoa flatbread, rocca, and sliced raw tomato."
+"Peri Peri Chicken Liver w Zucchini Bread",Meal,"Bell Pepper (Red):40 | Black Pepper:0.5 | Chicken Liver:150 | Fresh Coriander:5 | Garlic (Raw):4 | Harissa Paste (Base):20 | Lemon Juice:10 | Olive Oil (Extra Virgin):5 | Pumpkin Seeds:15 | Red Onion:35 | Sea Salt:1 | Smoked Paprika:1 | Tomato (Raw):45 | Zucchini Almond Bread (Base):75",569.39,39.65,21.28,38.09,,,,,false,1,Balanced,,,images/meals/peri_peri_chicken_liver_w_zucchini_bread.png,"Peri peri–spiced chicken liver with peppers and onion, served with warm zucchini almond bread, tomato, coriander, and a pumpkin-seed crunch.","1. Prepare Zucchini Almond Bread (Base) per base recipe instructions; slice and keep warm.
+2. Toss chicken liver with Harissa Paste (Base), smoked paprika, garlic, lemon juice, sea salt, and black pepper.
+3. Sauté red onion and bell pepper in olive oil until softened. Add the seasoned liver and sear until just cooked through.
+4. Plate with warm zucchini almond bread and sliced tomato. Scatter fresh coriander and pumpkin seeds over the top. Serve immediately."
+"Rosemary Garlic Chicken w Mushroom, Spinach & Roasted Sweet Potato",Meal,"Black Pepper:0.5 | Garlic (Raw):5 | Mushrooms:45 | Olive Oil (Extra Virgin):4 | Rosemary (Fresh):3 | Rosemary Garlic Chicken (Base):150 | Spinach (Fresh):55 | Sweet Potato:85",360,36,27,12,,,,,false,,Balanced,,,images/meals/rosemary_garlic_chicken.png,"Grilled rosemary garlic chicken with sautéed mushrooms and spinach over roasted sweet potato wedges.","Toss sweet potato wedges with half the olive oil, salt, and pepper. Roast at 200°C for 22–25 minutes until golden.
+Grill or pan-sear Rosemary Garlic Chicken (Base) until golden then in the oven for 20 minutes exactly, then Rest and slice.
+Sauté mushrooms in remaining olive oil until golden. Wilt spinach briefly in the same pan.
+Plate roasted sweet potato, spinach, and mushrooms. Top with sliced chicken and serve warm."

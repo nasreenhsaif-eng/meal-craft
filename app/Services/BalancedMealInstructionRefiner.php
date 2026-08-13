@@ -233,10 +233,10 @@ final class BalancedMealInstructionRefiner
                 SaladDressingMealRefiner::SERVE_DRESSING_ON_THE_SIDE,
             ]),
             'Turmeric Chicken Kale Salad' => $this->steps([
-                'Rub chicken with turmeric and garlic. Grill or pan-sear chicken until golden then in the oven for 20 minutes exactly, then Rest and slice.',
-                'Massage kale with lemon and olive oil until softened.',
-                'Add cucumber and carrots. Top with warm chicken.',
-                'Serve immediately.',
+                'Rub chicken with half the turmeric lemon dressing as a marinade. Grill or pan-sear chicken until golden then in the oven for 20 minutes exactly, then Rest and slice.',
+                'Massage kale until tender. Blanch or lightly steam broccoli until bright and just tender.',
+                'Toss kale and broccoli with avocado, coriander, and pumpkin seeds. Top with warm turmeric chicken.',
+                SaladDressingMealRefiner::SERVE_DRESSING_ON_THE_SIDE,
             ]),
             'Chicken Thai Mango Salad' => $this->steps([
                 'Grill or pan-sear chicken until golden then in the oven for 20 minutes exactly, then Rest and slice thinly.',
