@@ -14,6 +14,7 @@ use App\Models\Meal;
 use App\Models\MealCsvImportPendingRow;
 use App\Models\User;
 use App\Services\BaseIngredientService;
+use App\Services\CollapsedPrimaryProteinHealer;
 use App\Services\MealCraftMasterCsvExport;
 use App\Services\MenuDevelopmentCsvExport;
 use App\Services\MenuDevelopmentCsvSync;
@@ -27,6 +28,7 @@ use App\Support\LiquidIngredientPresentation;
 use App\Support\MealImagePath;
 use App\Support\MealInstructionsText;
 use App\Support\MealLibraryBulkNutrition;
+use App\Support\MealLibraryEditGuard;
 use App\Support\MealLibraryTaxonomy;
 use App\Support\RawPrepIngredientPresentation;
 use App\Support\SaladMealPresentation;
@@ -757,6 +759,10 @@ class MealLibraryController extends Controller
      */
     public function presentMealRowForUi(Meal $meal): array
     {
+        if (MealLibraryEditGuard::mealHasCollapsedOrMissingPrimaryMeat($meal)) {
+            $meal = app(CollapsedPrimaryProteinHealer::class)->ensureMeal($meal);
+        }
+
         return $this->toMealRow($meal);
     }
 
