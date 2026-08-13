@@ -16,6 +16,7 @@ use App\Support\ChiaBreakfastMeals;
 use App\Support\MealLibraryEditGuard;
 use App\Support\MealPlanSlotBasedDayNutrition;
 use App\Support\SavoryEggBreakfastMeals;
+use Illuminate\Support\Facades\Cache;
 
 /**
  * Builds the customer-facing menu with per-meal scaling for breakfast and mains,
@@ -24,6 +25,8 @@ use App\Support\SavoryEggBreakfastMeals;
  */
 final class AdaptedMenuBuilder
 {
+    public const COLLAPSED_PROTEIN_HEAL_CACHE_KEY = 'collapsed-primary-protein-healed:v2';
+
     /**
      * @param  array{
      *     include_soup?: bool,
@@ -45,6 +48,8 @@ final class AdaptedMenuBuilder
      */
     public static function build(CustomerProfile $profile, array $options = []): array
     {
+        self::healCollapsedPrimaryProteinLibraryOnce();
+
         $plan = UserPlanCalculator::calculateUserPlan($profile, $options);
 
         $craftKey = isset($options['craft_key']) ? (string) $options['craft_key'] : '';
@@ -206,6 +211,26 @@ final class AdaptedMenuBuilder
         }
 
         return app(CollapsedPrimaryProteinHealer::class)->ensureMeal($meal);
+    }
+
+    /**
+     * One library-wide heal per cache window when the adapted menu is built (craft carousel).
+     * PHPUnit skips this unless {@see config('customer_nutrition.heal_collapsed_protein_on_adapted_menu_build')}
+     * is true — per-meal {@see ensurePrimaryProteinBeforeAdapt()} still runs in all environments.
+     */
+    private static function healCollapsedPrimaryProteinLibraryOnce(): void
+    {
+        $forceInTests = (bool) config('customer_nutrition.heal_collapsed_protein_on_adapted_menu_build', false);
+
+        if (app()->runningUnitTests() && ! $forceInTests) {
+            return;
+        }
+
+        Cache::remember(self::COLLAPSED_PROTEIN_HEAL_CACHE_KEY, now()->addHours(6), static function (): bool {
+            app(CollapsedPrimaryProteinHealer::class)->healAll();
+
+            return true;
+        });
     }
 
     /**
