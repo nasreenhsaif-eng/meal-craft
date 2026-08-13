@@ -93,6 +93,41 @@ final class StandardMeatPortion
     }
 
     /**
+     * Primary protein class for tier plating: chicken, beef, liver, fish, or null.
+     *
+     * @return 'chicken'|'beef'|'liver'|'fish'|null
+     */
+    public static function primaryProteinClass(string $ingredientName, ?string $mealName = null): ?string
+    {
+        $name = strtolower(trim($ingredientName));
+        $meal = strtolower(trim((string) $mealName));
+
+        if ($name === '' || self::isExcluded($name) || ! self::isPrimaryMeatIngredient($ingredientName, $mealName)) {
+            return null;
+        }
+
+        if (str_contains($name, 'liver')) {
+            return self::isLiverMainMeal($meal) ? 'liver' : null;
+        }
+
+        if (str_contains($name, 'chicken')) {
+            return 'chicken';
+        }
+
+        if (str_contains($name, 'beef') || str_contains($name, 'aleppo ground beef') || str_contains($name, 'meatball')) {
+            return 'beef';
+        }
+
+        foreach (['salmon', 'hamour', 'shrimp', 'prawn', 'tuna', 'sardine'] as $fish) {
+            if (str_contains($name, $fish)) {
+                return 'fish';
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * @return list<string>
      */
     private static function primaryMeatPatterns(): array

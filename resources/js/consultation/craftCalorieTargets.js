@@ -7,6 +7,31 @@ const TIER_SLOT_CALORIES = Object.freeze({
     2000: { breakfast: 450, mainEach: 625 },
 });
 
+/** Mirrors config/customer_nutrition.php tier_primary_protein_grams */
+const TIER_PRIMARY_PROTEIN_GRAMS = Object.freeze({
+    1000: 100,
+    1200: 120,
+    1500: 150,
+    1800: 180,
+    2000: 200,
+});
+
+/** Mirrors config/customer_nutrition.php tier_complex_carb_grams (lean baseline) */
+const TIER_COMPLEX_CARB_GRAMS = Object.freeze({
+    1000: 85,
+    1200: 100,
+    1500: 125,
+    1800: 150,
+    2000: 165,
+});
+
+const KITCHEN_PORTION_ROUND_TO_GRAMS = 5;
+const FATTY_PROTEIN_STARCH_POLICY = Object.freeze({
+    referenceLeanKcalPer100g: 165,
+    minStarchFactor: 0.35,
+    maxStarchFactor: 1,
+});
+
 const FIXED_CHOICE_CALORIES = 150;
 const FIXED_CHOICE_COUNT = 2;
 const BUSINESS_MAIN_TARGET = 375;
@@ -224,4 +249,55 @@ export function selectedFixedSlotsFromSelections(selections) {
     }
 
     return slots;
+}
+
+/**
+ * @param {number} planTier
+ */
+export function tierPrimaryProteinGrams(planTier) {
+    const tier = Math.round(planTier);
+    const value = TIER_PRIMARY_PROTEIN_GRAMS[/** @type {keyof typeof TIER_PRIMARY_PROTEIN_GRAMS} */ (tier)];
+
+    return typeof value === 'number' ? value : Math.round(tier / 10);
+}
+
+/**
+ * @param {number} planTier
+ */
+export function tierComplexCarbGrams(planTier) {
+    const tier = Math.round(planTier);
+    const value = TIER_COMPLEX_CARB_GRAMS[/** @type {keyof typeof TIER_COMPLEX_CARB_GRAMS} */ (tier)];
+
+    if (typeof value === 'number') {
+        return value;
+    }
+
+    return roundToKitchenPortion(tier / 12);
+}
+
+/**
+ * @param {number} grams
+ */
+export function roundToKitchenPortion(grams) {
+    if (grams <= 0) {
+        return 0;
+    }
+
+    return Math.max(
+        KITCHEN_PORTION_ROUND_TO_GRAMS,
+        Math.round(grams / KITCHEN_PORTION_ROUND_TO_GRAMS) * KITCHEN_PORTION_ROUND_TO_GRAMS,
+    );
+}
+
+/**
+ * @param {number} kcalPer100g
+ */
+export function fattyProteinStarchFactor(kcalPer100g) {
+    const reference = FATTY_PROTEIN_STARCH_POLICY.referenceLeanKcalPer100g;
+    const factor = reference / Math.max(1, kcalPer100g);
+
+    return Math.max(
+        FATTY_PROTEIN_STARCH_POLICY.minStarchFactor,
+        Math.min(FATTY_PROTEIN_STARCH_POLICY.maxStarchFactor, Math.round(factor * 10000) / 10000),
+    );
 }

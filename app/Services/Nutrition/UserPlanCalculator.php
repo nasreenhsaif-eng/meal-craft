@@ -168,6 +168,81 @@ final class UserPlanCalculator
         ];
     }
 
+    public static function tierPrimaryProteinGrams(float $planTier): float
+    {
+        $snapped = (int) self::snapToPlanTier($planTier);
+
+        /** @var array<int, float> $table */
+        $table = config('customer_nutrition.tier_primary_protein_grams', []);
+
+        if (isset($table[$snapped])) {
+            return round((float) $table[$snapped], 2);
+        }
+
+        return round($snapped / 10.0, 2);
+    }
+
+    public static function tierComplexCarbGrams(float $planTier): float
+    {
+        $snapped = (int) self::snapToPlanTier($planTier);
+
+        /** @var array<int, float> $table */
+        $table = config('customer_nutrition.tier_complex_carb_grams', []);
+
+        if (isset($table[$snapped])) {
+            return round((float) $table[$snapped], 2);
+        }
+
+        return self::roundToKitchenPortion($snapped / 12.0);
+    }
+
+    public static function kitchenPortionRoundToGrams(): float
+    {
+        return max(1.0, (float) config('customer_nutrition.kitchen_portion_round_to_grams', 5.0));
+    }
+
+    public static function roundToKitchenPortion(float $grams): float
+    {
+        $step = self::kitchenPortionRoundToGrams();
+
+        if ($grams <= 0.0) {
+            return 0.0;
+        }
+
+        return max($step, round($grams / $step) * $step);
+    }
+
+    /**
+     * @return array{reference_lean_kcal_per_100g: float, min_starch_factor: float, max_starch_factor: float}
+     */
+    public static function fattyProteinStarchPolicy(): array
+    {
+        /** @var array{reference_lean_kcal_per_100g?: float, min_starch_factor?: float, max_starch_factor?: float} $policy */
+        $policy = config('customer_nutrition.fatty_protein_starch_policy', []);
+
+        return [
+            'reference_lean_kcal_per_100g' => (float) ($policy['reference_lean_kcal_per_100g'] ?? 165.0),
+            'min_starch_factor' => (float) ($policy['min_starch_factor'] ?? 0.35),
+            'max_starch_factor' => (float) ($policy['max_starch_factor'] ?? 1.0),
+        ];
+    }
+
+    /**
+     * Starch multiplier from primary protein calorie density (fat-driven).
+     * Lean ≈ 1.0; denser fish/beef cuts fall toward min_starch_factor.
+     */
+    public static function fattyProteinStarchFactor(float $kcalPer100g): float
+    {
+        $policy = self::fattyProteinStarchPolicy();
+        $reference = max(1.0, $policy['reference_lean_kcal_per_100g']);
+        $factor = $reference / max(1.0, $kcalPer100g);
+
+        return max(
+            $policy['min_starch_factor'],
+            min($policy['max_starch_factor'], round($factor, 4)),
+        );
+    }
+
     /**
      * @param  array<string, float>  $overrides
      */
