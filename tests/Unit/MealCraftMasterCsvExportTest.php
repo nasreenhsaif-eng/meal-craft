@@ -5,9 +5,8 @@ use App\Enums\RecipeCategory;
 use App\Models\Meal;
 use App\Services\MealCraftMasterCsvExport;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
 
-uses(TestCase::class, RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
 test('meal craft csv row uses target_carbs for net carb target when target_net_carbs is unset', function () {
     $meal = Meal::query()->create([

@@ -9,6 +9,9 @@ use App\Support\MenuDevelopmentCsv;
 use App\Support\StandardMeatPortion;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
+use Tests\Support\IsolatesMenuDevelopmentCsv;
+
+uses(IsolatesMenuDevelopmentCsv::class);
 
 /**
  * @return list<string>
@@ -93,6 +96,9 @@ test('every balanced weekday chicken plate and salad heals from two-gram collaps
 });
 
 test('heal-collapsed-protein --weekly fails while any weekday chicken slot is two grams', function (): void {
+    // --sync-csv must not rewrite database/data/menu/meals.csv from the RefreshDatabase fixture.
+    $this->setUpIsolatedMenuDevelopmentCsvPaths();
+
     $chicken = Ingredient::factory()->create([
         'name' => 'Chicken Breast',
         'calories' => 165,

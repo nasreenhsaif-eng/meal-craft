@@ -1,9 +1,6 @@
 <?php
 
 use App\Support\UsdaMealCraftCategoryFilter;
-use Tests\TestCase;
-
-uses(TestCase::class);
 
 test('meal craft search query appends raw meat only for chicken ingredients', function (): void {
     expect(UsdaMealCraftCategoryFilter::mealCraftSearchQueryForIngredient('Chicken'))->toBe('Chicken raw meat only')
