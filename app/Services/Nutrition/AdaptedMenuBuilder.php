@@ -9,9 +9,11 @@ use App\Http\Controllers\Admin\MealLibraryController;
 use App\Models\CustomerProfile;
 use App\Models\Ingredient;
 use App\Models\Meal;
+use App\Services\CollapsedPrimaryProteinHealer;
 use App\Services\RecipeIngredientUnitConverter;
 use App\Services\RecipeNutritionCalculator;
 use App\Support\ChiaBreakfastMeals;
+use App\Support\MealLibraryEditGuard;
 use App\Support\MealPlanSlotBasedDayNutrition;
 use App\Support\SavoryEggBreakfastMeals;
 
@@ -62,6 +64,7 @@ final class AdaptedMenuBuilder
         $scalableMeals = [];
 
         foreach ($meals as $meal) {
+            $meal = self::ensurePrimaryProteinBeforeAdapt($meal);
             $slot = self::resolveSlot($meal);
 
             if ($slot === null) {
@@ -121,7 +124,7 @@ final class AdaptedMenuBuilder
      */
     public static function adaptMealForProfile(CustomerProfile $profile, Meal $meal, array $options = []): ?array
     {
-        $meal->loadMissing('ingredients');
+        $meal = self::ensurePrimaryProteinBeforeAdapt($meal);
         $slot = self::resolveAdaptationSlot($meal, $options);
 
         if ($slot === null) {
@@ -180,12 +183,29 @@ final class AdaptedMenuBuilder
 
         $adapted = [];
 
+        $healedMeals = [];
+
         foreach ($meals as $meal) {
-            $meal->loadMissing('ingredients');
-            $adapted[] = self::serializeScaledMeal($meal, 'main', $plan);
+            $healed = self::ensurePrimaryProteinBeforeAdapt($meal);
+            $healedMeals[] = $healed;
+            $adapted[] = self::serializeScaledMeal($healed, 'main', $plan);
         }
 
-        return self::balanceMainMealProtein($adapted, $plan, $meals);
+        return self::balanceMainMealProtein($adapted, $plan, $healedMeals);
+    }
+
+    /**
+     * Craft cards read live library rows — restore crushed 1–2 g chicken before macros are scaled.
+     */
+    private static function ensurePrimaryProteinBeforeAdapt(Meal $meal): Meal
+    {
+        $meal->loadMissing('ingredients');
+
+        if (! MealLibraryEditGuard::mealHasCollapsedOrMissingPrimaryMeat($meal)) {
+            return $meal;
+        }
+
+        return app(CollapsedPrimaryProteinHealer::class)->ensureMeal($meal);
     }
 
     /**
