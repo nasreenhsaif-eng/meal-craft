@@ -204,3 +204,29 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
 - IMPORTANT: Activate `inertia-react-development` when working with Inertia React client-side patterns.
 
 </laravel-boost-guidelines>
+
+## Cursor Cloud specific instructions
+
+Environment is pre-provisioned (PHP, Node, Composer, SQLite are baked into the VM snapshot; the startup update script only refreshes `composer install` + `npm install`). The notes below are the non-obvious caveats for running/testing here.
+
+### Runtime toolchain
+- PHP `8.4` is the default `php` (PHP `8.3` is also installed as `php8.3`). `composer.json` pins `config.platform.php` to `8.3.0` for dependency resolution, so Composer resolves for 8.3 regardless of the runtime.
+- Node must be `>=20 <22` (see `package.json` `engines`). The VM's `/exec-daemon/node` is Node 22 and shadows `PATH`, so **always select Node 20 via nvm before running `npm`/Vite**: `. "$HOME/.nvm/nvm.sh" && nvm use 20`. The nvm default alias is already set to 20.
+- **Laravel Herd is NOT available** on this Linux VM (ignore the Herd notes above). `.env` `APP_URL` is set to `http://localhost:8000`.
+
+### Running the app
+- Serve with `php artisan serve --host=0.0.0.0 --port=8000` and, in a separate shell (Node 20), `npm run dev` for Vite/HMR. `composer run dev` runs the whole stack (server + queue + logs + vite) but Vite still needs Node 20 on `PATH`. See `composer.json` scripts for the canonical commands.
+- If you only need to serve without HMR, run `npm run build` once (Node 20) and then `php artisan serve`.
+- Standard commands live in `composer.json` (`dev`, `test`, `lint`, `lint:check`) and `package.json` (`build`, `dev`); prefer those over ad-hoc invocations.
+
+### Known pre-existing issues (NOT environment problems — do not "fix" as part of setup)
+- **`php artisan test` (full suite) aborts**, from two independent repo issues:
+  - `app/Services/BalancedDairyFreeManualRecipeAdjustments.php` has a static method call inside the `MEAL_GRAM_MAPS` class constant, which is an `E_COMPILE_ERROR` on every PHP version. Any test that loads this class (e.g. `tests/Feature/MealLibraryEditGuardTest.php`) hard-crashes the run with no output.
+  - The `Unit` suite double-binds `TestCase`: `tests/Pest.php` does `pest()->extend(TestCase::class)->in('Unit')` while several `tests/Unit/*` files also call `uses(TestCase::class)`, which Pest 4.7 rejects at suite-build time.
+  - Workaround: run targeted files/suites, e.g. `php artisan test tests/Feature/AuthenticationTest.php ...`. Most Feature tests pass.
+- **Running Feature tests can truncate the tracked menu CSV masters** `database/data/menu/{ingredients,meals}.csv`. Tests isolate CSV paths per-test via `Tests\Support\IsolatesMenuDevelopmentCsv`, but a hard crash (or a test missing the trait) can leave the real masters header-only. After running tests, check `git status` and `git checkout -- database/data/menu/*.csv` if needed. Never commit truncated CSVs.
+- **`php artisan db:seed` fails**: `DatabaseSeeder` creates a `User` without a password (NOT NULL violation). To load demo data (418 ingredients / 98 meals) use `php artisan db:seed --class=MenuDevelopmentSeeder`.
+- **`npm install` rewrites `package-lock.json`'s `name` to `workspace`** (because `package.json` has no `name`). Harmless; `git checkout -- package-lock.json` to keep the tree clean before committing.
+
+### Verified working flow
+- New-user journey works end-to-end: register at `/register` (customer role) → lands on the `/onboarding/*` wizard (Inertia/React) and persists to `customer_profiles`. Email verification does not block onboarding here.
