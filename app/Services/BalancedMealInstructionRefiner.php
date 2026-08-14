@@ -436,11 +436,11 @@ final class BalancedMealInstructionRefiner
             ]),
             BalancedRotationMealRecipeRefiner::SALTED_TAHINI_CARAMEL_CHOCOLATE_BAR_NAME => $this->steps([
                 'Heat oven to 175°C. Line an 8x8 inch pan with parchment paper.',
-                'Mix almond flour, 3 tablespoons coconut oil, 2 tablespoons date syrup, vanilla, and salt into a crumb. Press evenly into the pan and bake 10 minutes. Cool 10 minutes.',
-                'Warm tahini, date syrup, coconut oil, vanilla, and sea salt in a saucepan over medium-low heat for about 2 minutes, stirring often. Pour over the crust.',
+                'Mix almond flour, 3 tablespoons coconut oil, 2 tablespoons date syrup, half the vanilla, and a pinch of sea salt into a crumb. Press evenly into the pan and bake 10 minutes. Cool 10 minutes.',
+                'Warm tahini, 4 tablespoons date syrup, 2 tablespoons coconut oil, remaining vanilla, and 1/2 teaspoon sea salt in a saucepan over medium-low heat for about 2 minutes, stirring often. Pour over the crust.',
                 'Refrigerate 30 to 60 minutes until the caramel layer sets.',
-                'Whisk cocoa powder, remaining coconut oil, and a little date syrup until smooth and glossy.',
-                'Pour the chocolate layer over the caramel, tilt the pan to coat evenly, and chill 1 hour until firm. Sprinkle with flaky sea salt.',
+                'Whisk cocoa powder, 3 tablespoons coconut oil, and 1 tablespoon date syrup until smooth and glossy.',
+                'Pour the chocolate layer over the caramel, tilt the pan to coat evenly, and chill 1 hour until firm. Sprinkle with the remaining flaky sea salt.',
                 'Lift from the pan and cut into '.BalancedRotationMealRecipeRefiner::SALTED_CARAMEL_CHOCOLATE_BAR_SERVINGS_COUNT.' squares. One square is one serving.',
             ]),
             'Apple Pie Balls' => $this->steps([
