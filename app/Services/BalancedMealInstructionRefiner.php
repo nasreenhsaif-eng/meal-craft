@@ -146,11 +146,12 @@ final class BalancedMealInstructionRefiner
             ]),
             'Butternut Squash Fritters & Eggs' => $this->steps([
                 'Preheat the oven to 200°C.',
-                'Cut the butternut squash into 2–3 cm chunks. Place in a roasting tin, drizzle with olive oil, and season with sea salt, chili flakes, and fennel seeds. Roast for about 20 minutes, then leave to cool.',
-                'When cool, place the butternut squash in a blender with any roasting juices. Add eggs, garlic, fresh coriander, lemon juice, cumin seeds, and coriander seeds. Blend to a rough paste and season to taste.',
-                'Transfer the mixture to a bowl and stir in enough quinoa flour to make a smooth mix. Refrigerate for 1 hour to firm up. The mix should be sticky rather than wet — add a little more flour if needed.',
-                'With wet hands, shape into ping-pong-ball-sized fritters. Bake at 200°C until golden and set through, or pan-fry in olive oil until crisp.',
-                'Prepare Marinara Sauce (Base) per base recipe instructions. Warm and serve on the side.',
+                'Cut the butternut squash into 2–3 cm chunks. Toss with olive oil, sea salt, chili flakes, and fennel seeds. Roast until tender (about 20 minutes), then leave to cool.',
+                'Mash the roasted squash with garlic, lemon juice, cumin seeds, and coriander seeds. Stir in quinoa flour until the mix holds together — sticky rather than wet. Season to taste.',
+                'With wet hands, shape into 2 large fritters. Bake at 200°C until golden and set through, or pan-fry in a little olive oil until crisp.',
+                'Prepare Marinara Sauce (Base) per base recipe instructions. Warm and spoon generously over the fritters.',
+                'Soft-poach the eggs until the whites are set and the yolks are runny. Nestle on top of the marinara.',
+                'Scatter fresh basil and cracked black pepper over the eggs. Serve immediately.',
             ]),
             'Smashed Beans & Eggs' => $this->steps([
                 'Prepare Smashed White Beans (Base) per base recipe instructions.',
