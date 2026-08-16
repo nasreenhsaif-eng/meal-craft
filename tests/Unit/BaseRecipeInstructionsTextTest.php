@@ -1,16 +1,13 @@
 <?php
 
 use App\Support\BaseRecipeInstructionsText;
-use Tests\TestCase;
-
-uses(TestCase::class);
 
 test('normalize for storage formats numbered steps with Step prefix and newline joins', function () {
     $raw = 'Finely chop the coriander. Mince the garlic. Combine oil, lime, and spices.';
 
     $stored = BaseRecipeInstructionsText::normalizeForStorage($raw);
 
-    expect($stored)->toContain("Step 1:")
+    expect($stored)->toContain('Step 1:')
         ->and($stored)->toContain("\n")
         ->and($stored)->toMatch('/Step 1:.*\nStep 2:/s');
 });

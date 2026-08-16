@@ -423,4 +423,15 @@ return [
         'very_active' => 1.725,
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Heal crushed primary protein when building the adapted craft menu
+    |--------------------------------------------------------------------------
+    |
+    | Always on outside PHPUnit. Set true in tests to exercise the library-wide
+    | Cache::remember heal path.
+    |
+    */
+    'heal_collapsed_protein_on_adapted_menu_build' => false,
+
 ];

@@ -2,9 +2,8 @@
 
 use App\Models\Ingredient;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
-use Tests\TestCase;
 
-uses(TestCase::class, LazilyRefreshDatabase::class);
+uses(LazilyRefreshDatabase::class);
 
 test('ingredient highlights detect high-density nutrients', function () {
     $ingredient = Ingredient::query()->create([
@@ -52,4 +51,3 @@ test('ingredient is a powerfood when it has at least two highlights', function (
 
     expect($highlights)->toBeGreaterThanOrEqual(2);
 });
-

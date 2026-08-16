@@ -1,9 +1,6 @@
 <?php
 
 use App\Models\User;
-use Tests\TestCase;
-
-uses(TestCase::class);
 
 test('initials returns placeholder when name is empty or missing', function () {
     $user = new User(['name' => null, 'email' => 'a@b.test']);

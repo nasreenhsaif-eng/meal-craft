@@ -1,29 +1,71 @@
 <?php
 
+use App\Services\BalancedCanonicalMealRecipeRefiner;
 use App\Services\BalancedSodiumRecipeRefiner;
+use App\Support\StandardMeatPortion;
 
-test('sodium refiner keeps cooked quinoa as a cookable base instead of dry grain', function (): void {
-    $adjusted = app(BalancedSodiumRecipeRefiner::class)->adjustIngredientGrams([
-        'Cooked Quinoa (Base)' => 84.0,
-        'Chicken Breast' => 150.0,
-        'Vegetable Broth (Base)' => 50.0,
-        'Water (Filtered)' => 150.0,
-    ]);
+test('sodium adjust does not shrink rosemary garlic chicken base', function () {
+    $refiner = app(BalancedSodiumRecipeRefiner::class);
 
-    expect($adjusted)->toHaveKey('Cooked Quinoa (Base)')
-        ->and($adjusted)->not->toHaveKey('Quinoa (White)')
-        ->and($adjusted['Cooked Quinoa (Base)'])->toBe(75.6)
-        ->and($adjusted['Vegetable Broth (Base)'])->toBe(25.0)
-        ->and($adjusted['Water (Filtered)'])->toBe(175.0);
+    $adjusted = $refiner->adjustIngredientGrams([
+        'Rosemary Garlic Chicken (Base)' => StandardMeatPortion::GRAMS,
+        'Sweet Potato' => 85.0,
+        'Spinach (Fresh)' => 55.0,
+        'Mushrooms' => 45.0,
+        'Olive Oil (Extra Virgin)' => 4.0,
+        'Black Pepper' => 0.5,
+        'Sea Salt' => 1.0,
+    ], BalancedCanonicalMealRecipeRefiner::ROSEMARY_GARLIC_CHICKEN_PLATE_NAME);
+
+    expect($adjusted['Rosemary Garlic Chicken (Base)'])->toBe(StandardMeatPortion::GRAMS)
+        ->and($adjusted)->not->toHaveKey('Sea Salt');
 });
 
-test('sodium refiner keeps cooked couscous instead of swapping to dry couscous', function (): void {
-    $adjusted = app(BalancedSodiumRecipeRefiner::class)->adjustIngredientGrams([
-        'Cooked Couscous (Base)' => 90.0,
-        'Beef Ground Lean' => 130.0,
-    ]);
+test('sodium adjust restores collapsed primary chicken to the standard portion', function (float $collapsedGrams) {
+    $refiner = app(BalancedSodiumRecipeRefiner::class);
 
-    expect($adjusted)->toHaveKey('Cooked Couscous (Base)')
-        ->and($adjusted)->not->toHaveKey('Couscous')
-        ->and($adjusted['Cooked Couscous (Base)'])->toBe(81.0);
+    $adjusted = $refiner->adjustIngredientGrams([
+        'Rosemary Garlic Chicken (Base)' => $collapsedGrams,
+        'Sweet Potato' => 100.0,
+        'Spinach (Fresh)' => 100.0,
+        'Mushrooms' => 45.0,
+    ], BalancedCanonicalMealRecipeRefiner::ROSEMARY_GARLIC_CHICKEN_PLATE_NAME);
+
+    expect($adjusted['Rosemary Garlic Chicken (Base)'])->toBe(StandardMeatPortion::GRAMS);
+})->with([1.0, 2.0, 5.0, 20.0, 74.9]);
+
+test('sodium adjust restores one-gram chicken breast as primary meat', function () {
+    $refiner = app(BalancedSodiumRecipeRefiner::class);
+
+    $adjusted = $refiner->adjustIngredientGrams([
+        'Chicken Breast' => 1.0,
+        'Broccoli' => 80.0,
+    ], 'Grilled Chicken Chimichurri');
+
+    expect($adjusted['Chicken Breast'])->toBe(StandardMeatPortion::GRAMS);
+});
+
+test('sodium adjust is idempotent for dressings and chicken', function () {
+    $refiner = app(BalancedSodiumRecipeRefiner::class);
+    $mealName = BalancedCanonicalMealRecipeRefiner::ROSEMARY_GARLIC_CHICKEN_PLATE_NAME;
+
+    $first = $refiner->adjustIngredientGrams([
+        'Rosemary Garlic Chicken (Base)' => StandardMeatPortion::GRAMS,
+        'Red Pepper Dressing (Base)' => 20.0,
+        'Vegetable Stock' => 40.0,
+    ], $mealName);
+
+    $second = $refiner->adjustIngredientGrams($first, $mealName);
+
+    expect($second['Rosemary Garlic Chicken (Base)'])->toBe(StandardMeatPortion::GRAMS)
+        ->and($second['Red Pepper Dressing (Base)'])->toBe($first['Red Pepper Dressing (Base)'])
+        ->and($second['Vegetable Stock'])->toBe($first['Vegetable Stock'])
+        ->and($second['Water (Filtered)'] ?? 0.0)->toBe($first['Water (Filtered)'] ?? 0.0);
+});
+
+test('rosemary garlic chicken base is classified as primary meat', function () {
+    expect(StandardMeatPortion::isPrimaryMeatIngredient(
+        'Rosemary Garlic Chicken (Base)',
+        BalancedCanonicalMealRecipeRefiner::ROSEMARY_GARLIC_CHICKEN_PLATE_NAME,
+    ))->toBeTrue();
 });

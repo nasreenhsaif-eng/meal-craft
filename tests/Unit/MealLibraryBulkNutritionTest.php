@@ -1,9 +1,6 @@
 <?php
 
 use App\Support\MealLibraryBulkNutrition;
-use Tests\TestCase;
-
-uses(TestCase::class);
 
 test('bulk nutrition prefers ingredient rollup divided by servings', function () {
     $batch = [

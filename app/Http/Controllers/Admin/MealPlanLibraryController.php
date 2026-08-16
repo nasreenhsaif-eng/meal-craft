@@ -10,23 +10,15 @@ use App\Enums\MealPlanSchemaType;
 use App\Enums\MealPlanSlotType;
 use App\Enums\RecipeCategory;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Admin\StoreMealPlanDefaultDaySelectionsRequest;
 use App\Http\Requests\SearchMealsForSchedulerRequest;
 use App\Http\Requests\StoreMealPlanFromLibraryRequest;
 use App\Models\Meal;
 use App\Models\MealPlan;
 use App\Models\MealPlanDayMeal;
-use App\Services\MealPlanDefaultDaySelections;
-use App\Services\MealPlanLibraryTierPreview;
+use App\Services\CollapsedPrimaryProteinHealer;
 use App\Services\MealPlanService;
-use App\Services\Nutrition\UserPlanCalculator;
-use App\Support\ChiaDessertMeals;
-use App\Support\NutrientDenseBreakfastOptions;
-use App\Support\PrimaryFullCraftMainSlots;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -38,7 +30,7 @@ class MealPlanLibraryController extends Controller
     public function __construct(
         private MealPlanService $mealPlanService,
         private MealLibraryController $mealLibrary,
-        private MealPlanLibraryTierPreview $tierPreview,
+        private CollapsedPrimaryProteinHealer $collapsedPrimaryProteinHealer,
     ) {}
 
     public function index(): Response
@@ -113,6 +105,9 @@ class MealPlanLibraryController extends Controller
 
     public function show(MealPlan $mealPlan): Response
     {
+        // Admin meal-plan cards use stored meal macros — heal 1g chicken before presenting.
+        $this->collapsedPrimaryProteinHealer->healAll();
+
         $mealPlan->load([
             'dayMeals' => static function ($query): void {
                 $query->where('is_option_b', false)
@@ -137,12 +132,6 @@ class MealPlanLibraryController extends Controller
             ];
         }
 
-        $category = $mealPlan->plan_category;
-        $isNutrientDensePlan = $category === MealPlanLibraryCategory::NutrientDense
-            || str_contains(strtolower((string) ($mealPlan->name ?? '')), 'tbd');
-        $storedDefaults = MealPlanDefaultDaySelections::forPlan($mealPlan);
-        $hasStoredDefaults = $storedDefaults !== [];
-
         foreach ($mealPlan->dayMeals as $dayMeal) {
             if (! $dayMeal instanceof MealPlanDayMeal || $dayMeal->meal === null) {
                 continue;
@@ -154,47 +143,16 @@ class MealPlanLibraryController extends Controller
             }
 
             $categoryKey = $this->slotTypeToCategoryKey($dayMeal->slot_type);
-            $row = $this->mealLibrary->presentMealRowForUi($dayMeal->meal);
-            $slotIndex = (int) $dayMeal->slot_index;
-
-            // TBD Weekly Protocol: Greek yogurt chia lives on breakfast, not the dessert deck.
-            if (
-                $isNutrientDensePlan
-                && $categoryKey === 'desserts'
-                && ($slotIndex === 3 || ChiaDessertMeals::isChiaDessert($dayMeal->meal))
-            ) {
-                $categoryKey = 'breakfasts';
-                $slotIndex = NutrientDenseBreakfastOptions::CHIA_SLOT_INDEX;
-            }
-
-            $row['plan_slot_index'] = $slotIndex;
-
-            if ($hasStoredDefaults) {
-                $row['isRecommended'] = in_array(
-                    (int) $dayMeal->meal_id,
-                    $storedDefaults[$dayNumber][$categoryKey] ?? [],
-                    true,
-                );
-            } elseif ($categoryKey === 'meals') {
-                $primarySlots = $isNutrientDensePlan
-                    ? PrimaryFullCraftMainSlots::NUTRIENT_DENSE
-                    : PrimaryFullCraftMainSlots::BALANCED;
-                $row['isRecommended'] = in_array($slotIndex, $primarySlots, true);
-            } else {
-                $row['isRecommended'] = $slotIndex === 1;
-            }
-
-            $daysByNumber[$dayNumber]['categories'][$categoryKey][] = $row;
+            $meal = $this->collapsedPrimaryProteinHealer->ensureMeal($dayMeal->meal);
+            $daysByNumber[$dayNumber]['categories'][$categoryKey][] = $this->mealLibrary->presentMealRowForUi($meal);
         }
 
         $dailyMacros = $this->mealPlanService->averageDailyNutritionForOption($mealPlan, false);
+        $category = $mealPlan->plan_category;
         $tags = [$category instanceof MealPlanLibraryCategory ? $category->label() : __('Balanced')];
         if ($mealPlan->cycle_phase instanceof MealCyclePhaseTag) {
             $tags[] = $mealPlan->cycle_phase->label();
         }
-
-        $planTiers = UserPlanCalculator::planTiers();
-        $defaultPlanTier = in_array(1500, $planTiers, true) ? 1500 : ($planTiers[2] ?? $planTiers[0] ?? 1500);
 
         return Inertia::render('Admin/MealPlanDetail', [
             'mealPlan' => [
@@ -211,78 +169,8 @@ class MealPlanLibraryController extends Controller
                 ],
             ],
             'days' => array_values($daysByNumber),
-            'defaultDaySelections' => $storedDefaults,
-            'planTiers' => $planTiers,
-            'defaultPlanTier' => $defaultPlanTier,
-            'tierPreviewUrl' => route('admin.meal-plan-library.tier-preview', $mealPlan),
-            'saveDefaultSelectionsUrl' => route('admin.meal-plan-library.default-selections', $mealPlan),
             'libraryUrl' => route('admin.meal-plan-library'),
             'ingredientProfiles' => $this->mealLibrary->verifiedIngredientProfilesForUi(),
-        ]);
-    }
-
-    public function storeDefaultSelections(
-        StoreMealPlanDefaultDaySelectionsRequest $request,
-        MealPlan $mealPlan,
-    ): RedirectResponse {
-        MealPlanDefaultDaySelections::store($mealPlan, $request->normalizedSelections());
-
-        return redirect()
-            ->route('admin.meal-plan-library.show', $mealPlan)
-            ->with('success', __('Default meal selections saved. Customers will start with these picks and can still change them.'));
-    }
-
-    public function tierPreview(Request $request, MealPlan $mealPlan): JsonResponse
-    {
-        $validated = $request->validate([
-            'plan_tier' => ['required', 'integer', Rule::in(UserPlanCalculator::planTiers())],
-            'selections' => ['sometimes', 'string'],
-        ]);
-
-        $daySelectionsByDay = [];
-
-        if (isset($validated['selections']) && is_string($validated['selections']) && trim($validated['selections']) !== '') {
-            $decoded = json_decode($validated['selections'], true);
-
-            if (is_array($decoded)) {
-                foreach ($decoded as $dayNumber => $categories) {
-                    if (! is_numeric($dayNumber) || ! is_array($categories)) {
-                        continue;
-                    }
-
-                    $normalizedDay = (int) $dayNumber;
-
-                    if ($normalizedDay < 1) {
-                        continue;
-                    }
-
-                    /** @var array<string, list<int|string>> $categorySelections */
-                    $categorySelections = [];
-
-                    foreach ($categories as $categoryKey => $mealIds) {
-                        if (! is_string($categoryKey) || ! is_array($mealIds)) {
-                            continue;
-                        }
-
-                        $categorySelections[$categoryKey] = array_values(array_filter(
-                            array_map(static fn (mixed $id): int => (int) $id, $mealIds),
-                            static fn (int $id): bool => $id > 0,
-                        ));
-                    }
-
-                    $daySelectionsByDay[$normalizedDay] = $categorySelections;
-                }
-            }
-        }
-
-        return response()->json([
-            'planTier' => (int) $validated['plan_tier'],
-            'days' => $this->tierPreview->daysForTier(
-                $mealPlan,
-                (int) $validated['plan_tier'],
-                $request->user(),
-                $daySelectionsByDay,
-            ),
         ]);
     }
 

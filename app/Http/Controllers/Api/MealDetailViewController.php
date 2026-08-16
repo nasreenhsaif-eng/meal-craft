@@ -5,9 +5,11 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Admin\MealLibraryController;
 use App\Http\Controllers\Controller;
 use App\Models\Meal;
+use App\Services\CollapsedPrimaryProteinHealer;
 use App\Services\Nutrition\AdaptedMenuBuilder;
 use App\Services\Nutrition\AdaptedMenuBuildOptionsFromRequest;
 use App\Support\AdminConsultationPreviewProfile;
+use App\Support\MealLibraryEditGuard;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -15,6 +17,10 @@ class MealDetailViewController extends Controller
 {
     public function __invoke(Request $request, Meal $meal, MealLibraryController $mealLibrary): JsonResponse
     {
+        if (MealLibraryEditGuard::mealHasCollapsedOrMissingPrimaryMeat($meal)) {
+            $meal = app(CollapsedPrimaryProteinHealer::class)->ensureMeal($meal);
+        }
+
         $user = $request->user();
         $profile = AdminConsultationPreviewProfile::resolve($user);
 

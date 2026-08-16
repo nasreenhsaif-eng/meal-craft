@@ -9,23 +9,24 @@ use App\Http\Controllers\Admin\MealLibraryController;
 use App\Models\CustomerProfile;
 use App\Models\Ingredient;
 use App\Models\Meal;
-use App\Services\BalancedChiaDessertRecipeRefiner;
+use App\Services\CollapsedPrimaryProteinHealer;
+use App\Services\RecipeIngredientUnitConverter;
 use App\Services\RecipeNutritionCalculator;
-use App\Support\ChiaDessertMeals;
-use App\Support\CulinaryBreakfastRebalancer;
-use App\Support\CulinaryPortionConstraints;
-use App\Support\EggIngredientPresentation;
-use App\Support\KitchenPortionRounding;
+use App\Support\ChiaBreakfastMeals;
+use App\Support\MealLibraryEditGuard;
 use App\Support\MealPlanSlotBasedDayNutrition;
-use App\Support\PureCookingFatNutrition;
 use App\Support\SavoryEggBreakfastMeals;
+use Illuminate\Support\Facades\Cache;
 
 /**
- * Builds the customer-facing menu with per-meal scaling for savory breakfasts and mains,
- * and standard fixed portions for side salads, desserts, and soup.
+ * Builds the customer-facing menu with per-meal scaling for breakfast and mains,
+ * and standard fixed portions for side salads and desserts. Soup is an optional
+ * add-on at standard portion (no scaling).
  */
 final class AdaptedMenuBuilder
 {
+    public const COLLAPSED_PROTEIN_HEAL_CACHE_KEY = 'collapsed-primary-protein-healed:v2';
+
     /**
      * @param  array{
      *     include_soup?: bool,
@@ -34,6 +35,7 @@ final class AdaptedMenuBuilder
      *     dessert_calories?: float,
      *     snap_to_tier?: bool,
      *     craft_key?: string,
+     *     fixed_chia_breakfast?: bool,
      *     schedule_slot?: string,
      * }  $options
      * @return array{
@@ -46,6 +48,8 @@ final class AdaptedMenuBuilder
      */
     public static function build(CustomerProfile $profile, array $options = []): array
     {
+        self::healCollapsedPrimaryProteinLibraryOnce();
+
         $plan = UserPlanCalculator::calculateUserPlan($profile, $options);
 
         $craftKey = isset($options['craft_key']) ? (string) $options['craft_key'] : '';
@@ -53,8 +57,6 @@ final class AdaptedMenuBuilder
         if ($craftKey !== '' && in_array($craftKey, CraftCaloriePlanner::keys(), true)) {
             $plan = CraftCaloriePlanner::applyCraftToPlan($plan, $craftKey);
         }
-
-        $plan = self::planWithBreakfastFloorRebalance($profile, $plan, $options);
 
         $meals = Meal::queryForMealLibrary()
             ->with('ingredients')
@@ -67,28 +69,10 @@ final class AdaptedMenuBuilder
         $scalableMeals = [];
 
         foreach ($meals as $meal) {
+            $meal = self::ensurePrimaryProteinBeforeAdapt($meal);
             $slot = self::resolveSlot($meal);
 
             if ($slot === null) {
-                continue;
-            }
-
-            if ($slot === 'breakfast' && ChiaDessertMeals::isChiaDessert($meal)) {
-                continue;
-            }
-
-            if (
-                ChiaDessertMeals::isChiaDessert($meal)
-                && $meal->name !== ChiaDessertMeals::resolveMealNameForProfile((string) $meal->name, $profile)
-            ) {
-                continue;
-            }
-
-            if (
-                $slot === 'breakfast'
-                && SavoryEggBreakfastMeals::isSavoryEggBreakfast($meal)
-                && $meal->name !== SavoryEggBreakfastMeals::resolveMealNameForProfile((string) $meal->name, $profile)
-            ) {
                 continue;
             }
 
@@ -101,6 +85,12 @@ final class AdaptedMenuBuilder
             }
 
             if ($behavior === 'scalable') {
+                if ($slot === 'breakfast' && ChiaBreakfastMeals::isChiaBreakfast($meal)) {
+                    $scalableMeals[] = self::serializeChiaBreakfastMeal($meal, $plan);
+
+                    continue;
+                }
+
                 $scalableMeals[] = self::serializeScaledMeal($meal, $slot, $plan);
             }
         }
@@ -110,26 +100,7 @@ final class AdaptedMenuBuilder
             'craft_key' => $craftKey !== '' ? $craftKey : null,
             'include_soup' => ($options['include_soup'] ?? false) ? true : null,
             'soup_calories' => isset($options['soup_calories']) ? (float) $options['soup_calories'] : null,
-            'side_salad_calories' => isset($options['side_salad_calories']) ? (float) $options['side_salad_calories'] : null,
-            'dessert_calories' => isset($options['dessert_calories']) ? (float) $options['dessert_calories'] : null,
-            'plan_tier' => isset($options['plan_tier']) ? (float) $options['plan_tier'] : null,
-            'selected_fixed_slots' => isset($options['selected_fixed_slots']) ? $options['selected_fixed_slots'] : null,
-            'day_of_week' => isset($options['day_of_week']) ? (int) $options['day_of_week'] : null,
-            'selected_main_meal_ids' => isset($options['selected_main_meal_ids']) ? $options['selected_main_meal_ids'] : null,
-        ], static fn ($value): bool => $value !== null && $value !== '' && $value !== []);
-
-        $macroWarningsByDay = [];
-        $scheduledFullCraft = ProductionWeeklyMenuSchedule::scheduledFullCraftByWeekday(
-            $profile,
-            null,
-            $scheduleOptions,
-            $macroWarningsByDay,
-        );
-
-        $requestedDay = isset($options['day_of_week']) ? (int) $options['day_of_week'] : 0;
-        $plan['macro_warnings'] = ($requestedDay >= 1 && $requestedDay <= 7)
-            ? ($macroWarningsByDay[$requestedDay] ?? [])
-            : [];
+        ], static fn ($value): bool => $value !== null && $value !== '');
 
         return [
             'plan' => $plan,
@@ -138,7 +109,7 @@ final class AdaptedMenuBuilder
             'scalable_meals' => $scalableMeals,
             'fixed_meals' => $fixedPortionMeals,
             'scheduled_soups_by_weekday' => ProductionWeeklyMenuSchedule::scheduledSoupsByWeekday($profile, null, $scheduleOptions),
-            'scheduled_full_craft_by_weekday' => $scheduledFullCraft,
+            'scheduled_full_craft_by_weekday' => ProductionWeeklyMenuSchedule::scheduledFullCraftByWeekday($profile, null, $scheduleOptions),
             'production_meal_plan_id' => ProductionWeeklyMenuSchedule::resolveProductionMealPlan()?->id,
         ];
     }
@@ -151,13 +122,14 @@ final class AdaptedMenuBuilder
      *     dessert_calories?: float,
      *     snap_to_tier?: bool,
      *     craft_key?: string,
+     *     fixed_chia_breakfast?: bool,
      *     schedule_slot?: string,
      * }  $options
      * @return array<string, mixed>|null
      */
     public static function adaptMealForProfile(CustomerProfile $profile, Meal $meal, array $options = []): ?array
     {
-        $meal->loadMissing('ingredients');
+        $meal = self::ensurePrimaryProteinBeforeAdapt($meal);
         $slot = self::resolveAdaptationSlot($meal, $options);
 
         if ($slot === null) {
@@ -171,41 +143,17 @@ final class AdaptedMenuBuilder
         if ($craftKey !== '' && in_array($craftKey, CraftCaloriePlanner::keys(), true)) {
             $plan = CraftCaloriePlanner::applyCraftToPlan($plan, $craftKey);
         }
-
-        $plan = self::planWithBreakfastFloorRebalance($profile, $plan, $options);
         $behavior = UserPlanCalculator::slotBehavior($slot);
 
         if ($behavior === 'scalable') {
+            if ($slot === 'breakfast' && ChiaBreakfastMeals::isChiaBreakfast($meal)) {
+                return self::serializeChiaBreakfastMeal($meal, $plan);
+            }
+
             return self::serializeScaledMeal($meal, $slot, $plan);
         }
 
         return self::serializeStandardPortionMeal($meal, $slot, $profile);
-    }
-
-    /**
-     * Resolve the adapted meal payload for detail views, preferring reconciled weekday schedule data.
-     *
-     * @param  array<string, mixed>  $options
-     * @return array<string, mixed>|null
-     */
-    public static function adaptedMealForDetailView(CustomerProfile $profile, Meal $meal, array $options = []): ?array
-    {
-        $dayOfWeek = isset($options['day_of_week']) ? (int) $options['day_of_week'] : 0;
-        $craftKey = isset($options['craft_key']) ? (string) $options['craft_key'] : '';
-
-        if ($dayOfWeek >= 1 && $dayOfWeek <= 7 && $craftKey !== '') {
-            $scheduled = ProductionWeeklyMenuSchedule::adaptedMealFromScheduledDay(
-                $profile,
-                (int) $meal->id,
-                $options,
-            );
-
-            if ($scheduled !== null) {
-                return $scheduled;
-            }
-        }
-
-        return self::adaptMealForProfile($profile, $meal, $options);
     }
 
     /**
@@ -219,6 +167,7 @@ final class AdaptedMenuBuilder
      *     dessert_calories?: float,
      *     snap_to_tier?: bool,
      *     craft_key?: string,
+     *     fixed_chia_breakfast?: bool,
      *     schedule_slot?: string,
      * }  $options
      * @return list<array<string, mixed>>
@@ -237,77 +186,51 @@ final class AdaptedMenuBuilder
             $plan = CraftCaloriePlanner::applyCraftToPlan($plan, $craftKey);
         }
 
-        $plan = self::planWithBreakfastFloorRebalance($profile, $plan, $options);
-
         $adapted = [];
 
+        $healedMeals = [];
+
         foreach ($meals as $meal) {
-            $meal->loadMissing('ingredients');
-            $adapted[] = self::serializeScaledMeal($meal, 'main', $plan);
+            $healed = self::ensurePrimaryProteinBeforeAdapt($meal);
+            $healedMeals[] = $healed;
+            $adapted[] = self::serializeScaledMeal($healed, 'main', $plan);
         }
 
-        return self::balanceMainMealProtein($adapted, $plan, $meals);
+        return self::balanceMainMealProtein($adapted, $plan, $healedMeals);
     }
 
     /**
-     * When tier egg counts and side minimums push breakfast above its slot target, trim main targets
-     * so a full craft day still lands on the plan tier.
-     *
-     * @param  array<string, mixed>  $plan
-     * @param  array{
-     *     craft_key?: string,
-     *     day_of_week?: int,
-     * }  $options
-     * @return array<string, mixed>
+     * Craft cards read live library rows — restore crushed 1–2 g chicken before macros are scaled.
      */
-    private static function planWithBreakfastFloorRebalance(CustomerProfile $profile, array $plan, array $options): array
+    private static function ensurePrimaryProteinBeforeAdapt(Meal $meal): Meal
     {
-        $day = isset($options['day_of_week']) ? (int) $options['day_of_week'] : 0;
+        $meal->loadMissing('ingredients');
 
-        if ($day < 1 || $day > 7) {
-            return $plan;
+        if (! MealLibraryEditGuard::mealHasCollapsedOrMissingPrimaryMeat($meal)) {
+            return $meal;
         }
 
-        $craftKey = (string) ($options['craft_key'] ?? '');
-
-        if (! in_array($craftKey, [CraftCaloriePlanner::CRAFT_FULL, CraftCaloriePlanner::CRAFT_DAY], true)) {
-            return $plan;
-        }
-
-        $breakfastMeal = ProductionWeeklyMenuSchedule::resolveRotationBreakfastMeal($day, $profile);
-
-        if (! $breakfastMeal instanceof Meal || ! SavoryEggBreakfastMeals::isSavoryEggBreakfast($breakfastMeal)) {
-            return $plan;
-        }
-
-        $breakfastMeal->loadMissing('ingredients');
-        $serialized = self::serializeScaledMeal($breakfastMeal, 'breakfast', $plan);
-        $target = (float) ($plan['scalable_slot_targets']['breakfast']['calories'] ?? 0);
-        $actual = (float) ($serialized['adapted_nutrition']['calories'] ?? 0);
-
-        if ($target <= 0 || $actual <= $target + 0.5) {
-            return $plan;
-        }
-
-        $excess = $actual - $target;
-        $mainCount = $craftKey === CraftCaloriePlanner::CRAFT_DAY
-            ? 1
-            : max(1, (int) config('customer_nutrition.scalable_slots.main', 2));
-        $currentMain = (float) ($plan['scalable_slot_targets']['main_each']['calories'] ?? 0);
-        $newMain = max(0.0, round($currentMain - ($excess / $mainCount), 2));
-
-        $plan['scalable_slot_targets']['main_each']['calories'] = $newMain;
-        $plan['scalable_slot_targets']['main_each']['macros'] = UserPlanCalculator::mainEachMacroGrams($newMain, $profile);
-
-        return $plan;
+        return app(CollapsedPrimaryProteinHealer::class)->ensureMeal($meal);
     }
 
-    public static function planWithBreakfastFloorRebalanceForProfile(
-        CustomerProfile $profile,
-        array $plan,
-        array $options = [],
-    ): array {
-        return self::planWithBreakfastFloorRebalance($profile, $plan, $options);
+    /**
+     * One library-wide heal per cache window when the adapted menu is built (craft carousel).
+     * PHPUnit skips this unless {@see config('customer_nutrition.heal_collapsed_protein_on_adapted_menu_build')}
+     * is true — per-meal {@see ensurePrimaryProteinBeforeAdapt()} still runs in all environments.
+     */
+    private static function healCollapsedPrimaryProteinLibraryOnce(): void
+    {
+        $forceInTests = (bool) config('customer_nutrition.heal_collapsed_protein_on_adapted_menu_build', false);
+
+        if (app()->runningUnitTests() && ! $forceInTests) {
+            return;
+        }
+
+        Cache::remember(self::COLLAPSED_PROTEIN_HEAL_CACHE_KEY, now()->addHours(6), static function (): bool {
+            app(CollapsedPrimaryProteinHealer::class)->healAll();
+
+            return true;
+        });
     }
 
     /**
@@ -321,6 +244,7 @@ final class AdaptedMenuBuilder
             return $adaptedMains;
         }
 
+        $mainCount = count($adaptedMains);
         $proteinTargetEach = (float) ($plan['scalable_slot_targets']['main_each']['macros']['protein_g'] ?? 0);
         $slotTargetCaloriesEach = (float) ($plan['scalable_slot_targets']['main_each']['calories'] ?? 0);
 
@@ -328,95 +252,16 @@ final class AdaptedMenuBuilder
             return $adaptedMains;
         }
 
-        $compensatorIndexes = [];
-
-        foreach ($meals as $index => $meal) {
-            if (! $meal->isVegan()) {
-                $compensatorIndexes[] = $index;
-            }
-        }
-
-        if ($compensatorIndexes === []) {
-            return $adaptedMains;
-        }
-
-        $hasVeganMain = false;
-
-        foreach ($meals as $meal) {
-            if ($meal->isVegan()) {
-                $hasVeganMain = true;
-
-                break;
-            }
-        }
-
-        $balanced = $adaptedMains;
-
-        if (! MacroFirstMainMealScaler::isEnabled()) {
-            $balanced = self::boostCompensatorMainsTowardProtein(
-                $adaptedMains,
-                $meals,
-                $plan,
-                $compensatorIndexes,
-                $proteinTargetEach,
-                $slotTargetCaloriesEach,
-            );
-        } elseif ($hasVeganMain) {
-            $balanced = self::boostCompensatorMainsTowardProtein(
-                $adaptedMains,
-                $meals,
-                $plan,
-                $compensatorIndexes,
-                $proteinTargetEach,
-                $slotTargetCaloriesEach,
-            );
-        }
-
-        if (MacroFirstMainMealScaler::isEnabled() && ! $hasVeganMain) {
-            return $balanced;
-        }
-
-        $mainCount = count($balanced);
         $proteinTargetTotal = round($proteinTargetEach * $mainCount, 2);
         $currentProteinTotal = 0.0;
 
-        foreach ($balanced as $adapted) {
+        foreach ($adaptedMains as $adapted) {
             $currentProteinTotal += (float) ($adapted['adapted_nutrition']['protein'] ?? 0);
         }
 
         $shortfall = round($proteinTargetTotal - $currentProteinTotal, 2);
 
         if ($shortfall <= 0.25) {
-            return $balanced;
-        }
-
-        return self::distributeMainProteinShortfall(
-            $balanced,
-            $meals,
-            $plan,
-            $compensatorIndexes,
-            $shortfall,
-            $slotTargetCaloriesEach,
-        );
-    }
-
-    /**
-     * Day-level protein reconciliation — allows mains to use remaining day calorie budget.
-     *
-     * @param  list<array<string, mixed>>  $adaptedMains
-     * @param  list<Meal>  $meals
-     * @param  array{calories: float, protein_g: float, carbs_g: float, fat_g: float}  $scalableNonMainCalories
-     * @return list<array<string, mixed>>
-     */
-    public static function balanceMainMealProteinForDayDeficit(
-        array $adaptedMains,
-        array $plan,
-        array $meals,
-        float $proteinDeficit,
-        float $fixedPortionCalories,
-        array $scalableNonMainCalories,
-    ): array {
-        if ($adaptedMains === [] || count($adaptedMains) !== count($meals) || $proteinDeficit <= 0.25) {
             return $adaptedMains;
         }
 
@@ -432,380 +277,6 @@ final class AdaptedMenuBuilder
             return $adaptedMains;
         }
 
-        $dayTargetCalories = (float) ($plan['craft_day_calories'] ?? $plan['plan_tier'] ?? 0);
-        $dayTolerance = UserPlanCalculator::dayCalorieTolerance();
-        $maxDayCalories = $dayTargetCalories + $dayTolerance;
-        $nonMainCalories = round($fixedPortionCalories + (float) ($scalableNonMainCalories['calories'] ?? 0), 2);
-        $currentMainCalories = self::sumAdaptedMainCalories($adaptedMains);
-        $maxMainCalories = max(0.0, round($maxDayCalories - $nonMainCalories, 2));
-        $remainingCalorieBudget = max(0.0, round($maxMainCalories - $currentMainCalories, 2));
-
-        $compensatingProtein = 0.0;
-
-        foreach ($compensatorIndexes as $index) {
-            $compensatingProtein += (float) ($adaptedMains[$index]['adapted_nutrition']['protein'] ?? 0);
-        }
-
-        if ($compensatingProtein <= 0) {
-            return $adaptedMains;
-        }
-
-        $balanced = $adaptedMains;
-        $extraCaloriesPerCompensator = $remainingCalorieBudget / count($compensatorIndexes);
-
-        foreach ($compensatorIndexes as $index) {
-            $meal = $meals[$index];
-            $adapted = $balanced[$index];
-            $currentProtein = (float) ($adapted['adapted_nutrition']['protein'] ?? 0);
-            $currentCalories = (float) ($adapted['adapted_nutrition']['calories'] ?? 0);
-
-            if ($currentProtein <= 0 || $currentCalories <= 0) {
-                continue;
-            }
-
-            $proteinShare = $currentProtein / $compensatingProtein;
-            $addedProtein = round($proteinDeficit * $proteinShare, 2);
-            $boostMultiplier = ($currentProtein + $addedProtein) / $currentProtein;
-            // Day calorie headroom is the only hard ceiling (fixed overshoot already shrank slot targets).
-            $maxCalories = $currentCalories + $extraCaloriesPerCompensator;
-
-            if ($boostMultiplier <= 1.0001) {
-                continue;
-            }
-
-            $balanced[$index] = self::boostMainMealWithProteinMultiplier(
-                $meal,
-                $plan,
-                $adapted,
-                $boostMultiplier,
-                $maxCalories,
-            );
-        }
-
-        return $balanced;
-    }
-
-    /**
-     * Day-level carb recovery — boosts the highest-carb main when protein/fat are on target but calories are short.
-     *
-     * @param  list<array<string, mixed>>  $adaptedMains
-     * @param  list<Meal>  $meals
-     * @return list<array<string, mixed>>
-     */
-    public static function balanceMainMealCarbsForDayDeficit(
-        array $adaptedMains,
-        array $plan,
-        array $meals,
-        float $carbDeficit,
-        float $calorieDeficit,
-    ): array {
-        if ($adaptedMains === [] || count($adaptedMains) !== count($meals) || $carbDeficit <= 0.25 || $calorieDeficit <= 0.5) {
-            return $adaptedMains;
-        }
-
-        $bestIndex = null;
-        $bestCarbs = 0.0;
-
-        foreach ($adaptedMains as $index => $adapted) {
-            $carbs = (float) ($adapted['adapted_nutrition']['carbs'] ?? 0);
-
-            if ($carbs > $bestCarbs) {
-                $bestCarbs = $carbs;
-                $bestIndex = $index;
-            }
-        }
-
-        if ($bestIndex === null || $bestCarbs <= 0) {
-            return $adaptedMains;
-        }
-
-        $meal = $meals[$bestIndex];
-        $adapted = $adaptedMains[$bestIndex];
-        $currentCalories = (float) ($adapted['adapted_nutrition']['calories'] ?? 0);
-
-        if ($currentCalories <= 0) {
-            return $adaptedMains;
-        }
-
-        $carbMultiplier = ($bestCarbs + $carbDeficit) / $bestCarbs;
-        $maxMealCalories = $currentCalories + $calorieDeficit;
-        // Only carb roles scale — do not treat this like a whole-meal calorie multiplier.
-        $effectiveBoost = $carbMultiplier;
-
-        if ($effectiveBoost <= 1.0001) {
-            return $adaptedMains;
-        }
-
-        $balanced = $adaptedMains;
-        $balanced[$bestIndex] = self::boostMainMealWithCarbMultiplier(
-            $meal,
-            $plan,
-            $adapted,
-            $effectiveBoost,
-            $maxMealCalories,
-        );
-
-        return $balanced;
-    }
-
-    /**
-     * Trim protein roles on the highest-protein mains until day protein surplus is closed.
-     *
-     * @param  list<array<string, mixed>>  $adaptedMains
-     * @param  list<Meal>  $meals
-     * @return list<array<string, mixed>>
-     */
-    public static function trimMainMealsForProteinSurplus(
-        array $adaptedMains,
-        array $plan,
-        array $meals,
-        float $proteinSurplus,
-    ): array {
-        if ($adaptedMains === [] || count($adaptedMains) !== count($meals) || $proteinSurplus <= 0.25) {
-            return $adaptedMains;
-        }
-
-        $balanced = $adaptedMains;
-        $remainingProteinSurplus = $proteinSurplus;
-        $maxPasses = 8;
-
-        for ($pass = 0; $pass < $maxPasses && $remainingProteinSurplus > 0.25; $pass++) {
-            $bestProteinIndex = null;
-            $bestProtein = 0.0;
-
-            foreach ($balanced as $index => $adapted) {
-                $protein = (float) ($adapted['adapted_nutrition']['protein'] ?? 0);
-
-                if ($protein > $bestProtein) {
-                    $bestProtein = $protein;
-                    $bestProteinIndex = $index;
-                }
-            }
-
-            if ($bestProteinIndex === null || $bestProtein <= 0) {
-                break;
-            }
-
-            $proteinReduction = min($remainingProteinSurplus, $bestProtein * 0.35);
-            $proteinMultiplier = max(0.0, ($bestProtein - $proteinReduction) / $bestProtein);
-
-            if ($proteinMultiplier >= 0.9999) {
-                break;
-            }
-
-            $beforeProtein = $bestProtein;
-            $balanced[$bestProteinIndex] = self::trimMainMealWithProteinMultiplier(
-                $meals[$bestProteinIndex],
-                $plan,
-                $balanced[$bestProteinIndex],
-                $proteinMultiplier,
-            );
-            $afterProtein = (float) ($balanced[$bestProteinIndex]['adapted_nutrition']['protein'] ?? 0);
-            $removed = round($beforeProtein - $afterProtein, 2);
-
-            if ($removed < 0.25) {
-                break;
-            }
-
-            $remainingProteinSurplus = max(0.0, round($remainingProteinSurplus - $removed, 2));
-        }
-
-        return $balanced;
-    }
-
-    /**
-     * Day-level trim — reduces starchy carbs (then protein when over target) on mains.
-     * Cooking fat and vegetables are never trimmed.
-     *
-     * @param  list<array<string, mixed>>  $adaptedMains
-     * @param  list<Meal>  $meals
-     * @return list<array<string, mixed>>
-     */
-    public static function trimMainMealsForDaySurplus(
-        array $adaptedMains,
-        array $plan,
-        array $meals,
-        float $carbSurplus,
-        float $proteinSurplus,
-        float $calorieSurplus,
-    ): array {
-        if ($adaptedMains === [] || count($adaptedMains) !== count($meals) || $calorieSurplus <= 0.5) {
-            return $adaptedMains;
-        }
-
-        $tolerance = UserPlanCalculator::dayCalorieTolerance();
-        $balanced = $adaptedMains;
-        $remainingCalorieSurplus = $calorieSurplus;
-        $remainingCarbSurplus = max(0.0, $carbSurplus);
-        $remainingProteinSurplus = max(0.0, $proteinSurplus);
-        $maxPasses = 8;
-
-        for ($pass = 0; $pass < $maxPasses && $remainingCalorieSurplus > $tolerance; $pass++) {
-            $beforePassCalories = self::sumAdaptedMainCalories($balanced);
-
-            if ($remainingCarbSurplus > 0.25) {
-                $bestCarbIndex = null;
-                $bestCarbs = 0.0;
-
-                foreach ($balanced as $index => $adapted) {
-                    $carbs = (float) ($adapted['adapted_nutrition']['carbs'] ?? 0);
-
-                    if ($carbs > $bestCarbs) {
-                        $bestCarbs = $carbs;
-                        $bestCarbIndex = $index;
-                    }
-                }
-
-                if ($bestCarbIndex !== null && $bestCarbs > 0) {
-                    $carbReduction = min($remainingCarbSurplus, $remainingCalorieSurplus / 4);
-                    $carbMultiplier = max(0.0, ($bestCarbs - $carbReduction) / $bestCarbs);
-
-                    if ($carbMultiplier < 0.9999) {
-                        $balanced[$bestCarbIndex] = self::trimMainMealWithCarbMultiplier(
-                            $meals[$bestCarbIndex],
-                            $plan,
-                            $balanced[$bestCarbIndex],
-                            $carbMultiplier,
-                        );
-                        $remainingCarbSurplus = max(0.0, round($remainingCarbSurplus - $carbReduction, 2));
-                    }
-                }
-            }
-
-            if ($remainingProteinSurplus > 0.25 && $remainingCalorieSurplus > $tolerance) {
-                $bestProteinIndex = null;
-                $bestProtein = 0.0;
-
-                foreach ($balanced as $index => $adapted) {
-                    $protein = (float) ($adapted['adapted_nutrition']['protein'] ?? 0);
-
-                    if ($protein > $bestProtein) {
-                        $bestProtein = $protein;
-                        $bestProteinIndex = $index;
-                    }
-                }
-
-                if ($bestProteinIndex !== null && $bestProtein > 0) {
-                    $proteinReduction = min($remainingProteinSurplus, $remainingCalorieSurplus / 4);
-                    $proteinMultiplier = max(0.0, ($bestProtein - $proteinReduction) / $bestProtein);
-
-                    if ($proteinMultiplier < 0.9999) {
-                        $balanced[$bestProteinIndex] = self::trimMainMealWithProteinMultiplier(
-                            $meals[$bestProteinIndex],
-                            $plan,
-                            $balanced[$bestProteinIndex],
-                            $proteinMultiplier,
-                        );
-                        $remainingProteinSurplus = max(0.0, round($remainingProteinSurplus - $proteinReduction, 2));
-                    }
-                }
-            }
-
-            if ($remainingCalorieSurplus > $tolerance) {
-                $bestCalorieIndex = null;
-                $bestCalories = 0.0;
-
-                foreach ($balanced as $index => $adapted) {
-                    $calories = (float) ($adapted['adapted_nutrition']['calories'] ?? 0);
-
-                    if ($calories > $bestCalories) {
-                        $bestCalories = $calories;
-                        $bestCalorieIndex = $index;
-                    }
-                }
-
-                if ($bestCalorieIndex !== null && $bestCalories > 0) {
-                    $targetCalories = max(0.0, $bestCalories - ($remainingCalorieSurplus - $tolerance));
-
-                    if ($targetCalories < $bestCalories - 0.5) {
-                        // Day calorie close uses starch only; protein surplus is handled above
-                        // (bounded) so we never wipe plate protein to chase kcal.
-                        $balanced[$bestCalorieIndex] = self::trimMainMealToCalorieTarget(
-                            $meals[$bestCalorieIndex],
-                            $plan,
-                            $balanced[$bestCalorieIndex],
-                            $targetCalories,
-                            allowProteinTrim: false,
-                        );
-                    }
-                }
-            }
-
-            $afterPassCalories = self::sumAdaptedMainCalories($balanced);
-            $removed = round($beforePassCalories - $afterPassCalories, 2);
-
-            if ($removed < 0.5) {
-                break;
-            }
-
-            $remainingCalorieSurplus = max(0.0, round($remainingCalorieSurplus - $removed, 2));
-        }
-
-        return $balanced;
-    }
-
-    /**
-     * @param  list<array<string, mixed>>  $adaptedMains
-     * @param  list<Meal>  $meals
-     * @param  list<int>  $compensatorIndexes
-     * @return list<array<string, mixed>>
-     */
-    private static function boostCompensatorMainsTowardProtein(
-        array $adaptedMains,
-        array $meals,
-        array $plan,
-        array $compensatorIndexes,
-        float $proteinTargetEach,
-        float $slotTargetCaloriesEach,
-    ): array {
-        $balanced = $adaptedMains;
-
-        foreach ($compensatorIndexes as $index) {
-            $meal = $meals[$index];
-            $adapted = $balanced[$index];
-            $currentProtein = (float) ($adapted['adapted_nutrition']['protein'] ?? 0);
-            $currentCalories = (float) ($adapted['adapted_nutrition']['calories'] ?? 0);
-
-            if ($currentProtein <= 0 || $currentCalories <= 0 || $currentProtein >= $proteinTargetEach - 0.25) {
-                continue;
-            }
-
-            $boostMultiplier = $proteinTargetEach / $currentProtein;
-
-            if ($boostMultiplier <= 1.0001) {
-                continue;
-            }
-
-            $maxCalories = $slotTargetCaloriesEach > 0
-                ? $slotTargetCaloriesEach
-                : $currentCalories * $boostMultiplier;
-
-            $balanced[$index] = self::boostMainMealWithProteinMultiplier(
-                $meal,
-                $plan,
-                $adapted,
-                $boostMultiplier,
-                $maxCalories,
-            );
-        }
-
-        return $balanced;
-    }
-
-    /**
-     * @param  list<array<string, mixed>>  $adaptedMains
-     * @param  list<Meal>  $meals
-     * @param  list<int>  $compensatorIndexes
-     * @return list<array<string, mixed>>
-     */
-    private static function distributeMainProteinShortfall(
-        array $adaptedMains,
-        array $meals,
-        array $plan,
-        array $compensatorIndexes,
-        float $shortfall,
-        float $slotTargetCaloriesEach,
-    ): array {
         $compensatingProtein = 0.0;
 
         foreach ($compensatorIndexes as $index) {
@@ -831,251 +302,32 @@ final class AdaptedMenuBuilder
             $addedProtein = round($shortfall * $proteinShare, 2);
             $targetProtein = $currentProtein + $addedProtein;
             $boostMultiplier = $targetProtein / $currentProtein;
+            $currentScale = (float) ($adapted['scaling_multiplier'] ?? 1.0);
             $currentCalories = (float) ($adapted['adapted_nutrition']['calories'] ?? 0);
 
-            if ($currentCalories <= 0 || $boostMultiplier <= 1.0001) {
+            if ($currentCalories <= 0) {
                 continue;
             }
 
-            $maxCalories = $slotTargetCaloriesEach > 0
-                ? $slotTargetCaloriesEach
-                : $currentCalories * $boostMultiplier;
+            $maxBoostFromCalories = $slotTargetCaloriesEach > 0
+                ? $slotTargetCaloriesEach / $currentCalories
+                : $boostMultiplier;
+            $effectiveBoost = min($boostMultiplier, $maxBoostFromCalories);
 
-            $balanced[$index] = self::boostMainMealWithProteinMultiplier(
+            if ($effectiveBoost <= 1.0001) {
+                continue;
+            }
+
+            $balanced[$index] = self::serializeScaledMeal(
                 $meal,
+                'main',
                 $plan,
-                $adapted,
-                $boostMultiplier,
-                $maxCalories,
+                round($currentScale * $effectiveBoost, 4),
+                proteinBalanced: true,
             );
         }
 
         return $balanced;
-    }
-
-    /**
-     * @param  array<string, mixed>  $adapted
-     * @return array<int, float>
-     */
-    private static function adaptedGramsFromSerializedMain(array $adapted, Meal $meal): array
-    {
-        $grams = [];
-
-        foreach ($adapted['ingredients'] ?? [] as $row) {
-            if (! is_array($row)) {
-                continue;
-            }
-
-            $ingredientId = (int) ($row['id'] ?? 0);
-
-            if ($ingredientId <= 0) {
-                continue;
-            }
-
-            $grams[$ingredientId] = (float) ($row['adapted_amount_grams'] ?? 0);
-        }
-
-        if ($grams !== []) {
-            return $grams;
-        }
-
-        return self::baselineGramsByIngredientId($meal);
-    }
-
-    /**
-     * @param  array<string, mixed>  $adapted
-     * @return array<string, mixed>
-     */
-    private static function boostMainMealWithProteinMultiplier(
-        Meal $meal,
-        array $plan,
-        array $adapted,
-        float $effectiveBoost,
-        float $maxCalories,
-    ): array {
-        if (MacroFirstMainMealScaler::isEnabled()) {
-            $meal->loadMissing('ingredients');
-            $grams = self::adaptedGramsFromSerializedMain($adapted, $meal);
-            $grams = MacroFirstMainMealScaler::boostProteinRoleGrams($meal, $grams, $effectiveBoost);
-            // Keep the protein boost; free starch (day-surplus floor) so protein can land under maxCalories.
-            $grams = MacroFirstMainMealScaler::trimStarchRolesToCalorieTarget(
-                $meal,
-                $grams,
-                $maxCalories,
-                daySurplusFloor: true,
-            );
-
-            return self::serializeScaledMealFromGrams($meal, 'main', $plan, $grams, proteinBalanced: true);
-        }
-
-        $currentScale = (float) ($adapted['scaling_multiplier'] ?? 1.0);
-
-        return self::serializeScaledMeal(
-            $meal,
-            'main',
-            $plan,
-            round($currentScale * $effectiveBoost, 4),
-            proteinBalanced: true,
-        );
-    }
-
-    /**
-     * @param  array<string, mixed>  $adapted
-     * @return array<string, mixed>
-     */
-    private static function boostMainMealWithCarbMultiplier(
-        Meal $meal,
-        array $plan,
-        array $adapted,
-        float $effectiveBoost,
-        float $maxCalories,
-    ): array {
-        if (MacroFirstMainMealScaler::isEnabled()) {
-            $meal->loadMissing('ingredients');
-            $grams = self::adaptedGramsFromSerializedMain($adapted, $meal);
-            $grams = MacroFirstMainMealScaler::boostCarbRoleGrams($meal, $grams, $effectiveBoost);
-            // Cap with starch-only trim so protein already on the plate is preserved.
-            $grams = MacroFirstMainMealScaler::trimStarchRolesToCalorieTarget(
-                $meal,
-                $grams,
-                $maxCalories,
-                daySurplusFloor: true,
-            );
-            $grams = MacroFirstMainMealScaler::syncHerbSpiceToDishScale($meal, $grams);
-
-            return self::serializeScaledMealFromGrams($meal, 'main', $plan, $grams, proteinBalanced: false);
-        }
-
-        $currentScale = (float) ($adapted['scaling_multiplier'] ?? 1.0);
-
-        return self::serializeScaledMeal(
-            $meal,
-            'main',
-            $plan,
-            round($currentScale * $effectiveBoost, 4),
-            proteinBalanced: false,
-        );
-    }
-
-    /**
-     * @param  array<string, mixed>  $adapted
-     * @return array<string, mixed>
-     */
-    private static function trimMainMealWithCarbMultiplier(
-        Meal $meal,
-        array $plan,
-        array $adapted,
-        float $carbMultiplier,
-    ): array {
-        if (MacroFirstMainMealScaler::isEnabled()) {
-            $meal->loadMissing('ingredients');
-            $grams = self::adaptedGramsFromSerializedMain($adapted, $meal);
-            $grams = MacroFirstMainMealScaler::trimCarbRoleGrams($meal, $grams, $carbMultiplier);
-
-            return self::serializeScaledMealFromGrams($meal, 'main', $plan, $grams, proteinBalanced: false);
-        }
-
-        $currentScale = (float) ($adapted['scaling_multiplier'] ?? 1.0);
-
-        return self::serializeScaledMeal(
-            $meal,
-            'main',
-            $plan,
-            round($currentScale * $carbMultiplier, 4),
-            proteinBalanced: false,
-        );
-    }
-
-    /**
-     * @param  array<string, mixed>  $adapted
-     * @return array<string, mixed>
-     */
-    private static function trimMainMealWithProteinMultiplier(
-        Meal $meal,
-        array $plan,
-        array $adapted,
-        float $proteinMultiplier,
-    ): array {
-        if (MacroFirstMainMealScaler::isEnabled()) {
-            $meal->loadMissing('ingredients');
-            $grams = self::adaptedGramsFromSerializedMain($adapted, $meal);
-            $grams = MacroFirstMainMealScaler::trimProteinRoleGrams($meal, $grams, $proteinMultiplier);
-
-            return self::serializeScaledMealFromGrams($meal, 'main', $plan, $grams, proteinBalanced: false);
-        }
-
-        $currentScale = (float) ($adapted['scaling_multiplier'] ?? 1.0);
-
-        return self::serializeScaledMeal(
-            $meal,
-            'main',
-            $plan,
-            round($currentScale * $proteinMultiplier, 4),
-            proteinBalanced: false,
-        );
-    }
-
-    /**
-     * @param  array<string, mixed>  $adapted
-     * @return array<string, mixed>
-     */
-    private static function trimMainMealToCalorieTarget(
-        Meal $meal,
-        array $plan,
-        array $adapted,
-        float $targetCalories,
-        bool $allowProteinTrim = true,
-    ): array {
-        if (MacroFirstMainMealScaler::isEnabled()) {
-            $meal->loadMissing('ingredients');
-            $grams = self::adaptedGramsFromSerializedMain($adapted, $meal);
-            $grams = $allowProteinTrim
-                ? MacroFirstMainMealScaler::trimProteinAndStarchRolesToCalorieTarget(
-                    $meal,
-                    $grams,
-                    $targetCalories,
-                    daySurplusFloor: true,
-                )
-                : MacroFirstMainMealScaler::trimStarchRolesToCalorieTarget(
-                    $meal,
-                    $grams,
-                    $targetCalories,
-                    daySurplusFloor: true,
-                );
-
-            return self::serializeScaledMealFromGrams($meal, 'main', $plan, $grams, proteinBalanced: false);
-        }
-
-        $currentCalories = (float) ($adapted['adapted_nutrition']['calories'] ?? 0);
-
-        if ($currentCalories <= 0 || $targetCalories >= $currentCalories - 0.5) {
-            return $adapted;
-        }
-
-        $currentScale = (float) ($adapted['scaling_multiplier'] ?? 1.0);
-        $scale = max(0.0, round($currentScale * ($targetCalories / $currentCalories), 4));
-
-        return self::serializeScaledMeal(
-            $meal,
-            'main',
-            $plan,
-            $scale,
-            proteinBalanced: false,
-        );
-    }
-
-    /**
-     * @param  list<array<string, mixed>>  $adaptedMains
-     */
-    private static function sumAdaptedMainCalories(array $adaptedMains): float
-    {
-        $total = 0.0;
-
-        foreach ($adaptedMains as $adapted) {
-            $total += (float) ($adapted['adapted_nutrition']['calories'] ?? 0);
-        }
-
-        return round($total, 2);
     }
 
     public static function mealScalingMultiplier(Meal $meal, string $slot, array $plan): float
@@ -1155,6 +407,19 @@ final class AdaptedMenuBuilder
     }
 
     /**
+     * @param  array<string, mixed>  $plan
+     * @return array<string, mixed>
+     */
+    private static function serializeChiaBreakfastMeal(Meal $meal, array $plan): array
+    {
+        $serialized = self::serializeScaledMeal($meal, 'breakfast', $plan);
+        $serialized['fixed_chia_breakfast'] = true;
+        $serialized['kitchen_portion_calories'] = ChiaBreakfastMeals::fixedCalories();
+
+        return $serialized;
+    }
+
+    /**
      * @return array<string, mixed>
      */
     private static function serializeStandardPortionMeal(
@@ -1163,10 +428,6 @@ final class AdaptedMenuBuilder
         CustomerProfile $profile,
         bool $isOptionalAddOn = false,
     ): array {
-        if (ChiaDessertMeals::isChiaDessert($meal)) {
-            return self::serializeChiaDessertFixedPortionMeal($meal, $slot, $profile, $isOptionalAddOn);
-        }
-
         $baseline = $meal->nutritionForDisplay();
         $normalizedBaseline = self::normalizeNutritionKeys($baseline);
 
@@ -1194,80 +455,6 @@ final class AdaptedMenuBuilder
     }
 
     /**
-     * Chia rotation desserts always ship with a 120g coconut-chia base; toppings keep library grams.
-     *
-     * @return array<string, mixed>
-     */
-    private static function serializeChiaDessertFixedPortionMeal(
-        Meal $meal,
-        string $slot,
-        CustomerProfile $profile,
-        bool $isOptionalAddOn = false,
-    ): array {
-        $meal->loadMissing('ingredients');
-        $adaptedGramsByIngredientId = self::chiaDessertAdaptedGramsByIngredientId($meal);
-        $scaledRows = self::scaledIngredientRowsFromAdaptedGrams($meal, $adaptedGramsByIngredientId);
-        $adaptedNutrition = RecipeNutritionCalculator::fromRows($scaledRows, applyMealCookingYield: true);
-        $baseline = $meal->nutritionForDisplay();
-
-        return [
-            'id' => $meal->id,
-            'name' => $meal->name,
-            'slot' => $slot,
-            'portion_behavior' => UserPlanCalculator::slotBehavior($slot),
-            'is_scaled' => false,
-            'scaling_multiplier' => 1.0,
-            'counts_toward_core_tier' => ! $isOptionalAddOn,
-            'image_url' => $meal->imageUrl(),
-            'instructions' => $meal->instructions,
-            'short_description' => $meal->short_description,
-            'baseline_nutrition' => self::normalizeNutritionKeys($baseline),
-            'adapted_nutrition' => self::normalizeNutritionKeys($adaptedNutrition),
-            'ingredients' => self::serializeScaledIngredientsFromAdaptedGrams($meal, $adaptedGramsByIngredientId),
-            'planning_midpoint_calories' => UserPlanCalculator::slotPlanningMidpoint($slot),
-            'macro_split' => [
-                'protein_percentage' => (float) $profile->protein_percentage,
-                'carb_percentage' => (float) $profile->carb_percentage,
-                'fat_percentage' => (float) $profile->fat_percentage,
-            ],
-        ];
-    }
-
-    /**
-     * @return array<int, float>
-     */
-    private static function chiaDessertAdaptedGramsByIngredientId(Meal $meal): array
-    {
-        $adaptedGramsByIngredientId = [];
-
-        foreach ($meal->ingredients as $ingredient) {
-            $pivot = $ingredient->pivot;
-            $pivotAmount = $pivot->amount;
-            $unitRaw = $pivot->unit ?? '';
-            $baselineGrams = self::baselineGramsForPivot(
-                $ingredient,
-                $pivotAmount,
-                $unitRaw,
-                (float) ($pivot->amount_grams ?? 0),
-            );
-
-            if ($baselineGrams <= 0) {
-                continue;
-            }
-
-            $canonicalBaseGrams = BalancedChiaDessertRecipeRefiner::canonicalBaseGramsForIngredientName($ingredient->name);
-
-            if ($canonicalBaseGrams !== null) {
-                $baselineGrams = $canonicalBaseGrams;
-            }
-
-            $adaptedGramsByIngredientId[$ingredient->id] = round($baselineGrams, 2);
-        }
-
-        return $adaptedGramsByIngredientId;
-    }
-
-    /**
      * @param  array<string, mixed>  $plan
      * @return array<string, mixed>
      */
@@ -1281,69 +468,24 @@ final class AdaptedMenuBuilder
         $multiplier = $overrideMultiplier ?? self::mealScalingMultiplier($meal, $slot, $plan);
         $baseline = $meal->nutritionForDisplay();
         $targetCalories = self::slotTargetCalories($slot, $plan);
-        $planTier = (float) ($plan['plan_tier'] ?? 0);
+        $adaptedGramsByIngredientId = self::adaptedGramsFromMultiplier($meal, $multiplier);
 
-        if ($slot === 'breakfast' && SavoryEggBreakfastMeals::isSavoryEggBreakfast($meal)) {
-            $adaptedGramsByIngredientId = self::adaptedGramsForSavoryEggBreakfast($meal, $planTier);
-
-            if ($targetCalories > 0) {
-                $adaptedGramsByIngredientId = self::finalizeBreakfastGrams(
-                    $meal,
-                    $adaptedGramsByIngredientId,
-                    $targetCalories,
-                    $planTier,
-                );
-            }
-        } elseif ($slot === 'main' && $overrideMultiplier !== null) {
-            $adaptedGramsByIngredientId = self::adaptedGramsFromMultiplier($meal, $overrideMultiplier);
-        } elseif ($slot === 'main' && MacroFirstMainMealScaler::isEnabled()) {
-            $macroFirst = MacroFirstMainMealScaler::adapt($meal, $plan);
-            $adaptedGramsByIngredientId = $macroFirst['grams'];
-            $proteinBalanced = $macroFirst['protein_balanced'] || $proteinBalanced;
-        } else {
-            $adaptedGramsByIngredientId = self::adaptedGramsFromMultiplier($meal, $multiplier);
-
-            if ($slot === 'breakfast' && $targetCalories > 0) {
-                $adaptedGramsByIngredientId = self::normalizeAdaptedGramsToCalorieTarget(
-                    $meal,
-                    $adaptedGramsByIngredientId,
-                    $targetCalories,
-                    $planTier,
-                );
-            }
+        if ($slot === 'breakfast' && $targetCalories > 0) {
+            $adaptedGramsByIngredientId = self::normalizeAdaptedGramsToCalorieTarget(
+                $meal,
+                $adaptedGramsByIngredientId,
+                $targetCalories,
+                (float) ($plan['plan_tier'] ?? 0),
+            );
         }
 
-        return self::serializeScaledMealFromGrams(
-            $meal,
-            $slot,
-            $plan,
-            $adaptedGramsByIngredientId,
-            $proteinBalanced,
-            $multiplier,
-        );
-    }
-
-    /**
-     * @param  array<string, mixed>  $plan
-     * @param  array<int, float>  $adaptedGramsByIngredientId
-     * @return array<string, mixed>
-     */
-    public static function serializeScaledMealFromGrams(
-        Meal $meal,
-        string $slot,
-        array $plan,
-        array $adaptedGramsByIngredientId,
-        bool $proteinBalanced = false,
-        ?float $fallbackMultiplier = null,
-    ): array {
-        $baseline = $meal->nutritionForDisplay();
         $scaledRows = self::scaledIngredientRowsFromAdaptedGrams($meal, $adaptedGramsByIngredientId);
-        $adaptedNutrition = RecipeNutritionCalculator::fromRows($scaledRows, applyMealCookingYield: true);
+        $adaptedNutrition = RecipeNutritionCalculator::fromRows($scaledRows);
         $baselineCalories = (float) ($baseline['calories'] ?? 0);
         $adaptedCalories = (float) ($adaptedNutrition['calories'] ?? 0);
         $overallMultiplier = $baselineCalories > 0
             ? round($adaptedCalories / $baselineCalories, 4)
-            : ($fallbackMultiplier ?? 1.0);
+            : $multiplier;
 
         $serialized = [
             'id' => $meal->id,
@@ -1395,7 +537,7 @@ final class AdaptedMenuBuilder
 
         for ($attempt = 0; $attempt < 6; $attempt++) {
             $scaledRows = self::scaledIngredientRowsFromAdaptedGrams($meal, $normalized);
-            $nutrition = RecipeNutritionCalculator::fromRows($scaledRows, applyMealCookingYield: true);
+            $nutrition = RecipeNutritionCalculator::fromRows($scaledRows);
             $adaptedCalories = (float) ($nutrition['calories'] ?? 0);
 
             if ($adaptedCalories <= 0) {
@@ -1426,7 +568,7 @@ final class AdaptedMenuBuilder
     }
 
     /**
-     * Apply culinary floors/caps and volumetric rebalancing; never crush foundational sides.
+     * Apply tier side minimums, then trim flexible ingredients if minimums pushed calories over target.
      *
      * @param  array<int, float>  $adaptedGramsByIngredientId
      * @return array<int, float>
@@ -1438,12 +580,12 @@ final class AdaptedMenuBuilder
         float $planTier,
     ): array {
         $withMinimums = self::applyBreakfastSideMinimums($meal, $adaptedGramsByIngredientId, $planTier);
-        $rebalanced = CulinaryBreakfastRebalancer::rebalance($meal, $withMinimums, $targetCalories, $planTier);
 
-        return KitchenPortionRounding::snapAllGramsForMeal(
-            $meal,
-            CulinaryPortionConstraints::apply($meal, $rebalanced, $planTier),
-        );
+        if ($targetCalories <= 0) {
+            return $withMinimums;
+        }
+
+        return self::trimBreakfastFlexibleGramsToTarget($meal, $withMinimums, $targetCalories, $planTier);
     }
 
     /**
@@ -1456,13 +598,65 @@ final class AdaptedMenuBuilder
         float $targetCalories,
         float $planTier,
     ): array {
-        // Legacy entry point — cookability-first rebalancer owns breakfast calorie trim.
-        return CulinaryBreakfastRebalancer::rebalance(
-            $meal,
-            $adaptedGramsByIngredientId,
-            $targetCalories,
-            $planTier,
-        );
+        $scaledRows = self::scaledIngredientRowsFromAdaptedGrams($meal, $adaptedGramsByIngredientId);
+        $adaptedCalories = (float) (RecipeNutritionCalculator::fromRows($scaledRows)['calories'] ?? 0);
+
+        if ($adaptedCalories <= $targetCalories + 0.5) {
+            return $adaptedGramsByIngredientId;
+        }
+
+        /** @var list<int> $fixedIngredientIds */
+        $fixedIngredientIds = [];
+
+        foreach ($meal->ingredients as $ingredient) {
+            if ($planTier > 0 && SavoryEggBreakfastMeals::minimumSideGramsForPlanTier($ingredient, $planTier) !== null) {
+                $fixedIngredientIds[] = $ingredient->id;
+            }
+        }
+
+        $fixedCalories = 0.0;
+        $flexibleCalories = 0.0;
+
+        foreach ($meal->ingredients as $ingredient) {
+            $grams = (float) ($adaptedGramsByIngredientId[$ingredient->id] ?? 0);
+
+            if ($grams <= 0) {
+                continue;
+            }
+
+            $rowCalories = self::ingredientCaloriesForGrams($ingredient, $grams);
+
+            if (in_array($ingredient->id, $fixedIngredientIds, true)) {
+                $fixedCalories += $rowCalories;
+            } else {
+                $flexibleCalories += $rowCalories;
+            }
+        }
+
+        $flexibleBudget = max(0.0, $targetCalories - $fixedCalories);
+
+        if ($flexibleCalories <= 0 || $flexibleBudget <= 0) {
+            return $adaptedGramsByIngredientId;
+        }
+
+        $flexRatio = round($flexibleBudget / $flexibleCalories, 4);
+        $adjusted = $adaptedGramsByIngredientId;
+
+        foreach ($meal->ingredients as $ingredient) {
+            if (in_array($ingredient->id, $fixedIngredientIds, true)) {
+                continue;
+            }
+
+            $grams = (float) ($adaptedGramsByIngredientId[$ingredient->id] ?? 0);
+
+            if ($grams <= 0) {
+                continue;
+            }
+
+            $adjusted[$ingredient->id] = round($grams * $flexRatio, 4);
+        }
+
+        return $adjusted;
     }
 
     private static function ingredientCaloriesForGrams(Ingredient $ingredient, float $grams): float
@@ -1490,7 +684,7 @@ final class AdaptedMenuBuilder
                 continue;
             }
 
-            $minimum = SavoryEggBreakfastMeals::minimumSideGramsForPlanTier($ingredient, $planTier, $meal->name);
+            $minimum = SavoryEggBreakfastMeals::minimumSideGramsForPlanTier($ingredient, $planTier);
 
             if ($minimum !== null) {
                 $adaptedGramsByIngredientId[$ingredient->id] = max(
@@ -1501,58 +695,6 @@ final class AdaptedMenuBuilder
         }
 
         return $adaptedGramsByIngredientId;
-    }
-
-    /**
-     * @return array<int, float>
-     */
-    private static function adaptedGramsForSavoryEggBreakfast(Meal $meal, float $planTier): array
-    {
-        $sideMultiplier = SavoryEggBreakfastMeals::sidePortionMultiplierForMeal($meal, $planTier);
-        $targetEggFamilyGrams = SavoryEggBreakfastMeals::eggGramsForPlanTier($planTier);
-        $baselineEggFamilyGrams = SavoryEggBreakfastMeals::baselineEggFamilyGramsInMeal($meal);
-        $eggFamilyScale = $baselineEggFamilyGrams > 0
-            ? round($targetEggFamilyGrams / $baselineEggFamilyGrams, 4)
-            : 1.0;
-        $gramsByIngredientId = [];
-
-        foreach ($meal->ingredients as $ingredient) {
-            $pivot = $ingredient->pivot;
-            $baselineGrams = self::baselineGramsForPivot(
-                $ingredient,
-                $pivot->amount,
-                $pivot->unit ?? '',
-                (float) ($pivot->amount_grams ?? 0),
-            );
-
-            if ($baselineGrams <= 0) {
-                continue;
-            }
-
-            if (EggIngredientPresentation::isEggFamilyIngredient($ingredient)) {
-                if ($baselineEggFamilyGrams > 0) {
-                    $gramsByIngredientId[$ingredient->id] = round($baselineGrams * $eggFamilyScale, 4);
-
-                    continue;
-                }
-
-                if (EggIngredientPresentation::isWholeEggIngredient($ingredient)) {
-                    $gramsByIngredientId[$ingredient->id] = $targetEggFamilyGrams;
-                }
-
-                continue;
-            }
-
-            $gramsByIngredientId[$ingredient->id] = SavoryEggBreakfastMeals::adaptedSideGrams(
-                $ingredient,
-                $baselineGrams,
-                $sideMultiplier,
-                $planTier,
-                $meal->name,
-            );
-        }
-
-        return CulinaryPortionConstraints::apply($meal, $gramsByIngredientId, $planTier);
     }
 
     /**
@@ -1651,20 +793,7 @@ final class AdaptedMenuBuilder
                 $unitRaw,
                 (float) ($pivot->amount_grams ?? 0),
             );
-            $adaptedGrams = KitchenPortionRounding::snapGramsForIngredient(
-                $ingredient,
-                (float) ($adaptedGramsByIngredientId[$ingredient->id] ?? $baselineGrams),
-            );
-
-            // Never serialize a present library ingredient as 0 g — kitchen cannot apply that.
-            if ($adaptedGrams <= 0 && $baselineGrams > 0) {
-                $adaptedGrams = KitchenPortionRounding::snapGramsForIngredient(
-                    $ingredient,
-                    CulinaryPortionConstraints::kitchenPresentFloorGrams($ingredient, $baselineGrams),
-                );
-            }
-
-            $adaptedGrams = round($adaptedGrams, 2);
+            $adaptedGrams = round((float) ($adaptedGramsByIngredientId[$ingredient->id] ?? $baselineGrams), 2);
 
             $per100 = RecipeNutritionCalculator::per100gNutritionForIngredient($ingredient);
             $factor = $adaptedGrams / 100.0;
@@ -1794,14 +923,6 @@ final class AdaptedMenuBuilder
         $baseRow['isVegan'] = (bool) ($adapted['is_vegan'] ?? false);
         $baseRow['slot'] = (string) ($adapted['slot'] ?? '');
 
-        if (array_key_exists('plan_slot_index', $adapted)) {
-            $baseRow['plan_slot_index'] = (int) $adapted['plan_slot_index'];
-        }
-
-        if (array_key_exists('is_recommended', $adapted)) {
-            $baseRow['isRecommended'] = (bool) $adapted['is_recommended'];
-        }
-
         if (isset($baseRow['detailView']) && is_array($baseRow['detailView'])) {
             $detailView = $baseRow['detailView'];
             $detailView['macros'] = $macros;
@@ -1809,48 +930,6 @@ final class AdaptedMenuBuilder
         }
 
         return $baseRow;
-    }
-
-    /**
-     * @return array<int, float>
-     */
-    public static function baselineGramsByIngredientId(Meal $meal): array
-    {
-        $meal->loadMissing('ingredients');
-        $gramsByIngredientId = [];
-
-        foreach ($meal->ingredients as $ingredient) {
-            $pivot = $ingredient->pivot;
-            $baselineGrams = self::baselineGramsForPivot(
-                $ingredient,
-                $pivot->amount,
-                $pivot->unit ?? '',
-                (float) ($pivot->amount_grams ?? 0),
-            );
-
-            if ($baselineGrams <= 0) {
-                continue;
-            }
-
-            $canonicalBaseGrams = BalancedChiaDessertRecipeRefiner::canonicalBaseGramsForIngredientName($ingredient->name);
-
-            if ($canonicalBaseGrams !== null) {
-                $baselineGrams = $canonicalBaseGrams;
-            }
-
-            $gramsByIngredientId[$ingredient->id] = round($baselineGrams, 4);
-        }
-
-        return $gramsByIngredientId;
-    }
-
-    /**
-     * @param  array<int, float>  $adaptedGramsByIngredientId
-     * @return list<array<string, mixed>>
-     */
-    public static function scaledIngredientRowsFromAdaptedGramsPublic(Meal $meal, array $adaptedGramsByIngredientId): array
-    {
-        return self::scaledIngredientRowsFromAdaptedGrams($meal, $adaptedGramsByIngredientId);
     }
 
     private static function baselineGramsForPivot(
@@ -1862,11 +941,11 @@ final class AdaptedMenuBuilder
         $hasDisplayAmount = $pivotAmount !== null && $pivotAmount !== '' && (float) $pivotAmount > 0;
 
         if ($hasDisplayAmount && is_string($unitRaw) && $unitRaw !== '') {
-            return PureCookingFatNutrition::resolvedGramsForRow([
-                'amount' => (float) $pivotAmount,
-                'unit' => (string) $unitRaw,
-                'amount_grams' => $amountGrams,
-            ], $ingredient);
+            return RecipeIngredientUnitConverter::toGrams(
+                max(0.0, (float) $pivotAmount),
+                (string) $unitRaw,
+                (float) ($ingredient->density ?? 1.0),
+            );
         }
 
         return max(0.0, $amountGrams);

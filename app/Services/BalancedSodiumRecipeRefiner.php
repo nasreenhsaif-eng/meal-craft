@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Ingredient;
 use App\Models\Meal;
 use App\Support\MealLibraryEditGuard;
+use App\Support\StandardMeatPortion;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -13,6 +14,12 @@ use Illuminate\Support\Facades\DB;
 final class BalancedSodiumRecipeRefiner
 {
     private const DAILY_SODIUM_RDI_MG = 2300.0;
+
+    /**
+     * Restore primary meat when repeated non-idempotent scaling (or bad imports) collapsed it.
+     * Below this fraction of {@see StandardMeatPortion::GRAMS}, grams are reset to the standard portion.
+     */
+    private const COLLAPSED_PRIMARY_MEAT_FRACTION = 0.5;
 
     /** Meals that keep signature bases (chimichurri, steamed rice, pomegranate sauce, bone broth cup) as authored. */
     private const MEALS_SKIP_SODIUM_ADJUSTMENT = [
@@ -34,25 +41,24 @@ final class BalancedSodiumRecipeRefiner
     /**
      * Ingredient name => multiplier applied to grams (0 removes).
      *
-     * Cooked carb / legume bases stay as cooked kitchen portions (lightly scaled for sodium).
-     * Do not swap them for dry grain — that produced uncookable 5–30g “Quinoa (White)” / “Couscous” rows.
+     * Primary meat / meat bases are intentionally omitted — sodium cuts belong in the base recipe,
+     * not by shrinking the plate's protein portion (repeated runs used to collapse 150 g → ~2 g).
      *
      * @var array<string, float>
      */
     private const SODIUM_SCALE = [
-        'Rosemary Garlic Chicken (Base)' => 0.75,
         'Red Pepper Dressing (Base)' => 0.45,
         'Honey Mustard Dressing (Base)' => 0.45,
         'Sumac Za\'atar Dressing (Base)' => 0.35,
         'Zesty Lime Chili Salad Dressing (Base)' => 0.35,
         'Ratatouille (Base)' => 0.0,
-        'Turmeric Rice (Base)' => 0.9,
-        'Steamed Basmati Rice (Base)' => 0.9,
-        'Cooked Quinoa (Base)' => 0.9,
-        'Cooked Brown Basmati Rice (Base)' => 0.9,
-        'Cooked White Basmati Rice (Base)' => 0.9,
-        'Cooked Couscous (Base)' => 0.9,
-        'Cooked Chickpeas (Base)' => 0.9,
+        'Turmeric Rice (Base)' => 0.0,
+        'Steamed Basmati Rice (Base)' => 0.0,
+        'Cooked Quinoa (Base)' => 0.0,
+        'Cooked Brown Basmati Rice (Base)' => 0.0,
+        'Cooked White Basmati Rice (Base)' => 0.0,
+        'Cooked Couscous (Base)' => 0.0,
+        'Cooked Chickpeas (Base)' => 0.0,
         'Quinoa Bread (Base)' => 0.65,
         'Quinoa Flatbread (Base)' => 0.65,
         'Bone Broth (Base)' => 0.5,
@@ -62,11 +68,45 @@ final class BalancedSodiumRecipeRefiner
     ];
 
     /**
+     * Generous unscaled ceilings used to apply {@see SODIUM_SCALE} idempotently:
+     * target = min(current, ceiling) × factor; skip when already at/below that target.
+     *
+     * @var array<string, float>
+     */
+    private const SODIUM_SCALE_UNSCALED_CEILING = [
+        'Red Pepper Dressing (Base)' => 40.0,
+        'Honey Mustard Dressing (Base)' => 40.0,
+        'Sumac Za\'atar Dressing (Base)' => 40.0,
+        'Zesty Lime Chili Salad Dressing (Base)' => 40.0,
+        'Quinoa Bread (Base)' => 60.0,
+        'Quinoa Flatbread (Base)' => 60.0,
+        'Bone Broth (Base)' => 350.0,
+        'Harissa Paste (Base)' => 20.0,
+    ];
+
+    /**
+     * Unscaled ceilings for stock/broth → water swap (retain 25%, move the rest to water).
+     *
+     * @var array<string, float>
+     */
+    private const STOCK_WATER_SWAP_CEILING = [
+        'Vegetable Stock' => 60.0,
+        'Vegetable Broth (Base)' => 60.0,
+    ];
+
+    /**
      * When a scaled ingredient is removed, add low-sodium replacements (grams).
      *
      * @var array<string, array<string, float>>
      */
     private const REPLACEMENTS = [
+        'Cooked Quinoa (Base)' => ['Quinoa (White)' => 30.0],
+        'Cooked Brown Basmati Rice (Base)' => ['Basmati Rice (Brown)' => 45.0],
+        'Cooked White Basmati Rice (Base)' => ['Basmati Rice (White)' => 45.0],
+        'Cooked Couscous (Base)' => ['Couscous' => 30.0],
+        'Cooked Chickpeas (Base)' => ['Chickpeas' => 75.0],
+        'Turmeric Rice (Base)' => ['Basmati Rice (Brown)' => 45.0, 'Turmeric Powder' => 1.0],
+        'Steamed Basmati Rice (Base)' => ['Basmati Rice (Brown)' => 45.0],
         'Ratatouille (Base)' => [
             'Zucchini' => 40.0,
             'Bell Pepper (Red)' => 35.0,
@@ -93,7 +133,12 @@ final class BalancedSodiumRecipeRefiner
         return DB::transaction(function (): array {
             $updated = [];
 
-            foreach (BalancedWeeklyRotationSchedule::allScheduledMealNames() as $mealName) {
+            $mealNames = array_values(array_unique(array_merge(
+                BalancedWeeklyRotationSchedule::allScheduledMealNames(),
+                $this->libraryMealNamesWithCollapsedPrimaryMeat(),
+            )));
+
+            foreach ($mealNames as $mealName) {
                 if (in_array($mealName, self::MEALS_SKIP_SODIUM_ADJUSTMENT, true)) {
                     continue;
                 }
@@ -105,7 +150,8 @@ final class BalancedSodiumRecipeRefiner
                     continue;
                 }
 
-                if (MealLibraryEditGuard::shouldSkipMealRefinement($meal)) {
+                if (MealLibraryEditGuard::shouldSkipMealRefinement($meal)
+                    && ! MealLibraryEditGuard::mealHasCollapsedPrimaryMeat($meal)) {
                     continue;
                 }
 
@@ -124,7 +170,7 @@ final class BalancedSodiumRecipeRefiner
                     $ingredientGrams[$ingredient->name] = ($ingredientGrams[$ingredient->name] ?? 0) + $grams;
                 }
 
-                $adjusted = $this->adjustIngredientGrams($ingredientGrams);
+                $adjusted = $this->adjustIngredientGrams($ingredientGrams, $mealName);
 
                 if ($adjusted === $ingredientGrams) {
                     continue;
@@ -139,11 +185,29 @@ final class BalancedSodiumRecipeRefiner
     }
 
     /**
+     * @return list<string>
+     */
+    private function libraryMealNamesWithCollapsedPrimaryMeat(): array
+    {
+        $names = [];
+
+        foreach (Meal::queryForMealLibrary()->with('ingredients')->cursor() as $meal) {
+            if (MealLibraryEditGuard::mealHasCollapsedPrimaryMeat($meal)) {
+                $names[] = $meal->name;
+            }
+        }
+
+        return $names;
+    }
+
+    /**
      * @param  array<string, float>  $ingredientGrams
      * @return array<string, float>
      */
-    public function adjustIngredientGrams(array $ingredientGrams): array
+    public function adjustIngredientGrams(array $ingredientGrams, ?string $mealName = null): array
     {
+        $ingredientGrams = $this->restoreCollapsedPrimaryMeatPortions($ingredientGrams, $mealName);
+
         foreach (self::REMOVED_INGREDIENTS as $removed) {
             if (! isset($ingredientGrams[$removed])) {
                 continue;
@@ -161,6 +225,10 @@ final class BalancedSodiumRecipeRefiner
                 continue;
             }
 
+            if (StandardMeatPortion::isPrimaryMeatIngredient($ingredientName, $mealName)) {
+                continue;
+            }
+
             $original = $ingredientGrams[$ingredientName];
             unset($ingredientGrams[$ingredientName]);
 
@@ -168,6 +236,16 @@ final class BalancedSodiumRecipeRefiner
                 foreach (self::REPLACEMENTS[$ingredientName] ?? [] as $replacement => $grams) {
                     $ingredientGrams[$replacement] = ($ingredientGrams[$replacement] ?? 0) + $grams;
                 }
+
+                continue;
+            }
+
+            $ceiling = self::SODIUM_SCALE_UNSCALED_CEILING[$ingredientName] ?? $original;
+            $scaledCeilingTarget = round($ceiling * $multiplier, 4);
+
+            // Already at/below the sodium target from a prior refine — do not shrink again.
+            if ($original <= $scaledCeilingTarget + 0.05) {
+                $ingredientGrams[$ingredientName] = $original;
 
                 continue;
             }
@@ -185,13 +263,73 @@ final class BalancedSodiumRecipeRefiner
             }
 
             $stockGrams = $ingredientGrams[$stockName];
-            // Half the stock volume becomes filtered water so flavor remains kitchen-usable.
-            $waterSwap = round($stockGrams * 0.5, 4);
-            $ingredientGrams[$stockName] = round($stockGrams - $waterSwap, 4);
+            $ceiling = self::STOCK_WATER_SWAP_CEILING[$stockName] ?? $stockGrams;
+            $scaledCeilingTarget = round($ceiling * 0.25, 4);
+
+            // Idempotent: stock already looks like a post-swap retained amount.
+            if ($stockGrams <= $scaledCeilingTarget + 0.05) {
+                continue;
+            }
+
+            $retainedTarget = round($stockGrams * 0.25, 4);
+            $waterSwap = round($stockGrams - $retainedTarget, 4);
+            $ingredientGrams[$stockName] = $retainedTarget;
             $ingredientGrams['Water (Filtered)'] = ($ingredientGrams['Water (Filtered)'] ?? 0) + $waterSwap;
         }
 
         return $ingredientGrams;
+    }
+
+    /**
+     * @param  array<string, float>  $ingredientGrams
+     * @return array<string, float>
+     */
+    private function restoreCollapsedPrimaryMeatPortions(array $ingredientGrams, ?string $mealName = null): array
+    {
+        $floor = StandardMeatPortion::GRAMS * self::COLLAPSED_PRIMARY_MEAT_FRACTION;
+
+        foreach ($ingredientGrams as $name => $grams) {
+            if (! StandardMeatPortion::isPrimaryMeatIngredient($name, $mealName)) {
+                continue;
+            }
+
+            if (StandardMeatPortion::isLiverBlendIngredient($name, $mealName)) {
+                continue;
+            }
+
+            if ($grams <= 0.0 || $grams >= $floor) {
+                continue;
+            }
+
+            $target = str_contains(strtolower($name), 'beef')
+                ? StandardMeatPortion::targetPrimaryBeefGrams(
+                    $this->ingredientGramsAsPivotIterable($ingredientGrams),
+                    $mealName,
+                )
+                : StandardMeatPortion::GRAMS;
+
+            $ingredientGrams[$name] = $target;
+        }
+
+        return $ingredientGrams;
+    }
+
+    /**
+     * @param  array<string, float>  $ingredientGrams
+     * @return list<object>
+     */
+    private function ingredientGramsAsPivotIterable(array $ingredientGrams): array
+    {
+        $rows = [];
+
+        foreach ($ingredientGrams as $name => $grams) {
+            $rows[] = (object) [
+                'name' => $name,
+                'pivot' => (object) ['amount_grams' => $grams],
+            ];
+        }
+
+        return $rows;
     }
 
     public static function dailySodiumRdiMg(): float

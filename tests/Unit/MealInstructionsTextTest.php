@@ -1,9 +1,6 @@
 <?php
 
 use App\Support\MealInstructionsText;
-use Tests\TestCase;
-
-uses(TestCase::class);
 
 test('normalize for storage splits inline numbered steps onto separate lines', function () {
     $raw = '1. Heat oil. 2. Add carrots. 3. Pour broth and simmer.';

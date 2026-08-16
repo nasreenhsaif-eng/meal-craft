@@ -1,99 +1,181 @@
 <?php
 
+use App\Enums\MealType;
+use App\Enums\RecipeCategory;
 use App\Models\Ingredient;
 use App\Models\Meal;
-use App\Services\SaladDressingMealRefiner;
-use App\Support\MealLibraryRefinerOverrides;
+use App\Services\CollapsedPrimaryProteinHealer;
+use App\Support\MealLibraryEditGuard;
 use App\Support\StandardMeatPortion;
-use Tests\Support\IsolatesMenuDevelopmentCsv;
 
-uses(IsolatesMenuDevelopmentCsv::class);
+/**
+ * @param  array{calories?: float, protein?: float, carbs?: float, fat?: float}  $macros
+ */
+function turmericKaleIngredient(string $name, array $macros = []): Ingredient
+{
+    return Ingredient::factory()->create(array_merge([
+        'name' => $name,
+        'usda_food_category' => str_contains($name, '(Base)') ? 'Base Ingredient' : 'Produce',
+        'calories' => 100,
+        'protein' => 10,
+        'carbs' => 5,
+        'fat' => 5,
+        'is_verified' => true,
+    ], $macros));
+}
 
-beforeEach(function (): void {
-    $this->setUpIsolatedMenuDevelopmentCsvPaths();
-});
-
-test('turmeric chicken kale salad uses turmeric chicken base and listed salad ingredients', function (): void {
+test('turmeric chicken kale salad restores chicken dressing and seeds on a ui-locked incomplete recipe', function () {
     foreach ([
-        'Chicken Breast',
-        'Turmeric',
-        'Ginger (Raw)',
-        'Garlic (Raw)',
-        'Lemon Zest',
-        'Sea Salt',
-        'White Peppercorns',
-        'Kale',
-        'Avocado',
-        'Broccoli',
-        'Pumpkin Seeds',
-        'Sesame Seeds',
-        'Fresh Coriander',
-        'Turmeric Lemon Dressing (Base)',
-        'Turmeric Chicken (Base)',
-    ] as $ingredientName) {
-        Ingredient::query()->create([
-            'name' => $ingredientName,
-            'usda_food_category' => str_contains($ingredientName, '(Base)') ? 'Base Ingredient' : 'Vegetables',
-            'calories' => 100,
-            'protein' => 10,
-            'carbs' => 5,
-            'fat' => 5,
-            'b6' => 0,
-            'b9_folate' => 0,
-            'b12' => 0,
-            'iron' => 0,
-            'magnesium' => 0,
-            'micronutrients' => [],
-            'is_verified' => true,
-        ]);
+        'Chicken Breast' => ['calories' => 120, 'protein' => 23, 'carbs' => 0, 'fat' => 2.6],
+        'Kale' => ['calories' => 35, 'protein' => 2.9, 'carbs' => 4.4, 'fat' => 1.5],
+        'Broccoli' => ['calories' => 34, 'protein' => 2.8, 'carbs' => 6.6, 'fat' => 0.4],
+        'Avocado' => ['calories' => 160, 'protein' => 2, 'carbs' => 8.5, 'fat' => 14.7],
+        'Fresh Coriander' => ['calories' => 23, 'protein' => 2.1, 'carbs' => 3.7, 'fat' => 0.5],
+        'Pumpkin Seeds' => ['calories' => 559, 'protein' => 30.2, 'carbs' => 10.7, 'fat' => 49.1],
+        'Turmeric Lemon Dressing (Base)' => ['calories' => 422, 'protein' => 1, 'carbs' => 7.8, 'fat' => 44.5],
+    ] as $name => $macros) {
+        turmericKaleIngredient($name, $macros);
     }
 
-    Meal::query()->create([
+    $meal = Meal::factory()->create([
         'name' => 'Turmeric Chicken Kale Salad',
-        'category' => 'Meal',
-        'instructions' => 'Old instructions.',
-        'total_calories' => 300,
-        'total_protein' => 30,
-        'total_carbs' => 10,
-        'total_fat' => 10,
-        'nutrition_aggregates_synced' => false,
-    ]);
-
-    MealLibraryRefinerOverrides::put('Turmeric Chicken Kale Salad', [
-        'ingredients' => [
-            'Avocado' => 40.0,
-            'Broccoli' => 60.0,
-            'Fresh Coriander' => 8.0,
-            'Kale' => 80.0,
-            'Pumpkin Seeds' => 10.0,
-            'Sesame Seeds' => 6.0,
-            'Turmeric Chicken (Base)' => StandardMeatPortion::GRAMS,
-            'Turmeric Lemon Dressing (Base)' => 14.0,
-        ],
-        'instructions' => "1. Grill or pan-sear Turmeric Chicken (Base) until golden then in the oven for 20 minutes exactly, then Rest and slice.\n2. Massage kale until tender; lightly steam or blanch broccoli until bright green.\n3. Toss kale, broccoli, avocado, coriander, pumpkin seeds, and sesame seeds.\n4. Top with warm turmeric chicken.\n5. Serve dressing on the side.",
-        'diet_tags' => ['Dairy-free', 'Gluten-free'],
-        'food_filter_tags' => ['sesame'],
+        'category' => RecipeCategory::Meal,
+        'meal_type' => MealType::Main,
+        'library_edited_at' => now(),
         'short_description' => 'Golden turmeric chicken over massaged kale with avocado, broccoli, seeds, and turmeric lemon dressing.',
     ]);
 
-    app(SaladDressingMealRefiner::class)->refine('Turmeric Chicken Kale Salad');
+    $kale = Ingredient::query()->where('name', 'Kale')->firstOrFail();
+    $broccoli = Ingredient::query()->where('name', 'Broccoli')->firstOrFail();
+    $avocado = Ingredient::query()->where('name', 'Avocado')->firstOrFail();
+    $coriander = Ingredient::query()->where('name', 'Fresh Coriander')->firstOrFail();
 
-    $meal = Meal::query()->where('name', 'Turmeric Chicken Kale Salad')->with('ingredients')->firstOrFail();
-    $names = $meal->ingredients->pluck('name')->sort()->values()->all();
+    $meal->ingredients()->sync([
+        $broccoli->id => ['amount_grams' => 60, 'amount' => 60, 'unit' => 'g'],
+        $kale->id => ['amount_grams' => 55, 'amount' => 55, 'unit' => 'g'],
+        $coriander->id => ['amount_grams' => 5, 'amount' => 5, 'unit' => 'g'],
+        $avocado->id => ['amount_grams' => 40, 'amount' => 40, 'unit' => 'g'],
+    ]);
 
-    expect($names)->toBe([
-        'Avocado',
-        'Broccoli',
-        'Fresh Coriander',
-        'Kale',
-        'Pumpkin Seeds',
-        'Sesame Seeds',
-        'Turmeric Chicken (Base)',
-        'Turmeric Lemon Dressing (Base)',
-    ])
-        ->and((float) $meal->ingredients->firstWhere('name', 'Turmeric Chicken (Base)')->pivot->amount_grams)
+    expect(MealLibraryEditGuard::mealHasCollapsedOrMissingPrimaryMeat($meal->fresh(['ingredients'])))->toBeTrue();
+
+    $updated = app(CollapsedPrimaryProteinHealer::class)->healAll();
+
+    $meal->refresh()->load('ingredients');
+    $names = $meal->ingredients->pluck('name')->all();
+
+    expect($updated)->toContain('Turmeric Chicken Kale Salad')
+        ->and($names)->toContain('Chicken Breast')
+        ->and($names)->toContain('Turmeric Lemon Dressing (Base)')
+        ->and($names)->toContain('Pumpkin Seeds')
+        ->and($names)->toContain('Avocado')
+        ->and($names)->toContain('Broccoli')
+        ->and($names)->toContain('Kale')
+        ->and((float) $meal->ingredients->firstWhere('name', 'Chicken Breast')->pivot->amount_grams)
         ->toBe(StandardMeatPortion::GRAMS)
-        ->and($meal->instructions)->toContain('Turmeric Chicken (Base)')
-        ->and($meal->instructions)->not->toContain('Cherry Tomatoes')
-        ->and($meal->instructions)->not->toContain('Pomegranate');
+        ->and((float) $meal->ingredients->firstWhere('name', 'Turmeric Lemon Dressing (Base)')->pivot->amount_grams)
+        ->toBe(20.0)
+        ->and((float) $meal->ingredients->firstWhere('name', 'Pumpkin Seeds')->pivot->amount_grams)
+        ->toBe(10.0);
+});
+
+test('healAll restores screenshot bug shapes for rosemary plates and turmeric salad', function () {
+    $rosemary = Ingredient::factory()->create([
+        'name' => 'Rosemary Garlic Chicken (Base)',
+        'calories' => 200,
+        'protein' => 24,
+        'carbs' => 3,
+        'fat' => 10,
+    ]);
+
+    foreach ([
+        'Sweet Potato', 'Garlic (Raw)', 'Mushrooms', 'Spinach (Fresh)', 'Black Pepper',
+        'Quinoa Flatbread (Base)', 'Beetroot', 'Broccoli', 'Kale', 'Fresh Coriander', 'Avocado',
+        'Chicken Breast', 'Pumpkin Seeds', 'Turmeric Lemon Dressing (Base)',
+    ] as $name) {
+        Ingredient::factory()->create([
+            'name' => $name,
+            'calories' => 50,
+            'protein' => 5,
+            'carbs' => 5,
+            'fat' => 2,
+        ]);
+    }
+
+    $plate = Meal::factory()->create([
+        'name' => 'Rosemary Garlic Chicken w Mushroom, Spinach & Roasted Sweet Potato',
+        'library_edited_at' => now(),
+    ]);
+    $plate->ingredients()->sync([
+        Ingredient::query()->where('name', 'Rosemary Garlic Chicken (Base)')->value('id') => [
+            'amount_grams' => 2, 'amount' => 2, 'unit' => 'g',
+        ],
+        Ingredient::query()->where('name', 'Sweet Potato')->value('id') => [
+            'amount_grams' => 100, 'amount' => 100, 'unit' => 'g',
+        ],
+        Ingredient::query()->where('name', 'Spinach (Fresh)')->value('id') => [
+            'amount_grams' => 100, 'amount' => 100, 'unit' => 'g',
+        ],
+    ]);
+
+    $pomegranate = Meal::factory()->create([
+        'name' => 'Rosemary Garlic Chicken w Pomegranate Glaze, Beetroot & Rocca',
+        'library_edited_at' => now(),
+    ]);
+    $pomegranate->ingredients()->sync([
+        $rosemary->id => ['amount_grams' => 2, 'amount' => 2, 'unit' => 'g'],
+        Ingredient::query()->where('name', 'Quinoa Flatbread (Base)')->value('id') => [
+            'amount_grams' => 20, 'amount' => 20, 'unit' => 'g',
+        ],
+        Ingredient::query()->where('name', 'Beetroot')->value('id') => [
+            'amount_grams' => 100, 'amount' => 100, 'unit' => 'g',
+        ],
+    ]);
+
+    $turmeric = Meal::factory()->create([
+        'name' => 'Turmeric Chicken Kale Salad',
+        'library_edited_at' => now(),
+    ]);
+    $turmeric->ingredients()->sync([
+        Ingredient::query()->where('name', 'Broccoli')->value('id') => [
+            'amount_grams' => 60, 'amount' => 60, 'unit' => 'g',
+        ],
+        Ingredient::query()->where('name', 'Kale')->value('id') => [
+            'amount_grams' => 55, 'amount' => 55, 'unit' => 'g',
+        ],
+        Ingredient::query()->where('name', 'Fresh Coriander')->value('id') => [
+            'amount_grams' => 5, 'amount' => 5, 'unit' => 'g',
+        ],
+        Ingredient::query()->where('name', 'Avocado')->value('id') => [
+            'amount_grams' => 40, 'amount' => 40, 'unit' => 'g',
+        ],
+    ]);
+
+    app(CollapsedPrimaryProteinHealer::class)->healAll();
+
+    expect((float) $plate->fresh(['ingredients'])->ingredients->firstWhere('name', 'Rosemary Garlic Chicken (Base)')->pivot->amount_grams)
+        ->toBe(StandardMeatPortion::GRAMS)
+        ->and((float) $pomegranate->fresh(['ingredients'])->ingredients->firstWhere('name', 'Rosemary Garlic Chicken (Base)')->pivot->amount_grams)
+        ->toBe(StandardMeatPortion::GRAMS)
+        ->and((float) $turmeric->fresh(['ingredients'])->ingredients->firstWhere('name', 'Chicken Breast')->pivot->amount_grams)
+        ->toBe(StandardMeatPortion::GRAMS);
+});
+
+test('meal library edit guard detects missing chicken on a chicken salad name', function () {
+    $kale = turmericKaleIngredient('Kale');
+
+    $meal = Meal::factory()->create([
+        'name' => 'Turmeric Chicken Kale Salad',
+    ]);
+
+    $meal->ingredients()->sync([
+        $kale->id => ['amount_grams' => 55, 'amount' => 55, 'unit' => 'g'],
+    ]);
+
+    expect(MealLibraryEditGuard::mealHasCollapsedOrMissingPrimaryMeat($meal->fresh(['ingredients'])))
+        ->toBeTrue()
+        ->and(MealLibraryEditGuard::mealNameExpectsPrimaryMeat('Turmeric Chicken Kale Salad'))
+        ->toBeTrue()
+        ->and(MealLibraryEditGuard::mealNameExpectsPrimaryMeat('Shaved Fennel Rocca Salad'))
+        ->toBeFalse();
 });
