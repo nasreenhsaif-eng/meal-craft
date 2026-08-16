@@ -94,6 +94,17 @@ it('uses ketobiotic macro percentages for ketobiotic diet protocol', function ()
         ->and($percentages['fat_percentage'])->toBe(70.0);
 });
 
+it('uses nutrient dense macro percentages and enforces a 1500 kcal floor', function () {
+    $percentages = OnboardingDailyTargetsCalculator::macroPercentagesForDietProtocol(DietProtocol::NutrientDense);
+
+    expect($percentages['protein_percentage'])->toBe(30.0)
+        ->and($percentages['carb_percentage'])->toBe(40.0)
+        ->and($percentages['fat_percentage'])->toBe(30.0);
+
+    expect(OnboardingDailyTargetsCalculator::applyDietProtocolMinimumTier(DietProtocol::NutrientDense, 1200))
+        ->toBe(1500);
+});
+
 it('uses balanced macro split by default', function () {
     $percentages = OnboardingDailyTargetsCalculator::macroPercentagesForDietProtocol(DietProtocol::Balanced);
 

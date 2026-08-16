@@ -193,6 +193,11 @@ return [
             'carb_percentage' => 30.0,
             'fat_percentage' => 30.0,
         ],
+        'nutrient_dense' => [
+            'protein_percentage' => 30.0,
+            'carb_percentage' => 40.0,
+            'fat_percentage' => 30.0,
+        ],
         'ketobiotic' => [
             'protein_percentage' => 20.0,
             'carb_percentage' => 10.0,
@@ -213,6 +218,15 @@ return [
             'carb_percentage' => 50.0,
             'fat_percentage' => 25.0,
         ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Minimum plan tier (kcal) by diet protocol
+    |--------------------------------------------------------------------------
+    */
+    'diet_protocol_minimum_plan_tiers' => [
+        'nutrient_dense' => 1500,
     ],
 
     /*

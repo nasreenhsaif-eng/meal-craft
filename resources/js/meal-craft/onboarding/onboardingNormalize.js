@@ -44,6 +44,8 @@ export function activityLevelToServer(value) {
 export function normalizeDietProtocol(value) {
     const map = {
         balanced: 'balanced',
+        nutrient_dense: 'nutrient_dense',
+        nutrient_density: 'nutrient_dense',
         ketogenic: 'ketobiotic',
         keto: 'ketobiotic',
         ketobiotic: 'ketobiotic',
@@ -67,11 +69,8 @@ export function normalizeDietProtocol(value) {
 export function dietProtocolToServer(value) {
     const normalized = normalizeDietProtocol(value);
 
-    const legacy = {
-        sickle_cell_warrior: 'sickle_cell',
-    };
-
-    return legacy[normalized] ?? normalized;
+    // Frontend option id uses sickle_cell; API enum stores sickle_cell_warrior.
+    return normalized;
 }
 
 /**

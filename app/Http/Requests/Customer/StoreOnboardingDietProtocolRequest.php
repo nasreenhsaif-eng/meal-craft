@@ -15,8 +15,20 @@ class StoreOnboardingDietProtocolRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
-        if ($this->input('diet_protocol') === 'ketogenic') {
-            $this->merge(['diet_protocol' => 'ketobiotic']);
+        $protocol = $this->input('diet_protocol');
+
+        if (! is_string($protocol) || $protocol === '') {
+            return;
+        }
+
+        $aliases = [
+            'ketogenic' => DietProtocol::Ketobiotic->value,
+            'sickle_cell' => DietProtocol::SickleCellWarrior->value,
+            'nutrient_density' => DietProtocol::NutrientDense->value,
+        ];
+
+        if (isset($aliases[$protocol])) {
+            $this->merge(['diet_protocol' => $aliases[$protocol]]);
         }
     }
 

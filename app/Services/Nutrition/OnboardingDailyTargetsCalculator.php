@@ -65,6 +65,7 @@ final class OnboardingDailyTargetsCalculator
         $currentPhase = PeriodTrackingPhaseService::resolveCurrentPhase($periodData);
 
         $percentages = self::macroPercentagesForDietProtocol($dietProtocol, $currentPhase);
+        $dailyCalories = self::applyDietProtocolMinimumTier($dietProtocol, $dailyCalories);
         $grams = self::macroGrams($dailyCalories, $percentages);
 
         return [
@@ -176,6 +177,23 @@ final class OnboardingDailyTargetsCalculator
             'gain' => CustomerGoal::GainMuscle->value,
             default => CustomerGoal::Maintain->value,
         };
+    }
+
+    /**
+     * Enforce protocol-specific calorie floors (e.g. nutrient density recommends 1500+ kcal).
+     */
+    public static function applyDietProtocolMinimumTier(DietProtocol $protocol, int $dailyCalories): int
+    {
+        $minimums = config('customer_nutrition.diet_protocol_minimum_plan_tiers', []);
+        $minimum = (int) ($minimums[$protocol->value] ?? 0);
+
+        if ($minimum <= 0) {
+            return $dailyCalories;
+        }
+
+        $floored = max($dailyCalories, $minimum);
+
+        return (int) UserPlanCalculator::snapToPlanTier((float) $floored);
     }
 
     /**

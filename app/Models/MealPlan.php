@@ -2,12 +2,12 @@
 
 namespace App\Models;
 
+use App\Casts\SafeMealPlanLibraryCategoryCast;
 use App\Enums\MealCyclePhaseTag;
-use App\Enums\MealPlanLibraryCategory;
 use App\Enums\MealPlanSchemaType;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Model;
 
 class MealPlan extends Model
 {
@@ -27,7 +27,7 @@ class MealPlan extends Model
     {
         return [
             'schema_type' => MealPlanSchemaType::class,
-            'plan_category' => MealPlanLibraryCategory::class,
+            'plan_category' => SafeMealPlanLibraryCategoryCast::class,
             'cycle_phase' => MealCyclePhaseTag::class,
             'target_total_calories' => 'float',
             'target_total_protein_g' => 'float',

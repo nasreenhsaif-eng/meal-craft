@@ -48,9 +48,18 @@ export default function Container() {
     const pageProps = usePage().props;
     const onboarding = onboardingFromPage(pageProps);
     const activeStep = pageProps.activeStep ?? 'gender';
+    const pageErrors = pageProps.errors ?? {};
     const { state, patch, profileInput, computeTargetsBeforeSummary } = useOnboardingStore();
     const [processing, setProcessing] = useState(false);
     const [validationErrors, setValidationErrors] = useState(/** @type {Record<string, string>} */ ({}));
+
+    const stepErrors = useMemo(
+        () => ({
+            ...pageErrors,
+            ...validationErrors,
+        }),
+        [pageErrors, validationErrors],
+    );
 
     const steps = onboarding.steps ?? [];
     const visibleSteps = useMemo(
@@ -249,7 +258,7 @@ export default function Container() {
         currentStep: activeStep,
         customerName: onboarding.customerName ?? '',
         processing,
-        errors: validationErrors,
+        errors: stepErrors,
         onSubmit: handleNext,
     };
 

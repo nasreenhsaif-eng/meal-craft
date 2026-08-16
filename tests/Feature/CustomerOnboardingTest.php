@@ -438,6 +438,40 @@ test('cycle sync diet protocol advances to period tracking', function () {
         ->and($customer->fresh()->currentOnboardingStep())->toBe(OnboardingStep::PeriodTracking);
 });
 
+test('sickle_cell alias advances past diet protocol to birthday', function () {
+    $customer = User::factory()->customer()->create();
+    CustomerProfile::factory()->for($customer)->withoutOnboarding()->create([
+        'onboarding_step' => OnboardingStep::DietProtocol,
+        'sex' => 'female',
+    ]);
+
+    $this->actingAs($customer)
+        ->post(route('onboarding.diet-protocol.store'), [
+            'diet_protocol' => 'sickle_cell',
+        ])
+        ->assertRedirect(route('onboarding.show', ['step' => OnboardingStep::Birthday->value]));
+
+    expect($customer->fresh()->customerProfile?->diet_protocol)->toBe('sickle_cell_warrior')
+        ->and($customer->fresh()->currentOnboardingStep())->toBe(OnboardingStep::Birthday);
+});
+
+test('nutrient_dense diet protocol advances past diet protocol to birthday', function () {
+    $customer = User::factory()->customer()->create();
+    CustomerProfile::factory()->for($customer)->withoutOnboarding()->create([
+        'onboarding_step' => OnboardingStep::DietProtocol,
+        'sex' => 'female',
+    ]);
+
+    $this->actingAs($customer)
+        ->post(route('onboarding.diet-protocol.store'), [
+            'diet_protocol' => 'nutrient_dense',
+        ])
+        ->assertRedirect(route('onboarding.show', ['step' => OnboardingStep::Birthday->value]));
+
+    expect($customer->fresh()->customerProfile?->diet_protocol)->toBe('nutrient_dense')
+        ->and($customer->fresh()->currentOnboardingStep())->toBe(OnboardingStep::Birthday);
+});
+
 test('customer can open any onboarding tab ahead of saved progress', function () {
     $customer = User::factory()->customer()->create();
     CustomerProfile::factory()->for($customer)->withoutOnboarding()->create();
