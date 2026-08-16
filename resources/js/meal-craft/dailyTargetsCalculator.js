@@ -12,7 +12,7 @@
 /** @typedef {'lose' | 'maintain' | 'gain'} WeightGoal */
 
 /**
- * @typedef {'balanced' | 'ketobiotic' | 'cycle_sync' | 'thyroid' | 'sickle_cell_warrior' | 'sickle_cell'} DietProtocolId
+ * @typedef {'balanced' | 'nutrient_dense' | 'ketobiotic' | 'cycle_sync' | 'thyroid' | 'sickle_cell_warrior' | 'sickle_cell'} DietProtocolId
  */
 
 /**
@@ -84,6 +84,11 @@ export const DIET_PROTOCOL_MACRO_PRESETS = {
     balanced: {
         proteinPercentage: 40,
         carbPercentage: 30,
+        fatPercentage: 30,
+    },
+    nutrient_dense: {
+        proteinPercentage: 30,
+        carbPercentage: 40,
         fatPercentage: 30,
     },
     ketobiotic: {

@@ -123,6 +123,52 @@ export function IconSickleCellWarrior({ className = '' }) {
 }
 
 /**
+ * Leaf / whole-food plant — nutrient density protocol.
+ *
+ * @param {{ className?: string }} props
+ */
+export function IconNutrientDense({ className = '' }) {
+    const s = DIET_PROTOCOL_ICON_STROKE;
+
+    return (
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden className={iconClass(className)}>
+            <path
+                d="M12 20.5V10.5"
+                stroke="currentColor"
+                strokeWidth={s}
+                strokeLinecap="round"
+            />
+            <path
+                d="M12 11.25c-3.6-.15-6.35-2.2-7.35-5.35 3.45-.35 6.5 1.15 7.35 4.2"
+                stroke="currentColor"
+                strokeWidth={s}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+            />
+            <path
+                d="M12 11.25c3.6-.15 6.35-2.2 7.35-5.35-3.45-.35-6.5 1.15-7.35 4.2"
+                stroke="currentColor"
+                strokeWidth={s}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+            />
+            <path
+                d="M12 14.75c-2.2.1-3.9 1.15-4.55 2.85"
+                stroke="currentColor"
+                strokeWidth={s}
+                strokeLinecap="round"
+            />
+            <path
+                d="M12 14.75c2.2.1 3.9 1.15 4.55 2.85"
+                stroke="currentColor"
+                strokeWidth={s}
+                strokeLinecap="round"
+            />
+        </svg>
+    );
+}
+
+/**
  * Anatomical thyroid — horizontal butterfly lobes with central isthmus and trachea hint.
  *
  * @param {{ className?: string }} props
