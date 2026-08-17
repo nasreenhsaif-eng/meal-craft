@@ -21,6 +21,7 @@ const MEAL_CARD_WIDTH =
  * @param {number} props.maxSelected
  * @param {(meal: object) => void} props.onToggle
  * @param {(meal: object) => void} [props.onViewDetails]
+ * @param {(meal: object) => void} [props.onEditMeal]
  * @param {() => void} props.onBack
  * @param {() => void} [props.onConfirm] Defaults to onBack when omitted.
  * @param {string} [props.className]
@@ -33,6 +34,7 @@ export default function ProtocolMealOptionsScreen({
     maxSelected = 1,
     onToggle,
     onViewDetails,
+    onEditMeal,
     onBack,
     onConfirm,
     className = '',
@@ -101,6 +103,11 @@ export default function ProtocolMealOptionsScreen({
                                         onViewDetails={
                                             typeof onViewDetails === 'function'
                                                 ? () => onViewDetails(meal)
+                                                : undefined
+                                        }
+                                        onEdit={
+                                            typeof onEditMeal === 'function'
+                                                ? () => onEditMeal(meal)
                                                 : undefined
                                         }
                                     />

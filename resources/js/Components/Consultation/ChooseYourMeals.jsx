@@ -1684,8 +1684,10 @@ export function FixedChoicePicker({
  * @param {boolean} [props.categoriesReadOnly]
  * @param {(categoryKey: SelectionCategoryKey) => void} [props.onClearFixedChoiceCategory]
  * @param {(meal: ConsultationMeal) => void} [props.onViewDetails]
+ * @param {(meal: ConsultationMeal) => void} [props.onEditMeal]
  * @param {string} [props.panelClassName] Height class for the viewport-locked panel shell.
  * @param {boolean} [props.isMenuPending] Adapted menu / weekly schedule still loading from the API.
+ * @param {boolean} [props.protocolSelectedLayout] Force the customer onboarding slot cards (SEE OTHER OPTIONS).
  */
 export default function ChooseYourMeals({
     dayName = '',
@@ -1724,14 +1726,17 @@ export default function ChooseYourMeals({
     categoriesReadOnly = false,
     onClearFixedChoiceCategory,
     onViewDetails,
+    onEditMeal,
     panelClassName = 'h-[100dvh] min-h-screen',
     isMenuPending = false,
     dietProtocol = null,
+    protocolSelectedLayout = false,
 }) {
     const craftingSubtitle = `CRAFTING YOUR ${String(dayName).trim().toUpperCase()}`;
     /** Daily option decks stay interactive whenever the parent wires selection (hides CRAFT THIS MEAL only in true read-only review). */
     const categoryPickEnabled = typeof onToggleCategory === 'function' && !categoriesReadOnly;
-    const useProtocolSelectedLayout = dietProtocol === 'nutrient_dense' && layout === 'categories';
+    const useProtocolSelectedLayout =
+        layout === 'categories' && (protocolSelectedLayout || dietProtocol === 'nutrient_dense');
 
     const [validationFlashKeys, setValidationFlashKeys] = useState(/** @type {(SelectionCategoryKey | 'fixedChoice')[]} */ ([]));
     const [incompleteWarning, setIncompleteWarning] = useState(/** @type {string | null} */ (null));
@@ -1995,6 +2000,7 @@ export default function ChooseYourMeals({
                             categoryPickEnabled ? () => setOptionsSlotKey(def.selectionKey) : undefined
                         }
                         onViewDetails={onViewDetails}
+                        onEditMeal={onEditMeal}
                         className={flash ? 'ring-2 ring-red-300' : ''}
                     />
                 );
@@ -2016,6 +2022,7 @@ export default function ChooseYourMeals({
                     isLoading={isAutoAssigned && isMenuPending && cards.length === 0}
                     onSelect={categoryPickEnabled && !isAutoAssigned ? (meal) => onToggleCategory?.(def.selectionKey, meal) : () => {}}
                     onViewDetails={onViewDetails}
+                    onEditMeal={onEditMeal}
                 />
             );
         });
@@ -2031,6 +2038,7 @@ export default function ChooseYourMeals({
         categoriesReadOnly,
         categoryPickEnabled,
         onViewDetails,
+        onEditMeal,
         isMenuPending,
         weeklyDisplayDecks,
         useProtocolSelectedLayout,
@@ -2052,6 +2060,7 @@ export default function ChooseYourMeals({
                     categoryPickEnabled ? (key) => setOptionsSlotKey(key) : undefined
                 }
                 onViewDetails={onViewDetails}
+                onEditMeal={onEditMeal}
             />
         ) : null;
 
@@ -2127,6 +2136,7 @@ export default function ChooseYourMeals({
                     onToggleCategory?.(optionsSlotKey, meal);
                 }}
                 onViewDetails={onViewDetails}
+                onEditMeal={onEditMeal}
                 onBack={() => setOptionsSlotKey(null)}
                 onConfirm={() => setOptionsSlotKey(null)}
             />

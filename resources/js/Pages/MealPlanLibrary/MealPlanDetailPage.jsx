@@ -7,16 +7,13 @@ import { resolveUrl } from '../../meal-craft/mealCraftPageProps.js';
 import PillButton from '../../Components/Atoms/Button/Button.jsx';
 import Button from '../../Components/Atoms/Button.jsx';
 import AdminPreviewTierPicker from '../../Components/Admin/AdminPreviewTierPicker.jsx';
-import {
+import ChooseYourMeals, {
     applyDeckSelectionToggle,
     DEFAULT_FULL_CRAFT_MAX_SELECTIONS,
-    MealSlotCarousel,
 } from '../../Components/Consultation/ChooseYourMeals.jsx';
 import {
     applyFixedChoiceToggle,
-    countFixedChoiceSelections,
     FIXED_CHOICE_CATEGORY_KEYS,
-    FIXED_CHOICE_MAX_COUNT,
 } from '../../consultation/fixedChoiceSelection.js';
 import { DayMacroMicroTabPanel } from '../../Components/Consultation/DayNutritionalSummaryPanel.jsx';
 import MealDetailView from '../../Components/Molecules/MealDetailView/MealDetailView';
@@ -26,6 +23,8 @@ import { updateMealInPlanDays } from './mealPlanMealEdit.js';
 import { useMealDetailModal } from '../../meal-library/useMealDetailModal.js';
 
 const PAGE_BG = 'bg-[#F8F9F6]';
+
+const WEEKDAY_LONG = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 const DEFAULT_PLAN_TIERS = [1000, 1200, 1500, 1800, 2000];
 
@@ -181,6 +180,28 @@ function resolveInitialDaySelections(planDays, defaultDaySelections) {
 }
 
 /**
+ * @param {{ categories?: Record<string, Array<{ id?: string|number }>> } | null} dayData
+ * @param {{ id?: string|number }} meal
+ */
+function categoryKeyForMeal(dayData, meal) {
+    const mealId = String(meal?.id ?? '');
+
+    if (!dayData?.categories || mealId === '') {
+        return null;
+    }
+
+    for (const section of DETAIL_SECTIONS) {
+        const meals = dayData.categories[section.categoryKey] ?? [];
+
+        if (meals.some((item) => String(item?.id ?? '') === mealId)) {
+            return section.categoryKey;
+        }
+    }
+
+    return null;
+}
+
+/**
  * @param {object} props
  * @param {object} props.mealPlan
  * @param {Array<{ dayNumber: number; label: string; categories: Record<string, unknown[]> }>} props.days
@@ -191,6 +212,7 @@ function resolveInitialDaySelections(planDays, defaultDaySelections) {
  * @param {string} [props.saveDefaultSelectionsUrl]
  * @param {string} [props.libraryUrl]
  * @param {object[]} [props.ingredientProfiles]
+ * @param {string} [props.dietProtocol]
  */
 export default function MealPlanDetailPage({
     mealPlan,
@@ -202,6 +224,7 @@ export default function MealPlanDetailPage({
     saveDefaultSelectionsUrl = '',
     libraryUrl = '/admin/meal-plan-library',
     ingredientProfiles = [],
+    dietProtocol = 'balanced',
 }) {
     const page = usePage();
     const flashSuccess = page.props?.flash?.success ?? null;
@@ -393,6 +416,20 @@ export default function MealPlanDetailPage({
         });
     }, [activeDay]);
 
+    const clearFixedChoiceCategory = useCallback((categoryKey) => {
+        setDaySelections((prev) => {
+            const day = prev[activeDay] ?? {};
+
+            return {
+                ...prev,
+                [activeDay]: {
+                    ...day,
+                    [categoryKey]: [],
+                },
+            };
+        });
+    }, [activeDay]);
+
     const saveDefaultSelections = useCallback(() => {
         if (!saveDefaultSelectionsUrl) {
             return;
@@ -421,13 +458,39 @@ export default function MealPlanDetailPage({
         goalText.toLowerCase() !== planCategoryLabel.toLowerCase() &&
         goalText.toLowerCase() !== 'balanced';
 
-    const coreSections = DETAIL_SECTIONS.filter(
-        (section) => !FIXED_CHOICE_CATEGORY_KEYS.includes(section.categoryKey),
+    const categoryMaxSelections = useMemo(() => {
+        const breakfastCount = activeDayData?.categories?.breakfasts?.length ?? 0;
+
+        return {
+            ...DEFAULT_FULL_CRAFT_MAX_SELECTIONS,
+            breakfasts: breakfastCount > 0 ? DEFAULT_FULL_CRAFT_MAX_SELECTIONS.breakfasts : 0,
+        };
+    }, [activeDayData]);
+
+    const handleToggleCategory = useCallback(
+        (categoryKey, meal) => {
+            if (FIXED_CHOICE_CATEGORY_KEYS.includes(categoryKey)) {
+                toggleFixedChoiceSide(categoryKey, meal);
+                return;
+            }
+
+            toggleMealSelection(categoryKey, meal, defaultSelectionCapForCategory(categoryKey));
+        },
+        [toggleFixedChoiceSide, toggleMealSelection],
     );
-    const sideSections = FIXED_CHOICE_CATEGORY_KEYS.map((key) =>
-        DETAIL_SECTIONS.find((section) => section.categoryKey === key),
-    ).filter(Boolean);
-    const selectedSideCount = countFixedChoiceSelections(activeDaySelections);
+
+    const handleEditMeal = useCallback(
+        (meal) => {
+            const categoryKey = categoryKeyForMeal(activeDayData, meal);
+
+            if (!categoryKey) {
+                return;
+            }
+
+            openMealEdit(meal, categoryKey);
+        },
+        [activeDayData, openMealEdit],
+    );
 
     return (
         <div className={`min-h-full font-body ${PAGE_BG}`}>
@@ -547,69 +610,25 @@ export default function MealPlanDetailPage({
                         aria-busy={tierLoading}
                     >
                         {activeDayData ? (
-                            <>
-                                {coreSections.map((section) => {
-                                    const cards = activeDayData.categories?.[section.categoryKey] ?? [];
-                                    const selectedIds = activeDaySelections[section.categoryKey] ?? [];
-
-                                    return (
-                                        <MealSlotCarousel
-                                            key={`${activeDayData.dayNumber}-${section.categoryKey}`}
-                                            title={section.header}
-                                            deckScopeKey={`plan-${mealPlan?.id ?? 'x'}-day-${activeDayData.dayNumber}-${section.deckSuffix}`}
-                                            sectionKey={section.categoryKey}
-                                            sectionStackOrder={0}
-                                            cards={cards}
-                                            selectedIds={selectedIds}
-                                            maxSelected={defaultSelectionCapForCategory(section.categoryKey)}
-                                            onSelect={(meal) =>
-                                                toggleMealSelection(
-                                                    section.categoryKey,
-                                                    meal,
-                                                    defaultSelectionCapForCategory(section.categoryKey),
-                                                )
-                                            }
-                                            onViewDetails={openMealDetail}
-                                            onEditMeal={(meal) => openMealEdit(meal, section.categoryKey)}
-                                        />
-                                    );
-                                })}
-
-                                {sideSections.length > 0 ? (
-                                    <div className="space-y-4">
-                                        <div className="min-w-0">
-                                            <h2 className="font-montserrat text-lg font-bold text-[#262A22]">
-                                                Pick 1–2 of 3 sides
-                                            </h2>
-                                            <p className="mt-0.5 text-sm text-[#555555]">
-                                                Side salad, soup, or dessert • {selectedSideCount}/{FIXED_CHOICE_MAX_COUNT} selected (min 1)
-                                            </p>
-                                        </div>
-                                        {sideSections.map((section) => {
-                                            const cards = activeDayData.categories?.[section.categoryKey] ?? [];
-                                            const selectedIds = activeDaySelections[section.categoryKey] ?? [];
-
-                                            return (
-                                                <MealSlotCarousel
-                                                    key={`${activeDayData.dayNumber}-${section.categoryKey}`}
-                                                    title={section.header}
-                                                    deckScopeKey={`plan-${mealPlan?.id ?? 'x'}-day-${activeDayData.dayNumber}-${section.deckSuffix}`}
-                                                    sectionKey={section.categoryKey}
-                                                    sectionStackOrder={0}
-                                                    cards={cards}
-                                                    selectedIds={selectedIds}
-                                                    maxSelected={1}
-                                                    onSelect={(meal) =>
-                                                        toggleFixedChoiceSide(section.categoryKey, meal)
-                                                    }
-                                                    onViewDetails={openMealDetail}
-                                                    onEditMeal={(meal) => openMealEdit(meal, section.categoryKey)}
-                                                />
-                                            );
-                                        })}
-                                    </div>
-                                ) : null}
-                            </>
+                            <ChooseYourMeals
+                                panelClassName="h-[min(78dvh,880px)] min-h-[560px]"
+                                dayName={WEEKDAY_LONG[(activeDayData.dayNumber ?? 1) - 1] ?? activeDayData.label}
+                                layout="categories"
+                                dietProtocol={dietProtocol}
+                                protocolSelectedLayout
+                                meals={[]}
+                                displayDecks={activeDayData.categories}
+                                assignedMealsByCategory={activeDayData.categories}
+                                categorySelections={activeDaySelections}
+                                maxSelectionsByCategory={categoryMaxSelections}
+                                onToggleCategory={handleToggleCategory}
+                                onClearFixedChoiceCategory={clearFixedChoiceCategory}
+                                deckScopePrefix={`plan-${mealPlan?.id ?? 'x'}-day-${activeDayData.dayNumber}`}
+                                onViewDetails={openMealDetail}
+                                onEditMeal={handleEditMeal}
+                                targetCalories={selectedTier}
+                                craftTitle={mealPlan?.name ?? ''}
+                            />
                         ) : (
                             <p className="rounded-[12px] border border-dashed border-gray-200 bg-white p-8 text-center text-sm text-[#555555]">
                                 No day data available for this plan.

@@ -15,6 +15,7 @@ const MEAL_CARD_WIDTH =
  * @param {boolean} [props.multiSelect]
  * @param {() => void} [props.onSeeOtherOptions]
  * @param {(meal: object) => void} [props.onViewDetails]
+ * @param {(meal: object) => void} [props.onEditMeal]
  * @param {string} [props.className]
  */
 export default function ProtocolMealSlotCard({
@@ -23,6 +24,7 @@ export default function ProtocolMealSlotCard({
     multiSelect = false,
     onSeeOtherOptions,
     onViewDetails,
+    onEditMeal,
     className = '',
 }) {
     const meals = Array.isArray(selectedMeals) ? selectedMeals : [];
@@ -90,6 +92,11 @@ export default function ProtocolMealSlotCard({
                                     onViewDetails={
                                         typeof onViewDetails === 'function'
                                             ? () => onViewDetails(meal)
+                                            : undefined
+                                    }
+                                    onEdit={
+                                        typeof onEditMeal === 'function'
+                                            ? () => onEditMeal(meal)
                                             : undefined
                                     }
                                 />

@@ -29,6 +29,7 @@ function normalizeMealId(id) {
  * @param {(categoryKey: 'sideSalads'|'desserts'|'soup') => void} [props.onClearCategory]
  * @param {(categoryKey: 'sideSalads'|'desserts'|'soup') => void} [props.onSeeOtherOptions]
  * @param {(meal: object) => void} [props.onViewDetails]
+ * @param {(meal: object) => void} [props.onEditMeal]
  * @param {string} [props.className]
  */
 export default function ProtocolFixedChoiceSides({
@@ -40,6 +41,7 @@ export default function ProtocolFixedChoiceSides({
     onClearCategory,
     onSeeOtherOptions,
     onViewDetails,
+    onEditMeal,
     className = '',
 }) {
     const [limitWarning, setLimitWarning] = useState(/** @type {string | null} */ (null));
@@ -189,6 +191,11 @@ export default function ProtocolFixedChoiceSides({
                                                         onViewDetails={
                                                             typeof onViewDetails === 'function'
                                                                 ? () => onViewDetails(meal)
+                                                                : undefined
+                                                        }
+                                                        onEdit={
+                                                            typeof onEditMeal === 'function'
+                                                                ? () => onEditMeal(meal)
                                                                 : undefined
                                                         }
                                                     />

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Enums\CyclePhase;
+use App\Enums\DietProtocol;
 use App\Enums\DietType;
 use App\Enums\MealCyclePhaseTag;
 use App\Enums\MealPlanLibraryCategory;
@@ -218,6 +219,7 @@ class MealPlanLibraryController extends Controller
             'saveDefaultSelectionsUrl' => route('admin.meal-plan-library.default-selections', $mealPlan),
             'libraryUrl' => route('admin.meal-plan-library'),
             'ingredientProfiles' => $this->mealLibrary->verifiedIngredientProfilesForUi(),
+            'dietProtocol' => $this->dietProtocolSlugForPlan($mealPlan, $isNutrientDensePlan),
         ]);
     }
 
@@ -351,6 +353,21 @@ class MealPlanLibraryController extends Controller
             MealPlanSlotType::Salad => 'sideSalads',
             MealPlanSlotType::Dessert => 'desserts',
             MealPlanSlotType::Soup => 'soup',
+        };
+    }
+
+    private function dietProtocolSlugForPlan(MealPlan $mealPlan, bool $isNutrientDensePlan): string
+    {
+        if ($isNutrientDensePlan) {
+            return DietProtocol::NutrientDense->value;
+        }
+
+        $category = $mealPlan->plan_category;
+
+        return match ($category) {
+            MealPlanLibraryCategory::SickleCellWarrior => DietProtocol::SickleCellWarrior->value,
+            MealPlanLibraryCategory::CycleSync => DietProtocol::CycleSync->value,
+            default => DietProtocol::Balanced->value,
         };
     }
 }

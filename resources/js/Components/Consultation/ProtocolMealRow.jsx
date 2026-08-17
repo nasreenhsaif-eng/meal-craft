@@ -14,6 +14,7 @@ import SquareCheckbox from '../Atoms/Icons/SquareCheckbox.jsx';
  * @param {boolean} [props.compact] Slightly tighter padding for dual-column overview cards.
  * @param {() => void} [props.onSelect]
  * @param {() => void} [props.onViewDetails]
+ * @param {() => void} [props.onEdit]
  * @param {string} [props.className]
  */
 export default function ProtocolMealRow({
@@ -23,6 +24,7 @@ export default function ProtocolMealRow({
     compact = false,
     onSelect,
     onViewDetails,
+    onEdit,
     className = '',
 }) {
     const title = String(meal?.title ?? '').trim() || 'Meal';
@@ -101,19 +103,34 @@ export default function ProtocolMealRow({
                     className="mt-1.5 w-full max-w-full"
                     ariaLabel={`${title} macros`}
                 />
-                {typeof onViewDetails === 'function' ? (
-                    <div className="mt-2 flex justify-center">
-                        <PillButton
-                            type="button"
-                            label="VIEW DETAILS"
-                            variant="secondary"
-                            size="sm"
-                            className="!h-8 !min-h-8 px-3 text-[11px]"
-                            onClick={(event) => {
-                                event.stopPropagation();
-                                onViewDetails();
-                            }}
-                        />
+                {typeof onViewDetails === 'function' || typeof onEdit === 'function' ? (
+                    <div className="mt-2 flex flex-wrap justify-center gap-2">
+                        {typeof onViewDetails === 'function' ? (
+                            <PillButton
+                                type="button"
+                                label="VIEW DETAILS"
+                                variant="secondary"
+                                size="sm"
+                                className="!h-8 !min-h-8 px-3 text-[11px]"
+                                onClick={(event) => {
+                                    event.stopPropagation();
+                                    onViewDetails();
+                                }}
+                            />
+                        ) : null}
+                        {typeof onEdit === 'function' ? (
+                            <PillButton
+                                type="button"
+                                label="EDIT"
+                                variant="ghost"
+                                size="sm"
+                                className="!h-8 !min-h-8 px-3 text-[11px]"
+                                onClick={(event) => {
+                                    event.stopPropagation();
+                                    onEdit();
+                                }}
+                            />
+                        ) : null}
                     </div>
                 ) : null}
             </div>
