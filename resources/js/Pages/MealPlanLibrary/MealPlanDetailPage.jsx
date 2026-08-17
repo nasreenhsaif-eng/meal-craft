@@ -82,6 +82,65 @@ async function fetchTierPreviewDays(tierPreviewUrl, planTier, daySelections = {}
     return payload.days ?? [];
 }
 
+const CATEGORY_KEYS_FOR_SELECTION = ['breakfasts', 'meals', 'sideSalads', 'desserts', 'soup'];
+
+/**
+ * Keep chosen breakfast / side cards visible after tier preview recategorizes a meal.
+ *
+ * @param {Array<{ dayNumber: number; categories?: Record<string, object[]> }>} previewDays
+ * @param {Array<{ dayNumber: number; categories?: Record<string, object[]> }>} previousDays
+ * @param {Record<number, Record<string, Array<string|number>>>} daySelections
+ */
+function retainSelectedMealsInPreviewDays(previewDays, previousDays, daySelections) {
+    /** @type {Map<number, { dayNumber: number; categories?: Record<string, object[]> }>} */
+    const previousByDay = new Map((previousDays ?? []).map((day) => [day.dayNumber, day]));
+
+    return (previewDays ?? []).map((day) => {
+        const previous = previousByDay.get(day.dayNumber);
+        const selections = daySelections?.[day.dayNumber] ?? daySelections?.[String(day.dayNumber)] ?? {};
+        /** @type {Map<string, object>} */
+        const catalog = new Map();
+
+        for (const source of [previous?.categories, day.categories]) {
+            for (const meals of Object.values(source ?? {})) {
+                for (const meal of meals ?? []) {
+                    const id = String(meal?.id ?? '');
+                    if (id !== '' && !catalog.has(id)) {
+                        catalog.set(id, meal);
+                    }
+                }
+            }
+        }
+
+        /** @type {Record<string, object[]>} */
+        const categories = { ...(day.categories ?? {}) };
+
+        for (const categoryKey of CATEGORY_KEYS_FOR_SELECTION) {
+            const existing = Array.isArray(categories[categoryKey]) ? [...categories[categoryKey]] : [];
+            const existingIds = new Set(existing.map((meal) => String(meal?.id ?? '')).filter((id) => id !== ''));
+
+            for (const rawId of selections[categoryKey] ?? []) {
+                const id = String(rawId);
+                if (id === '' || existingIds.has(id)) {
+                    continue;
+                }
+
+                const meal = catalog.get(id);
+                if (!meal) {
+                    continue;
+                }
+
+                existing.push(meal);
+                existingIds.add(id);
+            }
+
+            categories[categoryKey] = existing;
+        }
+
+        return { ...day, categories };
+    });
+}
+
 /** @type {Record<string, 'breakfasts' | 'meals' | 'sideSalads' | 'desserts' | 'soup'>} */
 const SLOT_KEY_TO_CATEGORY = {
     breakfast: 'breakfasts',
@@ -286,7 +345,7 @@ export default function MealPlanDetailPage({
                         return;
                     }
 
-                    setPlanDays(tierDays);
+                    setPlanDays(retainSelectedMealsInPreviewDays(tierDays, days, daySelections));
                 })
                 .catch(() => {
                     if (!cancelled) {

@@ -114,10 +114,23 @@ export default function ProtocolFixedChoiceSides({
                     const selectedIds = (categorySelections?.[option.selectionKey] ?? []).map((id) =>
                         normalizeMealId(id),
                     );
-                    const selectedSet = new Set(selectedIds);
-                    const selectedMeals = cards.filter((meal) =>
-                        selectedSet.has(normalizeMealId(meal?.id)),
-                    );
+                    const selectedMeals = selectedIds
+                        .map((id) => {
+                            const fromCategory = cards.find((meal) => normalizeMealId(meal?.id) === id);
+                            if (fromCategory) {
+                                return fromCategory;
+                            }
+
+                            for (const deck of Object.values(displayDecks ?? {})) {
+                                const found = (deck ?? []).find((meal) => normalizeMealId(meal?.id) === id);
+                                if (found) {
+                                    return found;
+                                }
+                            }
+
+                            return null;
+                        })
+                        .filter(Boolean);
                     const isChecked = selectedMeals.length > 0 || selectedIds.length > 0;
 
                     return (

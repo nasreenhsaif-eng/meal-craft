@@ -160,6 +160,56 @@ export function normalizeConsultationMealId(id) {
 }
 
 /**
+ * Resolve selected meals in selection order, looking in the slot deck first, then every on-screen deck.
+ *
+ * @param {Array<string|number>} selectedIds
+ * @param {ConsultationMeal[]} [categoryCards]
+ * @param {Partial<Record<string, ConsultationMeal[]>> | null | undefined} [allDecks]
+ * @returns {ConsultationMeal[]}
+ */
+export function selectedMealsForSlotFromDecks(selectedIds, categoryCards = [], allDecks = null) {
+    /** @type {Map<string, ConsultationMeal>} */
+    const byId = new Map();
+
+    for (const meal of categoryCards ?? []) {
+        const id = normalizeConsultationMealId(meal?.id);
+        if (id !== '') {
+            byId.set(id, meal);
+        }
+    }
+
+    for (const cards of Object.values(allDecks ?? {})) {
+        for (const meal of cards ?? []) {
+            const id = normalizeConsultationMealId(meal?.id);
+            if (id !== '' && !byId.has(id)) {
+                byId.set(id, meal);
+            }
+        }
+    }
+
+    /** @type {ConsultationMeal[]} */
+    const selected = [];
+    const seen = new Set();
+
+    for (const rawId of selectedIds ?? []) {
+        const id = normalizeConsultationMealId(rawId);
+        if (id === '' || seen.has(id)) {
+            continue;
+        }
+
+        const meal = byId.get(id);
+        if (!meal) {
+            continue;
+        }
+
+        seen.add(id);
+        selected.push(meal);
+    }
+
+    return selected;
+}
+
+/**
  * Card arrays shown in weekly category carousels (same objects MacroGrid reads).
  *
  * @param {{
@@ -1979,9 +2029,10 @@ export default function ChooseYourMeals({
                 def.selectionKey === 'meals' && max === 1 ? 'Choose Your Meal of the Day' : def.header;
 
             if (useProtocolSelectedLayout) {
-                const selectedSet = new Set(selectedIds);
-                const selectedMeals = cards.filter((meal) =>
-                    selectedSet.has(normalizeConsultationMealId(meal?.id)),
+                const selectedMeals = selectedMealsForSlotFromDecks(
+                    selectedIds,
+                    cards,
+                    weeklyDisplayDecks,
                 );
                 const slotTitle =
                     def.selectionKey === 'meals'

@@ -2,8 +2,6 @@
 
 namespace App\Services;
 
-use App\Enums\DietProtocol;
-use App\Enums\MealPlanLibraryCategory;
 use App\Http\Controllers\Admin\MealLibraryController;
 use App\Models\CustomerProfile;
 use App\Models\Meal;
@@ -51,7 +49,6 @@ final class MealPlanLibraryTierPreview
         $profile = $this->previewProfileForTier($mealPlan, $planTier, $user);
         $dayCount = max(1, $mealPlan->structuredPlanningDayCount());
         $categoryKeys = ['breakfasts', 'meals', 'sideSalads', 'desserts', 'soup'];
-        $emptyCategories = array_fill_keys($categoryKeys, []);
 
         /** @var Collection<int, Collection<int, MealPlanDayMeal>> $rowsByDay */
         $rowsByDay = $mealPlan->dayMeals->groupBy('day_number');
@@ -92,7 +89,7 @@ final class MealPlanLibraryTierPreview
                 $buildOptions,
             );
 
-            $categories = $emptyCategories;
+            $categories = array_fill_keys($categoryKeys, []);
 
             foreach ($categoryKeys as $categoryKey) {
                 $bucket = match ($categoryKey) {
@@ -114,7 +111,7 @@ final class MealPlanLibraryTierPreview
                     }
 
                     $mealId = (int) ($adapted['id'] ?? 0);
-                    $resolvedMeal = $resolvedMealsById[$mealId] ?? $mealsById[$mealId] ?? null;
+                    $resolvedMeal = $resolvedMealsById[$mealId] ?? $mealsById[$mealId] ?? Meal::query()->with('ingredients')->find($mealId);
                     $scheduledMeal = $scheduledMealsByAdaptedId[$mealId] ?? $mealsById[$mealId] ?? $resolvedMeal;
 
                     if (! $resolvedMeal instanceof Meal || ! $scheduledMeal instanceof Meal) {
@@ -263,24 +260,16 @@ final class MealPlanLibraryTierPreview
             'user_id' => $user->id,
         ]);
 
-        $isNutrientDense = $mealPlan->plan_category === MealPlanLibraryCategory::NutrientDense;
+        $isNutrientDense = $mealPlan->usesNutrientDenseProtocol();
 
         $profile->forceFill([
             'daily_calorie_target' => $planTier,
-            'diet_protocol' => $this->dietProtocolForPlan($mealPlan)->value,
+            'diet_protocol' => $mealPlan->dietProtocol()->value,
             'protein_percentage' => $isNutrientDense ? 32 : ($profile->protein_percentage ?? 35),
             'carb_percentage' => $isNutrientDense ? 28 : ($profile->carb_percentage ?? 35),
             'fat_percentage' => $isNutrientDense ? 40 : ($profile->fat_percentage ?? 30),
         ]);
 
         return $profile;
-    }
-
-    private function dietProtocolForPlan(MealPlan $mealPlan): DietProtocol
-    {
-        return match ($mealPlan->plan_category) {
-            MealPlanLibraryCategory::NutrientDense => DietProtocol::NutrientDense,
-            default => DietProtocol::Balanced,
-        };
     }
 }

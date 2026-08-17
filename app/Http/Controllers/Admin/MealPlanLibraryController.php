@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Enums\CyclePhase;
-use App\Enums\DietProtocol;
 use App\Enums\DietType;
 use App\Enums\MealCyclePhaseTag;
 use App\Enums\MealPlanLibraryCategory;
@@ -126,7 +125,6 @@ class MealPlanLibraryController extends Controller
 
         $dayCount = max(1, $mealPlan->structuredPlanningDayCount());
         $categoryKeys = ['breakfasts', 'meals', 'sideSalads', 'desserts', 'soup'];
-        $emptyCategories = array_fill_keys($categoryKeys, []);
 
         /** @var array<int, array{dayNumber: int, label: string, categories: array<string, list<array<string, mixed>>}> $daysByNumber */
         $daysByNumber = [];
@@ -134,13 +132,12 @@ class MealPlanLibraryController extends Controller
             $daysByNumber[$dayNumber] = [
                 'dayNumber' => $dayNumber,
                 'label' => self::WEEKDAY_LABELS[$dayNumber - 1] ?? __('Day :number', ['number' => $dayNumber]),
-                'categories' => $emptyCategories,
+                'categories' => array_fill_keys($categoryKeys, []),
             ];
         }
 
         $category = $mealPlan->plan_category;
-        $isNutrientDensePlan = $category === MealPlanLibraryCategory::NutrientDense
-            || str_contains(strtolower((string) ($mealPlan->name ?? '')), 'tbd');
+        $isNutrientDensePlan = $mealPlan->usesNutrientDenseProtocol();
         $storedDefaults = MealPlanDefaultDaySelections::forPlan($mealPlan);
         $hasStoredDefaults = $storedDefaults !== [];
 
@@ -219,7 +216,7 @@ class MealPlanLibraryController extends Controller
             'saveDefaultSelectionsUrl' => route('admin.meal-plan-library.default-selections', $mealPlan),
             'libraryUrl' => route('admin.meal-plan-library'),
             'ingredientProfiles' => $this->mealLibrary->verifiedIngredientProfilesForUi(),
-            'dietProtocol' => $this->dietProtocolSlugForPlan($mealPlan, $isNutrientDensePlan),
+            'dietProtocol' => $mealPlan->dietProtocol()->value,
         ]);
     }
 
@@ -353,21 +350,6 @@ class MealPlanLibraryController extends Controller
             MealPlanSlotType::Salad => 'sideSalads',
             MealPlanSlotType::Dessert => 'desserts',
             MealPlanSlotType::Soup => 'soup',
-        };
-    }
-
-    private function dietProtocolSlugForPlan(MealPlan $mealPlan, bool $isNutrientDensePlan): string
-    {
-        if ($isNutrientDensePlan) {
-            return DietProtocol::NutrientDense->value;
-        }
-
-        $category = $mealPlan->plan_category;
-
-        return match ($category) {
-            MealPlanLibraryCategory::SickleCellWarrior => DietProtocol::SickleCellWarrior->value,
-            MealPlanLibraryCategory::CycleSync => DietProtocol::CycleSync->value,
-            default => DietProtocol::Balanced->value,
         };
     }
 }
