@@ -525,7 +525,7 @@ export function consultationSideSaladDeckForDay(source, scheduledSideSalads = []
         deck.push(meal);
     }
 
-    for (const meal of source.filter((entry) => entry.mealType === 'Side salad')) {
+    for (const meal of source.filter((entry) => mealMatchesConsultationCategory(entry, 'Side salad'))) {
         if (deck.length >= limit) {
             break;
         }
@@ -1809,7 +1809,23 @@ export default function ChooseYourMeals({
         }
 
         if (displayDecks && typeof displayDecks === 'object') {
-            return displayDecks;
+            const decks = {
+                breakfasts: displayDecks.breakfasts ?? [],
+                meals: displayDecks.meals ?? [],
+                sideSalads: displayDecks.sideSalads ?? [],
+                desserts: displayDecks.desserts ?? [],
+                soup: displayDecks.soup ?? [],
+            };
+            const catalog = [...(meals ?? []), ...Object.values(decks).flat()];
+
+            if (decks.sideSalads.length === 0) {
+                decks.sideSalads = consultationSideSaladDeckForDay(
+                    catalog,
+                    assignedMealsByCategory?.sideSalads ?? [],
+                );
+            }
+
+            return decks;
         }
 
         return buildWeeklyConsultationDisplayDecks({

@@ -117,7 +117,20 @@ function retainSelectedMealsInPreviewDays(previewDays, previousDays, daySelectio
 
         for (const categoryKey of CATEGORY_KEYS_FOR_SELECTION) {
             const existing = Array.isArray(categories[categoryKey]) ? [...categories[categoryKey]] : [];
+            const previousMeals = previous?.categories?.[categoryKey] ?? [];
             const existingIds = new Set(existing.map((meal) => String(meal?.id ?? '')).filter((id) => id !== ''));
+
+            if (existing.length === 0) {
+                for (const meal of previousMeals) {
+                    const id = String(meal?.id ?? '');
+                    if (id === '' || existingIds.has(id)) {
+                        continue;
+                    }
+
+                    existing.push(meal);
+                    existingIds.add(id);
+                }
+            }
 
             for (const rawId of selections[categoryKey] ?? []) {
                 const id = String(rawId);
@@ -139,6 +152,61 @@ function retainSelectedMealsInPreviewDays(previewDays, previousDays, daySelectio
 
         return { ...day, categories };
     });
+}
+
+/**
+ * Rebind checked side categories onto a card that is actually on the day.
+ *
+ * @param {Record<number, Record<string, string[]>>} daySelections
+ * @param {Array<{ dayNumber: number; categories?: Record<string, object[]> }>} planDays
+ */
+function repairFixedChoiceSelections(daySelections, planDays) {
+    let changed = false;
+    const next = { ...daySelections };
+
+    for (const day of planDays ?? []) {
+        const current = next[day.dayNumber] ?? next[String(day.dayNumber)] ?? {};
+        let dayChanged = false;
+        const patched = { ...current };
+
+        for (const key of FIXED_CHOICE_CATEGORY_KEYS) {
+            const ids = (current[key] ?? []).map((id) => String(id)).filter((id) => id !== '');
+
+            if (ids.length === 0) {
+                continue;
+            }
+
+            const cards = day.categories?.[key] ?? [];
+            const cardIds = new Set(cards.map((meal) => String(meal?.id ?? '')).filter((id) => id !== ''));
+            const valid = ids.filter((id) => cardIds.has(id));
+
+            if (valid.length === ids.length) {
+                continue;
+            }
+
+            dayChanged = true;
+
+            if (valid.length > 0) {
+                patched[key] = valid;
+                continue;
+            }
+
+            if (cards.length === 0) {
+                continue;
+            }
+
+            const recommended =
+                cards.find((meal) => meal?.isRecommended || meal?.is_recommended) ?? cards[0];
+            patched[key] = [String(recommended.id)];
+        }
+
+        if (dayChanged) {
+            next[day.dayNumber] = patched;
+            changed = true;
+        }
+    }
+
+    return changed ? next : daySelections;
 }
 
 /** @type {Record<string, 'breakfasts' | 'meals' | 'sideSalads' | 'desserts' | 'soup'>} */
@@ -382,6 +450,18 @@ export default function MealPlanDetailPage({
         () => planDays.find((day) => day.dayNumber === activeDay) ?? planDays[0] ?? null,
         [activeDay, planDays],
     );
+
+    useEffect(() => {
+        setDaySelections((prev) => repairFixedChoiceSelections(prev, planDays));
+    }, [planDays]);
+
+    const catalogMeals = useMemo(() => {
+        if (!activeDayData?.categories) {
+            return [];
+        }
+
+        return Object.values(activeDayData.categories).flat().filter(Boolean);
+    }, [activeDayData]);
 
     const activeDaySelections = daySelections[activeDay] ?? {};
 
@@ -675,7 +755,7 @@ export default function MealPlanDetailPage({
                                 layout="categories"
                                 dietProtocol={dietProtocol}
                                 protocolSelectedLayout
-                                meals={[]}
+                                meals={catalogMeals}
                                 displayDecks={activeDayData.categories}
                                 assignedMealsByCategory={activeDayData.categories}
                                 categorySelections={activeDaySelections}

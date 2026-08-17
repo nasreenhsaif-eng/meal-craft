@@ -6,6 +6,7 @@ import {
     FIXED_CHOICE_MIN_COUNT,
     FIXED_CHOICE_TOGGLE_OPTIONS,
     countFixedChoiceSelections,
+    resolveFixedChoiceSelectedMeals,
 } from '../../consultation/fixedChoiceSelection.js';
 
 /** @param {unknown} id */
@@ -110,28 +111,28 @@ export default function ProtocolFixedChoiceSides({
 
             <ul className="m-0 list-none divide-y divide-gray-100 p-0">
                 {FIXED_CHOICE_TOGGLE_OPTIONS.map((option) => {
-                    const cards = displayDecks?.[option.selectionKey] ?? [];
+                    const assignedCards = displayDecks?.[option.selectionKey] ?? [];
+                    const cards =
+                        assignedCards.length > 0
+                            ? assignedCards
+                            : Object.values(displayDecks ?? {})
+                                  .flat()
+                                  .filter((meal) => {
+                                      const label = String(meal?.mealType ?? meal?.category ?? '').toLowerCase();
+                                      const expected = String(option.mealTypeLabel ?? option.label).toLowerCase();
+
+                                      return label === expected || label === `${expected}s`;
+                                  });
                     const selectedIds = (categorySelections?.[option.selectionKey] ?? []).map((id) =>
                         normalizeMealId(id),
                     );
-                    const selectedMeals = selectedIds
-                        .map((id) => {
-                            const fromCategory = cards.find((meal) => normalizeMealId(meal?.id) === id);
-                            if (fromCategory) {
-                                return fromCategory;
-                            }
-
-                            for (const deck of Object.values(displayDecks ?? {})) {
-                                const found = (deck ?? []).find((meal) => normalizeMealId(meal?.id) === id);
-                                if (found) {
-                                    return found;
-                                }
-                            }
-
-                            return null;
-                        })
-                        .filter(Boolean);
+                    const selectedMeals = resolveFixedChoiceSelectedMeals(
+                        selectedIds,
+                        cards,
+                        displayDecks,
+                    );
                     const isChecked = selectedMeals.length > 0 || selectedIds.length > 0;
+                    const hasOptions = cards.length > 0;
 
                     return (
                         <li key={option.selectionKey} className="px-3 py-3 sm:px-4">
@@ -139,7 +140,7 @@ export default function ProtocolFixedChoiceSides({
                                 <button
                                     type="button"
                                     className="mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-[4px] border-0 bg-transparent p-0 outline-none focus-visible:ring-2 focus-visible:ring-[#5A6B44] focus-visible:ring-offset-1 disabled:opacity-50"
-                                    disabled={!pickEnabled || cards.length === 0}
+                                    disabled={!pickEnabled || !hasOptions}
                                     onClick={() => toggleCategory(option.selectionKey, cards, isChecked)}
                                     aria-pressed={isChecked}
                                     aria-label={
@@ -156,13 +157,13 @@ export default function ProtocolFixedChoiceSides({
                                         <button
                                             type="button"
                                             className="text-left font-montserrat text-sm font-bold text-[#262A22] disabled:opacity-50"
-                                            disabled={!pickEnabled || cards.length === 0}
+                                            disabled={!pickEnabled || !hasOptions}
                                             onClick={() => toggleCategory(option.selectionKey, cards, isChecked)}
                                         >
                                             {option.label}
                                         </button>
 
-                                        {isChecked && typeof onSeeOtherOptions === 'function' && pickEnabled ? (
+                                        {isChecked && hasOptions && typeof onSeeOtherOptions === 'function' && pickEnabled ? (
                                             <button
                                                 type="button"
                                                 onClick={() => onSeeOtherOptions(option.selectionKey)}
@@ -173,7 +174,7 @@ export default function ProtocolFixedChoiceSides({
                                         ) : null}
                                     </div>
 
-                                    {cards.length === 0 ? (
+                                    {!hasOptions ? (
                                         <p className="mt-1 font-body text-xs text-[#666666]">
                                             No {option.label.toLowerCase()} options for this day yet.
                                         </p>
