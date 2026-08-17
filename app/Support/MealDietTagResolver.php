@@ -138,6 +138,13 @@ final class MealDietTagResolver
             $tags[] = 'Vegetarian';
         }
 
+        if ($hasDairy) {
+            $tags = array_values(array_filter(
+                $tags,
+                static fn (string $tag): bool => $tag !== 'Dairy-free',
+            ));
+        }
+
         if (! $hasNuts) {
             $tags[] = 'Nut-free';
         }

@@ -14,6 +14,7 @@ import {
 import MealDetailModalPortal from '../../Components/Molecules/MealDetailModalPortal.jsx';
 import CustomerInertiaShell from '../../Layouts/CustomerInertiaShell.jsx';
 import { saveSummaryCraftPlanAndNavigateToEdit } from '../../consultation/consultationDraft.js';
+import { dailyMacroTargetsFromPlan } from '../../consultation/craftCalorieTargets.js';
 import { resolveInertiaLayoutChild } from '../../lib/resolveInertiaLayoutChild.js';
 import { useMealDetailModal } from '../../meal-library/useMealDetailModal.js';
 
@@ -38,6 +39,7 @@ function formatMacroValue(value) {
  *   craftTitle?: string;
  *   weekDuration?: number;
  *   planTierCalories?: number;
+ *   dietProtocol?: string | null;
  *   submittedAt?: string | null;
  *   days?: Array<{
  *     dayNumber: number;
@@ -126,6 +128,11 @@ export default function MealPlanSummary({
 
     const planCategoryLabel = `${craftPlan.craftTitle ?? 'Craft'} · ${craftPlan.planTierCalories ?? ''} kcal`.trim();
 
+    const dayMacroTargets = useMemo(
+        () => dailyMacroTargetsFromPlan(null, craftPlan.planTierCalories ?? 0, craftPlan.craftKey ?? 'full'),
+        [craftPlan.planTierCalories, craftPlan.craftKey],
+    );
+
     const handleEditSelections = useCallback(() => {
         const editUrl =
             typeof consultationEditUrl === 'string' && consultationEditUrl.trim() !== ''
@@ -183,10 +190,10 @@ export default function MealPlanSummary({
                                     >
                                         <p className="font-montserrat text-sm font-bold text-[#262A22]">{day.label}</p>
                                         <p className="mt-1 font-body text-xs text-[#555555]">
-                                            {formatMacroValue(day.totals.calories)} kcal · P{' '}
-                                            {formatMacroValue(day.totals.protein)}g · C{' '}
-                                            {formatMacroValue(day.totals.carbs)}g · F{' '}
-                                            {formatMacroValue(day.totals.fat)}g
+                                            {formatMacroValue(day.totals.calories)} / {formatMacroValue(dayMacroTargets.calories)} kcal · P{' '}
+                                            {formatMacroValue(day.totals.protein)}/{formatMacroValue(dayMacroTargets.protein)}g · C{' '}
+                                            {formatMacroValue(day.totals.carbs)}/{formatMacroValue(dayMacroTargets.carbs)}g · F{' '}
+                                            {formatMacroValue(day.totals.fat)}/{formatMacroValue(dayMacroTargets.fat)}g
                                         </p>
                                     </button>
                                 );
@@ -231,6 +238,8 @@ export default function MealPlanSummary({
                                 dayLabel={activeDayData?.label ?? 'Day'}
                                 planCategoryLabel={planCategoryLabel}
                                 planTierCalories={craftPlan.planTierCalories ?? 0}
+                                craftKey={craftPlan.craftKey ?? 'full'}
+                                dietProtocol={craftPlan.dietProtocol ?? null}
                                 onOpenMeal={openMealDetail}
                                 onEditMeals={handleEditSelections}
                             />

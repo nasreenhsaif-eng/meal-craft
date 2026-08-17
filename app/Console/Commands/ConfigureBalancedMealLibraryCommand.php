@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Services\BalancedEggBreakfastRecipeRefiner;
 use App\Services\BalancedMealLibraryConfigurator;
 use App\Services\MenuDevelopmentCsvExport;
 use Illuminate\Console\Command;
@@ -13,8 +14,19 @@ class ConfigureBalancedMealLibraryCommand extends Command
 
     protected $description = 'Curate canonical Balanced protocol meals (deck order, tags) and demote non-deck library rows';
 
-    public function handle(BalancedMealLibraryConfigurator $configurator, MenuDevelopmentCsvExport $csvExport): int
-    {
+    public function handle(
+        BalancedMealLibraryConfigurator $configurator,
+        BalancedEggBreakfastRecipeRefiner $eggBreakfastRefiner,
+        MenuDevelopmentCsvExport $csvExport,
+    ): int {
+        $this->info('Syncing savory egg breakfast recipes (including dairy-forward rotation)…');
+
+        $refinedBreakfasts = $eggBreakfastRefiner->refine();
+
+        if ($refinedBreakfasts !== []) {
+            $this->line('  • '.implode(', ', $refinedBreakfasts));
+        }
+
         $this->info('Configuring Balanced meal library deck…');
 
         $result = $configurator->configure();

@@ -18,7 +18,7 @@ final class AdaptedMenuBuildOptionsFromRequest
      *     day_of_week?: int,
      *     craft_key?: string,
      *     plan_tier?: float,
-     *     fixed_chia_breakfast?: bool,
+     *     selected_main_meal_ids?: list<int>,
      * }
      */
     public static function resolve(Request $request, User $user): array
@@ -32,9 +32,15 @@ final class AdaptedMenuBuildOptionsFromRequest
             'dessert_calories' => ['sometimes', 'numeric', 'min:0'],
             'day_of_week' => ['sometimes', 'integer', 'min:1', 'max:7'],
             'plan_tier' => ['sometimes', 'integer', Rule::in(UserPlanCalculator::planTiers())],
-            'fixed_chia_breakfast' => ['sometimes', 'boolean'],
             'selected_fixed_slots' => ['sometimes', 'array'],
             'selected_fixed_slots.*' => ['string', Rule::in(UserPlanCalculator::fixedChoiceSlots())],
+            'fixed_slot_actual_macros' => ['sometimes', 'array'],
+            'fixed_slot_actual_macros.protein_g' => ['sometimes', 'numeric', 'min:0'],
+            'fixed_slot_actual_macros.carbs_g' => ['sometimes', 'numeric', 'min:0'],
+            'fixed_slot_actual_macros.fat_g' => ['sometimes', 'numeric', 'min:0'],
+            'selected_main_meal_ids.*' => ['integer', 'min:1'],
+            'selected_breakfast_meal_ids' => ['sometimes', 'array'],
+            'selected_breakfast_meal_ids.*' => ['integer', 'min:1'],
         ]);
 
         $selectedFixedSlots = isset($validated['selected_fixed_slots'])
@@ -79,8 +85,22 @@ final class AdaptedMenuBuildOptionsFromRequest
             $buildOptions['plan_tier'] = (float) (int) $validated['plan_tier'];
         }
 
-        if (array_key_exists('fixed_chia_breakfast', $validated)) {
-            $buildOptions['fixed_chia_breakfast'] = (bool) $validated['fixed_chia_breakfast'];
+        if (isset($validated['selected_main_meal_ids'])) {
+            $buildOptions['selected_main_meal_ids'] = array_values(array_unique(array_map(
+                static fn (mixed $id): int => (int) $id,
+                $validated['selected_main_meal_ids'],
+            )));
+        }
+
+        if (isset($validated['selected_breakfast_meal_ids'])) {
+            $buildOptions['selected_breakfast_meal_ids'] = array_values(array_unique(array_map(
+                static fn (mixed $id): int => (int) $id,
+                $validated['selected_breakfast_meal_ids'],
+            )));
+        }
+
+        if (isset($validated['fixed_slot_actual_macros']) && is_array($validated['fixed_slot_actual_macros'])) {
+            $buildOptions['fixed_slot_actual_macros'] = UserPlanCalculator::normalizeMacroGrams($validated['fixed_slot_actual_macros']);
         }
 
         return AdaptedMenuFixedPortionResolver::mergeIntoBuildOptions($buildOptions);

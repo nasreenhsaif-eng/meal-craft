@@ -16,6 +16,14 @@ return [
     |
     | Full Craft day = breakfast + 2× main_each + fixed_choice_count × fixed_choice_calories.
     |
+    | Breakfast is tier-fixed: it only changes with the plan tier (1000/1200/…/2000),
+    | never when the customer picks a heavier/lighter side, dessert, or soup.
+    | Fixed-pick overshoot/undershoot vs the 2×150 budget is absorbed by mains only.
+    |
+    | Main scaling levers: protein + starchy carbs. Cooking fat (olive oil / butter)
+    | and vegetables are kitchen floors and are not trimmed. Herbs/spices follow the
+    | whole-dish scale (protein × carb geometric mean).
+    |
     */
     'tier_slot_calories' => [
         1000 => ['breakfast' => 200.0, 'main_each' => 250.0],
@@ -27,11 +35,38 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Fixed pick slots — customer picks exactly 2 of 3 per day (~150 kcal each)
+    | Main meal macro split (% of each main slot's calories)
+    |--------------------------------------------------------------------------
+    |
+    | Mains scale to these protein-first targets at every tier. Carbs yield within
+    | the same tier calorie budget so daily totals stay on plan.
+    |
+    */
+    'main_each_macro_split' => [
+        'protein_percentage' => 45.0,
+        'carb_percentage' => 25.0,
+        'fat_percentage' => 30.0,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Breakfast macro split (% of breakfast slot calories)
+    |--------------------------------------------------------------------------
+    */
+    'breakfast_macro_split' => [
+        'protein_percentage' => 40.0,
+        'carb_percentage' => 25.0,
+        'fat_percentage' => 35.0,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Fixed pick slots — customer picks 1–2 of 3 per day (~150 kcal each)
     |--------------------------------------------------------------------------
     */
     'fixed_choice_slots' => ['side_salad', 'dessert', 'soup'],
     'fixed_choice_count' => 2,
+    'fixed_choice_min_count' => 1,
     'fixed_choice_calories' => 150.0,
 
     /*
@@ -43,6 +78,35 @@ return [
     |
     */
     'day_calorie_tolerance' => 50.0,
+
+    /*
+    |--------------------------------------------------------------------------
+    | Day macro tolerance (grams) — consultation footer warnings & reconciliation
+    |--------------------------------------------------------------------------
+    */
+    'day_macro_tolerance' => [
+        'protein_g' => 15.0,
+        'carbs_g' => 20.0,
+        'fat_g' => 15.0,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Macro-first main meal scaling
+    |--------------------------------------------------------------------------
+    */
+    'macro_first_main_scaling' => [
+        'enabled' => true,
+        'herb_flavor_multiplier_min' => 0.5,
+        'herb_flavor_multiplier_max' => 2.0,
+        'max_primary_meat_grams' => 200.0,
+        'carb_baseline_floor_ratio' => 0.6,
+        // Day surplus may trim starch further toward this ratio of library baseline
+        // so mains can absorb fixed-pick overshoot without cutting fat/veg.
+        'carb_day_surplus_floor_ratio' => 0.25,
+        // Absolute cookable floor for starch lines — never wipe rice/quinoa to 0 g.
+        'carb_kitchen_minimum_grams' => 20.0,
+    ],
 
     /*
     |--------------------------------------------------------------------------
@@ -69,17 +133,6 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Fixed chia breakfast portion (kcal)
-    |--------------------------------------------------------------------------
-    |
-    | Balanced rotation chia puddings are a standard kitchen portion — they do not
-    | scale with the customer's plan tier. Mains absorb the remaining budget.
-    |
-    */
-    'chia_breakfast_calories' => 200.0,
-
-    /*
-    |--------------------------------------------------------------------------
     | Savory egg breakfast — large eggs per plan tier
     |--------------------------------------------------------------------------
     |
@@ -90,9 +143,9 @@ return [
     'savory_egg_breakfast_tier_counts' => [
         1000 => 2,
         1200 => 2,
-        1500 => 4,
+        1500 => 3,
         1800 => 4,
-        2000 => 5,
+        2000 => 4,
     ],
 
     /*
@@ -104,7 +157,88 @@ return [
     |
     */
     'savory_egg_breakfast_minimum_side_grams' => [
-        'Avocado' => 50.0,
+        'Avocado' => 25.0,
+        'Sweet Potato' => 100.0,
+        'White Onion' => 40.0,
+        'Red Onion' => 40.0,
+        'Bell Pepper (Red)' => 40.0,
+        'Spinach (Fresh)' => 25.0,
+        'Olive Oil' => 5.0,
+        'Olive Oil (Extra Virgin)' => 5.0,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Culinary portion constraints — cookability over raw macro forcing
+    |--------------------------------------------------------------------------
+    |
+    | Structural floors keep named dish bases and sauté vegetables cookable.
+    | Herb/spice caps stop accent ingredients from matching vegetable volume.
+    |
+    */
+    'culinary_portion_constraints' => [
+        'title_structural_minimum_grams' => 100.0,
+        'default_woody_fresh_herb_maximum_grams' => 1.0,
+        'default_soft_fresh_herb_maximum_grams' => 8.0,
+        'default_dry_spice_maximum_grams' => 2.0,
+        'default_minimum_grams' => [
+            'White Onion' => 40.0,
+            'Red Onion' => 40.0,
+            'Bell Pepper (Red)' => 40.0,
+            'Spinach (Fresh)' => 25.0,
+            'Olive Oil' => 5.0,
+            'Olive Oil (Extra Virgin)' => 5.0,
+            'Sweet Potato' => 100.0,
+        ],
+        'per_meal_minimum_grams' => [
+            'Sweet Potato Egg Hash' => [
+                'Sweet Potato' => 120.0,
+                'White Onion' => 50.0,
+                'Bell Pepper (Red)' => 50.0,
+                'Spinach (Fresh)' => 30.0,
+                'Olive Oil' => 5.0,
+            ],
+        ],
+        'herb_spice_maximum_grams' => [
+            'Rosemary (Fresh)' => 1.0,
+            'Thyme (Fresh)' => 1.0,
+            'Fresh Coriander' => 5.0,
+            'Black Pepper' => 1.0,
+            'Sea Salt' => 1.0,
+            'Flaxseeds' => 5.0,
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Main meal plate vegetables — minimum kitchen-realistic portions (grams)
+    |--------------------------------------------------------------------------
+    |
+    | When a vegetable is a named component in meal instructions (e.g. "steamed
+    | broccoli"), refiners and scaling must not strip it below this floor.
+    |
+    */
+    'main_meal_plate_vegetable_minimum_grams' => 40.0,
+
+    'main_meal_plate_vegetable_ingredients' => [
+        'Broccoli',
+        'Bok Choy',
+        'Sweet Potato',
+        'Beetroot',
+        'Zucchini',
+        'Pumpkin',
+        'Green Beans',
+        'Mushrooms',
+        'Carrots',
+        'Bell Pepper (Red)',
+        'Spinach (Fresh)',
+    ],
+
+    'main_meal_plate_vegetable_canonical_grams' => [
+        'Tamarind Honey & Sesame Chicken w Garlicky Green Beans' => [
+            'Broccoli' => 60.0,
+            'Bok Choy' => 80.0,
+        ],
     ],
 
     /*
@@ -112,7 +246,8 @@ return [
     | Slot behaviour
     |--------------------------------------------------------------------------
     |
-    | scalable      — portion scales to hit slot target within the plan tier
+    | scalable      — portion scales to the slot target for the plan tier
+    |                 (breakfast: tier table only; mains: also absorb fixed overshoot)
     | fixed_portion — standard kitchen portion; calories count toward tier
     |
     */
@@ -126,7 +261,7 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Slots eligible for the pick-2 fixed choice group
+    | Slots eligible for the pick 1–2 fixed choice group
     |--------------------------------------------------------------------------
     */
     'core_fixed_portion_slots' => ['side_salad', 'dessert', 'soup'],
@@ -171,8 +306,8 @@ return [
     */
     'macro_presets' => [
         'balanced' => [
-            'protein_percentage' => 40.0,
-            'carb_percentage' => 30.0,
+            'protein_percentage' => 35.0,
+            'carb_percentage' => 35.0,
             'fat_percentage' => 30.0,
         ],
         'high_protein' => [
@@ -189,8 +324,8 @@ return [
     */
     'diet_protocol_macro_presets' => [
         'balanced' => [
-            'protein_percentage' => 40.0,
-            'carb_percentage' => 30.0,
+            'protein_percentage' => 35.0,
+            'carb_percentage' => 35.0,
             'fat_percentage' => 30.0,
         ],
         'ketobiotic' => [
@@ -213,7 +348,55 @@ return [
             'carb_percentage' => 50.0,
             'fat_percentage' => 25.0,
         ],
+        'nutrient_dense' => [
+            'protein_percentage' => 32.0,
+            'carb_percentage' => 28.0,
+            'fat_percentage' => 40.0,
+        ],
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Nutrient-dense protocol per-slot macro splits (% of calories)
+    |--------------------------------------------------------------------------
+    */
+    'nutrient_dense_slot_macro_splits' => [
+        'breakfast' => [
+            'protein_percentage' => 35.0,
+            'carb_percentage' => 20.0,
+            'fat_percentage' => 45.0,
+        ],
+        'main_each' => [
+            'protein_percentage' => 35.0,
+            'carb_percentage' => 22.0,
+            'fat_percentage' => 43.0,
+        ],
+        'fixed_choice' => [
+            'protein_percentage' => 25.0,
+            'carb_percentage' => 30.0,
+            'fat_percentage' => 45.0,
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Nutrient-dense fermented portion caps (grams per serving)
+    |--------------------------------------------------------------------------
+    */
+    'nutrient_dense_fermented_caps' => [
+        'miso_paste' => 12.0,
+        'kimchi' => 40.0,
+        'sauerkraut' => 50.0,
+        'kefir' => 120.0,
+        'fermented_chimichurri' => 25.0,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Nutrient-dense production meal plan (optional env override)
+    |--------------------------------------------------------------------------
+    */
+    'nutrient_dense_production_meal_plan_id' => env('CUSTOMER_NUTRIENT_DENSE_MEAL_PLAN_ID'),
 
     /*
     |--------------------------------------------------------------------------

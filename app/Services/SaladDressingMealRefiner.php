@@ -6,6 +6,7 @@ use App\Models\Ingredient;
 use App\Models\Meal;
 use App\Support\MealInstructionsText;
 use App\Support\MealLibraryEditGuard;
+use App\Support\MealLibraryRefinerOverrides;
 use App\Support\SaladMealPresentation;
 use App\Support\StandardMeatPortion;
 use App\Support\WholeFoodDietPolicy;
@@ -56,8 +57,7 @@ final class SaladDressingMealRefiner
                     continue;
                 }
 
-                if (MealLibraryEditGuard::shouldSkipMealRefinement($meal)
-                    && ! MealLibraryEditGuard::mealHasCollapsedOrMissingPrimaryMeat($meal)) {
+                if (MealLibraryEditGuard::shouldSkipMealRefinement($meal)) {
                     continue;
                 }
 
@@ -174,13 +174,13 @@ final class SaladDressingMealRefiner
         $wholeFoodTags = WholeFoodDietPolicy::REQUIRED_MEAL_DIET_TAGS;
         $veganTags = array_merge($wholeFoodTags, ['Vegan']);
 
-        return [
+        $definitions = [
             'Marinated Pineapple, Peppers, Red Onion & Cilantro Side Salad' => [
                 'salad_ingredients' => [
                     'Pineapple' => 40,
                     'Bell Pepper (Red)' => 25,
                     'Cabbage (Purple)' => 45,
-                    'Cucumber' => 35,
+                    'Cucumber' => 40,
                     'Red Onion' => 12,
                     'Fresh Coriander' => 4,
                     'Red Thai Chillies' => 2,
@@ -202,15 +202,13 @@ final class SaladDressingMealRefiner
                     'Romaine Lettuce' => 50,
                     'Tomato (Raw)' => 60,
                     'Cucumber' => 60,
-                    'Bell Pepper (Red)' => 40,
-                    'Cabbage (Purple)' => 30,
-                    'Red Onion' => 25,
+                    'Carrots' => 40,
                 ],
                 'dressing_ingredients' => [
                     self::CLASSIC_LEMON_GARLIC_DRESSING => 15,
                 ],
                 'salad_instructions' => [
-                    'Wash and chop the lettuce, tomato, cucumber, pepper, cabbage, and onion.',
+                    'Wash and chop the lettuce, tomato, cucumber, and carrots.',
                     'Toss the vegetables together in a large bowl.',
                     'Serve immediately.',
                     self::SERVE_DRESSING_ON_THE_SIDE,
@@ -245,7 +243,7 @@ final class SaladDressingMealRefiner
                     'Arugula' => 45,
                     'Beetroot' => 75,
                     'Orange Sections' => 45,
-                    'Cucumber' => 30,
+                    'Cucumber' => 40,
                     'Walnuts' => 8,
                     'Fresh Mint' => 3,
                 ],
@@ -268,6 +266,8 @@ final class SaladDressingMealRefiner
                     'Orange Sections' => 40,
                     'Pomegranate Seeds' => 12,
                     'Walnuts' => 6,
+                    'Sesame Seeds' => 8,
+                    'Feta' => 25,
                 ],
                 'dressing_ingredients' => [
                     self::CLASSIC_LEMON_GARLIC_DRESSING => 12,
@@ -275,10 +275,12 @@ final class SaladDressingMealRefiner
                 'salad_instructions' => [
                     'Shave fennel very thin with a mandoline or sharp knife.',
                     'Toss fennel, rocca, orange segments, pomegranate, and walnuts together.',
+                    'Crumble goat feta over the top.',
                     'Serve immediately.',
                     self::SERVE_DRESSING_ON_THE_SIDE,
                 ],
-                'diet_tags' => $veganTags,
+                'diet_tags' => ['Gluten-free', 'Vegetarian'],
+                'short_description' => 'Ultra-crisp shaved fennel and rocca with orange, pomegranate, walnuts, and crumbled goat feta.',
             ],
             'Roasted Eggplant Rocca Salad' => [
                 'salad_ingredients' => [
@@ -344,6 +346,7 @@ final class SaladDressingMealRefiner
                 'salad_ingredients' => [
                     'Rosemary Garlic Chicken (Base)' => StandardMeatPortion::GRAMS,
                     'Rocca' => 50,
+                    'Purslane' => 40,
                     'Cucumber' => 55,
                     'Roasted Cherry Tomato (Base)' => 45,
                     'Rosemary (Fresh)' => 2,
@@ -355,7 +358,7 @@ final class SaladDressingMealRefiner
                 ],
                 'salad_instructions' => [
                     'Grill or pan-sear Rosemary Garlic Chicken (Base) until golden then in the oven for 20 minutes exactly, then Rest and slice.',
-                    'Toss rocca, cucumber, and cherry tomatoes in a bowl.',
+                    'Toss rocca, purslane, cucumber, and cherry tomatoes in a bowl.',
                     'Top with chicken and walnuts.',
                     self::SERVE_DRESSING_ON_THE_SIDE,
                 ],
@@ -363,24 +366,26 @@ final class SaladDressingMealRefiner
             ],
             'Turmeric Chicken Kale Salad' => [
                 'salad_ingredients' => [
-                    'Chicken Breast' => StandardMeatPortion::GRAMS,
-                    'Kale' => 55,
-                    'Broccoli' => 60,
+                    'Turmeric Chicken (Base)' => StandardMeatPortion::GRAMS,
+                    'Kale' => 80,
                     'Avocado' => 40,
-                    'Fresh Coriander' => 5,
+                    'Broccoli' => 60,
                     'Pumpkin Seeds' => 10,
+                    'Sesame Seeds' => 6,
+                    'Fresh Coriander' => 8,
                 ],
                 'dressing_ingredients' => [
-                    'Turmeric Lemon Dressing (Base)' => 20,
+                    'Turmeric Lemon Dressing (Base)' => 14,
                 ],
                 'salad_instructions' => [
-                    'Rub chicken with half the turmeric lemon dressing as a marinade. Grill or pan-sear chicken until golden then in the oven for 20 minutes exactly, then Rest and slice.',
-                    'Massage kale until tender. Blanch or lightly steam broccoli until bright and just tender.',
-                    'Toss kale and broccoli with avocado, coriander, and pumpkin seeds. Top with warm turmeric chicken.',
+                    'Grill or pan-sear Turmeric Chicken (Base) until golden then in the oven for 20 minutes exactly, then Rest and slice.',
+                    'Massage kale until tender; lightly steam or blanch broccoli until bright green.',
+                    'Toss kale, broccoli, avocado, coriander, pumpkin seeds, and sesame seeds.',
+                    'Top with warm turmeric chicken.',
                     self::SERVE_DRESSING_ON_THE_SIDE,
                 ],
-                'short_description' => 'Golden turmeric chicken over massaged kale with avocado, broccoli, seeds, and turmeric lemon dressing.',
                 'diet_tags' => $wholeFoodTags,
+                'short_description' => 'Golden turmeric chicken over massaged kale with avocado, broccoli, seeds, and turmeric lemon dressing.',
             ],
             'Chicken Thai Mango Salad' => [
                 'salad_ingredients' => [
@@ -458,7 +463,7 @@ final class SaladDressingMealRefiner
                     'Spinach (Fresh)' => 40,
                     'Carrots' => 40,
                     'Bell Pepper (Red)' => 35,
-                    'Cucumber' => 35,
+                    'Cucumber' => 40,
                     'Red Onion' => 15,
                     'Fresh Coriander' => 4,
                     'Wild Rice (Cooked)' => 75,
@@ -546,5 +551,7 @@ final class SaladDressingMealRefiner
                 'diet_tags' => $veganTags,
             ],
         ];
+
+        return MealLibraryRefinerOverrides::mergeRecipeDefinitionMap($definitions);
     }
 }

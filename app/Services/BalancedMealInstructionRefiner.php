@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Meal;
 use App\Support\MealLibraryEditGuard;
+use App\Support\MealLibraryRefinerOverrides;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -22,11 +23,11 @@ final class BalancedMealInstructionRefiner
             $definitions = $this->instructionDefinitions();
 
             $saladDressingMeals = array_flip(SaladDressingMealRefiner::refinedMealNames());
-            $chiaBreakfastMeals = array_flip(BalancedChiaBreakfastRecipeRefiner::refinedMealNames());
+            $chiaDessertMeals = array_flip(BalancedChiaDessertRecipeRefiner::refinedMealNames());
             $tandooriMeals = array_flip(BalancedTandooriMealRecipeRefiner::refinedMealNames());
 
             foreach (BalancedWeeklyRotationSchedule::allScheduledMealNames() as $mealName) {
-                if (isset($saladDressingMeals[$mealName]) || isset($chiaBreakfastMeals[$mealName]) || isset($tandooriMeals[$mealName])) {
+                if (isset($saladDressingMeals[$mealName]) || isset($chiaDessertMeals[$mealName]) || isset($tandooriMeals[$mealName])) {
                     continue;
                 }
 
@@ -63,8 +64,8 @@ final class BalancedMealInstructionRefiner
      */
     private function instructionDefinitions(): array
     {
-        return [
-            // Chia breakfasts
+        $definitions = [
+            // Chia desserts
             'Blueberry Walnut Chia Pudding' => $this->steps([
                 'Whisk chia seeds with coconut water and coconut milk in a jar.',
                 'Fold in blueberries and chopped walnuts.',
@@ -110,10 +111,50 @@ final class BalancedMealInstructionRefiner
             // Egg breakfasts
             'Mediterranean Omelet' => $this->steps([
                 'Beat eggs in a bowl.',
-                'Sauté diced pepper, tomato, and shallot in olive oil for 3 minutes.',
-                'Pour in eggs. Cook over medium heat until almost set.',
+                'Heat olive oil in a non-stick pan over medium heat. Sauté diced pepper, tomato, and shallot for 3 minutes.',
+                'Pour in eggs. Cook over medium-low heat until almost set.',
                 'Add olives and avocado on one half. Fold omelet in half.',
                 'Finish with fresh herbs. Serve warm.',
+            ]),
+            'Gouda & Spinach Scramble' => $this->steps([
+                'Heat half the grass-fed butter in a non-stick skillet over medium heat. Wilt spinach for 1 minute, then set aside.',
+                'Dice gouda and melt it in the remaining butter over medium-low heat until just beginning to soften.',
+                'Beat eggs, add to the skillet with a little more butter if the pan looks dry, and scramble gently until just set.',
+                'Fold gouda and spinach through the eggs. Season with black pepper and serve warm.',
+            ]),
+            'Greek Yogurt & Parmesan Frittata' => $this->steps([
+                'Heat oven to 180°C (350°F).',
+                'Whisk eggs with Greek yogurt, salt, and pepper. Fold in spinach and diced pepper.',
+                'Brush an oven-safe pan with olive oil, pour in the mixture, and bake 12–15 minutes until set.',
+                'Finish with grated parmesan and serve warm from the pan.',
+            ]),
+            'Feta & Herb Open Omelet' => $this->steps([
+                'Heat olive oil in a non-stick pan over medium heat. Sauté pepper and spinach until tender (2–3 min).',
+                'Beat eggs with black pepper. Pour over the vegetables and cook until the bottom is set.',
+                'Crumble feta and dill over the top. Fold one side over and slide onto a plate.',
+            ]),
+            'Brie & Mushroom Skillet Eggs' => $this->steps([
+                'Heat olive oil in a skillet over medium heat. Sauté onion and mushrooms until golden (5–6 min).',
+                'Add thyme. Make small wells and crack in eggs. Cover and cook on low until whites are set.',
+                'Top with brie slices, cover briefly to melt, and season with black pepper. Serve from the skillet.',
+            ]),
+            'Parmesan Shakshuka' => $this->steps([
+                'Heat olive oil in a skillet. Sauté onion, pepper, and garlic until softened (5 min).',
+                'Add crushed tomato and smoked paprika. Simmer 8–10 minutes until saucy.',
+                'Make wells in the sauce, crack in eggs, cover, and cook on low until whites are set (5–7 min).',
+                'Finish with grated parmesan and serve straight from the pan.',
+            ]),
+            'Halloumi Egg Stack' => $this->steps([
+                'Brush halloumi lightly with olive oil and grill until golden on both sides.',
+                'Wilt spinach in a pan with the remaining olive oil. Halve cherry tomatoes.',
+                'Poach eggs until whites are set and yolks are runny.',
+                'Layer halloumi, spinach, and poached eggs. Spoon Greek yogurt on top and finish with black pepper.',
+            ]),
+            'Feta & Dill Egg Muffins' => $this->steps([
+                'Heat oven to 180°C (350°F). Brush a muffin tin with olive oil.',
+                'Whisk eggs with salt, pepper, chopped dill, and spring onion.',
+                'Fold in spinach and crumbled feta. Divide between cups, filling about three-quarters full.',
+                'Bake 15–18 minutes until set in the centre. Cool 5 minutes before serving.',
             ]),
             'Deconstructed Shakshuka Skillet' => $this->steps([
                 'Sauté onion and pepper in olive oil until soft (5 min).',
@@ -138,25 +179,38 @@ final class BalancedMealInstructionRefiner
                 'Cool 5 minutes before removing. Serve warm or at room temperature.',
             ]),
             'Sweet Potato Egg Hash' => $this->steps([
-                'Preheat oven to 200°C. Toss diced sweet potato with olive oil, rosemary, thyme, sea salt, and black pepper. Spread on a tray and roast until tender (25–30 min).',
-                'Sauté diced white onion and red bell pepper in a frying pan with olive oil until softened (5–6 min).',
-                'Add roasted sweet potato to the pan and toss to combine. Season with a pinch of salt and pepper.',
-                'Beat eggs, pour into the pan, and scramble gently over medium-low heat until just set.',
-                'Finish with fresh coriander and serve hot.',
+                'Preheat oven to 200°C. Toss diced sweet potato with half the olive oil, rosemary, thyme, sea salt, and black pepper. Roast until tender (25–30 min).',
+                'Heat the remaining olive oil in a frying pan. Sauté diced onion and red bell pepper until softened (4–5 min), then wilt in the spinach (1–2 min).',
+                'Add roasted sweet potato and toss to combine.',
+                'Beat the whole egg with the egg whites, pour into the pan, and scramble gently over medium-low heat until just set.',
+                'Finish with fresh coriander and flaxseeds, and serve hot.',
             ]),
-            'Butternut Squash Fritters & Eggs' => $this->steps([
-                'Preheat the oven to 200°C.',
-                'Cut the butternut squash into 2–3 cm chunks. Place in a roasting tin, drizzle with olive oil, and season with sea salt, chili flakes, and fennel seeds. Roast for about 20 minutes, then leave to cool.',
-                'When cool, place the butternut squash in a blender with any roasting juices. Add eggs, garlic, fresh coriander, lemon juice, cumin seeds, and coriander seeds. Blend to a rough paste and season to taste.',
-                'Transfer the mixture to a bowl and stir in enough quinoa flour to make a smooth mix. Refrigerate for 1 hour to firm up. The mix should be sticky rather than wet — add a little more flour if needed.',
-                'With wet hands, shape into ping-pong-ball-sized fritters. Bake at 200°C until golden and set through, or pan-fry in olive oil until crisp.',
+            'Butternut Squash Frittata' => $this->steps([
+                'Preheat the oven to 180°C (350°F).',
+                'Cut butternut squash into 2 cm cubes. Toss with half the olive oil, paprika, and sea salt. Roast on a tray until tender and lightly golden (25–30 min).',
+                'Dice red onion (or thinly slice spring onion). Sauté in the remaining olive oil in an oven-safe skillet until softened (4–5 min).',
+                'Whisk two large eggs with Greek yogurt, chickpea flour, chopped dill, and half the shredded gruyère. Fold in roasted squash and sautéed onion.',
+                'Pour into the skillet, scatter the remaining gruyère on top, and bake until the centre is just set (15–18 min).',
+                'Fry two large eggs in a little olive oil until whites are crisp and yolks are runny.',
                 'Prepare Marinara Sauce (Base) per base recipe instructions. Warm and serve on the side.',
+                'Top the frittata with fried eggs and serve with marinara.',
+            ]),
+            'Butternut Squash & Eggs' => $this->steps([
+                'Preheat the oven to 180°C (350°F).',
+                'Cut butternut squash into 2 cm cubes. Toss with half the olive oil, paprika, and sea salt. Roast on a tray until tender and lightly golden (25–30 min).',
+                'Dice red onion (or thinly slice spring onion). Sauté in the remaining olive oil in an oven-safe skillet until softened (4–5 min).',
+                'Whisk two large eggs with chickpea flour and chopped dill. Fold in roasted squash and sautéed onion.',
+                'Pour into the skillet and bake until the centre is just set (15–18 min).',
+                'Fry two large eggs in a little olive oil until whites are crisp and yolks are runny.',
+                'Prepare Marinara Sauce (Base) per base recipe instructions. Warm and serve on the side.',
+                'Top the bake with fried eggs and serve with marinara.',
             ]),
             'Smashed Beans & Eggs' => $this->steps([
                 'Prepare Smashed White Beans (Base) per base recipe instructions.',
                 'Dice tomato and chop fresh coriander.',
-                'Fry or poach eggs until whites are set and yolks are runny.',
+                'Heat olive oil in a non-stick pan over medium heat. Fry eggs until whites are crisp and yolks are runny.',
                 'Spoon warm smashed beans onto plates, top with eggs, tomato, and coriander.',
+                'Crumble feta over the top and finish with pumpkin seeds.',
                 'Serve immediately.',
             ]),
 
@@ -228,14 +282,15 @@ final class BalancedMealInstructionRefiner
             ]),
             'Rosemary Chicken Rocca Salad' => $this->steps([
                 'Grill or pan-sear Rosemary Garlic Chicken (Base) until golden then in the oven for 20 minutes exactly, then Rest and slice.',
-                'Toss rocca, cucumber, and cherry tomatoes in a bowl.',
+                'Toss rocca, purslane, cucumber, and cherry tomatoes in a bowl.',
                 'Top with chicken and walnuts.',
                 SaladDressingMealRefiner::SERVE_DRESSING_ON_THE_SIDE,
             ]),
             'Turmeric Chicken Kale Salad' => $this->steps([
-                'Rub chicken with half the turmeric lemon dressing as a marinade. Grill or pan-sear chicken until golden then in the oven for 20 minutes exactly, then Rest and slice.',
-                'Massage kale until tender. Blanch or lightly steam broccoli until bright and just tender.',
-                'Toss kale and broccoli with avocado, coriander, and pumpkin seeds. Top with warm turmeric chicken.',
+                'Grill or pan-sear Turmeric Chicken (Base) until golden then in the oven for 20 minutes exactly, then Rest and slice.',
+                'Massage kale until tender; lightly steam or blanch broccoli until bright green.',
+                'Toss kale, broccoli, avocado, coriander, pumpkin seeds, and sesame seeds.',
+                'Top with warm turmeric chicken.',
                 SaladDressingMealRefiner::SERVE_DRESSING_ON_THE_SIDE,
             ]),
             'Chicken Thai Mango Salad' => $this->steps([
@@ -265,11 +320,11 @@ final class BalancedMealInstructionRefiner
 
             // Salmon mains
             BalancedCanonicalMealRecipeRefiner::BAKED_SALMON_NAME => $this->steps([
-                'Prepare Steamed Basmati Rice (Base) and keep warm.',
+                'Prepare Roasted Mixed Vegetables (Base) per base recipe instructions; keep warm.',
                 'Coat salmon generously with Fermented Chimichurri (Base).',
                 'Bake at 190°C for 12–15 minutes until flaky.',
                 'Steam or roast broccoli until bright green and tender.',
-                'Plate basmati rice and broccoli. Top with salmon and extra chimichurri if desired.',
+                'Plate roasted mixed vegetables and broccoli. Top with salmon, pumpkin seeds, and extra chimichurri if desired.',
             ]),
             'Citrus Herb Salmon' => $this->steps([
                 'Roast sweet potato cubes at 200°C for 20 minutes.',
@@ -279,10 +334,10 @@ final class BalancedMealInstructionRefiner
                 'Serve salmon with sweet potato and asparagus.',
             ]),
             'Grilled Salmon Mango Salsa' => $this->steps([
-                'Cook wild rice according to package. Keep warm.',
-                'Dice mango, pepper, and cucumber. Mix with lime and coriander for salsa.',
+                'Cube pumpkin and roast at 200°C until tender and lightly caramelized at the edges.',
+                'Dice mango, pepper, cucumber, and avocado. Toss with purslane, cashew nuts, lime juice, and coriander.',
                 'Grill or pan-sear salmon until cooked through.',
-                'Serve salmon over rice with mango salsa on top.',
+                'Serve salmon over roasted pumpkin with the mango salsa salad.',
             ]),
 
             // Beef mains
@@ -305,14 +360,15 @@ final class BalancedMealInstructionRefiner
                 'Sauté onion until golden. Return beef with water to cover.',
                 'Simmer low 60–90 minutes until beef is tender.',
                 'Add beans, herbs, and spinach in the last 10 minutes.',
-                'Warm quinoa bread separately. Serve stew with bread and lemon.',
+                'Prepare Steamed Basmati Rice (Base) per base recipe instructions; keep warm.',
+                'Serve stew over rice with lemon.',
             ]),
             'Chili Beef Stuffed Peppers' => $this->steps([
-                'Prepare Cooked Brown Basmati Rice (Base) per base recipe instructions.',
-                'Brown ground beef with onion and garlic. Stir in chili powder and diced tomato.',
-                'Mix beef with cooked brown basmati rice.',
-                'Halve peppers, remove seeds. Fill with beef mixture.',
+                'Prepare Cooked Quinoa (Base) and Fermented Beetroot (Base) per base recipe instructions.',
+                'Brown ground beef and beef liver with onion and garlic. Stir in chili powder, diced tomato, parsley, and spinach until wilted.',
+                'Fold in cooked quinoa. Halve peppers, remove seeds, and stuff with the mixture.',
                 'Bake at 190°C for 25–30 minutes until peppers are soft.',
+                'Plate stuffed peppers with purslane, fermented beetroot, and sunflower seeds on the side.',
             ]),
             'Rosemary Garlic Chicken w Pomegranate Glaze, Beetroot & Rocca' => $this->steps([
                 'Prepare Rosemary Garlic Chicken (Base) and Quinoa Flatbread (Base) per base recipe instructions; keep the flatbread warm.',
@@ -394,8 +450,8 @@ final class BalancedMealInstructionRefiner
             ]),
             'Shaved Fennel Rocca Salad' => $this->steps([
                 'Shave fennel very thin (mandoline or sharp knife).',
-                'Toss fennel and rocca with orange segments.',
-                'Dress with lemon and olive oil. Serve immediately.',
+                'Toss fennel and rocca with orange segments, pomegranate, and walnuts.',
+                'Crumble goat feta over the top. Serve dressing on the side.',
             ]),
             'Roasted Eggplant Rocca Salad' => $this->steps([
                 'Cube eggplant. Roast at 200°C with oil until soft and golden (25 min).',
@@ -413,26 +469,29 @@ final class BalancedMealInstructionRefiner
                 'Top with grapefruit, cucumber, and coconut.',
             ]),
             'Classic Garden Salad' => $this->steps([
-                'Chop lettuce, tomato, cucumber, pepper, and cabbage.',
-                'Thinly slice red onion.',
-                'Whisk olive oil, lemon, and herbs for dressing.',
-                'Toss just before serving.',
+                'Chop lettuce, tomato, and cucumber.',
+                'Shred or thinly slice the carrots.',
+                'Toss the vegetables together in a large bowl.',
+                'Serve with Classic Lemon Garlic Dressing (Base) on the side.',
             ]),
 
             // Desserts
             BalancedCanonicalMealRecipeRefiner::CARROT_DESSERT_NAME => $this->steps([
-                'Heat oven to 175°C (350°F). Grease a baking pan with ghee.',
-                'Whisk eggs, date syrup, melted ghee, and coconut cream until smooth.',
-                'Fold in grated carrots, almond flour, tapioca starch, coconut flour, cinnamon, nutmeg, walnuts, and raisins.',
-                'Pour into the pan. Bake 30–35 minutes until set and golden.',
-                'Cool, then cut into '.BalancedCanonicalMealRecipeRefiner::CARROT_DESSERT_SERVINGS_COUNT.' equal slices. One slice is one serving.',
+                'Create the sweet date paste (15 min). Soak the pitted dates in boiling water for 10 minutes. Blend the dates and all the soaking water in a food processor until entirely smooth. Let it cool slightly so it does not cook the eggs.',
+                'Prep your oven and vanilla bean (5 min). Preheat your oven to 350°F (175°C) and grease a 9×13-inch pan. Split the vanilla bean pod lengthwise and scrape out all the tiny black seeds.',
+                'Whisk the dry base (2 min). In a large bowl, thoroughly whisk together the almond flour, cinnamon, ginger, nutmeg, baking soda, baking powder, and salt.',
+                'Emulsify the wet ingredients (3 min). In a separate bowl, whisk the room-temperature eggs, homemade date paste, pumpkin puree, and scraped vanilla seeds until unified. Slowly drizzle in the melted grass-fed butter while whisking constantly.',
+                'Combine and fold textures (2 min). Pour the wet mixture into the dry flour blend. Stir gently with a spatula just until combined, then fold in the grated carrots and chopped walnuts.',
+                'Bake to perfection (38–42 min). Spread the batter evenly into your pan. Bake for 38 to 42 minutes. Because pumpkin holds excellent moisture, it needs those extra few minutes. Test the center with a toothpick—it should come out clean.',
+                'Cool completely, then cut into '.BalancedCanonicalMealRecipeRefiner::CARROT_DESSERT_SERVINGS_COUNT.' equal slices. One slice is one serving.',
             ]),
             BalancedRotationMealRecipeRefiner::CHOCOLATE_ORANGE_BROWNIE_NAME => $this->steps([
-                'Heat oven to 175°C. Line a small tin.',
-                'Whisk eggs with orange juice, zest, honey, and olive oil.',
-                'Fold in almond flour, cocoa powder, and chopped walnuts until combined.',
-                'Pour into tin. Bake until a skewer comes out mostly clean.',
-                'Cool, then cut into '.BalancedRotationMealRecipeRefiner::CHOCOLATE_ORANGE_BROWNIE_SERVINGS_COUNT.' equal small squares. One square is one serving.',
+                'Make the citrus & date sweetener. Pour boiling water over the pitted dates and soak 10 minutes. Blend with the orange zest and fresh orange juice until completely smooth.',
+                'Build the rich chocolate base. Melt the grass-fed butter, then whisk in the Dutch-process cocoa until glossy. Beat in the room-temperature eggs one at a time.',
+                'Whisk the grain-free flours. In a bowl, combine the super-fine blanched almond flour, tapioca starch, psyllium husks, baking powder, and fine sea salt.',
+                'Fold the batters together. Stir the date-orange puree into the chocolate base, then fold in the dry ingredients just until no dry streaks remain.',
+                'Bake at 175°C. Spread into a lined tin and bake until a skewer from the center comes out mostly clean with moist crumbs.',
+                'Cool completely, then cut into '.BalancedRotationMealRecipeRefiner::CHOCOLATE_ORANGE_BROWNIE_SERVINGS_COUNT.' equal small squares. One square is one serving.',
             ]),
             BalancedRotationMealRecipeRefiner::SALTED_TAHINI_CARAMEL_CHOCOLATE_BAR_NAME => $this->steps([
                 'Heat oven to 175°C. Line an 8x8 inch pan with parchment paper.',
@@ -448,6 +507,11 @@ final class BalancedMealInstructionRefiner
                 'Roll into '.BalancedRotationMealRecipeRefiner::APPLE_PIE_BALLS_PER_SERVING_COUNT.' small bite-size balls (~14g each). One serving is all '.BalancedRotationMealRecipeRefiner::APPLE_PIE_BALLS_PER_SERVING_COUNT.' balls.',
                 'Chill 30 minutes until firm. Serve cold.',
             ]),
+            'Banana Blueberry Balls' => $this->steps([
+                'Pulse almond flour, flaxseeds, cinnamon, maple syrup, almond butter, banana, and blueberries in a food processor until the mixture holds together.',
+                'Roll into '.BalancedRotationMealRecipeRefiner::BANANA_BLUEBERRY_BALLS_PER_SERVING_COUNT.' bite-size balls (~19g each). One serving is all '.BalancedRotationMealRecipeRefiner::BANANA_BLUEBERRY_BALLS_PER_SERVING_COUNT.' balls.',
+                'Chill 30 minutes until firm. Serve cold.',
+            ]),
             'Cinnamon Raisin Balls' => $this->steps([
                 'Combine dates or binder, raisins, nuts, and cinnamon in a food processor.',
                 'Pulse until mixture holds together.',
@@ -460,10 +524,12 @@ final class BalancedMealInstructionRefiner
                 'Cool before serving.',
             ]),
             'Chocolate PB Banana Muffin' => $this->steps([
-                'Heat oven to 180°C. Line a muffin tin.',
-                'Mash banana. Mix with peanut butter, egg, and dry ingredients.',
-                'Fill muffin cups. Bake until set (18–22 min).',
-                'Cool on a rack.',
+                'Prep time: 10 mins | Bake time: 18–20 mins | Equipment: 6-cup muffin tin, muffin liners.',
+                'Prep the oven: Preheat to 175°C (350°F) and line a '.BalancedRotationMealRecipeRefiner::CHOCOLATE_PB_BANANA_MUFFIN_BATCH_SERVINGS_COUNT.'-cup muffin tin with paper liners.',
+                'Mix the wets: In a medium bowl, vigorously whisk the mashed bananas (200g), eggs, peanut butter, and maple syrup together until smooth and completely combined.',
+                'Add the dries: Sift in the almond flour, cocoa powder, baking soda, and salt. Stir gently with a spatula just until the batter comes together and no dry pockets of flour remain.',
+                'Bake: Divide the batter evenly among the '.BalancedRotationMealRecipeRefiner::CHOCOLATE_PB_BANANA_MUFFIN_BATCH_SERVINGS_COUNT.' muffin cups. Bake for 18 to 20 minutes, or until the tops spring back when lightly touched and a toothpick inserted into the center comes out clean.',
+                'Cool: Let them cool in the pan for 5 minutes, then transfer to a wire rack to cool completely. One muffin is one serving.',
             ]),
             'Fruit Salad Bowl' => $this->steps([
                 'Wash and chop all fruit into bite-size pieces.',
@@ -471,57 +537,80 @@ final class BalancedMealInstructionRefiner
                 'Chill 15 minutes. Serve cold.',
             ]),
 
-            // Soups
+            // Soups — all batch recipes; whisk in 1 tbsp (15 g) psyllium husks per serving before portioning.
             'Vegan Mushroom Soup' => $this->steps([
                 'Sauté onion and mushrooms in oil until browned (8 min).',
                 'Add garlic, thyme, and turmeric. Cook 1 minute.',
                 'Pour in stock and coconut milk. Simmer 15 minutes.',
                 'Blend partially for a creamy texture, or leave chunky.',
-                'Serve hot.',
+                'Whisk in psyllium husks (1 tablespoon / 15 g per serving). Reheat gently and portion.',
             ]),
             'Butternut Squash Soup' => $this->steps([
                 'Sauté onion in oil until soft.',
                 'Add cubed squash and stock. Simmer until squash is very tender (20 min).',
-                'Blend until smooth. Season with spices from recipe.',
-                'Reheat gently and serve.',
+                'Blend until smooth. Whisk in psyllium husks (1 tablespoon / 15 g per serving). Season with spices from recipe.',
+                'Reheat gently and portion.',
             ]),
             'Tomato Basil Soup' => $this->steps([
                 'Sauté onion and garlic in olive oil for 3 minutes.',
                 'Add chopped tomatoes and broth. Simmer 20 minutes.',
                 'Blend with fresh basil until smooth.',
-                'Reheat and serve with extra basil on top.',
+                'Whisk in psyllium husks (1 tablespoon / 15 g per serving). Reheat and portion with extra basil on top.',
             ]),
             'Red Lentil Turmeric Soup' => $this->steps([
                 'Rinse red lentils.',
                 'Sauté onion, garlic, ginger, and spices for 2 minutes.',
                 'Add lentils, carrots, broth, and water. Simmer 25 minutes.',
                 'Stir in spinach until wilted. Finish with lemon juice.',
+                'Whisk in psyllium husks (1 tablespoon / 15 g per serving) and portion.',
             ]),
             'Cauliflower Ginger Soup' => $this->steps([
                 'Sauté onion and ginger in oil for 3 minutes.',
                 'Add cauliflower and stock. Simmer until very soft (18 min).',
                 'Blend with coconut milk until smooth.',
-                'Reheat and serve.',
+                'Whisk in psyllium husks (1 tablespoon / 15 g per serving). Reheat and portion.',
             ]),
             'Carrot Cumin Soup' => $this->steps([
                 'Toast cumin seeds in a dry pan for 30 seconds.',
                 'Sauté onion, garlic, and carrots in oil for 5 minutes.',
                 'Add lentils, stock, and spices. Simmer until carrots and lentils are soft.',
                 'Blend partially or fully. Finish with parsley and lemon.',
+                'Whisk in psyllium husks (1 tablespoon / 15 g per serving) and portion.',
+            ]),
+            'Lentil Carrot Soup' => $this->steps([
+                'Toast cumin seeds in a dry pan for 30 seconds.',
+                'Sauté onion, garlic, and carrots in oil for 5 minutes.',
+                'Add lentils, stock, and spices. Simmer until carrots and lentils are soft.',
+                'Blend partially or fully. Finish with parsley and lemon.',
+                'Whisk in psyllium husks (1 tablespoon / 15 g per serving) and portion.',
             ]),
             'Sweet Potato Fennel Soup' => $this->steps([
                 'Sauté fennel and onion in oil until softened.',
                 'Add sweet potato, ginger, and broth. Simmer 20 minutes.',
                 'Blend with coconut milk until smooth.',
-                'Reheat and serve.',
+                'Whisk in psyllium husks (1 tablespoon / 15 g per serving). Reheat and portion.',
+            ]),
+            'Miso Mushroom Soup' => $this->steps([
+                'Simmer mushrooms in water with ginger until tender.',
+                'Remove from heat. Whisk miso paste into the broth until smooth (do not boil miso).',
+                'Whisk in psyllium husks (1 tablespoon / 15 g per serving). Top with spring onion and portion.',
+            ]),
+            'Miso Carrot Ginger Soup' => $this->steps([
+                'Heat olive oil over medium-high heat in a soup pot. Sauté onion, garlic, and carrot until the onion is translucent, about 10 minutes.',
+                'Add ginger and Vegetable Broth (Base). Mix well and bring to a boil. Reduce heat to a simmer, cover, and cook until the carrot is very tender, about 30 minutes.',
+                'Turn off the heat. Puree the soup with an immersion blender (or carefully in a blender, then return to the pot).',
+                'In a small bowl, whisk white miso paste with a ladle of the hot soup until fully dissolved. Stir the miso mixture back into the pot. Season with sea salt and black pepper if needed.',
+                'Whisk in psyllium husks (1 tablespoon / 15 g per serving). Reheat gently without boiling.',
+                'Serve hot. Garnish each bowl with spring onion, roasted nori, Shichimi Togarashi (Base), and a drizzle of sesame oil.',
             ]),
             BalancedMealLibraryConfigurator::BONE_BROTH_MEAL_NAME => $this->steps([
-                'Measure 500 ml (one serving) of defatted Bone Broth (Base).',
-                'Pour into a small pot.',
-                'Heat gently on the stove until steaming (do not boil hard).',
-                'Pour into a mug or bowl and serve hot.',
+                'Heat the full batch of defatted Bone Broth (Base) gently (do not boil hard).',
+                'Whisk psyllium husks into the batch (1 tablespoon / 15 g per serving).',
+                'Portion 500 ml per cup and serve hot.',
             ]),
         ];
+
+        return MealLibraryRefinerOverrides::mergeInstructionDefinitionMap($definitions);
     }
 
     /**

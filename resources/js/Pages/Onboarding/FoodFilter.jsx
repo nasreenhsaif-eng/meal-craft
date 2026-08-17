@@ -3,10 +3,13 @@ import { useForm, usePage } from '@inertiajs/react';
 import Button from '../../Components/Atoms/Button/Button.jsx';
 import FoodFilterMultiSelect from '../../Components/MealSystem/FoodFilterMultiSelect.jsx';
 import { FOOD_FILTER_OTHER_ID } from '../../Components/MealSystem/foodFilterOptions.js';
+import DairyFreeFilterNotice from '../../Components/Molecules/Onboarding/DairyFreeFilterNotice.jsx';
 import { onboardingFromPage } from '../../meal-craft/mealCraftPageProps.js';
 import { useOnboardingStore } from '../../meal-craft/onboarding/OnboardingProvider.jsx';
 import customerOnboardingLayout from '../../Layouts/customerOnboardingLayout.jsx';
 import OnboardingStepFrame from '../../Components/Molecules/Onboarding/OnboardingStepFrame.jsx';
+
+const DAIRY_FILTER_ID = 'dairy';
 
 /**
  * Food filter onboarding step (Storybook / Inertia).
@@ -40,59 +43,77 @@ export function OnboardingFoodFilterInner({
 }) {
     const [demoSelected, setDemoSelected] = useState([]);
     const [demoOtherText, setDemoOtherText] = useState('');
+    const [dairyNoticeDismissed, setDairyNoticeDismissed] = useState(false);
     const selectedFilters = selectedFiltersProp ?? demoSelected;
     const otherText = otherTextProp ?? demoOtherText;
     const handleSelectedChange = onSelectedFiltersChange ?? setDemoSelected;
     const handleOtherChange = onOtherTextChange ?? setDemoOtherText;
 
+    const handleFiltersChange = (next) => {
+        if (!selectedFilters.includes(DAIRY_FILTER_ID) && next.includes(DAIRY_FILTER_ID)) {
+            setDairyNoticeDismissed(false);
+        }
+
+        if (!next.includes(DAIRY_FILTER_ID)) {
+            setDairyNoticeDismissed(false);
+        }
+
+        handleSelectedChange(next);
+    };
+
+    const showDairyNotice = selectedFilters.includes(DAIRY_FILTER_ID) && !dairyNoticeDismissed;
+
     return (
         <OnboardingStepFrame
-            embedded={embedded}
-            title="Food filters"
-            description="Select any ingredients or sensitivities we should avoid when planning your meals."
-            steps={steps}
-            currentStep={currentStep}
-            customerName={customerName}
-            centerHeader
-        >
-            <form
-                className="flex w-full flex-col gap-6 md:mx-auto md:max-w-xl"
-                onSubmit={(event) => {
-                    event.preventDefault();
-                    onSubmit?.();
-                }}
+                embedded={embedded}
+                title="Food filters"
+                description="Select any ingredients or sensitivities we should avoid when planning your meals."
+                steps={steps}
+                currentStep={currentStep}
+                customerName={customerName}
+                centerHeader
             >
-                <fieldset className="w-full min-w-0 border-0 p-0">
-                    <legend className="sr-only">Food filters</legend>
-                    <FoodFilterMultiSelect
-                        value={selectedFilters}
-                        onChange={handleSelectedChange}
-                        otherText={otherText}
-                        onOtherTextChange={handleOtherChange}
-                    />
-                    {errors.allergies ? (
-                        <p className="mt-3 text-center text-sm text-red-600" role="alert">
-                            {errors.allergies}
-                        </p>
-                    ) : null}
-                    {errors.allergy_other ? (
-                        <p className="mt-3 text-center text-sm text-red-600" role="alert">
-                            {errors.allergy_other}
-                        </p>
-                    ) : null}
-                </fieldset>
-
-                {embedded ? null : (
-                    <div className="flex w-full justify-center">
-                        <Button
-                            type="submit"
-                            label={processing ? 'Saving…' : 'Confirm'}
-                            disabled={processing}
-                            className="min-w-[200px] uppercase tracking-[0.08em]"
+                <form
+                    className="flex w-full flex-col gap-6 md:mx-auto md:max-w-xl"
+                    onSubmit={(event) => {
+                        event.preventDefault();
+                        onSubmit?.();
+                    }}
+                >
+                    <fieldset className="w-full min-w-0 border-0 p-0">
+                        <legend className="sr-only">Food filters</legend>
+                        <FoodFilterMultiSelect
+                            value={selectedFilters}
+                            onChange={handleFiltersChange}
+                            otherText={otherText}
+                            onOtherTextChange={handleOtherChange}
                         />
-                    </div>
-                )}
-            </form>
+                        {showDairyNotice ? (
+                            <DairyFreeFilterNotice onDismiss={() => setDairyNoticeDismissed(true)} />
+                        ) : null}
+                        {errors.allergies ? (
+                            <p className="mt-3 text-center text-sm text-red-600" role="alert">
+                                {errors.allergies}
+                            </p>
+                        ) : null}
+                        {errors.allergy_other ? (
+                            <p className="mt-3 text-center text-sm text-red-600" role="alert">
+                                {errors.allergy_other}
+                            </p>
+                        ) : null}
+                    </fieldset>
+
+                    {embedded ? null : (
+                        <div className="flex w-full justify-center">
+                            <Button
+                                type="submit"
+                                label={processing ? 'Saving…' : 'Confirm'}
+                                disabled={processing}
+                                className="min-w-[200px] uppercase tracking-[0.08em]"
+                            />
+                        </div>
+                    )}
+                </form>
         </OnboardingStepFrame>
     );
 }

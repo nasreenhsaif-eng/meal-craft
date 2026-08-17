@@ -33,11 +33,15 @@ function seedComplexCarbRefinerFixtures(): void
         'Salmon (Raw)' => ['calories' => 208, 'protein' => 20.4, 'carbs' => 0, 'fat' => 13.4],
         'Sweet Potato' => ['calories' => 86, 'protein' => 1.6, 'carbs' => 20.1, 'fat' => 0.1],
         'Wild Rice (Cooked)' => ['calories' => 101, 'protein' => 4, 'carbs' => 21.3, 'fat' => 0.3],
+        'Pumpkin' => ['calories' => 26, 'protein' => 1, 'carbs' => 6.5, 'fat' => 0.1],
+        'Avocado' => ['calories' => 160, 'protein' => 2, 'carbs' => 8.5, 'fat' => 14.7],
+        'Cashew Nuts' => ['calories' => 553, 'protein' => 18.2, 'carbs' => 30.2, 'fat' => 43.8],
         'Turmeric Rice (Base)' => ['calories' => 15.62, 'protein' => 0.39, 'carbs' => 4.32, 'fat' => 0.03],
         'Cooked Quinoa (Base)' => ['calories' => 42.86, 'protein' => 1.57, 'carbs' => 7.61, 'fat' => 0.68],
         'Cooked Brown Basmati Rice (Base)' => ['calories' => 64.8, 'protein' => 1.64, 'carbs' => 13.4, 'fat' => 0.44],
-        'Quinoa Bread (Base)' => ['calories' => 227.43, 'protein' => 7.9, 'carbs' => 35.98, 'fat' => 5.82],
-        'Beef Sirloin' => ['calories' => 244, 'protein' => 27, 'carbs' => 0, 'fat' => 15],
+        'Quinoa Bread (Base)' => ['calories' => 258.96, 'protein' => 8.08, 'carbs' => 39.14, 'fat' => 7.92],
+        'Steamed Basmati Rice (Base)' => ['calories' => 118.27, 'protein' => 2.36, 'carbs' => 26.11, 'fat' => 0.23],
+        'Beef Sirloin' => ['calories' => 162, 'protein' => 27, 'carbs' => 0, 'fat' => 6],
         'Beef Ground Lean' => ['calories' => 182, 'protein' => 26, 'carbs' => 0, 'fat' => 8],
         'Beef Chuck Roast' => ['calories' => 176, 'protein' => 20, 'carbs' => 0, 'fat' => 10.1],
         'Chicken Breast' => ['calories' => 165, 'protein' => 31, 'carbs' => 0, 'fat' => 3.6],
@@ -68,6 +72,18 @@ function seedComplexCarbRefinerFixtures(): void
         'White Onion' => ['calories' => 40, 'protein' => 1.1, 'carbs' => 9.3, 'fat' => 0.1],
         'Tomato (Raw)' => ['calories' => 18, 'protein' => 0.9, 'carbs' => 3.9, 'fat' => 0.2],
         'Chili Powder' => ['calories' => 282, 'protein' => 13.5, 'carbs' => 49.7, 'fat' => 14.3],
+        'Bok Choy' => ['calories' => 13, 'protein' => 1.5, 'carbs' => 2.2, 'fat' => 0.2],
+        'Egg' => ['calories' => 143, 'protein' => 12.6, 'carbs' => 0.7, 'fat' => 9.5],
+        'Eggplant' => ['calories' => 25, 'protein' => 1, 'carbs' => 6, 'fat' => 0.2],
+        'Fresh Basil' => ['calories' => 23, 'protein' => 3.2, 'carbs' => 2.7, 'fat' => 0.6],
+        'Chard' => ['calories' => 19, 'protein' => 1.8, 'carbs' => 3.7, 'fat' => 0.2],
+        'Potato' => ['calories' => 77, 'protein' => 2, 'carbs' => 17, 'fat' => 0.1],
+        'Purslane' => ['calories' => 16, 'protein' => 1.3, 'carbs' => 3.4, 'fat' => 0.1],
+        'Sunflower Seeds' => ['calories' => 584, 'protein' => 20.8, 'carbs' => 20, 'fat' => 51.5],
+        'Beef Liver' => ['calories' => 135, 'protein' => 20.4, 'carbs' => 3.9, 'fat' => 3.6],
+        'Fermented Beetroot (Base)' => ['calories' => 40, 'protein' => 1.5, 'carbs' => 8, 'fat' => 0.2],
+        'Saffron Rice (Base)' => ['calories' => 127.14, 'protein' => 2.54, 'carbs' => 28.07, 'fat' => 0.25],
+        'Bell Pepper (Red)' => ['calories' => 31, 'protein' => 1, 'carbs' => 6, 'fat' => 0.3],
     ];
 
     foreach ($ingredientMacros as $name => $macros) {
@@ -75,7 +91,7 @@ function seedComplexCarbRefinerFixtures(): void
     }
 
     foreach ([
-        'Citrus Herb Salmon',
+        'Citrus Herb Salmon with Asparagus & Sweet Potato',
         'Grilled Salmon Mango Salsa',
         'Grilled Beef Steak Ratatouille & Saffron rice',
         'Beef Bibimbap',
@@ -102,12 +118,12 @@ test('balanced rotation mains use varied complex carbs instead of steamed white 
     app(BalancedComplexCarbRecipeRefiner::class)->refine();
 
     $expectedCarbSources = [
-        'Citrus Herb Salmon' => 'Sweet Potato',
-        'Grilled Salmon Mango Salsa' => 'Wild Rice (Cooked)',
-        'Grilled Beef Steak Ratatouille & Saffron rice' => 'Turmeric Rice (Base)',
+        'Citrus Herb Salmon with Asparagus & Sweet Potato' => 'Sweet Potato',
+        'Grilled Salmon Mango Salsa' => 'Pumpkin',
+        'Grilled Beef Steak Ratatouille & Saffron rice' => 'Saffron Rice (Base)',
         'Beef Bibimbap' => 'Cooked Quinoa (Base)',
-        'Persian Herb Beef Stew' => 'Quinoa Bread (Base)',
-        'Chili Beef Stuffed Peppers' => 'Cooked Brown Basmati Rice (Base)',
+        'Persian Herb Beef Stew' => 'Steamed Basmati Rice (Base)',
+        'Chili Beef Stuffed Peppers' => 'Cooked Quinoa (Base)',
         'Grilled Chicken Chimichurri' => 'Sweet Potato',
     ];
 
@@ -115,7 +131,10 @@ test('balanced rotation mains use varied complex carbs instead of steamed white 
         $meal = Meal::query()->where('name', $mealName)->firstOrFail();
         $ingredientNames = $meal->fresh(['ingredients'])->ingredients->pluck('name')->all();
 
-        expect($ingredientNames)->toContain($carbIngredient)
-            ->and($ingredientNames)->not->toContain('Steamed Basmati Rice (Base)');
+        expect($ingredientNames)->toContain($carbIngredient);
+
+        if ($mealName !== 'Persian Herb Beef Stew') {
+            expect($ingredientNames)->not->toContain('Steamed Basmati Rice (Base)');
+        }
     }
 });

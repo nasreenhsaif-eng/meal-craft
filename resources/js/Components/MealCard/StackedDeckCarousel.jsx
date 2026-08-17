@@ -4,39 +4,18 @@ import { animate, motion, useMotionValue } from 'framer-motion';
 /** Triplicate ribbon for seamless wrap in both directions. */
 const RIBBON_COPIES = 3;
 
-/** Focus vs neighbor scale — keep 1:1 so side cards match height; opacity carries focus. */
-const RIBBON_FOCUS_SCALE = 1;
-const RIBBON_NEIGHBOR_SCALE = 1;
-const RIBBON_FOCUS_OPACITY = 1;
-const RIBBON_NEIGHBOR_OPACITY = 0.88;
+/** Overlaid nav buttons — track peeks underneath. */
+const RIBBON_ARROW_ZONE_CLASS = 'w-10 lg:w-11';
 
-/** Desktop row slide — direction follows arrow, not index wrap */
-function netflixSlideTransition() {
-    return { type: 'tween', duration: 0.4, ease: [0.22, 1, 0.36, 1] };
-}
-
-/** Gentle end settle when a 2-card step lands slightly off-center. */
-function ribbonSettleTransition() {
-    return { type: 'tween', duration: 0.28, ease: [0.22, 1, 0.36, 1] };
-}
+/** Gradual edge blur strips — wider than arrow zone so peek softens into center cards. */
+const RIBBON_EDGE_BLUR_WIDTH_CLASS = 'w-12 md:w-14 lg:w-16';
 
 /**
- * Full scroll width of the horizontal ribbon. Uses first→last screen span so transform on the track cannot
- * shrink the measured extent; underestimating triggers `tw <= cw` centering and a massive empty band.
- *
- * @param {HTMLDivElement} track
+ * Ribbon slide — gentle start (aggressive ease-out felt like a jump on arrow click).
+ * Edge blur + dots carry focus; card chrome stays uniform so index changes don't pop.
  */
-function getDesktopTrackScrollExtent(track) {
-    const n = track.children.length;
-    if (n === 0) {
-        return Math.ceil(Math.max(track.scrollWidth, track.offsetWidth));
-    }
-
-    const first = /** @type {HTMLElement} */ (track.children[0]).getBoundingClientRect();
-    const last = /** @type {HTMLElement} */ (track.children[n - 1]).getBoundingClientRect();
-    const span = last.right - first.left;
-
-    return Math.ceil(Math.max(track.scrollWidth, track.offsetWidth, span));
+function ribbonSlideTransition() {
+    return { type: 'tween', duration: 0.42, ease: [0.4, 0, 0.2, 1] };
 }
 
 /** Ribbon slide cell — consistent width on mobile and desktop */
@@ -49,6 +28,10 @@ const STATIC_CARD_SHELL_SINGLE =
 /** Desktop side-by-side pair — fixed equal width; stretch to matched height. */
 const STATIC_PAIR_CARD_SHELL =
     'flex h-full w-full min-w-0 max-w-[302px] flex-1 flex-col md:w-[302px] md:flex-none transform-gpu';
+
+/** Desktop side-by-side triple — equal flex columns within a 960px row. */
+const STATIC_TRIPLE_CARD_SHELL =
+    'flex h-full w-full min-w-0 max-w-[302px] flex-1 flex-col transform-gpu';
 
 const DESKTOP_MIN_WIDTH_PX = 768;
 
@@ -80,8 +63,12 @@ function useMinWidth(minWidthPx) {
  * @param {number} itemCount
  */
 function ribbonStageMaxWidthClass(itemCount) {
+    if (itemCount >= 6) {
+        return 'w-full max-w-[1480px]';
+    }
+
     if (itemCount >= 4) {
-        return 'w-full max-w-[960px]';
+        return 'w-full max-w-[1040px]';
     }
 
     if (itemCount === 3) {
@@ -127,6 +114,7 @@ function focusedPhysicalIndex(logicalIdx, itemCount, copies) {
 
 /**
  * Target track `x` to center a logical card.
+ * Uses offsetLeft (same space as step slides) so a post-slide snap cannot hitch from getBoundingClientRect drift.
  *
  * @param {number} logicalIdx
  * @param {HTMLDivElement} container
@@ -134,29 +122,28 @@ function focusedPhysicalIndex(logicalIdx, itemCount, copies) {
  * @param {(HTMLDivElement|null)[]} cards
  * @param {number} itemCount
  * @param {number} copies
- * @param {number} currentTrackX
  */
-function trackXForCenteredLogical(logicalIdx, container, track, cards, itemCount, copies, currentTrackX) {
+function trackXForCenteredLogical(logicalIdx, container, track, cards, itemCount, copies) {
     const physical = focusedPhysicalIndex(logicalIdx, itemCount, copies);
     const card = cards[physical];
     if (!card) {
         return undefined;
     }
 
-    const gr = container.getBoundingClientRect();
-    const cw = gr.width;
-    const tw = getDesktopTrackScrollExtent(track);
-    const cr = card.getBoundingClientRect();
-    const viewportCenterX = gr.left + cw / 2;
-    const cardCenterX = cr.left + cr.width / 2;
-    let x = currentTrackX - (cardCenterX - viewportCenterX);
+    const cw = container.clientWidth;
+    if (cw <= 0) {
+        return undefined;
+    }
 
-    if (tw > cw) {
-        const minX = cw - tw;
-        x = Math.max(minX, Math.min(0, x));
+    const cardCenter = card.offsetLeft + card.offsetWidth / 2;
+    let x = cw / 2 - cardCenter;
 
-        if (tw + x < cw - 1) {
-            x = minX;
+    // Finite ribbons may need edge clamping; infinite triplicate must not — clamp caused end-of-slide jumps.
+    if (copies < RIBBON_COPIES) {
+        const tw = Math.max(track.scrollWidth, track.offsetWidth);
+        if (tw > cw) {
+            const minX = cw - tw;
+            x = Math.max(minX, Math.min(0, x));
         }
     }
 
@@ -191,6 +178,7 @@ export default function StackedDeckCarousel({ title: _title, items: itemsProp, m
     const copies = ribbonCopyCount(itemCount);
     const isDesktop = useMinWidth(DESKTOP_MIN_WIDTH_PX);
     const useDesktopStaticPair = itemCount === 2 && isDesktop;
+    const useDesktopStaticTriple = itemCount === 3 && isDesktop;
 
     const galleryRef = useRef(/** @type {HTMLDivElement|null} */ (null));
     const trackRef = useRef(/** @type {HTMLDivElement|null} */ (null));
@@ -266,7 +254,7 @@ export default function StackedDeckCarousel({ title: _title, items: itemsProp, m
         (logicalIdx) => {
             const container = galleryRef.current;
             const track = trackRef.current;
-            if (!container || !track) {
+            if (!container || !track || itemCount === 0) {
                 return undefined;
             }
 
@@ -277,10 +265,9 @@ export default function StackedDeckCarousel({ title: _title, items: itemsProp, m
                 cardRefs.current,
                 itemCount,
                 copies,
-                trackX.get(),
             );
         },
-        [copies, itemCount, trackX],
+        [copies, itemCount],
     );
 
     const usesInfiniteRibbon = copies === RIBBON_COPIES;
@@ -320,26 +307,49 @@ export default function StackedDeckCarousel({ title: _title, items: itemsProp, m
     );
 
     /**
-     * Nudge track onto the centered target — instant for long ribbons, eased for 2-card decks.
+     * Snap track onto the centered target without a second visible tween (that felt like a jump after the slide).
      *
-     * @param {number} targetX
+     * @param {number} logicalIdx
+     * @param {{ force?: boolean }} [options]
      */
-    const settleTrackTo = useCallback(
-        async (targetX) => {
-            const drift = Math.abs(trackX.get() - targetX);
-            if (drift <= 0.5) {
+    const snapTrackToLogical = useCallback(
+        (logicalIdx, { force = false } = {}) => {
+            const tx = alignTrackToLogical(logicalIdx);
+            if (tx === undefined) {
                 return;
             }
 
-            if (itemCount === 2) {
-                await animate(trackX, targetX, ribbonSettleTransition()).finished;
-
+            const drift = Math.abs(trackX.get() - tx);
+            if (!force && drift <= 2) {
                 return;
             }
 
-            trackX.set(targetX);
+            trackX.set(tx);
         },
-        [itemCount, trackX],
+        [alignTrackToLogical, trackX],
+    );
+
+    /**
+     * After sliding onto a clone at the loop seam, instantly re-home to the matching middle-copy card
+     * without a visible jump (offsetLeft delta keeps the same pixels on screen).
+     *
+     * @param {number} logicalIdx
+     * @param {number} physicalShown
+     */
+    const rehomeInfiniteRibbonToMiddle = useCallback(
+        (logicalIdx, physicalShown) => {
+            const physicalMiddle = focusedPhysicalIndex(logicalIdx, itemCount, copies);
+            const middle = cardRefs.current[physicalMiddle];
+            const shown = cardRefs.current[physicalShown];
+            if (!middle || !shown) {
+                snapTrackToLogical(logicalIdx, { force: true });
+
+                return;
+            }
+
+            trackX.set(trackX.get() + (shown.offsetLeft - middle.offsetLeft));
+        },
+        [copies, itemCount, snapTrackToLogical, trackX],
     );
 
     /**
@@ -358,6 +368,9 @@ export default function StackedDeckCarousel({ title: _title, items: itemsProp, m
                 const n = itemCount;
                 const from = ribbonActiveIndexRef.current;
                 const to = direction === 1 ? (from + 1) % n : (from - 1 + n) % n;
+                const wraps =
+                    usesInfiniteRibbon &&
+                    ((from === n - 1 && to === 0) || (from === 0 && to === n - 1));
 
                 let stepPx = getStepBetweenLogical(from, to);
                 if (stepPx === 0) {
@@ -368,30 +381,32 @@ export default function StackedDeckCarousel({ title: _title, items: itemsProp, m
                     return;
                 }
 
-                if (itemCount === 2) {
-                    setRibbonActiveIndex(to);
-                    ribbonActiveIndexRef.current = to;
-                    await new Promise((r) => requestAnimationFrame(r));
-                }
-
                 const cur = trackX.get();
+                await animate(trackX, cur - stepPx, ribbonSlideTransition()).finished;
 
-                await animate(trackX, cur - stepPx, netflixSlideTransition()).finished;
-
-                const tx = alignTrackToLogical(to);
-                if (tx !== undefined) {
-                    await settleTrackTo(tx);
+                // Adjacent steps already land on the correct pixel; a post-slide snap hitch was the jump.
+                if (wraps) {
+                    const physicalShown = to === 0 ? 2 * n : n - 1;
+                    rehomeInfiniteRibbonToMiddle(to, physicalShown);
                 }
 
-                if (itemCount !== 2) {
-                    setRibbonActiveIndex(to);
-                    ribbonActiveIndexRef.current = to;
-                }
+                // Update active index only after the slide — never before (focus chrome pop felt like a jump).
+                setRibbonActiveIndex(to);
+                ribbonActiveIndexRef.current = to;
+
+                // Hold busy one frame so resize/align layout work cannot fight the settle.
+                await new Promise((r) => requestAnimationFrame(r));
             } finally {
                 navBusyRef.current = false;
             }
         },
-        [alignTrackToLogical, getStepBetweenLogical, itemCount, settleTrackTo, trackX],
+        [
+            getStepBetweenLogical,
+            itemCount,
+            rehomeInfiniteRibbonToMiddle,
+            trackX,
+            usesInfiniteRibbon,
+        ],
     );
 
     const prevRibbon = useCallback(() => moveRibbon(-1), [moveRibbon]);
@@ -414,6 +429,11 @@ export default function StackedDeckCarousel({ title: _title, items: itemsProp, m
             navBusyRef.current = true;
             try {
                 const from = ribbonActiveIndexRef.current;
+                const n = itemCount;
+                const wraps =
+                    usesInfiniteRibbon &&
+                    ((from === n - 1 && bounded === 0) || (from === 0 && bounded === n - 1));
+
                 let stepPx = getStepBetweenLogical(from, bounded);
                 if (stepPx === 0) {
                     await new Promise((r) => requestAnimationFrame(r));
@@ -421,44 +441,55 @@ export default function StackedDeckCarousel({ title: _title, items: itemsProp, m
                 }
 
                 if (stepPx !== 0) {
-                    if (itemCount === 2) {
-                        setRibbonActiveIndex(bounded);
-                        ribbonActiveIndexRef.current = bounded;
-                        await new Promise((r) => requestAnimationFrame(r));
-                    }
-
                     const cur = trackX.get();
-                    await animate(trackX, cur - stepPx, netflixSlideTransition()).finished;
+                    await animate(trackX, cur - stepPx, ribbonSlideTransition()).finished;
                 }
 
-                const tx = alignTrackToLogical(bounded);
-                if (tx !== undefined) {
-                    await settleTrackTo(tx);
+                if (wraps) {
+                    const physicalShown = bounded === 0 ? 2 * n : n - 1;
+                    rehomeInfiniteRibbonToMiddle(bounded, physicalShown);
+                } else if (stepPx === 0) {
+                    // Refs not ready — snap once; never snap after a successful adjacent/multi-step slide.
+                    snapTrackToLogical(bounded, { force: true });
                 }
 
-                if (itemCount !== 2) {
-                    setRibbonActiveIndex(bounded);
-                    ribbonActiveIndexRef.current = bounded;
-                }
+                setRibbonActiveIndex(bounded);
+                ribbonActiveIndexRef.current = bounded;
+
+                await new Promise((r) => requestAnimationFrame(r));
             } finally {
                 navBusyRef.current = false;
             }
         },
-        [alignTrackToLogical, getStepBetweenLogical, itemCount, settleTrackTo, trackX],
+        [
+            getStepBetweenLogical,
+            itemCount,
+            rehomeInfiniteRibbonToMiddle,
+            snapTrackToLogical,
+            trackX,
+            usesInfiniteRibbon,
+        ],
     );
 
     useEffect(() => {
-        const bump = () => setGalleryResizeSeq((s) => s + 1);
-        const ro = new ResizeObserver(bump);
-
         const gallery = galleryRef.current;
-        const track = trackRef.current;
-        if (gallery) {
-            ro.observe(gallery);
+        if (!gallery) {
+            return undefined;
         }
-        if (track) {
-            ro.observe(track);
-        }
+
+        let lastWidth = gallery.getBoundingClientRect().width;
+        const ro = new ResizeObserver((entries) => {
+            for (const entry of entries) {
+                const nextWidth = entry.contentRect.width;
+                if (Math.abs(nextWidth - lastWidth) <= 1) {
+                    continue;
+                }
+                lastWidth = nextWidth;
+                setGalleryResizeSeq((s) => s + 1);
+            }
+        });
+
+        ro.observe(gallery);
 
         return () => {
             ro.disconnect();
@@ -466,16 +497,28 @@ export default function StackedDeckCarousel({ title: _title, items: itemsProp, m
     }, [itemCount]);
 
     useLayoutEffect(() => {
-        if (itemCount === 0 || useDesktopStaticPair) {
+        if (itemCount === 0 || useDesktopStaticPair || useDesktopStaticTriple || navBusyRef.current) {
             return;
         }
         let innerId = 0;
         const outerId = requestAnimationFrame(() => {
             innerId = requestAnimationFrame(() => {
-                const tx = alignTrackToLogical(ribbonActiveIndexRef.current);
-                if (tx !== undefined) {
-                    trackX.set(tx);
+                if (navBusyRef.current) {
+                    return;
                 }
+
+                const tx = alignTrackToLogical(ribbonActiveIndexRef.current);
+                if (tx === undefined) {
+                    return;
+                }
+
+                const drift = Math.abs(trackX.get() - tx);
+                // Ignore sub-pixel / font reflow drift — recentering mid-session felt like a jump.
+                if (drift <= 8) {
+                    return;
+                }
+
+                trackX.set(tx);
             });
         });
 
@@ -483,7 +526,7 @@ export default function StackedDeckCarousel({ title: _title, items: itemsProp, m
             cancelAnimationFrame(outerId);
             cancelAnimationFrame(innerId);
         };
-    }, [alignTrackToLogical, galleryResizeSeq, itemCount, copies, trackX, useDesktopStaticPair]);
+    }, [alignTrackToLogical, galleryResizeSeq, itemCount, copies, trackX, useDesktopStaticPair, useDesktopStaticTriple]);
 
     if (itemCount === 1) {
         return (
@@ -519,131 +562,130 @@ export default function StackedDeckCarousel({ title: _title, items: itemsProp, m
         );
     }
 
+    if (useDesktopStaticTriple) {
+        return (
+            <div className="w-full px-4 py-4">
+                <div className="mx-auto flex w-full max-w-[960px] items-stretch justify-center gap-3 md:gap-4 lg:gap-6">
+                    {items.map((item, idx) => (
+                        <div key={`static-triple-${getKey(item, idx)}`} className={STATIC_TRIPLE_CARD_SHELL}>
+                            {renderMealCard(item, idx, {
+                                isFront: true,
+                                stackPos: null,
+                                deckLayout: 'staticPair',
+                            })}
+                        </div>
+                    ))}
+                </div>
+            </div>
+        );
+    }
+
     const stageMaxW = ribbonStageMaxWidthClass(itemCount);
 
     const ribbonArrowButtonClass =
         'pointer-events-auto flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-0 bg-white/90 text-[#262A22] shadow-sm shadow-[#262A22]/10 outline-none ring-0 backdrop-blur-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5A6B44]/35 focus-visible:ring-offset-0 disabled:pointer-events-none disabled:opacity-30';
 
+    const ribbonEdgeBlurClass = [
+        'pointer-events-none absolute inset-y-4 z-[100]',
+        RIBBON_EDGE_BLUR_WIDTH_CLASS,
+        'bg-white/20 backdrop-blur-[6px] md:backdrop-blur-[8px]',
+    ].join(' ');
+
     return (
         <div className="group relative w-full">
             <div className="relative w-full overflow-y-visible pb-2 pt-4 outline-none ring-0">
-                <div className="flex w-full items-center justify-center gap-1 md:gap-2">
-                    <div className="hidden w-10 shrink-0 items-center justify-center md:flex lg:w-11">
+                <div className={`relative mx-auto min-w-0 ${stageMaxW}`}>
+                    <div
+                        ref={galleryRef}
+                        className="relative min-h-[10rem] w-full min-w-0 overflow-x-clip px-1 py-4 outline-none ring-0 md:px-2 md:py-5"
+                    >
+                        <motion.div
+                            ref={trackRef}
+                            style={{ x: trackX }}
+                            className="relative z-0 flex w-max shrink-0 flex-nowrap items-stretch gap-3 will-change-transform transform-gpu md:gap-6"
+                        >
+                            {Array.from({ length: copies }, (_, copy) =>
+                                items.map((item, idx) => {
+                                    const physicalIdx = copy * itemCount + idx;
+                                    const focusedPhysical = focusedPhysicalIndex(
+                                        ribbonActiveIndex,
+                                        itemCount,
+                                        copies,
+                                    );
+                                    const isNearFocus = Math.abs(physicalIdx - focusedPhysical) <= 1;
+
+                                    return (
+                                        <div
+                                            key={`ribbon-${copy}-${getKey(item, idx)}`}
+                                            ref={(el) => {
+                                                cardRefs.current[physicalIdx] = el;
+                                            }}
+                                            data-ribbon-card=""
+                                            className={RIBBON_CARD_SHELL}
+                                        >
+                                            <div className="flex min-h-0 flex-1 flex-col rounded-[12px]">
+                                                {renderMealCard(item, idx, {
+                                                    isFront: isNearFocus,
+                                                    stackPos: null,
+                                                    deckLayout: 'ribbon',
+                                                })}
+                                            </div>
+                                        </div>
+                                    );
+                                }),
+                            ).flat()}
+                        </motion.div>
+                    </div>
+
+                    <div
+                        className={`${ribbonEdgeBlurClass} left-0 [mask-image:linear-gradient(to_right,black_0%,transparent_100%)] [-webkit-mask-image:linear-gradient(to_right,black_0%,transparent_100%)]`}
+                        aria-hidden="true"
+                    />
+                    <div
+                        className={`${ribbonEdgeBlurClass} right-0 [mask-image:linear-gradient(to_left,black_0%,transparent_100%)] [-webkit-mask-image:linear-gradient(to_left,black_0%,transparent_100%)]`}
+                        aria-hidden="true"
+                    />
+
+                    <div
+                        className={`pointer-events-none absolute inset-y-0 left-0 z-[110] flex ${RIBBON_ARROW_ZONE_CLASS} items-center justify-center`}
+                    >
                         <button
                             type="button"
                             aria-label="Previous meal"
+                            onMouseDown={(e) => e.preventDefault()}
                             onClick={() => void prevRibbon()}
                             disabled={itemCount <= 1}
                             className={ribbonArrowButtonClass}
                         >
-                            <svg className="h-8 w-8 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                            <svg
+                                className="h-7 w-7 shrink-0 md:h-8 md:w-8"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                aria-hidden="true"
+                            >
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.25} d="M15 18l-6-6 6-6" />
                             </svg>
                         </button>
                     </div>
-
-                    <div className={`relative mx-auto min-w-0 flex-1 ${stageMaxW}`}>
-                        <div
-                            ref={galleryRef}
-                            className="relative min-h-[10rem] w-full min-w-0 px-1 py-4 outline-none ring-0 md:px-2 md:py-5"
-                        >
-                            <div className="relative overflow-x-clip">
-                                <motion.div
-                                    ref={trackRef}
-                                    style={{ x: trackX }}
-                                    className="relative z-0 flex w-max shrink-0 flex-nowrap items-stretch gap-3 will-change-transform transform-gpu md:gap-6"
-                                >
-                                    {Array.from({ length: copies }, (_, copy) =>
-                                        items.map((item, idx) => {
-                                            const physicalIdx = copy * itemCount + idx;
-                                            const isRibbonFocus =
-                                                physicalIdx ===
-                                                focusedPhysicalIndex(ribbonActiveIndex, itemCount, copies);
-
-                                            return (
-                                                <div
-                                                    key={`ribbon-${copy}-${getKey(item, idx)}`}
-                                                    ref={(el) => {
-                                                        cardRefs.current[physicalIdx] = el;
-                                                    }}
-                                                    data-ribbon-card=""
-                                                    className={`${RIBBON_CARD_SHELL} ${isRibbonFocus ? 'z-[5]' : 'z-0'}`}
-                                                >
-                                                    <motion.div
-                                                        className={`flex min-h-0 flex-1 flex-col rounded-[12px] ${isRibbonFocus ? 'shadow-md shadow-[#262A22]/10' : ''}`}
-                                                        style={{ transformOrigin: 'center center' }}
-                                                        animate={{
-                                                            scale: isRibbonFocus
-                                                                ? RIBBON_FOCUS_SCALE
-                                                                : RIBBON_NEIGHBOR_SCALE,
-                                                            opacity: isRibbonFocus
-                                                                ? RIBBON_FOCUS_OPACITY
-                                                                : RIBBON_NEIGHBOR_OPACITY,
-                                                        }}
-                                                        transition={netflixSlideTransition()}
-                                                        whileHover={
-                                                            isRibbonFocus
-                                                                ? {
-                                                                      scale: 1.02,
-                                                                      transition: {
-                                                                          duration: 0.2,
-                                                                          ease: [0.22, 1, 0.36, 1],
-                                                                      },
-                                                                  }
-                                                                : undefined
-                                                        }
-                                                    >
-                                                        {renderMealCard(item, idx, {
-                                                            isFront: true,
-                                                            stackPos: null,
-                                                            deckLayout: 'ribbon',
-                                                        })}
-                                                    </motion.div>
-                                                </div>
-                                            );
-                                        }),
-                                    ).flat()}
-                                </motion.div>
-                            </div>
-                        </div>
-
-                        <div className="pointer-events-none absolute inset-y-0 left-0 z-[110] flex w-10 items-center justify-center md:hidden">
-                            <button
-                                type="button"
-                                aria-label="Previous meal"
-                                onClick={() => void prevRibbon()}
-                                disabled={itemCount <= 1}
-                                className={ribbonArrowButtonClass}
-                            >
-                                <svg className="h-7 w-7 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.25} d="M15 18l-6-6 6-6" />
-                                </svg>
-                            </button>
-                        </div>
-                        <div className="pointer-events-none absolute inset-y-0 right-0 z-[110] flex w-10 items-center justify-center md:hidden">
-                            <button
-                                type="button"
-                                aria-label="Next meal"
-                                onClick={() => void nextRibbon()}
-                                disabled={itemCount <= 1}
-                                className={ribbonArrowButtonClass}
-                            >
-                                <svg className="h-7 w-7 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.25} d="M9 18l6-6-6-6" />
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-
-                    <div className="hidden w-10 shrink-0 items-center justify-center md:flex lg:w-11">
+                    <div
+                        className={`pointer-events-none absolute inset-y-0 right-0 z-[110] flex ${RIBBON_ARROW_ZONE_CLASS} items-center justify-center`}
+                    >
                         <button
                             type="button"
                             aria-label="Next meal"
+                            onMouseDown={(e) => e.preventDefault()}
                             onClick={() => void nextRibbon()}
                             disabled={itemCount <= 1}
                             className={ribbonArrowButtonClass}
                         >
-                            <svg className="h-8 w-8 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                            <svg
+                                className="h-7 w-7 shrink-0 md:h-8 md:w-8"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                aria-hidden="true"
+                            >
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.25} d="M9 18l6-6-6-6" />
                             </svg>
                         </button>

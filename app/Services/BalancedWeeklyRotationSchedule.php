@@ -8,10 +8,12 @@ use InvalidArgumentException;
 /**
  * Seven-day Balanced weekly plan: same slot roles every day, different meals per weekday.
  *
- * Breakfast 1 — vegan chia pudding (rotates). Breakfast 2 — egg-based savory (rotates).
- * Main 1 — chicken + carbs/veg. Main 2 — chicken salad. Main 3 — salmon and beef alternate daily.
- * Main 4 — vegan main (includes former legume-heavy side salads). Salad 1 — legume-free vegan side (rotates). Salad 2 — Classic Garden Salad.
- * Dessert 1 — dessert (rotates). Dessert 2 — Fruit Salad Bowl.
+ * Breakfast — savory egg (rotates).
+ * Main 1 — chicken + carbs/veg. Main 2 — chicken salad. Main 3 — fish (mixed; rotates daily).
+ * Main 4 — plain beef meal (no liver; rotates daily). Main 5 — liver (dedicated or liver-blend; rotates daily).
+ * Main 6 — vegan main (includes former legume-heavy side salads).
+ * Salad 1 — legume-free vegan side (rotates). Salad 2 — Classic Garden Salad.
+ * Dessert 1 — baked dessert (rotates). Dessert 2 — Fruit Salad Bowl. Dessert 3 — Greek yogurt chia pudding (rotates; dairy-free customers resolve to coconut chia).
  * Soup 1 — rotating soup. Soup 2 — Bone Broth Cup (fixed every day).
  */
 final class BalancedWeeklyRotationSchedule
@@ -44,7 +46,7 @@ final class BalancedWeeklyRotationSchedule
     ];
 
     /** @var list<string> */
-    public const CHIA_BREAKFASTS = [
+    public const CHIA_DESSERTS = [
         'Blueberry Walnut Chia Pudding',
         'Mango Pumpkin Seed Chia Pudding',
         'Spiced Crunch Chia Pudding',
@@ -55,14 +57,36 @@ final class BalancedWeeklyRotationSchedule
     ];
 
     /** @var list<string> */
+    public const GREEK_YOGURT_CHIA_DESSERTS = [
+        'Blueberry Walnut Greek Yogurt Chia Pudding',
+        'Mango Pumpkin Seed Greek Yogurt Chia Pudding',
+        'Spiced Crunch Greek Yogurt Chia Pudding',
+        'Strawberry Almond Greek Yogurt Chia Pudding',
+        'Peach Pecan Greek Yogurt Chia Pudding',
+        'Raspberry Cacao Greek Yogurt Chia Pudding',
+        'Cacao & Almond Greek Yogurt Chia',
+    ];
+
+    /** @var list<string> Dairy-free egg breakfasts when customer filters dairy. */
     public const EGG_BREAKFASTS = [
         'Mediterranean Omelet',
         'Deconstructed Shakshuka Skillet',
         'Hummus Egg Stack',
         'Kuku Sabzi Egg Muffins',
         'Sweet Potato Egg Hash',
-        'Butternut Squash Fritters & Eggs',
+        'Butternut Squash & Eggs',
         'Smashed Beans & Eggs',
+    ];
+
+    /** @var list<string> High-protein dairy + egg breakfasts when dairy is allowed. */
+    public const DAIRY_FORWARD_EGG_BREAKFASTS = [
+        'Gouda & Spinach Scramble',
+        'Greek Yogurt & Parmesan Frittata',
+        'Feta & Herb Open Omelet',
+        'Brie & Mushroom Skillet Eggs',
+        'Parmesan Shakshuka',
+        'Butternut Squash Frittata',
+        'Feta & Dill Egg Muffins',
     ];
 
     /** @var list<string> */
@@ -87,25 +111,47 @@ final class BalancedWeeklyRotationSchedule
         'Blackened Chicken, Grilled Peppers & Onion Salad w Quinoa, Kale & Mustard Dressing',
     ];
 
-    /** @var list<string> */
+    /** @var list<string> Salmon subset — still used by micronutrient refiners. */
     public const SALMON_MAINS = [
         BalancedCanonicalMealRecipeRefiner::BAKED_SALMON_NAME,
         'Citrus Herb Salmon with Asparagus & Sweet Potato',
         'Grilled Salmon Mango Salsa',
     ];
 
-    /** @var list<string> */
+    /** @var list<string> Fish daily — salmon, mackerel, sardine rotation (main slot 3). */
+    public const FISH_MAINS = [
+        BalancedCanonicalMealRecipeRefiner::BAKED_SALMON_NAME,
+        'Grilled Mackerel w Roasted Vegetables',
+        NutrientDenseFermentedRecipeRefiner::SARDINE_MAIN_NAME,
+        'Citrus Herb Salmon with Asparagus & Sweet Potato',
+        'Salmon Cashew Cream & Roasted Mixed Vegetables',
+        'Pan Seared Hamour',
+        'Grilled Salmon Mango Salsa',
+    ];
+
+    /** @var list<string> Plain beef mains — main slot 4, one per weekday. */
     public const BEEF_MAINS = [
         'Grilled Beef Steak Ratatouille & Saffron rice',
         'Beef Bibimbap',
         'Persian Herb Beef Stew',
-        'Chili Beef Stuffed Peppers',
-        'Seared Beef Liver w Caramelized Onion, Spinach & Chimichurri',
-        'Sautéed Chicken Liver w Pomegranate Molasses, Quinoa Flatbread & Rocca',
-        'Beef & Liver Kefta w Herb Salad & Tahini',
+        'Beef Shawarma Platter',
+        'Sumac Beef Baba Ghanoush',
+        'Eggplant Beef Stew Quinoa Bread',
+        'Okra Beef Curry',
     ];
 
-    /** @var list<string> Legume-free vegan side salads (slot 1). */
+    /** @var list<string> Liver mains — slot 5, one per weekday. */
+    public const LIVER_MAINS = [
+        'Seared Beef Liver w Roasted Beetroot, Chard & Chimichurri',
+        NutrientDenseLiverMealRecipeRefiner::SAUTEED_CHICKEN_LIVER_NAME,
+        'Beef & Liver Kefta w Herb Salad & Tahini',
+        'Chili Beef Stuffed Peppers',
+        'Eggplant & Ground Beef Stew w Quinoa Bread',
+        NutrientDenseLiverMealRecipeRefiner::PERI_PERI_CHICKEN_LIVER_NAME,
+        'Spiced Beef & Liver Meatballs w Roasted Tomato Couscous',
+    ];
+
+    /** @var list<string> Legume-free side salads (slot 1). */
     public const VEGAN_SIDE_SALADS = [
         'Marinated Pineapple, Peppers, Red Onion & Cilantro Side Salad',
         'Tomato Parsely Salad w Sumac Za’ater Dressing',
@@ -113,10 +159,10 @@ final class BalancedWeeklyRotationSchedule
         'Shaved Fennel Rocca Salad',
         'Roasted Eggplant Rocca Salad',
         'Marinated Strawberry Beet Salad',
-        'Coconut Grapefruit Salad',
+        'Thai Rainbow Peanut Salad',
     ];
 
-    /** @var list<string> Vegan mains — includes legume-forward dishes moved from side rotation. */
+    /** @var list<string> Vegan mains — legume-forward plant meals. */
     public const VEGAN_MAINS = [
         BalancedCanonicalMealRecipeRefiner::VEGAN_BUTTERNUT_PEANUT_STEW_NAME,
         'Vegan Smoky Cauliflower & Lentil Stew w Quinoa Bread & Tahini',
@@ -124,16 +170,16 @@ final class BalancedWeeklyRotationSchedule
         'Vegan Harissa Roasted Cauliflower & Chickpea Salad w Tahini Dressing',
         'Vegan Curry Lentil Salad',
         'Spiced Cauliflower Chickpea Salad',
-        'Thai Rainbow Peanut Salad',
+        'Vegan Mushroom Bowl',
     ];
 
-    /** @var list<string> */
+    /** @var list<string> Daily rotating baked desserts (slot 1) — one unique meal per weekday. */
     public const DESSERTS = [
         BalancedCanonicalMealRecipeRefiner::CARROT_DESSERT_NAME,
         'Chocolate Orange Brownie',
         BalancedRotationMealRecipeRefiner::SALTED_TAHINI_CARAMEL_CHOCOLATE_BAR_NAME,
         'Apple Pie Balls',
-        'Cinnamon Raisin Balls',
+        'Banana Blueberry Balls',
         'Saffron Pumpkin Muffin',
         'Chocolate PB Banana Muffin',
     ];
@@ -154,15 +200,16 @@ final class BalancedWeeklyRotationSchedule
 
         return match ($slotType) {
             MealPlanSlotType::Breakfast => match ($slotIndex) {
-                1 => self::CHIA_BREAKFASTS[$index],
-                2 => self::EGG_BREAKFASTS[$index],
+                1 => self::DAIRY_FORWARD_EGG_BREAKFASTS[$index],
                 default => throw new InvalidArgumentException("Invalid breakfast slot index {$slotIndex}"),
             },
             MealPlanSlotType::Main => match ($slotIndex) {
                 1 => self::CHICKEN_PLATE_MAINS[$index],
                 2 => self::CHICKEN_SALAD_MAINS[$index],
-                3 => self::alternatingFishOrBeefMainForDay($dayNumber),
-                4 => self::VEGAN_MAINS[$index],
+                3 => self::FISH_MAINS[$index],
+                4 => self::BEEF_MAINS[$index],
+                5 => self::LIVER_MAINS[$index],
+                6 => self::VEGAN_MAINS[$index],
                 default => throw new InvalidArgumentException("Invalid main slot index {$slotIndex}"),
             },
             MealPlanSlotType::Salad => match ($slotIndex) {
@@ -171,6 +218,7 @@ final class BalancedWeeklyRotationSchedule
             },
             MealPlanSlotType::Dessert => match ($slotIndex) {
                 1 => self::DESSERTS[$index],
+                3 => self::GREEK_YOGURT_CHIA_DESSERTS[$index],
                 default => throw new InvalidArgumentException("Invalid dessert slot index {$slotIndex}"),
             },
             MealPlanSlotType::Soup => match ($slotIndex) {
@@ -178,20 +226,6 @@ final class BalancedWeeklyRotationSchedule
                 default => throw new InvalidArgumentException("Invalid soup slot index {$slotIndex}; slot 2 is fixed in FIXED_SLOT_MEALS"),
             },
         };
-    }
-
-    /**
-     * Odd days salmon, even days beef — alternating through the week.
-     */
-    public static function alternatingFishOrBeefMainForDay(int $dayNumber): string
-    {
-        $pairIndex = intdiv($dayNumber - 1, 2);
-
-        if ($dayNumber % 2 === 1) {
-            return self::SALMON_MAINS[$pairIndex % count(self::SALMON_MAINS)];
-        }
-
-        return self::BEEF_MAINS[$pairIndex % count(self::BEEF_MAINS)];
     }
 
     /**
@@ -209,12 +243,16 @@ final class BalancedWeeklyRotationSchedule
 
         foreach ([
             self::ROTATING_SOUPS,
-            self::CHIA_BREAKFASTS,
+            self::CHIA_DESSERTS,
+            self::GREEK_YOGURT_CHIA_DESSERTS,
+            self::DAIRY_FORWARD_EGG_BREAKFASTS,
             self::EGG_BREAKFASTS,
             self::CHICKEN_PLATE_MAINS,
             self::CHICKEN_SALAD_MAINS,
+            self::FISH_MAINS,
             self::SALMON_MAINS,
             self::BEEF_MAINS,
+            self::LIVER_MAINS,
             self::VEGAN_MAINS,
             self::VEGAN_SIDE_SALADS,
             self::DESSERTS,

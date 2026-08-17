@@ -28,16 +28,50 @@ final class WholeFoodDietPolicy
         'Almond Butter',
         'Date Syrup',
         'Coconut Cream',
+        'Baking Powder',
+    ];
+
+    /**
+     * Fermented whole foods allowed in nutrient-dense protocol meals.
+     * Natto is intentionally excluded (palatability).
+     *
+     * @var list<string>
+     */
+    public const ALLOWED_FERMENTED_NAMES = [
+        'Miso',
+        'Miso Paste',
+        'Kimchi',
+        'Kimchi (Base)',
+        'Sauerkraut',
+        'Sauerkraut (Base)',
+        'Kefir',
+        'Fermented Chimichurri (Base)',
+        'Miso Tahini Dressing (Base)',
+        'Sardines (Canned)',
+    ];
+
+    /** @var list<string> */
+    public const OPTIONAL_DAIRY_BASE_NAMES = [
+        'Greek Yogurt Chia Pudding (Base)',
+    ];
+
+    /** @var list<string> Dairy used only in customer-opt-in meals (food filter: dairy not selected). */
+    public const OPTIONAL_DAIRY_INGREDIENT_NAMES = [
+        'Greek Yogurt',
+        'Parmesan',
+        'Feta',
+        'Brie',
+        'Halloumi',
+        'Gouda',
+        'Gruyere Cheese',
     ];
 
     /** @var list<string> */
     public const BANNED_INGREDIENT_NAMES = [
         'Protein Powder (Isolate)',
         'Oats (Rolled)',
-        'Parmesan',
         'Cheddar Cheese',
         'Goat Cheese',
-        'Greek Yogurt',
         'Heavy Cream',
         'Milk',
         'Almond Milk (Unsweetened)',
@@ -48,11 +82,10 @@ final class WholeFoodDietPolicy
         'Tamari Sauce',
         'Tofu (Firm)',
         'Tempeh',
-        'Miso',
-        'Miso Paste',
         'Edamame',
         'Wheat Flour',
         'Nutritional Yeast',
+        'Natto',
         'Tomato Paste',
         'Wasabi (Paste)',
         'Sardines (Canned)',
@@ -65,6 +98,7 @@ final class WholeFoodDietPolicy
 
     /** @var list<string> */
     public const ALLOWED_DAIRY_EXCEPTION_NAMES = [
+        'Grass Fed Butter',
         'Ghee',
         'Ghee (Clarified)',
     ];
@@ -98,6 +132,14 @@ final class WholeFoodDietPolicy
             return false;
         }
 
+        if (in_array($name, self::ALLOWED_FERMENTED_NAMES, true)) {
+            return false;
+        }
+
+        if (in_array($name, self::OPTIONAL_DAIRY_INGREDIENT_NAMES, true)) {
+            return false;
+        }
+
         return in_array($name, self::BANNED_INGREDIENT_NAMES, true);
     }
 
@@ -120,6 +162,11 @@ final class WholeFoodDietPolicy
     public static function isBannedIngredient(Ingredient $ingredient): bool
     {
         if (in_array($ingredient->name, self::ALLOWED_DAIRY_EXCEPTION_NAMES, true)) {
+            return false;
+        }
+
+        if (in_array($ingredient->name, self::OPTIONAL_DAIRY_INGREDIENT_NAMES, true)
+            || in_array($ingredient->name, self::OPTIONAL_DAIRY_BASE_NAMES, true)) {
             return false;
         }
 
@@ -187,12 +234,40 @@ final class WholeFoodDietPolicy
         $tags = is_array($meal->diet_tags) ? $meal->diet_tags : [];
 
         foreach (self::REQUIRED_MEAL_DIET_TAGS as $required) {
+            if ($required === 'Dairy-free' && ! self::mealRequiresDairyFreeDietTag($meal)) {
+                continue;
+            }
+
             if (! in_array($required, $tags, true)) {
                 $violations[] = "{$meal->name}: missing diet tag «{$required}»";
             }
         }
 
         return $violations;
+    }
+
+    /**
+     * Meals with grass-fed butter or ghee are tagged without «Dairy-free».
+     */
+    public static function mealRequiresDairyFreeDietTag(Meal $meal): bool
+    {
+        $meal->loadMissing('ingredients');
+
+        foreach ($meal->ingredients as $ingredient) {
+            if (in_array($ingredient->name, self::OPTIONAL_DAIRY_BASE_NAMES, true)) {
+                return false;
+            }
+
+            if (in_array($ingredient->name, ['Butter (Unsalted)', 'Grass Fed Butter', 'Ghee', 'Ghee (Clarified)'], true)) {
+                return false;
+            }
+
+            if (in_array($ingredient->name, self::OPTIONAL_DAIRY_INGREDIENT_NAMES, true)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**

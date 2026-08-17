@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Ingredient;
 use App\Models\Meal;
 use App\Support\MealLibraryEditGuard;
+use App\Support\MealLibraryRefinerOverrides;
 use App\Support\StandardMeatPortion;
 use App\Support\WholeFoodDietPolicy;
 use Illuminate\Support\Facades\DB;
@@ -109,8 +110,8 @@ final class BalancedComplexCarbRecipeRefiner
     {
         $tags = WholeFoodDietPolicy::REQUIRED_MEAL_DIET_TAGS;
 
-        return [
-            'Citrus Herb Salmon' => [
+        $definitions = [
+            'Citrus Herb Salmon with Asparagus & Sweet Potato' => [
                 'ingredients' => [
                     'Salmon (Raw)' => StandardMeatPortion::GRAMS,
                     'Sweet Potato' => 90,
@@ -124,10 +125,13 @@ final class BalancedComplexCarbRecipeRefiner
             'Grilled Salmon Mango Salsa' => [
                 'ingredients' => [
                     'Salmon (Raw)' => StandardMeatPortion::GRAMS,
-                    'Wild Rice (Cooked)' => 90,
+                    'Pumpkin' => 90,
                     'Mango' => 50,
                     'Bell Pepper (Red)' => 30,
-                    'Cucumber' => 35,
+                    'Cucumber' => 40,
+                    'Avocado' => 40,
+                    'Purslane' => 40,
+                    'Cashew Nuts' => 10,
                     'Lime Juice' => 10,
                     'Fresh Coriander' => 3,
                 ],
@@ -168,7 +172,7 @@ final class BalancedComplexCarbRecipeRefiner
                 'ingredients' => [
                     'Beef Chuck Roast' => StandardMeatPortion::GRAMS,
                     'Cannellini Beans' => 70,
-                    'Quinoa Bread (Base)' => 50,
+                    'Steamed Basmati Rice (Base)' => 75,
                     'Spinach (Fresh)' => 35,
                     'Fresh Coriander' => 8,
                     'Dill (Fresh)' => 4,
@@ -181,13 +185,19 @@ final class BalancedComplexCarbRecipeRefiner
             'Chili Beef Stuffed Peppers' => [
                 'ingredients' => [
                     'Beef Ground Lean' => StandardMeatPortion::GRAMS,
-                    'Cooked Brown Basmati Rice (Base)' => 138,
+                    'Cooked Quinoa (Base)' => 80,
                     'Bell Pepper (Red)' => 105,
                     'White Onion' => 28,
                     'Tomato (Raw)' => 55,
                     'Garlic (Raw)' => 4,
                     'Chili Powder' => 2,
                     'Olive Oil' => 2,
+                    'Beef Liver' => 20,
+                    'Spinach (Fresh)' => 35,
+                    'Parsley' => 8,
+                    'Fermented Beetroot (Base)' => 50,
+                    'Purslane' => 40,
+                    'Sunflower Seeds' => 10,
                 ],
                 'diet_tags' => $tags,
             ],
@@ -206,5 +216,7 @@ final class BalancedComplexCarbRecipeRefiner
                 'diet_tags' => $tags,
             ],
         ];
+
+        return MealLibraryRefinerOverrides::mergeRecipeDefinitionMap($definitions);
     }
 }

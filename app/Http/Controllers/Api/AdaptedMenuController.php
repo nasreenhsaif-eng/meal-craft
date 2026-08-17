@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Meal;
 use App\Services\Nutrition\AdaptedMenuBuilder;
 use App\Services\Nutrition\AdaptedMenuBuildOptionsFromRequest;
 use App\Support\AdminConsultationPreviewProfile;
@@ -44,6 +45,7 @@ class AdaptedMenuController extends Controller
             'profile_id' => $profile->id,
             'daily_calorie_target' => $profile->daily_calorie_target,
             'include_soup' => $includeSoup,
+            'meal_library_revision' => Meal::libraryRevisionTimestamp(),
             'plan' => $menu['plan'],
             'fixed_portion_meals' => $menu['fixed_portion_meals'],
             'optional_add_on_meals' => $menu['optional_add_on_meals'],

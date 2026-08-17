@@ -5,6 +5,7 @@ namespace App\Enums;
 enum MealPlanLibraryCategory: string
 {
     case Balanced = 'balanced';
+    case NutrientDense = 'nutrient_dense';
     case SickleCellWarrior = 'sickle_cell_warrior';
     case CycleSync = 'cycle_sync';
 
@@ -12,6 +13,7 @@ enum MealPlanLibraryCategory: string
     {
         return match ($this) {
             self::Balanced => __('Balanced'),
+            self::NutrientDense => __('Nutrient Density Protocol'),
             self::SickleCellWarrior => __('Sickle Cell Warrior Plan'),
             self::CycleSync => __('Cycle Sync Meal Plan'),
         };

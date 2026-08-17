@@ -31,8 +31,8 @@ test('fromMeal computes macros from pivot grams', function () {
     $ing = makeIngredientForMealCard([
         'calories' => 100,
         'protein' => 10,
-        'carbs' => 5,
-        'fat' => 2,
+        'carbs' => 10,
+        'fat' => 20 / 9, // Atwater-matched: 40 + 40 + 20 = 100
     ]);
     $meal = Meal::query()->create([
         'name' => 'Lunch',
@@ -45,8 +45,8 @@ test('fromMeal computes macros from pivot grams', function () {
 
     expect((float) $nut['calories'])->toBe(100.0)
         ->and((float) $nut['protein'])->toBe(10.0)
-        ->and((float) $nut['carbs'])->toBe(5.0)
-        ->and((float) $nut['fat'])->toBe(2.0);
+        ->and((float) $nut['carbs'])->toBe(10.0)
+        ->and((float) $nut['fat'])->toBe(2.2);
 
     expect((float) $meal->fresh()->load('ingredients')->nutritionForDisplay()['calories'])->toBe(100.0);
 });
@@ -67,13 +67,19 @@ test('authenticated user sees saved meal on meals page', function () {
 test('meal details modal shows ingredients instructions and nutrition heading', function () {
     $this->actingAs(User::factory()->create());
     $ing = makeIngredientForMealCard(['name' => 'Oats']);
-    $meal = Meal::query()->create(['name' => 'Breakfast', 'description' => 'Mix and serve']);
+    $meal = Meal::query()->create([
+        'name' => 'Breakfast',
+        'description' => 'Mix and serve',
+        'short_description' => 'Warm oat bowl with a soft finish.',
+        'highlight' => 'Warm oat bowl with a soft finish.',
+    ]);
     $meal->ingredients()->attach($ing->id, ['amount_grams' => 40]);
 
     Livewire::test('pages::meals')
         ->call('openMealDetails', $meal->id)
         ->assertSet('showMealDetailsModal', true)
         ->assertSet('detailsMealId', $meal->id)
+        ->assertSee('Warm oat bowl with a soft finish.')
         ->assertSee('Oats')
         ->assertSee('Mix and serve')
         ->assertSee(__('Nutrition summary'));

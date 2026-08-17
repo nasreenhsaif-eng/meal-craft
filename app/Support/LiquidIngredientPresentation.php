@@ -55,10 +55,14 @@ final class LiquidIngredientPresentation
             return 0.0;
         }
 
+        if (PureCookingFatNutrition::isPureCookingFat($ingredient)) {
+            return PureCookingFatNutrition::millilitersFromGrams($ingredient, $grams);
+        }
+
         $density = (float) ($ingredient->density ?? 0);
 
         if ($density <= 0) {
-            $density = preg_match('/\bOil\b/i', $ingredient->name) ? 0.92 : 1.0;
+            $density = preg_match('/\bOil\b/i', $ingredient->name) ? PureCookingFatNutrition::OIL_DENSITY_G_PER_ML : 1.0;
         }
 
         return $grams / $density;
@@ -84,7 +88,7 @@ final class LiquidIngredientPresentation
             $grams = RecipeIngredientUnitConverter::toGrams(
                 $amount,
                 $enum,
-                (float) ($ingredient->density ?? 0) > 0 ? (float) $ingredient->density : 1.0,
+                PureCookingFatNutrition::densityGramsPerMl($ingredient),
             );
 
             return self::millilitersFromGrams($grams, $ingredient);
@@ -100,6 +104,7 @@ final class LiquidIngredientPresentation
         }
 
         $ml = self::millilitersFromGrams($grams, $ingredient);
+        $ml = self::snapKitchenMilliliters($ml);
 
         return self::formatTrimmedDecimal($ml, 2).'ml '.$ingredient->name;
     }
@@ -111,8 +116,27 @@ final class LiquidIngredientPresentation
         }
 
         $ml = self::millilitersFromAmountAndUnit($amount, $unit, $ingredient);
+        $ml = self::snapKitchenMilliliters($ml);
 
         return self::formatTrimmedDecimal($ml, 2).'ml '.$ingredient->name;
+    }
+
+    /**
+     * Round displayed milliliters to spoon-friendly steps (5 ml / 10 ml).
+     */
+    public static function snapKitchenMilliliters(float $milliliters): float
+    {
+        if ($milliliters <= 0) {
+            return 0.0;
+        }
+
+        if ($milliliters < 4.0) {
+            return max(1.0, round($milliliters));
+        }
+
+        $snapped = round($milliliters / 5.0) * 5.0;
+
+        return $snapped > 0 ? $snapped : 5.0;
     }
 
     public static function formatTrimmedDecimal(float $value, int $decimals): string

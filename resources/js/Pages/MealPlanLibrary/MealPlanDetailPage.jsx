@@ -1,25 +1,87 @@
 import { createPortal } from 'react-dom';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link } from '@inertiajs/react';
+import { Link, router, usePage } from '@inertiajs/react';
 import { AnimatePresence, motion } from 'framer-motion';
 import adminInertiaLayout from '../../lib/adminInertiaLayout.jsx';
 import { resolveUrl } from '../../meal-craft/mealCraftPageProps.js';
 import PillButton from '../../Components/Atoms/Button/Button.jsx';
 import Button from '../../Components/Atoms/Button.jsx';
+import AdminPreviewTierPicker from '../../Components/Admin/AdminPreviewTierPicker.jsx';
 import {
     applyDeckSelectionToggle,
     DEFAULT_FULL_CRAFT_MAX_SELECTIONS,
     MealSlotCarousel,
-    PlanMacroSummaryPanel,
-    SoupOfTheDayOptIn,
-    sumActiveDayMacros,
 } from '../../Components/Consultation/ChooseYourMeals.jsx';
+import {
+    applyFixedChoiceToggle,
+    countFixedChoiceSelections,
+    FIXED_CHOICE_CATEGORY_KEYS,
+    FIXED_CHOICE_MAX_COUNT,
+} from '../../consultation/fixedChoiceSelection.js';
+import { DayMacroMicroTabPanel } from '../../Components/Consultation/DayNutritionalSummaryPanel.jsx';
 import MealDetailView from '../../Components/Molecules/MealDetailView/MealDetailView';
 import MealPlanMealEditSheet from '../../Components/MealPlan/MealPlanMealEditSheet.jsx';
 import { SCHEDULER_SLOT_SECTIONS } from '../../meal-library/mealSearch.ts';
 import { updateMealInPlanDays } from './mealPlanMealEdit.js';
+import { useMealDetailModal } from '../../meal-library/useMealDetailModal.js';
 
 const PAGE_BG = 'bg-[#F8F9F6]';
+
+const DEFAULT_PLAN_TIERS = [1000, 1200, 1500, 1800, 2000];
+
+/**
+ * @param {number} mealPlanId
+ * @param {number[]} planTiers
+ * @param {number} fallback
+ */
+function readStoredMealPlanTier(mealPlanId, planTiers, fallback) {
+    if (typeof window === 'undefined' || mealPlanId <= 0) {
+        return fallback;
+    }
+
+    try {
+        const raw = sessionStorage.getItem(`mc-admin-meal-plan-tier-${mealPlanId}`);
+        const value = raw ? Number.parseInt(raw, 10) : Number.NaN;
+
+        if (Number.isFinite(value) && planTiers.includes(value)) {
+            return value;
+        }
+    } catch {
+        // ignore storage errors
+    }
+
+    return fallback;
+}
+
+/**
+ * @param {string} tierPreviewUrl
+ * @param {number} planTier
+ * @param {Record<number, Record<string, string[]>>} [daySelections]
+ */
+async function fetchTierPreviewDays(tierPreviewUrl, planTier, daySelections = {}) {
+    const url = new URL(tierPreviewUrl, window.location.origin);
+    url.searchParams.set('plan_tier', String(planTier));
+
+    if (Object.keys(daySelections).length > 0) {
+        url.searchParams.set('selections', JSON.stringify(daySelections));
+    }
+
+    const response = await fetch(url.toString(), {
+        headers: {
+            Accept: 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+        },
+        credentials: 'same-origin',
+    });
+
+    if (!response.ok) {
+        throw new Error('Could not load tier preview.');
+    }
+
+    const payload = await response.json();
+
+    return payload.days ?? [];
+}
 
 /** @type {Record<string, 'breakfasts' | 'meals' | 'sideSalads' | 'desserts' | 'soup'>} */
 const SLOT_KEY_TO_CATEGORY = {
@@ -37,11 +99,27 @@ const DETAIL_SECTIONS = SCHEDULER_SLOT_SECTIONS.map((section) => ({
     maxSelected: section.count,
 }));
 
-const SOUP_SECTION = DETAIL_SECTIONS.find((section) => section.categoryKey === 'soup');
-
 /** @param {string} categoryKey */
 function defaultSelectionCapForCategory(categoryKey) {
     return DEFAULT_FULL_CRAFT_MAX_SELECTIONS[categoryKey] ?? 1;
+}
+
+/**
+ * Prefer recommended / primary-slot meals when seeding admin preview selections.
+ *
+ * @param {Array<{ id?: string|number; isRecommended?: boolean; plan_slot_index?: number; planSlotIndex?: number }>} meals
+ * @param {number} cap
+ * @returns {string[]}
+ */
+function initialSelectedIdsForCategory(meals, cap) {
+    if (!Array.isArray(meals) || meals.length === 0 || cap <= 0) {
+        return [];
+    }
+
+    const recommended = meals.filter((meal) => meal?.isRecommended || meal?.is_recommended);
+    const source = recommended.length > 0 ? recommended : meals;
+
+    return source.slice(0, cap).map((meal) => String(meal.id));
 }
 
 /** @param {Array<{ dayNumber: number; categories?: Record<string, { id: string }[]> }>} planDays */
@@ -59,65 +137,178 @@ function buildInitialDaySelections(planDays) {
 
             const meals = day.categories?.[section.categoryKey] ?? [];
             const cap = defaultSelectionCapForCategory(section.categoryKey);
-            out[day.dayNumber][section.categoryKey] = meals.slice(0, cap).map((meal) => String(meal.id));
+            out[day.dayNumber][section.categoryKey] = initialSelectedIdsForCategory(meals, cap);
         }
     }
 
     return out;
 }
 
-/** @param {Array<{ dayNumber: number }>} planDays */
-function buildInitialSoupOptInByDay(planDays) {
-    /** @type {Record<number, boolean>} */
+/**
+ * @param {Record<number|string, Record<string, Array<number|string>>>|null|undefined} stored
+ * @param {Array<{ dayNumber: number; categories?: Record<string, { id: string }[]> }>} planDays
+ */
+function buildInitialDaySelectionsFromStored(stored, planDays) {
+    if (!stored || typeof stored !== 'object' || Object.keys(stored).length === 0) {
+        return null;
+    }
+
+    /** @type {Record<number, Record<string, string[]>>} */
     const out = {};
 
     for (const day of planDays) {
-        out[day.dayNumber] = false;
+        const dayKey = day.dayNumber;
+        const rawDay = stored[dayKey] ?? stored[String(dayKey)] ?? {};
+        out[dayKey] = {};
+
+        for (const section of DETAIL_SECTIONS) {
+            const ids = Array.isArray(rawDay?.[section.categoryKey])
+                ? rawDay[section.categoryKey].map((id) => String(id)).filter((id) => id !== '')
+                : [];
+            out[dayKey][section.categoryKey] = ids;
+        }
     }
 
     return out;
 }
 
 /**
+ * @param {Array<{ dayNumber: number; categories?: Record<string, { id: string }[]> }>} planDays
+ * @param {Record<number|string, Record<string, Array<number|string>>>|null|undefined} defaultDaySelections
+ */
+function resolveInitialDaySelections(planDays, defaultDaySelections) {
+    return buildInitialDaySelectionsFromStored(defaultDaySelections, planDays) ?? buildInitialDaySelections(planDays);
+}
+
+/**
  * @param {object} props
  * @param {object} props.mealPlan
  * @param {Array<{ dayNumber: number; label: string; categories: Record<string, unknown[]> }>} props.days
+ * @param {Record<number|string, Record<string, Array<number|string>>>} [props.defaultDaySelections]
+ * @param {number[]} [props.planTiers]
+ * @param {number} [props.defaultPlanTier]
+ * @param {string} [props.tierPreviewUrl]
+ * @param {string} [props.saveDefaultSelectionsUrl]
  * @param {string} [props.libraryUrl]
  * @param {object[]} [props.ingredientProfiles]
  */
 export default function MealPlanDetailPage({
     mealPlan,
     days = [],
+    defaultDaySelections = null,
+    planTiers = DEFAULT_PLAN_TIERS,
+    defaultPlanTier = 1500,
+    tierPreviewUrl = '',
+    saveDefaultSelectionsUrl = '',
     libraryUrl = '/admin/meal-plan-library',
     ingredientProfiles = [],
 }) {
-    const [planDays, setPlanDays] = useState(days);
-    const [activeDay, setActiveDay] = useState(() => days[0]?.dayNumber ?? 1);
-    const [daySelections, setDaySelections] = useState(() => buildInitialDaySelections(days));
-    const [soupOptInByDay, setSoupOptInByDay] = useState(() => buildInitialSoupOptInByDay(days));
-    const [mealDetailModal, setMealDetailModal] = useState(
-        /** @type {{ title: string; detailView: object } | null} */ (null),
+    const page = usePage();
+    const flashSuccess = page.props?.flash?.success ?? null;
+    const availablePlanTiers = planTiers.length > 0 ? planTiers : DEFAULT_PLAN_TIERS;
+    const mealPlanId = mealPlan?.id ?? 0;
+    const initialTier = readStoredMealPlanTier(
+        mealPlanId,
+        availablePlanTiers,
+        availablePlanTiers.includes(defaultPlanTier) ? defaultPlanTier : availablePlanTiers[0],
     );
+
+    const [selectedTier, setSelectedTier] = useState(initialTier);
+    const [planDays, setPlanDays] = useState(days);
+    const [tierLoading, setTierLoading] = useState(Boolean(tierPreviewUrl));
+    const [tierError, setTierError] = useState(/** @type {string | null} */ (null));
+    const [activeDay, setActiveDay] = useState(() => days[0]?.dayNumber ?? 1);
+    const [daySelections, setDaySelections] = useState(() =>
+        resolveInitialDaySelections(days, defaultDaySelections),
+    );
+    const [savingDefaults, setSavingDefaults] = useState(false);
+    const [saveDefaultsError, setSaveDefaultsError] = useState(/** @type {string | null} */ (null));
     const [mealEditModal, setMealEditModal] = useState(
         /** @type {{ dayNumber: number; categoryKey: string; meal: object } | null} */ (null),
+    );
+    const { mealDetailModal, detailLoading, openMealDetail, closeMealDetail } = useMealDetailModal(
+        '/api/meals/{id}/detail-view',
+        () => {
+            const params = new URLSearchParams();
+            params.set('plan_tier', String(selectedTier));
+            params.set('craft_key', 'full');
+            params.set('day_of_week', String(activeDay));
+
+            return params.toString();
+        },
     );
 
     useEffect(() => {
         setPlanDays(days);
-        setDaySelections(buildInitialDaySelections(days));
-        setSoupOptInByDay(buildInitialSoupOptInByDay(days));
-    }, [days]);
+        setDaySelections(resolveInitialDaySelections(days, defaultDaySelections));
+    }, [days, defaultDaySelections]);
+
+    const daySelectionsJson = useMemo(() => JSON.stringify(daySelections), [daySelections]);
+
+    useEffect(() => {
+        if (!tierPreviewUrl) {
+            setTierLoading(false);
+            return undefined;
+        }
+
+        let cancelled = false;
+
+        setTierLoading(true);
+        setTierError(null);
+
+        const timer = window.setTimeout(() => {
+            fetchTierPreviewDays(tierPreviewUrl, selectedTier, daySelections)
+                .then((tierDays) => {
+                    if (cancelled) {
+                        return;
+                    }
+
+                    setPlanDays(tierDays);
+                })
+                .catch(() => {
+                    if (!cancelled) {
+                        setTierError('Could not scale meals for this tier. Showing library portions.');
+                        setPlanDays(days);
+                    }
+                })
+                .finally(() => {
+                    if (!cancelled) {
+                        setTierLoading(false);
+                    }
+                });
+        }, 300);
+
+        return () => {
+            cancelled = true;
+            window.clearTimeout(timer);
+        };
+    }, [tierPreviewUrl, selectedTier, daySelectionsJson, days]);
+
+    useEffect(() => {
+        if (mealPlanId <= 0) {
+            return;
+        }
+
+        try {
+            sessionStorage.setItem(`mc-admin-meal-plan-tier-${mealPlanId}`, String(selectedTier));
+        } catch {
+            // ignore storage errors
+        }
+    }, [mealPlanId, selectedTier]);
 
     const activeDayData = useMemo(
         () => planDays.find((day) => day.dayNumber === activeDay) ?? planDays[0] ?? null,
         [activeDay, planDays],
     );
 
-    const soupOptIn = soupOptInByDay[activeDay] ?? false;
-
     const activeDaySelections = daySelections[activeDay] ?? {};
 
-    const selectedCategoriesForMacros = useMemo(() => {
+    const activeDayReconciliationWarnings = useMemo(
+        () => (Array.isArray(activeDayData?.reconciliationWarnings) ? activeDayData.reconciliationWarnings : []),
+        [activeDayData],
+    );
+
+    const selectedCategoriesForDayNutrition = useMemo(() => {
         if (!activeDayData?.categories) {
             return {};
         }
@@ -126,32 +317,23 @@ export default function MealPlanDetailPage({
         const out = {};
 
         for (const section of DETAIL_SECTIONS) {
-            if (section.categoryKey === 'soup' && !soupOptIn) {
-                continue;
-            }
-
             const meals = activeDayData.categories?.[section.categoryKey] ?? [];
-            const selectedSet = new Set(activeDaySelections[section.categoryKey] ?? []);
-            out[section.categoryKey] = meals.filter((meal) => selectedSet.has(String(meal.id)));
+            const selectedSet = new Set(
+                (activeDaySelections[section.categoryKey] ?? []).map((id) => String(id)),
+            );
+
+            out[section.categoryKey] = meals.filter((meal) => selectedSet.has(String(meal?.id ?? '')));
         }
 
         return out;
-    }, [activeDayData, activeDaySelections, soupOptIn]);
+    }, [activeDayData, activeDaySelections]);
 
     const backUrl = resolveUrl(libraryUrl, '/admin/meal-plan-library');
 
-    const openMealDetail = useCallback((meal) => {
-        if (!meal?.detailView) {
-            return;
-        }
-        setMealDetailModal({
-            title: meal.title ?? 'Meal details',
-            detailView: meal.detailView,
-        });
-    }, []);
-
     const openMealEdit = useCallback((meal, categoryKey) => {
-        if (!meal?.editForm) {
+        const hasKitchenRows = Array.isArray(meal?.kitchenIngredientRows) && meal.kitchenIngredientRows.length > 0;
+
+        if (!meal?.editForm && !hasKitchenRows) {
             return;
         }
         setMealEditModal({
@@ -192,19 +374,45 @@ export default function MealPlanDetailPage({
         });
     }, [activeDay]);
 
-    const setSoupOptInForActiveDay = useCallback((next) => {
-        setSoupOptInByDay((prev) => ({ ...prev, [activeDay]: next }));
+    /** Side salad / dessert / soup behave as one "pick 1–2 of 3" group, matching the customer flow. */
+    const toggleFixedChoiceSide = useCallback((categoryKey, meal) => {
+        const mealId = String(meal.id);
 
-        if (!next) {
-            setDaySelections((prev) => ({
+        setDaySelections((prev) => {
+            const day = prev[activeDay] ?? {};
+            const { next, blocked } = applyFixedChoiceToggle(day, categoryKey, mealId);
+
+            if (blocked) {
+                return prev;
+            }
+
+            return {
                 ...prev,
-                [activeDay]: {
-                    ...(prev[activeDay] ?? {}),
-                    soup: [],
-                },
-            }));
-        }
+                [activeDay]: next,
+            };
+        });
     }, [activeDay]);
+
+    const saveDefaultSelections = useCallback(() => {
+        if (!saveDefaultSelectionsUrl) {
+            return;
+        }
+
+        setSavingDefaults(true);
+        setSaveDefaultsError(null);
+
+        router.put(
+            saveDefaultSelectionsUrl,
+            { selections: daySelections },
+            {
+                preserveScroll: true,
+                onFinish: () => setSavingDefaults(false),
+                onError: () => {
+                    setSaveDefaultsError('Could not save default selections. Please try again.');
+                },
+            },
+        );
+    }, [daySelections, saveDefaultSelectionsUrl]);
 
     const planCategoryLabel = String(mealPlan?.category ?? '').trim();
     const goalText = String(mealPlan?.goal ?? '').trim();
@@ -213,12 +421,13 @@ export default function MealPlanDetailPage({
         goalText.toLowerCase() !== planCategoryLabel.toLowerCase() &&
         goalText.toLowerCase() !== 'balanced';
 
-    const activeDayTotals = useMemo(
-        () => sumActiveDayMacros(selectedCategoriesForMacros),
-        [selectedCategoriesForMacros],
+    const coreSections = DETAIL_SECTIONS.filter(
+        (section) => !FIXED_CHOICE_CATEGORY_KEYS.includes(section.categoryKey),
     );
-
-    const nonSoupSections = DETAIL_SECTIONS.filter((section) => section.categoryKey !== 'soup');
+    const sideSections = FIXED_CHOICE_CATEGORY_KEYS.map((key) =>
+        DETAIL_SECTIONS.find((section) => section.categoryKey === key),
+    ).filter(Boolean);
+    const selectedSideCount = countFixedChoiceSelections(activeDaySelections);
 
     return (
         <div className={`min-h-full font-body ${PAGE_BG}`}>
@@ -238,18 +447,29 @@ export default function MealPlanDetailPage({
                             {goalText}
                         </p>
                     ) : null}
+                    <p className="mt-3 max-w-3xl font-body text-sm text-[#555555]">
+                        Select the default meals for each day, then save. Customers start with these picks and can still
+                        change them via SEE OTHER OPTIONS.
+                    </p>
+                    <div className="mt-4 flex flex-wrap items-center gap-3">
+                        <Button
+                            type="button"
+                            variant="primary"
+                            size="sm"
+                            label={savingDefaults ? 'Saving defaults…' : 'Save as customer defaults'}
+                            disabled={!saveDefaultSelectionsUrl || savingDefaults}
+                            onClick={saveDefaultSelections}
+                        />
+                        {flashSuccess ? (
+                            <p className="font-body text-sm text-[#5A6B44]">{String(flashSuccess)}</p>
+                        ) : null}
+                        {saveDefaultsError ? (
+                            <p className="font-body text-sm text-red-700">{saveDefaultsError}</p>
+                        ) : null}
+                    </div>
                 </div>
 
-                <div className="mb-6">
-                    <PlanMacroSummaryPanel
-                        activeDayTotals={activeDayTotals}
-                        categories={selectedCategoriesForMacros}
-                        dayLabel={activeDayData?.label ?? 'Day'}
-                        planCategoryLabel={planCategoryLabel}
-                    />
-                </div>
-
-                <div className="sticky top-0 z-30 overflow-visible rounded-[12px] border border-gray-200 bg-[#F8F9F6]/95 p-3 backdrop-blur-sm sm:p-4">
+                <div className="mb-6 rounded-[12px] border border-gray-200 bg-white p-3 sm:p-4">
                     <div className="overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                         <div
                             className="flex w-max min-w-full items-center gap-2 px-1 py-2"
@@ -276,18 +496,59 @@ export default function MealPlanDetailPage({
                     </div>
                 </div>
 
+                {tierPreviewUrl ? (
+                    <div className="mb-6">
+                        <AdminPreviewTierPicker
+                            tiers={availablePlanTiers}
+                            selectedTier={selectedTier}
+                            onSelectTier={setSelectedTier}
+                            loading={tierLoading}
+                            description="Pick a calorie tier to reconcile kitchen portions and nutrition while you review each meal in this plan."
+                            compactHint="Breakfast and mains scale to the tier you pick. Side salads, desserts, and soup stay at standard kitchen portions."
+                        />
+                        {activeDayReconciliationWarnings.length > 0 ? (
+                            <div className="mt-2 rounded-[10px] border border-amber-200 bg-amber-50 px-3 py-2 font-body text-sm text-amber-900">
+                                {activeDayReconciliationWarnings.map((warning) => (
+                                    <p key={warning}>{warning}</p>
+                                ))}
+                            </div>
+                        ) : null}
+                        {tierError ? (
+                            <p className="mt-2 rounded-[10px] border border-amber-200 bg-amber-50 px-3 py-2 font-body text-sm text-amber-900">
+                                {tierError}
+                            </p>
+                        ) : null}
+                    </div>
+                ) : null}
+
+                {activeDayData ? (
+                    <div className="mb-8">
+                        <DayMacroMicroTabPanel
+                            key={`day-nutrition-${activeDayData.dayNumber}-${selectedTier}`}
+                            categories={selectedCategoriesForDayNutrition}
+                            dayLabel={activeDayData.label ?? 'Day'}
+                            planCategoryLabel={planCategoryLabel}
+                            craftKey="full"
+                            planTierCalories={selectedTier}
+                            nutritionPlan={null}
+                            initialTab="micronutrients"
+                        />
+                    </div>
+                ) : null}
+
                 <AnimatePresence mode="wait" initial={false}>
                     <motion.div
-                        key={activeDayData?.dayNumber ?? 'empty'}
+                        key={`${activeDayData?.dayNumber ?? 'empty'}-${selectedTier}`}
                         initial={{ x: 24, opacity: 0 }}
-                        animate={{ x: 0, opacity: 1 }}
+                        animate={{ x: 0, opacity: tierLoading ? 0.6 : 1 }}
                         exit={{ x: -24, opacity: 0 }}
                         transition={{ type: 'spring', stiffness: 260, damping: 30, mass: 0.85 }}
-                        className="mt-8 space-y-10 overflow-visible pb-12"
+                        className={`mt-6 space-y-10 overflow-visible pb-12 ${tierLoading ? 'pointer-events-none' : ''}`}
+                        aria-busy={tierLoading}
                     >
                         {activeDayData ? (
                             <>
-                                {nonSoupSections.map((section, idx) => {
+                                {coreSections.map((section) => {
                                     const cards = activeDayData.categories?.[section.categoryKey] ?? [];
                                     const selectedIds = activeDaySelections[section.categoryKey] ?? [];
 
@@ -297,7 +558,7 @@ export default function MealPlanDetailPage({
                                             title={section.header}
                                             deckScopeKey={`plan-${mealPlan?.id ?? 'x'}-day-${activeDayData.dayNumber}-${section.deckSuffix}`}
                                             sectionKey={section.categoryKey}
-                                            sectionStackOrder={idx}
+                                            sectionStackOrder={0}
                                             cards={cards}
                                             selectedIds={selectedIds}
                                             maxSelected={defaultSelectionCapForCategory(section.categoryKey)}
@@ -314,47 +575,38 @@ export default function MealPlanDetailPage({
                                     );
                                 })}
 
-                                {SOUP_SECTION ? (
+                                {sideSections.length > 0 ? (
                                     <div className="space-y-4">
-                                        <SoupOfTheDayOptIn
-                                            checked={soupOptIn}
-                                            header={SOUP_SECTION.header}
-                                            onChange={setSoupOptInForActiveDay}
-                                        />
-                                        <AnimatePresence initial={false}>
-                                            {soupOptIn ? (
-                                                <motion.div
-                                                    key={`soup-deck-${activeDayData.dayNumber}`}
-                                                    initial={{ opacity: 0, y: 12 }}
-                                                    animate={{ opacity: 1, y: 0 }}
-                                                    exit={{ opacity: 0, y: 8 }}
-                                                    transition={{ type: 'spring', stiffness: 320, damping: 34 }}
-                                                >
-                                                    <MealSlotCarousel
-                                                        title=""
-                                                        deckOnly
-                                                        showSelectionSubheader
-                                                        deckScopeKey={`plan-${mealPlan?.id ?? 'x'}-day-${activeDayData.dayNumber}-${SOUP_SECTION.deckSuffix}`}
-                                                        sectionKey={SOUP_SECTION.categoryKey}
-                                                        sectionStackOrder={nonSoupSections.length}
-                                                        cards={activeDayData.categories?.soup ?? []}
-                                                        selectedIds={activeDaySelections.soup ?? []}
-                                                        maxSelected={defaultSelectionCapForCategory(SOUP_SECTION.categoryKey)}
-                                                        onSelect={(meal) =>
-                                                            toggleMealSelection(
-                                                                SOUP_SECTION.categoryKey,
-                                                                meal,
-                                                                defaultSelectionCapForCategory(SOUP_SECTION.categoryKey),
-                                                            )
-                                                        }
-                                                        onViewDetails={openMealDetail}
-                                                        onEditMeal={(meal) =>
-                                                            openMealEdit(meal, SOUP_SECTION.categoryKey)
-                                                        }
-                                                    />
-                                                </motion.div>
-                                            ) : null}
-                                        </AnimatePresence>
+                                        <div className="min-w-0">
+                                            <h2 className="font-montserrat text-lg font-bold text-[#262A22]">
+                                                Pick 1–2 of 3 sides
+                                            </h2>
+                                            <p className="mt-0.5 text-sm text-[#555555]">
+                                                Side salad, soup, or dessert • {selectedSideCount}/{FIXED_CHOICE_MAX_COUNT} selected (min 1)
+                                            </p>
+                                        </div>
+                                        {sideSections.map((section) => {
+                                            const cards = activeDayData.categories?.[section.categoryKey] ?? [];
+                                            const selectedIds = activeDaySelections[section.categoryKey] ?? [];
+
+                                            return (
+                                                <MealSlotCarousel
+                                                    key={`${activeDayData.dayNumber}-${section.categoryKey}`}
+                                                    title={section.header}
+                                                    deckScopeKey={`plan-${mealPlan?.id ?? 'x'}-day-${activeDayData.dayNumber}-${section.deckSuffix}`}
+                                                    sectionKey={section.categoryKey}
+                                                    sectionStackOrder={0}
+                                                    cards={cards}
+                                                    selectedIds={selectedIds}
+                                                    maxSelected={1}
+                                                    onSelect={(meal) =>
+                                                        toggleFixedChoiceSide(section.categoryKey, meal)
+                                                    }
+                                                    onViewDetails={openMealDetail}
+                                                    onEditMeal={(meal) => openMealEdit(meal, section.categoryKey)}
+                                                />
+                                            );
+                                        })}
                                     </div>
                                 ) : null}
                             </>
@@ -373,7 +625,7 @@ export default function MealPlanDetailPage({
                           <button
                               type="button"
                               className="absolute inset-0 bg-black/40"
-                              onClick={() => setMealDetailModal(null)}
+                              onClick={closeMealDetail}
                               aria-label="Close meal details"
                           />
                           <div
@@ -383,22 +635,32 @@ export default function MealPlanDetailPage({
                               className="relative z-10 flex max-h-[min(92dvh,900px)] w-full max-w-2xl flex-col overflow-hidden rounded-t-[16px] bg-white shadow-2xl sm:rounded-[16px]"
                           >
                               <div className="flex shrink-0 items-start justify-between gap-4 border-b border-gray-100 px-5 py-4">
-                                  <div className="min-w-0">
+                                  <div className="min-w-0 flex-1">
                                       <h2
                                           id="meal-plan-detail-modal-title"
                                           className="break-words font-montserrat text-lg font-bold text-[#262A22]"
                                       >
                                           {mealDetailModal.title}
                                       </h2>
+                                      {mealDetailModal.detailView?.shortDescription ||
+                                      mealDetailModal.detailView?.description ? (
+                                          <p className="mt-1 font-montserrat text-sm font-medium leading-snug text-[#555555]">
+                                              {mealDetailModal.detailView.shortDescription ||
+                                                  mealDetailModal.detailView.description}
+                                          </p>
+                                      ) : null}
                                   </div>
                                   <Button
                                       label="Close"
                                       variant="ghost"
                                       type="button"
-                                      onClick={() => setMealDetailModal(null)}
+                                      onClick={closeMealDetail}
                                   />
                               </div>
                               <MealDetailView meal={mealDetailModal.detailView} embedded />
+                              {detailLoading ? (
+                                  <p className="px-5 pb-4 text-sm text-stone-500">Loading meal details…</p>
+                              ) : null}
                           </div>
                       </div>,
                       document.body,
@@ -423,6 +685,8 @@ export default function MealPlanDetailPage({
                               <MealPlanMealEditSheet
                                   meal={mealEditModal.meal}
                                   ingredientProfiles={ingredientProfiles}
+                                  planTier={selectedTier}
+                                  tierPreviewActive={Boolean(tierPreviewUrl)}
                                   onClose={() => setMealEditModal(null)}
                                   onApply={handleApplyMealEdit}
                               />

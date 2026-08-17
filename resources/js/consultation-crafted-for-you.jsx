@@ -3,10 +3,17 @@ import { Component, StrictMode } from 'react';
 import CraftedForYouPage from './Pages/Consultation/CraftedForYouPage.jsx';
 import { syncCsrfMetaTag } from './lib/csrfToken.js';
 
+// Bump when consultation curation shell changes so stale Fast Refresh clients reload.
+export const CONSULTATION_CURATION_BUNDLE_EPOCH = '2026-07-20-card-modal-macro-sync';
+
 const rootEl = document.getElementById('mc-consultation-crafted-root');
 const configEl = document.getElementById('mc-consultation-crafted-config');
 
-/** @type {{ closeHref?: string; homeHref?: string; summaryHref?: string; loginUrl?: string; signOutUrl?: string; csrfToken?: string; isCustomerAccount?: boolean; isAdminPreview?: boolean; pageEyebrow?: string; adaptedMenuUrl?: string; planTier?: number | null; planTiers?: number[]; chiaBreakfastMealNames?: string[]; editDraft?: object | null }} */
+if (typeof window !== 'undefined') {
+    window.__MC_CONSULTATION_CURATION_BUNDLE_EPOCH__ = CONSULTATION_CURATION_BUNDLE_EPOCH;
+}
+
+/** @type {{ closeHref?: string; homeHref?: string; backHref?: string; summaryHref?: string; loginUrl?: string; signOutUrl?: string; csrfToken?: string; isCustomerAccount?: boolean; isAdminPreview?: boolean; pageEyebrow?: string; adaptedMenuUrl?: string; mealLibraryRevision?: number; planTier?: number | null; planTiers?: number[]; editDraft?: object | null }} */
 let config = {};
 
 if (configEl) {
@@ -73,6 +80,7 @@ if (rootEl) {
         <StrictMode>
             <ConsultationErrorBoundary>
                 <CraftedForYouPage
+                    backHref={typeof config.backHref === 'string' ? config.backHref : undefined}
                     closeHref={typeof config.closeHref === 'string' ? config.closeHref : undefined}
                     homeHref={typeof config.homeHref === 'string' ? config.homeHref : undefined}
                     summaryHref={typeof config.summaryHref === 'string' ? config.summaryHref : undefined}
@@ -85,14 +93,15 @@ if (rootEl) {
                     adaptedMenuUrl={
                         typeof config.adaptedMenuUrl === 'string' ? config.adaptedMenuUrl : '/api/menu/adapted'
                     }
+                    mealLibraryRevision={
+                        typeof config.mealLibraryRevision === 'number' ? config.mealLibraryRevision : 0
+                    }
                     initialPlanTier={typeof config.planTier === 'number' ? config.planTier : null}
                     initialPlanTiers={Array.isArray(config.planTiers) ? config.planTiers : undefined}
-                    chiaBreakfastMealNames={
-                        Array.isArray(config.chiaBreakfastMealNames) ? config.chiaBreakfastMealNames : []
-                    }
                     initialEditDraft={
                         config.editDraft && typeof config.editDraft === 'object' ? config.editDraft : null
                     }
+                    dietProtocol={typeof config.dietProtocol === 'string' ? config.dietProtocol : null}
                 />
             </ConsultationErrorBoundary>
         </StrictMode>,

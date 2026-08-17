@@ -6,6 +6,7 @@ use App\Models\Ingredient;
 use App\Models\Meal;
 use App\Support\MealInstructionsText;
 use App\Support\MealLibraryEditGuard;
+use App\Support\MealLibraryRefinerOverrides;
 use App\Support\StandardMeatPortion;
 use App\Support\WholeFoodDietPolicy;
 use Illuminate\Support\Facades\DB;
@@ -137,7 +138,7 @@ final class BalancedTandooriMealRecipeRefiner
         $tags = WholeFoodDietPolicy::REQUIRED_MEAL_DIET_TAGS;
         $spicyTags = array_merge($tags, ['Spicy']);
 
-        return [
+        $definitions = [
             'Tandoori Chicken Salad' => [
                 'ingredients' => [
                     self::TANDOORI_CHICKEN_BASE => StandardMeatPortion::GRAMS,
@@ -189,7 +190,7 @@ final class BalancedTandooriMealRecipeRefiner
                     'Cooked Quinoa (Base)' => 84,
                     'Cabbage (Purple)' => 30,
                     'Carrots' => 20,
-                    'Cucumber' => 30,
+                    'Cucumber' => 40,
                     'Tomato (Raw)' => 60,
                     'Red Onion' => 15,
                     'White Onion' => 40,
@@ -215,7 +216,7 @@ final class BalancedTandooriMealRecipeRefiner
                     'Cooked Quinoa (Base)' => 84,
                     'Cabbage (Purple)' => 30,
                     'Carrots' => 20,
-                    'Cucumber' => 30,
+                    'Cucumber' => 40,
                     'Tomato (Raw)' => 60,
                     'Red Onion' => 15,
                     'White Onion' => 40,
@@ -236,5 +237,7 @@ final class BalancedTandooriMealRecipeRefiner
                 'diet_tags' => $spicyTags,
             ],
         ];
+
+        return MealLibraryRefinerOverrides::mergeRecipeDefinitionMap($definitions);
     }
 }

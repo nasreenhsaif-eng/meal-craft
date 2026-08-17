@@ -10,30 +10,38 @@ uses(RefreshDatabase::class);
 test('savory egg breakfast tier counts follow plan tiers', function () {
     expect(SavoryEggBreakfastMeals::eggCountForPlanTier(1000))->toBe(2)
         ->and(SavoryEggBreakfastMeals::eggCountForPlanTier(1200))->toBe(2)
-        ->and(SavoryEggBreakfastMeals::eggCountForPlanTier(1500))->toBe(4)
+        ->and(SavoryEggBreakfastMeals::eggCountForPlanTier(1500))->toBe(3)
         ->and(SavoryEggBreakfastMeals::eggCountForPlanTier(1800))->toBe(4)
-        ->and(SavoryEggBreakfastMeals::eggCountForPlanTier(2000))->toBe(5)
-        ->and(SavoryEggBreakfastMeals::eggGramsForPlanTier(2000))->toBe(250.0);
+        ->and(SavoryEggBreakfastMeals::eggCountForPlanTier(2000))->toBe(4)
+        ->and(SavoryEggBreakfastMeals::eggGramsForPlanTier(2000))->toBe(200.0);
 });
 
 test('savory egg breakfast side multiplier tracks egg count', function () {
     $meal = Meal::factory()->create();
-    $egg = Ingredient::factory()->create(['name' => 'Egg']);
-    $meal->ingredients()->attach($egg->id, ['amount_grams' => 100, 'amount' => 100, 'unit' => 'g']);
-    $meal = $meal->fresh(['ingredients']);
+    $meal->ingredients()->attach(Ingredient::factory()->create(['name' => 'Egg'])->id, [
+        'amount_grams' => 100,
+    ]);
 
     expect(SavoryEggBreakfastMeals::sidePortionMultiplierForMeal($meal, 1000))->toBe(1.0)
-        ->and(SavoryEggBreakfastMeals::sidePortionMultiplierForMeal($meal, 2000))->toBe(2.5);
+        ->and(SavoryEggBreakfastMeals::sidePortionMultiplierForMeal($meal, 2000))->toBe(2.0);
 });
 
 test('savory egg breakfast enforces minimum avocado portion scaled by plan tier', function () {
     $avocado = Ingredient::factory()->create(['name' => 'Avocado']);
 
-    expect(SavoryEggBreakfastMeals::minimumSideGramsForPlanTier($avocado, 1000))->toBe(50.0)
-        ->and(SavoryEggBreakfastMeals::minimumSideGramsForPlanTier($avocado, 1500))->toBe(75.0)
-        ->and(SavoryEggBreakfastMeals::minimumSideGramsForPlanTier($avocado, 2000))->toBe(112.5)
-        ->and(SavoryEggBreakfastMeals::adaptedSideGrams($avocado, 20.0, 1.0, 1000))->toBe(50.0)
-        ->and(SavoryEggBreakfastMeals::adaptedSideGrams($avocado, 20.0, 2.5, 2000))->toBe(112.5);
+    expect(SavoryEggBreakfastMeals::minimumSideGramsForPlanTier($avocado, 1000))->toBe(25.0)
+        ->and(SavoryEggBreakfastMeals::minimumSideGramsForPlanTier($avocado, 1500))->toBe(37.5)
+        ->and(SavoryEggBreakfastMeals::minimumSideGramsForPlanTier($avocado, 2000))->toBe(56.25)
+        ->and(SavoryEggBreakfastMeals::adaptedSideGrams($avocado, 20.0, 1.0, 1000))->toBe(25.0)
+        ->and(SavoryEggBreakfastMeals::adaptedSideGrams($avocado, 20.0, 2.0, 2000))->toBe(56.25);
+});
+
+test('savory egg breakfast keeps cooking oil at recipe baseline when eggs scale', function () {
+    $oil = Ingredient::factory()->create(['name' => 'Olive Oil (Extra Virgin)']);
+
+    expect(SavoryEggBreakfastMeals::adaptedSideGrams($oil, 5.0, 1.5, 1500, 'Mediterranean Omelet'))->toBe(5.0)
+        ->and(SavoryEggBreakfastMeals::adaptedSideGrams($oil, 5.0, 2.0, 2000, 'Mediterranean Omelet'))->toBe(5.0)
+        ->and(SavoryEggBreakfastMeals::adaptedSideGrams($oil, 10.0, 1.5, 1500, 'Feta & Herb Open Omelet'))->toBe(10.0);
 });
 
 test('savory egg breakfasts include balanced rotation meals', function () {

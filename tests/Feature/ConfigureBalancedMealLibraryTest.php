@@ -45,15 +45,32 @@ function seedBalancedDeckMealsForTest(): void
         'is_verified' => true,
     ]);
 
-    balancedDeckMeal('Blueberry Walnut Chia Pudding', [
+    Ingredient::query()->create([
+        'name' => 'Psyllium Husks',
+        'usda_food_category' => 'Pantry',
+        'calories' => 378,
+        'protein' => 0,
+        'carbs' => 88.9,
+        'fat' => 0,
+        'micronutrients' => [],
+        'is_verified' => true,
+    ]);
+
+    balancedDeckMeal('Hummus Egg Stack', [
         'category' => RecipeCategory::Breakfast,
         'meal_type' => MealType::Breakfast,
-        'total_calories' => 280,
+        'total_calories' => 290,
+    ]);
+    balancedDeckMeal('Blueberry Walnut Chia Pudding', [
+        'category' => RecipeCategory::Dessert,
+        'meal_type' => MealType::Dessert,
+        'total_calories' => 318,
     ]);
     balancedDeckMeal('Mediterranean Omelet', [
         'category' => RecipeCategory::Breakfast,
         'meal_type' => MealType::Breakfast,
         'total_calories' => 276,
+        'library_sort_order' => 500,
     ]);
     balancedDeckMeal('Tamarind Honey & Sesame Chicken w Garlicky Green Beans');
     balancedDeckMeal(BalancedCanonicalMealRecipeRefiner::ROSEMARY_GARLIC_CHICKEN_PLATE_NAME);
@@ -116,9 +133,14 @@ test('balanced configurator creates bone broth cup soup meal', function (): void
 
     expect($meal)->not->toBeNull()
         ->and($meal->meal_type)->toBe(MealType::Soup)
-        ->and((float) $meal->ingredients->first()->pivot->amount_grams)->toBe(BalancedMealLibraryConfigurator::BONE_BROTH_SERVING_GRAMS)
-        ->and((float) $meal->total_calories)->toBeGreaterThan(70.0)
-        ->and((float) $meal->total_calories)->toBeLessThan(120.0);
+        ->and($meal->is_bulk)->toBeTrue()
+        ->and((float) $meal->servings_count)->toBe((float) BalancedCanonicalMealRecipeRefiner::BATCH_SOUP_SERVINGS_COUNT)
+        ->and((float) $meal->ingredients->firstWhere('name', 'Bone Broth (Base)')->pivot->amount_grams)
+        ->toBe(BalancedMealLibraryConfigurator::BONE_BROTH_SERVING_GRAMS * BalancedCanonicalMealRecipeRefiner::BATCH_SOUP_SERVINGS_COUNT)
+        ->and((float) $meal->ingredients->firstWhere('name', 'Psyllium Husks')->pivot->amount_grams)
+        ->toBe(BalancedCanonicalMealRecipeRefiner::BATCH_SOUP_PSYLLIUM_TABLESPOON_GRAMS * BalancedCanonicalMealRecipeRefiner::BATCH_SOUP_SERVINGS_COUNT)
+        ->and((float) $meal->total_calories)->toBeGreaterThan(130.0)
+        ->and((float) $meal->total_calories)->toBeLessThan(165.0);
 });
 
 test('adapted menu lists canonical breakfasts and mains before demoted library meals', function (): void {
@@ -138,13 +160,12 @@ test('adapted menu lists canonical breakfasts and mains before demoted library m
     $breakfastNames = collect($menu['scalable_meals'] ?? [])
         ->filter(fn (array $m): bool => ($m['slot'] ?? '') === 'breakfast')
         ->pluck('name')
-        ->take(2)
+        ->take(1)
         ->values()
         ->all();
 
     expect($breakfastNames)->toBe([
-        'Blueberry Walnut Chia Pudding',
-        'Mediterranean Omelet',
+        'Hummus Egg Stack',
     ]);
 
     $mainNames = collect($menu['scalable_meals'] ?? [])

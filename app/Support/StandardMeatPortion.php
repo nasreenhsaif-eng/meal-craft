@@ -114,6 +114,7 @@ final class StandardMeatPortion
             'sardines',
             'rosemary garlic chicken (base)',
             'tandoori chicken (base)',
+            'turmeric chicken (base)',
             'tandoori salmon (base)',
             'spiced aleppo ground beef (base)',
             'italian meatballs (base)',

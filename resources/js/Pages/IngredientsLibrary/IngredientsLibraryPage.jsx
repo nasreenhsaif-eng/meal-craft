@@ -10,7 +10,7 @@ import SquareCheckbox from '../../Components/Atoms/Icons/SquareCheckbox.jsx';
 import BaseRecipeEditorView from './BaseRecipeEditorView.jsx';
 import NutrientBadge from '../../Components/Atoms/MealSystem/NutrientBadge.jsx';
 import CSVUploader from '../../Components/CSVUploader.jsx';
-import { gramsFromAmountAndUnit } from '../../meal-library/aggregateIngredientNutrition.ts';
+import { gramsFromAmountUnitAndDensity } from '../../meal-library/aggregateIngredientNutrition.ts';
 import { filterIngredientsForCombobox } from '../../meal-library/ingredientSearch.ts';
 import {
     dietTagsFromPage,
@@ -336,10 +336,15 @@ export function IngredientsLibraryPageView({
         if (createIsBaseRecipe) {
             const components = createCompositionRows
                 .filter((row) => row.ingredientId != null)
-                .map((row) => ({
-                    ingredient_id: row.ingredientId,
-                    amount_grams: gramsFromAmountAndUnit(row.amount, row.unit),
-                }))
+                .map((row) => {
+                    const profile = componentPickerDatabase.find((p) => p.id === row.ingredientId);
+                    const density =
+                        typeof profile?.density === 'number' && profile.density > 0 ? profile.density : 1;
+                    return {
+                        ingredient_id: row.ingredientId,
+                        amount_grams: gramsFromAmountUnitAndDensity(row.amount, row.unit, density),
+                    };
+                })
                 .filter((row) => row.amount_grams > 0);
 
             if (components.length === 0) {
@@ -439,10 +444,15 @@ export function IngredientsLibraryPageView({
 
         const components = detailModal.rows
             .filter((row) => row.ingredientId != null)
-            .map((row) => ({
-                ingredient_id: row.ingredientId,
-                amount_grams: gramsFromAmountAndUnit(row.amount, row.unit),
-            }))
+            .map((row) => {
+                const profile = componentPickerDatabase.find((p) => p.id === row.ingredientId);
+                const density =
+                    typeof profile?.density === 'number' && profile.density > 0 ? profile.density : 1;
+                return {
+                    ingredient_id: row.ingredientId,
+                    amount_grams: gramsFromAmountUnitAndDensity(row.amount, row.unit, density),
+                };
+            })
             .filter((row) => row.amount_grams > 0);
 
         if (components.length === 0) {

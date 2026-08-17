@@ -4,6 +4,7 @@
  */
 
 import { gramsFromIngredientAmountAndUnit, parseIngredientQuantityString } from './ingredientQuantityString';
+import { finalizeRecipeNutrition } from './recipeMacroRounding';
 
 export type IngredientProfile = {
     /** Present when loaded from the verified ingredient library (meal library create form). */
@@ -200,7 +201,12 @@ export function calculateMealNutrition(
             continue;
         }
         const density = typeof row.density === 'number' && row.density > 0 ? row.density : 1;
-        const grams = gramsFromIngredientAmountAndUnit(seg.amount, seg.unit, density);
+        // Pure cooking oils: corrupt library densities must not undercount ml → g.
+        const name = String(row.name ?? '');
+        const oilLike = /\boil\b/i.test(name) && !/\b(butter|tahini)\b/i.test(name);
+        const pureFatDensity =
+            oilLike && (density < 0.85 || density > 0.98) ? 0.92 : density;
+        const grams = gramsFromIngredientAmountAndUnit(seg.amount, seg.unit, pureFatDensity);
         gramsByNorm.set(key, (gramsByNorm.get(key) ?? 0) + grams);
     }
 
@@ -240,11 +246,17 @@ export function calculateMealNutrition(
         if (!ing) continue;
         const factor = grams / 100;
         const micros = ing.micronutrients ?? {};
+        const name = ing.name ?? '';
+        const oilLike = /\boil\b/i.test(name) && !/\b(butter bean|butternut|coconut butter|peanut butter|almond butter|cashew butter)\b/i.test(name);
+        const calories = oilLike ? 884 : ing.calories;
+        const fat = oilLike ? 100 : ing.fat;
+        const protein = oilLike ? 0 : ing.protein;
+        const carbs = oilLike ? 0 : ing.carbs;
 
-        nutrition.calories += ing.calories * factor;
-        nutrition.protein += ing.protein * factor;
-        nutrition.carbs += ing.carbs * factor;
-        nutrition.fat += ing.fat * factor;
+        nutrition.calories += calories * factor;
+        nutrition.protein += protein * factor;
+        nutrition.carbs += carbs * factor;
+        nutrition.fat += fat * factor;
         nutrition.b6 += (ing.b6 ?? 0) * factor;
         nutrition.b9_folate += (ing.b9_folate ?? 0) * factor;
         nutrition.b12 += (ing.b12 ?? 0) * factor;
@@ -257,18 +269,20 @@ export function calculateMealNutrition(
     }
 
     for (const k of Object.keys(nutrition)) {
-        nutrition[k] = Math.round(nutrition[k] * 100) / 100;
+        // Leave unrounded until single-stage finalize below.
+        nutrition[k] = nutrition[k] ?? 0;
     }
 
-    const healthScore = computeMealHealthScore(nutrition);
+    const finalized = finalizeRecipeNutrition(nutrition);
+    const healthScore = computeMealHealthScore(finalized);
 
     const categoryWarnings =
-        categoryResolved !== null ? calorieWarningsForCategory(categoryResolved, nutrition.calories ?? 0) : [];
+        categoryResolved !== null ? calorieWarningsForCategory(categoryResolved, finalized.calories ?? 0) : [];
 
     return {
         ok: true,
         pendingIngredients: [],
-        nutrition,
+        nutrition: finalized,
         healthScore,
         category: categoryResolved,
         categoryWarnings,

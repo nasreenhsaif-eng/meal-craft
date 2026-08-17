@@ -1,13 +1,18 @@
 /** @typedef {'sideSalads' | 'desserts' | 'soup'} FixedChoiceCategoryKey */
 
-/** Side salad / dessert / soup — pick exactly 2 total across these categories. */
+/** Side salad / dessert / soup — pick 1–2 total across these categories. */
 export const FIXED_CHOICE_CATEGORY_KEYS = Object.freeze(
     /** @type {const} */ (['sideSalads', 'desserts', 'soup']),
 );
 
-export const FIXED_CHOICE_REQUIRED_COUNT = 2;
+export const FIXED_CHOICE_MAX_COUNT = 2;
 
-/** Display order for the horizontal toggle bar. */
+/** @deprecated Use {@link FIXED_CHOICE_MAX_COUNT} */
+export const FIXED_CHOICE_REQUIRED_COUNT = FIXED_CHOICE_MAX_COUNT;
+
+export const FIXED_CHOICE_MIN_COUNT = 1;
+
+/** Display order for the horizontal toggle bar — soup is always last. */
 export const FIXED_CHOICE_TOGGLE_OPTIONS = Object.freeze([
     {
         selectionKey: 'sideSalads',
@@ -17,18 +22,18 @@ export const FIXED_CHOICE_TOGGLE_OPTIONS = Object.freeze([
         mealTypeLabel: 'Side salad',
     },
     {
-        selectionKey: 'soup',
-        label: 'Soup',
-        deckSuffix: 'soup',
-        header: 'Soups',
-        mealTypeLabel: 'Soup',
-    },
-    {
         selectionKey: 'desserts',
         label: 'Dessert',
         deckSuffix: 'dessert',
         header: 'Desserts',
         mealTypeLabel: 'Dessert',
+    },
+    {
+        selectionKey: 'soup',
+        label: 'Soup',
+        deckSuffix: 'soup',
+        header: 'Soups',
+        mealTypeLabel: 'Soup',
     },
 ]);
 
@@ -49,7 +54,9 @@ export function countFixedChoiceSelections(categorySelections) {
  * @param {Partial<Record<FixedChoiceCategoryKey, string[]>> | null | undefined} categorySelections
  */
 export function isFixedChoiceComplete(categorySelections) {
-    return countFixedChoiceSelections(categorySelections) === FIXED_CHOICE_REQUIRED_COUNT;
+    const count = countFixedChoiceSelections(categorySelections);
+
+    return count >= FIXED_CHOICE_MIN_COUNT && count <= FIXED_CHOICE_MAX_COUNT;
 }
 
 /**
@@ -76,19 +83,20 @@ export function visibleFixedChoiceCategoriesFromSelections(categorySelections) {
  * @returns {{ next: Partial<Record<FixedChoiceCategoryKey, string[]>>; blocked: boolean }}
  */
 export function applyFixedChoiceToggle(current, categoryKey, mealId) {
-    const existing = current[categoryKey] ?? [];
-    const isOn = existing.includes(mealId);
+    const normalizedId = String(mealId);
+    const existing = (current[categoryKey] ?? []).map((id) => String(id));
+    const isOn = existing.includes(normalizedId);
 
     if (isOn) {
         return {
-            next: { ...current, [categoryKey]: existing.filter((id) => id !== mealId) },
+            next: { ...current, [categoryKey]: existing.filter((id) => id !== normalizedId) },
             blocked: false,
         };
     }
 
     if (existing.length >= 1) {
         return {
-            next: { ...current, [categoryKey]: [mealId] },
+            next: { ...current, [categoryKey]: [normalizedId] },
             blocked: false,
         };
     }
@@ -98,12 +106,12 @@ export function applyFixedChoiceToggle(current, categoryKey, mealId) {
         0,
     );
 
-    if (otherTotal + existing.length >= FIXED_CHOICE_REQUIRED_COUNT) {
+    if (otherTotal + existing.length >= FIXED_CHOICE_MAX_COUNT) {
         return { next: current, blocked: true };
     }
 
     return {
-        next: { ...current, [categoryKey]: [...existing, mealId] },
+        next: { ...current, [categoryKey]: [...existing, normalizedId] },
         blocked: false,
     };
 }

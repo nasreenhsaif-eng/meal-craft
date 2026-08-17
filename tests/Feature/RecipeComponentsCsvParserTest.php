@@ -125,3 +125,45 @@ test('recipe components csv parser reports row context for bare ingredient names
             ->toContain('Carrots');
     }
 });
+
+test('recipe components csv parser formats component rows as name weight cell', function () {
+    $chia = Ingredient::factory()->create([
+        'is_verified' => true,
+        'name' => 'Chia Seeds',
+    ]);
+    $milk = Ingredient::factory()->create([
+        'is_verified' => true,
+        'name' => 'Coconut Milk',
+    ]);
+
+    $cell = RecipeComponentsCsvParser::formatComponentRowsAsNameCell([
+        ['ingredient_id' => $chia->id, 'amount_grams' => 30],
+        ['ingredient_id' => $milk->id, 'amount_grams' => 200],
+    ]);
+
+    expect($cell)->toBe('Chia Seeds (30g) | Coconut Milk (200g)');
+});
+
+test('menu ingredients csv stores base recipe components as names not legacy ids', function () {
+    $path = database_path('data/menu/ingredients.csv');
+    $handle = fopen($path, 'r');
+    $header = fgetcsv($handle, 0, ',', '"', '\\');
+    $index = array_flip($header);
+    $legacyIdCells = [];
+
+    while (($row = fgetcsv($handle, 0, ',', '"', '\\')) !== false) {
+        if (($row[$index['is_base_recipe']] ?? '') !== '1') {
+            continue;
+        }
+
+        $cell = trim((string) ($row[$index['recipe_components']] ?? ''));
+
+        if ($cell !== '' && preg_match('/(?:^|[|,])\s*\d+\s*:\s*\d/u', $cell)) {
+            $legacyIdCells[] = (string) ($row[$index['name']] ?? 'unknown');
+        }
+    }
+
+    fclose($handle);
+
+    expect($legacyIdCells)->toBeEmpty();
+});

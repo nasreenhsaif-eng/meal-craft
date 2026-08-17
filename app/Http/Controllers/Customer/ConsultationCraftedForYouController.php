@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers\Customer;
 
+use App\Enums\OnboardingStep;
 use App\Http\Controllers\Controller;
+use App\Models\Meal;
 use App\Services\Nutrition\UserPlanCalculator;
 use App\Support\AdminConsultationPreviewProfile;
-use App\Support\ChiaBreakfastMeals;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 
@@ -25,7 +26,12 @@ class ConsultationCraftedForYouController extends Controller
             $editDraft = $request->session()->pull('consultation_edit_draft');
         }
 
+        $backHref = $request->query('from') === 'onboarding'
+            ? route('onboarding.show', ['step' => OnboardingStep::FoodFilters->value], absolute: false)
+            : null;
+
         $consultationConfig = [
+            'backHref' => $backHref,
             'closeHref' => $isCustomer ? route('app.home') : route('admin.dashboard'),
             'homeHref' => $isCustomer ? route('app.home') : route('admin.dashboard'),
             'summaryHref' => route('app.meal-plan', absolute: false),
@@ -37,12 +43,13 @@ class ConsultationCraftedForYouController extends Controller
             'pageEyebrow' => $isCustomer ? 'Your plan' : 'Admin / Consultation',
             'adaptedMenuUrl' => route('api.menu.adapted', absolute: false),
             'mealDetailViewUrlTemplate' => '/api/meals/{id}/detail-view',
+            'mealLibraryRevision' => Meal::libraryRevisionTimestamp(),
             'planTiers' => UserPlanCalculator::planTiers(),
-            'chiaBreakfastMealNames' => ChiaBreakfastMeals::mealNames(),
             'planTier' => $profile?->daily_calorie_target !== null
                 ? (int) UserPlanCalculator::snapToPlanTier((float) $profile->daily_calorie_target)
                 : null,
             'editDraft' => $editDraft,
+            'dietProtocol' => $profile?->diet_protocol ?? 'balanced',
         ];
 
         return view('pages.consultation.crafted-for-you', [

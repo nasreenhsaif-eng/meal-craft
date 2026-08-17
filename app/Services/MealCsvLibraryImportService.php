@@ -21,6 +21,7 @@ use App\Support\MealLibraryDelimitedCellParser;
 use App\Support\MealLibraryEditGuard;
 use App\Support\MealLibraryTaxonomy;
 use App\Support\MenuDevelopmentCsv;
+use App\Support\PureCookingFatNutrition;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -457,7 +458,7 @@ final class MealCsvLibraryImportService
             ];
         }
 
-        $nutrition = RecipeNutritionCalculator::fromRows($rows);
+        $nutrition = RecipeNutritionCalculator::fromRows($rows, applyMealCookingYield: true);
         $healthScore = $this->computeMealHealthScore($nutrition);
 
         $calorieWarnings = [];
@@ -1129,7 +1130,7 @@ final class MealCsvLibraryImportService
 
     private function gramsForIngredientAmountUnit(Ingredient $ingredient, float $amount, string $unit): float
     {
-        $density = (float) ($ingredient->density ?? 0) > 0 ? (float) $ingredient->density : 1.0;
+        $density = PureCookingFatNutrition::densityGramsPerMl($ingredient);
         $normalizedUnit = IngredientQuantityStringParser::normalizeUnit($unit);
         $enum = RecipeAmountUnit::tryFrom($normalizedUnit);
 

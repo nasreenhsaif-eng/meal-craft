@@ -2,6 +2,7 @@
 
 namespace App\Services\Nutrition;
 
+use App\Enums\DietProtocol;
 use App\Enums\MealType;
 use App\Enums\RecipeCategory;
 use App\Models\CustomerProfile;
@@ -87,7 +88,24 @@ final class UserPlanCalculator
     }
 
     /**
-     * Split the scalable calorie budget across breakfast and mains using tier-table proportions.
+     * @return array{protein_g: float, carbs_g: float, fat_g: float}
+     */
+    public static function dayMacroTolerance(): array
+    {
+        $config = config('customer_nutrition.day_macro_tolerance', []);
+
+        return [
+            'protein_g' => max(0.0, round((float) ($config['protein_g'] ?? 15.0), 2)),
+            'carbs_g' => max(0.0, round((float) ($config['carbs_g'] ?? 20.0), 2)),
+            'fat_g' => max(0.0, round((float) ($config['fat_g'] ?? 15.0), 2)),
+        ];
+    }
+
+    /**
+     * Split the remaining day calories after fixed picks.
+     *
+     * Breakfast stays at the tier-table value (changes only with plan tier).
+     * Mains absorb any overshoot/undershoot when actual fixed kcal ≠ the 2×150 budget.
      *
      * @return array{breakfast: float, main_each: float, scalable_budget: float}
      */
@@ -96,27 +114,14 @@ final class UserPlanCalculator
         $tierTargets = self::tierSlotCalories($planTier);
         $mainCount = max(1, (int) config('customer_nutrition.scalable_slots.main', 2));
 
-        $referenceScalableBudget = round(
-            $tierTargets['breakfast'] + ($tierTargets['main_each'] * $mainCount),
-            2,
-        );
-
+        $breakfast = round((float) $tierTargets['breakfast'], 2);
         $scalableBudget = max(0.0, round($planTier - $fixedPortionTotal, 2));
-
-        if ($referenceScalableBudget <= 0) {
-            return [
-                'breakfast' => 0.0,
-                'main_each' => 0.0,
-                'scalable_budget' => $scalableBudget,
-            ];
-        }
-
-        $breakfastShare = $tierTargets['breakfast'] / $referenceScalableBudget;
-        $mainEachShare = $tierTargets['main_each'] / $referenceScalableBudget;
+        $mainsBudget = max(0.0, round($scalableBudget - $breakfast, 2));
+        $mainEach = $mainCount > 0 ? round($mainsBudget / $mainCount, 2) : 0.0;
 
         return [
-            'breakfast' => round($scalableBudget * $breakfastShare, 2),
-            'main_each' => round($scalableBudget * $mainEachShare, 2),
+            'breakfast' => $breakfast,
+            'main_each' => $mainEach,
             'scalable_budget' => $scalableBudget,
         ];
     }
@@ -165,6 +170,126 @@ final class UserPlanCalculator
         return [
             'breakfast' => round((float) ($row['breakfast'] ?? 0.0), 2),
             'main_each' => round((float) ($row['main_each'] ?? 0.0), 2),
+        ];
+    }
+
+    /**
+     * Protein-first macro percentages for scalable main meal slots (all tiers).
+     *
+     * @return array{protein: float, carb: float, fat: float}
+     */
+    public static function mainEachMacroPercentages(?CustomerProfile $profile = null): array
+    {
+        $split = self::slotMacroSplitConfig('main_each', $profile);
+
+        return [
+            'protein' => (float) ($split['protein_percentage'] ?? 45.0),
+            'carb' => (float) ($split['carb_percentage'] ?? 25.0),
+            'fat' => (float) ($split['fat_percentage'] ?? 30.0),
+        ];
+    }
+
+    /**
+     * @return array{protein_g: float, carbs_g: float, fat_g: float}
+     */
+    public static function mainEachMacroGrams(float $calories, ?CustomerProfile $profile = null): array
+    {
+        $split = self::mainEachMacroPercentages($profile);
+
+        return self::macroGramsFromCaloriesAndPercentages(
+            $calories,
+            $split['protein'],
+            $split['carb'],
+            $split['fat'],
+        );
+    }
+
+    /**
+     * Protein-forward macro percentages for the breakfast slot.
+     *
+     * @return array{protein: float, carb: float, fat: float}
+     */
+    public static function breakfastMacroPercentages(?CustomerProfile $profile = null): array
+    {
+        $split = self::slotMacroSplitConfig('breakfast', $profile);
+
+        return [
+            'protein' => (float) ($split['protein_percentage'] ?? 40.0),
+            'carb' => (float) ($split['carb_percentage'] ?? 25.0),
+            'fat' => (float) ($split['fat_percentage'] ?? 35.0),
+        ];
+    }
+
+    /**
+     * @return array{protein_g: float, carbs_g: float, fat_g: float}
+     */
+    public static function breakfastMacroGrams(float $calories, ?CustomerProfile $profile = null): array
+    {
+        $split = self::breakfastMacroPercentages($profile);
+
+        return self::macroGramsFromCaloriesAndPercentages(
+            $calories,
+            $split['protein'],
+            $split['carb'],
+            $split['fat'],
+        );
+    }
+
+    /**
+     * @return array{protein_percentage?: float, carb_percentage?: float, fat_percentage?: float}
+     */
+    private static function slotMacroSplitConfig(string $slot, ?CustomerProfile $profile): array
+    {
+        if ($profile !== null && DietProtocol::tryFromStored($profile->diet_protocol) === DietProtocol::NutrientDense) {
+            /** @var array<string, array<string, float>> $splits */
+            $splits = config('customer_nutrition.nutrient_dense_slot_macro_splits', []);
+            $dense = $splits[$slot] ?? [];
+
+            if ($dense !== []) {
+                return $dense;
+            }
+        }
+
+        $legacyKey = match ($slot) {
+            'breakfast' => 'breakfast_macro_split',
+            'main_each' => 'main_each_macro_split',
+            default => null,
+        };
+
+        if ($legacyKey !== null) {
+            /** @var array{protein_percentage?: float, carb_percentage?: float, fat_percentage?: float} $split */
+            $split = config("customer_nutrition.{$legacyKey}", []);
+
+            return $split;
+        }
+
+        return [];
+    }
+
+    /**
+     * @param  array<string, mixed>  $macros
+     * @return array{protein_g: float, carbs_g: float, fat_g: float}
+     */
+    public static function normalizeMacroGrams(array $macros): array
+    {
+        return [
+            'protein_g' => round(max(0.0, (float) ($macros['protein_g'] ?? 0)), 2),
+            'carbs_g' => round(max(0.0, (float) ($macros['carbs_g'] ?? $macros['carb_g'] ?? 0)), 2),
+            'fat_g' => round(max(0.0, (float) ($macros['fat_g'] ?? 0)), 2),
+        ];
+    }
+
+    /**
+     * @param  array{protein_g: float, carbs_g: float, fat_g: float}  $left
+     * @param  array{protein_g: float, carbs_g: float, fat_g: float}  $right
+     * @return array{protein_g: float, carbs_g: float, fat_g: float}
+     */
+    public static function subtractMacroGrams(array $left, array $right): array
+    {
+        return [
+            'protein_g' => round(max(0.0, $left['protein_g'] - $right['protein_g']), 2),
+            'carbs_g' => round(max(0.0, $left['carbs_g'] - $right['carbs_g']), 2),
+            'fat_g' => round(max(0.0, $left['fat_g'] - $right['fat_g']), 2),
         ];
     }
 
@@ -261,12 +386,12 @@ final class UserPlanCalculator
      * @param  array{
      *     include_soup?: bool,
      *     selected_fixed_slots?: list<string>,
+     *     fixed_slot_actual_macros?: array{protein_g?: float, carbs_g?: float, fat_g?: float},
      *     soup_calories?: float,
      *     side_salad_calories?: float,
      *     dessert_calories?: float,
      *     snap_to_tier?: bool,
      *     plan_tier?: float,
-     *     fixed_chia_breakfast?: bool,
      * }  $options
      * @return array<string, mixed>
      */
@@ -296,17 +421,13 @@ final class UserPlanCalculator
         $includeSoup = in_array('soup', $selectedFixedSlots ?? [], true)
             || (bool) ($options['include_soup'] ?? false);
 
-        $fixedChiaBreakfast = (bool) ($options['fixed_chia_breakfast'] ?? false);
-
         $perSlotFixed = self::resolveFixedSlotCalories($selectedFixedSlots, $options);
 
         $budgetFixedTotal = round(self::fixedChoiceCount() * self::fixedChoiceCaloriesPerSlot(), 2);
 
-        $fixedPortionTotal = $budgetFixedTotal;
-
-        if ($selectedFixedSlots !== null && count($selectedFixedSlots) === self::fixedChoiceCount()) {
-            $fixedPortionTotal = round(array_sum($perSlotFixed), 2);
-        }
+        $fixedPortionTotal = $selectedFixedSlots !== null
+            ? round(array_sum($perSlotFixed), 2)
+            : $budgetFixedTotal;
 
         $proteinPct = (float) $profile->protein_percentage;
         $carbPct = (float) $profile->carb_percentage;
@@ -321,19 +442,16 @@ final class UserPlanCalculator
         $mainTargetCaloriesEach = $scalableTargets['main_each'];
         $scalableBudgetCalories = $scalableTargets['scalable_budget'];
 
-        $fixedPortionMacros = self::macroGramsFromCaloriesAndPercentages(
-            $fixedPortionTotal,
-            $proteinPct,
-            $carbPct,
-            $fatPct,
-        );
+        $fixedPortionMacros = isset($options['fixed_slot_actual_macros']) && is_array($options['fixed_slot_actual_macros'])
+            ? self::normalizeMacroGrams($options['fixed_slot_actual_macros'])
+            : self::macroGramsFromCaloriesAndPercentages(
+                $fixedPortionTotal,
+                $proteinPct,
+                $carbPct,
+                $fatPct,
+            );
 
-        $scalableBudgetMacros = self::macroGramsFromCaloriesAndPercentages(
-            $scalableBudgetCalories,
-            $proteinPct,
-            $carbPct,
-            $fatPct,
-        );
+        $scalableBudgetMacros = self::subtractMacroGrams($dailyMacros, $fixedPortionMacros);
 
         $coreDayCalories = round(
             $fixedPortionTotal + $breakfastTargetCalories + ($mainTargetCaloriesEach * $mainCount),
@@ -365,7 +483,6 @@ final class UserPlanCalculator
             'daily_macros' => $dailyMacros,
             'include_soup' => $includeSoup,
             'selected_fixed_slots' => $selectedFixedSlots ?? self::fixedChoiceSlots(),
-            'fixed_chia_breakfast' => $fixedChiaBreakfast,
             'fixed_portion' => [
                 'slots' => self::coreFixedPortionSlots(),
                 'choice_count' => self::fixedChoiceCount(),
@@ -385,6 +502,7 @@ final class UserPlanCalculator
             'core_day_calories' => $coreDayCalories,
             'day_total_calories' => $dayTotalCalories,
             'day_calorie_tolerance' => self::dayCalorieTolerance(),
+            'day_macro_tolerance' => self::dayMacroTolerance(),
             'scalable_budget' => [
                 'calories' => $scalableBudgetCalories,
                 'macros' => $scalableBudgetMacros,
@@ -404,21 +522,11 @@ final class UserPlanCalculator
             'scalable_slot_targets' => [
                 'breakfast' => [
                     'calories' => $breakfastTargetCalories,
-                    'macros' => self::macroGramsFromCaloriesAndPercentages(
-                        $breakfastTargetCalories,
-                        $proteinPct,
-                        $carbPct,
-                        $fatPct,
-                    ),
+                    'macros' => self::breakfastMacroGrams($breakfastTargetCalories, $profile),
                 ],
                 'main_each' => [
                     'calories' => $mainTargetCaloriesEach,
-                    'macros' => self::macroGramsFromCaloriesAndPercentages(
-                        $mainTargetCaloriesEach,
-                        $proteinPct,
-                        $carbPct,
-                        $fatPct,
-                    ),
+                    'macros' => self::mainEachMacroGrams($mainTargetCaloriesEach, $profile),
                 ],
             ],
         ];

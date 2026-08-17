@@ -6,9 +6,11 @@ use App\Support\WholeFoodDietPolicy;
 test('whole food policy bans protein powder oats dairy and soy', function (): void {
     expect(WholeFoodDietPolicy::isBannedIngredientName('Protein Powder (Isolate)'))->toBeTrue()
         ->and(WholeFoodDietPolicy::isBannedIngredientName('Oats (Rolled)'))->toBeTrue()
-        ->and(WholeFoodDietPolicy::isBannedIngredientName('Parmesan'))->toBeTrue()
+        ->and(WholeFoodDietPolicy::isBannedIngredientName('Cheddar Cheese'))->toBeTrue()
         ->and(WholeFoodDietPolicy::isBannedIngredientName('Soy Sauce'))->toBeTrue()
-        ->and(WholeFoodDietPolicy::isBannedIngredientName('Salmon'))->toBeFalse();
+        ->and(WholeFoodDietPolicy::isBannedIngredientName('Salmon'))->toBeFalse()
+        ->and(WholeFoodDietPolicy::isBannedIngredientName('Greek Yogurt'))->toBeFalse()
+        ->and(WholeFoodDietPolicy::isBannedIngredientName('Halloumi'))->toBeFalse();
 });
 
 test('whole food policy allows ghee olives house almond flour and vetted pantry staples', function (): void {
@@ -37,6 +39,17 @@ test('whole food policy treats house base ingredients as allowed', function (): 
     ])))->toBeTrue();
 });
 
-test('whole food policy caps olive portions per meal', function (): void {
-    expect(WholeFoodDietPolicy::MAX_OLIVE_GRAMS_PER_MEAL)->toBe(15.0);
+test('whole food policy allows optional dairy ingredients even when category is dairy', function (): void {
+    expect(WholeFoodDietPolicy::isBannedIngredient(new Ingredient([
+        'name' => 'Feta',
+        'usda_food_category' => 'Dairy',
+    ])))->toBeFalse()
+        ->and(WholeFoodDietPolicy::isBannedIngredient(new Ingredient([
+            'name' => 'Greek Yogurt',
+            'usda_food_category' => 'Dairy',
+        ])))->toBeFalse()
+        ->and(WholeFoodDietPolicy::isBannedIngredient(new Ingredient([
+            'name' => 'Goat Cheese',
+            'usda_food_category' => 'Dairy',
+        ])))->toBeTrue();
 });

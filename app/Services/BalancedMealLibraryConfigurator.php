@@ -6,11 +6,12 @@ use App\Enums\MealType;
 use App\Enums\RecipeCategory;
 use App\Models\Ingredient;
 use App\Models\Meal;
+use App\Support\MealLibraryBulkNutrition;
 use Illuminate\Support\Facades\DB;
 
 /**
  * Curates the meal library for the Balanced protocol customer deck:
- * 2 breakfasts, 4 mains, 2 side salads, 2 desserts, 2 soups (same choices for all customers; portions scale by tier).
+ * 1 savory breakfast, 4 mains, 2 side salads, 3 desserts, 2 soups (same choices for all customers; portions scale by tier).
  */
 final class BalancedMealLibraryConfigurator
 {
@@ -36,72 +37,72 @@ final class BalancedMealLibraryConfigurator
     {
         return [
             [
-                'name' => 'Blueberry Walnut Chia Pudding',
+                'name' => 'Hummus Egg Stack',
                 'sort' => 0,
-                'slot' => 'breakfast',
-                'meal_plan_tags' => ['Balanced'],
-                'diet_tags' => ['Vegan', 'Dairy-free', 'Gluten-free'],
-            ],
-            [
-                'name' => 'Mediterranean Omelet',
-                'sort' => 1,
                 'slot' => 'breakfast',
                 'meal_plan_tags' => ['Balanced'],
                 'diet_tags' => ['Vegetarian', 'Dairy-free', 'Gluten-free'],
             ],
             [
                 'name' => 'Tamarind Honey & Sesame Chicken w Garlicky Green Beans',
-                'sort' => 2,
+                'sort' => 1,
                 'slot' => 'main_chicken_plate',
                 'meal_plan_tags' => ['Balanced'],
                 'diet_tags' => ['Dairy-free', 'Gluten-free'],
             ],
             [
                 'name' => BalancedCanonicalMealRecipeRefiner::ROSEMARY_GARLIC_CHICKEN_PLATE_NAME,
-                'sort' => 3,
+                'sort' => 2,
                 'slot' => 'main_chicken_plate',
                 'meal_plan_tags' => ['Balanced'],
                 'diet_tags' => ['Dairy-free', 'Gluten-free'],
             ],
             [
                 'name' => BalancedCanonicalMealRecipeRefiner::BAKED_SALMON_NAME,
-                'sort' => 4,
+                'sort' => 3,
                 'slot' => 'main_salmon',
                 'meal_plan_tags' => ['Balanced'],
                 'diet_tags' => ['Dairy-free', 'Gluten-free'],
             ],
             [
                 'name' => BalancedCanonicalMealRecipeRefiner::VEGAN_BUTTERNUT_PEANUT_STEW_NAME,
-                'sort' => 5,
+                'sort' => 4,
                 'slot' => 'main_vegan',
                 'meal_plan_tags' => ['Balanced'],
                 'diet_tags' => ['Vegan', 'Dairy-free', 'Gluten-free'],
             ],
             [
                 'name' => 'Marinated Pineapple, Peppers, Red Onion & Cilantro Side Salad',
-                'sort' => 6,
+                'sort' => 5,
                 'slot' => 'side_salad',
                 'meal_plan_tags' => ['Balanced'],
                 'diet_tags' => ['Vegan', 'Dairy-free', 'Gluten-free'],
             ],
             [
                 'name' => 'Classic Garden Salad',
-                'sort' => 7,
+                'sort' => 6,
                 'slot' => 'side_salad_classic',
                 'meal_plan_tags' => ['Balanced'],
                 'diet_tags' => ['Vegan', 'Dairy-free', 'Gluten-free'],
             ],
             [
                 'name' => BalancedCanonicalMealRecipeRefiner::CARROT_DESSERT_NAME,
-                'sort' => 8,
+                'sort' => 7,
                 'slot' => 'dessert',
                 'meal_plan_tags' => ['Balanced'],
-                'diet_tags' => ['Vegetarian', 'Dairy-free', 'Gluten-free'],
+                'diet_tags' => ['Vegetarian', 'Gluten-free'],
             ],
             [
                 'name' => 'Fruit Salad Bowl',
-                'sort' => 9,
+                'sort' => 8,
                 'slot' => 'dessert_fruit',
+                'meal_plan_tags' => ['Balanced'],
+                'diet_tags' => ['Vegan', 'Dairy-free', 'Gluten-free'],
+            ],
+            [
+                'name' => 'Blueberry Walnut Chia Pudding',
+                'sort' => 9,
+                'slot' => 'dessert_chia',
                 'meal_plan_tags' => ['Balanced'],
                 'diet_tags' => ['Vegan', 'Dairy-free', 'Gluten-free'],
             ],
@@ -199,35 +200,58 @@ final class BalancedMealLibraryConfigurator
         /** @var Ingredient|null $broth */
         $broth = Ingredient::query()->where('name', 'Bone Broth (Base)')->first();
 
-        if ($broth === null) {
+        /** @var Ingredient|null $psyllium */
+        $psyllium = Ingredient::query()->where('name', 'Psyllium Husks')->first();
+
+        if ($broth === null || $psyllium === null) {
             return false;
         }
 
-        $portionGrams = self::BONE_BROTH_SERVING_GRAMS;
+        $servingsCount = (float) BalancedCanonicalMealRecipeRefiner::BATCH_SOUP_SERVINGS_COUNT;
+        $batchBrothGrams = self::BONE_BROTH_SERVING_GRAMS * $servingsCount;
+        $batchPsylliumGrams = BalancedCanonicalMealRecipeRefiner::BATCH_SOUP_PSYLLIUM_TABLESPOON_GRAMS * $servingsCount;
 
         $meal = Meal::query()->create([
             'name' => self::BONE_BROTH_MEAL_NAME,
             'category' => RecipeCategory::Soup,
             'meal_type' => MealType::Soup,
-            'short_description' => '500 ml cup of defatted house bone broth — long-simmered and gelatin-rich.',
-            'instructions' => 'Heat gently and serve in a mug or bowl.',
+            'short_description' => '500 ml cup of defatted house bone broth — long-simmered, gelatin-rich, with psyllium husks for fiber.',
+            'instructions' => 'Heat the full batch of defatted Bone Broth (Base) gently (do not boil hard). Whisk psyllium husks into the batch (1 tablespoon / 15 g per serving). Portion 500 ml per cup and serve hot.',
             'meal_plan_tags' => ['Balanced'],
             'meal_plan_tag' => 'Balanced',
             'diet_tags' => ['Dairy-free', 'Gluten-free'],
-            'library_sort_order' => 11,
-            'nutrition_aggregates_synced' => true,
+            'library_sort_order' => 12,
+            'is_bulk' => true,
+            'servings_count' => $servingsCount,
+            'nutrition_aggregates_synced' => false,
         ]);
 
         $meal->ingredients()->sync([
             $broth->id => [
-                'amount_grams' => $portionGrams,
-                'amount' => $portionGrams,
+                'amount_grams' => $batchBrothGrams,
+                'amount' => $batchBrothGrams,
+                'unit' => 'g',
+            ],
+            $psyllium->id => [
+                'amount_grams' => $batchPsylliumGrams,
+                'amount' => $batchPsylliumGrams,
                 'unit' => 'g',
             ],
         ]);
 
-        $nutrition = RecipeNutritionCalculator::fromMeal($meal->fresh(['ingredients']));
-        $meal->update(Meal::nutritionSummaryToPersistedAttributes($nutrition));
+        $batchNutrition = RecipeNutritionCalculator::fromMeal($meal->fresh(['ingredients']));
+        $nutritionResolution = MealLibraryBulkNutrition::resolvePersistedNutrition(
+            $batchNutrition,
+            true,
+            $servingsCount,
+            null,
+            true,
+        );
+
+        $meal->update(array_merge(
+            $nutritionResolution['attributes'],
+            ['nutrition_aggregates_synced' => $nutritionResolution['nutrition_aggregates_synced']],
+        ));
 
         return true;
     }

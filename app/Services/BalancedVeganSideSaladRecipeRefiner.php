@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Ingredient;
 use App\Models\Meal;
 use App\Support\MealLibraryEditGuard;
+use App\Support\MealLibraryRefinerOverrides;
 use App\Support\WholeFoodDietPolicy;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -107,25 +108,14 @@ final class BalancedVeganSideSaladRecipeRefiner
     {
         $veganTags = array_merge(WholeFoodDietPolicy::REQUIRED_MEAL_DIET_TAGS, ['Vegan']);
 
-        return [
+        $definitions = [
             'Citrus Beet Arugula Salad' => [
                 'ingredients' => [
                     'Arugula' => 45,
                     'Beetroot' => 80,
                     'Orange Sections' => 45,
-                    'Walnuts' => 8,
+                    'Walnuts' => 5,
                     'Lemon Juice' => 8,
-                    'Olive Oil' => 4,
-                ],
-                'diet_tags' => $veganTags,
-            ],
-            'Shaved Fennel Rocca Salad' => [
-                'ingredients' => [
-                    'Fennel Bulb' => 70,
-                    'Rocca' => 45,
-                    'Orange Sections' => 40,
-                    'Lemon Juice' => 8,
-                    'Olive Oil' => 4,
                 ],
                 'diet_tags' => $veganTags,
             ],
@@ -136,7 +126,6 @@ final class BalancedVeganSideSaladRecipeRefiner
                     'Rocca' => 45,
                     'Pomegranate Seeds' => 15,
                     'Lemon Juice' => 8,
-                    'Olive Oil' => 4,
                 ],
                 'diet_tags' => $veganTags,
             ],
@@ -147,7 +136,6 @@ final class BalancedVeganSideSaladRecipeRefiner
                     'Romaine Lettuce' => 50,
                     'White Onion' => 15,
                     'Apple Cider Vinegar' => 10,
-                    'Olive Oil' => 4,
                 ],
                 'diet_tags' => $veganTags,
             ],
@@ -157,7 +145,6 @@ final class BalancedVeganSideSaladRecipeRefiner
                     'Grapefruit Sections' => 70,
                     'Cucumber' => 50,
                     'Lime Juice' => 10,
-                    'Olive Oil' => 3,
                     'Coconut Meat' => 10,
                 ],
                 'diet_tags' => $veganTags,
@@ -165,13 +152,19 @@ final class BalancedVeganSideSaladRecipeRefiner
             'Vegan Curry Lentil Salad' => [
                 'ingredients' => [
                     'French Lentils' => 60,
-                    'Spinach (Fresh)' => 40,
+                    'White Onion' => 40,
+                    'Kale' => 40,
+                    'Broccoli' => 50,
                     'Carrots' => 40,
-                    'Bell Pepper (Red)' => 40,
-                    'Curry Powder' => 2,
-                    'Lemon Juice' => 10,
-                    'Olive Oil' => 5,
-                    'Wild Rice (Cooked)' => 80,
+                    'Bell Pepper (Red)' => 35,
+                    'Fresh Coriander' => 5,
+                    'Mint Coconut Chutney Dressing (Base)' => 20,
+                    'Pumpkin Seeds' => 10,
+                    'Sesame Seeds' => 5,
+                    'Cumin Ground' => 2,
+                    'Sea Salt' => 1,
+                    'Black Pepper' => 1,
+                    'Olive Oil' => 8,
                 ],
                 'diet_tags' => $veganTags,
             ],
@@ -183,7 +176,6 @@ final class BalancedVeganSideSaladRecipeRefiner
                     'Cumin Seeds' => 2,
                     'Smoked Paprika' => 1,
                     'Lemon Juice' => 8,
-                    'Olive Oil' => 4,
                 ],
                 'diet_tags' => $veganTags,
             ],
@@ -193,7 +185,7 @@ final class BalancedVeganSideSaladRecipeRefiner
                     'Carrots' => 40,
                     'Cucumber' => 40,
                     'Bell Pepper (Red)' => 30,
-                    'Peanut Butter' => 10,
+                    'Peanut Butter' => 8,
                     'Lime Juice' => 10,
                     'Water (Filtered)' => 10,
                     'Fresh Coriander' => 4,
@@ -201,5 +193,7 @@ final class BalancedVeganSideSaladRecipeRefiner
                 'diet_tags' => $veganTags,
             ],
         ];
+
+        return MealLibraryRefinerOverrides::mergeRecipeDefinitionMap($definitions);
     }
 }

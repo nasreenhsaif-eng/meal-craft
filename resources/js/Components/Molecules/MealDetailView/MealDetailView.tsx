@@ -1,5 +1,4 @@
 import { Fragment, type ReactElement, useState } from 'react';
-import { MealPlanTag } from '../../MealSystem/DietaryTags.jsx';
 import SafetyAlerts from '../../MealSystem/SafetyAlerts.jsx';
 import NutrientBadge from '../../Atoms/MealSystem/NutrientBadge.jsx';
 import MealCraftLogo from '../../Atoms/Logo/MealCraftLogo.jsx';
@@ -45,7 +44,7 @@ export type MealInstructionSection = {
 export type MealDetailModel = {
     shortDescription?: string;
     cyclePhases: CyclePhase[];
-    dietaryTags: string[];
+    dietaryTags?: string[];
     hasG6pdTrigger?: boolean;
     safetyAlerts: MealSafetyAlert[];
     sickleCellHighlights?: string[];
@@ -56,6 +55,8 @@ export type MealDetailModel = {
     nutritionalData: MealNutritionalData;
     ingredients: string[];
     ingredientSections?: MealIngredientSection[];
+    /** Estimated cooked plated weight from raw/dry inputs + pre-cooked bases. */
+    cookingYieldNote?: string | null;
     instructions: string[] | string;
     instructionSections?: MealInstructionSection[];
     imageUrl?: string | null;
@@ -137,13 +138,13 @@ export default function MealDetailView({ meal, className = '', hideImage = false
     const {
         shortDescription,
         cyclePhases,
-        dietaryTags,
         hasG6pdTrigger = false,
         safetyAlerts,
         sickleCellHighlights = [],
         nutritionalData,
         ingredients,
         ingredientSections,
+        cookingYieldNote,
         instructions,
         instructionSections,
         imageUrl,
@@ -163,6 +164,7 @@ export default function MealDetailView({ meal, className = '', hideImage = false
 
     const hasIngredientSections = Array.isArray(ingredientSections) && ingredientSections.length > 0;
     const hasInstructionSections = Array.isArray(instructionSections) && instructionSections.length > 0;
+    const mealBlurb = String(shortDescription || description || '').trim();
 
     return (
         <div
@@ -206,27 +208,29 @@ export default function MealDetailView({ meal, className = '', hideImage = false
                         </div>
                     ) : null}
 
-                    <div className="flex flex-col gap-4">
-                        {dietaryTags?.length ? (
-                            <div className="flex flex-wrap gap-2" role="list" aria-label="Dietary tags">
-                                {dietaryTags.map((tag) => (
-                                    <span key={tag} role="listitem" className="inline-flex">
-                                        <MealPlanTag label={tag} />
-                                    </span>
-                                ))}
-                            </div>
-                        ) : null}
+                    {mealBlurb ? (
+                        <section className="space-y-2" aria-labelledby="meal-detail-description-heading">
+                            <h2
+                                id="meal-detail-description-heading"
+                                className="font-montserrat text-lg font-bold tracking-tight text-[#262A22] md:text-[18px]"
+                            >
+                                Description
+                            </h2>
+                            <p className="font-montserrat text-sm font-medium leading-relaxed text-[#555555] md:text-[15px]">
+                                {mealBlurb}
+                            </p>
+                        </section>
+                    ) : null}
 
-                        {cyclePhases?.length ? (
-                            <div className="flex flex-wrap gap-2" role="list" aria-label="Cycle phases">
-                                {cyclePhases.map((phase) => (
-                                    <span key={phase} role="listitem" className="inline-flex">
-                                        <CyclePhaseTag phase={phase} />
-                                    </span>
-                                ))}
-                            </div>
-                        ) : null}
-                    </div>
+                    {cyclePhases?.length ? (
+                        <div className="flex flex-wrap gap-2" role="list" aria-label="Cycle phases">
+                            {cyclePhases.map((phase) => (
+                                <span key={phase} role="listitem" className="inline-flex">
+                                    <CyclePhaseTag phase={phase} />
+                                </span>
+                            ))}
+                        </div>
+                    ) : null}
 
                     <section className="space-y-4" aria-labelledby="meal-detail-ingredients-heading">
                         <h2
@@ -264,6 +268,11 @@ export default function MealDetailView({ meal, className = '', hideImage = false
                                 ))}
                             </ul>
                         )}
+                        {String(cookingYieldNote ?? '').trim() !== '' ? (
+                            <p className="font-montserrat text-sm font-medium leading-relaxed text-[#5A6B44] md:text-[15px]">
+                                {String(cookingYieldNote).trim()}
+                            </p>
+                        ) : null}
                     </section>
 
                     <section className="space-y-4" aria-labelledby="meal-detail-instructions-heading">

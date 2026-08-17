@@ -7,6 +7,7 @@ use App\Enums\MealPlanSlotType;
 use App\Models\Meal;
 use App\Models\MealPlan;
 use App\Models\MealPlanDayMeal;
+use App\Support\SavoryEggBreakfastMeals;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
@@ -34,7 +35,7 @@ final class BalancedWeeklyMealPlanBuilder
 
             if ($refineRecipes) {
                 $refined = app(BalancedCanonicalMealRecipeRefiner::class)->refine();
-                $refined = array_merge($refined, app(BalancedChiaBreakfastRecipeRefiner::class)->refine());
+                $refined = array_merge($refined, app(BalancedChiaDessertRecipeRefiner::class)->refine());
                 $refined = array_merge($refined, app(BalancedComplexCarbRecipeRefiner::class)->refine());
                 $refined = array_merge($refined, app(BalancedEggBreakfastRecipeRefiner::class)->refine());
                 $refined = array_merge($refined, app(BalancedVeganSideSaladRecipeRefiner::class)->refine());
@@ -137,6 +138,12 @@ final class BalancedWeeklyMealPlanBuilder
         $map = [];
         foreach ($meals as $meal) {
             $map[$meal->name] = (int) $meal->id;
+
+            $canonicalName = SavoryEggBreakfastMeals::canonicalMealName((string) $meal->name);
+
+            if ($canonicalName !== $meal->name) {
+                $map[$canonicalName] = (int) $meal->id;
+            }
         }
 
         return $map;
