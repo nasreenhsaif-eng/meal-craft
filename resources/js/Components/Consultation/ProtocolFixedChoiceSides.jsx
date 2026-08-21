@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import SquareCheckbox from '../Atoms/Icons/SquareCheckbox.jsx';
-import ProtocolMealRow from './ProtocolMealRow.jsx';
+import MealCardClientViewNano from '../MealCardClientViewNano.jsx';
 import {
     FIXED_CHOICE_MAX_COUNT,
     FIXED_CHOICE_MIN_COUNT,
@@ -18,8 +18,11 @@ function normalizeMealId(id) {
     return String(id);
 }
 
+/** Portrait Nano card footprint under a checked side category. */
+const MEAL_CARD_WIDTH = 'w-full max-w-[280px] shrink-0';
+
 /**
- * ND protocol sides: checkbox per category; expand selected meal rows when checked.
+ * ND protocol sides: checkbox per category; expand selected old-style meal cards when checked.
  *
  * @param {object} props
  * @param {Partial<Record<'sideSalads'|'desserts'|'soup', string[]>>} props.categorySelections
@@ -181,27 +184,24 @@ export default function ProtocolFixedChoiceSides({
                                     ) : null}
 
                                     {isChecked && selectedMeals.length > 0 ? (
-                                        <div
-                                            className={[
-                                                'mt-3 flex gap-3',
-                                                selectedMeals.length <= 2
-                                                    ? 'flex-wrap justify-center'
-                                                    : 'flex-col',
-                                            ].join(' ')}
-                                        >
+                                        <div className="mt-3 flex flex-wrap justify-center gap-3">
                                             {selectedMeals.map((meal, index) => (
                                                 <div
                                                     key={normalizeMealId(meal?.id) || index}
-                                                    className={[
-                                                        'overflow-hidden rounded-[10px] border border-gray-200 bg-[#F8F9F6]',
-                                                        selectedMeals.length <= 2
-                                                            ? 'w-full min-w-0 md:w-[calc(50%-0.375rem)] md:max-w-[calc(50%-0.375rem)]'
-                                                            : 'w-full',
-                                                    ].join(' ')}
+                                                    className={MEAL_CARD_WIDTH}
                                                 >
-                                                    <ProtocolMealRow
-                                                        meal={meal}
-                                                        compact
+                                                    <MealCardClientViewNano
+                                                        deck
+                                                        alignActionsBottom
+                                                        hideCraftButton
+                                                        selected
+                                                        title={String(meal?.title ?? '').trim() || 'Meal'}
+                                                        imageUrl={
+                                                            typeof meal?.imageUrl === 'string'
+                                                                ? meal.imageUrl
+                                                                : undefined
+                                                        }
+                                                        macros={meal?.macros}
                                                         onViewDetails={
                                                             typeof onViewDetails === 'function'
                                                                 ? () => onViewDetails(meal)

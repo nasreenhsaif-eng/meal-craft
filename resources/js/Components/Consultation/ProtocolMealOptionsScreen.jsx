@@ -1,17 +1,13 @@
 import PillButton from '../Atoms/Button/Button.jsx';
-import ProtocolMealRow from './ProtocolMealRow.jsx';
+import MealCardClientViewNano from '../MealCardClientViewNano.jsx';
 
-/** Same footprint as one Main Meals / overview card. */
-const MEAL_CARD_SHELL =
-    'overflow-hidden rounded-[10px] border border-gray-200 bg-[#F8F9F6]';
-
-const MEAL_CARD_WIDTH =
-    'w-full min-w-0 max-w-full md:w-[calc(50%-0.375rem)] md:max-w-[calc(50%-0.375rem)]';
+/** Portrait Nano card footprint in the options grid. */
+const MEAL_CARD_WIDTH = 'w-full max-w-[280px] shrink-0';
 
 /**
  * Full-screen “Choose Your Meals of the Day” list for SEE OTHER OPTIONS.
  *
- * Cards match the day-overview ProtocolMealRow chrome (soft fill, bordered shell).
+ * Uses the old portrait craft cards; CRAFT THIS MEAL / SELECTED is the toggle (no checkbox row).
  *
  * @param {object} props
  * @param {string} props.dayLabel e.g. "SUNDAY"
@@ -43,7 +39,7 @@ export default function ProtocolMealOptionsScreen({
     const optionCount = options.length;
     const selectedCount = selectedIds.length;
     const handleConfirm = typeof onConfirm === 'function' ? onConfirm : onBack;
-    const centerPair = optionCount > 0 && optionCount <= 2;
+    const atLimit = selectedCount >= maxSelected && maxSelected > 1;
 
     return (
         <div
@@ -76,7 +72,7 @@ export default function ProtocolMealOptionsScreen({
                     <ul
                         className={[
                             'm-0 flex list-none flex-wrap gap-3 px-3 pb-4',
-                            centerPair ? 'justify-center' : 'justify-start',
+                            optionCount <= 2 ? 'justify-center' : 'justify-center sm:justify-start',
                         ].join(' ')}
                     >
                         {options.map((meal, index) => {
@@ -84,22 +80,18 @@ export default function ProtocolMealOptionsScreen({
                             const selected = selectedSet.has(id);
 
                             return (
-                                <li
-                                    key={id}
-                                    className={[
-                                        MEAL_CARD_WIDTH,
-                                        MEAL_CARD_SHELL,
-                                        selected ? 'ring-2 ring-inset ring-[#5A6B44]/35' : '',
-                                    ]
-                                        .join(' ')
-                                        .trim()}
-                                >
-                                    <ProtocolMealRow
-                                        meal={meal}
+                                <li key={id} className={MEAL_CARD_WIDTH}>
+                                    <MealCardClientViewNano
+                                        deck
+                                        alignActionsBottom
                                         selected={selected}
-                                        showCheckbox
-                                        compact
-                                        onSelect={() => onToggle?.(meal)}
+                                        title={String(meal?.title ?? '').trim() || 'Meal'}
+                                        imageUrl={typeof meal?.imageUrl === 'string' ? meal.imageUrl : undefined}
+                                        macros={meal?.macros}
+                                        onToggleSelected={
+                                            typeof onToggle === 'function' ? () => onToggle(meal) : undefined
+                                        }
+                                        vibrantCraftWhenAtLimit={atLimit && !selected}
                                         onViewDetails={
                                             typeof onViewDetails === 'function'
                                                 ? () => onViewDetails(meal)
