@@ -115,3 +115,52 @@ export function applyFixedChoiceToggle(current, categoryKey, mealId) {
         blocked: false,
     };
 }
+
+/**
+ * Meals to show under a checked side category. Falls back to the recommended/first card
+ * when saved ids no longer match the on-screen deck.
+ *
+ * @param {Array<string|number>} selectedIds
+ * @param {object[]} cards
+ * @param {Partial<Record<string, object[]>>} [allDecks]
+ * @returns {object[]}
+ */
+export function resolveFixedChoiceSelectedMeals(selectedIds, cards = [], allDecks = {}) {
+    const normalizedIds = (selectedIds ?? []).map((id) => String(id)).filter((id) => id !== '');
+    /** @type {object[]} */
+    const resolved = [];
+    const seen = new Set();
+
+    for (const id of normalizedIds) {
+        const fromCategory = (cards ?? []).find((meal) => String(meal?.id ?? '') === id);
+        let found = fromCategory ?? null;
+
+        if (!found) {
+            for (const deck of Object.values(allDecks ?? {})) {
+                found = (deck ?? []).find((meal) => String(meal?.id ?? '') === id) ?? null;
+                if (found) {
+                    break;
+                }
+            }
+        }
+
+        if (!found || seen.has(String(found.id))) {
+            continue;
+        }
+
+        seen.add(String(found.id));
+        resolved.push(found);
+    }
+
+    if (resolved.length > 0) {
+        return resolved;
+    }
+
+    if (normalizedIds.length === 0) {
+        return [];
+    }
+
+    const fallback = (cards ?? []).find((meal) => meal?.isRecommended || meal?.is_recommended) ?? (cards ?? [])[0];
+
+    return fallback ? [fallback] : [];
+}

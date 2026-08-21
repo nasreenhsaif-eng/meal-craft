@@ -6,7 +6,6 @@ import { mushroomOmeletteAdminMealFixture } from '../mealCardStoryFixtures.js';
 const saladImage =
     'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=800&q=80';
 
-/** @type {import('./ProtocolMealRow.jsx').default extends Function ? object : never} */
 const chickenMeal = {
     id: '1',
     title: 'Rosemary Garlic Chicken w Roasted Vegetables',
@@ -47,7 +46,7 @@ const mainOptions = [
 function StoryCanvas({ children, wide = false }) {
     return (
         <div className="min-h-[80vh] w-full bg-[#F8F9F6] px-4 py-8">
-            <div className={`mx-auto ${wide ? 'max-w-lg' : 'max-w-md'}`}>{children}</div>
+            <div className={`mx-auto ${wide ? 'max-w-2xl' : 'max-w-md'}`}>{children}</div>
         </div>
     );
 }
@@ -58,11 +57,11 @@ export default {
 };
 
 export const MealRow = {
-    name: 'Protocol meal row',
+    name: 'Protocol meal card (old Nano)',
     render: () => (
         <StoryCanvas>
-            <div className="rounded-[12px] border border-[#5A6B44] bg-white">
-                <ProtocolMealRow meal={chickenMeal} onViewDetails={() => {}} />
+            <div className="mx-auto max-w-[280px]">
+                <ProtocolMealRow meal={chickenMeal} selected onViewDetails={() => {}} onSelect={() => {}} />
             </div>
         </StoryCanvas>
     ),
@@ -85,7 +84,7 @@ export const SlotCardBreakfast = {
 export const SlotCardMains = {
     name: 'Slot card — dual mains',
     render: () => (
-        <StoryCanvas>
+        <StoryCanvas wide>
             <ProtocolMealSlotCard
                 title="Main Meals"
                 selectedMeals={[chickenMeal, liverMeal]}

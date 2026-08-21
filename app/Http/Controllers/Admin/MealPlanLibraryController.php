@@ -125,7 +125,6 @@ class MealPlanLibraryController extends Controller
 
         $dayCount = max(1, $mealPlan->structuredPlanningDayCount());
         $categoryKeys = ['breakfasts', 'meals', 'sideSalads', 'desserts', 'soup'];
-        $emptyCategories = array_fill_keys($categoryKeys, []);
 
         /** @var array<int, array{dayNumber: int, label: string, categories: array<string, list<array<string, mixed>>}> $daysByNumber */
         $daysByNumber = [];
@@ -133,13 +132,12 @@ class MealPlanLibraryController extends Controller
             $daysByNumber[$dayNumber] = [
                 'dayNumber' => $dayNumber,
                 'label' => self::WEEKDAY_LABELS[$dayNumber - 1] ?? __('Day :number', ['number' => $dayNumber]),
-                'categories' => $emptyCategories,
+                'categories' => array_fill_keys($categoryKeys, []),
             ];
         }
 
         $category = $mealPlan->plan_category;
-        $isNutrientDensePlan = $category === MealPlanLibraryCategory::NutrientDense
-            || str_contains(strtolower((string) ($mealPlan->name ?? '')), 'tbd');
+        $isNutrientDensePlan = $mealPlan->usesNutrientDenseProtocol();
         $storedDefaults = MealPlanDefaultDaySelections::forPlan($mealPlan);
         $hasStoredDefaults = $storedDefaults !== [];
 
@@ -218,6 +216,7 @@ class MealPlanLibraryController extends Controller
             'saveDefaultSelectionsUrl' => route('admin.meal-plan-library.default-selections', $mealPlan),
             'libraryUrl' => route('admin.meal-plan-library'),
             'ingredientProfiles' => $this->mealLibrary->verifiedIngredientProfilesForUi(),
+            'dietProtocol' => $mealPlan->dietProtocol()->value,
         ]);
     }
 

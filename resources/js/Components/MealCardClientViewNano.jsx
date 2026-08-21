@@ -100,23 +100,35 @@ export default function MealCardClientViewNano({
 
     const showCheckmark = assigned || selected;
 
+    /**
+     * Flat grid / protocol cards (no carousel stack role) — same elevation as {@link MealCard} `DECK_SHELL`:
+     * outer `shadow-md` for selected and unselected alike.
+     */
+    const isFlatDeckCard = deck && !ribbon && deckStackRole == null;
+
     /** Selected: inset ring keeps outer card dimensions stable in the carousel track. */
     const selectedShellClass = selected ? 'ring-2 ring-inset ring-[#5A6B44]/35' : '';
-    const cardShadowClass =
-        deck ? (selected ? 'shadow-none ring-0' : 'shadow-none') : selected ? 'shadow-none' : 'shadow-md';
+    const cardShadowClass = isFlatDeckCard
+        ? 'shadow-none'
+        : deck
+          ? selected
+              ? 'shadow-none ring-0'
+              : 'shadow-none'
+          : selected
+            ? 'shadow-none'
+            : 'shadow-md';
     /** Mobile 3D stack only — fan depth cue (not used on flat desktop ribbon). */
     const articleDeckStackShadow =
-        deck && !ribbon && !selected && deckStackRole === 'front'
+        !isFlatDeckCard && deck && !ribbon && !selected && deckStackRole === 'front'
             ? 'shadow-[-14px_0_28px_-10px_rgba(38,42,34,0.16)]'
             : '';
     /** Mobile stack back cards only. */
     const deckBackRimClass =
-        deck && !ribbon && !selected && deckStackRole === 'back'
+        !isFlatDeckCard && deck && !ribbon && !selected && deckStackRole === 'back'
             ? 'ring-1 ring-white/90 shadow-[inset_-1px_0_0_0_rgba(38,42,34,0.06)]'
             : '';
-    /** Front hero in mobile stack when role unset — ribbon excluded. */
-    const articleShadowDeck =
-        deck && !ribbon && !selected && deckStackRole == null ? 'shadow-md' : '';
+    /** Flat deck / protocol: always MealCard-style `shadow-md` (selected and unselected). */
+    const articleShadowDeck = isFlatDeckCard ? 'shadow-md' : '';
     const selectedDeckRaise =
         deck && selected ? 'relative z-[1]' : '';
 

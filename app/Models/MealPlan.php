@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\DietProtocol;
 use App\Enums\MealCyclePhaseTag;
 use App\Enums\MealPlanLibraryCategory;
 use App\Enums\MealPlanSchemaType;
@@ -50,6 +51,28 @@ class MealPlan extends Model
             MealPlanSchemaType::FourWeek => 28,
             MealPlanSchemaType::WeeklyStructured => 7,
             default => 0,
+        };
+    }
+
+    public function usesNutrientDenseProtocol(): bool
+    {
+        if ($this->plan_category === MealPlanLibraryCategory::NutrientDense) {
+            return true;
+        }
+
+        return str_contains(strtolower((string) ($this->name ?? '')), 'tbd');
+    }
+
+    public function dietProtocol(): DietProtocol
+    {
+        if ($this->usesNutrientDenseProtocol()) {
+            return DietProtocol::NutrientDense;
+        }
+
+        return match ($this->plan_category) {
+            MealPlanLibraryCategory::SickleCellWarrior => DietProtocol::SickleCellWarrior,
+            MealPlanLibraryCategory::CycleSync => DietProtocol::CycleSync,
+            default => DietProtocol::Balanced,
         };
     }
 

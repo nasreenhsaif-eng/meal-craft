@@ -146,7 +146,46 @@ test('authenticated users can view meal plan detail with day categories', functi
             ->has('libraryUrl')
             ->has('planTiers')
             ->has('defaultPlanTier')
-            ->has('tierPreviewUrl'));
+            ->has('tierPreviewUrl')
+            ->where('dietProtocol', 'balanced'));
+});
+
+test('nutrient dense meal plans expose nutrient_dense diet protocol to the admin picker', function (): void {
+    $user = User::factory()->create();
+
+    $plan = MealPlan::query()->create([
+        'name' => 'Nutrient Density Protocol',
+        'goal' => 'Weekly nutrient density rotation.',
+        'schema_type' => MealPlanSchemaType::WeeklyStructured,
+        'plan_category' => MealPlanLibraryCategory::NutrientDense,
+        'target_total_calories' => 10500,
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('admin.meal-plan-library.show', $plan))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Admin/MealPlanDetail')
+            ->where('dietProtocol', 'nutrient_dense'));
+});
+
+test('tbd weekly protocol plans use the customer onboarding nutrient dense picker', function (): void {
+    $user = User::factory()->create();
+
+    $plan = MealPlan::query()->create([
+        'name' => 'TBD Weekly Protocol',
+        'goal' => 'Weekly nutrient density rotation.',
+        'schema_type' => MealPlanSchemaType::WeeklyStructured,
+        'plan_category' => MealPlanLibraryCategory::Balanced,
+        'target_total_calories' => 10500,
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('admin.meal-plan-library.show', $plan))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Admin/MealPlanDetail')
+            ->where('dietProtocol', 'nutrient_dense'));
 });
 
 test('meal plan tier preview returns tier-scaled days for admin', function (): void {
