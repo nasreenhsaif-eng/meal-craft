@@ -127,12 +127,8 @@ export default function MealCardClientViewNano({
         !isFlatDeckCard && deck && !ribbon && !selected && deckStackRole === 'back'
             ? 'ring-1 ring-white/90 shadow-[inset_-1px_0_0_0_rgba(38,42,34,0.06)]'
             : '';
-    /** Flat deck / protocol: always MealCard-style shadow-md. Stack front (no role) also uses shadow-md. */
-    const articleShadowDeck = isFlatDeckCard
-        ? 'shadow-md'
-        : deck && !ribbon && !selected && deckStackRole == null
-          ? 'shadow-md'
-          : '';
+    /** Flat deck / protocol: always MealCard-style `shadow-md` (selected and unselected). */
+    const articleShadowDeck = isFlatDeckCard ? 'shadow-md' : '';
     const selectedDeckRaise =
         deck && selected ? 'relative z-[1]' : '';
 
