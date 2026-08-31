@@ -47,7 +47,10 @@ test('meal library index includes detailView on each meal for the detail modal',
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->component('Admin/MealLibrary')
             ->has('meals', 1)
+            ->has('browseTabs')
+            ->where('browseTabs.0.id', 'all')
             ->where('meals.0.title', 'Detail Payload Meal')
+            ->where('meals.0.browseTab', 'meal')
             ->where('meals.0.macros.calories', 50)
             ->where('meals.0.detailView.nutritionalData.sections.0.rows.0.value', '50')
             ->has('meals.0.detailView')
@@ -108,6 +111,7 @@ test('meal library meal card macros use stored per-serving totals when meal is b
             ->component('Admin/MealLibrary')
             ->has('meals', 1)
             ->where('meals.0.title', 'Bulk Macro Card Meal')
+            ->where('meals.0.browseTab', 'meal')
             ->where('meals.0.macros.calories', 167)
             ->where('meals.0.macros.protein', 3.8)
             ->where('meals.0.macros.carbs', 21.5)

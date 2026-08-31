@@ -46,7 +46,7 @@ const mainOptions = [
 function StoryCanvas({ children, wide = false }) {
     return (
         <div className="min-h-[80vh] w-full bg-[#F8F9F6] px-4 py-8">
-            <div className={`mx-auto ${wide ? 'max-w-2xl' : 'max-w-md'}`}>{children}</div>
+            <div className={`mx-auto ${wide ? 'max-w-[1100px]' : 'max-w-md'}`}>{children}</div>
         </div>
     );
 }

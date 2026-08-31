@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\CyclePhase;
 use App\Enums\DietType;
+use App\Enums\MealLibraryKey;
 use App\Enums\MealType;
 use App\Enums\RecipeCategory;
 use App\Services\RecipeNutritionCalculator;
@@ -15,6 +16,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
@@ -23,6 +25,13 @@ class Meal extends Model
 {
     /** @use HasFactory<MealFactory> */
     use HasFactory, SoftDeletes;
+
+    /**
+     * @var array<string, mixed>
+     */
+    protected $attributes = [
+        'library_key' => 'classic',
+    ];
 
     protected $fillable = [
         'name',
@@ -77,6 +86,7 @@ class Meal extends Model
         'nutrition_aggregates_synced',
         'library_sort_order',
         'library_edited_at',
+        'library_key',
     ];
 
     protected function casts(): array
@@ -125,6 +135,7 @@ class Meal extends Model
             'sickle_cell_program_highlight' => 'boolean',
             'nutrition_aggregates_synced' => 'boolean',
             'library_edited_at' => 'datetime',
+            'library_key' => MealLibraryKey::class,
         ];
     }
 
@@ -153,10 +164,33 @@ class Meal extends Model
     public static function queryForMealLibrary(): Builder
     {
         return static::query()
+            ->where('library_key', MealLibraryKey::Classic)
             ->visibleInMealLibrary()
             ->orderBy('library_sort_order')
             ->orderByDesc('updated_at')
             ->orderBy('id');
+    }
+
+    /**
+     * Meals shown in the admin Meal Tiers Library only.
+     *
+     * @return Builder<Meal>
+     */
+    public static function queryForMealTiersLibrary(): Builder
+    {
+        return static::query()
+            ->where('library_key', MealLibraryKey::Tiers)
+            ->visibleInMealLibrary()
+            ->orderBy('library_sort_order')
+            ->orderByDesc('updated_at')
+            ->orderBy('id');
+    }
+
+    public static function nextTiersLibrarySortOrder(): int
+    {
+        $max = static::queryForMealTiersLibrary()->max('library_sort_order');
+
+        return $max !== null ? ((int) $max) + 1 : 0;
     }
 
     public static function nextLibrarySortOrder(): int
@@ -249,6 +283,14 @@ class Meal extends Model
         return $this->belongsToMany(Ingredient::class)
             ->withPivot(['amount_grams', 'amount', 'unit'])
             ->withTimestamps();
+    }
+
+    /**
+     * @return HasMany<MealCalorieTier, $this>
+     */
+    public function calorieTiers(): HasMany
+    {
+        return $this->hasMany(MealCalorieTier::class)->orderBy('calorie_tier');
     }
 
     public function derivedLibraryIngredient(): HasOne

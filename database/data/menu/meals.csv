@@ -1,2 +1,2 @@
 meal_name,meal_type,ingredients_string,target_calories,target_protein,target_carbs,target_fat,batch_calories,batch_protein,batch_carbs,batch_fat,is_bulk,servings_count,meal_plan_tag,cycle_phase,safety_alerts,image_url,short_description,instructions
-"Pest SC safety meal",Meal,"Pest Iron C Ingredient:100",,,,,,,,,false,,,,"Contains: Peanuts",,,
+"Duplicate context meal",Meal,,,,,,,,,,false,,,,,,,

@@ -34,6 +34,7 @@ use App\Support\MealInstructionsText;
 use App\Support\MealLibraryBulkNutrition;
 use App\Support\MealLibraryEditGuard;
 use App\Support\MealLibraryTaxonomy;
+use App\Support\MealTiersLibraryBrowseTab;
 use App\Support\RawPrepIngredientPresentation;
 use App\Support\SaladMealPresentation;
 use App\Support\SickleCellNutrientRdi;
@@ -773,6 +774,7 @@ class MealLibraryController extends Controller
             'meals' => $meals,
             'ingredientProfiles' => $ingredientProfiles,
             'pendingMealImports' => $pendingMealImports,
+            'browseTabs' => MealTiersLibraryBrowseTab::tabsForMeals($meals),
         ];
     }
 
@@ -1066,6 +1068,7 @@ class MealLibraryController extends Controller
             'imageUrl' => $this->mealImageUrl($meal),
             'mealType' => ($meal->category ?? RecipeCategory::Meal)->value,
             'category' => ($meal->category ?? RecipeCategory::Meal)->value,
+            'browseTab' => MealTiersLibraryBrowseTab::forMeal($meal),
             'prepMinutes' => 0,
             'macros' => [
                 'calories' => (int) round((float) ($nutrition['calories'] ?? 0)),

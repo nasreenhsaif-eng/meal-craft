@@ -9,6 +9,7 @@ import MultiPillDropdown from '../../Components/Atoms/TextInput/MultiPillDropdow
 import Button from '../../Components/Atoms/Button.jsx';
 import PillButton from '../../Components/Atoms/Button/Button.jsx';
 import MealCard from '../../Components/MealCard.jsx';
+import MealBrowseTabs from '../../Components/MealBrowseTabs.jsx';
 import MealDetailView from '../../Components/Molecules/MealDetailView/MealDetailView';
 import MealLibrarySortableTable from '../../Components/MealLibrary/MealLibrarySortableTable.jsx';
 import CSVUploader from '../../Components/CSVUploader.jsx';
@@ -617,6 +618,7 @@ function deleteSelectedButtonClass(anySelected) {
  *   cyclePhases?: { value: string; label: string }[];
  *   meals?: object[];
  *   ingredientProfiles?: object[];
+ *   browseTabs?: Array<{ id: string, label: string }>;
  *   csvMealCraftTemplateUrl?: string;
  *   csvExportUrl?: string;
  *   csvImportUrl?: string;
@@ -644,6 +646,7 @@ function deleteSelectedButtonClass(anySelected) {
 export function MealLibraryPageContent({
     cyclePhases = DEFAULT_CYCLE_PHASES,
     meals = [],
+    browseTabs = [],
     ingredientProfiles = [],
     csvMealCraftTemplateUrl = '',
     csvExportUrl = '#',
@@ -664,6 +667,7 @@ export function MealLibraryPageContent({
     onRowReorder,
 }) {
     const [query, setQuery] = useState('');
+    const [browseTab, setBrowseTab] = useState(browseTabs[0]?.id ?? 'all');
     const [mealRows, setMealRows] = useState(meals);
     const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
     const [selectedRows, setSelectedRows] = useState(/** @type {string[]} */ ([]));
@@ -726,7 +730,7 @@ export function MealLibraryPageContent({
 
     useEffect(() => {
         setVisibleCount(PAGE_SIZE);
-    }, [query, mealRows]);
+    }, [query, mealRows, browseTab]);
 
     useEffect(() => {
         if (storyInitialCreateModalOpen) {
@@ -1056,12 +1060,23 @@ export function MealLibraryPageContent({
         };
     }, [activeSuggestRow]);
 
+    const activeBrowseTab = browseTabs.some((tab) => tab.id === browseTab)
+        ? browseTab
+        : (browseTabs[0]?.id ?? 'all');
+    const activeBrowseLabel = browseTabs.find((tab) => tab.id === activeBrowseTab)?.label ?? 'All';
+
     const filteredMeals = useMemo(() => {
         const q = query.trim().toLowerCase();
+        const inBrowseTab =
+            browseTabs.length === 0 || activeBrowseTab === 'all'
+                ? mealRows
+                : mealRows.filter((m) => m.browseTab === activeBrowseTab);
+
         if (!q) {
-            return mealRows;
+            return inBrowseTab;
         }
-        return mealRows.filter((m) => {
+
+        return inBrowseTab.filter((m) => {
             const titleMatch = String(m.title ?? '')
                 .toLowerCase()
                 .includes(q);
@@ -1076,7 +1091,7 @@ export function MealLibraryPageContent({
                 m.tags.some((t) => String(t.label ?? t ?? '').toLowerCase().includes(q));
             return titleMatch || mealTypeMatch || categoryMatch || tagMatch;
         });
-    }, [mealRows, query]);
+    }, [mealRows, query, browseTabs, activeBrowseTab]);
 
     const displayedMeals = useMemo(
         () => filteredMeals.slice(0, Math.min(visibleCount, filteredMeals.length)),
@@ -1884,45 +1899,48 @@ export function MealLibraryPageContent({
                             </div>
                         </div>
 
-                        <div className="flex w-full min-w-0 flex-col gap-3 sm:flex-row sm:items-end">
-                            <div className="min-w-0 flex-1">
-                                <TextInput
-                                    label="Search meals"
-                                    placeholder="Search by name, meal type, category, or tag…"
-                                    value={query}
-                                    onChange={(e) => setQuery(e.target.value)}
-                                    className="!max-w-none"
-                                />
-                            </div>
-                            <div
-                                className="flex shrink-0 items-center gap-1 self-stretch rounded-[12px] border border-[#E5E7EB] bg-[#F8F9F6] p-1 sm:self-auto"
-                                role="group"
-                                aria-label="Library view"
-                            >
-                                <RoundIconButton
-                                    type="button"
-                                    icon={<IconLayoutGrid className={viewMode === 'grid' ? 'text-[#5A6B44]' : ''} />}
-                                    ariaLabel="Grid view"
-                                    aria-pressed={viewMode === 'grid'}
-                                    onClick={() => setViewMode('grid')}
-                                    className={
-                                        viewMode === 'grid'
-                                            ? '!border-transparent bg-white text-[#262A22] shadow-sm'
-                                            : '!border-transparent bg-transparent text-[#6B7280] shadow-none hover:bg-white/70'
-                                    }
-                                />
-                                <RoundIconButton
-                                    type="button"
-                                    icon={<IconLayoutList className={viewMode === 'list' ? 'text-[#5A6B44]' : ''} />}
-                                    ariaLabel="List view"
-                                    aria-pressed={viewMode === 'list'}
-                                    onClick={() => setViewMode('list')}
-                                    className={
-                                        viewMode === 'list'
-                                            ? '!border-transparent bg-white text-[#262A22] shadow-sm'
-                                            : '!border-transparent bg-transparent text-[#6B7280] shadow-none hover:bg-white/70'
-                                    }
-                                />
+                        <div className="flex w-full min-w-0 flex-col gap-3">
+                            <MealBrowseTabs tabs={browseTabs} activeId={activeBrowseTab} onChange={setBrowseTab} />
+                            <div className="flex w-full min-w-0 flex-col gap-3 sm:flex-row sm:items-end">
+                                <div className="min-w-0 flex-1">
+                                    <TextInput
+                                        label="Search meals"
+                                        placeholder="Search by name, meal type, category, or tag…"
+                                        value={query}
+                                        onChange={(e) => setQuery(e.target.value)}
+                                        className="!max-w-none"
+                                    />
+                                </div>
+                                <div
+                                    className="flex shrink-0 items-center gap-1 self-stretch rounded-[12px] border border-[#E5E7EB] bg-[#F8F9F6] p-1 sm:self-auto"
+                                    role="group"
+                                    aria-label="Library view"
+                                >
+                                    <RoundIconButton
+                                        type="button"
+                                        icon={<IconLayoutGrid className={viewMode === 'grid' ? 'text-[#5A6B44]' : ''} />}
+                                        ariaLabel="Grid view"
+                                        aria-pressed={viewMode === 'grid'}
+                                        onClick={() => setViewMode('grid')}
+                                        className={
+                                            viewMode === 'grid'
+                                                ? '!border-transparent bg-white text-[#262A22] shadow-sm'
+                                                : '!border-transparent bg-transparent text-[#6B7280] shadow-none hover:bg-white/70'
+                                        }
+                                    />
+                                    <RoundIconButton
+                                        type="button"
+                                        icon={<IconLayoutList className={viewMode === 'list' ? 'text-[#5A6B44]' : ''} />}
+                                        ariaLabel="List view"
+                                        aria-pressed={viewMode === 'list'}
+                                        onClick={() => setViewMode('list')}
+                                        className={
+                                            viewMode === 'list'
+                                                ? '!border-transparent bg-white text-[#262A22] shadow-sm'
+                                                : '!border-transparent bg-transparent text-[#6B7280] shadow-none hover:bg-white/70'
+                                        }
+                                    />
+                                </div>
                             </div>
                         </div>
 
@@ -1959,7 +1977,9 @@ export function MealLibraryPageContent({
                     <div className="p-5">
                         {filteredMeals.length === 0 ? (
                             <p className="rounded-[12px] border border-dashed border-gray-200 bg-[#F8F9F6] p-8 text-center font-body text-sm text-[#555555]">
-                                No meals match your search. Try another name, type, category, or tag.
+                                {query.trim()
+                                    ? 'No meals match your search. Try another name, type, category, or tag.'
+                                    : `No ${activeBrowseLabel.toLowerCase()} meals in the Meal Library yet.`}
                             </p>
                         ) : viewMode === 'grid' ? (
                             <>

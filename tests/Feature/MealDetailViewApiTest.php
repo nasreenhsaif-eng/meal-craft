@@ -138,22 +138,22 @@ test('meal detail view api scales ingredient amounts for customer plan and craft
         ->assertJsonPath('detailView.ingredients.0', "{$expectedGrams}g Scaled Rice");
 });
 
-test('meal detail view api formats liquid ingredients in milliliters', function () {
+test('meal detail view api formats cooking oils in tablespoons', function () {
     // Non-admin without a calorie target so consultation adaptation does not snap portions.
     $user = User::factory()->customer()->create();
 
     $oil = Ingredient::factory()->create([
         'name' => 'Olive Oil (Extra Virgin)',
         'usda_food_category' => 'Fats',
-        'density' => 1.0,
+        'density' => 0.92,
     ]);
     $meal = Meal::factory()->create(['name' => 'API Detail Omelet With Oil']);
-    $meal->ingredients()->attach($oil->id, ['amount_grams' => 6, 'amount' => 6, 'unit' => 'g']);
+    $meal->ingredients()->attach($oil->id, ['amount_grams' => 13.8, 'amount' => 13.8, 'unit' => 'g']);
 
     $this->actingAs($user)
         ->getJson(route('api.meals.detail-view', $meal))
         ->assertOk()
-        ->assertJsonPath('detailView.ingredients.0', '5ml Olive Oil (Extra Virgin)');
+        ->assertJsonPath('detailView.ingredients.0', '1 tbsp Olive Oil (Extra Virgin)');
 });
 
 test('meal detail view api matches scheduled savory breakfast calories for full craft day', function () {

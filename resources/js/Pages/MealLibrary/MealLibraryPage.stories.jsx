@@ -24,10 +24,25 @@ const sampleIngredientProfiles = [
     },
 ];
 
+const sampleBrowseTabs = [
+    { id: 'chicken', label: 'Chicken' },
+    { id: 'liver', label: 'Liver' },
+    { id: 'salmon', label: 'Salmon' },
+    { id: 'dessert', label: 'Dessert' },
+    { id: 'side_salad', label: 'Side salad' },
+    { id: 'beef', label: 'Beef' },
+    { id: 'soup', label: 'Soup' },
+    { id: 'breakfast', label: 'Breakfast' },
+    { id: 'main_salad', label: 'Main salad' },
+    { id: 'base_recipe', label: 'Base recipe' },
+    { id: 'meal', label: 'Meal' },
+];
+
 const sampleMeals = [
     {
         id: '1',
-        title: 'Rice Bowl',
+        title: 'Rosemary Garlic Chicken',
+        browseTab: 'chicken',
         imageUrl: '',
         mealType: 'Meal',
         category: 'Meal',
@@ -40,6 +55,7 @@ const sampleMeals = [
     {
         id: '2',
         title: 'Greek Yogurt Parfait',
+        browseTab: 'breakfast',
         imageUrl: '',
         mealType: 'Breakfast',
         category: 'Breakfast',
@@ -52,6 +68,7 @@ const sampleMeals = [
     {
         id: '3',
         title: 'Lentil Soup',
+        browseTab: 'soup',
         imageUrl: '',
         mealType: 'Soup',
         category: 'Soup',
@@ -108,7 +125,12 @@ export const Default = {
     render: (args) => (
         <div className="min-h-screen w-full bg-gray-50 p-8">
             <MealLibraryStoryShell>
-                <MealLibraryPageContent {...args} meals={sampleMeals} ingredientProfiles={sampleIngredientProfiles} />
+                <MealLibraryPageContent
+                    {...args}
+                    meals={sampleMeals}
+                    browseTabs={sampleBrowseTabs}
+                    ingredientProfiles={sampleIngredientProfiles}
+                />
             </MealLibraryStoryShell>
         </div>
     ),
@@ -125,6 +147,7 @@ export const ListViewWithReorder = {
                 <MealLibraryPageContent
                     {...args}
                     meals={sampleMeals}
+                    browseTabs={sampleBrowseTabs}
                     ingredientProfiles={sampleIngredientProfiles}
                     onRowReorder={(updated) => {
                         console.log(

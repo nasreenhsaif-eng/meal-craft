@@ -1,7 +1,17 @@
 import MealCardClientViewNano from '../MealCardClientViewNano.jsx';
 
-/** Portrait Nano card footprint in the selected-slot grid. */
-const MEAL_CARD_WIDTH = 'w-full max-w-[280px] shrink-0';
+/**
+ * Full-width grid with 280px tracks + justify-center.
+ * Shrink-wrapped flex (`w-max`) resolved to 100% and left the pair on the left edge.
+ */
+function mealCardsGridClass(count) {
+    return [
+        'grid w-full justify-center justify-items-stretch gap-3',
+        count >= 2
+            ? 'grid-cols-[minmax(0,280px)] sm:grid-cols-[repeat(2,minmax(0,280px))]'
+            : 'grid-cols-[minmax(0,280px)]',
+    ].join(' ');
+}
 
 /**
  * Day-overview slot card: olive border, SEE OTHER OPTIONS, selected old-style meal cards.
@@ -58,16 +68,9 @@ export default function ProtocolMealSlotCard({
                         No meal selected yet.
                     </p>
                 ) : (
-                    <div
-                        className={[
-                            'flex flex-wrap gap-3',
-                            meals.length === 1 ? 'justify-center' : 'justify-center md:justify-start',
-                        ]
-                            .join(' ')
-                            .trim()}
-                    >
+                    <div className={mealCardsGridClass(meals.length)}>
                         {meals.map((meal, index) => (
-                            <div key={String(meal?.id ?? index)} className={MEAL_CARD_WIDTH}>
+                            <div key={String(meal?.id ?? index)} className="min-w-0 w-full">
                                 <MealCardClientViewNano
                                     deck
                                     alignActionsBottom
