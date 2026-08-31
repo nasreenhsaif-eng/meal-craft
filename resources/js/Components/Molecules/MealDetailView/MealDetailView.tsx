@@ -55,6 +55,8 @@ export type MealDetailModel = {
     nutritionalData: MealNutritionalData;
     ingredients: string[];
     ingredientSections?: MealIngredientSection[];
+    /** Legend for raw / dry / pre-cooked prep weights on every recipe. */
+    ingredientsPrepNote?: string | null;
     /** Estimated cooked plated weight from raw/dry inputs + pre-cooked bases. */
     cookingYieldNote?: string | null;
     instructions: string[] | string;
@@ -144,6 +146,7 @@ export default function MealDetailView({ meal, className = '', hideImage = false
         nutritionalData,
         ingredients,
         ingredientSections,
+        ingredientsPrepNote,
         cookingYieldNote,
         instructions,
         instructionSections,
@@ -239,6 +242,11 @@ export default function MealDetailView({ meal, className = '', hideImage = false
                         >
                             Ingredients
                         </h2>
+                        {String(ingredientsPrepNote ?? '').trim() !== '' ? (
+                            <p className="font-montserrat text-sm font-medium leading-relaxed text-[#5A6B44] md:text-[15px]">
+                                {String(ingredientsPrepNote).trim()}
+                            </p>
+                        ) : null}
                         {hasIngredientSections ? (
                             <div className="space-y-6">
                                 {ingredientSections.map((section) => (

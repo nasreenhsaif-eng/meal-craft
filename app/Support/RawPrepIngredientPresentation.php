@@ -54,6 +54,14 @@ final class RawPrepIngredientPresentation
         return sprintf('%sg %s (%s)', $formattedGrams, $ingredient->name, $suffix);
     }
 
+    /**
+     * Legend shown above every recipe ingredient list.
+     */
+    public static function ingredientsPrepNote(): string
+    {
+        return __('Listed amounts are prep weights: meats and fish are raw before cooking; dry grains and legumes are dry weight; (Base) items are pre-cooked plated portions.');
+    }
+
     private static function displayName(string $ingredientName): string
     {
         if ($ingredientName === 'Salmon (Raw)') {

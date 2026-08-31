@@ -96,6 +96,7 @@ final class MealTiersLibraryPresentation
 
         $buckets = MealTiersProteinFamily::bucketsForMeal($meal, (int) $tier->calorie_tier);
         $eggCount = MealTiersCalorieTabs::savoryEggMinimumForMeal($meal, (int) $tier->calorie_tier);
+        $yieldSummary = IngredientCookingYield::mealYieldSummary($tier->ingredients);
 
         return [
             'calorie_tier' => (int) $tier->calorie_tier,
@@ -109,6 +110,8 @@ final class MealTiersLibraryPresentation
             'nutritionalData' => self::nutritionalData($nutrition),
             'ingredients' => $ingredients,
             'ingredientSections' => self::ingredientSections($tier),
+            'ingredientsPrepNote' => RawPrepIngredientPresentation::ingredientsPrepNote(),
+            'cookingYieldNote' => $yieldSummary['note'] !== '' ? $yieldSummary['note'] : null,
             'proteinFamily' => MealTiersProteinFamily::forMeal($meal),
             'buckets' => $buckets,
             'proteinGramsTarget' => MealTiersProteinFamily::proteinGramsForTier((int) $tier->calorie_tier),
@@ -271,7 +274,21 @@ final class MealTiersLibraryPresentation
             return $ingredient->name.' — '.LiquidIngredientPresentation::formatKitchenQuantity($grams, $ingredient);
         }
 
-        return $ingredient->name.' — '.self::decimal($grams).' g';
+        $formattedGrams = self::decimal($grams);
+
+        if (RawPrepIngredientPresentation::isRawPrepIngredient($ingredient)) {
+            return RawPrepIngredientPresentation::formatLine($grams, $formattedGrams, $ingredient);
+        }
+
+        if (RawPrepIngredientPresentation::isDryWeightIngredient($ingredient)) {
+            return RawPrepIngredientPresentation::formatDryLine($grams, $formattedGrams, $ingredient);
+        }
+
+        if (RawPrepIngredientPresentation::isPreCookedBaseIngredient($ingredient)) {
+            return RawPrepIngredientPresentation::formatBaseLine($grams, $formattedGrams, $ingredient);
+        }
+
+        return $ingredient->name.' — '.$formattedGrams.' g';
     }
 
     private static function decimal(float $value): string

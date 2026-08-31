@@ -196,6 +196,9 @@ export default function MealTiersLibraryPage({
             nutritionalData: tier.nutritionalData,
             ingredients: ingredientLines.length > 0 ? ingredientLines : meal.detailView?.ingredients,
             ingredientSections: tier.ingredientSections ?? meal.detailView?.ingredientSections,
+            ingredientsPrepNote:
+                tier.ingredientsPrepNote ?? meal.detailView?.ingredientsPrepNote,
+            cookingYieldNote: tier.cookingYieldNote ?? meal.detailView?.cookingYieldNote,
         };
     };
 

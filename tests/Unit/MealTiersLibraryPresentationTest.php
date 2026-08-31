@@ -51,7 +51,7 @@ test('keeps rosemary garlic chicken base in the protein group', function () {
 
 test('groups tiers library ingredients into protein carbs-veg fats-sauces and seasonings', function () {
     $chicken = Ingredient::factory()->make(['name' => 'Chicken Breast', 'usda_food_category' => 'Proteins']);
-    $rice = Ingredient::factory()->make(['name' => 'Brown Rice', 'usda_food_category' => 'Grains']);
+    $rice = Ingredient::factory()->make(['name' => 'Brown Rice', 'usda_food_category' => 'Grains', 'calories' => 360]);
     $pepper = Ingredient::factory()->make(['name' => 'Black Pepper', 'usda_food_category' => 'Spices and Herbs']);
     $chicken->setRelation('pivot', (object) ['amount_grams' => 150]);
     $rice->setRelation('pivot', (object) ['amount_grams' => 100]);
@@ -67,5 +67,19 @@ test('groups tiers library ingredients into protein carbs-veg fats-sauces and se
         'Protein',
         'Carbs and vegetables',
         'Seasonings',
+    ])
+        ->and($sections[0]['items'][0])->toContain('raw, before cooking')
+        ->and($sections[1]['items'][0])->toContain('dry weight');
+});
+
+test('labels pre-cooked chicken bases on tiers ingredient lines', function () {
+    $base = Ingredient::factory()->make([
+        'name' => 'Rosemary Garlic Chicken (Base)',
+        'usda_food_category' => 'Base Ingredient',
+        'is_base_recipe' => true,
     ]);
+    $base->setRelation('pivot', (object) ['amount_grams' => 100]);
+
+    expect(MealTiersLibraryPresentation::ingredientAmountLine($base, 100.0))
+        ->toContain('pre-cooked base');
 });

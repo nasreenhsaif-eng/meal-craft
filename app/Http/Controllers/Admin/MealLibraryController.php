@@ -1156,6 +1156,7 @@ class MealLibraryController extends Controller
             'sickleCellHighlights' => $sickleCellHighlights,
             'nutritionalData' => $this->nutritionalDataForDetailView($nutrition),
             'ingredients' => $ingredientLines,
+            'ingredientsPrepNote' => RawPrepIngredientPresentation::ingredientsPrepNote(),
             'cookingYieldNote' => $yieldSummary['note'] !== '' ? $yieldSummary['note'] : null,
             'instructions' => $instructions,
             'imageUrl' => $this->mealImageUrl($meal),

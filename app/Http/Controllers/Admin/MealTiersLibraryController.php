@@ -19,6 +19,7 @@ use App\Support\MealTiersIngredientStructurer;
 use App\Support\MealTiersLibraryBrowseTab;
 use App\Support\MealTiersLibraryPresentation;
 use App\Support\MealTiersProteinFamily;
+use App\Support\RawPrepIngredientPresentation;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -379,6 +380,9 @@ class MealTiersLibraryController extends Controller
                 'ingredients' => $detailIngredientLines !== [] ? $detailIngredientLines : [__('No ingredients on file.')],
                 'ingredientSections' => $defaultTier['ingredientSections']
                     ?? MealTiersLibraryPresentation::ingredientSectionsFromIngredients($meal->ingredients),
+                'ingredientsPrepNote' => $defaultTier['ingredientsPrepNote']
+                    ?? RawPrepIngredientPresentation::ingredientsPrepNote(),
+                'cookingYieldNote' => $defaultTier['cookingYieldNote'] ?? null,
                 'instructions' => $instructionLines !== [] ? $instructionLines : [__('No written instructions on file.')],
                 'imageUrl' => MealImagePath::resolveUrl($meal->image_path, $meal->name) ?: null,
                 'imageAlt' => $meal->name,

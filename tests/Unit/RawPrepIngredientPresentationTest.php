@@ -23,3 +23,10 @@ test('formats chicken breast with raw before cooking suffix', function () {
     expect(RawPrepIngredientPresentation::formatLine(120, '120', $chicken))
         ->toBe('120g Chicken Breast (raw, before cooking)');
 });
+
+test('exposes a prep-weight legend for every recipe', function () {
+    expect(RawPrepIngredientPresentation::ingredientsPrepNote())
+        ->toContain('raw before cooking')
+        ->toContain('dry weight')
+        ->toContain('pre-cooked');
+});
