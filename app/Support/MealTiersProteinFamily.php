@@ -22,6 +22,10 @@ final class MealTiersProteinFamily
      */
     public static function forMeal(Meal $meal): ?string
     {
+        if (! $meal->exists) {
+            return self::fromMealName((string) $meal->name);
+        }
+
         $meal->loadMissing('ingredients');
 
         foreach ($meal->ingredients as $ingredient) {
@@ -52,6 +56,16 @@ final class MealTiersProteinFamily
         }
 
         return self::fromLooseName($name, $mealName);
+    }
+
+    /**
+     * Chicken / fish / beef mains share the 1000 ml kitchen pack-out scaler.
+     *
+     * @param  self::Chicken|self::Fish|self::Beef|null  $family
+     */
+    public static function usesKitchenPackout(?string $family): bool
+    {
+        return in_array($family, [self::Chicken, self::Fish, self::Beef], true);
     }
 
     /**
@@ -105,7 +119,7 @@ final class MealTiersProteinFamily
             return self::Chicken;
         }
 
-        foreach (['salmon', 'hamour', 'shrimp', 'prawn', 'tuna', 'sardine', 'fish'] as $needle) {
+        foreach (['salmon', 'hamour', 'shrimp', 'prawn', 'tuna', 'sardine', 'mackerel', 'fish'] as $needle) {
             if (str_contains($haystack, $needle) && $needle !== 'fish sauce') {
                 if (str_contains($haystack, 'fish sauce')) {
                     continue;

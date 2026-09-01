@@ -38,3 +38,17 @@ test('classifies eggs as protein and green beans as vegetables', function () {
     expect(MealIngredientDisplayOrder::groupRank($egg))->toBe(MealIngredientDisplayOrder::GROUP_PROTEIN)
         ->and(MealIngredientDisplayOrder::groupRank($beans))->toBe(MealIngredientDisplayOrder::GROUP_VEGETABLES);
 });
+
+test('classifies bell peppers as vegetables not seasonings', function () {
+    $bell = Ingredient::factory()->make(['name' => 'Bell Pepper (Red)', 'usda_food_category' => 'Vegetables']);
+    $roasted = Ingredient::factory()->make(['name' => 'Roasted Red Bell Peppers (Base)', 'usda_food_category' => 'Base Ingredient']);
+    $black = Ingredient::factory()->make(['name' => 'Black Pepper', 'usda_food_category' => 'Spices']);
+    $cayenne = Ingredient::factory()->make(['name' => 'Cayenne Pepper', 'usda_food_category' => 'Spices']);
+    $dressing = Ingredient::factory()->make(['name' => 'Red Pepper Dressing (Base)', 'usda_food_category' => 'Base Ingredient']);
+
+    expect(MealIngredientDisplayOrder::groupRank($bell))->toBe(MealIngredientDisplayOrder::GROUP_VEGETABLES)
+        ->and(MealIngredientDisplayOrder::groupRank($roasted))->toBe(MealIngredientDisplayOrder::GROUP_VEGETABLES)
+        ->and(MealIngredientDisplayOrder::groupRank($black))->toBe(MealIngredientDisplayOrder::GROUP_HERBS_SPICES)
+        ->and(MealIngredientDisplayOrder::groupRank($cayenne))->toBe(MealIngredientDisplayOrder::GROUP_HERBS_SPICES)
+        ->and(MealIngredientDisplayOrder::groupRank($dressing))->toBe(MealIngredientDisplayOrder::GROUP_SAUCES);
+});

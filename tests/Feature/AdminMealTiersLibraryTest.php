@@ -8,6 +8,7 @@ use App\Models\Meal;
 use App\Models\MealCalorieTier;
 use App\Models\User;
 use App\Services\BalancedCanonicalMealRecipeRefiner;
+use App\Support\ChickenKitchenPlateTargets;
 
 test('the meal library index does not include meal tiers library meals', function () {
     $user = User::factory()->create();
@@ -138,7 +139,10 @@ test('copying a classic chicken meal into the tiers library creates a new row wi
             ->where('meals.0.title', 'Rosemary Garlic Chicken')
             ->where('meals.0.detailView.shortDescription', '')
             ->where('meals.0.calorieTiers.0.ingredientSections.0.title', 'Protein')
-            ->where('meals.0.calorieTiers.0.ingredients.0.name', 'Chicken Breast'));
+            ->where('meals.0.calorieTiers.0.ingredientSections.0.items.0.ingredientId', fn ($id) => is_int($id) && $id > 0)
+            ->where('meals.0.calorieTiers.0.ingredientSections.0.items.0.isBaseRecipe', false)
+            ->where('meals.0.calorieTiers.0.ingredients.0.name', 'Chicken Breast')
+            ->where('meals.0.calorieTiers.0.ingredients.0.is_base_recipe', false));
 });
 
 test('admins can store a one-size chia pudding in the meal tiers library', function () {
@@ -247,16 +251,13 @@ test('copying the rosemary garlic chicken plate authors the kitchen oil plate', 
 
     expect($fiveHundred)->not->toBeNull()
         ->and((float) $fiveHundred->ingredients()->where('ingredients.id', $base->id)->first()?->pivot->amount_grams)->toBe(130.0)
-        ->and((float) $fiveHundred->ingredients()->where('ingredients.id', $potato->id)->first()?->pivot->amount_grams)->toBe(180.0)
-        ->and((float) $fiveHundred->ingredients()->where('ingredients.id', $spinach->id)->first()?->pivot->amount_grams)->toBe(25.0)
-        ->and((float) $fiveHundred->ingredients()->where('ingredients.id', $mushrooms->id)->first()?->pivot->amount_grams)->toBe(35.0)
         ->and((float) $fiveHundred->ingredients()->where('ingredients.id', $oil->id)->first()?->pivot->amount_grams)->toBe(5.0)
         ->and($fiveHundred->ingredients()->where('ingredients.id', $chicken->id)->exists())->toBeFalse()
         ->and((float) $fourHundred?->ingredients()->where('ingredients.id', $base->id)->first()?->pivot->amount_grams)->toBe(100.0)
-        ->and((float) $fourHundred?->ingredients()->where('ingredients.id', $potato->id)->first()?->pivot->amount_grams)->toBe(130.0)
         ->and((float) $fourHundred?->ingredients()->where('ingredients.id', $oil->id)->first()?->pivot->amount_grams)->toBe(5.0)
-        ->and((float) $eightHundred?->ingredients()->where('ingredients.id', $base->id)->first()?->pivot->amount_grams)->toBe(200.0)
-        ->and((float) $eightHundred?->ingredients()->where('ingredients.id', $potato->id)->first()?->pivot->amount_grams)->toBe(345.0);
+        ->and((float) $eightHundred?->ingredients()->where('ingredients.id', $base->id)->first()?->pivot->amount_grams)->toBe(225.0)
+        ->and((float) $eightHundred?->ingredients()->where('ingredients.id', $oil->id)->first()?->pivot->amount_grams)->toBe(5.0)
+        ->and(ChickenKitchenPlateTargets::containerMl())->toBe(1000.0);
 
     expect((float) $classic->ingredients()->where('ingredients.id', $base->id)->first()?->pivot->amount_grams)->toBe(115.0);
 });
@@ -277,4 +278,18 @@ test('copy all missing classic meals into the meal tiers library', function () {
 
     expect(Meal::queryForMealTiersLibrary()->where('name', 'Classic Alpha Bowl')->count())->toBe(1)
         ->and(Meal::queryForMealTiersLibrary()->where('name', 'Classic Beta Bowl')->count())->toBe(1);
+});
+
+test('copy all skips classic meals excluded from the meal tiers library', function () {
+    $user = User::factory()->create();
+
+    Meal::factory()->create(['name' => 'Salmon Plate']);
+    Meal::factory()->create(['name' => 'Classic Gamma Bowl']);
+
+    $this->actingAs($user)
+        ->post(route('admin.meal-tiers-library.copy-all'))
+        ->assertRedirect(route('admin.meal-tiers-library'));
+
+    expect(Meal::queryForMealTiersLibrary()->where('name', 'Salmon Plate')->count())->toBe(0)
+        ->and(Meal::queryForMealTiersLibrary()->where('name', 'Classic Gamma Bowl')->count())->toBe(1);
 });

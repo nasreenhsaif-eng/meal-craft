@@ -25,6 +25,9 @@ final class IngredientCookingYield
 
     public const STATE_FINISHED_BASE = 'finished_base';
 
+    /** Raw finfish / shellfish prep weight to cooked plated weight (shared kitchen curve). */
+    public const FISH_RAW_TO_COOKED_YIELD = 0.78;
+
     /**
      * Explicit profiles for staples where meal amounts are dry/raw but macros may be cooked.
      *
@@ -38,11 +41,39 @@ final class IngredientCookingYield
         ],
         'Salmon' => [
             'macros_state' => self::STATE_RAW_OR_DRY,
-            'dry_to_cooked_yield' => 0.78,
+            'dry_to_cooked_yield' => self::FISH_RAW_TO_COOKED_YIELD,
         ],
         'Salmon (Raw)' => [
             'macros_state' => self::STATE_RAW_OR_DRY,
-            'dry_to_cooked_yield' => 0.78,
+            'dry_to_cooked_yield' => self::FISH_RAW_TO_COOKED_YIELD,
+        ],
+        'Hamour (Fish)' => [
+            'macros_state' => self::STATE_RAW_OR_DRY,
+            'dry_to_cooked_yield' => self::FISH_RAW_TO_COOKED_YIELD,
+        ],
+        'Hamour Fillet' => [
+            'macros_state' => self::STATE_RAW_OR_DRY,
+            'dry_to_cooked_yield' => self::FISH_RAW_TO_COOKED_YIELD,
+        ],
+        'Shrimp (Raw)' => [
+            'macros_state' => self::STATE_RAW_OR_DRY,
+            'dry_to_cooked_yield' => self::FISH_RAW_TO_COOKED_YIELD,
+        ],
+        'Prawns' => [
+            'macros_state' => self::STATE_RAW_OR_DRY,
+            'dry_to_cooked_yield' => self::FISH_RAW_TO_COOKED_YIELD,
+        ],
+        'Mackerel' => [
+            'macros_state' => self::STATE_RAW_OR_DRY,
+            'dry_to_cooked_yield' => self::FISH_RAW_TO_COOKED_YIELD,
+        ],
+        'Sardines (Canned)' => [
+            'macros_state' => self::STATE_COOKED,
+            'dry_to_cooked_yield' => 1.0,
+        ],
+        'Tuna (Canned)' => [
+            'macros_state' => self::STATE_COOKED,
+            'dry_to_cooked_yield' => 1.0,
         ],
         'Beef Ground Lean' => [
             'macros_state' => self::STATE_RAW_OR_DRY,
@@ -222,8 +253,16 @@ final class IngredientCookingYield
      */
     public static function amountStateLabel(Ingredient $ingredient): ?string
     {
+        if (EggIngredientPresentation::isEggFamilyIngredient($ingredient)) {
+            return null;
+        }
+
         if (self::isFinishedBaseComponent($ingredient)) {
-            return __('pre-cooked base');
+            return __('cooked plated portion');
+        }
+
+        if (self::isCannedIngredient($ingredient)) {
+            return __('drained canned');
         }
 
         $profile = self::profileFor($ingredient);
@@ -332,6 +371,13 @@ final class IngredientCookingYield
         $calories = (float) ($ingredient->calories ?? 0);
         $category = strtolower((string) ($ingredient->usda_food_category ?? ''));
 
+        if (self::isCannedIngredient($ingredient)) {
+            return [
+                'macros_state' => self::STATE_COOKED,
+                'dry_to_cooked_yield' => 1.0,
+            ];
+        }
+
         if (str_contains($name, 'cooked') || str_contains($name, '(base)')) {
             // Named cooked products or leftover base naming without prepared category.
             if (str_contains($name, 'cooked')) {
@@ -369,6 +415,13 @@ final class IngredientCookingYield
             }
         }
 
+        if (self::isRawFishProtein($ingredient)) {
+            return [
+                'macros_state' => self::STATE_RAW_OR_DRY,
+                'dry_to_cooked_yield' => self::FISH_RAW_TO_COOKED_YIELD,
+            ];
+        }
+
         $isMeat = str_contains($category, 'protein')
             || str_contains($category, 'poultry')
             || str_contains($category, 'beef')
@@ -389,5 +442,31 @@ final class IngredientCookingYield
             'macros_state' => self::STATE_RAW_OR_DRY,
             'dry_to_cooked_yield' => 1.0,
         ];
+    }
+
+    public static function isCannedIngredient(Ingredient $ingredient): bool
+    {
+        return str_contains(strtolower(trim($ingredient->name)), '(canned)');
+    }
+
+    public static function isRawFishProtein(Ingredient $ingredient): bool
+    {
+        if (self::isCannedIngredient($ingredient)) {
+            return false;
+        }
+
+        $name = strtolower(trim($ingredient->name));
+
+        if ($name === '') {
+            return false;
+        }
+
+        foreach (['salmon', 'hamour', 'shrimp', 'prawn', 'mackerel', 'tuna'] as $needle) {
+            if (str_contains($name, $needle)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

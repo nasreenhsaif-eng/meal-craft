@@ -2,7 +2,9 @@
 
 namespace App\Services;
 
+use App\Enums\MealLibraryKey;
 use App\Models\Meal;
+use App\Support\MealInstructionsText;
 use App\Support\MealLibraryEditGuard;
 use App\Support\MealLibraryRefinerOverrides;
 use Illuminate\Support\Facades\DB;
@@ -26,7 +28,12 @@ final class BalancedMealInstructionRefiner
             $chiaDessertMeals = array_flip(BalancedChiaDessertRecipeRefiner::refinedMealNames());
             $tandooriMeals = array_flip(BalancedTandooriMealRecipeRefiner::refinedMealNames());
 
-            foreach (BalancedWeeklyRotationSchedule::allScheduledMealNames() as $mealName) {
+            $scheduledNames = array_unique(array_merge(
+                BalancedWeeklyRotationSchedule::allScheduledMealNames(),
+                NutrientDenseWeeklyRotationSchedule::allScheduledMealNames(),
+            ));
+
+            foreach ($scheduledNames as $mealName) {
                 if (isset($saladDressingMeals[$mealName]) || isset($chiaDessertMeals[$mealName]) || isset($tandooriMeals[$mealName])) {
                     continue;
                 }
@@ -37,26 +44,60 @@ final class BalancedMealInstructionRefiner
                     continue;
                 }
 
-                /** @var Meal|null $meal */
-                $meal = Meal::queryForMealLibrary()->where('name', $mealName)->first();
-
-                if ($meal === null) {
-                    continue;
+                if ($this->applyInstructionsToLibraryMeals($mealName, $instructions, force: true)) {
+                    $updated[] = $mealName;
                 }
-
-                if (MealLibraryEditGuard::shouldSkipMealRefinement($meal)) {
-                    continue;
-                }
-
-                $meal->update([
-                    'instructions' => $instructions,
-                    'description' => $instructions,
-                ]);
-                $updated[] = $mealName;
             }
 
-            return $updated;
+            foreach ($definitions as $mealName => $instructions) {
+                if (isset($saladDressingMeals[$mealName]) || isset($chiaDessertMeals[$mealName]) || isset($tandooriMeals[$mealName])) {
+                    continue;
+                }
+
+                if (in_array($mealName, $updated, true)) {
+                    continue;
+                }
+
+                if ($this->applyInstructionsToLibraryMeals($mealName, $instructions, force: false)) {
+                    $updated[] = $mealName;
+                }
+            }
+
+            return array_values(array_unique($updated));
         });
+    }
+
+    private function applyInstructionsToLibraryMeals(string $mealName, string $instructions, bool $force): bool
+    {
+        $applied = false;
+
+        foreach ([MealLibraryKey::Classic, MealLibraryKey::Tiers] as $libraryKey) {
+            /** @var Meal|null $meal */
+            $meal = Meal::query()
+                ->where('name', $mealName)
+                ->where('library_key', $libraryKey)
+                ->first();
+
+            if ($meal === null) {
+                continue;
+            }
+
+            if (MealLibraryEditGuard::shouldSkipMealInstructionRefinement($meal)) {
+                continue;
+            }
+
+            if (! $force && ! MealInstructionsText::needsBackfill($meal->instructions, $meal->description)) {
+                continue;
+            }
+
+            $meal->update([
+                'instructions' => $instructions,
+                'description' => $instructions,
+            ]);
+            $applied = true;
+        }
+
+        return $applied;
     }
 
     /**
@@ -115,6 +156,27 @@ final class BalancedMealInstructionRefiner
                 'Pour in eggs. Cook over medium-low heat until almost set.',
                 'Add olives and avocado on one half. Fold omelet in half.',
                 'Finish with fresh herbs. Serve warm.',
+            ]),
+            'Moroccan Meatballs' => $this->steps([
+                'Prepare Cooked Quinoa (Base) per base recipe instructions; keep warm.',
+                'Mix ground beef with garlic, grated onion, and Ras El Hanout (Base); roll into meatballs.',
+                'Brown meatballs in olive oil until golden all over.',
+                'Drizzle with pomegranate molasses and simmer briefly until glazed.',
+                'Plate warm quinoa and top with glazed meatballs.',
+                'Garnish with chopped parsley, toasted pine nuts, and pomegranate seeds.',
+            ]),
+            'Okra Beef Curry' => $this->steps([
+                'Prepare Okra Beef Curry (Base) per base recipe instructions; keep hot.',
+                'Prepare Steamed Basmati Rice (Base) per base recipe instructions.',
+                'Portion beef, okra, and sauce separately from the stew.',
+                'Plate rice, arrange beef and okra, and ladle sauce over.',
+                'Serve with a lemon wedge and chopped fresh coriander.',
+            ]),
+            'Pan Seared Hamour' => $this->steps([
+                'Prepare Roasted Mixed Vegetables (Base) and Steamed Basmati Rice (Base) per base recipe instructions.',
+                'Season hamour with cumin seeds, garlic, lemon juice, and olive oil.',
+                'Pan-sear hamour until golden and cooked through.',
+                'Serve hamour over rice with roasted mixed vegetables on the side.',
             ]),
             'Gouda & Spinach Scramble' => $this->steps([
                 'Heat half the grass-fed butter in a non-stick skillet over medium heat. Wilt spinach for 1 minute, then set aside.',
@@ -295,9 +357,10 @@ final class BalancedMealInstructionRefiner
             ]),
             'Chicken Thai Mango Salad' => $this->steps([
                 'Grill or pan-sear chicken until golden then in the oven for 20 minutes exactly, then Rest and slice thinly.',
-                'Shred cabbage and slice mango and cucumber.',
-                'Whisk lime dressing. Toss salad with dressing.',
-                'Top with chicken. Garnish with herbs.',
+                'Shred cabbage; slice mango, cucumber, tomatoes, and red onion.',
+                'Toss vegetables with coriander.',
+                'Top with chicken and cashew nuts.',
+                SaladDressingMealRefiner::SERVE_DRESSING_ON_THE_SIDE,
             ]),
             'Tandoori Coconut Mint Salad' => $this->steps([
                 'Grill or pan-sear Tandoori Chicken (Base) until golden then in the oven for 20 minutes exactly, then Rest and slice.',
@@ -313,7 +376,7 @@ final class BalancedMealInstructionRefiner
             ]),
             'Tandoori Chicken Salad' => $this->steps([
                 'Grill or pan-sear Tandoori Chicken (Base) until golden then in the oven for 20 minutes exactly, then Rest and slice.',
-                'Toss romaine, cucumber, celery, tomatoes, onion, herbs, and pomegranate.',
+                'Toss romaine, cucumber, celery, about 8 halved cherry tomatoes, onion, herbs, and pomegranate.',
                 'Top with chicken and cashews.',
                 SaladDressingMealRefiner::SERVE_DRESSING_ON_THE_SIDE,
             ]),
@@ -335,9 +398,11 @@ final class BalancedMealInstructionRefiner
             ]),
             'Grilled Salmon Mango Salsa' => $this->steps([
                 'Cube pumpkin and roast at 200°C until tender and lightly caramelized at the edges.',
-                'Dice mango, pepper, cucumber, and avocado. Toss with purslane, cashew nuts, lime juice, and coriander.',
-                'Grill or pan-sear salmon until cooked through.',
-                'Serve salmon over roasted pumpkin with the mango salsa salad.',
+                'Prepare Lemon Herb Salmon Marinade (Base) per base recipe instructions. Coat salmon and marinate 20–30 minutes.',
+                'Prepare Citrus Herb Sauce (Base) per base recipe instructions; keep warm.',
+                'Dice mango, pepper, cucumber, and avocado. Toss with purslane, cashew nuts, a spoonful of citrus herb sauce, and coriander.',
+                'Grill or pan-sear the marinated salmon until cooked through.',
+                'Serve salmon over roasted pumpkin with the mango salsa salad. Spoon the remaining citrus herb sauce over the salmon so it stays moist and glossy.',
             ]),
 
             // Beef mains
@@ -355,13 +420,16 @@ final class BalancedMealInstructionRefiner
                 'Fry eggs sunny-side up.',
                 'Layer quinoa, vegetables, and beef in a bowl. Top with egg and sesame seeds.',
             ]),
+            'Beef Shawarma Platter' => $this->steps([
+                'Prepare Beef Shawarma (Base), Creamy Cumin Hummus (Base), Cucumber Pickle (Base), and Fire Roasted Tomatoes (Base) per base recipe instructions.',
+                'Plate hummus, drizzle with olive oil, and garnish with parsley.',
+                'Add shredded beef shawarma, fresh cucumber slices, grilled tomato, and cucumber pickle.',
+            ]),
             'Persian Herb Beef Stew' => $this->steps([
-                'Brown beef cubes in olive oil. Set aside.',
-                'Sauté onion until golden. Return beef with water to cover.',
-                'Simmer low 60–90 minutes until beef is tender.',
-                'Add beans, herbs, and spinach in the last 10 minutes.',
-                'Prepare Steamed Basmati Rice (Base) per base recipe instructions; keep warm.',
-                'Serve stew over rice with lemon.',
+                'Prepare Ghormeh Sabzi Stew (Base) and Steamed Basmati Rice (Base) per base recipe instructions; keep both hot.',
+                'Brown beef chuck cubes in a little olive oil; add water to cover and simmer 60–90 minutes until tender. Season lightly.',
+                'Portion steamed rice, beef, and sabzi stew per kitchen gram targets for the calorie tier.',
+                'Serve rice with beef and ghormeh sabzi stew spooned over or alongside.',
             ]),
             'Chili Beef Stuffed Peppers' => $this->steps([
                 'Prepare Cooked Quinoa (Base) and Fermented Beetroot (Base) per base recipe instructions.',
@@ -607,6 +675,85 @@ final class BalancedMealInstructionRefiner
                 'Heat the full batch of defatted Bone Broth (Base) gently (do not boil hard).',
                 'Whisk psyllium husks into the batch (1 tablespoon / 15 g per serving).',
                 'Portion 500 ml per cup and serve hot.',
+            ]),
+
+            'Pesto Chicken Koosa Noodles' => $this->steps([
+                'Preheat oven to 200°C. Dice pumpkin into 2 cm cubes, toss with half the olive oil, and roast until tender and golden at the edges (20–25 min).',
+                'Spiralize zucchini into koosa noodles (or cut thin ribbons with a peeler). Pat dry.',
+                'Season chicken breast with sea salt and black pepper. Heat the remaining olive oil in a pan over medium-high heat.',
+                'Pan-sear chicken until golden, then finish in the oven for 20 minutes exactly. Rest and slice.',
+                'In the same pan, blister cherry tomatoes for 2–3 minutes. Add koosa noodles and toss 1–2 minutes until just tender.',
+                'Prepare Basil Pesto (House) per base recipe instructions. Toss noodles and tomatoes with pesto.',
+                'Plate roasted pumpkin cubes, pesto koosa noodles, and sliced chicken. Finish with black pepper.',
+            ]),
+            'Lemon Chicken Eggplant' => $this->steps([
+                'Prepare Eggplant Dip (Mutabal) (Base) and Zucchini Almond Bread (Base) per base recipe instructions. Toast the bread and keep warm.',
+                'Cut chicken breast into cubes. Slice lemon into thin rounds.',
+                'Thread the chicken onto skewers, alternating with lemon slices between the chicken pieces.',
+                'Whisk lemon juice, olive oil, minced garlic, and fresh oregano. Brush the skewers with the marinade.',
+                'Grill or pan-sear the skewers until golden, then finish in the oven for 20 minutes exactly. Rest.',
+                'Warm cherry tomatoes and diced red pepper in the pan for 2–3 minutes. Finish with fresh parsley.',
+                'Serve the lemon chicken skewers over mutabal with peppers, tomatoes, purslane, and toasted zucchini almond bread.',
+            ]),
+            'Chicken Quinoa Plate' => $this->steps([
+                'Prepare Cooked Quinoa (Base) per base recipe instructions; keep warm.',
+                'Season chicken breast with ground cumin, sea salt, and black pepper.',
+                'Heat olive oil in a pan. Pan-sear chicken 5–6 minutes per side until cooked through. Rest and slice.',
+                'Steam or roast broccoli until bright green and tender.',
+                'Plate quinoa, broccoli, and sliced chicken.',
+            ]),
+            'Craft Shrimp Avocado Bowl' => $this->steps([
+                'Prepare Cooked Quinoa (Base) per base recipe instructions; keep warm.',
+                'Season raw shrimp with sea salt and black pepper. Heat olive oil in a pan over medium-high heat.',
+                'Sauté shrimp 1–2 minutes per side until pink and curled. Remove from heat.',
+                'Wilt spinach in the same pan with a splash of water (30 seconds). Halve cherry tomatoes.',
+                'Assemble bowl with quinoa, spinach, tomatoes, and sliced avocado. Top with shrimp and a squeeze of lime juice.',
+            ]),
+            'High Protein Miso Crunch Salad' => $this->steps([
+                'Whisk miso paste, tahini, rice vinegar, and water until smooth for the dressing.',
+                'Thinly shred purple cabbage and julienne carrots. Toss with edamame.',
+                'Season chicken breast and grill or pan-sear until cooked through. Rest and slice into strips.',
+                'Toss salad vegetables with half the dressing. Top with chicken strips and drizzle remaining dressing.',
+            ]),
+            'Salmon Plate' => $this->steps([
+                'Pat salmon dry. Season with sea salt and black pepper.',
+                'Pan-sear or bake at 190°C for 12–15 minutes until flaky and cooked through.',
+                'Rest 2 minutes and serve.',
+            ]),
+            'Salmon Plate B' => $this->steps([
+                'Pat salmon dry. Season with sea salt and black pepper.',
+                'Pan-sear or bake at 190°C for 12–15 minutes until flaky and cooked through.',
+                'Rest 2 minutes and serve.',
+            ]),
+            'Salmon Quinoa Bowl' => $this->steps([
+                'Prepare Cooked Quinoa (Base) per base recipe instructions; keep warm.',
+                'Pat salmon dry. Season with sea salt and black pepper.',
+                'Pan-sear or bake salmon at 190°C for 12–15 minutes until flaky.',
+                'Plate quinoa and top with salmon.',
+            ]),
+            'Chia Dessert' => $this->steps([
+                'Prepare Cooked Quinoa (Base) per base recipe instructions.',
+                'Portion and serve warm or chilled as directed for your plan.',
+            ]),
+            NutrientDenseLiverMealRecipeRefiner::SAUTEED_CHICKEN_LIVER_NAME => $this->steps([
+                'Prepare Quinoa Flatbread (Base) per base recipe instructions; keep warm.',
+                'Pat chicken liver dry and season with sea salt, black pepper, and nutmeg.',
+                'Warm olive oil in a wide pan. Sauté red onion and garlic until fragrant. Add sliced cabbage and bell pepper; cook until softened (4–5 min).',
+                'Push vegetables to the side. Sear livers 1–2 minutes per side until browned outside and just cooked through.',
+                'Stir cherry tomatoes and oregano into the vegetables. Finish with pomegranate molasses.',
+                'Serve livers with garlicky cabbage and peppers alongside warm quinoa flatbread.',
+            ]),
+            NutrientDenseFermentedRecipeRefiner::TAHINI_PURSLANE_PEPPER_SALAD_NAME => $this->steps([
+                'Prepare Roasted Cherry Tomato (Base) and Lemon-Tahini Dressing (Base) per base recipe instructions.',
+                'Toss purslane, sliced bell pepper, and roasted cherry tomatoes in a bowl.',
+                'Scatter sesame seeds over the salad.',
+                SaladDressingMealRefiner::SERVE_DRESSING_ON_THE_SIDE,
+            ]),
+            NutrientDenseFermentedRecipeRefiner::MACKEREL_QUINOA_NAME => $this->steps([
+                'Prepare Cooked Quinoa (Base) per base recipe instructions. Fold in chopped parsley and half the lemon juice.',
+                'Score mackerel fillets. Whisk olive oil, remaining lemon juice, sea salt, and black pepper. Coat fish and rest 10 minutes.',
+                'Grill or pan-sear skin-side down over medium-high heat until skin is crisp and flesh is cooked through, about 4–5 minutes per side.',
+                'Serve mackerel over lemon herb quinoa.',
             ]),
         ];
 

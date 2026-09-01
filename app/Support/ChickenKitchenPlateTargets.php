@@ -9,7 +9,7 @@ use App\Models\Ingredient;
 use App\Models\Meal;
 
 /**
- * Shared chicken kitchen pack-out targets for the Meal Tiers Library.
+ * Shared kitchen pack-out targets for chicken, fish, and beef Meal Tiers mains.
  */
 final class ChickenKitchenPlateTargets
 {
@@ -33,6 +33,33 @@ final class ChickenKitchenPlateTargets
         return (float) config('meal_tiers_library.chicken_kitchen.nut_seed_cap_grams', 15.0);
     }
 
+    public static function denseVegCapGrams(): float
+    {
+        return (float) config('meal_tiers_library.chicken_kitchen.dense_veg_cap_grams', 280.0);
+    }
+
+    public static function leafyCapGrams(): float
+    {
+        return (float) config('meal_tiers_library.chicken_kitchen.leafy_cap_grams', 50.0);
+    }
+
+    public static function noodleVegCapGrams(): float
+    {
+        return (float) config('meal_tiers_library.chicken_kitchen.noodle_veg_cap_grams', 250.0);
+    }
+
+    public static function cherryTomatoCapGrams(): float
+    {
+        return (float) config('meal_tiers_library.chicken_kitchen.cherry_tomato_cap_grams', 80.0);
+    }
+
+    public static function isCherryTomatoIngredient(Ingredient $ingredient): bool
+    {
+        $name = strtolower(trim($ingredient->name));
+
+        return $name !== '' && str_contains($name, 'cherry tomato');
+    }
+
     public static function calorieTolerance(): float
     {
         return (float) config('meal_tiers_library.chicken_kitchen.calorie_tolerance', 25.0);
@@ -49,9 +76,17 @@ final class ChickenKitchenPlateTargets
         return (float) $grams[$calorieTier];
     }
 
-    public static function designedCaloriesForTier(int $calorieTier): ?float
+    public static function designedCaloriesForTier(int $calorieTier, ?Meal $meal = null): ?float
     {
-        $row = config('meal_tiers_library.families.chicken.'.$calorieTier);
+        $family = MealTiersProteinFamily::Chicken;
+
+        if ($meal !== null) {
+            $family = MealTiersProteinFamily::fromMealName((string) $meal->name)
+                ?? ($meal->exists ? MealTiersProteinFamily::forMeal($meal) : null)
+                ?? MealTiersProteinFamily::Chicken;
+        }
+
+        $row = config('meal_tiers_library.families.'.$family.'.'.$calorieTier);
 
         if (! is_array($row) || ! isset($row['designed_calories'])) {
             return null;
@@ -102,9 +137,72 @@ final class ChickenKitchenPlateTargets
             return true;
         }
 
-        $role = MealScalingRole::roleForIngredient($ingredient);
+        return false;
+    }
 
-        return $role === MealScalingRoleEnum::Sauce && str_contains($name, '(base)');
+    public static function isSideBreadIngredient(Ingredient $ingredient): bool
+    {
+        $name = strtolower(trim($ingredient->name));
+
+        return $name !== '' && str_contains($name, 'bread');
+    }
+
+    /**
+     * House (Base) components already cooked — meal grams are plated kitchen weight, not raw/dry prep.
+     */
+    public static function isPlatedBaseIngredient(Ingredient $ingredient, Meal $meal): bool
+    {
+        if (! IngredientCookingYield::isFinishedBaseComponent($ingredient)) {
+            return false;
+        }
+
+        if (StandardMeatPortion::isPrimaryMeatIngredient($ingredient->name, $meal->name)) {
+            return false;
+        }
+
+        if (self::isDressingIngredient($ingredient) || self::isSideBreadIngredient($ingredient)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    public static function isPlatedRiceBaseIngredient(Ingredient $ingredient): bool
+    {
+        if (! IngredientCookingYield::isFinishedBaseComponent($ingredient)) {
+            return false;
+        }
+
+        $name = strtolower(trim($ingredient->name));
+
+        return $name !== '' && str_contains($name, 'rice') && str_contains($name, '(base)');
+    }
+
+    /**
+     * Kitchen minimum cooked plated rice (Base) grams, scaled with the protein tier curve from 400 kcal.
+     */
+    public static function platedRiceBaseGramsForTier(int $calorieTier, ?Meal $meal = null): ?float
+    {
+        $family = $meal !== null ? MealTiersProteinFamily::forMeal($meal) : null;
+
+        if ($family === MealTiersProteinFamily::Beef) {
+            $minimums = config('meal_tiers_library.chicken_kitchen.plated_rice_base_grams_beef', []);
+
+            if (is_array($minimums) && array_key_exists($calorieTier, $minimums)) {
+                return KitchenPortionRounding::snapFiveGramSteps((float) $minimums[$calorieTier]);
+            }
+        }
+
+        $anchorTier = 400;
+        $anchorGrams = (float) config('meal_tiers_library.chicken_kitchen.plated_rice_base_grams_at_400', 100.0);
+        $anchorProtein = self::cookedProteinGramsForTier($anchorTier);
+        $tierProtein = self::cookedProteinGramsForTier($calorieTier);
+
+        if ($anchorProtein === null || $tierProtein === null || $anchorProtein <= 0.0 || $anchorGrams <= 0.0) {
+            return null;
+        }
+
+        return KitchenPortionRounding::snapFiveGramSteps($anchorGrams * $tierProtein / $anchorProtein);
     }
 
     public static function densityBandForIngredient(Ingredient $ingredient, Meal $meal): string
@@ -138,6 +236,12 @@ final class ChickenKitchenPlateTargets
             }
         }
 
+        foreach (['zucchini', 'koosa', 'courgette'] as $needle) {
+            if (str_contains($name, $needle)) {
+                return 'noodle_veg';
+            }
+        }
+
         foreach ([
             'potato', 'sweet potato', 'pumpkin', 'beet', 'carrot', 'squash',
             'eggplant', 'cauliflower', 'broccoli',
@@ -165,8 +269,8 @@ final class ChickenKitchenPlateTargets
 
     /**
      * Stored protein grams for a primary meat ingredient at a calorie tab.
-     * Cooked bases / liver store cooked curve grams; raw breast / thigh store
-     * the raw weight that yields that cooked target.
+     * Cooked bases / liver store cooked curve grams; raw breast / thigh / raw
+     * fish and beef store the raw weight that yields that cooked target.
      */
     public static function storedProteinGramsForIngredient(Ingredient $ingredient, int $calorieTier): ?float
     {
@@ -182,6 +286,22 @@ final class ChickenKitchenPlateTargets
             return KitchenPortionRounding::snapFiveGramSteps(
                 ChickenBreastYield::rawGramsFromCooked($cooked),
             );
+        }
+
+        // Finished bases are already cooked plated grams.
+        if (str_contains($name, '(base)') || IngredientCookingYield::isFinishedBaseComponent($ingredient)) {
+            return KitchenPortionRounding::snapFiveGramSteps($cooked);
+        }
+
+        $profile = IngredientCookingYield::profileFor($ingredient);
+        $yield = (float) $profile['dry_to_cooked_yield'];
+
+        if (
+            $profile['macros_state'] === IngredientCookingYield::STATE_RAW_OR_DRY
+            && $yield > 0.0
+            && $yield < 1.0
+        ) {
+            return KitchenPortionRounding::snapFiveGramSteps($cooked / $yield);
         }
 
         return KitchenPortionRounding::snapFiveGramSteps($cooked);

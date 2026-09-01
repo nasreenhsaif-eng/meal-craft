@@ -1,5 +1,5 @@
 import { createPortal } from 'react-dom';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { router, usePage } from '@inertiajs/react';
 import adminInertiaLayout from '../../lib/adminInertiaLayout.jsx';
 import Button from '../../Components/Atoms/Button.jsx';
@@ -8,6 +8,7 @@ import MealCard from '../../Components/MealCard.jsx';
 import MealCalorieTierTabs from '../../Components/MealCalorieTierTabs.jsx';
 import MealIngredientRowsEditor from '../../Components/MealPlan/MealIngredientRowsEditor.jsx';
 import MealDetailView from '../../Components/Molecules/MealDetailView/MealDetailView';
+import BaseRecipeDetailModal from '../../Components/Molecules/BaseRecipeDetailModal/BaseRecipeDetailModal';
 import TextInput from '../../Components/Atoms/TextInput/TextInput.jsx';
 
 const EMPTY_ROW = Object.freeze({
@@ -103,6 +104,7 @@ export default function MealTiersLibraryPage({
     const [editingMeal, setEditingMeal] = useState(null);
     const [detailMeal, setDetailMeal] = useState(null);
     const [detailTier, setDetailTier] = useState(null);
+    const [baseRecipeModal, setBaseRecipeModal] = useState(null);
     const [browseTab, setBrowseTab] = useState(browseTabs[0]?.id ?? 'all');
     const [name, setName] = useState('');
     const [category, setCategory] = useState('Meal');
@@ -179,6 +181,15 @@ export default function MealTiersLibraryPage({
         setEditorOpen(false);
     };
 
+    const mapTierIngredientItems = (rows = []) =>
+        rows
+            .filter((row) => Boolean(row?.line))
+            .map((row) => ({
+                line: String(row.line),
+                ingredientId: Number(row.ingredient_id ?? row.ingredientId ?? 0) || undefined,
+                isBaseRecipe: Boolean(row.is_base_recipe ?? row.isBaseRecipe),
+            }));
+
     const detailViewForMeal = (meal) => {
         if (!detailTier || !Array.isArray(meal.calorieTiers)) {
             return meal.detailView;
@@ -187,7 +198,8 @@ export default function MealTiersLibraryPage({
         if (!tier) {
             return meal.detailView;
         }
-        const ingredientLines = (tier.ingredients ?? []).map((row) => row.line).filter(Boolean);
+        const ingredientItems = mapTierIngredientItems(tier.ingredients ?? []);
+        const ingredientLines = ingredientItems.map((row) => row.line).filter(Boolean);
 
         return {
             ...meal.detailView,
@@ -195,12 +207,24 @@ export default function MealTiersLibraryPage({
             description: '',
             nutritionalData: tier.nutritionalData,
             ingredients: ingredientLines.length > 0 ? ingredientLines : meal.detailView?.ingredients,
+            ingredientItems: ingredientItems.length > 0 ? ingredientItems : meal.detailView?.ingredientItems,
             ingredientSections: tier.ingredientSections ?? meal.detailView?.ingredientSections,
             ingredientsPrepNote:
                 tier.ingredientsPrepNote ?? meal.detailView?.ingredientsPrepNote,
             cookingYieldNote: tier.cookingYieldNote ?? meal.detailView?.cookingYieldNote,
         };
     };
+
+    const handleBaseRecipeClick = useCallback((item) => {
+        if (!item?.ingredientId) {
+            return;
+        }
+
+        setBaseRecipeModal({
+            ingredientId: item.ingredientId,
+            title: 'Base recipe',
+        });
+    }, []);
 
     const activeBucketHint = (() => {
         if (!usesTabs) {
@@ -333,6 +357,7 @@ export default function MealTiersLibraryPage({
                                   key={`${detailMeal.id}-${detailTier ?? 'default'}`}
                                   meal={detailViewForMeal(detailMeal)}
                                   embedded
+                                  onBaseRecipeClick={handleBaseRecipeClick}
                               />
                               <div className="shrink-0 border-t border-gray-100 px-4 py-3 md:px-6">
                                   <Button
@@ -350,6 +375,12 @@ export default function MealTiersLibraryPage({
                       document.body,
                   )
                 : null}
+
+            <BaseRecipeDetailModal
+                modal={baseRecipeModal}
+                onClose={() => setBaseRecipeModal(null)}
+                onBaseRecipeClick={handleBaseRecipeClick}
+            />
 
             {editorOpen && typeof document !== 'undefined'
                 ? createPortal(

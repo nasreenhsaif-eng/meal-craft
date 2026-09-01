@@ -27,7 +27,7 @@ const sampleIngredientProfiles = [
 const sampleBrowseTabs = [
     { id: 'chicken', label: 'Chicken' },
     { id: 'liver', label: 'Liver' },
-    { id: 'salmon', label: 'Salmon' },
+    { id: 'salmon', label: 'Fish' },
     { id: 'dessert', label: 'Dessert' },
     { id: 'side_salad', label: 'Side salad' },
     { id: 'beef', label: 'Beef' },
@@ -35,7 +35,7 @@ const sampleBrowseTabs = [
     { id: 'breakfast', label: 'Breakfast' },
     { id: 'main_salad', label: 'Main salad' },
     { id: 'base_recipe', label: 'Base recipe' },
-    { id: 'meal', label: 'Meal' },
+    { id: 'vegan', label: 'Vegan' },
 ];
 
 const sampleMeals = [

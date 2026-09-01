@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Meal;
+use App\Support\GhormehSabziStewBaseRecipe;
 use App\Support\MealLibraryEditGuard;
 use App\Support\StandardMeatPortion;
 
@@ -53,10 +54,14 @@ final class BalancedDairyFreeManualRecipeAdjustments
         ],
         'Moroccan Meatballs' => [
             'Beef Ground Lean' => StandardMeatPortion::GRAMS,
+            'Cooked Quinoa (Base)' => 80.0,
             'Garlic (Raw)' => 3.0,
-            'Marinara Sauce (Base)' => 100.0,
+            'Olive Oil (Extra Virgin)' => 4.0,
+            'Parsley' => 8.0,
+            'Pine Nuts' => 8.0,
+            'Pomegranate Molasses' => 10.0,
+            'Pomegranate Seeds' => 12.0,
             'Ras El Hanout (Base)' => 3.0,
-            'Olive Oil' => 2.0,
             'White Onion' => 30.0,
         ],
         'Italian Meatballs in Marinara w Buckwheat Spaghetti' => [
@@ -133,14 +138,8 @@ final class BalancedDairyFreeManualRecipeAdjustments
         ],
         'Persian Herb Beef Stew' => [
             'Beef Chuck Roast' => StandardMeatPortion::GRAMS,
-            'Cannellini Beans' => 70.0,
-            'Dill (Fresh)' => 4.0,
-            'Fresh Coriander' => 8.0,
-            'Lemon Juice' => 8.0,
-            'Olive Oil' => 2.0,
-            'Steamed Basmati Rice (Base)' => 75.0,
-            'Spinach (Fresh)' => 35.0,
-            'White Onion' => 28.0,
+            'Ghormeh Sabzi Stew (Base)' => GhormehSabziStewBaseRecipe::PER_SERVING_GRAMS,
+            'Steamed Basmati Rice (Base)' => 70.0,
         ],
         'Spiced Crunch Chia Pudding' => [
             'Almond whole' => 3.0,

@@ -8,6 +8,7 @@ use App\Models\MealCalorieTier;
 use App\Support\MealTiersAuthoredPlates;
 use App\Support\MealTiersCalorieTabs;
 use App\Support\MealTiersIngredientStructurer;
+use App\Support\MealTiersLibraryExclusions;
 use App\Support\MealTiersProteinFamily;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -18,6 +19,10 @@ final class MealTiersLibraryCopyService
     {
         if ($classic->library_key === MealLibraryKey::Tiers) {
             throw new InvalidArgumentException('Only Meal Library meals can be copied into the Meal Tiers Library.');
+        }
+
+        if (MealTiersLibraryExclusions::isExcluded($classic)) {
+            throw new InvalidArgumentException('This meal is excluded from the Meal Tiers Library.');
         }
 
         $classic->loadMissing('ingredients');
@@ -76,6 +81,12 @@ final class MealTiersLibraryCopyService
             ->orderBy('library_sort_order')
             ->orderBy('id')
             ->each(function (Meal $classic) use (&$copied, &$skipped, &$existingNames): void {
+                if (MealTiersLibraryExclusions::isExcluded($classic)) {
+                    $skipped++;
+
+                    return;
+                }
+
                 if (isset($existingNames[$classic->name])) {
                     $skipped++;
 

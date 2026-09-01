@@ -222,6 +222,7 @@ final class NutrientDenseLiverMealRecipeRefiner
                 ],
                 'diet_tags' => $tags,
                 'short_description' => 'Pan-sautéed chicken liver with garlicky cabbage and peppers.',
+                'instructions' => "1. Prepare Quinoa Flatbread (Base) per base recipe instructions; keep warm.\n2. Pat chicken liver dry and season with sea salt, black pepper, and nutmeg.\n3. Warm olive oil in a wide pan. Sauté red onion and garlic until fragrant. Add sliced cabbage and bell pepper; cook until softened (4–5 min).\n4. Push vegetables to the side. Sear livers 1–2 minutes per side until browned outside and just cooked through.\n5. Stir cherry tomatoes and oregano into the vegetables. Finish with pomegranate molasses.\n6. Serve livers with garlicky cabbage and peppers alongside warm quinoa flatbread.",
             ],
             self::SPICED_BEEF_LIVER_MEATBALLS_NAME => [
                 'ingredients' => [

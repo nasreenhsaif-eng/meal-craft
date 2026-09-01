@@ -91,6 +91,7 @@ final class MealTiersLibraryPresentation
                 'name' => $ingredient->name,
                 'amount_grams' => $grams,
                 'line' => self::ingredientAmountLine($ingredient, $grams),
+                'is_base_recipe' => $ingredient->isPreparedBaseIngredient(),
             ];
         }
 
@@ -114,10 +115,21 @@ final class MealTiersLibraryPresentation
             'cookingYieldNote' => $yieldSummary['note'] !== '' ? $yieldSummary['note'] : null,
             'proteinFamily' => MealTiersProteinFamily::forMeal($meal),
             'buckets' => $buckets,
-            'proteinGramsTarget' => MealTiersProteinFamily::proteinGramsForTier((int) $tier->calorie_tier),
+            'proteinGramsTarget' => self::proteinGramsTargetForMeal($meal, (int) $tier->calorie_tier),
             'eggCount' => $eggCount,
             'authored' => $tier->ingredients->isNotEmpty(),
         ];
+    }
+
+    public static function proteinGramsTargetForMeal(Meal $meal, int $calorieTier): ?float
+    {
+        $family = MealTiersProteinFamily::forMeal($meal);
+
+        if (MealTiersProteinFamily::usesKitchenPackout($family)) {
+            return ChickenKitchenPlateTargets::cookedProteinGramsForTier($calorieTier);
+        }
+
+        return MealTiersProteinFamily::proteinGramsForTier($calorieTier);
     }
 
     /**
@@ -131,7 +143,7 @@ final class MealTiersLibraryPresentation
     /**
      * Protein, then carbs and vegetables, then fats and sauces, then seasonings.
      *
-     * @return list<array{title: string, items: list<string>}>
+     * @return list<array{title: string, items: list<array{line: string, ingredientId: int, isBaseRecipe: bool}>}>
      */
     public static function ingredientSections(MealCalorieTier $tier): array
     {
@@ -140,7 +152,7 @@ final class MealTiersLibraryPresentation
 
     /**
      * @param  iterable<Ingredient>  $ingredients
-     * @return list<array{title: string, items: list<string>}>
+     * @return list<array{title: string, items: list<array{line: string, ingredientId: int, isBaseRecipe: bool}>}>
      */
     public static function ingredientSectionsFromIngredients(iterable $ingredients): array
     {
@@ -156,13 +168,25 @@ final class MealTiersLibraryPresentation
             $grams = (float) ($ingredient->pivot->amount_grams ?? 0);
             $line = self::ingredientAmountLine($ingredient, $grams);
             $key = self::tiersLibraryGroupKey($ingredient);
-            $grouped[$key]['items'][] = $line;
+            $grouped[$key]['items'][] = self::structuredIngredientItem($ingredient, $line);
         }
 
         return array_values(array_filter(
             $grouped,
             static fn (array $section): bool => $section['items'] !== [],
         ));
+    }
+
+    /**
+     * @return array{line: string, ingredientId: int, isBaseRecipe: bool}
+     */
+    public static function structuredIngredientItem(Ingredient $ingredient, string $line): array
+    {
+        return [
+            'line' => $line,
+            'ingredientId' => (int) $ingredient->id,
+            'isBaseRecipe' => $ingredient->isPreparedBaseIngredient(),
+        ];
     }
 
     public static function tiersLibraryGroupRank(Ingredient $ingredient): int
@@ -276,8 +300,16 @@ final class MealTiersLibraryPresentation
 
         $formattedGrams = self::decimal($grams);
 
+        if (EggIngredientPresentation::isEggIngredient($ingredient)) {
+            return EggIngredientPresentation::formatLine($grams, $formattedGrams);
+        }
+
         if (RawPrepIngredientPresentation::isRawPrepIngredient($ingredient)) {
             return RawPrepIngredientPresentation::formatLine($grams, $formattedGrams, $ingredient);
+        }
+
+        if (RawPrepIngredientPresentation::isCannedPrepIngredient($ingredient)) {
+            return RawPrepIngredientPresentation::formatCannedLine($grams, $formattedGrams, $ingredient);
         }
 
         if (RawPrepIngredientPresentation::isDryWeightIngredient($ingredient)) {

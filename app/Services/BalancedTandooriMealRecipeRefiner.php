@@ -142,9 +142,9 @@ final class BalancedTandooriMealRecipeRefiner
             'Tandoori Chicken Salad' => [
                 'ingredients' => [
                     self::TANDOORI_CHICKEN_BASE => StandardMeatPortion::GRAMS,
-                    'Romaine Lettuce' => 55,
+                    'Romaine Lettuce' => 50,
                     'Cucumber' => 45,
-                    'Cherry Tomatoes' => 45,
+                    'Cherry Tomatoes' => 80,
                     'Celery' => 20,
                     'Red Onion' => 12,
                     'Fresh Coriander' => 4,
@@ -155,7 +155,7 @@ final class BalancedTandooriMealRecipeRefiner
                 ],
                 'instructions' => [
                     'Grill or pan-sear Tandoori Chicken (Base) until golden then in the oven for 20 minutes exactly, then Rest and slice.',
-                    'Toss romaine, cucumber, celery, tomatoes, onion, herbs, and pomegranate.',
+                    'Toss romaine, cucumber, celery, about 8 halved cherry tomatoes, onion, herbs, and pomegranate.',
                     'Top with chicken and cashews.',
                     SaladDressingMealRefiner::SERVE_DRESSING_ON_THE_SIDE,
                 ],

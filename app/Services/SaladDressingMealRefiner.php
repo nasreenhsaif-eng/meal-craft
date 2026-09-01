@@ -396,7 +396,7 @@ final class SaladDressingMealRefiner
                     'Cherry Tomatoes' => 40,
                     'Red Onion' => 15,
                     'Fresh Coriander' => 5,
-                    'Peanuts (Crushed)' => 8,
+                    'Cashew Nuts' => 10,
                 ],
                 'dressing_ingredients' => [
                     self::PEANUT_BUTTER_DRESSING => 25,
@@ -405,7 +405,7 @@ final class SaladDressingMealRefiner
                     'Grill or pan-sear chicken until golden then in the oven for 20 minutes exactly, then Rest and slice thinly.',
                     'Shred cabbage; slice mango, cucumber, tomatoes, and red onion.',
                     'Toss vegetables with coriander.',
-                    'Top with chicken and crushed peanuts.',
+                    'Top with chicken and cashew nuts.',
                     self::SERVE_DRESSING_ON_THE_SIDE,
                 ],
                 'diet_tags' => $wholeFoodTags,

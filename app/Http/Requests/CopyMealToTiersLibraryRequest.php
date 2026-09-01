@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Enums\MealLibraryKey;
 use App\Models\Meal;
+use App\Support\MealTiersLibraryExclusions;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
 
@@ -33,6 +34,8 @@ class CopyMealToTiersLibraryRequest extends FormRequest
 
                 if ($meal === null || $meal->library_key === MealLibraryKey::Tiers) {
                     $validator->errors()->add('meal_id', __('Choose a meal from the current Meal Library.'));
+                } elseif (MealTiersLibraryExclusions::isExcluded($meal)) {
+                    $validator->errors()->add('meal_id', __('This meal cannot be copied into the Meal Tiers Library.'));
                 }
             },
         ];

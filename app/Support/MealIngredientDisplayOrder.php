@@ -32,6 +32,11 @@ final class MealIngredientDisplayOrder
             return self::GROUP_VEGETABLES;
         }
 
+        // Vegetable peppers (not black/cayenne/aleppo spice peppers).
+        if (str_contains($name, 'bell pepper')) {
+            return self::GROUP_VEGETABLES;
+        }
+
         if (self::nameIndicatesSauce($name)) {
             return self::GROUP_SAUCES;
         }

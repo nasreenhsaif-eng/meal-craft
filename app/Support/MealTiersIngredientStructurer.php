@@ -47,11 +47,21 @@ final class MealTiersIngredientStructurer
     public static function gramsForTier(Meal $meal, array $baseline, int $calorieTier): array
     {
         if (MealTiersAuthoredPlates::scalesFrom500($meal)) {
-            return MealTiersAuthoredPlates::gramsByIngredientIdForTier($meal, $calorieTier)
-                ?? MealTiersAuthoredPlates::scaleBaselineFrom500($baseline, $calorieTier);
+            $authoredBaseline = MealTiersAuthoredPlates::gramsByIngredientIdForTier(
+                $meal,
+                MealTiersAuthoredPlates::ReferenceCalorieTier,
+            );
+
+            if ($authoredBaseline !== null) {
+                return ChickenKitchenContainerScaler::gramsForTier($meal, $authoredBaseline, $calorieTier);
+            }
+
+            return MealTiersAuthoredPlates::scaleBaselineFrom500($baseline, $calorieTier);
         }
 
-        if (MealTiersProteinFamily::forMeal($meal) === MealTiersProteinFamily::Chicken) {
+        $family = MealTiersProteinFamily::forMeal($meal);
+
+        if (MealTiersProteinFamily::usesKitchenPackout($family)) {
             return ChickenKitchenContainerScaler::gramsForTier($meal, $baseline, $calorieTier);
         }
 

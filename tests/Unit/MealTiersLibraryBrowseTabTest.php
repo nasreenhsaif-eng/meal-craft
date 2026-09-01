@@ -16,7 +16,7 @@ test('browse tabs include protein families and every recipe category', function 
         MealTiersLibraryBrowseTab::Breakfast,
         MealTiersLibraryBrowseTab::MainSalad,
         MealTiersLibraryBrowseTab::BaseRecipe,
-        MealTiersLibraryBrowseTab::Meal,
+        MealTiersLibraryBrowseTab::Vegan,
     ]);
 });
 
@@ -64,7 +64,12 @@ test('classifies library meals onto the browse tabs', function () {
         ->and(MealTiersLibraryBrowseTab::forMeal(Meal::factory()->make([
             'name' => 'Lentil Quinoa Bowl',
             'category' => RecipeCategory::Meal,
-        ])))->toBe(MealTiersLibraryBrowseTab::Meal);
+            'diet_tags' => ['Vegan'],
+        ])))->toBe(MealTiersLibraryBrowseTab::Vegan)
+        ->and(MealTiersLibraryBrowseTab::forMeal(Meal::factory()->make([
+            'name' => 'Grilled Mackerel w Roasted Vegetables',
+            'category' => RecipeCategory::Meal,
+        ])))->toBe(MealTiersLibraryBrowseTab::Salmon);
 });
 
 test('breakfast and base recipe stay on their category even when the name mentions chicken', function () {

@@ -29,15 +29,22 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Chicken kitchen pack-out (plates + salads, same 500 ml cup)
+    | Shared kitchen pack-out for chicken, fish, and beef (plates + salads)
+    | Same 1000 ml cup, protein curve, oil/dressing locks, and veg caps.
     |--------------------------------------------------------------------------
     */
     'chicken_kitchen' => [
-        'container_ml' => 500.0,
+        'container_ml' => 1000.0,
         'plate_prep_oil_grams' => 5.0,
         'salad_dressing_ml' => 20.0,
         'salad_dressing_grams' => 20.0,
         'nut_seed_cap_grams' => 15.0,
+        'dense_veg_cap_grams' => 280.0,
+        'leafy_cap_grams' => 50.0,
+        // Spiralized zucchini / koosa noodles pack loosely but still need a hard plate cap.
+        'noodle_veg_cap_grams' => 250.0,
+        // About 8 medium cherry tomatoes (~10 g each).
+        'cherry_tomato_cap_grams' => 80.0,
         'calorie_tolerance' => 25.0,
         // Cooked plated grams. Raw breast/thigh store rawGramsFromCooked of these targets.
         'cooked_protein_grams' => [
@@ -48,10 +55,22 @@ return [
             700 => 195.0,
             800 => 225.0,
         ],
+        // Minimum cooked plated grams for (Base) rice sides — kitchen scoop, not dry weight.
+        'plated_rice_base_grams_at_400' => 100.0,
+        // Beef plates budget protein heavily; keep a realistic rice scoop without blowing the tier.
+        'plated_rice_base_grams_beef' => [
+            400 => 100.0,
+            500 => 100.0,
+            550 => 105.0,
+            600 => 110.0,
+            700 => 115.0,
+            800 => 125.0,
+        ],
         // Approximate packed volume (ml per gram) by density band.
         'ml_per_gram' => [
             'protein' => 1.05,
             'leafy' => 6.0,
+            'noodle_veg' => 3.5,
             'dense_veg' => 1.15,
             'grain' => 1.35,
             'nut_seed' => 1.4,
@@ -90,6 +109,18 @@ return [
             700 => ['protein' => 525, 'carbs_veg' => 88, 'sauce_fat' => 88, 'seasoning' => 9, 'designed_calories' => 709],
             800 => ['protein' => 600, 'carbs_veg' => 100, 'sauce_fat' => 100, 'seasoning' => 10, 'designed_calories' => 810],
         ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Classic meals excluded from the Meal Tiers Library
+    |--------------------------------------------------------------------------
+    */
+    'excluded_classic_meal_names' => [
+        'Grilled Mackerel w Lemon Herb Quinoa',
+        'Salmon Plate',
+        'Salmon Plate B',
+        'Salmon Quinoa Bowl',
     ],
 
 ];

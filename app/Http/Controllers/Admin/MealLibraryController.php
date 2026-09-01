@@ -976,6 +976,10 @@ class MealLibraryController extends Controller
             return RawPrepIngredientPresentation::formatLine($grams, $formattedGrams, $ingredient);
         }
 
+        if (RawPrepIngredientPresentation::isCannedPrepIngredient($ingredient)) {
+            return RawPrepIngredientPresentation::formatCannedLine($grams, $formattedGrams, $ingredient);
+        }
+
         if (RawPrepIngredientPresentation::isDryWeightIngredient($ingredient)) {
             return RawPrepIngredientPresentation::formatDryLine($grams, $formattedGrams, $ingredient);
         }

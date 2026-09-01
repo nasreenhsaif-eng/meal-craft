@@ -47,6 +47,34 @@ test('repaired base recipes declare instruction-aligned components in master csv
             'must_include' => ['Olive Oil (Extra Virgin)', 'Lime Juice', 'Garlic (Raw)'],
             'must_exclude' => ['French Lentils', 'Almond Flour'],
         ],
+        'Ghormeh Sabzi Stew (Base)' => [
+            'must_include' => ['Cooked Cannellini Beans (Base)', 'Parsley', 'Fresh Coriander', 'Dill (Fresh)', 'Fenugreek Leaves (Fresh)'],
+            'must_exclude' => ['Beef Chuck Roast', 'Steamed Basmati Rice (Base)'],
+        ],
+        'Shawarma Spice Blend (Base)' => [
+            'must_include' => ['cumin powder', 'coriander powder', 'Paprika', 'Cinnamon', 'Allspice', 'Garlic Powder'],
+            'must_exclude' => ['Beef Chuck Roast', 'Tahini'],
+        ],
+        'Beef Shawarma (Base)' => [
+            'must_include' => ['Beef Chuck Roast', 'Shawarma Spice Blend (Base)', 'Olive Oil (Extra Virgin)', 'Garlic (Raw)'],
+            'must_exclude' => ['Creamy Cumin Hummus (Base)', 'Cucumber Pickle (Base)', 'Tomato (Raw)'],
+        ],
+        'Okra Beef Curry (Base)' => [
+            'must_include' => ['Beef Chuck Roast', 'Okra', 'Homemade Tomato Sauce (Base)', 'Garlic (Raw)', 'Coriander Seeds', 'Olive Oil (Extra Virgin)'],
+            'must_exclude' => ['Marinara Sauce (Base)', 'Tomato Sauce (600g)', 'Steamed Basmati Rice (Base)', 'Lemon Slices'],
+        ],
+        'Homemade Tomato Sauce (Base)' => [
+            'must_include' => ['Tomato (Raw)', 'Tomato Paste', 'Garlic (Raw)', 'Olive Oil (Extra Virgin)'],
+            'must_exclude' => ['Marinara Sauce (Base)', 'Beef Chuck Roast', 'Okra'],
+        ],
+        'Lemon Herb Salmon Marinade (Base)' => [
+            'must_include' => ['Lemon Juice', 'Fresh Coriander', 'Dill (Fresh)', 'Fresh Parsley', 'Sea Salt', 'Black Pepper'],
+            'must_exclude' => ['Salmon (Raw)', 'Mango'],
+        ],
+        'Citrus Herb Sauce (Base)' => [
+            'must_include' => ['Lemon Juice', 'Lime Juice', 'Fresh Coriander', 'Dill (Fresh)', 'Fresh Parsley', 'Olive Oil (Extra Virgin)'],
+            'must_exclude' => ['Salmon (Raw)', 'Mango'],
+        ],
         'Red Pepper Dressing (Base)' => [
             'must_include' => ['Bell Pepper (Red)', 'Apple Cider Vinegar', 'Olive Oil (Extra Virgin)'],
             'must_exclude' => ['Black Beans', 'Lemon Juice'],

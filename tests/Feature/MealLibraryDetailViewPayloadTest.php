@@ -50,7 +50,7 @@ test('meal library index includes detailView on each meal for the detail modal',
             ->has('browseTabs')
             ->where('browseTabs.0.id', 'all')
             ->where('meals.0.title', 'Detail Payload Meal')
-            ->where('meals.0.browseTab', 'meal')
+            ->where('meals.0.browseTab', 'vegan')
             ->where('meals.0.macros.calories', 50)
             ->where('meals.0.detailView.nutritionalData.sections.0.rows.0.value', '50')
             ->has('meals.0.detailView')

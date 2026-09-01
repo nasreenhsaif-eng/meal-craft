@@ -352,6 +352,31 @@ class MealTiersLibraryController extends Controller
             trim((string) ($meal->instructions ?: $meal->description ?: '')),
         );
 
+        $ingredientSections = $defaultTier['ingredientSections']
+            ?? MealTiersLibraryPresentation::ingredientSectionsFromIngredients($meal->ingredients);
+
+        $ingredientItems = array_map(
+            static fn (array $row): array => [
+                'line' => (string) ($row['line'] ?? ''),
+                'ingredientId' => (int) ($row['ingredient_id'] ?? 0),
+                'isBaseRecipe' => (bool) ($row['is_base_recipe'] ?? false),
+            ],
+            $defaultTier['ingredients'] ?? [],
+        );
+
+        if ($ingredientItems === []) {
+            $ingredientItems = array_map(
+                static fn (Ingredient $ingredient): array => MealTiersLibraryPresentation::structuredIngredientItem(
+                    $ingredient,
+                    MealTiersLibraryPresentation::ingredientAmountLine(
+                        $ingredient,
+                        (float) ($ingredient->pivot->amount_grams ?? 0),
+                    ),
+                ),
+                MealTiersLibraryPresentation::sortedIngredients($meal->ingredients),
+            );
+        }
+
         return [
             'id' => (string) $meal->id,
             'title' => $meal->name,
@@ -378,8 +403,8 @@ class MealTiersLibraryController extends Controller
                 'sickleCellHighlights' => [],
                 'nutritionalData' => $nutrition,
                 'ingredients' => $detailIngredientLines !== [] ? $detailIngredientLines : [__('No ingredients on file.')],
-                'ingredientSections' => $defaultTier['ingredientSections']
-                    ?? MealTiersLibraryPresentation::ingredientSectionsFromIngredients($meal->ingredients),
+                'ingredientItems' => $ingredientItems,
+                'ingredientSections' => $ingredientSections,
                 'ingredientsPrepNote' => $defaultTier['ingredientsPrepNote']
                     ?? RawPrepIngredientPresentation::ingredientsPrepNote(),
                 'cookingYieldNote' => $defaultTier['cookingYieldNote'] ?? null,

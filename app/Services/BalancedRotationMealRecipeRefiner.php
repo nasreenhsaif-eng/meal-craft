@@ -4,9 +4,11 @@ namespace App\Services;
 
 use App\Models\Ingredient;
 use App\Models\Meal;
+use App\Support\BeefShawarmaBaseRecipe;
 use App\Support\MealLibraryBulkNutrition;
 use App\Support\MealLibraryEditGuard;
 use App\Support\MealLibraryRefinerOverrides;
+use App\Support\OkraBeefCurryBaseRecipe;
 use App\Support\StandardMeatPortion;
 use App\Support\WholeFoodDietPolicy;
 use Illuminate\Support\Facades\DB;
@@ -307,6 +309,57 @@ final class BalancedRotationMealRecipeRefiner
         $vegetarianTags = array_merge($tags, ['Vegetarian']);
 
         $definitions = [
+            'Beef Shawarma Platter' => [
+                'ingredients' => [
+                    'Beef Shawarma (Base)' => BeefShawarmaBaseRecipe::PER_SERVING_GRAMS,
+                    'Creamy Cumin Hummus (Base)' => 70.0,
+                    'Cucumber' => 40.0,
+                    'Fire Roasted Tomatoes (Base)' => 50.0,
+                    'Cucumber Pickle (Base)' => 25.0,
+                    'Olive Oil (Extra Virgin)' => 5.0,
+                    'Parsley' => 5.0,
+                ],
+                'diet_tags' => $tags,
+                'short_description' => 'Shredded beef shawarma with house hummus, fresh cucumber, grilled tomato, pickle, olive oil, and parsley.',
+            ],
+            'Okra Beef Curry' => [
+                'ingredients' => [
+                    'Okra Beef Curry (Base)' => OkraBeefCurryBaseRecipe::PER_SERVING_GRAMS,
+                    'Steamed Basmati Rice (Base)' => 70.0,
+                    'Lemon Slices' => 15.0,
+                    'Fresh Coriander' => 5.0,
+                ],
+                'diet_tags' => $tags,
+                'short_description' => 'Slow-braised beef and okra in from-scratch homemade tomato curry finished with garlic-coriander tadka, served over steamed basmati rice with lemon and fresh coriander.',
+            ],
+            'Pan Seared Hamour' => [
+                'ingredients' => [
+                    'Hamour Fillet' => StandardMeatPortion::GRAMS,
+                    'Steamed Basmati Rice (Base)' => 70.0,
+                    'Roasted Mixed Vegetables (Base)' => 100.0,
+                    'Cumin Seeds' => 1.0,
+                    'Garlic (Raw)' => 5.0,
+                    'Lemon Juice' => 10.0,
+                    'Olive Oil' => 5.0,
+                ],
+                'diet_tags' => $tags,
+                'short_description' => 'Pan-seared hamour with cumin and garlic, served over steamed basmati rice and roasted mixed vegetables.',
+            ],
+            'Craft Shrimp Avocado Bowl' => [
+                'ingredients' => [
+                    'Shrimp (Raw)' => StandardMeatPortion::GRAMS,
+                    'Cooked Quinoa (Base)' => 85.0,
+                    'Avocado' => 30.0,
+                    'Cherry Tomatoes' => 50.0,
+                    'Spinach (Fresh)' => 30.0,
+                    'Lime Juice' => 10.0,
+                    'Olive Oil' => 5.0,
+                    'Black Pepper' => 0.5,
+                    'Sea Salt' => 0.5,
+                ],
+                'diet_tags' => $tags,
+                'short_description' => 'Sautéed shrimp over warm quinoa with avocado, wilted spinach, cherry tomatoes, and lime.',
+            ],
             'Spicy Harissa Grilled Chicken w Roasted Sweet Potato & Zucchini' => [
                 'ingredients' => [
                     'Chicken Breast' => StandardMeatPortion::GRAMS,

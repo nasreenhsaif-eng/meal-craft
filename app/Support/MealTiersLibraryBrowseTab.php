@@ -30,6 +30,9 @@ final class MealTiersLibraryBrowseTab
 
     public const BaseRecipe = 'base_recipe';
 
+    public const Vegan = 'vegan';
+
+    /** @deprecated Orphan mains without a protein family; not shown as a browse tab. */
     public const Meal = 'meal';
 
     public const All = 'all';
@@ -42,7 +45,7 @@ final class MealTiersLibraryBrowseTab
         return [
             ['id' => self::Chicken, 'label' => 'Chicken'],
             ['id' => self::Liver, 'label' => 'Liver'],
-            ['id' => self::Salmon, 'label' => 'Salmon'],
+            ['id' => self::Salmon, 'label' => 'Fish'],
             ['id' => self::Dessert, 'label' => 'Dessert'],
             ['id' => self::SideSalad, 'label' => 'Side salad'],
             ['id' => self::Beef, 'label' => 'Beef'],
@@ -50,7 +53,7 @@ final class MealTiersLibraryBrowseTab
             ['id' => self::Breakfast, 'label' => 'Breakfast'],
             ['id' => self::MainSalad, 'label' => 'Main salad'],
             ['id' => self::BaseRecipe, 'label' => 'Base recipe'],
-            ['id' => self::Meal, 'label' => 'Meal'],
+            ['id' => self::Vegan, 'label' => 'Vegan'],
         ];
     }
 
@@ -150,6 +153,10 @@ final class MealTiersLibraryBrowseTab
 
         if ($category === RecipeCategory::MainSalad) {
             return self::MainSalad;
+        }
+
+        if ($meal->isVegan()) {
+            return self::Vegan;
         }
 
         return self::Meal;

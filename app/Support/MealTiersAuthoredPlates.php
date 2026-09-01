@@ -21,20 +21,11 @@ final class MealTiersAuthoredPlates
     public const TablespoonOilGrams = 15.0;
 
     /**
-     * Cooked protein curve (100 g min at 400) + extras tuned for ~tier calories in a 500 ml cup.
-     * Oil is ½ tbsp on every tier.
+     * Reference 500 kcal kitchen plate at 1000 ml (½ tbsp oil). Other tabs scale via {@see ChickenKitchenContainerScaler}.
      *
      * @var array<int, array<string, float>>
      */
     private const RosemaryGarlicChickenPlates = [
-        400 => [
-            RosemaryGarlicChickenBaseRecipe::NAME => 100.0,
-            'Sweet Potato' => 130.0,
-            'Spinach (Fresh)' => 70.0,
-            'Mushrooms' => 50.0,
-            'Olive Oil (Extra Virgin)' => self::HalfTablespoonOilGrams,
-            'Black Pepper' => 1.0,
-        ],
         500 => [
             RosemaryGarlicChickenBaseRecipe::NAME => 130.0,
             'Sweet Potato' => 180.0,
@@ -43,39 +34,26 @@ final class MealTiersAuthoredPlates
             'Olive Oil (Extra Virgin)' => self::HalfTablespoonOilGrams,
             'Black Pepper' => 1.0,
         ],
-        550 => [
-            RosemaryGarlicChickenBaseRecipe::NAME => 145.0,
-            'Sweet Potato' => 210.0,
-            'Spinach (Fresh)' => 25.0,
-            'Mushrooms' => 25.0,
-            'Olive Oil (Extra Virgin)' => self::HalfTablespoonOilGrams,
-            'Black Pepper' => 1.0,
-        ],
-        600 => [
-            RosemaryGarlicChickenBaseRecipe::NAME => 165.0,
-            'Sweet Potato' => 195.0,
-            'Spinach (Fresh)' => 25.0,
-            'Mushrooms' => 25.0,
-            'Olive Oil (Extra Virgin)' => self::HalfTablespoonOilGrams,
-            'Black Pepper' => 1.0,
-        ],
-        700 => [
-            RosemaryGarlicChickenBaseRecipe::NAME => 180.0,
-            'Sweet Potato' => 280.0,
-            'Spinach (Fresh)' => 65.0,
-            'Mushrooms' => 55.0,
-            'Olive Oil (Extra Virgin)' => self::HalfTablespoonOilGrams,
-            'Black Pepper' => 1.0,
-        ],
-        800 => [
-            RosemaryGarlicChickenBaseRecipe::NAME => 200.0,
-            'Sweet Potato' => 345.0,
-            'Spinach (Fresh)' => 70.0,
-            'Mushrooms' => 55.0,
-            'Olive Oil (Extra Virgin)' => self::HalfTablespoonOilGrams,
+    ];
+
+    /**
+     * Reference 500 kcal pesto koosa plate: spiralized zucchini noodles + roasted pumpkin cubes.
+     *
+     * @var array<int, array<string, float>>
+     */
+    private const PestoChickenKoosaPlates = [
+        500 => [
+            'Chicken Breast' => 150.0,
+            'Zucchini' => 200.0,
+            'Pumpkin' => 150.0,
+            'Cherry Tomatoes' => 45.0,
+            'Basil Pesto (House)' => 25.0,
+            'Olive Oil' => self::HalfTablespoonOilGrams,
             'Black Pepper' => 1.0,
         ],
     ];
+
+    public const PestoChickenKoosaMealName = 'Pesto Chicken Koosa Noodles';
 
     /**
      * 500 kcal kitchen plate (½ tbsp oil for vegetables).
@@ -96,12 +74,20 @@ final class MealTiersAuthoredPlates
     {
         $name = trim($name);
 
-        if ($name !== BalancedCanonicalMealRecipeRefiner::ROSEMARY_GARLIC_CHICKEN_PLATE_NAME
-            && $name !== BalancedCanonicalMealRecipeRefiner::ROSEMARY_GARLIC_CHICKEN_PLATE_LEGACY_NAME) {
+        if ($calorieTier !== self::ReferenceCalorieTier) {
             return null;
         }
 
-        return self::RosemaryGarlicChickenPlates[$calorieTier] ?? null;
+        if ($name === BalancedCanonicalMealRecipeRefiner::ROSEMARY_GARLIC_CHICKEN_PLATE_NAME
+            || $name === BalancedCanonicalMealRecipeRefiner::ROSEMARY_GARLIC_CHICKEN_PLATE_LEGACY_NAME) {
+            return self::RosemaryGarlicChickenPlates[$calorieTier] ?? null;
+        }
+
+        if ($name === self::PestoChickenKoosaMealName) {
+            return self::PestoChickenKoosaPlates[$calorieTier] ?? null;
+        }
+
+        return null;
     }
 
     /**

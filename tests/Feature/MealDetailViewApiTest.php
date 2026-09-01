@@ -51,7 +51,54 @@ test('meal detail view api formats salmon with raw before cooking label', functi
         ->assertJsonPath('detailView.ingredients.0', '125g Salmon (raw, before cooking)');
 });
 
-test('meal detail view api formats egg ingredients with large egg counts', function () {
+test('meal detail view api formats canned sardines with drained canned label', function () {
+    $user = User::factory()->customer()->create();
+
+    $sardines = Ingredient::factory()->create([
+        'name' => 'Sardines (Canned)',
+        'usda_food_category' => 'Proteins',
+        'calories' => 208,
+    ]);
+    $meal = Meal::factory()->create(['name' => 'API Detail Sardine Pate w Zucchini Bread']);
+    $meal->ingredients()->attach($sardines->id, ['amount_grams' => 100, 'amount' => 100, 'unit' => 'g']);
+
+    $this->actingAs($user)
+        ->getJson(route('api.meals.detail-view', $meal))
+        ->assertOk()
+        ->assertJsonPath('detailView.ingredients.0', '100g Sardines (drained canned)');
+});
+
+test('meal detail view api formats hamour and shrimp with salmon-style raw labels', function () {
+    $user = User::factory()->customer()->create();
+
+    $hamour = Ingredient::factory()->create([
+        'name' => 'Hamour Fillet',
+        'usda_food_category' => 'Proteins',
+        'calories' => 92,
+    ]);
+    $hamourMeal = Meal::factory()->create(['name' => 'API Detail Pan Seared Hamour']);
+    $hamourMeal->ingredients()->attach($hamour->id, ['amount_grams' => 165, 'amount' => 165, 'unit' => 'g']);
+
+    $shrimp = Ingredient::factory()->create([
+        'name' => 'Shrimp (Raw)',
+        'usda_food_category' => 'Proteins',
+        'calories' => 85,
+    ]);
+    $shrimpMeal = Meal::factory()->create(['name' => 'API Detail Craft Shrimp Avocado Bowl']);
+    $shrimpMeal->ingredients()->attach($shrimp->id, ['amount_grams' => 165, 'amount' => 165, 'unit' => 'g']);
+
+    $this->actingAs($user)
+        ->getJson(route('api.meals.detail-view', $hamourMeal))
+        ->assertOk()
+        ->assertJsonPath('detailView.ingredients.0', '165g Hamour (raw, before cooking)');
+
+    $this->actingAs($user)
+        ->getJson(route('api.meals.detail-view', $shrimpMeal))
+        ->assertOk()
+        ->assertJsonPath('detailView.ingredients.0', '165g Shrimp (raw, before cooking)');
+});
+
+test('meal detail view api formats egg ingredients with raw egg counts', function () {
     $user = User::factory()->customer()->create();
 
     $egg = Ingredient::factory()->create(['name' => 'Egg']);
@@ -61,7 +108,7 @@ test('meal detail view api formats egg ingredients with large egg counts', funct
     $this->actingAs($user)
         ->getJson(route('api.meals.detail-view', $meal))
         ->assertOk()
-        ->assertJsonPath('detailView.ingredients.0', '2 large eggs (100g)');
+        ->assertJsonPath('detailView.ingredients.0', '2 eggs raw');
 });
 
 test('meal detail view api returns persisted instructions and ingredients', function () {

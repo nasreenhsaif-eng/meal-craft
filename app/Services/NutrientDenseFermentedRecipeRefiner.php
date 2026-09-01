@@ -240,6 +240,7 @@ final class NutrientDenseFermentedRecipeRefiner
                 'diet_tags' => $veganTags,
                 'highlight' => 'Purslane and red pepper with roasted cherry tomatoes, sesame and pumpkin seeds, and lemon-tahini dressing.',
                 'image_path' => self::TAHINI_PURSLANE_PEPPER_SALAD_IMAGE,
+                'instructions' => "1. Prepare Roasted Cherry Tomato (Base) and Lemon-Tahini Dressing (Base) per base recipe instructions.\n2. Toss purslane, sliced bell pepper, and roasted cherry tomatoes in a bowl.\n3. Scatter sesame seeds over the salad.\n4. Serve dressing on the side.",
             ],
             self::SAUERKRAUT_ROCCA_SALAD_NAME => [
                 'category' => RecipeCategory::SideSalad,
@@ -329,6 +330,7 @@ final class NutrientDenseFermentedRecipeRefiner
                 ],
                 'diet_tags' => $fishTags,
                 'highlight' => 'Mackerel over lemon herb quinoa — dense in D and B12.',
+                'instructions' => "1. Prepare Cooked Quinoa (Base) per base recipe instructions. Fold in chopped parsley and half the lemon juice.\n2. Score mackerel fillets. Whisk olive oil, remaining lemon juice, sea salt, and black pepper. Coat fish and rest 10 minutes.\n3. Grill or pan-sear skin-side down over medium-high heat until skin is crisp and flesh is cooked through, about 4–5 minutes per side.\n4. Serve mackerel over lemon herb quinoa.",
             ],
         ];
     }

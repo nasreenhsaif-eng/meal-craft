@@ -167,20 +167,23 @@ Layer quinoa, vegetables, and beef in a bowl. Top with egg and sesame seeds.',
     'Beef Shawarma Platter' => [
         'synced_at' => '2026-07-12T10:11:47+00:00',
         'ingredients' => [
-            'Beef Chuck Roast' => 150.0,
-            'Cucumber' => 50.0,
-            'Lemon Juice' => 5.0,
-            'Shawarma Spice Blend' => 3.0,
-            'Tahini' => 10.0,
-            'Tomato (Raw)' => 50.0,
-            'White Onion' => 40.0,
+            'Beef Shawarma (Base)' => 112.0,
+            'Creamy Cumin Hummus (Base)' => 70.0,
+            'Cucumber' => 40.0,
+            'Cucumber Pickle (Base)' => 25.0,
+            'Fire Roasted Tomatoes (Base)' => 50.0,
+            'Olive Oil (Extra Virgin)' => 5.0,
+            'Parsley' => 5.0,
         ],
-        'highlight' => 'Shredded slow-cooked beef chuck with shawarma spices, cucumber-tomato salad, and tahini drizzle.',
-        'short_description' => 'Shredded slow-cooked beef chuck with shawarma spices, cucumber-tomato salad, and tahini drizzle.',
-        'instructions' => 'served alongside a crisp cucumber-tomato salad and tahini drizzle.',
+        'highlight' => 'Shredded beef shawarma with house hummus, fresh cucumber, grilled tomato, pickle, olive oil, and parsley.',
+        'short_description' => 'Shredded beef shawarma with house hummus, fresh cucumber, grilled tomato, pickle, olive oil, and parsley.',
+        'instructions' => 'Prepare Beef Shawarma (Base), Creamy Cumin Hummus (Base), Cucumber Pickle (Base), and Fire Roasted Tomatoes (Base) per base recipe instructions.
+Plate hummus, drizzle with olive oil, and garnish with parsley.
+Add shredded beef shawarma, fresh cucumber slices, grilled tomato, and cucumber pickle.',
         'food_filter_tags' => [
             0 => 'nightshades',
             1 => 'sesame',
+            2 => 'beans',
         ],
     ],
     'Blackened Chicken, Grilled Peppers & Onion Salad w Quinoa, Kale & Mustard Dressing' => [
@@ -564,24 +567,24 @@ Pour the fruit smoothie over the chia layer. Serve chilled.',
         ],
     ],
     'Chicken Thai Mango Salad' => [
-        'synced_at' => '2026-07-12T10:11:47+00:00',
+        'synced_at' => '2026-09-01T08:05:00+00:00',
         'ingredients' => [
             'Cabbage (Purple)' => 75.0,
+            'Cashew Nuts' => 10.0,
             'Cherry Tomatoes' => 40.0,
             'Chicken Breast' => 150.0,
             'Cucumber' => 45.0,
             'Fresh Coriander' => 5.0,
             'Mango' => 55.0,
             'Peanut Butter Dressing (Base)' => 25.0,
-            'Peanuts (Crushed)' => 10.0,
             'Red Onion' => 15.0,
         ],
-        'highlight' => 'Grilled chicken breast with mango, purple cabbage, cucumber, and cherry tomatoes in peanut butter dressing.',
-        'short_description' => 'Grilled chicken breast with mango, purple cabbage, cucumber, and cherry tomatoes in peanut butter dressing.',
+        'highlight' => 'Grilled chicken breast with mango, purple cabbage, cucumber, cherry tomatoes, and cashew nuts — peanut butter dressing on the side.',
+        'short_description' => 'Grilled chicken breast with mango, purple cabbage, cucumber, cherry tomatoes, and cashew nuts — peanut butter dressing on the side.',
         'instructions' => 'Grill or pan-sear chicken until golden then in the oven for 20 minutes exactly, then Rest and slice thinly.
 Shred cabbage; slice mango, cucumber, tomatoes, and red onion.
 Toss vegetables with coriander.
-Top with chicken and crushed peanuts.
+Top with chicken and cashew nuts.
 Serve dressing on the side.',
         'diet_tags' => [
             0 => 'Dairy-free',
@@ -805,6 +808,35 @@ Serve dressing on the side.',
             0 => 'Dairy-free',
             1 => 'Gluten-free',
             2 => 'Vegan',
+        ],
+    ],
+    'Craft Shrimp Avocado Bowl' => [
+        'synced_at' => '2026-09-01T17:00:00+00:00',
+        'ingredients' => [
+            'Avocado' => 30.0,
+            'Black Pepper' => 0.5,
+            'Cherry Tomatoes' => 50.0,
+            'Cooked Quinoa (Base)' => 85.0,
+            'Lime Juice' => 10.0,
+            'Olive Oil' => 5.0,
+            'Sea Salt' => 0.5,
+            'Shrimp (Raw)' => 150.0,
+            'Spinach (Fresh)' => 30.0,
+        ],
+        'highlight' => 'Sautéed shrimp over warm quinoa with avocado, wilted spinach, cherry tomatoes, and lime.',
+        'short_description' => 'Sautéed shrimp over warm quinoa with avocado, wilted spinach, cherry tomatoes, and lime.',
+        'instructions' => '1. Prepare Cooked Quinoa (Base) per base recipe instructions; keep warm.
+2. Season raw shrimp with sea salt and black pepper. Heat olive oil in a pan over medium-high heat.
+3. Sauté shrimp 1–2 minutes per side until pink and curled. Remove from heat.
+4. Wilt spinach in the same pan with a splash of water (30 seconds). Halve cherry tomatoes.
+5. Assemble bowl with quinoa, spinach, tomatoes, and sliced avocado. Top with shrimp and a squeeze of lime juice.',
+        'diet_tags' => [
+            0 => 'Dairy-free',
+            1 => 'Gluten-free',
+        ],
+        'food_filter_tags' => [
+            0 => 'nightshades',
+            1 => 'shellfish',
         ],
     ],
     'Deconstructed Shakshuka Skillet' => [
@@ -1170,25 +1202,28 @@ Serve dressing on the side.',
         ],
     ],
     'Grilled Salmon Mango Salsa' => [
-        'synced_at' => '2026-07-22T15:59:48+00:00',
+        'synced_at' => '2026-09-01T12:00:00+00:00',
         'ingredients' => [
             'Avocado' => 40.0,
             'Bell Pepper (Red)' => 30.0,
             'Cashew Nuts' => 10.0,
+            'Citrus Herb Sauce (Base)' => 30.0,
             'Cucumber' => 40.0,
             'Fresh Coriander' => 3.0,
-            'Lime Juice' => 10.0,
+            'Lemon Herb Salmon Marinade (Base)' => 20.0,
             'Mango' => 50.0,
             'Pumpkin' => 90.0,
             'Purslane' => 40.0,
             'Salmon (Raw)' => 150.0,
         ],
-        'highlight' => 'Pan-seared salmon over roasted pumpkin with mango salsa salad, avocado, purslane, and cashews.',
-        'short_description' => 'Pan-seared salmon over roasted pumpkin with mango salsa salad, avocado, purslane, and cashews.',
+        'highlight' => 'Lemon-herb marinated salmon over roasted pumpkin with mango salsa, citrus herb sauce, avocado, purslane, and cashews.',
+        'short_description' => 'Lemon-herb marinated salmon over roasted pumpkin with mango salsa, citrus herb sauce, avocado, purslane, and cashews.',
         'instructions' => 'Cube pumpkin and roast at 200°C until tender and lightly caramelized at the edges.
-Dice mango, pepper, cucumber, and avocado. Toss with purslane, cashew nuts, lime juice, and coriander.
-Grill or pan-sear salmon until cooked through.
-Serve salmon over roasted pumpkin with the mango salsa salad.',
+Prepare Lemon Herb Salmon Marinade (Base) per base recipe instructions. Coat salmon and marinate 20–30 minutes.
+Prepare Citrus Herb Sauce (Base) per base recipe instructions; keep warm.
+Dice mango, pepper, cucumber, and avocado. Toss with purslane, cashew nuts, a spoonful of citrus herb sauce, and coriander.
+Grill or pan-sear the marinated salmon until cooked through.
+Serve salmon over roasted pumpkin with the mango salsa salad. Spoon the remaining citrus herb sauce over the salmon so it stays moist and glossy.',
         'diet_tags' => [
             0 => 'Dairy-free',
             1 => 'Gluten-free',
@@ -1314,6 +1349,42 @@ Serve skewers with zereshk turmeric rice, roasted vegetables on the side, and fr
         'food_filter_tags' => [
             0 => 'eggs',
             1 => 'nuts',
+        ],
+    ],
+    'Lemon Chicken Eggplant' => [
+        'synced_at' => '2026-09-01T07:40:00+00:00',
+        'ingredients' => [
+            'Bell Pepper (Red)' => 50.0,
+            'Cherry Tomatoes' => 40.0,
+            'Chicken Breast' => 150.0,
+            'Eggplant Dip (Mutabal) (Base)' => 90.0,
+            'Fresh Oregano' => 5.0,
+            'Fresh Parsley' => 5.0,
+            'Garlic (Raw)' => 5.0,
+            'Lemon Juice' => 15.0,
+            'Lemon Slices' => 40.0,
+            'Olive Oil' => 5.0,
+            'Purslane' => 45.0,
+            'Zucchini Almond Bread (Base)' => 45.0,
+        ],
+        'highlight' => 'Lemon chicken skewers with lemon slices between the pieces, served over smoky babaghanoush (mutabal) with toasted zucchini almond bread.',
+        'short_description' => 'Lemon chicken skewers with lemon slices between the pieces, served over smoky babaghanoush (mutabal) with toasted zucchini almond bread.',
+        'instructions' => 'Prepare Eggplant Dip (Mutabal) (Base) and Zucchini Almond Bread (Base) per base recipe instructions. Toast the bread and keep warm.
+Cut chicken breast into cubes. Slice lemon into thin rounds.
+Thread the chicken onto skewers, alternating with lemon slices between the chicken pieces.
+Whisk lemon juice, olive oil, minced garlic, and fresh oregano. Brush the skewers with the marinade.
+Grill or pan-sear the skewers until golden, then finish in the oven for 20 minutes exactly. Rest.
+Warm cherry tomatoes and diced red pepper in the pan for 2–3 minutes. Finish with fresh parsley.
+Serve the lemon chicken skewers over mutabal with peppers, tomatoes, purslane, and toasted zucchini almond bread.',
+        'diet_tags' => [
+            0 => 'Dairy-free',
+            1 => 'Gluten-free',
+        ],
+        'food_filter_tags' => [
+            0 => 'eggs',
+            1 => 'nightshades',
+            2 => 'nuts',
+            3 => 'sesame',
         ],
     ],
     'Mango Pumpkin Seed Chia Pudding' => [
@@ -1472,30 +1543,61 @@ Finish with fresh herbs. Serve warm.',
             1 => 'nightshades',
         ],
     ],
-    'Okra Beef Curry' => [
-        'synced_at' => '2026-07-12T10:11:47+00:00',
+    'Moroccan Meatballs' => [
+        'synced_at' => '2026-09-01T16:15:00+00:00',
         'ingredients' => [
-            'Beef Chuck Roast' => 150.0,
-            'Coriander Seeds' => 2.0,
-            'Garlic' => 5.0,
-            'Marinara Sauce (Base)' => 60.0,
-            'Okra' => 120.0,
-            'Olive Oil' => 5.0,
-            'White Onion' => 35.0,
+            'Beef Ground Lean' => 150.0,
+            'Cooked Quinoa (Base)' => 80.0,
+            'Garlic (Raw)' => 3.0,
+            'Olive Oil (Extra Virgin)' => 4.0,
+            'Parsley' => 8.0,
+            'Pine Nuts' => 8.0,
+            'Pomegranate Molasses' => 10.0,
+            'Pomegranate Seeds' => 12.0,
+            'Ras El Hanout (Base)' => 3.0,
+            'White Onion' => 30.0,
         ],
-        'highlight' => 'A rich traditional stew uniting tender slow-cooked beef chuck with whole fresh okra pods in an aromatic garlic-ginger tomato curry base.',
-        'short_description' => 'A rich traditional stew uniting tender slow-cooked beef chuck with whole fresh okra pods in an aromatic garlic-ginger tomato curry base.',
-        'instructions' => 'Sear cubed beef chuck roast in a hot pan with a drop of olive oil until deeply browned; transfer to slow cooker.
-Sauté chopped white onion, minced garlic, and grated ginger with curry spices until fragrant; add to slow cooker.
-Add your house tomato sauce base and a splash of water; cover and cook on low for 6 to 8 hours until beef fibers easily separate.
-Gently fold in clean, trimmed whole okra pods during the final 45 minutes of cooking to ensure they soften without bursting.
-Carefully ladle the balanced beef and okra curry combo into your service container matrix.',
+        'highlight' => 'Ras el hanout-spiced beef meatballs glazed with pomegranate molasses over fluffy quinoa, finished with parsley, pine nuts, and pomegranate seeds.',
+        'short_description' => 'Ras el hanout-spiced beef meatballs glazed with pomegranate molasses over fluffy quinoa, finished with parsley, pine nuts, and pomegranate seeds.',
+        'instructions' => '1. Prepare Cooked Quinoa (Base) per base recipe instructions; keep warm.
+2. Mix ground beef with garlic, grated onion, and Ras El Hanout (Base); roll into meatballs.
+3. Brown meatballs in olive oil until golden all over.
+4. Drizzle with pomegranate molasses and simmer briefly until glazed.
+5. Plate warm quinoa and top with glazed meatballs.
+6. Garnish with chopped parsley, toasted pine nuts, and pomegranate seeds.',
+        'diet_tags' => [
+            0 => 'Dairy-free',
+            1 => 'Gluten-free',
+        ],
+        'food_filter_tags' => [
+            0 => 'nuts',
+        ],
+    ],
+    'Okra Beef Curry' => [
+        'synced_at' => '2026-09-01T18:05:00+00:00',
+        'ingredients' => [
+            'Fresh Coriander' => 5.0,
+            'Lemon Slices' => 15.0,
+            'Okra Beef Curry (Base)' => 332.0,
+            'Steamed Basmati Rice (Base)' => 70.0,
+        ],
+        'highlight' => 'Slow-braised beef and okra in from-scratch homemade tomato curry finished with garlic-coriander tadka, served over steamed basmati rice with lemon and fresh coriander.',
+        'short_description' => 'Slow-braised beef and okra in from-scratch homemade tomato curry finished with garlic-coriander tadka, served over steamed basmati rice with lemon and fresh coriander.',
+        'instructions' => '1. Prepare Okra Beef Curry (Base) per base recipe instructions; keep hot.
+2. Prepare Steamed Basmati Rice (Base) per base recipe instructions.
+3. Portion beef, okra, and sauce separately from the stew.
+4. Plate rice, arrange beef and okra, and ladle sauce over.
+5. Serve with a lemon wedge and chopped fresh coriander.',
+        'diet_tags' => [
+            0 => 'Dairy-free',
+            1 => 'Gluten-free',
+        ],
         'food_filter_tags' => [
             0 => 'nightshades',
         ],
     ],
     'Pan Seared Hamour' => [
-        'synced_at' => '2026-07-12T10:11:47+00:00',
+        'synced_at' => '2026-09-01T17:00:00+00:00',
         'ingredients' => [
             'Cumin Seeds' => 1.0,
             'Garlic (Raw)' => 5.0,
@@ -1503,12 +1605,18 @@ Carefully ladle the balanced beef and okra curry combo into your service contain
             'Lemon Juice' => 10.0,
             'Olive Oil' => 5.0,
             'Roasted Mixed Vegetables (Base)' => 100.0,
+            'Steamed Basmati Rice (Base)' => 70.0,
         ],
         'highlight' => 'Pan-seared hamour with cumin and garlic, served over steamed basmati rice and roasted mixed vegetables.',
         'short_description' => 'Pan-seared hamour with cumin and garlic, served over steamed basmati rice and roasted mixed vegetables.',
-        'instructions' => 'Prepare Roasted Mixed Vegetables (Base) and Steamed Basmati Rice (Base) per base recipe instructions.
-Season hamour with cumin, garlic, lemon juice, and olive oil. Pan-sear until golden and cooked through.
-Serve hamour over rice with roasted mixed vegetables on the side.',
+        'instructions' => '1. Prepare Roasted Mixed Vegetables (Base) and Steamed Basmati Rice (Base) per base recipe instructions.
+2. Season hamour with cumin seeds, garlic, lemon juice, and olive oil.
+3. Pan-sear hamour until golden and cooked through.
+4. Serve hamour over rice with roasted mixed vegetables on the side.',
+        'diet_tags' => [
+            0 => 'Dairy-free',
+            1 => 'Gluten-free',
+        ],
         'food_filter_tags' => [
             0 => 'fish',
             1 => 'nightshades',
@@ -1669,27 +1777,48 @@ Finish with Fresh Parsley and serve with warm Zucchini Almond Bread (Base).',
             2 => 'nuts',
         ],
     ],
+    'Pesto Chicken Koosa Noodles' => [
+        'synced_at' => '2026-09-01T08:00:00+00:00',
+        'ingredients' => [
+            'Basil Pesto (House)' => 25.0,
+            'Black Pepper' => 1.0,
+            'Cherry Tomatoes' => 45.0,
+            'Chicken Breast' => 150.0,
+            'Olive Oil' => 5.0,
+            'Pumpkin' => 150.0,
+            'Zucchini' => 200.0,
+        ],
+        'highlight' => 'Pesto-tossed koosa noodles with pan-seared chicken, roasted pumpkin cubes, and blistered cherry tomatoes.',
+        'short_description' => 'Pesto-tossed koosa noodles with pan-seared chicken, roasted pumpkin cubes, and blistered cherry tomatoes.',
+        'instructions' => 'Preheat oven to 200°C. Dice pumpkin into 2 cm cubes, toss with half the olive oil, and roast until tender and golden at the edges (20–25 min).
+Spiralize zucchini into koosa noodles (or cut thin ribbons with a peeler). Pat dry.
+Season chicken breast with sea salt and black pepper. Heat the remaining olive oil in a pan over medium-high heat.
+Pan-sear chicken until golden, then finish in the oven for 20 minutes exactly. Rest and slice.
+In the same pan, blister cherry tomatoes for 2–3 minutes. Add koosa noodles and toss 1–2 minutes until just tender.
+Prepare Basil Pesto (House) per base recipe instructions. Toss noodles and tomatoes with pesto.
+Plate roasted pumpkin cubes, pesto koosa noodles, and sliced chicken. Finish with black pepper.',
+        'diet_tags' => [
+            0 => 'Dairy-free',
+            1 => 'Gluten-free',
+        ],
+        'food_filter_tags' => [
+            0 => 'nightshades',
+            1 => 'nuts',
+        ],
+    ],
     'Persian Herb Beef Stew' => [
         'synced_at' => '2026-07-20T08:10:00+00:00',
         'ingredients' => [
             'Beef Chuck Roast' => 150.0,
-            'Cannellini Beans' => 70.0,
-            'Dill (Fresh)' => 4.0,
-            'Fresh Coriander' => 8.0,
-            'Lemon Juice' => 8.0,
-            'Olive Oil' => 2.0,
-            'Steamed Basmati Rice (Base)' => 75.0,
-            'Spinach (Fresh)' => 35.0,
-            'White Onion' => 28.0,
+            'Ghormeh Sabzi Stew (Base)' => 189.0,
+            'Steamed Basmati Rice (Base)' => 70.0,
         ],
-        'highlight' => 'A fragrant traditional stew of slow-simmered beef chuck packed with minced cilantro, served over fluffy basmati rice.',
-        'short_description' => 'A fragrant traditional stew of slow-simmered beef chuck packed with minced cilantro, served over fluffy basmati rice.',
-        'instructions' => 'Brown beef cubes in olive oil. Set aside.
-Sauté onion until golden. Return beef with water to cover.
-Simmer low 60–90 minutes until beef is tender.
-Add beans, herbs, and spinach in the last 10 minutes.
-Prepare Steamed Basmati Rice (Base) per base recipe instructions; keep warm.
-Serve stew over rice with lemon.',
+        'highlight' => 'Slow-simmered beef chuck with classic Persian ghormeh sabzi stew and steamed basmati rice — bulk sabzi batch plus per-plate beef, stew, and rice grams.',
+        'short_description' => 'Slow-simmered beef chuck with classic Persian ghormeh sabzi stew and steamed basmati rice — bulk sabzi batch plus per-plate beef, stew, and rice grams.',
+        'instructions' => 'Prepare Ghormeh Sabzi Stew (Base) and Steamed Basmati Rice (Base) per base recipe instructions; keep both hot.
+Brown beef chuck cubes in a little olive oil; add water to cover and simmer 60–90 minutes until tender. Season lightly.
+Portion steamed rice, beef, and sabzi stew per kitchen gram targets for the calorie tier.
+Serve rice with beef and ghormeh sabzi stew spooned over or alongside.',
         'diet_tags' => [
             0 => 'Dairy-free',
             1 => 'Gluten-free',
@@ -2023,6 +2152,12 @@ Garnish with chopped fresh parsley.',
         ],
         'highlight' => 'Pan-sautéed chicken liver with garlicky cabbage and peppers.',
         'short_description' => 'Pan-sautéed chicken liver with garlicky cabbage and peppers.',
+        'instructions' => 'Prepare Quinoa Flatbread (Base) per base recipe instructions; keep warm.
+Pat chicken liver dry and season with sea salt, black pepper, and nutmeg.
+Warm olive oil in a wide pan. Sauté red onion and garlic until fragrant. Add sliced cabbage and bell pepper; cook until softened (4–5 min).
+Push vegetables to the side. Sear livers 1–2 minutes per side until browned outside and just cooked through.
+Stir cherry tomatoes and oregano into the vegetables. Finish with pomegranate molasses.
+Serve livers with garlicky cabbage and peppers alongside warm quinoa flatbread.',
         'diet_tags' => [
             0 => 'Dairy-free',
             1 => 'Gluten-free',
@@ -2382,7 +2517,6 @@ Serve chilled.',
             'Cauliflower' => 80.0,
             'Dill (Fresh)' => 3.0,
             'Eggplant Dip (Mutabal) (Base)' => 90.0,
-            'Olive Oil' => 5.0,
             'Parsley' => 5.0,
             'Pickled Red Onion (Base)' => 25.0,
             'Pomegranate Seeds' => 15.0,
@@ -2503,24 +2637,24 @@ Serve with steamed broccoli, cucumber pickle, and Garlicky Green Beans (Base) sp
         ],
     ],
     'Tandoori Chicken Salad' => [
-        'synced_at' => '2026-07-12T10:11:47+00:00',
+        'synced_at' => '2026-09-01T08:30:00+00:00',
         'ingredients' => [
             'Cashew Nuts' => 10.0,
             'Celery' => 20.0,
-            'Cherry Tomatoes' => 45.0,
+            'Cherry Tomatoes' => 80.0,
             'Cucumber' => 45.0,
             'Fresh Coriander' => 5.0,
             'Fresh Mint' => 5.0,
             'Mint Coconut Chutney Dressing (Base)' => 15.0,
             'Pomegranate Seeds' => 10.0,
             'Red Onion' => 10.0,
-            'Romaine Lettuce' => 55.0,
+            'Romaine Lettuce' => 50.0,
             'Tandoori Chicken (Base)' => 150.0,
         ],
         'highlight' => 'Lean chicken breast strips marinated in bold tandoori spices and grilled',
         'short_description' => 'Lean chicken breast strips marinated in bold tandoori spices and grilled',
         'instructions' => 'Grill or pan-sear Tandoori Chicken (Base) until golden then in the oven for 20 minutes exactly, then Rest and slice.
-Toss romaine, cucumber, celery, tomatoes, onion, herbs, and pomegranate.
+Toss romaine, cucumber, celery, about 8 halved cherry tomatoes, onion, herbs, and pomegranate.
 Top with chicken and cashews.
 Serve dressing on the side.',
         'diet_tags' => [
