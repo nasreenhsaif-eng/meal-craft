@@ -43,17 +43,17 @@ final class MealTiersLibraryBrowseTab
     public static function tabs(): array
     {
         return [
-            ['id' => self::Chicken, 'label' => 'Chicken'],
-            ['id' => self::Liver, 'label' => 'Liver'],
-            ['id' => self::Salmon, 'label' => 'Fish'],
-            ['id' => self::Dessert, 'label' => 'Dessert'],
-            ['id' => self::SideSalad, 'label' => 'Side salad'],
-            ['id' => self::Beef, 'label' => 'Beef'],
-            ['id' => self::Soup, 'label' => 'Soup'],
             ['id' => self::Breakfast, 'label' => 'Breakfast'],
+            ['id' => self::Chicken, 'label' => 'Chicken'],
+            ['id' => self::Beef, 'label' => 'Beef'],
+            ['id' => self::Salmon, 'label' => 'Fish'],
+            ['id' => self::Liver, 'label' => 'Liver'],
+            ['id' => self::Vegan, 'label' => 'Vegan'],
+            ['id' => self::SideSalad, 'label' => 'Side salad'],
+            ['id' => self::Dessert, 'label' => 'Dessert'],
+            ['id' => self::Soup, 'label' => 'Soup'],
             ['id' => self::MainSalad, 'label' => 'Main salad'],
             ['id' => self::BaseRecipe, 'label' => 'Base recipe'],
-            ['id' => self::Vegan, 'label' => 'Vegan'],
         ];
     }
 

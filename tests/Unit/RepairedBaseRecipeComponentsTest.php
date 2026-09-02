@@ -99,9 +99,9 @@ test('repaired base recipes declare instruction-aligned components in master csv
             'must_include' => ['Beef Chuck Roast', 'Eggs (Large)', 'Almond Flour'],
             'must_exclude' => ['Sardines (Canned)', 'Carom Seeds'],
         ],
-        'Quinoa Bread (Base)' => [
+        'Quinoa Flatbread (Base)' => [
             'must_include' => ['Quinoa Flour', 'Psyllium Husks', 'Flaxseeds'],
-            'must_exclude' => ['Beef Ground', 'Lamb Chops'],
+            'must_exclude' => ['Beef Ground', 'Lamb Chops', 'Baking Powder'],
         ],
         'Zucchini Almond Bread (Base)' => [
             'must_include' => ['Almond Flour', 'Zucchini', 'Eggs (Large)', 'Ghee'],

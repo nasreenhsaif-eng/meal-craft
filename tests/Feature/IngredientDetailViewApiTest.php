@@ -37,6 +37,36 @@ test('ingredient detail view api returns base recipe components and instructions
         ->assertJsonPath('detailView.nutritionSubheading', 'Per 100 g totals');
 });
 
+test('quinoa flatbread detail view reports nutrition per one bread serving', function () {
+    $user = User::factory()->create();
+    $flour = Ingredient::factory()->create([
+        'name' => 'Quinoa Flour',
+        'is_verified' => true,
+        'calories' => 368,
+        'protein' => 14,
+        'carbs' => 64,
+        'fat' => 6,
+    ]);
+
+    $base = app(BaseIngredientService::class)->upsert(
+        null,
+        'Quinoa Flatbread (Base)',
+        [['ingredient_id' => $flour->id, 'amount_grams' => 25]],
+        97.5,
+        [
+            'description' => 'One bread serving.',
+            'instructions' => "Step 1: Whisk.\nStep 2: Sear.",
+        ],
+    );
+
+    $this->actingAs($user)
+        ->getJson(route('api.ingredients.detail-view', $base))
+        ->assertOk()
+        ->assertJsonPath('detailView.nutritionSubheading', 'Per serving (1 bread)')
+        ->assertJsonPath('detailView.nutritionalData.valueColumnLabel', 'Per serving')
+        ->assertJsonPath('detailView.ingredients.0', '25g Quinoa Flour');
+});
+
 test('ingredient detail view api returns 404 for non-base ingredients', function () {
     $user = User::factory()->create();
     $ingredient = Ingredient::factory()->create([

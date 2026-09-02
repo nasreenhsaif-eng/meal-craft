@@ -16,7 +16,11 @@ final class BaseIngredientDetailViewPresenter
     {
         $ingredient->loadMissing(['components']);
 
-        $nutrition = $this->nutritionPer100GramsCalculatorShape($ingredient);
+        $nutritionPer100g = $this->nutritionPer100GramsCalculatorShape($ingredient);
+        $servesOneBread = QuinoaFlatbreadBaseRecipe::is($ingredient);
+        $nutrition = $servesOneBread
+            ? QuinoaFlatbreadBaseRecipe::nutritionPerServing($nutritionPer100g)
+            : $nutritionPer100g;
 
         $childIds = [];
         $ingredientLines = [];
@@ -71,14 +75,21 @@ final class BaseIngredientDetailViewPresenter
             'hasG6pdTrigger' => $hasG6pdTrigger,
             'safetyAlerts' => $safetyAlerts,
             'sickleCellHighlights' => $sickleCellHighlights,
-            'nutritionalData' => $this->nutritionalDataPer100gSidebar($nutrition),
+            'nutritionalData' => $this->nutritionalDataSidebar(
+                $nutrition,
+                $servesOneBread ? __('Per serving') : __('Per 100 g'),
+            ),
             'ingredients' => $ingredientLines,
             'ingredientItems' => $ingredientItems,
             'instructions' => $this->instructionsLinesFromText($instructionsRaw),
             'imageUrl' => MealImagePath::resolveUrl($ingredient->image_path, $ingredient->name),
             'imageAlt' => $ingredient->name,
-            'nutritionSubheading' => __('Per 100 g totals'),
-            'sickleRdiFootnote' => __('High Source: ≥20%% of daily RDI per 100 g'),
+            'nutritionSubheading' => $servesOneBread
+                ? __('Per serving (1 bread)')
+                : __('Per 100 g totals'),
+            'sickleRdiFootnote' => $servesOneBread
+                ? __('High Source: ≥20%% of daily RDI per serving')
+                : __('High Source: ≥20%% of daily RDI per 100 g'),
         ];
     }
 
@@ -129,7 +140,7 @@ final class BaseIngredientDetailViewPresenter
      * @param  array<string, float>  $nutrition
      * @return array<string, mixed>
      */
-    private function nutritionalDataPer100gSidebar(array $nutrition): array
+    private function nutritionalDataSidebar(array $nutrition, string $valueColumnLabel): array
     {
         $calories = (float) ($nutrition['calories'] ?? 0);
         $protein = (float) ($nutrition['protein'] ?? 0);
@@ -169,7 +180,7 @@ final class BaseIngredientDetailViewPresenter
         ];
 
         return [
-            'valueColumnLabel' => __('Per 100 g'),
+            'valueColumnLabel' => $valueColumnLabel,
             'sections' => [
                 ['title' => __('Macros'), 'rows' => $macroRows],
                 ['title' => __('Vitamins'), 'rows' => $vitaminRows],

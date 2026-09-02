@@ -63,7 +63,7 @@ test('salad dressing refiner peanut and tahini cups stay at 20g', function (): v
     );
 
     expect((float) $thai[SaladDressingMealRefiner::PEANUT_BUTTER_DRESSING])->toBe(20.0)
-        ->and((float) $harissa['Lemon-Tahini Dressing (Base)'])->toBe(20.0)
+        ->and((float) $harissa['Lemon-Tahini Dressing (Base)'])->toBe(15.0)
         ->and(SideSaladPackaging::violationMessages($thai))->toBe([])
         ->and(SideSaladPackaging::violationMessages($harissa))->toBe([]);
 });

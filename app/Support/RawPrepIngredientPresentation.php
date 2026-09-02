@@ -66,6 +66,14 @@ final class RawPrepIngredientPresentation
 
     public static function formatBaseLine(float $grams, string $formattedGrams, Ingredient $ingredient): string
     {
+        if (QuinoaFlatbreadBaseRecipe::is($ingredient)) {
+            $breads = max(1, (int) round($grams / QuinoaFlatbreadBaseRecipe::GRAMS_PER_BREAD));
+
+            return $breads === 1
+                ? __('1 Quinoa Flatbread (1 bread)')
+                : __(':count Quinoa Flatbread (:count breads)', ['count' => $breads]);
+        }
+
         $displayName = self::displayName($ingredient->name);
         $suffix = IngredientCookingYield::amountStateLabel($ingredient) ?? __('cooked plated portion');
 

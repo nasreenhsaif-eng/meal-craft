@@ -6,17 +6,17 @@ use App\Support\MealTiersLibraryBrowseTab;
 
 test('browse tabs include protein families and every recipe category', function () {
     expect(array_column(MealTiersLibraryBrowseTab::tabs(), 'id'))->toBe([
-        MealTiersLibraryBrowseTab::Chicken,
-        MealTiersLibraryBrowseTab::Liver,
-        MealTiersLibraryBrowseTab::Salmon,
-        MealTiersLibraryBrowseTab::Dessert,
-        MealTiersLibraryBrowseTab::SideSalad,
-        MealTiersLibraryBrowseTab::Beef,
-        MealTiersLibraryBrowseTab::Soup,
         MealTiersLibraryBrowseTab::Breakfast,
+        MealTiersLibraryBrowseTab::Chicken,
+        MealTiersLibraryBrowseTab::Beef,
+        MealTiersLibraryBrowseTab::Salmon,
+        MealTiersLibraryBrowseTab::Liver,
+        MealTiersLibraryBrowseTab::Vegan,
+        MealTiersLibraryBrowseTab::SideSalad,
+        MealTiersLibraryBrowseTab::Dessert,
+        MealTiersLibraryBrowseTab::Soup,
         MealTiersLibraryBrowseTab::MainSalad,
         MealTiersLibraryBrowseTab::BaseRecipe,
-        MealTiersLibraryBrowseTab::Vegan,
     ]);
 });
 

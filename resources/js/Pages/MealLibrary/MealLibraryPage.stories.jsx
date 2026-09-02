@@ -25,17 +25,17 @@ const sampleIngredientProfiles = [
 ];
 
 const sampleBrowseTabs = [
-    { id: 'chicken', label: 'Chicken' },
-    { id: 'liver', label: 'Liver' },
-    { id: 'salmon', label: 'Fish' },
-    { id: 'dessert', label: 'Dessert' },
-    { id: 'side_salad', label: 'Side salad' },
-    { id: 'beef', label: 'Beef' },
-    { id: 'soup', label: 'Soup' },
     { id: 'breakfast', label: 'Breakfast' },
+    { id: 'chicken', label: 'Chicken' },
+    { id: 'beef', label: 'Beef' },
+    { id: 'salmon', label: 'Fish' },
+    { id: 'liver', label: 'Liver' },
+    { id: 'vegan', label: 'Vegan' },
+    { id: 'side_salad', label: 'Side salad' },
+    { id: 'dessert', label: 'Dessert' },
+    { id: 'soup', label: 'Soup' },
     { id: 'main_salad', label: 'Main salad' },
     { id: 'base_recipe', label: 'Base recipe' },
-    { id: 'vegan', label: 'Vegan' },
 ];
 
 const sampleMeals = [
