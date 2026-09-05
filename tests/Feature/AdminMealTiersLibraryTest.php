@@ -293,3 +293,55 @@ test('copy all skips classic meals excluded from the meal tiers library', functi
     expect(Meal::queryForMealTiersLibrary()->where('name', 'Salmon Plate')->count())->toBe(0)
         ->and(Meal::queryForMealTiersLibrary()->where('name', 'Classic Gamma Bowl')->count())->toBe(1);
 });
+
+test('excluded meals already in the tiers library are purged and hidden', function () {
+    $user = User::factory()->create();
+
+    Meal::factory()->create([
+        'name' => 'High Protein Miso Crunch Salad',
+        'library_key' => MealLibraryKey::Tiers,
+        'category' => RecipeCategory::SideSalad,
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('admin.meal-tiers-library'))
+        ->assertSuccessful()
+        ->assertInertia(fn ($page) => $page
+            ->component('Admin/MealTiersLibrary')
+            ->has('meals', 0));
+
+    expect(Meal::withTrashed()
+        ->where('library_key', MealLibraryKey::Tiers)
+        ->where('name', 'High Protein Miso Crunch Salad')
+        ->whereNotNull('deleted_at')
+        ->exists())->toBeTrue();
+});
+
+test('side salads without calorie tabs still show persisted micronutrients', function () {
+    $user = User::factory()->create();
+
+    Meal::factory()->create([
+        'name' => 'Garden Side Salad Micros',
+        'library_key' => MealLibraryKey::Tiers,
+        'category' => RecipeCategory::SideSalad,
+        'total_calories' => 149,
+        'total_protein' => 2.4,
+        'total_carbs' => 11.4,
+        'total_fat' => 11.6,
+        'total_vitamin_c' => 17.4,
+        'total_iron' => 1.4,
+        'total_calcium' => 58.8,
+        'total_folate' => 141.6,
+        'nutrition_aggregates_synced' => true,
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('admin.meal-tiers-library'))
+        ->assertSuccessful()
+        ->assertInertia(fn ($page) => $page
+            ->component('Admin/MealTiersLibrary')
+            ->has('meals', 1)
+            ->where('meals.0.usesTabs', false)
+            ->where('meals.0.detailView.nutritionalData.sections.1.rows.1.value', '17.4')
+            ->where('meals.0.detailView.nutritionalData.sections.2.rows.1.value', '1.4'));
+});

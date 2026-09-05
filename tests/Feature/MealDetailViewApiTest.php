@@ -200,7 +200,7 @@ test('meal detail view api formats cooking oils in tablespoons', function () {
     $this->actingAs($user)
         ->getJson(route('api.meals.detail-view', $meal))
         ->assertOk()
-        ->assertJsonPath('detailView.ingredients.0', '1 tbsp Olive Oil (Extra Virgin)');
+        ->assertJsonPath('detailView.ingredients.0', '13.8g (1 tbsp) Olive Oil (Extra Virgin)');
 });
 
 test('meal detail view api matches scheduled savory breakfast calories for full craft day', function () {

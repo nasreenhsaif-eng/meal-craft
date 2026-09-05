@@ -71,7 +71,7 @@ final class MealTiersIngredientStructurer
         $grams = $baseline;
 
         if ($buckets === null || $targetProteinGrams === null) {
-            return self::applyCookingOilTierCap($meal, $grams, $calorieTier);
+            return self::scaleBaselineToCalorieTier($meal, $baseline, $calorieTier);
         }
 
         $proteinIds = [];
@@ -124,6 +124,38 @@ final class MealTiersIngredientStructurer
                 $grams[$id] = round(($baseline[$id] ?? 0.0) * $multiplier, 2);
             }
         }
+
+        return self::applyCookingOilTierCap($meal, $grams, $calorieTier);
+    }
+
+    /**
+     * Plant-based / non-meat mains have no chicken/fish/beef kitchen buckets.
+     * Scale the authored baseline plate toward the selected calorie tab.
+     *
+     * @param  array<int, float>  $baseline
+     * @return array<int, float>
+     */
+    private static function scaleBaselineToCalorieTier(Meal $meal, array $baseline, int $calorieTier): array
+    {
+        $ingredientIds = array_keys($baseline);
+        $currentCalories = self::caloriesForIngredientIds($meal, $baseline, $ingredientIds);
+
+        if ($currentCalories <= 0.0) {
+            return self::applyCookingOilTierCap(
+                $meal,
+                KitchenPortionRounding::snapAllGramsForMeal($meal, $baseline),
+                $calorieTier,
+            );
+        }
+
+        $scale = $calorieTier / $currentCalories;
+        $grams = [];
+
+        foreach ($baseline as $ingredientId => $amount) {
+            $grams[(int) $ingredientId] = (float) $amount * $scale;
+        }
+
+        $grams = KitchenPortionRounding::snapAllGramsForMeal($meal, $grams);
 
         return self::applyCookingOilTierCap($meal, $grams, $calorieTier);
     }

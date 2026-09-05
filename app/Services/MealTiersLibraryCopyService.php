@@ -60,12 +60,44 @@ final class MealTiersLibraryCopyService
     }
 
     /**
+     * Soft-delete Meal Tiers Library rows whose classic names are on the exclusion list.
+     */
+    public function purgeExcludedFromTiersLibrary(): int
+    {
+        $excluded = MealTiersLibraryExclusions::names();
+
+        if ($excluded === []) {
+            return 0;
+        }
+
+        $purged = 0;
+
+        Meal::query()
+            ->where('library_key', MealLibraryKey::Tiers)
+            ->whereIn('name', $excluded)
+            ->orderBy('id')
+            ->each(function (Meal $meal) use (&$purged): void {
+                $meal->calorieTiers()->each(function (MealCalorieTier $tier): void {
+                    $tier->ingredients()->detach();
+                });
+                $meal->calorieTiers()->delete();
+                $meal->ingredients()->detach();
+                $meal->delete();
+                $purged++;
+            });
+
+        return $purged;
+    }
+
+    /**
      * Copy every Meal Library row that is not already present (by name) in Meal Tiers Library.
      *
-     * @return array{copied: int, skipped: int}
+     * @return array{copied: int, skipped: int, purged: int}
      */
     public function copyAllMissingFromClassic(): array
     {
+        $purged = $this->purgeExcludedFromTiersLibrary();
+
         /** @var array<string, true> $existingNames */
         $existingNames = Meal::query()
             ->where('library_key', MealLibraryKey::Tiers)
@@ -101,6 +133,7 @@ final class MealTiersLibraryCopyService
         return [
             'copied' => $copied,
             'skipped' => $skipped,
+            'purged' => $purged,
         ];
     }
 

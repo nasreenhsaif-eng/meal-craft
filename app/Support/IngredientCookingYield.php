@@ -258,7 +258,7 @@ final class IngredientCookingYield
         }
 
         if (self::isFinishedBaseComponent($ingredient)) {
-            return __('cooked plated portion');
+            return self::finishedBaseAmountStateLabel($ingredient);
         }
 
         if (self::isCannedIngredient($ingredient)) {
@@ -279,6 +279,33 @@ final class IngredientCookingYield
         }
 
         return null;
+    }
+
+    /**
+     * Prep-state wording for (Base) components — dressings are not “cooked plated”.
+     */
+    private static function finishedBaseAmountStateLabel(Ingredient $ingredient): string
+    {
+        $name = strtolower(trim($ingredient->name));
+
+        if (str_contains($name, 'dressing') || str_contains($name, 'vinaigrette')) {
+            return __('prepared dressing');
+        }
+
+        if (str_contains($name, 'marinade')) {
+            return __('prepared marinade');
+        }
+
+        if (
+            str_contains($name, 'sauce')
+            || str_contains($name, 'paste')
+            || str_contains($name, 'chutney')
+            || str_contains($name, 'molasses')
+        ) {
+            return __('prepared portion');
+        }
+
+        return __('cooked plated portion');
     }
 
     /**

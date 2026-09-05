@@ -6,9 +6,9 @@ use App\Support\MealLibraryRefinerOverrides;
 use App\Support\SideSaladPackaging;
 
 test('side salad packaging caps match 500ml salad and 20ml dressing cups', function (): void {
-    expect(SideSaladPackaging::maxFluffyLeafGrams())->toBe(60.0)
-        ->and(SideSaladPackaging::maxDenseLeafGrams())->toBe(70.0)
-        ->and(SideSaladPackaging::maxCombinedLeafGrams())->toBe(70.0)
+    expect(SideSaladPackaging::maxFluffyLeafGrams())->toBe(90.0)
+        ->and(SideSaladPackaging::maxDenseLeafGrams())->toBe(80.0)
+        ->and(SideSaladPackaging::maxCombinedLeafGrams())->toBe(90.0)
         ->and(SideSaladPackaging::maxDressingGrams())->toBe(20.0);
 });
 
@@ -37,6 +37,10 @@ test('key salad overrides keep dressing at or under 20g', function (): void {
     $overrides = MealLibraryRefinerOverrides::all();
 
     foreach ([
+        'Classic Garden Salad',
+        'Citrus Beet Arugula Salad',
+        'Coconut Grapefruit Salad',
+        'Marinated Strawberry Beet Salad',
         'Thai Rainbow Peanut Salad',
         'Roasted Eggplant Rocca Salad',
         'Chicken Thai Mango Salad',
@@ -48,7 +52,7 @@ test('key salad overrides keep dressing at or under 20g', function (): void {
     }
 });
 
-test('salad dressing refiner peanut and tahini cups stay at 20g', function (): void {
+test('salad dressing refiner peanut and tahini cups stay within the dressing cup', function (): void {
     $definitions = (new ReflectionClass(SaladDressingMealRefiner::class))
         ->getMethod('recipeDefinitions')
         ->invoke(new SaladDressingMealRefiner);
@@ -62,8 +66,8 @@ test('salad dressing refiner peanut and tahini cups stay at 20g', function (): v
         $definitions['Vegan Harissa Roasted Cauliflower & Chickpea Salad w Tahini Dressing']['dressing_ingredients'],
     );
 
-    expect((float) $thai[SaladDressingMealRefiner::PEANUT_BUTTER_DRESSING])->toBe(20.0)
-        ->and((float) $harissa['Lemon-Tahini Dressing (Base)'])->toBe(15.0)
+    expect((float) $thai[SaladDressingMealRefiner::PEANUT_BUTTER_DRESSING])->toBe(15.0)
+        ->and((float) $harissa['Lemon-Tahini Dressing (Base)'])->toBe(20.0)
         ->and(SideSaladPackaging::violationMessages($thai))->toBe([])
         ->and(SideSaladPackaging::violationMessages($harissa))->toBe([]);
 });

@@ -32,6 +32,32 @@ return [
             0 => 'nuts',
         ],
     ],
+    'Baked Eggplant Lentils Hummus' => [
+        'synced_at' => '2026-09-03T10:20:00+00:00',
+        'ingredients' => [
+            'Creamy Cumin Hummus (Base)' => 40.0,
+            'Eggplant' => 150.0,
+            'French Lentils' => 35.0,
+            'Olive Oil (Extra Virgin)' => 3.0,
+            'Roasted Cherry Tomato (Base)' => 30.0,
+            'Rocca' => 20.0,
+            'Sea Salt' => 1.0,
+            'Wild Rice (Cooked)' => 60.0,
+            'cumin powder' => 2.0,
+        ],
+        'highlight' => 'Tender baked globe eggplant slices paired with seasoned French lentils and wild rice over a bed of silky house hummus.',
+        'short_description' => 'Tender baked globe eggplant slices paired with seasoned French lentils and wild rice over a bed of silky house hummus.',
+        'instructions' => '1. Preheat oven to 200°C (400°F). Slice 150g eggplant into uniform 1 cm rounds. Lightly brush with 3g olive oil, season with half the sea salt and 1g cumin powder, and roast on a parchment-lined tray for 20–22 minutes until tender and caramelized.
+2. Rinse 35g French lentils. In a small saucepan, bring 80ml water to a boil, add lentils, cover, and simmer over low heat for 18–20 minutes until tender with a slight al dente bite. Drain any remaining liquid, then fold in 1g cumin powder and a pinch of salt.
+3. Spread 40g of Creamy Cumin Hummus (Base) across the bottom of the plate or meal bowl.
+4. Spoon 60g warm Wild Rice (Cooked) and the seasoned warm French lentils directly over the hummus bed.
+5. Neatly shingle the baked eggplant rounds over the grains. Top with 30g warm Roasted Cherry Tomato (Base) and fresh rocca leaves.',
+        'food_filter_tags' => [
+            0 => 'beans',
+            1 => 'nightshades',
+            2 => 'sesame',
+        ],
+    ],
     'Baked Salmon with Fermented Chimichurri & Roasted Vegetables' => [
         'synced_at' => '2026-07-20T08:25:00+00:00',
         'ingredients' => [
@@ -587,7 +613,7 @@ Pour the fruit smoothie over the chia layer. Serve chilled.',
             'Cucumber' => 45.0,
             'Fresh Coriander' => 5.0,
             'Mango' => 55.0,
-            'Peanut Butter Dressing (Base)' => 25.0,
+            'Peanut Butter Dressing (Base)' => 20.0,
             'Red Onion' => 15.0,
         ],
         'highlight' => 'Grilled chicken breast with mango, purple cabbage, cucumber, cherry tomatoes, and cashew nuts — peanut butter dressing on the side.',
@@ -726,22 +752,21 @@ Roll into balls. Refrigerate until firm.',
         ],
     ],
     'Citrus Beet Arugula Salad' => [
-        'synced_at' => '2026-07-20T07:52:12+00:00',
+        'synced_at' => '2026-09-05T10:00:00+00:00',
         'ingredients' => [
-            'Arugula' => 45.0,
-            'Beetroot' => 75.0,
-            'Classic Lemon Garlic Dressing (Base)' => 12.0,
+            'Arugula' => 80.0,
+            'Beetroot' => 60.0,
+            'Classic Lemon Garlic Dressing (Base)' => 15.0,
             'Cucumber' => 40.0,
             'Fresh Mint' => 3.0,
-            'Orange Sections' => 45.0,
-            'Walnuts' => 8.0,
+            'Orange Sections' => 40.0,
+            'Walnuts' => 6.0,
         ],
-        'short_description' => 'Roasted beet and citrus salad with arugula, walnuts, and lemon-garlic dressing.',
-        'highlight' => 'Roasted beet and citrus salad with arugula, walnuts, and lemon-garlic dressing.',
-        'instructions' => 'Roast or boil beetroot until tender. Cool, peel, and slice.
-Arrange arugula on plates.
-Top with beets, orange segments, cucumber, walnuts, and mint.
-Serve dressing on the side.',
+        'short_description' => 'Roasted beet and citrus salad on a generous arugula bed with cucumber, walnuts, and mint — packed for a 500 ml bowl with lemon-garlic dressing on the side.',
+        'highlight' => 'Roasted beet and citrus salad on a generous arugula bed with cucumber, walnuts, and mint — packed for a 500 ml bowl with lemon-garlic dressing on the side.',
+        'instructions' => '1. Roast or boil beetroot until tender. Cool, peel, and slice or wedge. Supreme or peel the orange into segments. Thinly slice cucumber into half-moons. Lightly toast and roughly chop the walnuts. Tear the mint leaves.
+2. Portion arugula into a 500 ml container as an airy bed. Top with beets, orange segments, cucumber, walnuts, and mint.
+3. Serve Classic Lemon Garlic Dressing (Base) on the side in a 20 ml cup.',
         'diet_tags' => [
             0 => 'Dairy-free',
             1 => 'Gluten-free',
@@ -749,7 +774,6 @@ Serve dressing on the side.',
         ],
         'food_filter_tags' => [
             0 => 'nuts',
-            1 => 'sesame',
         ],
     ],
     'Citrus Herb Salmon with Asparagus & Sweet Potato' => [
@@ -774,20 +798,19 @@ Serve salmon with sweet potato and asparagus.',
         ],
     ],
     'Classic Garden Salad' => [
-        'synced_at' => '2026-07-12T10:11:47+00:00',
+        'synced_at' => '2026-09-04T10:00:00+00:00',
         'ingredients' => [
-            'Carrots' => 40.0,
-            'Classic Lemon Garlic Dressing (Base)' => 15.0,
+            'Carrots' => 35.0,
+            'Classic Lemon Garlic Dressing (Base)' => 20.0,
             'Cucumber' => 60.0,
-            'Romaine Lettuce' => 50.0,
-            'Tomato (Raw)' => 60.0,
+            'Romaine Lettuce' => 90.0,
+            'Tomato (Raw)' => 50.0,
         ],
-        'highlight' => 'A crisp classic garden salad with lettuce, tomato, cucumber, and carrots.',
-        'short_description' => 'A crisp classic garden salad with lettuce, tomato, cucumber, and carrots.',
-        'instructions' => 'Wash and chop the lettuce, tomato, cucumber, and carrots.
-Toss the vegetables together in a large bowl.
-Serve immediately.
-Serve dressing on the side.',
+        'highlight' => 'Crisp shredded romaine garden salad with tomato, cucumber, and carrots — packed for a 500 ml bowl with lemon-garlic dressing on the side.',
+        'short_description' => 'Crisp shredded romaine garden salad with tomato, cucumber, and carrots — packed for a 500 ml bowl with lemon-garlic dressing on the side.',
+        'instructions' => '1. Wash and shred or chop the romaine for airy, high-fill volume. Slice cucumber into half-moons. Use cherry tomatoes or sliced raw tomato. Julienned or shred the carrots.
+2. Toss romaine, tomato, cucumber, and carrots. Portion into a 500 ml container.
+3. Serve Classic Lemon Garlic Dressing (Base) on the side in a 20 ml cup.',
         'diet_tags' => [
             0 => 'Vegan',
             1 => 'Dairy-free',
@@ -798,23 +821,22 @@ Serve dressing on the side.',
         ],
     ],
     'Coconut Grapefruit Salad' => [
-        'synced_at' => '2026-07-12T10:11:47+00:00',
+        'synced_at' => '2026-09-05T11:30:00+00:00',
         'ingredients' => [
-            'Coconut Meat' => 10.0,
-            'Cucumber' => 45.0,
-            'Fresh Mint' => 5.0,
+            'Broccoli' => 40.0,
+            'Coconut Meat' => 7.0,
+            'Cucumber' => 40.0,
             'Grapefruit Lime Dressing (Base)' => 15.0,
-            'Grapefruit Sections' => 65.0,
+            'Grapefruit Sections' => 55.0,
             'Pomegranate Seeds' => 10.0,
             'Red Onion' => 10.0,
-            'Romaine Lettuce' => 50.0,
+            'Romaine Lettuce' => 60.0,
         ],
-        'highlight' => 'Crisp romaine with juicy grapefruit, coconut, mint, and pomegranate over a citrus-lime dressing',
-        'short_description' => 'Crisp romaine with juicy grapefruit, coconut, mint, and pomegranate over a citrus-lime dressing',
-        'instructions' => 'Segment grapefruit and slice cucumber and red onion.
-Toss romaine with grapefruit, cucumber, onion, mint, and pomegranate.
-Top with coconut and serve.
-Serve dressing on the side.',
+        'highlight' => 'Chopped romaine with shaved broccoli, grapefruit, cucumber, pomegranate, red onion, and coconut — packed for a 500 ml bowl with grapefruit-lime dressing on the side.',
+        'short_description' => 'Chopped romaine with shaved broccoli, grapefruit, cucumber, pomegranate, red onion, and coconut — packed for a 500 ml bowl with grapefruit-lime dressing on the side.',
+        'instructions' => '1. Chop the romaine. Finely chop or shave raw broccoli florets. Peel grapefruit into supremes/segments. Slice cucumber into half-moons. Very thinly shave the red onion. Shave coconut meat into ribbons.
+2. Toss romaine and broccoli with grapefruit, cucumber, red onion, and pomegranate seeds. Top with coconut. Portion into a 500 ml container.
+3. Serve Grapefruit Lime Dressing (Base) on the side in a 20 ml cup.',
         'diet_tags' => [
             0 => 'Dairy-free',
             1 => 'Gluten-free',
@@ -1440,24 +1462,23 @@ Serve chilled.',
         ],
     ],
     'Marinated Pineapple, Peppers, Red Onion & Cilantro Side Salad' => [
-        'synced_at' => '2026-07-20T07:52:12+00:00',
+        'synced_at' => '2026-09-04T10:30:00+00:00',
         'ingredients' => [
-            'Bell Pepper (Red)' => 25.0,
-            'Cabbage (Purple)' => 45.0,
-            'Cucumber' => 40.0,
-            'Fresh Coriander' => 4.0,
-            'Pineapple' => 40.0,
-            'Red Onion' => 12.0,
+            'Bell Pepper (Red)' => 35.0,
+            'Cabbage (Purple)' => 60.0,
+            'Cucumber' => 55.0,
+            'Fresh Coriander' => 6.0,
+            'Pineapple' => 50.0,
+            'Red Onion' => 15.0,
             'Red Thai Chillies' => 2.0,
-            'Zesty Lime Chili Salad Dressing (Base)' => 12.0,
+            'Zesty Lime Chili Salad Dressing (Base)' => 20.0,
         ],
-        'short_description' => 'Tropical side salad of pineapple, peppers, red onion, cucumber, and cilantro with zesty lime-chili dressing.',
-        'highlight' => 'Tropical side salad of pineapple, peppers, red onion, cucumber, and cilantro with zesty lime-chili dressing.',
-        'instructions' => 'Dice pineapple, pepper, cucumber, and red onion.
-Toss with thinly sliced cabbage and fresh coriander.
-Refrigerate 15–30 minutes so the vegetables soften slightly.
-Add chilli just before serving.
-Serve dressing on the side.',
+        'short_description' => 'Tropical side salad of pineapple, peppers, red onion, cucumber, and cilantro with zesty lime-chili dressing — packed for a 500 ml bowl with dressing on the side.',
+        'highlight' => 'Tropical side salad of pineapple, peppers, red onion, cucumber, and cilantro with zesty lime-chili dressing — packed for a 500 ml bowl with dressing on the side.',
+        'instructions' => '1. Finely shred the purple cabbage. Cut pineapple into small bite-sized chunks. Slice cucumber into thin half-moons and red pepper into thin matchsticks. Very thinly shave the red onion.
+2. Toss cabbage, cucumber, pineapple, red pepper, red onion, and fresh coriander in a bowl. Portion into a 500 ml container.
+3. Finely slice the red Thai chillies and add just before serving (or pack separately if preferred).
+4. Serve Zesty Lime Chili Salad Dressing (Base) on the side in a 20 ml cup.',
         'diet_tags' => [
             0 => 'Dairy-free',
             1 => 'Gluten-free',
@@ -1465,28 +1486,27 @@ Serve dressing on the side.',
         ],
         'food_filter_tags' => [
             0 => 'nightshades',
-            1 => 'nuts',
-            2 => 'spicy',
+            1 => 'spicy',
         ],
     ],
     'Marinated Strawberry Beet Salad' => [
-        'synced_at' => '2026-07-12T10:11:47+00:00',
+        'synced_at' => '2026-09-04T11:00:00+00:00',
         'ingredients' => [
             'Apple Cider Beet Marinade (Base)' => 15.0,
-            'Beetroot' => 65.0,
-            'Fresh Mint' => 5.0,
-            'Romaine Lettuce' => 45.0,
-            'Strawberries' => 55.0,
-            'Walnuts' => 10.0,
-            'White Onion' => 15.0,
+            'Beetroot' => 60.0,
+            'Celery' => 30.0,
+            'Fresh Mint' => 4.0,
+            'Romaine Lettuce' => 80.0,
+            'Strawberries' => 50.0,
+            'Walnuts' => 8.0,
+            'White Onion' => 10.0,
         ],
-        'highlight' => 'Juicy strawberries and tender cubed beets marinated in raw apple cider vinegar',
-        'short_description' => 'Juicy strawberries and tender cubed beets marinated in raw apple cider vinegar',
-        'instructions' => 'Cook beetroot until tender. Cool and dice.
-Slice strawberries and onion.
-Toss beets, strawberries, onion, walnuts, and mint. Marinate 20 minutes.
-Serve over romaine.
-Serve dressing on the side.',
+        'highlight' => 'Juicy strawberries and roasted beet matchsticks with celery, mint, and walnuts over chopped romaine — packed for a 500 ml bowl with marinade dressing on the side.',
+        'short_description' => 'Juicy strawberries and roasted beet matchsticks with celery, mint, and walnuts over chopped romaine — packed for a 500 ml bowl with marinade dressing on the side.',
+        'instructions' => '1. Cook or roast beetroot until tender. Cool and cut into matchsticks. Slice strawberries. Thinly slice celery into half-moons. Very thinly shave the onion. Tear the mint leaves. Lightly crush the walnuts.
+2. Toss beets, strawberries, celery, onion, walnuts, and mint. Marinate briefly.
+3. Portion chopped romaine into a 500 ml container and top with the marinated mixture.
+4. Serve Apple Cider Beet Marinade (Base) on the side in a 20 ml cup.',
         'diet_tags' => [
             0 => 'Dairy-free',
             1 => 'Gluten-free',
@@ -2144,6 +2164,31 @@ Garnish with chopped fresh parsley.',
             5 => 'nuts',
         ],
     ],
+    'Sauerkraut & Rocca Salad' => [
+        'synced_at' => '2026-09-05T09:00:00+00:00',
+        'ingredients' => [
+            'Almond whole' => 6.0,
+            'Avocado' => 25.0,
+            'Cherry Tomatoes' => 45.0,
+            'Cilantro Lime Dressing (Base)' => 15.0,
+            'Rocca' => 80.0,
+            'Sauerkraut (Base)' => 40.0,
+        ],
+        'highlight' => 'Homemade sauerkraut with airy rocca, avocado, cherry tomatoes, and sliced almonds — packed for a 500 ml bowl with cilantro-lime dressing on the side.',
+        'short_description' => 'Homemade sauerkraut with airy rocca, avocado, cherry tomatoes, and sliced almonds — packed for a 500 ml bowl with cilantro-lime dressing on the side.',
+        'instructions' => '1. Prepare Sauerkraut (Base) per base recipe instructions; gently drain.
+2. Toss drained sauerkraut, rocca, halved cherry tomatoes, diced avocado, and sliced or crushed almonds. Portion into a 500 ml container.
+3. Serve Cilantro Lime Dressing (Base) on the side in a 20 ml cup.',
+        'diet_tags' => [
+            0 => 'Dairy-free',
+            1 => 'Gluten-free',
+            2 => 'Vegan',
+        ],
+        'food_filter_tags' => [
+            0 => 'nightshades',
+            1 => 'nuts',
+        ],
+    ],
     'Sautéed Chicken Liver w Garlicky Cabbage & Peppers' => [
         'synced_at' => '2026-07-20T08:00:00+00:00',
         'ingredients' => [
@@ -2715,23 +2760,22 @@ Serve dressing on the side.',
         ],
     ],
     'Thai Rainbow Peanut Salad' => [
-        'synced_at' => '2026-07-20T07:52:12+00:00',
+        'synced_at' => '2026-09-05T10:30:00+00:00',
         'ingredients' => [
-            'Bell Pepper (Red)' => 30.0,
-            'Cabbage (Purple)' => 55.0,
-            'Carrots' => 40.0,
-            'Cucumber' => 40.0,
+            'Bell Pepper (Red)' => 35.0,
+            'Cabbage (Purple)' => 80.0,
+            'Carrots' => 45.0,
+            'Cucumber' => 45.0,
             'Fresh Coriander' => 5.0,
-            'Peanut Butter Dressing (Base)' => 25.0,
-            'Peanuts (Crushed)' => 8.0,
+            'Peanut Butter Dressing (Base)' => 15.0,
+            'Peanuts (Crushed)' => 5.0,
             'Red Onion' => 12.0,
         ],
-        'short_description' => 'Crunchy rainbow salad of purple cabbage, carrots, cucumber, and peppers with peanut butter dressing and crushed peanuts.',
-        'highlight' => 'Crunchy rainbow salad of purple cabbage, carrots, cucumber, and peppers with peanut butter dressing and crushed peanuts.',
-        'instructions' => 'Shred cabbage and julienne carrots, cucumber, and red onion.
-Toss vegetables with coriander and crushed peanuts.
-Serve chilled.
-Serve dressing on the side.',
+        'short_description' => 'Crunchy rainbow salad of shredded purple cabbage, carrots, cucumber, and peppers with crushed peanuts — packed for a 500 ml bowl with peanut butter dressing on the side.',
+        'highlight' => 'Crunchy rainbow salad of shredded purple cabbage, carrots, cucumber, and peppers with crushed peanuts — packed for a 500 ml bowl with peanut butter dressing on the side.',
+        'instructions' => '1. Finely shred the purple cabbage. Julienne the carrots. Cut cucumber into matchsticks or thinly sliced half-moons. Cut red pepper into thin strips. Very thinly shave the red onion. Chop the coriander. Use roasted unsalted crushed peanuts.
+2. Toss cabbage, carrots, cucumber, red pepper, red onion, coriander, and crushed peanuts. Portion into a 500 ml container.
+3. Serve Peanut Butter Dressing (Base) on the side in a 20 ml cup.',
         'diet_tags' => [
             0 => 'Dairy-free',
             1 => 'Gluten-free',
@@ -2828,7 +2872,7 @@ Serve dressing on the side.',
         ],
     ],
     'Vegan Butternut Squash, Lentil & Peanut Stew w Brown Rice' => [
-        'synced_at' => '2026-07-20T08:10:00+00:00',
+        'synced_at' => '2026-09-03T10:00:00+00:00',
         'ingredients' => [
             'Bell Pepper (Red)' => 30.0,
             'Black Pepper' => 0.5,
@@ -2836,31 +2880,31 @@ Serve dressing on the side.',
             'Cabbage (Purple)' => 16.0,
             'Cherry Tomatoes' => 10.0,
             'Chili Flakes' => 0.5,
-            'Cooked Brown Basmati Rice (Base)' => 113.0,
+            'Cooked Brown Basmati Rice (Base)' => 80.0,
             'Fresh Coriander' => 4.0,
             'Garlic (Raw)' => 2.0,
-            'Lentils (Red)' => 40.0,
+            'Lentils (Red)' => 30.0,
             'Lime Juice' => 3.0,
             'Mushrooms' => 30.0,
-            'Olive Oil' => 5.0,
-            'Peanut Butter' => 10.0,
-            'Peanuts (Crushed)' => 15.0,
+            'Olive Oil' => 3.0,
+            'Peanut Butter' => 8.0,
+            'Peanuts (Crushed)' => 8.0,
             'Red Onion' => 30.0,
             'Sea Salt' => 0.5,
             'Spinach (Fresh)' => 16.0,
             'Tomato (Raw)' => 80.0,
-            'Vegetable Stock' => 48.0,
-            'Water (Filtered)' => 144.0,
+            'Vegetable Stock' => 50.0,
+            'Water (Filtered)' => 130.0,
             'Zucchini' => 30.0,
         ],
         'highlight' => 'A rich plant-based stew with red lentils, peanut butter, and crushed peanuts over brown rice.',
         'short_description' => 'A rich plant-based stew with red lentils, peanut butter, and crushed peanuts over brown rice.',
-        'instructions' => '1. Prepare Cooked Brown Basmati Rice (Base) per base recipe instructions; keep warm.
-2. Fry finely chopped onion in olive oil for 5 minutes until soft. Grate in garlic and stir.
-3. Add chopped tomatoes and cook for a couple of minutes. Add water, rinsed red lentils, chopped red pepper, and butternut squash cubes. Bring to the boil, then reduce to a simmer.
-4. Stir in vegetable stock and peanut butter until combined. Add zucchini and simmer for 20 minutes.
-5. Add mushrooms and spinach–cabbage greens. Simmer a couple of minutes until wilted. Season with sea salt, black pepper, and chilli flakes.
-6. Serve stew over cooked brown basmati rice. Top with fresh coriander, cherry tomatoes, crushed peanuts, and lime juice.',
+        'instructions' => '1. Warm 80g of pre-cooked Cooked Brown Basmati Rice (Base) in a serving bowl; keep warm.
+2. In a saucepan, heat 3g olive oil over medium heat. Add finely chopped red onion and sauté for 3–4 minutes until translucent. Stir in 2g grated garlic for 30 seconds.
+3. Add 80g diced raw tomatoes and cook for 2 minutes. Pour in 130ml water, 50ml vegetable stock, 30g rinsed red lentils, 30g red bell pepper, and 60g butternut squash cubes. Bring to a gentle boil, then lower to a simmer.
+4. Whisk 8g peanut butter into the simmering liquid until fully dissolved. Add 30g sliced zucchini, cover, and simmer for 15 minutes until squash and lentils are tender.
+5. Stir in 30g mushrooms, 16g shredded purple cabbage, and 16g spinach. Simmer for 2 minutes until wilted. Season with sea salt, black pepper, and chili flakes.
+6. Ladle the stew over the brown rice. Top with 8g crushed roasted peanuts, halved cherry tomatoes, fresh coriander, and a squeeze of lime juice.',
         'diet_tags' => [
             0 => 'Vegan',
             1 => 'Dairy-free',
@@ -2910,24 +2954,24 @@ Serve dressing on the side.',
         ],
     ],
     'Vegan Harissa Roasted Cauliflower & Chickpea Salad w Tahini Dressing' => [
-        'synced_at' => '2026-09-02T13:31:00+00:00',
+        'synced_at' => '2026-09-04T09:30:00+00:00',
         'ingredients' => [
-            'Beetroot' => 120.0,
-            'Black Seeds' => 2.0,
-            'Cauliflower' => 120.0,
-            'Cooked Chickpeas (Base)' => 75.0,
+            'Beetroot' => 150.0,
+            'Black Seeds' => 3.0,
+            'Cauliflower' => 150.0,
+            'Cooked Chickpeas (Base)' => 120.0,
             'Dill (Fresh)' => 5.0,
             'Fresh Mint' => 5.0,
-            'Harissa Paste (Base)' => 5.0,
-            'Lemon-Tahini Dressing (Base)' => 15.0,
-            'Olive Oil (Extra Virgin)' => 3.0,
+            'Harissa Paste (Base)' => 10.0,
+            'Lemon-Tahini Dressing (Base)' => 20.0,
+            'Olive Oil (Extra Virgin)' => 5.0,
             'Sea Salt' => 0.5,
-            'Shallots' => 5.0,
-            'Sunflower Seeds' => 5.0,
+            'Shallots' => 10.0,
+            'Sunflower Seeds' => 10.0,
         ],
         'highlight' => 'Harissa-roasted cauliflower, beetroot, and chickpeas with dill, mint, seeds, and lemon-tahini dressing.',
         'short_description' => 'Harissa-roasted cauliflower, beetroot, and chickpeas with dill, mint, seeds, and lemon-tahini dressing.',
-        'instructions' => '1. Prepare Cooked Chickpeas (Base) per base recipe instructions from 35g dry chickpeas (about 75–80g cooked), or measure 75g cooked chickpeas.
+        'instructions' => '1. Prepare Cooked Chickpeas (Base) per base recipe instructions from about 55g dry chickpeas (about 120g cooked), or measure 120g cooked chickpeas.
 2. Toss the cooked chickpeas, cubed beetroot, and cauliflower florets with olive oil, Harissa Paste (Base), and a pinch of sea salt. Spread onto a baking sheet and roast at 200°C for 22–25 minutes until caramelized and tender.
 3. Transfer roasted vegetables and chickpeas to a wide serving bowl. Toss gently with sliced shallots, fresh dill, and fresh mint.
 4. Scatter sunflower seeds and black seeds over the top. Drizzle Lemon-Tahini Dressing (Base) over the salad, or serve on the side.',
@@ -2944,30 +2988,31 @@ Serve dressing on the side.',
         ],
     ],
     'Vegan Mushroom Bowl' => [
-        'synced_at' => '2026-07-12T10:11:47+00:00',
+        'synced_at' => '2026-09-03T10:05:00+00:00',
         'ingredients' => [
             'Bell Pepper (Red)' => 45.0,
+            'Black Pepper' => 0.5,
             'Broccoli' => 50.0,
             'Cherry Tomato' => 40.0,
-            'Cilantro Lime Dressing (Base)' => 10.0,
+            'Cilantro Lime Dressing (Base)' => 15.0,
             'Cooked Black Beans (Base)' => 100.0,
+            'Cooked Quinoa (Base)' => 120.0,
             'Fresh Coriander' => 5.0,
             'Garlic (Raw)' => 5.0,
             'Mushrooms' => 110.0,
-            'Quinoa' => 35.0,
+            'Olive Oil (Extra Virgin)' => 5.0,
+            'Sea Salt' => 0.5,
             'Spinach (Fresh)' => 50.0,
             'White Onion' => 20.0,
         ],
         'highlight' => 'Vibrant vegan bowl with sautéed mushrooms, black beans, red pepper, broccoli, and cherry tomatoes over quinoa, finished with cilantro-lime dressing.',
         'short_description' => 'Vibrant vegan bowl with sautéed mushrooms, black beans, red pepper, broccoli, and cherry tomatoes over quinoa, finished with cilantro-lime dressing.',
-        'instructions' => 'Prepare Cooked Black Beans (Base) per base recipe instructions; keep warm.
-Prepare quinoa per standard method: rinse, simmer until fluffy, and keep warm.
-Sauté diced white onion and minced garlic in a little olive oil until softened.
-Add sliced mushrooms and diced red bell pepper; cook 6–8 minutes until the mushrooms brown and release their moisture.
-Add broccoli florets, cover briefly, and steam 3–4 minutes until bright and tender-crisp.
-Fold in cooked black beans and spinach; cook until the spinach wilts.
-Season lightly. Spoon quinoa into a bowl, top with the mushroom and vegetable mixture, and scatter cherry tomatoes.
-Drizzle with Cilantro Lime Dressing (Base) and finish with fresh coriander.',
+        'instructions' => '1. Prepare Cooked Quinoa (Base) from 40g dry quinoa simmered in 80ml water with a pinch of salt for 12–14 minutes until tender (~120g cooked), or measure 120g cooked quinoa. Keep 100g pre-cooked Cooked Black Beans (Base) warm.
+2. Heat 5g olive oil in a wide skillet over medium heat. Sauté the diced white onion and minced garlic for 2 minutes until fragrant. Add 110g sliced mushrooms and cook for 5–6 minutes until browned and their liquid has evaporated.
+3. Add the 45g diced red pepper and 50g broccoli florets with 1 tablespoon of water. Cover the pan for 2–3 minutes to let the broccoli steam-tenderize while staying bright green.
+4. Uncover, add the 100g cooked black beans and 50g fresh spinach, and toss gently for 1 minute until the spinach wilts. Season with salt and black pepper.
+5. Spoon the cooked quinoa into one side of the serving bowl. Arrange the warm mushroom, broccoli, and black bean mixture alongside it.
+6. Scatter halved cherry tomatoes and fresh chopped coriander over the bowl, then drizzle evenly with 15ml Cilantro Lime Dressing (Base).',
         'food_filter_tags' => [
             0 => 'beans',
             1 => 'nightshades',
@@ -3040,31 +3085,33 @@ Drizzle with Cilantro Lime Dressing (Base) and finish with fresh coriander.',
         ],
     ],
     'Vegan Sri Lankan Red Lentil Dal w Quinoa Bread' => [
-        'synced_at' => '2026-07-12T10:11:47+00:00',
+        'synced_at' => '2026-09-03T10:14:00+00:00',
         'ingredients' => [
-            'Chili Flakes' => 1.0,
             'Chili Powder' => 1.0,
             'Coriander Seeds' => 1.0,
             'cumin powder' => 1.0,
+            'Fresh Coriander' => 3.0,
             'Garlic (Raw)' => 5.0,
             'Ginger (Raw)' => 5.0,
-            'Homemade Coconut Milk' => 5.0,
-            'Lentils (Red)' => 60.0,
+            'Homemade Coconut Milk' => 15.0,
+            'Lentils (Red)' => 40.0,
             'mustard seeds' => 1.0,
-            'Olive Oil (Extra Virgin)' => 5.0,
+            'Olive Oil (Extra Virgin)' => 3.0,
             'Purslane' => 120.0,
             'Quinoa Flatbread (Base)' => 97.5,
+            'Sea Salt' => 0.5,
             'Tomato (Raw)' => 35.0,
             'Turmeric Powder' => 1.0,
-            'Water (Filtered)' => 150.0,
+            'Water (Filtered)' => 175.0,
             'White Onion' => 25.0,
         ],
         'highlight' => 'Rich red lentil dal with creamy coconut milk and traditional spices',
         'short_description' => 'Rich red lentil dal with creamy coconut milk and traditional spices',
-        'instructions' => '1. Rinse red lentils. Simmer with water, turmeric, and ginger until soft (20 min).
-2. Sauté onion, garlic, and spices in oil. Stir into lentils.
-3. Simmer 5 more minutes until creamy.
-4. Warm quinoa bread. Serve dal with bread and fresh coriander.',
+        'instructions' => '1. Rinse 40g dry red lentils thoroughly. In a small pot, combine lentils with 175ml filtered water, 5g grated ginger, and 1g ground turmeric. Bring to a boil, then reduce heat to low, cover, and simmer for 14–16 minutes until lentils are soft and breaking down.
+2. While lentils cook, heat 3g olive oil in a small pan over medium heat. Add 1g mustard seeds and 1g coriander seeds; let them pop for 20 seconds. Add the 25g finely chopped onion, 5g minced garlic, 1g cumin powder, and 1g chili powder. Sauté for 3–4 minutes until onions are soft and fragrant.
+3. Add the 35g diced tomatoes and the cooked tempered spice mixture directly into the simmering dal.
+4. Stir in 15ml Homemade Coconut Milk and season with sea salt. Fold in the 120g chopped purslane and simmer gently for 2–3 minutes until tender and bright green.
+5. Warm 1 Quinoa Flatbread (Base) in a dry pan. Pour the dal into a bowl, garnish with fresh coriander, and serve immediately alongside the flatbread.',
         'diet_tags' => [
             0 => 'Vegan',
             1 => 'Dairy-free',

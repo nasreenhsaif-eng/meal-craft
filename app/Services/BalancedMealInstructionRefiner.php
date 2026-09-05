@@ -449,12 +449,12 @@ final class BalancedMealInstructionRefiner
 
             // Vegan mains
             BalancedCanonicalMealRecipeRefiner::VEGAN_BUTTERNUT_PEANUT_STEW_NAME => $this->steps([
-                'Prepare Cooked Brown Basmati Rice (Base) per base recipe instructions; keep warm.',
-                'Fry finely chopped onion in olive oil for 5 minutes until soft. Grate in garlic and stir.',
-                'Add chopped tomatoes and cook for a couple of minutes. Add water, rinsed red lentils, chopped red pepper, and butternut squash cubes. Bring to the boil, then reduce to a simmer.',
-                'Stir in vegetable stock and peanut butter until combined. Add zucchini and simmer for 20 minutes.',
-                'Add mushrooms and spinach–cabbage greens. Simmer a couple of minutes until wilted. Season with sea salt, black pepper, and chilli flakes.',
-                'Serve stew over cooked brown basmati rice. Top with fresh coriander, cherry tomatoes, crushed peanuts, and lime juice.',
+                'Warm 80g of pre-cooked Cooked Brown Basmati Rice (Base) in a serving bowl; keep warm.',
+                'In a saucepan, heat 3g olive oil over medium heat. Add finely chopped red onion and sauté for 3–4 minutes until translucent. Stir in 2g grated garlic for 30 seconds.',
+                'Add 80g diced raw tomatoes and cook for 2 minutes. Pour in 130ml water, 50ml vegetable stock, 30g rinsed red lentils, 30g red bell pepper, and 60g butternut squash cubes. Bring to a gentle boil, then lower to a simmer.',
+                'Whisk 8g peanut butter into the simmering liquid until fully dissolved. Add 30g sliced zucchini, cover, and simmer for 15 minutes until squash and lentils are tender.',
+                'Stir in 30g mushrooms, 16g shredded purple cabbage, and 16g spinach. Simmer for 2 minutes until wilted. Season with sea salt, black pepper, and chili flakes.',
+                'Ladle the stew over the brown rice. Top with 8g crushed roasted peanuts, halved cherry tomatoes, fresh coriander, and a squeeze of lime juice.',
             ]),
             'Vegan Smoky Cauliflower & Lentil Stew w Quinoa Bread & Tahini' => $this->steps([
                 'Prepare Quinoa Flatbread (Base) per base recipe instructions; keep warm (one full folded crepe for scooping).',
@@ -465,13 +465,14 @@ final class BalancedMealInstructionRefiner
                 'Stir in lemon juice, transfer to a bowl, and finish with a tahini drizzle. Serve warm alongside the quinoa flatbread.',
             ]),
             'Vegan Sri Lankan Red Lentil Dal w Quinoa Bread' => $this->steps([
-                'Rinse red lentils. Simmer with water, turmeric, and ginger until soft (20 min).',
-                'Sauté onion, garlic, and spices in oil. Stir into lentils.',
-                'Simmer 5 more minutes until creamy.',
-                'Warm quinoa bread. Serve dal with bread and fresh coriander.',
+                'Rinse 40g dry red lentils thoroughly. In a small pot, combine lentils with 175ml filtered water, 5g grated ginger, and 1g ground turmeric. Bring to a boil, then reduce heat to low, cover, and simmer for 14–16 minutes until lentils are soft and breaking down.',
+                'While lentils cook, heat 3g olive oil in a small pan over medium heat. Add 1g mustard seeds and 1g coriander seeds; let them pop for 20 seconds. Add the 25g finely chopped onion, 5g minced garlic, 1g cumin powder, and 1g chili powder. Sauté for 3–4 minutes until onions are soft and fragrant.',
+                'Add the 35g diced tomatoes and the cooked tempered spice mixture directly into the simmering dal.',
+                'Stir in 15ml Homemade Coconut Milk and season with sea salt. Fold in the 120g chopped purslane and simmer gently for 2–3 minutes until tender and bright green.',
+                'Warm 1 Quinoa Flatbread (Base) in a dry pan. Pour the dal into a bowl, garnish with fresh coriander, and serve immediately alongside the flatbread.',
             ]),
             'Vegan Harissa Roasted Cauliflower & Chickpea Salad w Tahini Dressing' => $this->steps([
-                'Prepare Cooked Chickpeas (Base) per base recipe instructions from 35g dry chickpeas (about 75–80g cooked), or measure 75g cooked chickpeas.',
+                'Prepare Cooked Chickpeas (Base) per base recipe instructions from about 55g dry chickpeas (about 120g cooked), or measure 120g cooked chickpeas.',
                 'Toss the cooked chickpeas, cubed beetroot, and cauliflower florets with olive oil, Harissa Paste (Base), and a pinch of sea salt.',
                 'Spread onto a baking sheet and roast at 200°C for 22–25 minutes until caramelized and tender.',
                 'Transfer roasted vegetables and chickpeas to a wide serving bowl. Toss gently with sliced shallots, fresh dill, and fresh mint.',
@@ -492,18 +493,17 @@ final class BalancedMealInstructionRefiner
                 'Cool slightly. Serve over romaine with lemon and olive oil.',
             ]),
             'Thai Rainbow Peanut Salad' => $this->steps([
-                'Shred cabbage and julienne carrots and cucumber.',
-                'Whisk peanut butter with lime juice and water until smooth.',
-                'Toss vegetables with dressing and fresh coriander.',
-                'Serve chilled. Add crushed peanuts on top if included.',
+                'Finely shred the purple cabbage. Julienne the carrots. Cut cucumber into matchsticks or thinly sliced half-moons. Cut red pepper into thin strips. Very thinly shave the red onion. Chop the coriander. Use roasted unsalted crushed peanuts.',
+                'Toss cabbage, carrots, cucumber, red pepper, red onion, coriander, and crushed peanuts. Portion into a 500 ml container.',
+                'Serve Peanut Butter Dressing (Base) on the side in a 20 ml cup.',
             ]),
 
             // Side salads (legume-free vegan)
             'Marinated Pineapple, Peppers, Red Onion & Cilantro Side Salad' => $this->steps([
-                'Dice pineapple, pepper, cucumber, and red onion.',
-                'Toss with thinly sliced cabbage and dressing.',
-                'Refrigerate 15–30 minutes to meld flavours.',
-                'Add coriander and chilli before serving.',
+                'Finely shred the purple cabbage. Cut pineapple into small bite-sized chunks. Slice cucumber into thin half-moons and red pepper into thin matchsticks. Very thinly shave the red onion.',
+                'Toss cabbage, cucumber, pineapple, red pepper, red onion, and fresh coriander. Portion into a 500 ml container.',
+                'Finely slice the red Thai chillies and add just before serving (or pack separately if preferred).',
+                'Serve Zesty Lime Chili Salad Dressing (Base) on the side in a 20 ml cup.',
             ]),
             'Tomato Parsely Salad w Sumac Za’ater Dressing' => $this->steps([
                 'Prepare Sumac Za\'atar Dressing (Base) per base recipe instructions; rest 10 minutes.',
@@ -513,9 +513,9 @@ final class BalancedMealInstructionRefiner
                 'Serve at room temperature with dressing on the side.',
             ]),
             'Citrus Beet Arugula Salad' => $this->steps([
-                'Roast or boil beetroot until tender. Cool, peel, and slice.',
-                'Arrange arugula on plates. Add beets and orange segments.',
-                'Scatter walnuts. Drizzle with lemon and olive oil.',
+                'Roast or boil beetroot until tender. Cool, peel, and slice or wedge. Supreme or peel the orange into segments. Thinly slice cucumber into half-moons. Lightly toast and roughly chop the walnuts. Tear the mint leaves.',
+                'Portion arugula into a 500 ml container as an airy bed. Top with beets, orange segments, cucumber, walnuts, and mint.',
+                'Serve Classic Lemon Garlic Dressing (Base) on the side in a 20 ml cup.',
             ]),
             'Shaved Fennel Rocca Salad' => $this->steps([
                 'Shave fennel very thin (mandoline or sharp knife).',
@@ -528,20 +528,20 @@ final class BalancedMealInstructionRefiner
                 'Combine with warm eggplant and pomegranate seeds.',
             ]),
             'Marinated Strawberry Beet Salad' => $this->steps([
-                'Cook beetroot until tender. Cool and dice.',
-                'Slice strawberries and onion. Toss with vinegar and oil.',
-                'Marinate 20 minutes. Serve over romaine.',
+                'Cook or roast beetroot until tender. Cool and cut into matchsticks. Slice strawberries. Thinly slice celery into half-moons. Very thinly shave the onion. Tear the mint leaves. Lightly crush the walnuts.',
+                'Toss beets, strawberries, celery, onion, walnuts, and mint. Marinate briefly.',
+                'Portion chopped romaine into a 500 ml container and top with the marinated mixture.',
+                'Serve Apple Cider Beet Marinade (Base) on the side in a 20 ml cup.',
             ]),
             'Coconut Grapefruit Salad' => $this->steps([
-                'Segment grapefruit. Slice cucumber.',
-                'Toss romaine with lime dressing.',
-                'Top with grapefruit, cucumber, and coconut.',
+                'Chop the romaine. Finely chop or shave raw broccoli florets. Peel grapefruit into supremes/segments. Slice cucumber into half-moons. Very thinly shave the red onion. Shave coconut meat into ribbons.',
+                'Toss romaine and broccoli with grapefruit, cucumber, red onion, and pomegranate seeds. Top with coconut. Portion into a 500 ml container.',
+                'Serve Grapefruit Lime Dressing (Base) on the side in a 20 ml cup.',
             ]),
             'Classic Garden Salad' => $this->steps([
-                'Chop lettuce, tomato, and cucumber.',
-                'Shred or thinly slice the carrots.',
-                'Toss the vegetables together in a large bowl.',
-                'Serve with Classic Lemon Garlic Dressing (Base) on the side.',
+                'Wash and shred or chop the romaine for airy, high-fill volume. Slice cucumber into half-moons. Use cherry tomatoes or sliced raw tomato. Julienned or shred the carrots.',
+                'Toss romaine, tomato, cucumber, and carrots. Portion into a 500 ml container.',
+                'Serve Classic Lemon Garlic Dressing (Base) on the side in a 20 ml cup.',
             ]),
 
             // Desserts

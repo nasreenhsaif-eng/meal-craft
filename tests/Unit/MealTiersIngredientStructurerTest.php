@@ -60,9 +60,60 @@ test('chicken mains scale primary protein grams to the calorie tab', function ()
 
     expect(array_keys($grams))->toBe([400, 500, 550, 600, 700, 800])
         ->and($grams[400][$chicken->id])->toBe(135.0)
-        ->and($grams[500][$chicken->id])->toBe(175.0)
+        ->and($grams[500][$chicken->id])->toBe(170.0)
         ->and($grams[800][$chicken->id])->toBe(300.0)
         ->and($grams[400][$oil->id])->toBe(5.0)
         ->and($grams[500][$oil->id])->toBe(5.0)
+        ->and($grams[800][$oil->id])->toBe(5.0);
+});
+
+test('plant based mains scale toward each calorie tab from the baseline plate', function () {
+    $chickpeas = Ingredient::factory()->create([
+        'name' => 'Cooked Chickpeas (Base)',
+        'calories' => 100,
+        'protein' => 8,
+        'carbs' => 15,
+        'fat' => 2,
+        'usda_food_category' => 'Legumes',
+    ]);
+    $cauliflower = Ingredient::factory()->create([
+        'name' => 'Cauliflower',
+        'calories' => 25,
+        'protein' => 2,
+        'carbs' => 5,
+        'fat' => 0,
+        'usda_food_category' => 'Vegetables',
+    ]);
+    $oil = Ingredient::factory()->create([
+        'name' => 'Olive Oil (Extra Virgin)',
+        'calories' => 884,
+        'protein' => 0,
+        'carbs' => 0,
+        'fat' => 100,
+        'usda_food_category' => 'Fats',
+    ]);
+
+    $meal = Meal::factory()->create([
+        'name' => 'Vegan Harissa Roasted Cauliflower & Chickpea Salad w Tahini Dressing',
+        'category' => RecipeCategory::Meal,
+        'meal_type' => MealType::Main,
+    ]);
+    $meal->ingredients()->attach([
+        $chickpeas->id => ['amount_grams' => 100, 'amount' => 100, 'unit' => 'g'],
+        $cauliflower->id => ['amount_grams' => 200, 'amount' => 200, 'unit' => 'g'],
+        $oil->id => ['amount_grams' => 5, 'amount' => 5, 'unit' => 'g'],
+    ]);
+    $meal->load('ingredients');
+
+    // Baseline = 100 + 50 + 44.2 = 194.2 kcal
+    $grams = MealTiersIngredientStructurer::gramsByTier($meal);
+
+    expect(array_keys($grams))->toBe([400, 500, 550, 600, 700, 800])
+        ->and($grams[400][$chickpeas->id])->toBeGreaterThan(100)
+        ->and($grams[800][$chickpeas->id])->toBeGreaterThan($grams[400][$chickpeas->id])
+        ->and(fmod($grams[400][$chickpeas->id], 5.0))->toEqual(0.0)
+        ->and(fmod($grams[800][$chickpeas->id], 5.0))->toEqual(0.0)
+        ->and(fmod($grams[400][$cauliflower->id], 5.0))->toEqual(0.0)
+        ->and($grams[400][$oil->id])->toBe(5.0)
         ->and($grams[800][$oil->id])->toBe(5.0);
 });

@@ -87,6 +87,17 @@ test('prepared base ingredients use finished grams without further yield convers
         ->and(IngredientCookingYield::amountStateLabel($base))->toBe('cooked plated portion');
 });
 
+test('dressing bases are labeled prepared dressing not cooked plated', function (): void {
+    $dressing = new Ingredient([
+        'name' => 'Cilantro Lime Dressing (Base)',
+        'calories' => 180,
+        'usda_food_category' => IngredientLibraryCategory::BaseIngredient,
+        'is_base_recipe' => true,
+    ]);
+
+    expect(IngredientCookingYield::amountStateLabel($dressing))->toBe('prepared dressing');
+});
+
 test('meal yield summary combines raw shrink and base finished grams', function (): void {
     $chicken = new Ingredient([
         'name' => ChickenBreastYield::RAW_INGREDIENT_NAME,

@@ -10,6 +10,7 @@ use App\Enums\RecipeCategory;
 use App\Services\RecipeNutritionCalculator;
 use App\Support\MealImagePath;
 use App\Support\MealLibraryBulkNutrition;
+use App\Support\MealTiersLibraryExclusions;
 use App\Support\RecipeMacroRounding;
 use Database\Factories\MealFactory;
 use Illuminate\Database\Eloquent\Builder;
@@ -178,9 +179,16 @@ class Meal extends Model
      */
     public static function queryForMealTiersLibrary(): Builder
     {
-        return static::query()
+        $query = static::query()
             ->where('library_key', MealLibraryKey::Tiers)
-            ->visibleInMealLibrary()
+            ->visibleInMealLibrary();
+
+        $excluded = MealTiersLibraryExclusions::names();
+        if ($excluded !== []) {
+            $query->whereNotIn('name', $excluded);
+        }
+
+        return $query
             ->orderBy('library_sort_order')
             ->orderByDesc('updated_at')
             ->orderBy('id');

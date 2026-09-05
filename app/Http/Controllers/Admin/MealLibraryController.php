@@ -27,6 +27,7 @@ use App\Support\IngredientCookingYield;
 use App\Support\IngredientG6pdSafety;
 use App\Support\IngredientLibraryNameMatcher;
 use App\Support\KitchenPortionRounding;
+use App\Support\KitchenSpoonPresentation;
 use App\Support\LiquidIngredientPresentation;
 use App\Support\MealFoodFilterCatalog;
 use App\Support\MealImagePath;
@@ -993,6 +994,10 @@ class MealLibraryController extends Controller
             $adaptedAmount = $adaptedRow['adapted_amount'] ?? null;
 
             if ($adaptedAmount !== null && $unit !== '' && $unit !== 'g') {
+                if (KitchenSpoonPresentation::appliesTo($ingredient) && $grams > 0) {
+                    return KitchenSpoonPresentation::formatLibraryLine($ingredient, $grams, $formattedGrams);
+                }
+
                 if (LiquidIngredientPresentation::isLiquidIngredient($ingredient)) {
                     return LiquidIngredientPresentation::formatLineFromAmountAndUnit(
                         (float) $adaptedAmount,
@@ -1005,8 +1010,8 @@ class MealLibraryController extends Controller
             }
         }
 
-        if ($grams > 0 && LiquidIngredientPresentation::isLiquidIngredient($ingredient)) {
-            return LiquidIngredientPresentation::formatLine($grams, $ingredient);
+        if ($grams > 0 && KitchenSpoonPresentation::appliesTo($ingredient)) {
+            return KitchenSpoonPresentation::formatLibraryLine($ingredient, $grams, $formattedGrams);
         }
 
         if ($grams > 0) {

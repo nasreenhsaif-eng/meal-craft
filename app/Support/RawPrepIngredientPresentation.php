@@ -75,7 +75,7 @@ final class RawPrepIngredientPresentation
         }
 
         $displayName = self::displayName($ingredient->name);
-        $suffix = IngredientCookingYield::amountStateLabel($ingredient) ?? __('cooked plated portion');
+        $suffix = IngredientCookingYield::amountStateLabel($ingredient) ?? __('prepared portion');
 
         if ($grams <= 0) {
             return $displayName.' ('.$suffix.')';
@@ -89,7 +89,7 @@ final class RawPrepIngredientPresentation
      */
     public static function ingredientsPrepNote(): string
     {
-        return __('Listed amounts are prep weights: meats and fish are raw before cooking; canned fish is drained weight; dry grains and legumes are dry weight; (Base) items are cooked plated portions.');
+        return __('Listed amounts are prep weights: meats and fish are raw before cooking; canned fish is drained weight; dry grains and legumes are dry weight; cooked (Base) sides are plated portions; dressings and sauces are prepared portions.');
     }
 
     private static function displayName(string $ingredientName): string

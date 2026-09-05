@@ -291,13 +291,6 @@ final class MealTiersLibraryPresentation
             return $ingredient->name;
         }
 
-        if (
-            LiquidIngredientPresentation::isCookingOilIngredient($ingredient)
-            || LiquidIngredientPresentation::isLiquidIngredient($ingredient)
-        ) {
-            return $ingredient->name.' — '.LiquidIngredientPresentation::formatKitchenQuantity($grams, $ingredient);
-        }
-
         $formattedGrams = self::decimal($grams);
 
         if (EggIngredientPresentation::isEggIngredient($ingredient)) {
@@ -318,6 +311,10 @@ final class MealTiersLibraryPresentation
 
         if (RawPrepIngredientPresentation::isPreCookedBaseIngredient($ingredient)) {
             return RawPrepIngredientPresentation::formatBaseLine($grams, $formattedGrams, $ingredient);
+        }
+
+        if (KitchenSpoonPresentation::appliesTo($ingredient)) {
+            return KitchenSpoonPresentation::formatTierLine($ingredient, $grams, $formattedGrams);
         }
 
         return $ingredient->name.' — '.$formattedGrams.' g';

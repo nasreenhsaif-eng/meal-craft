@@ -301,17 +301,10 @@ export default function MealTiersLibraryPage({
                             adminControls
                             showActions
                             meal={meal}
-                            calorieTierTabs={meal.usesTabs ? meal.tabValues : null}
-                            calorieTiers={meal.calorieTiers}
                             onEdit={() => openEdit(meal)}
                             onViewDetails={() => {
                                 setDetailMeal(meal);
                                 setDetailTier(meal.tabValues?.includes(500) ? 500 : (meal.tabValues?.[0] ?? null));
-                            }}
-                            onCalorieTierChange={(tier) => {
-                                if (detailMeal?.id === meal.id) {
-                                    setDetailTier(tier);
-                                }
                             }}
                         />
                     ))}

@@ -65,10 +65,23 @@ test('formats pre-cooked rice bases as cooked plated portions', function () {
         ->toBe('75g Steamed Basmati Rice (cooked plated portion)');
 });
 
+test('formats dressing bases as prepared dressing not cooked plated', function () {
+    $dressing = Ingredient::factory()->make([
+        'name' => 'Cilantro Lime Dressing (Base)',
+        'usda_food_category' => 'Base Ingredient',
+        'calories' => 180,
+        'is_base_recipe' => true,
+    ]);
+
+    expect(RawPrepIngredientPresentation::formatBaseLine(15, '15', $dressing))
+        ->toBe('15g Cilantro Lime Dressing (prepared dressing)');
+});
+
 test('exposes a prep-weight legend for every recipe', function () {
     expect(RawPrepIngredientPresentation::ingredientsPrepNote())
         ->toContain('raw before cooking')
         ->toContain('canned fish is drained weight')
         ->toContain('dry weight')
-        ->toContain('(Base) items are cooked plated portions');
+        ->toContain('cooked (Base) sides are plated portions')
+        ->toContain('dressings and sauces are prepared portions');
 });

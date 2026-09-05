@@ -31,6 +31,8 @@ class MealTiersLibraryController extends Controller
 
     public function index(): Response
     {
+        $this->copyService->purgeExcludedFromTiersLibrary();
+
         $mealRows = Meal::queryForMealTiersLibrary()
             ->with(['ingredients', 'calorieTiers.ingredients'])
             ->get()
@@ -341,12 +343,9 @@ class MealTiersLibraryController extends Controller
             );
         }
 
-        $nutrition = $defaultTier['nutritionalData'] ?? MealTiersLibraryPresentation::nutritionalData([
-            'calories' => (float) ($meal->total_calories ?? 0),
-            'protein' => (float) ($meal->total_protein ?? 0),
-            'carbs' => (float) ($meal->total_carbs ?? 0),
-            'fat' => (float) ($meal->total_fat ?? 0),
-        ]);
+        $nutrition = $defaultTier['nutritionalData'] ?? MealTiersLibraryPresentation::nutritionalData(
+            $meal->persistedNutritionAsCalculatorShape(),
+        );
 
         $instructionLines = MealInstructionsText::linesFromRaw(
             trim((string) ($meal->instructions ?: $meal->description ?: '')),
