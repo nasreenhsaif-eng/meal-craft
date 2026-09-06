@@ -1117,7 +1117,7 @@ final class AdaptedMenuBuilder
                 RecipeCategory::Meal => 'main',
                 RecipeCategory::Soup => 'soup',
                 RecipeCategory::SideSalad, RecipeCategory::MainSalad => 'side_salad',
-                RecipeCategory::Dessert => 'dessert',
+                RecipeCategory::Dessert, RecipeCategory::ChiaPudding => 'dessert',
                 default => null,
             };
         }

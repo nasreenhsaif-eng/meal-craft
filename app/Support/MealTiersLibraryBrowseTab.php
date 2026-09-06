@@ -18,6 +18,8 @@ final class MealTiersLibraryBrowseTab
 
     public const Dessert = 'dessert';
 
+    public const ChiaPudding = 'chia_pudding';
+
     public const SideSalad = 'side_salad';
 
     public const Beef = 'beef';
@@ -50,6 +52,7 @@ final class MealTiersLibraryBrowseTab
             ['id' => self::Liver, 'label' => 'Liver'],
             ['id' => self::Vegan, 'label' => 'Vegan'],
             ['id' => self::SideSalad, 'label' => 'Side salad'],
+            ['id' => self::ChiaPudding, 'label' => 'Chia pudding'],
             ['id' => self::Dessert, 'label' => 'Dessert'],
             ['id' => self::Soup, 'label' => 'Soup'],
             ['id' => self::MainSalad, 'label' => 'Main salad'],
@@ -112,6 +115,10 @@ final class MealTiersLibraryBrowseTab
 
         if ($category === RecipeCategory::Soup) {
             return self::Soup;
+        }
+
+        if ($category === RecipeCategory::ChiaPudding || ChiaDessertMeals::isChiaDessert($meal)) {
+            return self::ChiaPudding;
         }
 
         if ($category === RecipeCategory::Dessert) {

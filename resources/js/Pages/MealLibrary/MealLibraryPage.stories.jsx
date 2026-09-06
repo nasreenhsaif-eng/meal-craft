@@ -32,6 +32,7 @@ const sampleBrowseTabs = [
     { id: 'liver', label: 'Liver' },
     { id: 'vegan', label: 'Vegan' },
     { id: 'side_salad', label: 'Side salad' },
+    { id: 'chia_pudding', label: 'Chia pudding' },
     { id: 'dessert', label: 'Dessert' },
     { id: 'soup', label: 'Soup' },
     { id: 'main_salad', label: 'Main salad' },

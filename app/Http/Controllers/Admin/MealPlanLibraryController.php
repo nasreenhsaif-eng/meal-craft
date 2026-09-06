@@ -48,6 +48,7 @@ class MealPlanLibraryController extends Controller
             RecipeCategory::Meal,
             RecipeCategory::SideSalad,
             RecipeCategory::Dessert,
+            RecipeCategory::ChiaPudding,
             RecipeCategory::Soup,
         ];
 

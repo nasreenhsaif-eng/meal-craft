@@ -379,7 +379,7 @@ function mealCsvImportIngredientLibraryRowNames(rows) {
     return names;
 }
 
-const MEAL_FORM_TYPE_OPTIONS = ['Breakfast', 'Meal', 'Side Salad', 'Soup', 'Dessert'];
+const MEAL_FORM_TYPE_OPTIONS = ['Breakfast', 'Meal', 'Side Salad', 'Soup', 'Dessert', 'Chia Pudding'];
 const UNIT_OPTIONS = ['g', 'kg', 'ml', 'ltr'];
 
 const DEFAULT_CYCLE_PHASES = [

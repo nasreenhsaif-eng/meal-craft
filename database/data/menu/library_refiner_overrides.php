@@ -84,21 +84,28 @@ return [
         ],
     ],
     'Banana Blueberry Balls' => [
-        'synced_at' => '2026-07-12T10:11:47+00:00',
+        'synced_at' => '2026-09-06T14:50:00+00:00',
         'ingredients' => [
-            'Almond Butter' => 5.0,
-            'Almond Flour' => 15.0,
-            'Banana' => 10.0,
-            'Blueberries' => 10.0,
-            'Cinnamon' => 1.0,
-            'Flaxseeds' => 2.0,
-            'Maple Syrup' => 10.0,
+            'Almond Butter' => 12.0,
+            'Almond Flour (Base)' => 36.0,
+            'Banana' => 45.0,
+            'Blueberries' => 30.0,
+            'Cinnamon' => 3.0,
+            'Flaxseeds' => 6.0,
+            'Maple Syrup' => 15.0,
+            'Sea Salt' => 0.5,
         ],
-        'highlight' => 'No-bake banana-blueberry energy balls with almond flour, flaxseed, maple syrup, and almond butter — 3 bites per serving (~193 kcal).',
-        'short_description' => 'No-bake banana-blueberry energy balls with almond flour, flaxseed, maple syrup, and almond butter — 3 bites per serving (~193 kcal).',
-        'instructions' => '1. Pulse almond flour, flaxseeds, cinnamon, maple syrup, almond butter, banana, and blueberries in a food processor until the mixture holds together.
-2. Roll into 3 bite-size balls (~19g each). One serving is all 3 balls.
-3. Chill 30 minutes until firm. Serve cold.',
+        'highlight' => 'No-bake banana-blueberry energy balls with almond flour, flaxseed, maple syrup, and almond butter — 3 balls per serving (~150 kcal).',
+        'short_description' => 'No-bake banana-blueberry energy balls with almond flour, flaxseed, maple syrup, and almond butter — 3 balls per serving (~150 kcal).',
+        'instructions' => '1. Add the almond flour, ground flaxseeds, cinnamon, sea salt, almond butter, banana, and maple syrup to the food processor. Pulse until a smooth, thick dough forms.
+2. Add the blueberries and pulse just 2–3 times so they burst slightly into specks without turning the dough completely liquid.
+3. For 3 balls per serving (9 balls total): roll into about 16–17g balls (1 level tablespoon each). One serving is 3 balls (~150 kcal). For 4 smaller balls per serving (12 balls total): roll into about 12–13g balls; one serving is still 4 balls (~150 kcal).
+4. Refrigerate 30 minutes so the flaxseeds absorb fruit moisture and firm up.',
+        'diet_tags' => [
+            0 => 'Dairy-free',
+            1 => 'Gluten-free',
+            2 => 'Vegan',
+        ],
         'food_filter_tags' => [
             0 => 'nuts',
         ],
@@ -669,7 +676,7 @@ Serve dressing on the side.',
         ],
     ],
     'Chocolate Orange Brownie' => [
-        'synced_at' => '2026-07-12T10:11:47+00:00',
+        'synced_at' => '2026-09-06T10:00:00+00:00',
         'ingredients' => [
             'Almond Flour (Base)' => 95.0,
             'Baking Powder' => 1.0,
@@ -678,19 +685,20 @@ Serve dressing on the side.',
             'Grass Fed Butter' => 120.0,
             'Medjool Dates' => 265.0,
             'Orange Juice' => 30.0,
-            'Orange Zest' => 10.0,
-            'Psyllium Husks' => 335.0,
+            'Orange Zest' => 4.0,
+            'Psyllium Husks' => 15.0,
+            'Sea Salt' => 1.5,
             'Tapioca Starch' => 30.0,
             'Water (Filtered)' => 80.0,
         ],
-        'highlight' => 'Rich flourless cocoa-orange brownie batch (24 small squares) with house almond flour, eggs, honey, olive oil, and walnuts.',
-        'short_description' => 'Rich flourless cocoa-orange brownie batch (24 small squares) with house almond flour, eggs, honey, olive oil, and walnuts.',
-        'instructions' => 'Make the citrus & date sweetener. Pour boiling water over the pitted dates and soak 10 minutes. Blend with the orange zest and fresh orange juice until completely smooth.
-Build the rich chocolate base. Melt the grass-fed butter, then whisk in the Dutch-process cocoa until glossy. Beat in the room-temperature eggs one at a time.
-Whisk the grain-free flours. In a bowl, combine the super-fine blanched almond flour, tapioca starch, psyllium husks, baking powder, and fine sea salt.
-Fold the batters together. Stir the date-orange puree into the chocolate base, then fold in the dry ingredients just until no dry streaks remain.
-Bake at 175°C. Spread into a lined tin and bake until a skewer from the center comes out mostly clean with moist crumbs.
-Cool completely, then cut into 16 equal squares. One square is one serving.',
+        'highlight' => 'Rich grain-free cocoa-orange brownie batch (16 small squares) with date-orange sweetener, Dutch cocoa, grass-fed butter, blanched almond flour, tapioca, and psyllium — about 169 kcal per square.',
+        'short_description' => 'Rich grain-free cocoa-orange brownie batch (16 small squares) with date-orange sweetener, Dutch cocoa, grass-fed butter, blanched almond flour, tapioca, and psyllium — about 169 kcal per square.',
+        'instructions' => '1. Make the citrus & date sweetener. Pour boiling water over the pitted dates and soak 10 minutes. Blend with the orange zest and fresh orange juice until completely smooth.
+2. Build the rich chocolate base. Melt the grass-fed butter, then whisk in the Dutch-process cocoa until glossy. Beat in the room-temperature eggs one at a time.
+3. Whisk the grain-free flours. In a bowl, combine the super-fine blanched almond flour, tapioca starch, psyllium husks, baking powder, and fine sea salt.
+4. Fold the batters together. Stir the date-orange puree into the chocolate base, then fold in the dry ingredients just until no dry streaks remain.
+5. Bake at 175°C. Spread into a lined tin and bake until a skewer from the center comes out mostly clean with moist crumbs.
+6. Cool completely, then cut into 16 equal small squares. One square is one serving.',
         'diet_tags' => [
             0 => 'Vegetarian',
             1 => 'Gluten-free',
@@ -733,20 +741,30 @@ Cool completely, then cut into 16 equal squares. One square is one serving.',
         ],
     ],
     'Cinnamon Raisin Balls' => [
-        'synced_at' => '2026-07-12T10:11:47+00:00',
+        'synced_at' => '2026-09-06T14:00:00+00:00',
         'ingredients' => [
-            'Almond Butter' => 20.0,
-            'Almond whole' => 10.0,
+            'Almond Butter' => 15.0,
             'Cinnamon' => 3.0,
-            'Medjool Dates' => 15.0,
-            'Raisins' => 10.0,
-            'Walnuts' => 20.0,
+            'Coconut Flour' => 24.0,
+            'Medjool Dates' => 36.0,
+            'Raisins' => 15.0,
+            'Sea Salt' => 0.5,
+            'Walnuts' => 15.0,
+            'Water (Filtered)' => 50.0,
         ],
-        'highlight' => 'No-bake snack bites blending soft Medjool dates, raisins, walnuts, almond butter, and cinnamon.',
-        'short_description' => 'No-bake snack bites blending soft Medjool dates, raisins, walnuts, almond butter, and cinnamon.',
-        'instructions' => 'Combine dates or binder, raisins, nuts, and cinnamon in a food processor.
-Pulse until mixture holds together.
-Roll into balls. Refrigerate until firm.',
+        'highlight' => 'No-bake cinnamon-raisin coconut flour balls with dates, almond butter, and walnuts — 3 balls per serving (~147 kcal).',
+        'short_description' => 'No-bake cinnamon-raisin coconut flour balls with dates, almond butter, and walnuts — 3 balls per serving (~147 kcal).',
+        'instructions' => '1. Pulse the walnuts in a food processor until coarsely chopped, then tip out half to keep some crunchy texture.
+2. Add the coconut flour, soaked Medjool dates (soaked in hot water 5 minutes, then drained), raisins, almond butter, cinnamon, sea salt, and about 45g (3 tbsp) warm water. Process until a uniform paste forms.
+3. Rest 3 minutes so the coconut flour can absorb liquid. If too stiff or crumbly, add up to about 10g more water (about 1 tsp at a time). If too wet, wait another minute.
+4. Stir in the reserved crunchy walnut pieces.
+5. For 3 balls per serving (9 balls total): scoop about 16–17g each and roll firmly. One serving is 3 balls (~147 kcal). For 4 smaller balls per serving (12 balls total): scoop about 12–13g each; one serving is still 4 balls (~147 kcal).
+6. Refrigerate 20 minutes before serving so the coconut flour sets them firm.',
+        'diet_tags' => [
+            0 => 'Dairy-free',
+            1 => 'Gluten-free',
+            2 => 'Vegan',
+        ],
         'food_filter_tags' => [
             0 => 'nuts',
         ],
@@ -2048,21 +2066,27 @@ Serve dressing on the side.',
         ],
     ],
     'Saffron Pumpkin Muffin' => [
-        'synced_at' => '2026-07-12T10:11:47+00:00',
+        'synced_at' => '2026-09-06T14:53:00+00:00',
         'ingredients' => [
-            'Almond Flour (Base)' => 25.0,
-            'Butternut Squash' => 35.0,
-            'Cinnamon' => 9.0,
-            'Egg' => 55.0,
-            'Honey (Raw)' => 10.0,
-            'Saffron Threads' => 1.0,
+            'Almond Flour (Base)' => 250.0,
+            'Baking Powder' => 7.0,
+            'Cinnamon' => 8.0,
+            'Eggs (Large)' => 200.0,
+            'Honey (Raw)' => 120.0,
+            'Pumpkin Puree' => 350.0,
+            'Saffron Threads' => 0.75,
+            'Sea Salt' => 2.0,
+            'Water (Filtered)' => 15.0,
         ],
-        'highlight' => 'A moist artisan breakfast muffin infusing pure local saffron water with organic pumpkin purée',
-        'short_description' => 'A moist artisan breakfast muffin infusing pure local saffron water with organic pumpkin purée',
-        'instructions' => '1. Heat oven to 180°C. Line a muffin tin.
-2. Mix pumpkin, eggs, saffron, and dry ingredients.
-3. Divide into cups. Bake 18–22 minutes until springy.
-4. Cool before serving.',
+        'highlight' => 'Grain-free saffron pumpkin muffins (batch of 10) with almond flour, honey, and bloomed saffron — one muffin per serving.',
+        'short_description' => 'Grain-free saffron pumpkin muffins (batch of 10) with almond flour, honey, and bloomed saffron — one muffin per serving.',
+        'instructions' => '1. Preheat & prep: Heat oven to 180°C (350°F). Line a 10–12 cup muffin tin with parchment liners.
+2. Bloom the saffron: Lightly crush the saffron threads and steep in 1 tablespoon (15g) warm water for 5 minutes until a deep golden liquid forms.
+3. Mix wet ingredients: In a large bowl, whisk the pumpkin puree, eggs, bloomed saffron (with liquid), and raw honey until smooth and well integrated.
+4. Combine dry ingredients: In a separate bowl, whisk together the almond flour, cinnamon, baking powder, and sea salt to remove clumps.
+5. Fold: Gently fold the dry ingredients into the wet mixture until just combined.
+6. Bake: Divide evenly among 10 muffin cups (filling each about ¾ full). Bake at 180°C for 20–24 minutes, or until the tops are golden and a toothpick inserted into the center comes out clean.
+7. Cool: Transfer to a wire rack to cool completely before peeling the liners — almond-flour muffins firm up as they reach room temperature. One muffin is one serving.',
         'diet_tags' => [
             0 => 'Vegetarian',
             1 => 'Dairy-free',

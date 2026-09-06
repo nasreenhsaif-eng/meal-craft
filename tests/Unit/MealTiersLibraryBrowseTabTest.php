@@ -13,6 +13,7 @@ test('browse tabs include protein families and every recipe category', function 
         MealTiersLibraryBrowseTab::Liver,
         MealTiersLibraryBrowseTab::Vegan,
         MealTiersLibraryBrowseTab::SideSalad,
+        MealTiersLibraryBrowseTab::ChiaPudding,
         MealTiersLibraryBrowseTab::Dessert,
         MealTiersLibraryBrowseTab::Soup,
         MealTiersLibraryBrowseTab::MainSalad,
@@ -37,6 +38,10 @@ test('classifies library meals onto the browse tabs', function () {
             'name' => 'Chocolate Orange Brownie',
             'category' => RecipeCategory::Dessert,
         ])))->toBe(MealTiersLibraryBrowseTab::Dessert)
+        ->and(MealTiersLibraryBrowseTab::forMeal(Meal::factory()->make([
+            'name' => 'Blueberry Walnut Chia Pudding',
+            'category' => RecipeCategory::ChiaPudding,
+        ])))->toBe(MealTiersLibraryBrowseTab::ChiaPudding)
         ->and(MealTiersLibraryBrowseTab::forMeal(Meal::factory()->make([
             'name' => 'Marinated Pineapple Side Salad',
             'category' => RecipeCategory::SideSalad,

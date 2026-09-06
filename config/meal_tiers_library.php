@@ -117,12 +117,14 @@ return [
     |--------------------------------------------------------------------------
     */
     'excluded_classic_meal_names' => [
+        'Blueberry Walnut Chia Pudding',
         'Grilled Mackerel w Lemon Herb Quinoa',
         'High Protein Miso Crunch Salad',
         'Salmon Plate',
         'Salmon Plate B',
         'Salmon Quinoa Bowl',
         'Shaved Fennel Rocca Salad',
+        'Spiced Crunch Chia Pudding',
         'Vegan Curry Lentil Salad',
     ],
 

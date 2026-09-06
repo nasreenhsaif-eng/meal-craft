@@ -21,7 +21,7 @@ const EMPTY_ROW = Object.freeze({
 
 function tabValuesForCategory(category, title = '', proteinStructures = {}) {
     const name = String(title ?? '').toLowerCase();
-    if (name.includes('chia')) {
+    if (category === 'Chia Pudding' || name.includes('chia')) {
         return [];
     }
     if (category === 'Breakfast') {
