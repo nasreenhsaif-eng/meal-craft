@@ -308,16 +308,15 @@ Serve chilled.',
         ],
     ],
     'Bone Broth Cup' => [
-        'synced_at' => '2026-07-12T11:39:24+00:00',
+        'synced_at' => '2026-09-07T08:32:00+00:00',
         'ingredients' => [
-            'Bone Broth (Base)' => 5000.0,
-            'Psyllium Husks' => 150.0,
+            'Bone Broth (Base)' => 10000.0,
         ],
-        'highlight' => '500 ml cup of defatted house bone broth — long-simmered, gelatin-rich, with psyllium husks for fiber.',
-        'short_description' => '500 ml cup of defatted house bone broth — long-simmered, gelatin-rich, with psyllium husks for fiber.',
-        'instructions' => '1. Heat the full batch of defatted Bone Broth (Base) gently (do not boil hard).
-2. Whisk psyllium husks into the batch (1 tablespoon / 15 g per serving).
-3. Portion 500 ml per cup and serve hot.',
+        'highlight' => '500 ml cup of fully defatted house bone broth — long-simmered, gelatin-rich collagen broth from cracked beef leg bones.',
+        'short_description' => '500 ml cup of fully defatted house bone broth — long-simmered, gelatin-rich collagen broth from cracked beef leg bones.',
+        'instructions' => '1. Prepare Bone Broth (Base) per base recipe instructions (roast, long simmer, strain, calibrate to 10 L, and fully defat).
+2. Gently warm the gelatinized broth only until liquefied.
+3. Ladle into 20 containers at 500 ml each. One cup is one serving. Freeze or refrigerate.',
         'diet_tags' => [
             0 => 'Dairy-free',
             1 => 'Gluten-free',
@@ -525,6 +524,39 @@ Serve chilled.',
             0 => 'beans',
         ],
     ],
+    'Lentil Carrot Soup' => [
+        'synced_at' => '2026-09-07T09:40:00+00:00',
+        'ingredients' => [
+            'Black Pepper' => 2.0,
+            'Carrots' => 1200.0,
+            'Coriander Seeds' => 8.0,
+            'Cumin Seeds' => 10.0,
+            'French Lentils' => 220.0,
+            'Fresh Parsley' => 40.0,
+            'Garlic' => 30.0,
+            'Lemon Juice' => 60.0,
+            'Olive Oil' => 15.0,
+            'Sea Salt' => 20.0,
+            'Vegetable Broth (Base)' => 500.0,
+            'Water (Filtered)' => 3600.0,
+            'White Onion' => 350.0,
+        ],
+        'highlight' => 'Earthy French lentil and carrot soup prepared as a 5 L batch with cumin and coriander, then portioned into 500 ml cups (10 servings).',
+        'short_description' => 'Earthy French lentil and carrot soup prepared as a 5 L batch with cumin and coriander, then portioned into 500 ml cups (10 servings).',
+        'instructions' => '1. Toast spices: In a large 7–8 liter stockpot, toast 10g crushed cumin seeds and 8g crushed coriander over medium heat for 45–60 seconds until fragrant.
+2. Sauté aromatics: Add 15g olive oil, 350g diced onion, and 1200g diced carrots. Cook for 5–6 minutes until the onion softens. Stir in 30g minced garlic and cook for 1 minute.
+3. Simmer: Add 220g rinsed French lentils, 500g vegetable broth, and 3600g filtered water. Bring to a boil, then lower the heat to medium-low. Cover loosely and simmer for 30 minutes until both the lentils and carrots are completely tender.
+4. Blend for body: Immersion-blend roughly half of the pot until smooth so broken-down carrots and lentils thicken the broth while preserving whole lentils for texture.
+5. Finish & portion: Stir in 60g lemon juice, 40g chopped parsley, sea salt, and black pepper. Top off with a splash of hot water to hit exactly 5 liters, then portion into ten 500 ml cups. One cup is one serving.',
+        'diet_tags' => [
+            0 => 'Dairy-free',
+            1 => 'Gluten-free',
+            2 => 'Vegan',
+        ],
+        'food_filter_tags' => [
+            0 => 'beans',
+        ],
+    ],
     'Carrot Walnut Raisin Spice Cake' => [
         'synced_at' => '2026-07-12T10:11:47+00:00',
         'ingredients' => [
@@ -564,26 +596,28 @@ Serve chilled.',
         ],
     ],
     'Cauliflower Ginger Soup' => [
-        'synced_at' => '2026-07-12T10:11:47+00:00',
+        'synced_at' => '2026-09-07T09:04:00+00:00',
         'ingredients' => [
-            'Black Pepper' => 10.0,
+            'Black Pepper' => 3.0,
             'Cauliflower Florets' => 2200.0,
-            'Garlic' => 40.0,
-            'Ginger (Raw)' => 120.0,
-            'Homemade Coconut Milk' => 400.0,
-            'Olive Oil' => 40.0,
-            'Psyllium Husks' => 150.0,
-            'Turmeric Powder' => 20.0,
-            'Vegetable Stock' => 5.0,
-            'Water (Filtered)' => 1180.0,
-            'White Onion' => 300.0,
+            'Garlic' => 35.0,
+            'Ginger (Raw)' => 35.0,
+            'Homemade Coconut Milk' => 450.0,
+            'Lemon Juice' => 25.0,
+            'Olive Oil' => 25.0,
+            'Sea Salt' => 20.0,
+            'Turmeric Powder' => 12.0,
+            'Vegetable Broth (Base)' => 20.0,
+            'Water (Filtered)' => 3200.0,
+            'White Onion' => 350.0,
         ],
-        'highlight' => 'Silky cauliflower soup brightened with ginger and turmeric.',
-        'short_description' => 'Silky cauliflower soup brightened with ginger and turmeric.',
-        'instructions' => '1. Sauté onion and ginger in oil for 3 minutes.
-2. Add cauliflower and stock. Simmer until very soft (18 min).
-3. Blend with coconut milk until smooth.
-4. Whisk in psyllium husks (1 tablespoon / 15 g per serving). Reheat and portion.',
+        'highlight' => 'Silky cauliflower-ginger soup prepared as a 5 L batch with coconut milk and turmeric, then portioned into 500 ml cups (10 servings).',
+        'short_description' => 'Silky cauliflower-ginger soup prepared as a 5 L batch with coconut milk and turmeric, then portioned into 500 ml cups (10 servings).',
+        'instructions' => '1. Sauté the aromatics: Heat 25g olive oil in a large 7–8 liter stockpot over medium heat. Add 350g diced onion and cook for 4–5 minutes until soft and translucent. Add 35g grated ginger, 35g minced garlic, 12g turmeric, and 3g black pepper. Stir constantly for 60 seconds until fragrant.
+2. Simmer the cauliflower: Add 2200g cauliflower florets, 20g vegetable broth base, and 3200g filtered water. Bring to a boil, then lower the heat to medium-low, cover loosely, and simmer for 18–20 minutes until the cauliflower is completely tender.
+3. Blend silky smooth: Remove from heat and pour in 450g homemade coconut milk. Puree with an immersion blender until completely smooth, creamy, and velvety.
+4. Calibrate & season: Check the total volume; top off with a small splash of hot water if needed to reach exactly 5 liters. Stir in sea salt and 25g fresh lemon juice to taste.
+5. Portion: Ladle into ten 500 ml cups. One cup is one serving.',
         'diet_tags' => [
             0 => 'Vegan',
             1 => 'Dairy-free',
@@ -1592,6 +1626,66 @@ Finish with fresh herbs. Serve warm.',
             1 => 'nightshades',
         ],
     ],
+    'Miso Carrot Ginger Soup' => [
+        'synced_at' => '2026-09-07T09:50:00+00:00',
+        'ingredients' => [
+            'Black Pepper' => 3.0,
+            'Carrots' => 1125.0,
+            'Garlic (Raw)' => 30.0,
+            'Ginger (Raw)' => 30.0,
+            'Miso Paste' => 110.0,
+            'Olive Oil (Extra Virgin)' => 70.0,
+            'Psyllium Husks' => 150.0,
+            'Sea Salt' => 5.0,
+            'Seaweed (Nori)' => 10.0,
+            'Sesame Oil' => 10.0,
+            'Shichimi Togarashi (Base)' => 20.0,
+            'Spring Onion' => 80.0,
+            'Vegetable Broth (Base)' => 2000.0,
+            'White Onion' => 375.0,
+        ],
+        'highlight' => 'Golden carrot-ginger miso soup with roasted nori, scallions, sesame oil, and shichimi togarashi.',
+        'short_description' => 'Golden carrot-ginger miso soup with roasted nori, scallions, sesame oil, and shichimi togarashi.',
+        'instructions' => '1. Heat olive oil over medium-high heat in a soup pot. Sauté onion, garlic, and carrot until the onion is translucent, about 10 minutes.
+2. Add ginger and Vegetable Broth (Base). Mix well and bring to a boil. Reduce heat to a simmer, cover, and cook until the carrot is very tender, about 30 minutes.
+3. Turn off the heat. Puree the soup with an immersion blender (or carefully in a blender, then return to the pot).
+4. In a small bowl, whisk white miso paste with a ladle of the hot soup until fully dissolved. Stir the miso mixture back into the pot. Season with sea salt and black pepper if needed.
+5. Whisk in psyllium husks (1 tablespoon / 15 g per serving). Reheat gently without boiling.
+6. Serve hot. Garnish each bowl with spring onion, roasted nori, Shichimi Togarashi (Base), and a drizzle of sesame oil.',
+        'diet_tags' => [
+            0 => 'Dairy-free',
+            1 => 'Gluten-free',
+            2 => 'Vegan',
+        ],
+        'food_filter_tags' => [
+            0 => 'soy',
+        ],
+    ],
+    'Miso Mushroom Soup' => [
+        'synced_at' => '2026-09-07T08:22:00+00:00',
+        'ingredients' => [
+            'Ginger (Raw)' => 15.0,
+            'Miso Paste' => 100.0,
+            'Mushrooms' => 700.0,
+            'Psyllium Husks' => 8.0,
+            'Spring Onion' => 70.0,
+            'Water (Filtered)' => 2000.0,
+        ],
+        'highlight' => 'Gentle miso-mushroom broth prepared as a 2 L batch, then portioned into 500 ml cups (4 servings).',
+        'short_description' => 'Gentle miso-mushroom broth prepared as a 2 L batch, then portioned into 500 ml cups (4 servings).',
+        'instructions' => '1. Simmer the aromatics & mushrooms: In a large pot, add 2000g water, 15g sliced ginger, the white parts of the spring onions, and 700g sliced mushrooms. Bring to a boil, then lower the heat to a gentle simmer for 12–15 minutes until the mushrooms are completely tender and have infused the broth.
+2. Whisk the miso: Turn off the heat completely. Ladle about 1 cup of hot broth into a small bowl, add 100g miso paste, and whisk until entirely dissolved with no lumps. Pour back into the pot and stir. Never boil miso directly.
+3. Optional light thickening: If you want a slightly richer mouthfeel, vigorously whisk in 8g of psyllium husk (about 2 teaspoons for the entire pot) right after adding the miso, and let it sit off heat for 2 minutes.
+4. Portion & serve: This is a 2 L batch. Ladle into four 500 ml cups (one cup is one serving) and top generously with the sliced green spring onion tops.',
+        'diet_tags' => [
+            0 => 'Vegan',
+            1 => 'Dairy-free',
+            2 => 'Gluten-free',
+        ],
+        'food_filter_tags' => [
+            0 => 'soy',
+        ],
+    ],
     'Moroccan Meatballs' => [
         'synced_at' => '2026-09-01T16:15:00+00:00',
         'ingredients' => [
@@ -1922,32 +2016,34 @@ Serve chilled.',
         ],
     ],
     'Red Lentil Turmeric Soup' => [
-        'synced_at' => '2026-07-12T10:11:47+00:00',
+        'synced_at' => '2026-09-07T09:01:00+00:00',
         'ingredients' => [
-            'Carrots' => 800.0,
-            'Cumin Seeds' => 20.0,
-            'Garlic' => 40.0,
-            'Ginger (Raw)' => 80.0,
-            'Lemon Juice' => 80.0,
-            'Lentils (Red)' => 800.0,
-            'Olive Oil' => 30.0,
-            'Psyllium Husks' => 150.0,
-            'Spinach (Fresh)' => 400.0,
-            'Turmeric Powder' => 20.0,
+            'Black Pepper' => 2.0,
+            'Carrots' => 600.0,
+            'cumin powder' => 8.0,
+            'Garlic' => 30.0,
+            'Ginger (Raw)' => 25.0,
+            'Lemon Juice' => 60.0,
+            'Lentils (Red)' => 250.0,
+            'Olive Oil' => 15.0,
+            'Sea Salt' => 18.0,
+            'Spinach (Fresh)' => 300.0,
+            'Turmeric Powder' => 15.0,
             'Vegetable Broth (Base)' => 500.0,
-            'Water (Filtered)' => 1600.0,
-            'White Onion' => 300.0,
+            'Water (Filtered)' => 3800.0,
+            'White Onion' => 250.0,
         ],
-        'highlight' => 'Warming red lentil soup with carrots, turmeric, and fresh spinach.',
-        'short_description' => 'Warming red lentil soup with carrots, turmeric, and fresh spinach.',
-        'instructions' => '1. Rinse red lentils.
-2. Sauté onion, garlic, ginger, and spices for 2 minutes.
-3. Add lentils, carrots, broth, and water. Simmer 25 minutes.
-4. Stir in spinach until wilted. Finish with lemon juice.
-5. Whisk in psyllium husks (1 tablespoon / 15 g per serving) and portion.',
+        'highlight' => 'Warming red lentil turmeric soup prepared as a 5 L batch with carrots and spinach, then portioned into 500 ml cups (10 servings).',
+        'short_description' => 'Warming red lentil turmeric soup prepared as a 5 L batch with carrots and spinach, then portioned into 500 ml cups (10 servings).',
+        'instructions' => '1. Sauté aromatics: In a large 7–8 liter stockpot, heat 15g olive oil over medium heat. Add 250g diced onion and cook for 4–5 minutes until translucent. Stir in 30g minced garlic, 25g grated ginger, 8g ground cumin, 15g turmeric, and 2g black pepper. Sauté for 60 seconds until fragrant.
+2. Simmer: Add 250g rinsed red lentils, 600g diced carrots, 500g vegetable broth, and 3800g filtered water. Bring to a boil, then reduce heat to low, cover loosely, and simmer for 20 minutes until the lentils melt and the carrots are completely soft.
+3. Blend for creaminess: Use an immersion blender directly in the pot to blend half or two-thirds of the soup for a rich, naturally creamy texture.
+4. Finish: Stir in 300g chopped fresh spinach and cook for 2 minutes until wilted. Turn off the heat, stir in 60g lemon juice, and season with sea salt to taste.
+5. Portion: Confirm total batch volume is at 5 liters (top off with a little hot water if needed), stir thoroughly, and ladle into ten 500 ml cups. One cup is one serving.',
         'diet_tags' => [
-            0 => 'Dairy-free',
-            1 => 'Gluten-free',
+            0 => 'Vegan',
+            1 => 'Dairy-free',
+            2 => 'Gluten-free',
         ],
         'food_filter_tags' => [
             0 => 'beans',
@@ -3043,28 +3139,30 @@ Serve dressing on the side.',
         ],
     ],
     'Vegan Mushroom Soup' => [
-        'synced_at' => '2026-07-12T10:11:47+00:00',
+        'synced_at' => '2026-09-07T08:18:00+00:00',
         'ingredients' => [
+            'Black Pepper' => 1.0,
             'Bone Broth (Base)' => 250.0,
-            'Garlic' => 30.0,
-            'Mushrooms' => 3000.0,
-            'Olive Oil' => 30.0,
-            'Psyllium Husks' => 150.0,
-            'Thyme (Fresh)' => 50.0,
-            'Water (Filtered)' => 1475.0,
-            'White Onion' => 300.0,
+            'Garlic' => 8.0,
+            'Mushrooms' => 600.0,
+            'Olive Oil' => 10.0,
+            'Psyllium Husks' => 5.0,
+            'Sea Salt' => 3.0,
+            'Thyme (Fresh)' => 3.0,
+            'Water (Filtered)' => 350.0,
+            'White Onion' => 75.0,
         ],
-        'highlight' => 'A rich creamy plant-based umami soup combining sautéed wild mushrooms and garlic blended with coconut cream',
-        'short_description' => 'A rich creamy plant-based umami soup combining sautéed wild mushrooms and garlic blended with coconut cream',
-        'instructions' => '1. Sauté onion and mushrooms in oil until browned (8 min).
-2. Add garlic, thyme, and turmeric. Cook 1 minute.
-3. Pour in stock and coconut milk. Simmer 15 minutes.
-4. Blend partially for a creamy texture, or leave chunky.
-5. Whisk in psyllium husks (1 tablespoon / 15 g per serving). Reheat gently and portion.',
+        'highlight' => 'Deeply browned mushroom soup prepared as a 1 L batch with bone broth, then portioned into 500 ml cups (2 servings).',
+        'short_description' => 'Deeply browned mushroom soup prepared as a 1 L batch with bone broth, then portioned into 500 ml cups (2 servings).',
+        'instructions' => '1. Brown the aromatics & mushrooms: Heat 10g olive oil in a pot over medium-high heat. Add 75g diced onion and sauté for 3 minutes until translucent. Add 600g sliced mushrooms and cook for 8–10 minutes, letting them release their liquid and brown deeply.
+2. Add herbs & garlic: Stir in 8g minced garlic and 3g fresh thyme (plus a pinch of turmeric if using). Sauté for 60 seconds until fragrant.
+3. Simmer: Pour in 250g bone broth and 350g filtered water. Bring to a gentle boil, then lower the heat and simmer for 12–15 minutes to marry the flavors.
+4. Blend for natural creaminess: Transfer half (or all, if you prefer smooth soup) to a blender, or use an immersion blender directly in the pot. Pureeing cooked mushrooms creates a velvety texture without needing heavy starches.
+5. Thicken & season (optional): If you prefer an extra-thick body, slowly whisk in 5g of psyllium husk over low heat and let it rest for 2 minutes to hydrate. Season with sea salt and cracked black pepper to taste.
+6. Portion: This is a 1 L batch. Fill two 500 ml cups (one cup is one serving) and serve hot.',
         'diet_tags' => [
-            0 => 'Vegan',
-            1 => 'Dairy-free',
-            2 => 'Gluten-free',
+            0 => 'Dairy-free',
+            1 => 'Gluten-free',
         ],
     ],
     'Vegan Smoky Cauliflower & Lentil Stew w Quinoa Bread & Tahini' => [

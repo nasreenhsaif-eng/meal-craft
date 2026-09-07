@@ -118,13 +118,21 @@ return [
     */
     'excluded_classic_meal_names' => [
         'Blueberry Walnut Chia Pudding',
+        'Cacao & Almond Chia',
+        'Carrot Cumin Soup',
+        'Chia Pudding Smoothie',
         'Grilled Mackerel w Lemon Herb Quinoa',
         'High Protein Miso Crunch Salad',
+        'Mango Pumpkin Seed Chia Pudding',
+        'Peach Pecan Chia Pudding',
+        'Raspberry Cacao Chia Pudding',
         'Salmon Plate',
         'Salmon Plate B',
         'Salmon Quinoa Bowl',
         'Shaved Fennel Rocca Salad',
         'Spiced Crunch Chia Pudding',
+        'Strawberry Almond Chia Pudding',
+        'Sweet Potato Fennel Soup',
         'Vegan Curry Lentil Salad',
     ],
 

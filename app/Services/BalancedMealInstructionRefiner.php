@@ -615,11 +615,12 @@ final class BalancedMealInstructionRefiner
 
             // Soups — all batch recipes; whisk in 1 tbsp (15 g) psyllium husks per serving before portioning.
             'Vegan Mushroom Soup' => $this->steps([
-                'Sauté onion and mushrooms in oil until browned (8 min).',
-                'Add garlic, thyme, and turmeric. Cook 1 minute.',
-                'Pour in stock and coconut milk. Simmer 15 minutes.',
-                'Blend partially for a creamy texture, or leave chunky.',
-                'Whisk in psyllium husks (1 tablespoon / 15 g per serving). Reheat gently and portion.',
+                'Brown the aromatics & mushrooms: Heat 10g olive oil in a pot over medium-high heat. Add 75g diced onion and sauté for 3 minutes until translucent. Add 600g sliced mushrooms and cook for 8–10 minutes, letting them release their liquid and brown deeply.',
+                'Add herbs & garlic: Stir in 8g minced garlic and 3g fresh thyme (plus a pinch of turmeric if using). Sauté for 60 seconds until fragrant.',
+                'Simmer: Pour in 250g bone broth and 350g filtered water. Bring to a gentle boil, then lower the heat and simmer for 12–15 minutes to marry the flavors.',
+                'Blend for natural creaminess: Transfer half (or all, if you prefer smooth soup) to a blender, or use an immersion blender directly in the pot. Pureeing cooked mushrooms creates a velvety texture without needing heavy starches.',
+                'Thicken & season (optional): If you prefer an extra-thick body, slowly whisk in 5g of psyllium husk over low heat and let it rest for 2 minutes to hydrate. Season with sea salt and cracked black pepper to taste.',
+                'Portion: This is a 1 L batch. Fill two 500 ml cups (one cup is one serving) and serve hot.',
             ]),
             'Butternut Squash Soup' => $this->steps([
                 'Sauté onion in oil until soft.',
@@ -634,17 +635,18 @@ final class BalancedMealInstructionRefiner
                 'Whisk in psyllium husks (1 tablespoon / 15 g per serving). Reheat and portion with extra basil on top.',
             ]),
             'Red Lentil Turmeric Soup' => $this->steps([
-                'Rinse red lentils.',
-                'Sauté onion, garlic, ginger, and spices for 2 minutes.',
-                'Add lentils, carrots, broth, and water. Simmer 25 minutes.',
-                'Stir in spinach until wilted. Finish with lemon juice.',
-                'Whisk in psyllium husks (1 tablespoon / 15 g per serving) and portion.',
+                'Sauté aromatics: In a large 7–8 liter stockpot, heat 15g olive oil over medium heat. Add 250g diced onion and cook for 4–5 minutes until translucent. Stir in 30g minced garlic, 25g grated ginger, 8g ground cumin, 15g turmeric, and 2g black pepper. Sauté for 60 seconds until fragrant.',
+                'Simmer: Add 250g rinsed red lentils, 600g diced carrots, 500g vegetable broth, and 3800g filtered water. Bring to a boil, then reduce heat to low, cover loosely, and simmer for 20 minutes until the lentils melt and the carrots are completely soft.',
+                'Blend for creaminess: Use an immersion blender directly in the pot to blend half or two-thirds of the soup for a rich, naturally creamy texture.',
+                'Finish: Stir in 300g chopped fresh spinach and cook for 2 minutes until wilted. Turn off the heat, stir in 60g lemon juice, and season with sea salt to taste.',
+                'Portion: Confirm total batch volume is at 5 liters (top off with a little hot water if needed), stir thoroughly, and ladle into ten 500 ml cups. One cup is one serving.',
             ]),
             'Cauliflower Ginger Soup' => $this->steps([
-                'Sauté onion and ginger in oil for 3 minutes.',
-                'Add cauliflower and stock. Simmer until very soft (18 min).',
-                'Blend with coconut milk until smooth.',
-                'Whisk in psyllium husks (1 tablespoon / 15 g per serving). Reheat and portion.',
+                'Sauté the aromatics: Heat 25g olive oil in a large 7–8 liter stockpot over medium heat. Add 350g diced onion and cook for 4–5 minutes until soft and translucent. Add 35g grated ginger, 35g minced garlic, 12g turmeric, and 3g black pepper. Stir constantly for 60 seconds until fragrant.',
+                'Simmer the cauliflower: Add 2200g cauliflower florets, 20g vegetable broth base, and 3200g filtered water. Bring to a boil, then lower the heat to medium-low, cover loosely, and simmer for 18–20 minutes until the cauliflower is completely tender.',
+                'Blend silky smooth: Remove from heat and pour in 450g homemade coconut milk. Puree with an immersion blender until completely smooth, creamy, and velvety.',
+                'Calibrate & season: Check the total volume; top off with a small splash of hot water if needed to reach exactly 5 liters. Stir in sea salt and 25g fresh lemon juice to taste.',
+                'Portion: Ladle into ten 500 ml cups. One cup is one serving.',
             ]),
             'Carrot Cumin Soup' => $this->steps([
                 'Toast cumin seeds in a dry pan for 30 seconds.',
@@ -654,11 +656,11 @@ final class BalancedMealInstructionRefiner
                 'Whisk in psyllium husks (1 tablespoon / 15 g per serving) and portion.',
             ]),
             'Lentil Carrot Soup' => $this->steps([
-                'Toast cumin seeds in a dry pan for 30 seconds.',
-                'Sauté onion, garlic, and carrots in oil for 5 minutes.',
-                'Add lentils, stock, and spices. Simmer until carrots and lentils are soft.',
-                'Blend partially or fully. Finish with parsley and lemon.',
-                'Whisk in psyllium husks (1 tablespoon / 15 g per serving) and portion.',
+                'Toast spices: In a large 7–8 liter stockpot, toast 10g crushed cumin seeds and 8g crushed coriander over medium heat for 45–60 seconds until fragrant.',
+                'Sauté aromatics: Add 15g olive oil, 350g diced onion, and 1200g diced carrots. Cook for 5–6 minutes until the onion softens. Stir in 30g minced garlic and cook for 1 minute.',
+                'Simmer: Add 220g rinsed French lentils, 500g vegetable broth, and 3600g filtered water. Bring to a boil, then lower the heat to medium-low. Cover loosely and simmer for 30 minutes until both the lentils and carrots are completely tender.',
+                'Blend for body: Immersion-blend roughly half of the pot until smooth so broken-down carrots and lentils thicken the broth while preserving whole lentils for texture.',
+                'Finish & portion: Stir in 60g lemon juice, 40g chopped parsley, sea salt, and black pepper. Top off with a splash of hot water to hit exactly 5 liters, then portion into ten 500 ml cups. One cup is one serving.',
             ]),
             'Sweet Potato Fennel Soup' => $this->steps([
                 'Sauté fennel and onion in oil until softened.',
@@ -667,9 +669,10 @@ final class BalancedMealInstructionRefiner
                 'Whisk in psyllium husks (1 tablespoon / 15 g per serving). Reheat and portion.',
             ]),
             'Miso Mushroom Soup' => $this->steps([
-                'Simmer mushrooms in water with ginger until tender.',
-                'Remove from heat. Whisk miso paste into the broth until smooth (do not boil miso).',
-                'Whisk in psyllium husks (1 tablespoon / 15 g per serving). Top with spring onion and portion.',
+                'Simmer the aromatics & mushrooms: In a large pot, add 2000g water, 15g sliced ginger, the white parts of the spring onions, and 700g sliced mushrooms. Bring to a boil, then lower the heat to a gentle simmer for 12–15 minutes until the mushrooms are completely tender and have infused the broth.',
+                'Whisk the miso: Turn off the heat completely. Ladle about 1 cup of hot broth into a small bowl, add 100g miso paste, and whisk until entirely dissolved with no lumps. Pour back into the pot and stir. Never boil miso directly.',
+                'Optional light thickening: If you want a slightly richer mouthfeel, vigorously whisk in 8g of psyllium husk (about 2 teaspoons for the entire pot) right after adding the miso, and let it sit off heat for 2 minutes.',
+                'Portion & serve: This is a 2 L batch. Ladle into four 500 ml cups (one cup is one serving) and top generously with the sliced green spring onion tops.',
             ]),
             'Miso Carrot Ginger Soup' => $this->steps([
                 'Heat olive oil over medium-high heat in a soup pot. Sauté onion, garlic, and carrot until the onion is translucent, about 10 minutes.',
@@ -680,9 +683,9 @@ final class BalancedMealInstructionRefiner
                 'Serve hot. Garnish each bowl with spring onion, roasted nori, Shichimi Togarashi (Base), and a drizzle of sesame oil.',
             ]),
             BalancedMealLibraryConfigurator::BONE_BROTH_MEAL_NAME => $this->steps([
-                'Heat the full batch of defatted Bone Broth (Base) gently (do not boil hard).',
-                'Whisk psyllium husks into the batch (1 tablespoon / 15 g per serving).',
-                'Portion 500 ml per cup and serve hot.',
+                'Prepare Bone Broth (Base) per base recipe instructions (roast, long simmer, strain, calibrate to 10 L, and fully defat).',
+                'Gently warm the gelatinized broth only until liquefied.',
+                'Ladle into 20 containers at 500 ml each. One cup is one serving. Freeze or refrigerate.',
             ]),
 
             'Pesto Chicken Koosa Noodles' => $this->steps([
