@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\MealPlanSlotType;
 use App\Http\Controllers\Admin\MealLibraryController;
 use App\Models\CustomerProfile;
 use App\Models\Meal;
@@ -10,6 +11,11 @@ use App\Models\MealPlanDayMeal;
 use App\Models\User;
 use App\Services\Nutrition\AdaptedMenuFixedPortionResolver;
 use App\Services\Nutrition\FullCraftDayMenuBuilder;
+use App\Support\ChiaDessertMeals;
+use App\Support\CraftLibraryTierMap;
+use App\Support\NutrientDenseBreakfastOptions;
+use App\Support\PrimaryFullCraftMainSlots;
+use App\Support\ScheduledTiersMealResolver;
 use Illuminate\Support\Collection;
 
 final class MealPlanLibraryTierPreview
@@ -20,6 +26,100 @@ final class MealPlanLibraryTierPreview
     public function __construct(
         private MealLibraryController $mealLibrary,
     ) {}
+
+    /**
+     * Structured plan days with authored calorie tabs attached — no scaling.
+     *
+     * @return list<array{
+     *     dayNumber: int,
+     *     label: string,
+     *     categories: array<string, list<array<string, mixed>>>,
+     *     reconciliationWarnings: list<string>
+     * }>
+     */
+    public function catalogDays(MealPlan $mealPlan): array
+    {
+        $mealPlan->loadMissing([
+            'dayMeals' => static function ($query): void {
+                $query->where('is_option_b', false)
+                    ->orderBy('day_number')
+                    ->orderBy('slot_type')
+                    ->orderBy('slot_index');
+            },
+            'dayMeals.meal.ingredients',
+            'dayMeals.meal.calorieTiers.ingredients',
+        ]);
+
+        $dayCount = max(1, $mealPlan->structuredPlanningDayCount());
+        $categoryKeys = ['breakfasts', 'meals', 'sideSalads', 'desserts', 'soup'];
+        $isNutrientDensePlan = $mealPlan->usesNutrientDenseProtocol();
+        $storedDefaults = MealPlanDefaultDaySelections::forPlan($mealPlan);
+        $hasStoredDefaults = $storedDefaults !== [];
+
+        /** @var array<int, array{dayNumber: int, label: string, categories: array<string, list<array<string, mixed>>>, reconciliationWarnings: list<string>}> $daysByNumber */
+        $daysByNumber = [];
+        for ($dayNumber = 1; $dayNumber <= $dayCount; $dayNumber++) {
+            $daysByNumber[$dayNumber] = [
+                'dayNumber' => $dayNumber,
+                'label' => self::WEEKDAY_LABELS[$dayNumber - 1] ?? __('Day :number', ['number' => $dayNumber]),
+                'categories' => array_fill_keys($categoryKeys, []),
+                'reconciliationWarnings' => [],
+            ];
+        }
+
+        foreach ($mealPlan->dayMeals as $dayMeal) {
+            if (! $dayMeal instanceof MealPlanDayMeal || $dayMeal->meal === null) {
+                continue;
+            }
+
+            $dayNumber = (int) $dayMeal->day_number;
+            if (! isset($daysByNumber[$dayNumber])) {
+                continue;
+            }
+
+            $slotType = $dayMeal->slot_type instanceof MealPlanSlotType
+                ? $dayMeal->slot_type
+                : MealPlanSlotType::tryFrom((string) $dayMeal->slot_type);
+
+            if (! $slotType instanceof MealPlanSlotType) {
+                continue;
+            }
+
+            $categoryKey = $this->slotTypeToCategoryKey($slotType);
+            $presentedMeal = ScheduledTiersMealResolver::forMeal($dayMeal->meal);
+            $row = $this->mealLibrary->presentMealRowForUi($presentedMeal);
+            $row['calorieTiers'] = $this->mealLibrary->compactCalorieTiersForPlanPreview($presentedMeal);
+            $slotIndex = (int) $dayMeal->slot_index;
+
+            if (
+                $isNutrientDensePlan
+                && $categoryKey === 'desserts'
+                && ($slotIndex === 3 || ChiaDessertMeals::isChiaDessert($dayMeal->meal))
+            ) {
+                $categoryKey = 'breakfasts';
+                $slotIndex = NutrientDenseBreakfastOptions::CHIA_SLOT_INDEX;
+            }
+
+            $row['plan_slot_index'] = $slotIndex;
+
+            if ($hasStoredDefaults) {
+                $storedIds = $storedDefaults[$dayNumber][$categoryKey] ?? [];
+                $row['isRecommended'] = in_array((int) $presentedMeal->id, $storedIds, true)
+                    || in_array((int) $dayMeal->meal_id, $storedIds, true);
+            } elseif ($categoryKey === 'meals') {
+                $primarySlots = $isNutrientDensePlan
+                    ? PrimaryFullCraftMainSlots::NUTRIENT_DENSE
+                    : PrimaryFullCraftMainSlots::BALANCED;
+                $row['isRecommended'] = in_array($slotIndex, $primarySlots, true);
+            } else {
+                $row['isRecommended'] = $slotIndex === 1;
+            }
+
+            $daysByNumber[$dayNumber]['categories'][$categoryKey][] = $row;
+        }
+
+        return array_values($daysByNumber);
+    }
 
     /**
      * @param  array<int, array<string, list<int|string>>>  $daySelectionsByDay  dayNumber => categoryKey => meal ids
@@ -36,6 +136,12 @@ final class MealPlanLibraryTierPreview
         User $user,
         array $daySelectionsByDay = [],
     ): array {
+        $days = $this->catalogDays($mealPlan);
+
+        if ($this->catalogUsesLibraryTabs($days)) {
+            return $this->overlayLibraryTabs($days, $planTier);
+        }
+
         $mealPlan->loadMissing([
             'dayMeals' => static function ($query): void {
                 $query->where('is_option_b', false)
@@ -44,6 +150,7 @@ final class MealPlanLibraryTierPreview
                     ->orderBy('slot_index');
             },
             'dayMeals.meal.ingredients',
+            'dayMeals.meal.calorieTiers.ingredients',
         ]);
 
         $profile = $this->previewProfileForTier($mealPlan, $planTier, $user);
@@ -80,7 +187,6 @@ final class MealPlanLibraryTierPreview
             $adaptedSelection = $this->translateSelectionToAdaptedIds($daySelection, $uiMealMaps);
             $buildOptions = $this->buildOptionsForDay($planTier, $dayNumber, $adaptedSelection, $profile, $mealsById);
             $resolvedMealsById = $uiMealMaps['resolved'];
-            $scheduledMealsByAdaptedId = $uiMealMaps['scheduled'];
 
             $built = FullCraftDayMenuBuilder::buildPreviewDayFromRows(
                 $profile,
@@ -112,13 +218,12 @@ final class MealPlanLibraryTierPreview
 
                     $mealId = (int) ($adapted['id'] ?? 0);
                     $resolvedMeal = $resolvedMealsById[$mealId] ?? $mealsById[$mealId] ?? Meal::query()->with('ingredients')->find($mealId);
-                    $scheduledMeal = $scheduledMealsByAdaptedId[$mealId] ?? $mealsById[$mealId] ?? $resolvedMeal;
 
-                    if (! $resolvedMeal instanceof Meal || ! $scheduledMeal instanceof Meal) {
+                    if (! $resolvedMeal instanceof Meal) {
                         continue;
                     }
 
-                    $baseRow = $this->mealLibrary->presentMealRowForUi($scheduledMeal);
+                    $baseRow = $this->mealLibrary->presentMealRowForUi($resolvedMeal);
                     $categories[$categoryKey][] = $this->mealLibrary->applyAdaptedToMealRow(
                         $baseRow,
                         $adapted,
@@ -271,5 +376,124 @@ final class MealPlanLibraryTierPreview
         ]);
 
         return $profile;
+    }
+
+    /**
+     * @param  list<array{categories: array<string, list<array<string, mixed>>>}>  $days
+     */
+    private function catalogUsesLibraryTabs(array $days): bool
+    {
+        foreach ($days as $day) {
+            foreach (['breakfasts', 'meals'] as $categoryKey) {
+                foreach ($day['categories'][$categoryKey] ?? [] as $meal) {
+                    if (is_array($meal['calorieTiers'] ?? null) && $meal['calorieTiers'] !== []) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @param  list<array{dayNumber: int, label: string, categories: array<string, list<array<string, mixed>>>, reconciliationWarnings?: list<string>}>  $days
+     * @return list<array{dayNumber: int, label: string, categories: array<string, list<array<string, mixed>>>, reconciliationWarnings: list<string>}>
+     */
+    private function overlayLibraryTabs(array $days, int $planTier): array
+    {
+        $map = CraftLibraryTierMap::row(CraftLibraryTierMap::DEFAULT_CRAFT, $planTier);
+
+        foreach ($days as $index => $day) {
+            $categories = $day['categories'] ?? [];
+            $categories['breakfasts'] = $this->overlayCategoryMeals($categories['breakfasts'] ?? [], $map['breakfast']);
+            $categories['meals'] = $this->overlayCategoryMeals($categories['meals'] ?? [], $map['main_each']);
+
+            if (! $map['include_side_salad']) {
+                $categories['sideSalads'] = [];
+            }
+
+            if (! $map['include_dessert']) {
+                $categories['desserts'] = [];
+            }
+
+            if (! $map['include_soup']) {
+                $categories['soup'] = [];
+            }
+
+            if ($map['breakfast'] <= 0) {
+                $categories['breakfasts'] = [];
+            }
+
+            $days[$index]['categories'] = $categories;
+            $days[$index]['reconciliationWarnings'] = [];
+        }
+
+        return $days;
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $meals
+     * @return list<array<string, mixed>>
+     */
+    private function overlayCategoryMeals(array $meals, int $tab): array
+    {
+        if ($tab <= 0) {
+            return $meals;
+        }
+
+        return array_map(fn (array $meal): array => $this->overlayMealRowFromTabs($meal, $tab), $meals);
+    }
+
+    /**
+     * @param  array<string, mixed>  $row
+     * @return array<string, mixed>
+     */
+    private function overlayMealRowFromTabs(array $row, int $tab): array
+    {
+        $tiers = is_array($row['calorieTiers'] ?? null) ? $row['calorieTiers'] : [];
+
+        foreach ($tiers as $tier) {
+            if (! is_array($tier) || (int) ($tier['calorie_tier'] ?? 0) !== $tab) {
+                continue;
+            }
+
+            /** @var array{calories: int, protein: float, carbs: float, fat: float} $macros */
+            $macros = is_array($tier['macros'] ?? null) ? $tier['macros'] : ($row['macros'] ?? []);
+            $row['macros'] = $macros;
+            $row['caloriesNumber'] = $macros['calories'] ?? null;
+            $row['isScaled'] = false;
+            $row['libraryCalorieTier'] = $tab;
+            $row['kitchenIngredientRows'] = $tier['kitchenIngredientRows'] ?? [];
+
+            if (isset($row['detailView']) && is_array($row['detailView'])) {
+                $row['detailView']['macros'] = $macros;
+
+                if (is_array($tier['nutrition'] ?? null)) {
+                    $row['detailView']['nutrition'] = $tier['nutrition'];
+                }
+
+                if (is_array($tier['nutritionalData'] ?? null)) {
+                    $row['detailView']['nutritionalData'] = $tier['nutritionalData'];
+                }
+            }
+
+            return $row;
+        }
+
+        $row['isScaled'] = false;
+
+        return $row;
+    }
+
+    private function slotTypeToCategoryKey(MealPlanSlotType $slotType): string
+    {
+        return match ($slotType) {
+            MealPlanSlotType::Breakfast => 'breakfasts',
+            MealPlanSlotType::Main => 'meals',
+            MealPlanSlotType::Salad => 'sideSalads',
+            MealPlanSlotType::Dessert => 'desserts',
+            MealPlanSlotType::Soup => 'soup',
+        };
     }
 }

@@ -194,6 +194,16 @@ class Meal extends Model
             ->orderBy('id');
     }
 
+    /**
+     * Tiers-library rows for weekly schedules, including meals hidden from the admin browse list.
+     *
+     * @return Builder<Meal>
+     */
+    public static function queryScheduledTiersMeals(): Builder
+    {
+        return static::query()->where('library_key', MealLibraryKey::Tiers);
+    }
+
     public static function nextTiersLibrarySortOrder(): int
     {
         $max = static::queryForMealTiersLibrary()->max('library_sort_order');
@@ -299,6 +309,11 @@ class Meal extends Model
     public function calorieTiers(): HasMany
     {
         return $this->hasMany(MealCalorieTier::class)->orderBy('calorie_tier');
+    }
+
+    public function isTiersLibrary(): bool
+    {
+        return $this->library_key === MealLibraryKey::Tiers;
     }
 
     public function derivedLibraryIngredient(): HasOne

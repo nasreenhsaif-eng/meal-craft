@@ -11,6 +11,7 @@ use App\Http\Requests\ReorderMealsFromLibraryRequest;
 use App\Http\Requests\StoreMealFromLibraryRequest;
 use App\Models\Ingredient;
 use App\Models\Meal;
+use App\Models\MealCalorieTier;
 use App\Models\MealCsvImportPendingRow;
 use App\Models\User;
 use App\Services\BaseIngredientService;
@@ -36,6 +37,7 @@ use App\Support\MealLibraryBulkNutrition;
 use App\Support\MealLibraryEditGuard;
 use App\Support\MealLibraryTaxonomy;
 use App\Support\MealTiersLibraryBrowseTab;
+use App\Support\MealTiersLibraryPresentation;
 use App\Support\RawPrepIngredientPresentation;
 use App\Support\SaladMealPresentation;
 use App\Support\SickleCellNutrientRdi;
@@ -794,6 +796,89 @@ class MealLibraryController extends Controller
         }
 
         return $this->toMealRow($meal);
+    }
+
+    /**
+     * Authored Meal Tiers Library tabs for plan preview — lookup only, no scaling.
+     *
+     * @return list<array{
+     *     calorie_tier: int,
+     *     macros: array{calories: int, protein: float, carbs: float, fat: float},
+     *     nutrition: array<string, float>,
+     *     nutritionalData: array<string, mixed>,
+     *     kitchenIngredientRows: list<array{ingredientId: int, selectedName: string, nameQuery: string, amount: string, unit: string}>
+     * }>
+     */
+    public function compactCalorieTiersForPlanPreview(Meal $meal): array
+    {
+        $meal->loadMissing('calorieTiers.ingredients');
+
+        $tiers = [];
+
+        foreach ($meal->calorieTiers as $tier) {
+            if (! $tier instanceof MealCalorieTier) {
+                continue;
+            }
+
+            $nutrition = is_array($tier->nutrition) && $tier->nutrition !== []
+                ? $tier->nutrition
+                : [
+                    'calories' => $tier->total_calories,
+                    'protein' => $tier->total_protein,
+                    'carbs' => $tier->total_carbs,
+                    'fat' => $tier->total_fat,
+                ];
+
+            /** @var array<string, float> $nutritionFloats */
+            $nutritionFloats = [];
+            foreach ($nutrition as $key => $value) {
+                if (is_numeric($value)) {
+                    $nutritionFloats[(string) $key] = (float) $value;
+                }
+            }
+
+            $tiers[] = [
+                'calorie_tier' => (int) $tier->calorie_tier,
+                'macros' => [
+                    'calories' => (int) round((float) ($nutritionFloats['calories'] ?? 0)),
+                    'protein' => round((float) ($nutritionFloats['protein'] ?? 0), 1),
+                    'carbs' => round((float) ($nutritionFloats['carbs'] ?? 0), 1),
+                    'fat' => round((float) ($nutritionFloats['fat'] ?? 0), 1),
+                ],
+                'nutrition' => $nutritionFloats,
+                'nutritionalData' => MealTiersLibraryPresentation::nutritionalData($nutritionFloats),
+                'kitchenIngredientRows' => $this->kitchenIngredientRowsFromTier($tier),
+            ];
+        }
+
+        return $tiers;
+    }
+
+    /**
+     * @return list<array{ingredientId: int, selectedName: string, nameQuery: string, amount: string, unit: string}>
+     */
+    public function kitchenIngredientRowsFromTier(MealCalorieTier $tier): array
+    {
+        $rows = [];
+
+        foreach ($tier->ingredients as $ingredient) {
+            $name = trim((string) $ingredient->name);
+            $grams = (float) ($ingredient->pivot->amount_grams ?? 0);
+
+            if ($name === '' || $grams <= 0) {
+                continue;
+            }
+
+            $rows[] = [
+                'ingredientId' => (int) $ingredient->id,
+                'selectedName' => $name,
+                'nameQuery' => $name,
+                'amount' => (string) (round($grams * 10000) / 10000),
+                'unit' => 'g',
+            ];
+        }
+
+        return $rows;
     }
 
     /**

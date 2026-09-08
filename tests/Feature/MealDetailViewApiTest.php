@@ -132,7 +132,7 @@ test('meal detail view api returns persisted instructions and ingredients', func
 test('meal detail view api scales ingredient amounts for customer plan and craft', function () {
     $user = User::factory()->customer()->create();
     CustomerProfile::factory()->for($user)->create([
-        'daily_calorie_target' => 1200,
+        'daily_calorie_target' => 1250,
         'protein_percentage' => 30,
         'carb_percentage' => 40,
         'fat_percentage' => 30,
@@ -215,7 +215,7 @@ test('meal detail view api matches scheduled savory breakfast calories for full 
     $scheduled = ProductionWeeklyMenuSchedule::scheduledFullCraftByWeekday(
         AdminConsultationPreviewProfile::resolve($user),
         null,
-        ['plan_tier' => 1000, 'craft_key' => CraftCaloriePlanner::CRAFT_FULL],
+        ['plan_tier' => 1250, 'craft_key' => CraftCaloriePlanner::CRAFT_FULL],
     );
 
     $expectedCalories = null;
@@ -235,7 +235,7 @@ test('meal detail view api matches scheduled savory breakfast calories for full 
     $this->actingAs($user)
         ->getJson(route('api.meals.detail-view', $meal).'?'.http_build_query([
             'craft_key' => CraftCaloriePlanner::CRAFT_FULL,
-            'plan_tier' => 1000,
+            'plan_tier' => 1250,
             'day_of_week' => 1,
         ]))
         ->assertOk()

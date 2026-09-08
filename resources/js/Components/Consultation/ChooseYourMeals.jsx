@@ -1785,8 +1785,7 @@ export default function ChooseYourMeals({
     const craftingSubtitle = `CRAFTING YOUR ${String(dayName).trim().toUpperCase()}`;
     /** Daily option decks stay interactive whenever the parent wires selection (hides CRAFT THIS MEAL only in true read-only review). */
     const categoryPickEnabled = typeof onToggleCategory === 'function' && !categoriesReadOnly;
-    const useProtocolSelectedLayout =
-        layout === 'categories' && (protocolSelectedLayout || dietProtocol === 'nutrient_dense');
+    const useProtocolSelectedLayout = Boolean(protocolSelectedLayout) || layout === 'categories';
 
     const [validationFlashKeys, setValidationFlashKeys] = useState(/** @type {(SelectionCategoryKey | 'fixedChoice')[]} */ ([]));
     const [incompleteWarning, setIncompleteWarning] = useState(/** @type {string | null} */ (null));

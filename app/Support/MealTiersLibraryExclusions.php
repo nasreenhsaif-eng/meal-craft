@@ -46,4 +46,30 @@ final class MealTiersLibraryExclusions
 
         return in_array($name, self::names(), true);
     }
+
+    public static function weeklyProtocolReplacement(Meal|string $meal): ?string
+    {
+        $name = $meal instanceof Meal ? trim((string) $meal->name) : trim($meal);
+
+        if ($name === '') {
+            return null;
+        }
+
+        /** @var array<string, mixed>|mixed $replacements */
+        $replacements = config('meal_tiers_library.weekly_protocol_replacements', []);
+
+        if (! is_array($replacements)) {
+            return null;
+        }
+
+        $replacement = $replacements[$name] ?? null;
+
+        if (! is_string($replacement)) {
+            return null;
+        }
+
+        $trimmed = trim($replacement);
+
+        return $trimmed !== '' ? $trimmed : null;
+    }
 }

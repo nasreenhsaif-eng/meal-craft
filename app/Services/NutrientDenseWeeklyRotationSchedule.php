@@ -27,9 +27,9 @@ final class NutrientDenseWeeklyRotationSchedule
         'Miso Mushroom Soup',
         'Red Lentil Turmeric Soup',
         'Miso Carrot Ginger Soup',
-        'Sweet Potato Fennel Soup',
+        'Butternut Squash Soup',
         'Miso Mushroom Soup',
-        'Carrot Cumin Soup',
+        'Lentil Carrot Soup',
         'Miso Carrot Ginger Soup',
     ];
 
@@ -150,7 +150,7 @@ final class NutrientDenseWeeklyRotationSchedule
         'Kimchi Purslane Side Salad',
         'Tahini Purslane Pepper Salad',
         'Sauerkraut & Rocca Salad',
-        'Shaved Fennel Rocca Salad',
+        'Coconut Grapefruit Salad',
         'Citrus Beet Arugula Salad',
         'Marinated Pineapple, Peppers, Red Onion & Cilantro Side Salad',
         'Roasted Eggplant Rocca Salad',
@@ -162,7 +162,7 @@ final class NutrientDenseWeeklyRotationSchedule
         'Vegan Smoky Cauliflower & Lentil Stew w Quinoa Bread & Tahini',
         'Vegan Sri Lankan Red Lentil Dal w Quinoa Bread',
         'Vegan Harissa Roasted Cauliflower & Chickpea Salad w Tahini Dressing',
-        'Vegan Curry Lentil Salad',
+        'Baked Eggplant Lentils Hummus',
         'Spiced Cauliflower Chickpea Salad',
         'Vegan Mushroom Bowl',
     ];

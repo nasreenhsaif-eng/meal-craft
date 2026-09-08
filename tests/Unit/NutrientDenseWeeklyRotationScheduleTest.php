@@ -3,6 +3,7 @@
 use App\Enums\MealPlanSlotType;
 use App\Services\NutrientDenseFermentedRecipeRefiner;
 use App\Services\NutrientDenseWeeklyRotationSchedule;
+use App\Support\MealTiersLibraryExclusions;
 
 test('nutrient dense rotation assigns fish daily on main slot 3', function (): void {
     foreach (range(1, 7) as $day) {
@@ -140,5 +141,16 @@ test('micro-dense side salads rotate daily without repeating within the week', f
     expect($salads)->toHaveCount(7)
         ->and(array_unique($salads))->toHaveCount(7)
         ->and($salads[0])->toBe('Kimchi Purslane Side Salad')
-        ->and($salads[1])->toBe('Tahini Purslane Pepper Salad');
+        ->and($salads[1])->toBe('Tahini Purslane Pepper Salad')
+        ->and($salads[3])->toBe('Coconut Grapefruit Salad');
+});
+
+test('nutrient dense rotation does not schedule meals excluded from the Meal Tiers Library', function (): void {
+    foreach (range(1, 7) as $day) {
+        foreach (MealPlanSlotType::daySlotTemplate() as [$slotType, $slotIndex]) {
+            $name = NutrientDenseWeeklyRotationSchedule::mealNameForDay($day, $slotType, $slotIndex);
+
+            expect(MealTiersLibraryExclusions::isExcluded($name))->toBeFalse();
+        }
+    }
 });

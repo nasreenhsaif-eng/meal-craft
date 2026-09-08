@@ -136,4 +136,20 @@ return [
         'Vegan Curry Lentil Salad',
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Weekly protocol fallbacks when an excluded classic is still stored
+    |--------------------------------------------------------------------------
+    |
+    | Slot resync prefers the current rotation name. These names cover leftover
+    | day_meals that still point at a deleted Meal Tiers Library row.
+    |
+    */
+    'weekly_protocol_replacements' => [
+        'Shaved Fennel Rocca Salad' => 'Coconut Grapefruit Salad',
+        'Vegan Curry Lentil Salad' => 'Baked Eggplant Lentils Hummus',
+        'Carrot Cumin Soup' => 'Lentil Carrot Soup',
+        'Sweet Potato Fennel Soup' => 'Butternut Squash Soup',
+    ],
+
 ];

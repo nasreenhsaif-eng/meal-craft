@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\MealLibraryKey;
 use App\Enums\MealPlanSchemaType;
 use App\Enums\MealPlanSlotType;
 use App\Enums\MealType;
@@ -77,6 +78,32 @@ test('nutrient dense weekly plan builder creates seven day rotating menus with f
 
     expect($dayOneBreakfast)->toBe('Mediterranean Omelet')
         ->and($dayOneBeef)->toBe('Grilled Beef Steak Ratatouille & Saffron rice');
+});
+
+test('nutrient dense weekly plan prefers meal tiers library copies by name', function (): void {
+    seedNutrientDenseWeeklyPlanDeck();
+
+    $classic = Meal::queryForMealLibrary()->where('name', 'Mediterranean Omelet')->firstOrFail();
+    $tiersCopy = Meal::factory()->tiers()->create([
+        'name' => 'Mediterranean Omelet',
+        'category' => RecipeCategory::Breakfast,
+        'meal_type' => MealType::Breakfast,
+        'total_calories' => 300,
+        'library_sort_order' => 1,
+    ]);
+
+    $result = app(NutrientDenseWeeklyMealPlanBuilder::class)->build(refineRecipes: false);
+
+    $scheduledBreakfast = $result['plan']->dayMeals()
+        ->where('day_number', 1)
+        ->where('slot_type', MealPlanSlotType::Breakfast->value)
+        ->where('slot_index', 1)
+        ->where('is_option_b', false)
+        ->first();
+
+    expect($scheduledBreakfast?->meal_id)->toBe($tiersCopy->id)
+        ->and($scheduledBreakfast?->meal?->library_key)->toBe(MealLibraryKey::Tiers)
+        ->and($classic->id)->not->toBe($tiersCopy->id);
 });
 
 test('nutrient dense weekly plan stores 32/28/40 macro targets at reference tier', function (): void {

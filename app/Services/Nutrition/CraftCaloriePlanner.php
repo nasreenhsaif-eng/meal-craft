@@ -2,10 +2,11 @@
 
 namespace App\Services\Nutrition;
 
+use App\Support\CraftLibraryTierMap;
 use InvalidArgumentException;
 
 /**
- * Maps each consultation craft to a day calorie budget and per-slot scaling targets.
+ * Maps each consultation craft to a day calorie budget and Meal Tiers Library plate tabs.
  */
 final class CraftCaloriePlanner
 {
@@ -43,61 +44,32 @@ final class CraftCaloriePlanner
             throw new InvalidArgumentException("Unknown craft key [{$craftKey}].");
         }
 
-        $tier = (float) ($basePlan['plan_tier'] ?? 0);
-        $breakfast = (float) ($basePlan['scalable_slot_targets']['breakfast']['calories'] ?? 0);
-        $mainEach = (float) ($basePlan['scalable_slot_targets']['main_each']['calories'] ?? 0);
-        $fixedChoiceTotal = UserPlanCalculator::coreFixedPortionCaloriesTotal();
-        $businessConfig = UserPlanCalculator::businessCraftConfig();
+        $incomingTier = (float) ($basePlan['plan_tier'] ?? 0);
+        $craftTotal = CraftLibraryTierMap::snapToCraftTotal($incomingTier, $craftKey);
+        $row = CraftLibraryTierMap::row($craftKey, $craftTotal);
 
         $macroPct = self::resolveMacroPercentages($basePlan);
+        $breakfastCalories = (float) $row['breakfast'];
+        $mainEachCalories = (float) $row['main_each'];
 
-        $scalableSlotTargets = $basePlan['scalable_slot_targets'];
-
-        $craftDayCalories = match ($craftKey) {
-            self::CRAFT_FULL => round($tier, 2),
-            self::CRAFT_AFTERNOON => round($tier - $breakfast, 2),
-            self::CRAFT_DAY => round($tier - $mainEach, 2),
-            self::CRAFT_INTERMITTENT => round($tier - $breakfast - $mainEach, 2),
-            self::CRAFT_BUSINESS => round(
-                $businessConfig['main_target'] + $businessConfig['side_calories'],
-                2,
-            ),
-            default => round($tier, 2),
-        };
-
-        if ($craftKey === self::CRAFT_INTERMITTENT) {
-            $mainTarget = max(0.0, round($craftDayCalories - $fixedChoiceTotal, 2));
-            $scalableSlotTargets = [
-                'breakfast' => self::slotTarget(0.0, $macroPct),
-                'main_each' => self::mainSlotTarget($mainTarget),
-            ];
-        }
-
-        if ($craftKey === self::CRAFT_BUSINESS) {
-            $scalableSlotTargets = [
-                'breakfast' => self::slotTarget(0.0, $macroPct),
-                'main_each' => self::mainSlotTarget($businessConfig['main_target']),
-            ];
-        }
-
-        if ($craftKey === self::CRAFT_AFTERNOON) {
-            $scalableSlotTargets = [
-                'breakfast' => self::slotTarget(0.0, $macroPct),
-                'main_each' => $basePlan['scalable_slot_targets']['main_each'],
-            ];
-        }
+        $scalableSlotTargets = [
+            'breakfast' => self::slotTarget($breakfastCalories, $macroPct),
+            'main_each' => self::mainSlotTarget($mainEachCalories),
+        ];
 
         return array_merge($basePlan, [
             'craft_key' => $craftKey,
-            'craft_day_calories' => $craftDayCalories,
+            'plan_tier' => (float) $craftTotal,
+            'craft_day_calories' => (float) $craftTotal,
             'craft_soup_counts_as_add_on' => false,
             'business_main_target' => $craftKey === self::CRAFT_BUSINESS
-                ? $businessConfig['main_target']
+                ? $mainEachCalories
                 : null,
             'scalable_slot_targets' => $scalableSlotTargets,
+            'library_slots' => $row,
             'craft' => [
                 'key' => $craftKey,
-                'day_calories' => $craftDayCalories,
+                'day_calories' => (float) $craftTotal,
                 'soup_counts_as_add_on' => false,
             ],
         ]);

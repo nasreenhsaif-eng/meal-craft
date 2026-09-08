@@ -430,7 +430,7 @@ test('diet protocol submission calculates and persists daily targets', function 
     $profile = $customer->fresh()->customerProfile;
 
     expect($profile?->diet_protocol)->toBe('ketobiotic')
-        ->and($profile?->daily_calorie_target)->toBeIn([1000, 1200, 1500, 1800, 2000])
+        ->and($profile?->daily_calorie_target)->toBeIn([1250, 1500, 1800, 2000])
         ->and($profile?->fat_percentage)->toBe(70.0)
         ->and($customer->fresh()->currentOnboardingStep())->toBe(OnboardingStep::Birthday);
 

@@ -17,6 +17,7 @@ test('excluded classic meals are blocked from the meal tiers library', function 
         ->and(MealTiersLibraryExclusions::isExcluded('Strawberry Almond Chia Pudding'))->toBeTrue()
         ->and(MealTiersLibraryExclusions::isExcluded('Sweet Potato Fennel Soup'))->toBeTrue()
         ->and(MealTiersLibraryExclusions::isExcluded('Vegan Curry Lentil Salad'))->toBeTrue()
+        ->and(MealTiersLibraryExclusions::weeklyProtocolReplacement('Shaved Fennel Rocca Salad'))->toBe('Coconut Grapefruit Salad')
         ->and(MealTiersLibraryExclusions::isExcluded('Rosemary Garlic Chicken w Mushroom, Spinach & Roasted Sweet Potato'))->toBeFalse()
         ->and(MealTiersLibraryExclusions::names())->toContain('Chia Pudding Smoothie');
 });

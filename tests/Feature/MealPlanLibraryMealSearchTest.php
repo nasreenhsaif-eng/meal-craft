@@ -54,6 +54,50 @@ test('meal plan library meal search filters by category and query', function () 
         ->assertJsonCount(1, 'meals');
 });
 
+test('meal plan library meal search prefers the Meal Tiers Library copy when both exist', function (): void {
+    $user = User::factory()->create();
+
+    Meal::factory()->create([
+        'name' => 'Herb chicken plate',
+        'category' => RecipeCategory::Meal,
+    ]);
+    $tiers = Meal::factory()->tiers()->create([
+        'name' => 'Herb chicken plate',
+        'category' => RecipeCategory::Meal,
+    ]);
+
+    $this->actingAs($user)
+        ->getJson(route('admin.meal-plan-library.meals.search', [
+            'q' => 'chicken',
+            'categories' => [RecipeCategory::Meal->value],
+        ]))
+        ->assertOk()
+        ->assertJsonPath('meals.0.id', $tiers->id)
+        ->assertJsonCount(1, 'meals');
+});
+
+test('meal plan library meal search omits meals excluded from the Meal Tiers Library', function (): void {
+    $user = User::factory()->create();
+
+    Meal::factory()->create([
+        'name' => 'Shaved Fennel Rocca Salad',
+        'category' => RecipeCategory::SideSalad,
+    ]);
+    $kept = Meal::factory()->tiers()->create([
+        'name' => 'Coconut Grapefruit Salad',
+        'category' => RecipeCategory::SideSalad,
+    ]);
+
+    $this->actingAs($user)
+        ->getJson(route('admin.meal-plan-library.meals.search', [
+            'q' => 'salad',
+            'categories' => [RecipeCategory::SideSalad->value],
+        ]))
+        ->assertOk()
+        ->assertJsonPath('meals.0.id', $kept->id)
+        ->assertJsonCount(1, 'meals');
+});
+
 test('meal plan library inertia page exposes meal search url', function () {
     $user = User::factory()->create();
 

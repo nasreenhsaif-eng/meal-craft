@@ -80,7 +80,8 @@ test('customer consultation page does not enable admin tier preview', function (
 
     $config = json_decode($matches[1] ?? '{}', true);
 
-    expect($config['isAdminPreview'] ?? null)->toBeFalse();
+    expect($config['isAdminPreview'] ?? null)->toBeFalse()
+        ->and($config['planTiers'] ?? null)->toBe([1250, 1500, 1800, 2000]);
 });
 
 test('consultation page exposes onboarding back link when opened from onboarding', function () {

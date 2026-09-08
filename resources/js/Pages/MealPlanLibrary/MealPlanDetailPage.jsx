@@ -21,12 +21,16 @@ import MealPlanMealEditSheet from '../../Components/MealPlan/MealPlanMealEditShe
 import { SCHEDULER_SLOT_SECTIONS } from '../../meal-library/mealSearch.ts';
 import { updateMealInPlanDays } from './mealPlanMealEdit.js';
 import { useMealDetailModal } from '../../meal-library/useMealDetailModal.js';
+import {
+    applyLibraryTierPortions,
+    daysUseLibraryPortions,
+} from '../../consultation/applyLibraryTierPortions.js';
 
 const PAGE_BG = 'bg-[#F8F9F6]';
 
 const WEEKDAY_LONG = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-const DEFAULT_PLAN_TIERS = [1000, 1200, 1500, 1800, 2000];
+const DEFAULT_PLAN_TIERS = [1250, 1500, 1800, 2000];
 
 /**
  * @param {number} mealPlanId
@@ -364,8 +368,9 @@ export default function MealPlanDetailPage({
     );
 
     const [selectedTier, setSelectedTier] = useState(initialTier);
-    const [planDays, setPlanDays] = useState(days);
-    const [tierLoading, setTierLoading] = useState(Boolean(tierPreviewUrl));
+    const libraryBacked = useMemo(() => daysUseLibraryPortions(days), [days]);
+    const [sourceDays, setSourceDays] = useState(days);
+    const [tierLoading, setTierLoading] = useState(() => Boolean(tierPreviewUrl) && !daysUseLibraryPortions(days));
     const [tierError, setTierError] = useState(/** @type {string | null} */ (null));
     const [activeDay, setActiveDay] = useState(() => days[0]?.dayNumber ?? 1);
     const [daySelections, setDaySelections] = useState(() =>
@@ -388,15 +393,20 @@ export default function MealPlanDetailPage({
         },
     );
 
+    const planDays = useMemo(
+        () => (libraryBacked ? applyLibraryTierPortions(sourceDays, selectedTier) : sourceDays),
+        [libraryBacked, sourceDays, selectedTier],
+    );
+
     useEffect(() => {
-        setPlanDays(days);
+        setSourceDays(days);
         setDaySelections(resolveInitialDaySelections(days, defaultDaySelections));
     }, [days, defaultDaySelections]);
 
     const daySelectionsJson = useMemo(() => JSON.stringify(daySelections), [daySelections]);
 
     useEffect(() => {
-        if (!tierPreviewUrl) {
+        if (libraryBacked || !tierPreviewUrl) {
             setTierLoading(false);
             return undefined;
         }
@@ -413,12 +423,12 @@ export default function MealPlanDetailPage({
                         return;
                     }
 
-                    setPlanDays(retainSelectedMealsInPreviewDays(tierDays, days, daySelections));
+                    setSourceDays(retainSelectedMealsInPreviewDays(tierDays, days, daySelections));
                 })
                 .catch(() => {
                     if (!cancelled) {
-                        setTierError('Could not scale meals for this tier. Showing library portions.');
-                        setPlanDays(days);
+                        setTierError('Could not load Meal Tiers Library portions for this tier. Showing stored meals.');
+                        setSourceDays(days);
                     }
                 })
                 .finally(() => {
@@ -432,7 +442,7 @@ export default function MealPlanDetailPage({
             cancelled = true;
             window.clearTimeout(timer);
         };
-    }, [tierPreviewUrl, selectedTier, daySelectionsJson, days]);
+    }, [libraryBacked, tierPreviewUrl, selectedTier, daySelectionsJson, days]);
 
     useEffect(() => {
         if (mealPlanId <= 0) {
@@ -509,12 +519,27 @@ export default function MealPlanDetailPage({
         if (!mealEditModal) {
             return;
         }
-        setPlanDays((prev) =>
+        setSourceDays((prev) =>
             updateMealInPlanDays(prev, {
                 dayNumber: mealEditModal.dayNumber,
                 categoryKey: mealEditModal.categoryKey,
                 mealId: String(mealEditModal.meal.id),
-            }, updatedMeal),
+            }, {
+                ...updatedMeal,
+                calorieTiers: (mealEditModal.meal.calorieTiers ?? updatedMeal.calorieTiers ?? []).map((tier) => {
+                    if (Number(tier?.calorie_tier) !== Number(updatedMeal.libraryCalorieTier ?? mealEditModal.meal.libraryCalorieTier)) {
+                        return tier;
+                    }
+
+                    return {
+                        ...tier,
+                        macros: updatedMeal.macros ?? tier.macros,
+                        kitchenIngredientRows: updatedMeal.kitchenIngredientRows ?? tier.kitchenIngredientRows,
+                        nutrition: updatedMeal.detailView?.nutrition ?? tier.nutrition,
+                        nutritionalData: updatedMeal.detailView?.nutritionalData ?? tier.nutritionalData,
+                    };
+                }),
+            }),
         );
     }, [mealEditModal]);
 
@@ -705,8 +730,8 @@ export default function MealPlanDetailPage({
                             selectedTier={selectedTier}
                             onSelectTier={setSelectedTier}
                             loading={tierLoading}
-                            description="Pick a calorie tier to reconcile kitchen portions and nutrition while you review each meal in this plan."
-                            compactHint="Breakfast and mains scale to the tier you pick. Side salads, desserts, and soup stay at standard kitchen portions."
+                            description="Pick a daily total to load the matching Meal Tiers Library portions. Meal cards show one calorie. Side salads, desserts, and soup stay at their authored kitchen portions."
+                            compactHint="Pick a daily total to load the matching Meal Tiers Library portions. Meal cards show one calorie. Side salads, desserts, and soup stay at their authored kitchen portions."
                         />
                         {activeDayReconciliationWarnings.length > 0 ? (
                             <div className="mt-2 rounded-[10px] border border-amber-200 bg-amber-50 px-3 py-2 font-body text-sm text-amber-900">

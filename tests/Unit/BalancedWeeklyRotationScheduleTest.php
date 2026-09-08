@@ -3,6 +3,7 @@
 use App\Enums\MealPlanSlotType;
 use App\Services\BalancedWeeklyRotationSchedule;
 use App\Services\NutrientDenseLiverMealRecipeRefiner;
+use App\Support\MealTiersLibraryExclusions;
 
 test('balanced weekly rotation assigns one savory egg breakfast per day', function (): void {
     $dayOne = BalancedWeeklyRotationSchedule::mealNameForDay(1, MealPlanSlotType::Breakfast, 1);
@@ -61,8 +62,8 @@ test('balanced weekly rotation assigns a different rotating soup in slot 1 each 
         ->and($soups[2])->toBe('Tomato Basil Soup')
         ->and($soups[3])->toBe('Red Lentil Turmeric Soup')
         ->and($soups[4])->toBe('Cauliflower Ginger Soup')
-        ->and($soups[5])->toBe('Carrot Cumin Soup')
-        ->and($soups[6])->toBe('Sweet Potato Fennel Soup')
+        ->and($soups[5])->toBe('Lentil Carrot Soup')
+        ->and($soups[6])->toBe('Miso Mushroom Soup')
         ->and(count(array_unique($soups)))->toBe(7);
 });
 
@@ -149,4 +150,14 @@ test('balanced weekly rotation assigns a unique vegan main in slot six each week
 
     expect($veganMains)->toBe(BalancedWeeklyRotationSchedule::VEGAN_MAINS)
         ->and(array_unique($veganMains))->toHaveCount(7);
+});
+
+test('balanced rotation does not schedule meals excluded from the Meal Tiers Library', function (): void {
+    foreach (range(1, 7) as $day) {
+        foreach (MealPlanSlotType::daySlotTemplate() as [$slotType, $slotIndex]) {
+            $name = BalancedWeeklyRotationSchedule::mealNameForDay($day, $slotType, $slotIndex);
+
+            expect(MealTiersLibraryExclusions::isExcluded($name))->toBeFalse();
+        }
+    }
 });
