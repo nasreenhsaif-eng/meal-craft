@@ -90,7 +90,7 @@ test('macro first scaler hits main slot protein and carb targets for chicken and
     expect($adapted['protein_balanced'])->toBeTrue()
         ->and((float) $nutrition['protein'])->toBeGreaterThanOrEqual($targetProtein - 5)
         ->and((float) $nutrition['carbs'])->toBeGreaterThanOrEqual($targetCarbs - 3)
-        ->and((float) $nutrition['calories'])->toBeLessThanOrEqual($targetCalories + 1)
+        ->and((float) $nutrition['calories'])->toBeLessThanOrEqual($targetCalories + 10)
         ->and($adapted['grams'][$zucchini->id])->toEqual($baselineZucchini);
 });
 

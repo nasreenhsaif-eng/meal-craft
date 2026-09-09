@@ -59,7 +59,6 @@ final class BalancedSodiumRecipeRefiner
         'Cooked White Basmati Rice (Base)' => 0.0,
         'Cooked Couscous (Base)' => 0.0,
         'Cooked Chickpeas (Base)' => 0.0,
-        'Quinoa Bread (Base)' => 0.65,
         'Quinoa Flatbread (Base)' => 0.65,
         'Bone Broth (Base)' => 0.5,
         'Harissa Paste (Base)' => 0.35,
@@ -78,8 +77,7 @@ final class BalancedSodiumRecipeRefiner
         'Honey Mustard Dressing (Base)' => 40.0,
         'Sumac Za\'atar Dressing (Base)' => 40.0,
         'Zesty Lime Chili Salad Dressing (Base)' => 40.0,
-        'Quinoa Bread (Base)' => 60.0,
-        'Quinoa Flatbread (Base)' => 60.0,
+        'Quinoa Flatbread (Base)' => 100.0,
         'Bone Broth (Base)' => 350.0,
         'Harissa Paste (Base)' => 20.0,
     ];

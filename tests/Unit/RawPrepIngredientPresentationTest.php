@@ -23,3 +23,65 @@ test('formats chicken breast with raw before cooking suffix', function () {
     expect(RawPrepIngredientPresentation::formatLine(120, '120', $chicken))
         ->toBe('120g Chicken Breast (raw, before cooking)');
 });
+
+test('formats canned sardines with drained canned suffix', function () {
+    $sardines = Ingredient::factory()->make([
+        'name' => 'Sardines (Canned)',
+        'usda_food_category' => 'Proteins',
+        'calories' => 208,
+    ]);
+
+    expect(RawPrepIngredientPresentation::isCannedPrepIngredient($sardines))->toBeTrue()
+        ->and(RawPrepIngredientPresentation::formatCannedLine(100, '100', $sardines))
+        ->toBe('100g Sardines (drained canned)');
+});
+
+test('formats hamour and shrimp with salmon-style display names', function () {
+    $hamour = Ingredient::factory()->make([
+        'name' => 'Hamour Fillet',
+        'usda_food_category' => 'Proteins',
+        'calories' => 92,
+    ]);
+    $shrimp = Ingredient::factory()->make([
+        'name' => 'Shrimp (Raw)',
+        'usda_food_category' => 'Proteins',
+        'calories' => 85,
+    ]);
+
+    expect(RawPrepIngredientPresentation::formatLine(165, '165', $hamour))
+        ->toBe('165g Hamour (raw, before cooking)')
+        ->and(RawPrepIngredientPresentation::formatLine(165, '165', $shrimp))
+        ->toBe('165g Shrimp (raw, before cooking)');
+});
+
+test('formats pre-cooked rice bases as cooked plated portions', function () {
+    $rice = Ingredient::factory()->make([
+        'name' => 'Steamed Basmati Rice (Base)',
+        'usda_food_category' => 'Base Ingredient',
+        'calories' => 118,
+    ]);
+
+    expect(RawPrepIngredientPresentation::formatBaseLine(75, '75', $rice))
+        ->toBe('75g Steamed Basmati Rice (cooked plated portion)');
+});
+
+test('formats dressing bases as prepared dressing not cooked plated', function () {
+    $dressing = Ingredient::factory()->make([
+        'name' => 'Cilantro Lime Dressing (Base)',
+        'usda_food_category' => 'Base Ingredient',
+        'calories' => 180,
+        'is_base_recipe' => true,
+    ]);
+
+    expect(RawPrepIngredientPresentation::formatBaseLine(15, '15', $dressing))
+        ->toBe('15g Cilantro Lime Dressing (prepared dressing)');
+});
+
+test('exposes a prep-weight legend for every recipe', function () {
+    expect(RawPrepIngredientPresentation::ingredientsPrepNote())
+        ->toContain('raw before cooking')
+        ->toContain('canned fish is drained weight')
+        ->toContain('dry weight')
+        ->toContain('cooked (Base) sides are plated portions')
+        ->toContain('dressings and sauces are prepared portions');
+});

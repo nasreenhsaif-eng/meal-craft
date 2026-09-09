@@ -7,6 +7,7 @@ use App\Enums\MealType;
 use App\Enums\RecipeCategory;
 use App\Models\CustomerProfile;
 use App\Models\Meal;
+use App\Support\CraftLibraryTierMap;
 
 /**
  * Derives per-slot calorie targets from the customer's plan tier.
@@ -22,8 +23,14 @@ final class UserPlanCalculator
      */
     public static function planTiers(): array
     {
+        $fromLibrary = CraftLibraryTierMap::planTiers();
+
+        if ($fromLibrary !== []) {
+            return $fromLibrary;
+        }
+
         /** @var list<int> $tiers */
-        $tiers = config('customer_nutrition.plan_tiers', [1000, 1200, 1500, 1800, 2000]);
+        $tiers = config('customer_nutrition.plan_tiers', [1250, 1500, 1800, 2000]);
 
         return array_values(array_map(intval(...), $tiers));
     }

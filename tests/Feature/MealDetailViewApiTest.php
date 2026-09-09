@@ -51,7 +51,54 @@ test('meal detail view api formats salmon with raw before cooking label', functi
         ->assertJsonPath('detailView.ingredients.0', '125g Salmon (raw, before cooking)');
 });
 
-test('meal detail view api formats egg ingredients with large egg counts', function () {
+test('meal detail view api formats canned sardines with drained canned label', function () {
+    $user = User::factory()->customer()->create();
+
+    $sardines = Ingredient::factory()->create([
+        'name' => 'Sardines (Canned)',
+        'usda_food_category' => 'Proteins',
+        'calories' => 208,
+    ]);
+    $meal = Meal::factory()->create(['name' => 'API Detail Sardine Pate w Zucchini Bread']);
+    $meal->ingredients()->attach($sardines->id, ['amount_grams' => 100, 'amount' => 100, 'unit' => 'g']);
+
+    $this->actingAs($user)
+        ->getJson(route('api.meals.detail-view', $meal))
+        ->assertOk()
+        ->assertJsonPath('detailView.ingredients.0', '100g Sardines (drained canned)');
+});
+
+test('meal detail view api formats hamour and shrimp with salmon-style raw labels', function () {
+    $user = User::factory()->customer()->create();
+
+    $hamour = Ingredient::factory()->create([
+        'name' => 'Hamour Fillet',
+        'usda_food_category' => 'Proteins',
+        'calories' => 92,
+    ]);
+    $hamourMeal = Meal::factory()->create(['name' => 'API Detail Pan Seared Hamour']);
+    $hamourMeal->ingredients()->attach($hamour->id, ['amount_grams' => 165, 'amount' => 165, 'unit' => 'g']);
+
+    $shrimp = Ingredient::factory()->create([
+        'name' => 'Shrimp (Raw)',
+        'usda_food_category' => 'Proteins',
+        'calories' => 85,
+    ]);
+    $shrimpMeal = Meal::factory()->create(['name' => 'API Detail Craft Shrimp Avocado Bowl']);
+    $shrimpMeal->ingredients()->attach($shrimp->id, ['amount_grams' => 165, 'amount' => 165, 'unit' => 'g']);
+
+    $this->actingAs($user)
+        ->getJson(route('api.meals.detail-view', $hamourMeal))
+        ->assertOk()
+        ->assertJsonPath('detailView.ingredients.0', '165g Hamour (raw, before cooking)');
+
+    $this->actingAs($user)
+        ->getJson(route('api.meals.detail-view', $shrimpMeal))
+        ->assertOk()
+        ->assertJsonPath('detailView.ingredients.0', '165g Shrimp (raw, before cooking)');
+});
+
+test('meal detail view api formats egg ingredients with raw egg counts', function () {
     $user = User::factory()->customer()->create();
 
     $egg = Ingredient::factory()->create(['name' => 'Egg']);
@@ -61,7 +108,7 @@ test('meal detail view api formats egg ingredients with large egg counts', funct
     $this->actingAs($user)
         ->getJson(route('api.meals.detail-view', $meal))
         ->assertOk()
-        ->assertJsonPath('detailView.ingredients.0', '2 large eggs (100g)');
+        ->assertJsonPath('detailView.ingredients.0', '2 eggs raw');
 });
 
 test('meal detail view api returns persisted instructions and ingredients', function () {
@@ -85,7 +132,7 @@ test('meal detail view api returns persisted instructions and ingredients', func
 test('meal detail view api scales ingredient amounts for customer plan and craft', function () {
     $user = User::factory()->customer()->create();
     CustomerProfile::factory()->for($user)->create([
-        'daily_calorie_target' => 1200,
+        'daily_calorie_target' => 1250,
         'protein_percentage' => 30,
         'carb_percentage' => 40,
         'fat_percentage' => 30,
@@ -138,22 +185,22 @@ test('meal detail view api scales ingredient amounts for customer plan and craft
         ->assertJsonPath('detailView.ingredients.0', "{$expectedGrams}g Scaled Rice");
 });
 
-test('meal detail view api formats liquid ingredients in milliliters', function () {
+test('meal detail view api formats cooking oils in tablespoons', function () {
     // Non-admin without a calorie target so consultation adaptation does not snap portions.
     $user = User::factory()->customer()->create();
 
     $oil = Ingredient::factory()->create([
         'name' => 'Olive Oil (Extra Virgin)',
         'usda_food_category' => 'Fats',
-        'density' => 1.0,
+        'density' => 0.92,
     ]);
     $meal = Meal::factory()->create(['name' => 'API Detail Omelet With Oil']);
-    $meal->ingredients()->attach($oil->id, ['amount_grams' => 6, 'amount' => 6, 'unit' => 'g']);
+    $meal->ingredients()->attach($oil->id, ['amount_grams' => 13.8, 'amount' => 13.8, 'unit' => 'g']);
 
     $this->actingAs($user)
         ->getJson(route('api.meals.detail-view', $meal))
         ->assertOk()
-        ->assertJsonPath('detailView.ingredients.0', '5ml Olive Oil (Extra Virgin)');
+        ->assertJsonPath('detailView.ingredients.0', '13.8g (1 tbsp) Olive Oil (Extra Virgin)');
 });
 
 test('meal detail view api matches scheduled savory breakfast calories for full craft day', function () {
@@ -168,7 +215,7 @@ test('meal detail view api matches scheduled savory breakfast calories for full 
     $scheduled = ProductionWeeklyMenuSchedule::scheduledFullCraftByWeekday(
         AdminConsultationPreviewProfile::resolve($user),
         null,
-        ['plan_tier' => 1000, 'craft_key' => CraftCaloriePlanner::CRAFT_FULL],
+        ['plan_tier' => 1250, 'craft_key' => CraftCaloriePlanner::CRAFT_FULL],
     );
 
     $expectedCalories = null;
@@ -188,7 +235,7 @@ test('meal detail view api matches scheduled savory breakfast calories for full 
     $this->actingAs($user)
         ->getJson(route('api.meals.detail-view', $meal).'?'.http_build_query([
             'craft_key' => CraftCaloriePlanner::CRAFT_FULL,
-            'plan_tier' => 1000,
+            'plan_tier' => 1250,
             'day_of_week' => 1,
         ]))
         ->assertOk()

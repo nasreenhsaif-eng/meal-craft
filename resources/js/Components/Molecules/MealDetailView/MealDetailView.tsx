@@ -33,7 +33,13 @@ export type MealSafetyAlert = {
 
 export type MealIngredientSection = {
     title: string;
-    items: string[];
+    items: string[] | MealIngredientItem[];
+};
+
+export type MealIngredientItem = {
+    line: string;
+    ingredientId?: number;
+    isBaseRecipe?: boolean;
 };
 
 export type MealInstructionSection = {
@@ -54,7 +60,10 @@ export type MealDetailModel = {
     sickleRdiFootnote?: string;
     nutritionalData: MealNutritionalData;
     ingredients: string[];
+    ingredientItems?: MealIngredientItem[];
     ingredientSections?: MealIngredientSection[];
+    /** Legend for raw / dry / pre-cooked prep weights on every recipe. */
+    ingredientsPrepNote?: string | null;
     /** Estimated cooked plated weight from raw/dry inputs + pre-cooked bases. */
     cookingYieldNote?: string | null;
     instructions: string[] | string;
@@ -72,6 +81,7 @@ export type MealDetailViewProps = {
     hideImage?: boolean;
     /** When true, omit outer max-height so a parent modal owns scrolling (title stays visible). */
     embedded?: boolean;
+    onBaseRecipeClick?: (item: MealIngredientItem) => void;
 };
 
 const G6PD_SAFETY_ALERT_BADGE = 'G6PD Safety Alert';
@@ -133,7 +143,51 @@ export function MealNutritionSummaryTable({ data }: { data: MealNutritionalData 
     );
 }
 
-export default function MealDetailView({ meal, className = '', hideImage = false, embedded = false }: MealDetailViewProps): ReactElement {
+function normalizeIngredientItem(item: string | MealIngredientItem): MealIngredientItem {
+    if (typeof item === 'string') {
+        return { line: item };
+    }
+
+    return {
+        line: String(item.line ?? ''),
+        ingredientId: item.ingredientId,
+        isBaseRecipe: item.isBaseRecipe,
+    };
+}
+
+function MealIngredientLine({
+    item,
+    onBaseRecipeClick,
+}: {
+    item: string | MealIngredientItem;
+    onBaseRecipeClick?: (item: MealIngredientItem) => void;
+}): ReactElement {
+    const normalized = normalizeIngredientItem(item);
+    const canOpenBaseRecipe =
+        normalized.isBaseRecipe === true && normalized.ingredientId != null && typeof onBaseRecipeClick === 'function';
+
+    if (canOpenBaseRecipe) {
+        return (
+            <button
+                type="button"
+                className="text-left underline decoration-[#5A6B44]/40 underline-offset-2 outline-none hover:text-[#5A6B44] focus-visible:ring-2 focus-visible:ring-[#5A6B44]/35"
+                onClick={() => onBaseRecipeClick(normalized)}
+            >
+                {normalized.line}
+            </button>
+        );
+    }
+
+    return <>{normalized.line}</>;
+}
+
+export default function MealDetailView({
+    meal,
+    className = '',
+    hideImage = false,
+    embedded = false,
+    onBaseRecipeClick,
+}: MealDetailViewProps): ReactElement {
     const [mediaFailed, setMediaFailed] = useState(false);
     const {
         shortDescription,
@@ -143,7 +197,9 @@ export default function MealDetailView({ meal, className = '', hideImage = false
         sickleCellHighlights = [],
         nutritionalData,
         ingredients,
+        ingredientItems,
         ingredientSections,
+        ingredientsPrepNote,
         cookingYieldNote,
         instructions,
         instructionSections,
@@ -163,6 +219,10 @@ export default function MealDetailView({ meal, className = '', hideImage = false
     const scBadges = sickleCellHighlights.filter((b) => b !== G6PD_HIGHLIGHT_BADGE);
 
     const hasIngredientSections = Array.isArray(ingredientSections) && ingredientSections.length > 0;
+    const hasStructuredIngredientItems = Array.isArray(ingredientItems) && ingredientItems.length > 0;
+    const flatIngredientItems = hasStructuredIngredientItems
+        ? ingredientItems
+        : ingredients.map((line) => ({ line }));
     const hasInstructionSections = Array.isArray(instructionSections) && instructionSections.length > 0;
     const mealBlurb = String(shortDescription || description || '').trim();
 
@@ -239,6 +299,11 @@ export default function MealDetailView({ meal, className = '', hideImage = false
                         >
                             Ingredients
                         </h2>
+                        {String(ingredientsPrepNote ?? '').trim() !== '' ? (
+                            <p className="font-montserrat text-sm font-medium leading-relaxed text-[#5A6B44] md:text-[15px]">
+                                {String(ingredientsPrepNote).trim()}
+                            </p>
+                        ) : null}
                         {hasIngredientSections ? (
                             <div className="space-y-6">
                                 {ingredientSections.map((section) => (
@@ -247,23 +312,33 @@ export default function MealDetailView({ meal, className = '', hideImage = false
                                             {section.title}
                                         </h3>
                                         <ul className="space-y-3 font-montserrat text-sm font-medium leading-relaxed text-[#374151] md:text-[15px]">
-                                            {section.items.map((line, idx) => (
-                                                <li
-                                                    key={`${section.title}-${idx}-${line}`}
-                                                    className="border-b border-gray-100 pb-3 last:border-b-0 last:pb-0"
-                                                >
-                                                    {line}
-                                                </li>
-                                            ))}
+                                            {section.items.map((item, idx) => {
+                                                const normalized = normalizeIngredientItem(item);
+
+                                                return (
+                                                    <li
+                                                        key={`${section.title}-${idx}-${normalized.line}`}
+                                                        className="border-b border-gray-100 pb-3 last:border-b-0 last:pb-0"
+                                                    >
+                                                        <MealIngredientLine
+                                                            item={item}
+                                                            onBaseRecipeClick={onBaseRecipeClick}
+                                                        />
+                                                    </li>
+                                                );
+                                            })}
                                         </ul>
                                     </div>
                                 ))}
                             </div>
                         ) : (
                             <ul className="space-y-3 font-montserrat text-sm font-medium leading-relaxed text-[#374151] md:text-[15px]">
-                                {ingredients.map((line, idx) => (
-                                    <li key={`${idx}-${line}`} className="border-b border-gray-100 pb-3 last:border-b-0 last:pb-0">
-                                        {line}
+                                {flatIngredientItems.map((item, idx) => (
+                                    <li
+                                        key={`${idx}-${item.line}`}
+                                        className="border-b border-gray-100 pb-3 last:border-b-0 last:pb-0"
+                                    >
+                                        <MealIngredientLine item={item} onBaseRecipeClick={onBaseRecipeClick} />
                                     </li>
                                 ))}
                             </ul>

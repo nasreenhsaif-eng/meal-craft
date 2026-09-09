@@ -103,3 +103,125 @@ test('tbd weekly protocol admin detail moves chia from desserts to breakfasts', 
         ->and(collect($previewDay['categories']['breakfasts'])->pluck('title')->all())
         ->toContain('Blueberry Walnut Greek Yogurt Chia Pudding');
 });
+
+test('tbd weekly protocol with balanced category still previews chia on breakfast and keeps the side salad', function (): void {
+    $user = User::factory()->create();
+
+    $omelette = Meal::factory()->create([
+        'name' => NutrientDenseBreakfastOptions::OMELETTE_NAME,
+        'category' => RecipeCategory::Breakfast,
+        'meal_type' => MealType::Breakfast,
+    ]);
+
+    $baked = Meal::factory()->create([
+        'name' => 'Chocolate Orange Brownie',
+        'category' => RecipeCategory::Dessert,
+        'meal_type' => MealType::Dessert,
+    ]);
+
+    $fruit = Meal::factory()->create([
+        'name' => 'Fruit Salad Bowl',
+        'category' => RecipeCategory::Dessert,
+        'meal_type' => MealType::Dessert,
+    ]);
+
+    $chia = Meal::factory()->create([
+        'name' => 'Blueberry Walnut Greek Yogurt Chia Pudding',
+        'category' => RecipeCategory::Dessert,
+        'meal_type' => MealType::Dessert,
+    ]);
+
+    $salad = Meal::factory()->create([
+        'name' => 'Garden Side Salad',
+        'category' => RecipeCategory::SideSalad,
+        'meal_type' => MealType::Salad,
+    ]);
+
+    $plan = MealPlan::query()->create([
+        'name' => 'TBD Weekly Protocol',
+        'goal' => 'Nutrient dense rotation.',
+        'schema_type' => MealPlanSchemaType::WeeklyStructured,
+        'plan_category' => MealPlanLibraryCategory::Balanced,
+        'target_total_calories' => 14000,
+        'default_day_selections' => [
+            1 => [
+                'breakfasts' => [$chia->id],
+                'meals' => [],
+                'sideSalads' => [$salad->id],
+                'desserts' => [$fruit->id],
+                'soup' => [],
+            ],
+        ],
+    ]);
+
+    $plan->dayMeals()->createMany([
+        [
+            'meal_id' => $omelette->id,
+            'day_number' => 1,
+            'slot_type' => MealPlanSlotType::Breakfast,
+            'slot_index' => 1,
+            'is_option_b' => false,
+        ],
+        [
+            'meal_id' => $salad->id,
+            'day_number' => 1,
+            'slot_type' => MealPlanSlotType::Salad,
+            'slot_index' => 1,
+            'is_option_b' => false,
+        ],
+        [
+            'meal_id' => $baked->id,
+            'day_number' => 1,
+            'slot_type' => MealPlanSlotType::Dessert,
+            'slot_index' => 1,
+            'is_option_b' => false,
+        ],
+        [
+            'meal_id' => $fruit->id,
+            'day_number' => 1,
+            'slot_type' => MealPlanSlotType::Dessert,
+            'slot_index' => 2,
+            'is_option_b' => false,
+        ],
+        [
+            'meal_id' => $chia->id,
+            'day_number' => 1,
+            'slot_type' => MealPlanSlotType::Dessert,
+            'slot_index' => 3,
+            'is_option_b' => false,
+        ],
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('admin.meal-plan-library.show', $plan))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Admin/MealPlanDetail')
+            ->where('dietProtocol', 'nutrient_dense')
+            ->where('days.0.categories.breakfasts.1.title', 'Blueberry Walnut Greek Yogurt Chia Pudding')
+            ->where('days.0.categories.sideSalads.0.title', 'Garden Side Salad'));
+
+    $previewDay = $this->actingAs($user)
+        ->getJson(route('admin.meal-plan-library.tier-preview', [
+            'mealPlan' => $plan,
+            'plan_tier' => 1500,
+            'selections' => json_encode([
+                1 => [
+                    'breakfasts' => [$chia->id],
+                    'meals' => [],
+                    'sideSalads' => [$salad->id],
+                    'desserts' => [$fruit->id],
+                    'soup' => [],
+                ],
+            ]),
+        ]))
+        ->assertOk()
+        ->json('days.0');
+
+    expect(collect($previewDay['categories']['breakfasts'])->pluck('title')->all())
+        ->toContain('Blueberry Walnut Greek Yogurt Chia Pudding')
+        ->and(collect($previewDay['categories']['desserts'])->pluck('title')->all())
+        ->not->toContain('Blueberry Walnut Greek Yogurt Chia Pudding')
+        ->and(collect($previewDay['categories']['sideSalads'])->pluck('title')->all())
+        ->toContain('Garden Side Salad');
+});

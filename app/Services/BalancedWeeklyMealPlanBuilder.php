@@ -7,6 +7,7 @@ use App\Enums\MealPlanSlotType;
 use App\Models\Meal;
 use App\Models\MealPlan;
 use App\Models\MealPlanDayMeal;
+use App\Support\MealTiersLibraryExclusions;
 use App\Support\SavoryEggBreakfastMeals;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -133,7 +134,7 @@ final class BalancedWeeklyMealPlanBuilder
     {
         $names = BalancedWeeklyRotationSchedule::allScheduledMealNames();
 
-        $meals = Meal::queryForMealLibrary()->whereIn('name', $names)->get(['id', 'name']);
+        $meals = Meal::queryScheduledTiersMeals()->whereIn('name', $names)->get(['id', 'name']);
 
         $map = [];
         foreach ($meals as $meal) {
@@ -143,6 +144,26 @@ final class BalancedWeeklyMealPlanBuilder
 
             if ($canonicalName !== $meal->name) {
                 $map[$canonicalName] = (int) $meal->id;
+            }
+        }
+
+        $missing = array_values(array_diff($names, array_keys($map)));
+
+        if ($missing !== []) {
+            $classic = Meal::queryForMealLibrary()->whereIn('name', $missing)->get(['id', 'name']);
+
+            foreach ($classic as $meal) {
+                if (MealTiersLibraryExclusions::isExcluded($meal)) {
+                    continue;
+                }
+
+                $map[$meal->name] = (int) $meal->id;
+
+                $canonicalName = SavoryEggBreakfastMeals::canonicalMealName((string) $meal->name);
+
+                if ($canonicalName !== $meal->name) {
+                    $map[$canonicalName] = (int) $meal->id;
+                }
             }
         }
 

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import MacroGrid from './MacroGrid.jsx';
+import MealCalorieTierTabs from './MealCalorieTierTabs.jsx';
 import Button from './Atoms/Button.jsx';
 import RoundIconButton from './Atoms/Icons/RoundIconButton.jsx';
 import { IconEdit } from './Atoms/SvgIcons.jsx';
@@ -63,6 +64,9 @@ function MacroGridDeckSection({ macros }) {
  * @param {() => void} [props.onCraftThisMeal]
  * @param {boolean} [props.disabled]
  * @param {string} [props.className]
+ * @param {number[]} [props.calorieTierTabs] Admin Meal Tiers Library only. Omit on the classic Meal Library.
+ * @param {object[]} [props.calorieTiers]
+ * @param {(tier: number, payload: object | null) => void} [props.onCalorieTierChange]
  */
 export default function MealCard({
     meal,
@@ -84,6 +88,9 @@ export default function MealCard({
     onCraftThisMeal,
     disabled = false,
     className = '',
+    calorieTierTabs = null,
+    calorieTiers = null,
+    onCalorieTierChange,
 }) {
     const [mediaFailed, setMediaFailed] = useState(false);
 
@@ -207,7 +214,15 @@ export default function MealCard({
                         </h3>
                     </div>
 
-                    <MacroGridDeckSection macros={resolvedMacros} />
+                    {Array.isArray(calorieTierTabs) && calorieTierTabs.length > 0 && isAdmin ? (
+                        <MealCalorieTierTabs
+                            tabValues={calorieTierTabs}
+                            calorieTiers={calorieTiers ?? mealRecord?.calorieTiers ?? []}
+                            onCalorieTierChange={onCalorieTierChange}
+                        />
+                    ) : (
+                        <MacroGridDeckSection macros={resolvedMacros} />
+                    )}
 
                     {!isAdmin ? (
                         <>

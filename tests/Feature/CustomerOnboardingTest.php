@@ -189,6 +189,25 @@ test('gender onboarding page renders with shared props', function () {
             ->where('mealCraft.onboarding.currentStep', OnboardingStep::Gender->value));
 });
 
+test('customer can save birthday on the first day of the minimum picker year', function () {
+    $customer = User::factory()->customer()->create();
+    CustomerProfile::factory()->for($customer)->withoutOnboarding()->create([
+        'onboarding_step' => OnboardingStep::Birthday,
+        'sex' => 'female',
+    ]);
+
+    $date = now()->subYears(100)->startOfYear()->toDateString();
+
+    $this->actingAs($customer)
+        ->post(route('onboarding.birthday.store'), [
+            'date_of_birth' => $date,
+        ])
+        ->assertRedirect(route('onboarding.show', ['step' => OnboardingStep::Height->value]));
+
+    expect($customer->fresh()->customerProfile?->date_of_birth?->toDateString())->toBe($date)
+        ->and($customer->fresh()->currentOnboardingStep())->toBe(OnboardingStep::Height);
+});
+
 test('customer can save birthday and advance to height', function () {
     $customer = User::factory()->customer()->create();
     CustomerProfile::factory()->for($customer)->withoutOnboarding()->create([
@@ -411,7 +430,7 @@ test('diet protocol submission calculates and persists daily targets', function 
     $profile = $customer->fresh()->customerProfile;
 
     expect($profile?->diet_protocol)->toBe('ketobiotic')
-        ->and($profile?->daily_calorie_target)->toBeIn([1000, 1200, 1500, 1800, 2000])
+        ->and($profile?->daily_calorie_target)->toBeIn([1250, 1500, 1800, 2000])
         ->and($profile?->fat_percentage)->toBe(70.0)
         ->and($customer->fresh()->currentOnboardingStep())->toBe(OnboardingStep::Birthday);
 

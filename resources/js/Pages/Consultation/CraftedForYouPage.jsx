@@ -29,6 +29,7 @@ import {
     scheduledFullCraftCategoryMealsForDay,
     scheduledSoupConsultationMealsForDay,
 } from '../../consultation/mapAdaptedMenuMeals.js';
+import { resolveProtocolBreakfastSeedId } from '../../consultation/seedProtocolBreakfast.js';
 import { buildCraftPlanSubmissionPayload, submitCraftPlan } from '../../consultation/submitCraftPlan.js';
 import { craftDayCaloriesForKey, dailyMacroTargetsFromPlan, dayMacroToleranceFromPlan, fixedPortionCaloriesForAdapt, nutritionPlanMatchesTier, selectedFixedSlotsFromSelections } from '../../consultation/craftCalorieTargets.js';
 import {
@@ -42,7 +43,7 @@ import { useMealDetailModal } from '../../meal-library/useMealDetailModal.js';
 const PAGE_BG = 'bg-[#F8F9F6]';
 const WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const WEEKDAY_LONG = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-const DEFAULT_PLAN_TIERS = [1000, 1200, 1500, 1800, 2000];
+const DEFAULT_PLAN_TIERS = [1250, 1500, 1800, 2000];
 const PREVIEW_PLAN_TIER_STORAGE_KEY = 'mc-admin-preview-plan-tier';
 const CONSULTATION_BACK_HREF_STORAGE_KEY = 'mc-consultation-back-href';
 
@@ -1128,30 +1129,17 @@ export default function CraftedForYouPage({
                 };
 
                 const assigned = scheduledFullCraftCategoryMealsForDay(scheduledFullCraftByWeekday, day);
-                const breakfastDeck = assigned?.breakfasts ?? [];
-                const recommendedBreakfast =
-                    breakfastDeck.find((meal) => meal?.isRecommended) ?? breakfastDeck[0];
-                const deckBreakfast = consultationDeckOptionsForSlotKey(catalogMeals, 'breakfast')[0];
-                const breakfast = recommendedBreakfast ?? deckBreakfast;
+                const breakfastId = resolveProtocolBreakfastSeedId({
+                    assignedBreakfasts: assigned?.breakfasts,
+                    currentBreakfastId: current.breakfasts?.[0],
+                    protectExisting: dietProtocol === 'nutrient_dense',
+                });
 
-                if (!breakfast?.id) {
+                if (!breakfastId) {
                     continue;
                 }
 
-                const breakfastId = normalizeConsultationMealId(breakfast.id);
-
-                // Nutrient Density: seed once with the recommended egg breakfast; never overwrite a customer swap.
-                if (dietProtocol === 'nutrient_dense') {
-                    if ((current.breakfasts?.length ?? 0) > 0) {
-                        continue;
-                    }
-
-                    next[day] = { ...current, breakfasts: [breakfastId] };
-                    changed = true;
-                    continue;
-                }
-
-                if (current.breakfasts?.[0] === breakfastId) {
+                if (normalizeConsultationMealId(current.breakfasts?.[0]) === breakfastId) {
                     continue;
                 }
 
@@ -1161,7 +1149,7 @@ export default function CraftedForYouPage({
 
             return changed ? next : prev;
         });
-    }, [craft, sortedSelectedDays, scheduledFullCraftByWeekday, catalogMeals, dietProtocol]);
+    }, [craft, sortedSelectedDays, scheduledFullCraftByWeekday, dietProtocol]);
 
     useEffect(() => {
         if (dietProtocol !== 'nutrient_dense' || !craft || sortedSelectedDays.length === 0) {
@@ -1356,9 +1344,9 @@ export default function CraftedForYouPage({
         craftKey !== null && (isLgViewport !== true ? true : weekDuration !== null);
     const canGoNextFromManualDays = weekDuration !== null && sortedSelectedDays.length === weekDuration;
 
-    /** Full / Afternoon / Day / Intermittent share the weekly category carousels (same meal options). */
+    /** Weekly crafts share the default + SEE OTHER OPTIONS day view (no carousel). */
     const usesWeeklyCategoryLayout = useMemo(
-        () => Boolean(craft && ['full', 'afternoon', 'day', 'intermittent'].includes(craft.key)),
+        () => Boolean(craft && ['full', 'afternoon', 'day', 'intermittent', 'business'].includes(craft.key)),
         [craft],
     );
 
@@ -1992,6 +1980,7 @@ export default function CraftedForYouPage({
                                 scheduledSoupMeals={scheduledSoupForDay(curationDay)}
                                 onViewDetails={openMealDetailWhenScheduleReady}
                                 dietProtocol={dietProtocol}
+                                protocolSelectedLayout
                                 isMenuPending={isMenuPending}
                             >
                                 {usesWeeklyCategoryLayout ? null : (

@@ -7,7 +7,6 @@ use App\Enums\DietType;
 use App\Enums\MealCyclePhaseTag;
 use App\Enums\MealPlanLibraryCategory;
 use App\Enums\MealPlanSchemaType;
-use App\Enums\MealPlanSlotType;
 use App\Enums\RecipeCategory;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreMealPlanDefaultDaySelectionsRequest;
@@ -15,26 +14,22 @@ use App\Http\Requests\SearchMealsForSchedulerRequest;
 use App\Http\Requests\StoreMealPlanFromLibraryRequest;
 use App\Models\Meal;
 use App\Models\MealPlan;
-use App\Models\MealPlanDayMeal;
 use App\Services\MealPlanDefaultDaySelections;
 use App\Services\MealPlanLibraryTierPreview;
 use App\Services\MealPlanService;
 use App\Services\Nutrition\UserPlanCalculator;
-use App\Support\ChiaDessertMeals;
-use App\Support\NutrientDenseBreakfastOptions;
-use App\Support\PrimaryFullCraftMainSlots;
+use App\Support\MealTiersLibraryExclusions;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class MealPlanLibraryController extends Controller
 {
-    /** @var list<string> */
-    private const WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
     public function __construct(
         private MealPlanService $mealPlanService,
         private MealLibraryController $mealLibrary,
@@ -48,27 +43,16 @@ class MealPlanLibraryController extends Controller
             RecipeCategory::Meal,
             RecipeCategory::SideSalad,
             RecipeCategory::Dessert,
+            RecipeCategory::ChiaPudding,
             RecipeCategory::Soup,
         ];
 
-        $schedulerMeals = Meal::queryForMealLibrary()
-            ->whereIn('category', array_map(
+        $schedulerMeals = $this->schedulerMealRows(
+            array_map(
                 static fn (RecipeCategory $category): string => $category->value,
                 $schedulerCategories,
-            ))
-            ->orderBy('name')
-            ->get(['id', 'name', 'category'])
-            ->map(static function (Meal $meal): array {
-                $category = $meal->category;
-
-                return [
-                    'id' => $meal->id,
-                    'name' => $meal->name,
-                    'category' => $category instanceof RecipeCategory ? $category->value : (string) $category,
-                ];
-            })
-            ->values()
-            ->all();
+            ),
+        );
 
         $mealPlans = MealPlan::query()
             ->where('schema_type', MealPlanSchemaType::WeeklyStructured)
@@ -113,80 +97,9 @@ class MealPlanLibraryController extends Controller
 
     public function show(MealPlan $mealPlan): Response
     {
-        $mealPlan->load([
-            'dayMeals' => static function ($query): void {
-                $query->where('is_option_b', false)
-                    ->orderBy('day_number')
-                    ->orderBy('slot_type')
-                    ->orderBy('slot_index');
-            },
-            'dayMeals.meal.ingredients',
-        ]);
-
-        $dayCount = max(1, $mealPlan->structuredPlanningDayCount());
-        $categoryKeys = ['breakfasts', 'meals', 'sideSalads', 'desserts', 'soup'];
-        $emptyCategories = array_fill_keys($categoryKeys, []);
-
-        /** @var array<int, array{dayNumber: int, label: string, categories: array<string, list<array<string, mixed>>}> $daysByNumber */
-        $daysByNumber = [];
-        for ($dayNumber = 1; $dayNumber <= $dayCount; $dayNumber++) {
-            $daysByNumber[$dayNumber] = [
-                'dayNumber' => $dayNumber,
-                'label' => self::WEEKDAY_LABELS[$dayNumber - 1] ?? __('Day :number', ['number' => $dayNumber]),
-                'categories' => $emptyCategories,
-            ];
-        }
+        $days = $this->tierPreview->catalogDays($mealPlan);
 
         $category = $mealPlan->plan_category;
-        $isNutrientDensePlan = $category === MealPlanLibraryCategory::NutrientDense
-            || str_contains(strtolower((string) ($mealPlan->name ?? '')), 'tbd');
-        $storedDefaults = MealPlanDefaultDaySelections::forPlan($mealPlan);
-        $hasStoredDefaults = $storedDefaults !== [];
-
-        foreach ($mealPlan->dayMeals as $dayMeal) {
-            if (! $dayMeal instanceof MealPlanDayMeal || $dayMeal->meal === null) {
-                continue;
-            }
-
-            $dayNumber = (int) $dayMeal->day_number;
-            if (! isset($daysByNumber[$dayNumber])) {
-                continue;
-            }
-
-            $categoryKey = $this->slotTypeToCategoryKey($dayMeal->slot_type);
-            $row = $this->mealLibrary->presentMealRowForUi($dayMeal->meal);
-            $slotIndex = (int) $dayMeal->slot_index;
-
-            // TBD Weekly Protocol: Greek yogurt chia lives on breakfast, not the dessert deck.
-            if (
-                $isNutrientDensePlan
-                && $categoryKey === 'desserts'
-                && ($slotIndex === 3 || ChiaDessertMeals::isChiaDessert($dayMeal->meal))
-            ) {
-                $categoryKey = 'breakfasts';
-                $slotIndex = NutrientDenseBreakfastOptions::CHIA_SLOT_INDEX;
-            }
-
-            $row['plan_slot_index'] = $slotIndex;
-
-            if ($hasStoredDefaults) {
-                $row['isRecommended'] = in_array(
-                    (int) $dayMeal->meal_id,
-                    $storedDefaults[$dayNumber][$categoryKey] ?? [],
-                    true,
-                );
-            } elseif ($categoryKey === 'meals') {
-                $primarySlots = $isNutrientDensePlan
-                    ? PrimaryFullCraftMainSlots::NUTRIENT_DENSE
-                    : PrimaryFullCraftMainSlots::BALANCED;
-                $row['isRecommended'] = in_array($slotIndex, $primarySlots, true);
-            } else {
-                $row['isRecommended'] = $slotIndex === 1;
-            }
-
-            $daysByNumber[$dayNumber]['categories'][$categoryKey][] = $row;
-        }
-
         $dailyMacros = $this->mealPlanService->averageDailyNutritionForOption($mealPlan, false);
         $tags = [$category instanceof MealPlanLibraryCategory ? $category->label() : __('Balanced')];
         if ($mealPlan->cycle_phase instanceof MealCyclePhaseTag) {
@@ -210,14 +123,15 @@ class MealPlanLibraryController extends Controller
                     'fat' => (float) ($dailyMacros['fat'] ?? 0),
                 ],
             ],
-            'days' => array_values($daysByNumber),
-            'defaultDaySelections' => $storedDefaults,
+            'days' => $days,
+            'defaultDaySelections' => MealPlanDefaultDaySelections::forPlan($mealPlan),
             'planTiers' => $planTiers,
             'defaultPlanTier' => $defaultPlanTier,
             'tierPreviewUrl' => route('admin.meal-plan-library.tier-preview', $mealPlan),
             'saveDefaultSelectionsUrl' => route('admin.meal-plan-library.default-selections', $mealPlan),
             'libraryUrl' => route('admin.meal-plan-library'),
             'ingredientProfiles' => $this->mealLibrary->verifiedIngredientProfilesForUi(),
+            'dietProtocol' => $mealPlan->dietProtocol()->value,
         ]);
     }
 
@@ -321,36 +235,75 @@ class MealPlanLibraryController extends Controller
         $categories = $request->validated('categories');
         $term = trim((string) $request->validated('q', ''));
 
-        $query = Meal::queryForMealLibrary()
-            ->whereIn('category', $categories)
-            ->orderBy('name')
-            ->limit(12);
+        return response()->json([
+            'meals' => $this->schedulerMealRows($categories, $term, 12),
+        ]);
+    }
+
+    /**
+     * @param  list<string>  $categories
+     * @return list<array{id: int, name: string, category: string}>
+     */
+    private function schedulerMealRows(array $categories, string $term = '', ?int $limit = null): array
+    {
+        $tiers = $this->mealsForSchedulerQuery(Meal::queryScheduledTiersMeals(), $categories, $term);
+        $classic = $this->mealsForSchedulerQuery(Meal::queryForMealLibrary(), $categories, $term);
+
+        $merged = $this->preferTiersMealsByName($tiers, $classic)->sortBy('name')->values();
+
+        if ($limit !== null) {
+            $merged = $merged->take($limit);
+        }
+
+        return $merged->map(static function (Meal $meal): array {
+            $category = $meal->category;
+
+            return [
+                'id' => (int) $meal->id,
+                'name' => (string) $meal->name,
+                'category' => $category instanceof RecipeCategory ? $category->value : (string) $category,
+            ];
+        })->all();
+    }
+
+    /**
+     * @param  Builder<Meal>  $query
+     * @param  list<string>  $categories
+     * @return Collection<int, Meal>
+     */
+    private function mealsForSchedulerQuery(Builder $query, array $categories, string $term): Collection
+    {
+        $query->whereIn('category', $categories)->orderBy('name');
 
         if ($term !== '') {
             $query->where('name', 'like', '%'.$term.'%');
         }
 
-        $meals = $query->get(['id', 'name', 'category'])->map(static function (Meal $meal): array {
-            $category = $meal->category;
-
-            return [
-                'id' => $meal->id,
-                'name' => $meal->name,
-                'category' => $category instanceof RecipeCategory ? $category->value : (string) $category,
-            ];
-        })->values()->all();
-
-        return response()->json(['meals' => $meals]);
+        return $query->get(['id', 'name', 'category']);
     }
 
-    private function slotTypeToCategoryKey(MealPlanSlotType $slotType): string
+    /**
+     * @param  Collection<int, Meal>  $tiers
+     * @param  Collection<int, Meal>  $classic
+     * @return Collection<int, Meal>
+     */
+    private function preferTiersMealsByName(Collection $tiers, Collection $classic): Collection
     {
-        return match ($slotType) {
-            MealPlanSlotType::Breakfast => 'breakfasts',
-            MealPlanSlotType::Main => 'meals',
-            MealPlanSlotType::Salad => 'sideSalads',
-            MealPlanSlotType::Dessert => 'desserts',
-            MealPlanSlotType::Soup => 'soup',
-        };
+        /** @var array<string, Meal> $byName */
+        $byName = [];
+
+        foreach ($classic as $meal) {
+            if (MealTiersLibraryExclusions::isExcluded($meal)) {
+                continue;
+            }
+
+            $byName[(string) $meal->name] = $meal;
+        }
+
+        foreach ($tiers as $meal) {
+            $byName[(string) $meal->name] = $meal;
+        }
+
+        return collect(array_values($byName));
     }
 }

@@ -7,7 +7,7 @@ function sideSalad(id, title) {
 }
 
 describe('consultationSideSaladDeckForDay', () => {
-    it('shows up to three side salad options', () => {
+    it('shows up to two side salad options', () => {
         const catalog = [
             sideSalad('a', 'Kimchi Purslane Side Salad'),
             sideSalad('b', 'Tahini Purslane Pepper Salad'),
@@ -19,7 +19,13 @@ describe('consultationSideSaladDeckForDay', () => {
 
         const deck = consultationSideSaladDeckForDay(catalog, scheduled);
 
-        expect(deck).toHaveLength(3);
-        expect(deck.map((meal) => meal.id)).toEqual(['a', 'b', 'c']);
+        expect(deck).toHaveLength(2);
+        expect(deck.map((meal) => meal.id)).toEqual(['a', 'b']);
+    });
+
+    it('matches admin mealType Side Salad (title case)', () => {
+        const catalog = [{ id: 'a', title: 'Kimchi Purslane Side Salad', mealType: 'Side Salad' }];
+
+        expect(consultationSideSaladDeckForDay(catalog, []).map((meal) => meal.id)).toEqual(['a']);
     });
 });

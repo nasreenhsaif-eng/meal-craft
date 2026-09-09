@@ -88,7 +88,7 @@ test('customers cannot override plan tier via adapted menu query', function () {
     ]);
 
     $this->actingAs($user)
-        ->getJson('/api/menu/adapted?plan_tier=1000')
+        ->getJson('/api/menu/adapted?plan_tier=1250')
         ->assertSuccessful()
         ->assertJsonPath('plan.plan_tier', 2000);
 
@@ -98,7 +98,7 @@ test('customers cannot override plan tier via adapted menu query', function () {
 test('selected fixed slots keep explicit tier slot targets and day total at tier', function () {
     $user = User::factory()->create();
     CustomerProfile::factory()->for($user)->create([
-        'daily_calorie_target' => 1200,
+        'daily_calorie_target' => 1250,
         'protein_percentage' => 40,
         'carb_percentage' => 30,
         'fat_percentage' => 30,
@@ -110,9 +110,9 @@ test('selected fixed slots keep explicit tier slot targets and day total at tier
         'soup_calories' => 107,
     ]);
 
-    expect($withSideAndSoup['day_total_calories'])->toBe(1200.0)
-        ->and($withSideAndSoup['scalable_slot_targets']['breakfast']['calories'])->toBe(194.0)
-        ->and($withSideAndSoup['scalable_slot_targets']['main_each']['calories'])->toBe(339.5)
+    expect($withSideAndSoup['day_total_calories'])->toBe(1250.0)
+        ->and($withSideAndSoup['scalable_slot_targets']['breakfast']['calories'])->toBe(300.0)
+        ->and($withSideAndSoup['scalable_slot_targets']['main_each']['calories'])->toBe(311.5)
         ->and($withSideAndSoup['fixed_portion']['per_slot']['side_salad'])->toBe(220.0)
         ->and($withSideAndSoup['fixed_portion']['per_slot']['soup'])->toBe(107.0);
 });
@@ -265,9 +265,9 @@ test('adapted menu lists chia dessert as fixed portion when high-cal dessert is 
     );
 
     $response->assertSuccessful()
-        ->assertJsonPath('plan.scalable_slot_targets.breakfast.calories', 258);
+        ->assertJsonPath('plan.scalable_slot_targets.breakfast.calories', 300);
 
-    expect((float) $response->json('plan.scalable_slot_targets.main_each.calories'))->toEqualWithDelta(387.0, 1.0)
+    expect((float) $response->json('plan.scalable_slot_targets.main_each.calories'))->toEqualWithDelta(400.0, 1.0)
         ->and((float) $response->json('plan.day_total_calories'))->toBe(1500.0);
 
     $chia = collect($response->json('fixed_portion_meals'))->firstWhere('name', 'Blueberry Walnut Greek Yogurt Chia Pudding');
@@ -529,10 +529,10 @@ test('adapted menu applies craft-specific calorie budgets when craft_key is prov
 
     $response->assertSuccessful()
         ->assertJsonPath('plan.craft_key', 'business')
-        ->assertJsonPath('plan.craft_day_calories', 525);
+        ->assertJsonPath('plan.craft_day_calories', 650);
 });
 
-test('adapted menu day craft subtracts one main meal from the plan tier', function () {
+test('adapted menu day craft snaps to the nearest Day Craft library total', function () {
     $user = User::factory()->create();
     CustomerProfile::factory()->for($user)->create([
         'daily_calorie_target' => 2000,
@@ -542,7 +542,7 @@ test('adapted menu day craft subtracts one main meal from the plan tier', functi
 
     $response->assertSuccessful()
         ->assertJsonPath('plan.craft_key', 'day')
-        ->assertJsonPath('plan.craft_day_calories', 1375);
+        ->assertJsonPath('plan.craft_day_calories', 1400);
 });
 
 test('adapted menu returns day macro tolerance and consistent daily macros across tier switches', function () {

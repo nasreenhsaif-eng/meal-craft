@@ -7,16 +7,13 @@ import { resolveUrl } from '../../meal-craft/mealCraftPageProps.js';
 import PillButton from '../../Components/Atoms/Button/Button.jsx';
 import Button from '../../Components/Atoms/Button.jsx';
 import AdminPreviewTierPicker from '../../Components/Admin/AdminPreviewTierPicker.jsx';
-import {
+import ChooseYourMeals, {
     applyDeckSelectionToggle,
     DEFAULT_FULL_CRAFT_MAX_SELECTIONS,
-    MealSlotCarousel,
 } from '../../Components/Consultation/ChooseYourMeals.jsx';
 import {
     applyFixedChoiceToggle,
-    countFixedChoiceSelections,
     FIXED_CHOICE_CATEGORY_KEYS,
-    FIXED_CHOICE_MAX_COUNT,
 } from '../../consultation/fixedChoiceSelection.js';
 import { DayMacroMicroTabPanel } from '../../Components/Consultation/DayNutritionalSummaryPanel.jsx';
 import MealDetailView from '../../Components/Molecules/MealDetailView/MealDetailView';
@@ -24,10 +21,16 @@ import MealPlanMealEditSheet from '../../Components/MealPlan/MealPlanMealEditShe
 import { SCHEDULER_SLOT_SECTIONS } from '../../meal-library/mealSearch.ts';
 import { updateMealInPlanDays } from './mealPlanMealEdit.js';
 import { useMealDetailModal } from '../../meal-library/useMealDetailModal.js';
+import {
+    applyLibraryTierPortions,
+    daysUseLibraryPortions,
+} from '../../consultation/applyLibraryTierPortions.js';
 
 const PAGE_BG = 'bg-[#F8F9F6]';
 
-const DEFAULT_PLAN_TIERS = [1000, 1200, 1500, 1800, 2000];
+const WEEKDAY_LONG = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+const DEFAULT_PLAN_TIERS = [1250, 1500, 1800, 2000];
 
 /**
  * @param {number} mealPlanId
@@ -81,6 +84,133 @@ async function fetchTierPreviewDays(tierPreviewUrl, planTier, daySelections = {}
     const payload = await response.json();
 
     return payload.days ?? [];
+}
+
+const CATEGORY_KEYS_FOR_SELECTION = ['breakfasts', 'meals', 'sideSalads', 'desserts', 'soup'];
+
+/**
+ * Keep chosen breakfast / side cards visible after tier preview recategorizes a meal.
+ *
+ * @param {Array<{ dayNumber: number; categories?: Record<string, object[]> }>} previewDays
+ * @param {Array<{ dayNumber: number; categories?: Record<string, object[]> }>} previousDays
+ * @param {Record<number, Record<string, Array<string|number>>>} daySelections
+ */
+function retainSelectedMealsInPreviewDays(previewDays, previousDays, daySelections) {
+    /** @type {Map<number, { dayNumber: number; categories?: Record<string, object[]> }>} */
+    const previousByDay = new Map((previousDays ?? []).map((day) => [day.dayNumber, day]));
+
+    return (previewDays ?? []).map((day) => {
+        const previous = previousByDay.get(day.dayNumber);
+        const selections = daySelections?.[day.dayNumber] ?? daySelections?.[String(day.dayNumber)] ?? {};
+        /** @type {Map<string, object>} */
+        const catalog = new Map();
+
+        for (const source of [previous?.categories, day.categories]) {
+            for (const meals of Object.values(source ?? {})) {
+                for (const meal of meals ?? []) {
+                    const id = String(meal?.id ?? '');
+                    if (id !== '' && !catalog.has(id)) {
+                        catalog.set(id, meal);
+                    }
+                }
+            }
+        }
+
+        /** @type {Record<string, object[]>} */
+        const categories = { ...(day.categories ?? {}) };
+
+        for (const categoryKey of CATEGORY_KEYS_FOR_SELECTION) {
+            const existing = Array.isArray(categories[categoryKey]) ? [...categories[categoryKey]] : [];
+            const previousMeals = previous?.categories?.[categoryKey] ?? [];
+            const existingIds = new Set(existing.map((meal) => String(meal?.id ?? '')).filter((id) => id !== ''));
+
+            if (existing.length === 0) {
+                for (const meal of previousMeals) {
+                    const id = String(meal?.id ?? '');
+                    if (id === '' || existingIds.has(id)) {
+                        continue;
+                    }
+
+                    existing.push(meal);
+                    existingIds.add(id);
+                }
+            }
+
+            for (const rawId of selections[categoryKey] ?? []) {
+                const id = String(rawId);
+                if (id === '' || existingIds.has(id)) {
+                    continue;
+                }
+
+                const meal = catalog.get(id);
+                if (!meal) {
+                    continue;
+                }
+
+                existing.push(meal);
+                existingIds.add(id);
+            }
+
+            categories[categoryKey] = existing;
+        }
+
+        return { ...day, categories };
+    });
+}
+
+/**
+ * Rebind checked side categories onto a card that is actually on the day.
+ *
+ * @param {Record<number, Record<string, string[]>>} daySelections
+ * @param {Array<{ dayNumber: number; categories?: Record<string, object[]> }>} planDays
+ */
+function repairFixedChoiceSelections(daySelections, planDays) {
+    let changed = false;
+    const next = { ...daySelections };
+
+    for (const day of planDays ?? []) {
+        const current = next[day.dayNumber] ?? next[String(day.dayNumber)] ?? {};
+        let dayChanged = false;
+        const patched = { ...current };
+
+        for (const key of FIXED_CHOICE_CATEGORY_KEYS) {
+            const ids = (current[key] ?? []).map((id) => String(id)).filter((id) => id !== '');
+
+            if (ids.length === 0) {
+                continue;
+            }
+
+            const cards = day.categories?.[key] ?? [];
+            const cardIds = new Set(cards.map((meal) => String(meal?.id ?? '')).filter((id) => id !== ''));
+            const valid = ids.filter((id) => cardIds.has(id));
+
+            if (valid.length === ids.length) {
+                continue;
+            }
+
+            dayChanged = true;
+
+            if (valid.length > 0) {
+                patched[key] = valid;
+                continue;
+            }
+
+            if (cards.length === 0) {
+                continue;
+            }
+
+            const recommended =
+                cards.find((meal) => meal?.isRecommended || meal?.is_recommended) ?? cards[0];
+            patched[key] = [String(recommended.id)];
+        }
+
+        if (dayChanged) {
+            next[day.dayNumber] = patched;
+            changed = true;
+        }
+    }
+
+    return changed ? next : daySelections;
 }
 
 /** @type {Record<string, 'breakfasts' | 'meals' | 'sideSalads' | 'desserts' | 'soup'>} */
@@ -181,6 +311,28 @@ function resolveInitialDaySelections(planDays, defaultDaySelections) {
 }
 
 /**
+ * @param {{ categories?: Record<string, Array<{ id?: string|number }>> } | null} dayData
+ * @param {{ id?: string|number }} meal
+ */
+function categoryKeyForMeal(dayData, meal) {
+    const mealId = String(meal?.id ?? '');
+
+    if (!dayData?.categories || mealId === '') {
+        return null;
+    }
+
+    for (const section of DETAIL_SECTIONS) {
+        const meals = dayData.categories[section.categoryKey] ?? [];
+
+        if (meals.some((item) => String(item?.id ?? '') === mealId)) {
+            return section.categoryKey;
+        }
+    }
+
+    return null;
+}
+
+/**
  * @param {object} props
  * @param {object} props.mealPlan
  * @param {Array<{ dayNumber: number; label: string; categories: Record<string, unknown[]> }>} props.days
@@ -191,6 +343,7 @@ function resolveInitialDaySelections(planDays, defaultDaySelections) {
  * @param {string} [props.saveDefaultSelectionsUrl]
  * @param {string} [props.libraryUrl]
  * @param {object[]} [props.ingredientProfiles]
+ * @param {string} [props.dietProtocol]
  */
 export default function MealPlanDetailPage({
     mealPlan,
@@ -202,6 +355,7 @@ export default function MealPlanDetailPage({
     saveDefaultSelectionsUrl = '',
     libraryUrl = '/admin/meal-plan-library',
     ingredientProfiles = [],
+    dietProtocol = 'balanced',
 }) {
     const page = usePage();
     const flashSuccess = page.props?.flash?.success ?? null;
@@ -214,8 +368,9 @@ export default function MealPlanDetailPage({
     );
 
     const [selectedTier, setSelectedTier] = useState(initialTier);
-    const [planDays, setPlanDays] = useState(days);
-    const [tierLoading, setTierLoading] = useState(Boolean(tierPreviewUrl));
+    const libraryBacked = useMemo(() => daysUseLibraryPortions(days), [days]);
+    const [sourceDays, setSourceDays] = useState(days);
+    const [tierLoading, setTierLoading] = useState(() => Boolean(tierPreviewUrl) && !daysUseLibraryPortions(days));
     const [tierError, setTierError] = useState(/** @type {string | null} */ (null));
     const [activeDay, setActiveDay] = useState(() => days[0]?.dayNumber ?? 1);
     const [daySelections, setDaySelections] = useState(() =>
@@ -238,15 +393,20 @@ export default function MealPlanDetailPage({
         },
     );
 
+    const planDays = useMemo(
+        () => (libraryBacked ? applyLibraryTierPortions(sourceDays, selectedTier) : sourceDays),
+        [libraryBacked, sourceDays, selectedTier],
+    );
+
     useEffect(() => {
-        setPlanDays(days);
+        setSourceDays(days);
         setDaySelections(resolveInitialDaySelections(days, defaultDaySelections));
     }, [days, defaultDaySelections]);
 
     const daySelectionsJson = useMemo(() => JSON.stringify(daySelections), [daySelections]);
 
     useEffect(() => {
-        if (!tierPreviewUrl) {
+        if (libraryBacked || !tierPreviewUrl) {
             setTierLoading(false);
             return undefined;
         }
@@ -263,12 +423,12 @@ export default function MealPlanDetailPage({
                         return;
                     }
 
-                    setPlanDays(tierDays);
+                    setSourceDays(retainSelectedMealsInPreviewDays(tierDays, days, daySelections));
                 })
                 .catch(() => {
                     if (!cancelled) {
-                        setTierError('Could not scale meals for this tier. Showing library portions.');
-                        setPlanDays(days);
+                        setTierError('Could not load Meal Tiers Library portions for this tier. Showing stored meals.');
+                        setSourceDays(days);
                     }
                 })
                 .finally(() => {
@@ -282,7 +442,7 @@ export default function MealPlanDetailPage({
             cancelled = true;
             window.clearTimeout(timer);
         };
-    }, [tierPreviewUrl, selectedTier, daySelectionsJson, days]);
+    }, [libraryBacked, tierPreviewUrl, selectedTier, daySelectionsJson, days]);
 
     useEffect(() => {
         if (mealPlanId <= 0) {
@@ -300,6 +460,18 @@ export default function MealPlanDetailPage({
         () => planDays.find((day) => day.dayNumber === activeDay) ?? planDays[0] ?? null,
         [activeDay, planDays],
     );
+
+    useEffect(() => {
+        setDaySelections((prev) => repairFixedChoiceSelections(prev, planDays));
+    }, [planDays]);
+
+    const catalogMeals = useMemo(() => {
+        if (!activeDayData?.categories) {
+            return [];
+        }
+
+        return Object.values(activeDayData.categories).flat().filter(Boolean);
+    }, [activeDayData]);
 
     const activeDaySelections = daySelections[activeDay] ?? {};
 
@@ -347,12 +519,27 @@ export default function MealPlanDetailPage({
         if (!mealEditModal) {
             return;
         }
-        setPlanDays((prev) =>
+        setSourceDays((prev) =>
             updateMealInPlanDays(prev, {
                 dayNumber: mealEditModal.dayNumber,
                 categoryKey: mealEditModal.categoryKey,
                 mealId: String(mealEditModal.meal.id),
-            }, updatedMeal),
+            }, {
+                ...updatedMeal,
+                calorieTiers: (mealEditModal.meal.calorieTiers ?? updatedMeal.calorieTiers ?? []).map((tier) => {
+                    if (Number(tier?.calorie_tier) !== Number(updatedMeal.libraryCalorieTier ?? mealEditModal.meal.libraryCalorieTier)) {
+                        return tier;
+                    }
+
+                    return {
+                        ...tier,
+                        macros: updatedMeal.macros ?? tier.macros,
+                        kitchenIngredientRows: updatedMeal.kitchenIngredientRows ?? tier.kitchenIngredientRows,
+                        nutrition: updatedMeal.detailView?.nutrition ?? tier.nutrition,
+                        nutritionalData: updatedMeal.detailView?.nutritionalData ?? tier.nutritionalData,
+                    };
+                }),
+            }),
         );
     }, [mealEditModal]);
 
@@ -393,6 +580,20 @@ export default function MealPlanDetailPage({
         });
     }, [activeDay]);
 
+    const clearFixedChoiceCategory = useCallback((categoryKey) => {
+        setDaySelections((prev) => {
+            const day = prev[activeDay] ?? {};
+
+            return {
+                ...prev,
+                [activeDay]: {
+                    ...day,
+                    [categoryKey]: [],
+                },
+            };
+        });
+    }, [activeDay]);
+
     const saveDefaultSelections = useCallback(() => {
         if (!saveDefaultSelectionsUrl) {
             return;
@@ -421,13 +622,39 @@ export default function MealPlanDetailPage({
         goalText.toLowerCase() !== planCategoryLabel.toLowerCase() &&
         goalText.toLowerCase() !== 'balanced';
 
-    const coreSections = DETAIL_SECTIONS.filter(
-        (section) => !FIXED_CHOICE_CATEGORY_KEYS.includes(section.categoryKey),
+    const categoryMaxSelections = useMemo(() => {
+        const breakfastCount = activeDayData?.categories?.breakfasts?.length ?? 0;
+
+        return {
+            ...DEFAULT_FULL_CRAFT_MAX_SELECTIONS,
+            breakfasts: breakfastCount > 0 ? DEFAULT_FULL_CRAFT_MAX_SELECTIONS.breakfasts : 0,
+        };
+    }, [activeDayData]);
+
+    const handleToggleCategory = useCallback(
+        (categoryKey, meal) => {
+            if (FIXED_CHOICE_CATEGORY_KEYS.includes(categoryKey)) {
+                toggleFixedChoiceSide(categoryKey, meal);
+                return;
+            }
+
+            toggleMealSelection(categoryKey, meal, defaultSelectionCapForCategory(categoryKey));
+        },
+        [toggleFixedChoiceSide, toggleMealSelection],
     );
-    const sideSections = FIXED_CHOICE_CATEGORY_KEYS.map((key) =>
-        DETAIL_SECTIONS.find((section) => section.categoryKey === key),
-    ).filter(Boolean);
-    const selectedSideCount = countFixedChoiceSelections(activeDaySelections);
+
+    const handleEditMeal = useCallback(
+        (meal) => {
+            const categoryKey = categoryKeyForMeal(activeDayData, meal);
+
+            if (!categoryKey) {
+                return;
+            }
+
+            openMealEdit(meal, categoryKey);
+        },
+        [activeDayData, openMealEdit],
+    );
 
     return (
         <div className={`min-h-full font-body ${PAGE_BG}`}>
@@ -503,8 +730,8 @@ export default function MealPlanDetailPage({
                             selectedTier={selectedTier}
                             onSelectTier={setSelectedTier}
                             loading={tierLoading}
-                            description="Pick a calorie tier to reconcile kitchen portions and nutrition while you review each meal in this plan."
-                            compactHint="Breakfast and mains scale to the tier you pick. Side salads, desserts, and soup stay at standard kitchen portions."
+                            description="Pick a daily total to load the matching Meal Tiers Library portions. Meal cards show one calorie. Side salads, desserts, and soup stay at their authored kitchen portions."
+                            compactHint="Pick a daily total to load the matching Meal Tiers Library portions. Meal cards show one calorie. Side salads, desserts, and soup stay at their authored kitchen portions."
                         />
                         {activeDayReconciliationWarnings.length > 0 ? (
                             <div className="mt-2 rounded-[10px] border border-amber-200 bg-amber-50 px-3 py-2 font-body text-sm text-amber-900">
@@ -547,69 +774,25 @@ export default function MealPlanDetailPage({
                         aria-busy={tierLoading}
                     >
                         {activeDayData ? (
-                            <>
-                                {coreSections.map((section) => {
-                                    const cards = activeDayData.categories?.[section.categoryKey] ?? [];
-                                    const selectedIds = activeDaySelections[section.categoryKey] ?? [];
-
-                                    return (
-                                        <MealSlotCarousel
-                                            key={`${activeDayData.dayNumber}-${section.categoryKey}`}
-                                            title={section.header}
-                                            deckScopeKey={`plan-${mealPlan?.id ?? 'x'}-day-${activeDayData.dayNumber}-${section.deckSuffix}`}
-                                            sectionKey={section.categoryKey}
-                                            sectionStackOrder={0}
-                                            cards={cards}
-                                            selectedIds={selectedIds}
-                                            maxSelected={defaultSelectionCapForCategory(section.categoryKey)}
-                                            onSelect={(meal) =>
-                                                toggleMealSelection(
-                                                    section.categoryKey,
-                                                    meal,
-                                                    defaultSelectionCapForCategory(section.categoryKey),
-                                                )
-                                            }
-                                            onViewDetails={openMealDetail}
-                                            onEditMeal={(meal) => openMealEdit(meal, section.categoryKey)}
-                                        />
-                                    );
-                                })}
-
-                                {sideSections.length > 0 ? (
-                                    <div className="space-y-4">
-                                        <div className="min-w-0">
-                                            <h2 className="font-montserrat text-lg font-bold text-[#262A22]">
-                                                Pick 1–2 of 3 sides
-                                            </h2>
-                                            <p className="mt-0.5 text-sm text-[#555555]">
-                                                Side salad, soup, or dessert • {selectedSideCount}/{FIXED_CHOICE_MAX_COUNT} selected (min 1)
-                                            </p>
-                                        </div>
-                                        {sideSections.map((section) => {
-                                            const cards = activeDayData.categories?.[section.categoryKey] ?? [];
-                                            const selectedIds = activeDaySelections[section.categoryKey] ?? [];
-
-                                            return (
-                                                <MealSlotCarousel
-                                                    key={`${activeDayData.dayNumber}-${section.categoryKey}`}
-                                                    title={section.header}
-                                                    deckScopeKey={`plan-${mealPlan?.id ?? 'x'}-day-${activeDayData.dayNumber}-${section.deckSuffix}`}
-                                                    sectionKey={section.categoryKey}
-                                                    sectionStackOrder={0}
-                                                    cards={cards}
-                                                    selectedIds={selectedIds}
-                                                    maxSelected={1}
-                                                    onSelect={(meal) =>
-                                                        toggleFixedChoiceSide(section.categoryKey, meal)
-                                                    }
-                                                    onViewDetails={openMealDetail}
-                                                    onEditMeal={(meal) => openMealEdit(meal, section.categoryKey)}
-                                                />
-                                            );
-                                        })}
-                                    </div>
-                                ) : null}
-                            </>
+                            <ChooseYourMeals
+                                panelClassName="h-[min(78dvh,880px)] min-h-[560px]"
+                                dayName={WEEKDAY_LONG[(activeDayData.dayNumber ?? 1) - 1] ?? activeDayData.label}
+                                layout="categories"
+                                dietProtocol={dietProtocol}
+                                protocolSelectedLayout
+                                meals={catalogMeals}
+                                displayDecks={activeDayData.categories}
+                                assignedMealsByCategory={activeDayData.categories}
+                                categorySelections={activeDaySelections}
+                                maxSelectionsByCategory={categoryMaxSelections}
+                                onToggleCategory={handleToggleCategory}
+                                onClearFixedChoiceCategory={clearFixedChoiceCategory}
+                                deckScopePrefix={`plan-${mealPlan?.id ?? 'x'}-day-${activeDayData.dayNumber}`}
+                                onViewDetails={openMealDetail}
+                                onEditMeal={handleEditMeal}
+                                targetCalories={selectedTier}
+                                craftTitle={mealPlan?.name ?? ''}
+                            />
                         ) : (
                             <p className="rounded-[12px] border border-dashed border-gray-200 bg-white p-8 text-center text-sm text-[#555555]">
                                 No day data available for this plan.

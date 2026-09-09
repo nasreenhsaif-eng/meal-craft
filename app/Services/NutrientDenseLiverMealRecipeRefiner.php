@@ -216,12 +216,13 @@ final class NutrientDenseLiverMealRecipeRefiner
                     'Olive Oil (Extra Virgin)' => 6.0,
                     'Oregano' => 1.0,
                     'Pomegranate Molasses' => 10.0,
-                    'Quinoa Flatbread (Base)' => 35.0,
+                    'Quinoa Flatbread (Base)' => 97.5,
                     'Red Onion' => 35.0,
                     'Sea Salt' => 0.5,
                 ],
                 'diet_tags' => $tags,
                 'short_description' => 'Pan-sautéed chicken liver with garlicky cabbage and peppers.',
+                'instructions' => "1. Prepare Quinoa Flatbread (Base) per base recipe instructions; keep warm.\n2. Pat chicken liver dry and season with sea salt, black pepper, and nutmeg.\n3. Warm olive oil in a wide pan. Sauté red onion and garlic until fragrant. Add sliced cabbage and bell pepper; cook until softened (4–5 min).\n4. Push vegetables to the side. Sear livers 1–2 minutes per side until browned outside and just cooked through.\n5. Stir cherry tomatoes and oregano into the vegetables. Finish with pomegranate molasses.\n6. Serve livers with garlicky cabbage and peppers alongside warm quinoa flatbread.",
             ],
             self::SPICED_BEEF_LIVER_MEATBALLS_NAME => [
                 'ingredients' => [
@@ -278,16 +279,28 @@ final class NutrientDenseLiverMealRecipeRefiner
                 'ingredients' => [
                     'Beef Ground Lean' => StandardMeatPortion::beefGramsForLiverBlendMeal(20.0),
                     'Beef Liver' => 20.0,
+                    'Black Pepper' => 1.0,
                     'Fresh Basil' => 8.0,
                     'Garlic (Raw)' => 4.0,
                     'Marinara Sauce (Base)' => 80.0,
-                    'Olive Oil (Extra Virgin)' => 4.0,
+                    'Olive Oil (Extra Virgin)' => 5.0,
                     'Oregano' => 1.0,
+                    'Smoked Paprika' => 1.0,
                     'White Onion' => 28.0,
                     'Zucchini' => 200.0,
+                    'Zucchini Almond Bread (Base)' => 45.0,
+                    'coriander powder' => 1.0,
+                    'cumin powder' => 1.0,
                 ],
                 'diet_tags' => $tags,
-                'short_description' => 'Tender zucchini boats stuffed with seasoned beef and minced liver, baked in marinara with fresh basil.',
+                'short_description' => 'Zucchini boats stuffed with spiced beef and liver, baked with marinara and basil, served with toasted zucchini almond bread.',
+                'instructions' => "1. Prepare Zucchini Almond Bread (Base) per base recipe instructions; toast before serving and keep warm.\n"
+                    ."2. Chop and fry 1 small onion in olive oil until softening. Add oregano and garlic; cook until golden.\n"
+                    ."3. Add minced beef and finely minced liver; fry until browned. Season with black pepper, smoked paprika, cumin powder, and coriander powder.\n"
+                    ."4. Halve the zucchini lengthwise and scoop into boats. Oil the zucchini boats and bake until golden.\n"
+                    ."5. Stuff the boats with the beef–liver mixture, spoon Marinara Sauce (Base) over the top, and bake until heated through.\n"
+                    .'6. Finish with fresh basil leaves. Serve with toasted zucchini almond bread.',
+                'food_filter_tags' => ['nightshades', 'nuts', 'eggs', 'dairy'],
             ],
         ];
     }

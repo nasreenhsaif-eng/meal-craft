@@ -16,14 +16,14 @@ class StoreOnboardingBirthdayRequest extends FormRequest
      */
     public function rules(): array
     {
-        $minimumBirthDate = now()->subYears(100)->toDateString();
+        $minimumBirthDate = now()->subYears(100)->startOfYear()->toDateString();
         $maximumBirthDate = now()->subYears(13)->toDateString();
 
         return [
             'date_of_birth' => [
                 'required',
                 'date',
-                'after:'.$minimumBirthDate,
+                'after_or_equal:'.$minimumBirthDate,
                 'before_or_equal:'.$maximumBirthDate,
             ],
         ];

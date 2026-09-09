@@ -1,16 +1,107 @@
-/** Mirrors {@link CraftCaloriePlanner} / config/customer_nutrition.php tier targets. */
+/** Mirrors config/craft_library_tiers.php — Full Craft onboarding snap totals. */
 const TIER_SLOT_CALORIES = Object.freeze({
-    1000: { breakfast: 200, mainEach: 250 },
-    1200: { breakfast: 200, mainEach: 350 },
-    1500: { breakfast: 300, mainEach: 450 },
-    1800: { breakfast: 400, mainEach: 550 },
-    2000: { breakfast: 450, mainEach: 625 },
+    1250: { breakfast: 300, mainEach: 400 },
+    1500: { breakfast: 300, mainEach: 400 },
+    1800: { breakfast: 400, mainEach: 500 },
+    2000: { breakfast: 500, mainEach: 600 },
+});
+
+/**
+ * @typedef {{ breakfast: number; mainEach: number; mainCount: number; includeSideSalad: boolean; includeDessert: boolean; includeSoup: boolean }} CraftLibrarySlotRow
+ */
+
+/** @type {Readonly<Record<string, Readonly<Record<number, CraftLibrarySlotRow>>>>} */
+const CRAFT_LIBRARY_TIERS = Object.freeze({
+    full: Object.freeze({
+        1250: { breakfast: 300, mainEach: 400, mainCount: 2, includeSideSalad: true, includeDessert: false, includeSoup: false },
+        1500: { breakfast: 300, mainEach: 400, mainCount: 2, includeSideSalad: true, includeDessert: true, includeSoup: false },
+        1800: { breakfast: 400, mainEach: 500, mainCount: 2, includeSideSalad: true, includeDessert: true, includeSoup: false },
+        2000: { breakfast: 500, mainEach: 600, mainCount: 2, includeSideSalad: true, includeDessert: true, includeSoup: false },
+    }),
+    afternoon: Object.freeze({
+        950: { breakfast: 0, mainEach: 400, mainCount: 2, includeSideSalad: true, includeDessert: false, includeSoup: false },
+        1200: { breakfast: 0, mainEach: 400, mainCount: 2, includeSideSalad: true, includeDessert: true, includeSoup: false },
+        1500: { breakfast: 0, mainEach: 550, mainCount: 2, includeSideSalad: true, includeDessert: true, includeSoup: false },
+        1800: { breakfast: 0, mainEach: 700, mainCount: 2, includeSideSalad: true, includeDessert: true, includeSoup: false },
+        2000: { breakfast: 0, mainEach: 800, mainCount: 2, includeSideSalad: true, includeDessert: true, includeSoup: false },
+    }),
+    day: Object.freeze({
+        1100: { breakfast: 300, mainEach: 400, mainCount: 1, includeSideSalad: true, includeDessert: true, includeSoup: false },
+        1200: { breakfast: 400, mainEach: 400, mainCount: 1, includeSideSalad: true, includeDessert: true, includeSoup: false },
+        1400: { breakfast: 500, mainEach: 500, mainCount: 1, includeSideSalad: true, includeDessert: true, includeSoup: false },
+    }),
+    business: Object.freeze({
+        550: { breakfast: 0, mainEach: 400, mainCount: 1, includeSideSalad: true, includeDessert: false, includeSoup: false },
+        650: { breakfast: 0, mainEach: 400, mainCount: 1, includeSideSalad: false, includeDessert: true, includeSoup: false },
+    }),
+    intermittent: Object.freeze({
+        950: { breakfast: 0, mainEach: 400, mainCount: 1, includeSideSalad: true, includeDessert: true, includeSoup: true },
+        1050: { breakfast: 0, mainEach: 500, mainCount: 1, includeSideSalad: true, includeDessert: true, includeSoup: true },
+        1100: { breakfast: 0, mainEach: 550, mainCount: 1, includeSideSalad: true, includeDessert: true, includeSoup: true },
+        1150: { breakfast: 0, mainEach: 600, mainCount: 1, includeSideSalad: true, includeDessert: true, includeSoup: true },
+    }),
 });
 
 const FIXED_CHOICE_CALORIES = 150;
 const FIXED_CHOICE_COUNT = 2;
-const BUSINESS_MAIN_TARGET = 375;
+const BUSINESS_MAIN_TARGET = 400;
 const BUSINESS_SIDE_CALORIES = 150;
+
+/**
+ * @param {string | null | undefined} craftKey
+ * @returns {Readonly<Record<number, CraftLibrarySlotRow>>}
+ */
+function craftLibraryRows(craftKey) {
+    const key = craftKey && CRAFT_LIBRARY_TIERS[craftKey] ? craftKey : 'full';
+
+    return CRAFT_LIBRARY_TIERS[key];
+}
+
+/**
+ * @param {number} calories
+ * @param {string | null | undefined} [craftKey]
+ */
+export function snapToCraftTotal(calories, craftKey = 'full') {
+    const rows = craftLibraryRows(craftKey);
+    const totals = Object.keys(rows).map((total) => Number(total)).filter((total) => Number.isFinite(total));
+
+    if (totals.length === 0) {
+        return Math.max(0, Math.round(calories));
+    }
+
+    let nearest = totals[0];
+    let smallest = Math.abs(calories - nearest);
+
+    for (const total of totals) {
+        const distance = Math.abs(calories - total);
+
+        if (distance < smallest) {
+            smallest = distance;
+            nearest = total;
+        }
+    }
+
+    return nearest;
+}
+
+/**
+ * @param {number} calories
+ * @param {string | null | undefined} [craftKey]
+ * @returns {CraftLibrarySlotRow}
+ */
+export function craftLibrarySlotRow(calories, craftKey = 'full') {
+    const rows = craftLibraryRows(craftKey);
+    const total = snapToCraftTotal(calories, craftKey);
+
+    return rows[total] ?? {
+        breakfast: 300,
+        mainEach: 400,
+        mainCount: 2,
+        includeSideSalad: true,
+        includeDessert: true,
+        includeSoup: false,
+    };
+}
 const BALANCED_MACRO_SPLIT = Object.freeze({
     protein: 35,
     carbs: 35,
@@ -26,24 +117,12 @@ const MAIN_EACH_MACRO_SPLIT = Object.freeze({
 
 /**
  * @param {number} planTier
+ * @param {string | null | undefined} [craftKey]
  */
-export function tierSlotTargetsForPlanTier(planTier) {
-    const tier = Math.round(planTier);
-    const row = /** @type {{ breakfast: number; mainEach: number } | undefined} */ (
-        TIER_SLOT_CALORIES[/** @type {keyof typeof TIER_SLOT_CALORIES} */ (tier)]
-    );
+export function tierSlotTargetsForPlanTier(planTier, craftKey = 'full') {
+    const row = craftLibrarySlotRow(planTier, craftKey);
 
-    if (row) {
-        return { breakfast: row.breakfast, mainEach: row.mainEach };
-    }
-
-    const fixedTotal = FIXED_CHOICE_COUNT * FIXED_CHOICE_CALORIES;
-    const scalableBudget = Math.max(0, tier - fixedTotal);
-
-    return {
-        breakfast: Math.round(scalableBudget * 0.2),
-        mainEach: Math.round(scalableBudget * 0.4),
-    };
+    return { breakfast: row.breakfast, mainEach: row.mainEach };
 }
 
 /**
@@ -211,28 +290,9 @@ export function breakfastSlotTargetCaloriesFromPlan(nutritionPlan, planTier = 0)
  * @param {number} planTier
  */
 export function craftDayCaloriesForKey(craftKey, planTier) {
-    const tier = Math.round(planTier);
-    const { breakfast, mainEach } = tierSlotTargetsForPlanTier(tier);
-    const fixedTotal = FIXED_CHOICE_COUNT * FIXED_CHOICE_CALORIES;
+    const key = craftKey || 'full';
 
-    if (!craftKey) {
-        return tier;
-    }
-
-    switch (craftKey) {
-        case 'full':
-            return tier;
-        case 'afternoon':
-            return tier - breakfast;
-        case 'day':
-            return tier - mainEach;
-        case 'intermittent':
-            return tier - breakfast - mainEach;
-        case 'business':
-            return BUSINESS_MAIN_TARGET + BUSINESS_SIDE_CALORIES;
-        default:
-            return tier;
-    }
+    return snapToCraftTotal(planTier, key);
 }
 
 /**
@@ -251,20 +311,17 @@ export function mainProteinTargetPerMeal(craftKey, planTier, nutritionPlan = nul
         return fromPlan;
     }
 
-    const { mainEach } = tierSlotTargetsForPlanTier(Math.round(planTier));
-
     if (craftKey === 'business') {
-        return macroGramsFromCalories(BUSINESS_MAIN_TARGET, MAIN_EACH_MACRO_SPLIT).protein;
+        return macroGramsFromCalories(craftLibrarySlotRow(planTier, 'business').mainEach, MAIN_EACH_MACRO_SPLIT).protein;
     }
 
     if (craftKey === 'intermittent') {
-        const intermittentMainEach = Math.max(
-            0,
-            craftDayCaloriesForKey('intermittent', planTier) - FIXED_CHOICE_COUNT * FIXED_CHOICE_CALORIES,
-        );
+        const intermittentMainEach = craftLibrarySlotRow(planTier, 'intermittent').mainEach;
 
         return macroGramsFromCalories(intermittentMainEach, MAIN_EACH_MACRO_SPLIT).protein;
     }
+
+    const { mainEach } = tierSlotTargetsForPlanTier(Math.round(planTier), craftKey);
 
     return macroGramsFromCalories(mainEach, MAIN_EACH_MACRO_SPLIT).protein;
 }
@@ -529,17 +586,19 @@ export function categoryMacroTargetsFromPlan(craftKey, planTier, nutritionPlan, 
 
     if (mealItems.length > 0) {
         const each = mainSlotMacroTargetsFromPlan(nutritionPlan, planTier);
+        const row = craftLibrarySlotRow(planTier, key);
+        const mainCount = mealItems.length > 0 ? (row.mainCount || mealItems.length) : mealItems.length;
 
         if (key === 'business') {
-            const grams = macroGramsFromCalories(BUSINESS_MAIN_TARGET, MAIN_EACH_MACRO_SPLIT);
+            const grams = macroGramsFromCalories(row.mainEach, MAIN_EACH_MACRO_SPLIT);
             targets.meals = {
-                calories: BUSINESS_MAIN_TARGET,
+                calories: row.mainEach,
                 protein: Math.round(grams.protein),
                 carbs: Math.round(grams.carbs),
                 fat: Math.round(grams.fat),
             };
         } else {
-            targets.meals = scaleMacroTotals(each, mealItems.length);
+            targets.meals = scaleMacroTotals(each, mainCount);
         }
     }
 

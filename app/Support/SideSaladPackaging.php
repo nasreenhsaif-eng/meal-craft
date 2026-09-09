@@ -16,19 +16,19 @@ final class SideSaladPackaging
     /** Fluffy leaves (rocca, purslane, arugula, romaine, kale). */
     public static function maxFluffyLeafGrams(): float
     {
-        return (float) config('customer_nutrition.side_salad_packaging.max_fluffy_leaf_grams', 60.0);
+        return (float) config('customer_nutrition.side_salad_packaging.max_fluffy_leaf_grams', 90.0);
     }
 
     /** Denser shredded cabbage / bok choy bases. */
     public static function maxDenseLeafGrams(): float
     {
-        return (float) config('customer_nutrition.side_salad_packaging.max_dense_leaf_grams', 70.0);
+        return (float) config('customer_nutrition.side_salad_packaging.max_dense_leaf_grams', 80.0);
     }
 
     /** Combined leafy greens in one salad. */
     public static function maxCombinedLeafGrams(): float
     {
-        return (float) config('customer_nutrition.side_salad_packaging.max_combined_leaf_grams', 70.0);
+        return (float) config('customer_nutrition.side_salad_packaging.max_combined_leaf_grams', 90.0);
     }
 
     public static function maxDressingGrams(): float

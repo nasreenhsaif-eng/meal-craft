@@ -50,11 +50,11 @@ test('one fixed slot redistributes unused side budget to scalable meals', functi
         'selected_fixed_slots' => ['dessert'],
     ]);
 
-    // Breakfast stays tier-fixed (450); unused fixed budget goes entirely to mains.
+    // Breakfast stays the Full Craft library tab (500); unused fixed budget goes to mains only.
     expect($oneSide['day_total_calories'])->toEqualWithDelta(2000.0, 0.05)
         ->and($oneSide['fixed_portion']['calories'])->toBe(150.0)
-        ->and($oneSide['scalable_slot_targets']['breakfast']['calories'])->toBe(450.0)
-        ->and($oneSide['scalable_slot_targets']['main_each']['calories'])->toEqualWithDelta(700.0, 0.05)
+        ->and($oneSide['scalable_slot_targets']['breakfast']['calories'])->toBe(500.0)
+        ->and($oneSide['scalable_slot_targets']['main_each']['calories'])->toEqualWithDelta(675.0, 0.05)
         ->and($oneSide['scalable_slot_targets']['main_each']['calories'])
         ->toBeGreaterThan($twoSides['scalable_slot_targets']['main_each']['calories']);
 });

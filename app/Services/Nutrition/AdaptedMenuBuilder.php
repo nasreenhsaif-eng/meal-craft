@@ -9,14 +9,17 @@ use App\Http\Controllers\Admin\MealLibraryController;
 use App\Models\CustomerProfile;
 use App\Models\Ingredient;
 use App\Models\Meal;
+use App\Models\MealCalorieTier;
 use App\Services\BalancedChiaDessertRecipeRefiner;
 use App\Services\RecipeNutritionCalculator;
 use App\Support\ChiaDessertMeals;
+use App\Support\CraftLibraryTierMap;
 use App\Support\CulinaryBreakfastRebalancer;
 use App\Support\CulinaryPortionConstraints;
 use App\Support\EggIngredientPresentation;
 use App\Support\KitchenPortionRounding;
 use App\Support\MealPlanSlotBasedDayNutrition;
+use App\Support\MealTiersCalorieTabs;
 use App\Support\PureCookingFatNutrition;
 use App\Support\SavoryEggBreakfastMeals;
 
@@ -175,6 +178,10 @@ final class AdaptedMenuBuilder
         $plan = self::planWithBreakfastFloorRebalance($profile, $plan, $options);
         $behavior = UserPlanCalculator::slotBehavior($slot);
 
+        if (self::usesLibraryTierPlate($meal, $slot)) {
+            return self::serializeLibraryTierMeal($meal, $slot, $plan, $profile);
+        }
+
         if ($behavior === 'scalable') {
             return self::serializeScaledMeal($meal, $slot, $plan);
         }
@@ -240,10 +247,21 @@ final class AdaptedMenuBuilder
         $plan = self::planWithBreakfastFloorRebalance($profile, $plan, $options);
 
         $adapted = [];
+        $usesLibraryPlates = false;
 
         foreach ($meals as $meal) {
             $meal->loadMissing('ingredients');
-            $adapted[] = self::serializeScaledMeal($meal, 'main', $plan);
+
+            if (self::usesLibraryTierPlate($meal, 'main')) {
+                $usesLibraryPlates = true;
+                $adapted[] = self::serializeLibraryTierMeal($meal, 'main', $plan, $profile);
+            } else {
+                $adapted[] = self::serializeScaledMeal($meal, 'main', $plan);
+            }
+        }
+
+        if ($usesLibraryPlates) {
+            return $adapted;
         }
 
         return self::balanceMainMealProtein($adapted, $plan, $meals);
@@ -1117,7 +1135,7 @@ final class AdaptedMenuBuilder
                 RecipeCategory::Meal => 'main',
                 RecipeCategory::Soup => 'soup',
                 RecipeCategory::SideSalad, RecipeCategory::MainSalad => 'side_salad',
-                RecipeCategory::Dessert => 'dessert',
+                RecipeCategory::Dessert, RecipeCategory::ChiaPudding => 'dessert',
                 default => null,
             };
         }
@@ -1152,6 +1170,84 @@ final class AdaptedMenuBuilder
             MealPlanSlotType::Dessert => 'dessert',
             MealPlanSlotType::Soup => 'soup',
         };
+    }
+
+    private static function usesLibraryTierPlate(Meal $meal, string $slot): bool
+    {
+        if (! $meal->isTiersLibrary()) {
+            return false;
+        }
+
+        if (! in_array($slot, ['breakfast', 'main'], true)) {
+            return false;
+        }
+
+        return MealTiersCalorieTabs::usesTabs($meal);
+    }
+
+    /**
+     * @param  array<string, mixed>  $plan
+     * @return array<string, mixed>
+     */
+    private static function serializeLibraryTierMeal(
+        Meal $meal,
+        string $slot,
+        array $plan,
+        CustomerProfile $profile,
+    ): array {
+        $craftKey = (string) ($plan['craft_key'] ?? CraftLibraryTierMap::DEFAULT_CRAFT);
+
+        if ($craftKey === '') {
+            $craftKey = CraftLibraryTierMap::DEFAULT_CRAFT;
+        }
+
+        $planTier = (float) ($plan['plan_tier'] ?? $plan['craft_day_calories'] ?? 0);
+        $tab = CraftLibraryTierMap::calorieTabForSlot($craftKey, $planTier, $slot);
+
+        $meal->loadMissing(['calorieTiers.ingredients']);
+
+        /** @var MealCalorieTier|null $tier */
+        $tier = $meal->calorieTiers->firstWhere('calorie_tier', $tab);
+
+        if (! $tier instanceof MealCalorieTier || $tier->ingredients->isEmpty()) {
+            return self::serializeStandardPortionMeal($meal, $slot, $profile);
+        }
+
+        $adaptedGramsByIngredientId = [];
+
+        foreach ($tier->ingredients as $ingredient) {
+            $grams = (float) ($ingredient->pivot->amount_grams ?? 0);
+
+            if ($grams > 0) {
+                $adaptedGramsByIngredientId[(int) $ingredient->id] = round($grams, 2);
+            }
+        }
+
+        $meal->setRelation('ingredients', $tier->ingredients);
+
+        $serialized = self::serializeScaledMealFromGrams(
+            $meal,
+            $slot,
+            $plan,
+            $adaptedGramsByIngredientId,
+            false,
+            1.0,
+        );
+
+        $serialized['is_scaled'] = false;
+        $serialized['scaling_multiplier'] = 1.0;
+        $serialized['portion_behavior'] = 'fixed_portion';
+        $serialized['library_calorie_tier'] = $tab;
+
+        if ($slot === 'breakfast') {
+            $eggCount = MealTiersCalorieTabs::savoryEggMinimumForMeal($meal, $tab);
+
+            if ($eggCount !== null) {
+                $serialized['savory_egg_count'] = $eggCount;
+            }
+        }
+
+        return $serialized;
     }
 
     /**

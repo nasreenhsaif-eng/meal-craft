@@ -4,9 +4,11 @@ namespace App\Services;
 
 use App\Models\Ingredient;
 use App\Models\Meal;
+use App\Support\BeefShawarmaBaseRecipe;
 use App\Support\MealLibraryBulkNutrition;
 use App\Support\MealLibraryEditGuard;
 use App\Support\MealLibraryRefinerOverrides;
+use App\Support\OkraBeefCurryBaseRecipe;
 use App\Support\StandardMeatPortion;
 use App\Support\WholeFoodDietPolicy;
 use Illuminate\Support\Facades\DB;
@@ -24,8 +26,8 @@ final class BalancedRotationMealRecipeRefiner
 
     public const CHOCOLATE_ORANGE_BROWNIE_SERVINGS_COUNT = 16;
 
-    /** One US cup psyllium husks in the full batch (240 g at library density 1.0 g/ml). */
-    public const CHOCOLATE_ORANGE_BROWNIE_PSYLLIUM_BATCH_GRAMS = 240.0;
+    /** Corrected full-batch psyllium husk grams (not a cup measure). */
+    public const CHOCOLATE_ORANGE_BROWNIE_PSYLLIUM_BATCH_GRAMS = 15.0;
 
     public const SALTED_TAHINI_CARAMEL_CHOCOLATE_BAR_NAME = 'Salted Tahini Caramel Chocolate Bar';
 
@@ -35,7 +37,15 @@ final class BalancedRotationMealRecipeRefiner
 
     public const BANANA_BLUEBERRY_BALLS_PER_SERVING_COUNT = 3;
 
+    public const BANANA_BLUEBERRY_BALLS_SERVINGS_COUNT = 3;
+
+    public const CINNAMON_RAISIN_BALLS_SERVINGS_COUNT = 3;
+
+    public const CINNAMON_RAISIN_BALLS_PER_SERVING_COUNT = 3;
+
     public const CHOCOLATE_PB_BANANA_MUFFIN_BATCH_SERVINGS_COUNT = 6;
+
+    public const SAFFRON_PUMPKIN_MUFFIN_BATCH_SERVINGS_COUNT = 10;
 
     /**
      * @return list<string>
@@ -211,38 +221,38 @@ final class BalancedRotationMealRecipeRefiner
     }
 
     /**
-     * Batch yields {@see CHOCOLATE_ORANGE_BROWNIE_SERVINGS_COUNT} squares.
-     * Volumes: 1½ cups dates, ⅓ cup water, zest of 2 oranges, 2 tbsp OJ; ¾ cup butter & cocoa, 3 eggs;
-     * ½ cup almond flour, ¼ cup tapioca, 1 cup psyllium husks, ¼ tsp baking powder & salt.
+     * Batch yields {@see CHOCOLATE_ORANGE_BROWNIE_SERVINGS_COUNT} squares (~169 kcal each).
+     * Batch plate: 120g butter, 265g dates, 95g almond flour, 75g cocoa, 3 eggs (~150g),
+     * 30g tapioca, 15g psyllium, 30g orange juice, plus zest / baking powder / salt / soak water.
      *
      * @return array<string, float>
      */
-    private function chocolateOrangeBrowniePerServingIngredients(): array
+    private function chocolateOrangeBrownieBatchIngredients(): array
     {
         return [
-            'Medjool Dates' => 16.6875,
-            'Water (Filtered)' => 4.9375,
-            'Orange Zest' => 0.75,
-            'Orange Juice' => 1.9375,
-            'Grass Fed Butter' => 10.625,
-            'Cocoa Powder' => 4.6875,
-            'Eggs (Large)' => 9.375,
-            'Almond Flour (Base)' => 6,
-            'Tapioca Starch' => 1.875,
-            'Psyllium Husks' => self::CHOCOLATE_ORANGE_BROWNIE_PSYLLIUM_BATCH_GRAMS / self::CHOCOLATE_ORANGE_BROWNIE_SERVINGS_COUNT,
-            'Baking Powder' => 0.0781,
-            'Sea Salt' => 0.0938,
+            'Grass Fed Butter' => 120.0,
+            'Medjool Dates' => 265.0,
+            'Almond Flour (Base)' => 95.0,
+            'Cocoa Powder' => 75.0,
+            'Eggs (Large)' => 150.0,
+            'Tapioca Starch' => 30.0,
+            'Psyllium Husks' => self::CHOCOLATE_ORANGE_BROWNIE_PSYLLIUM_BATCH_GRAMS,
+            'Orange Juice' => 30.0,
+            'Orange Zest' => 4.0,
+            'Baking Powder' => 1.0,
+            'Sea Salt' => 1.5,
+            'Water (Filtered)' => 80.0,
         ];
     }
 
     /**
      * @return array<string, float>
      */
-    private function chocolateOrangeBrownieBatchIngredients(): array
+    private function chocolateOrangeBrowniePerServingIngredients(): array
     {
         return $this->scaleIngredientGrams(
-            $this->chocolateOrangeBrowniePerServingIngredients(),
-            self::CHOCOLATE_ORANGE_BROWNIE_SERVINGS_COUNT,
+            $this->chocolateOrangeBrownieBatchIngredients(),
+            1 / self::CHOCOLATE_ORANGE_BROWNIE_SERVINGS_COUNT,
         );
     }
 
@@ -307,6 +317,57 @@ final class BalancedRotationMealRecipeRefiner
         $vegetarianTags = array_merge($tags, ['Vegetarian']);
 
         $definitions = [
+            'Beef Shawarma Platter' => [
+                'ingredients' => [
+                    'Beef Shawarma (Base)' => BeefShawarmaBaseRecipe::PER_SERVING_GRAMS,
+                    'Creamy Cumin Hummus (Base)' => 70.0,
+                    'Cucumber' => 40.0,
+                    'Fire Roasted Tomatoes (Base)' => 50.0,
+                    'Cucumber Pickle (Base)' => 25.0,
+                    'Olive Oil (Extra Virgin)' => 5.0,
+                    'Parsley' => 5.0,
+                ],
+                'diet_tags' => $tags,
+                'short_description' => 'Shredded beef shawarma with house hummus, fresh cucumber, grilled tomato, pickle, olive oil, and parsley.',
+            ],
+            'Okra Beef Curry' => [
+                'ingredients' => [
+                    'Okra Beef Curry (Base)' => OkraBeefCurryBaseRecipe::PER_SERVING_GRAMS,
+                    'Steamed Basmati Rice (Base)' => 70.0,
+                    'Lemon Slices' => 15.0,
+                    'Fresh Coriander' => 5.0,
+                ],
+                'diet_tags' => $tags,
+                'short_description' => 'Slow-braised beef and okra in from-scratch homemade tomato curry finished with garlic-coriander tadka, served over steamed basmati rice with lemon and fresh coriander.',
+            ],
+            'Pan Seared Hamour' => [
+                'ingredients' => [
+                    'Hamour Fillet' => StandardMeatPortion::GRAMS,
+                    'Steamed Basmati Rice (Base)' => 70.0,
+                    'Roasted Mixed Vegetables (Base)' => 100.0,
+                    'Cumin Seeds' => 1.0,
+                    'Garlic (Raw)' => 5.0,
+                    'Lemon Juice' => 10.0,
+                    'Olive Oil' => 5.0,
+                ],
+                'diet_tags' => $tags,
+                'short_description' => 'Pan-seared hamour with cumin and garlic, served over steamed basmati rice and roasted mixed vegetables.',
+            ],
+            'Craft Shrimp Avocado Bowl' => [
+                'ingredients' => [
+                    'Shrimp (Raw)' => StandardMeatPortion::GRAMS,
+                    'Cooked Quinoa (Base)' => 85.0,
+                    'Avocado' => 30.0,
+                    'Cherry Tomatoes' => 50.0,
+                    'Spinach (Fresh)' => 30.0,
+                    'Lime Juice' => 10.0,
+                    'Olive Oil' => 5.0,
+                    'Black Pepper' => 0.5,
+                    'Sea Salt' => 0.5,
+                ],
+                'diet_tags' => $tags,
+                'short_description' => 'Sautéed shrimp over warm quinoa with avocado, wilted spinach, cherry tomatoes, and lime.',
+            ],
             'Spicy Harissa Grilled Chicken w Roasted Sweet Potato & Zucchini' => [
                 'ingredients' => [
                     'Chicken Breast' => StandardMeatPortion::GRAMS,
@@ -358,42 +419,46 @@ final class BalancedRotationMealRecipeRefiner
             ],
             'Vegan Smoky Cauliflower & Lentil Stew w Quinoa Bread & Tahini' => [
                 'ingredients' => [
-                    'Cauliflower' => 100,
-                    'Lentils (Red)' => 80,
-                    'Carrots' => 30,
-                    'White Onion' => 28,
-                    'Cherry Tomatoes' => 38,
-                    'Garlic (Raw)' => 3,
-                    'Smoked Paprika' => 2,
-                    'Cumin Seeds' => 2,
-                    'Coriander Seeds' => 1,
-                    'Chili Flakes' => 1,
-                    'Tahini' => 12,
-                    'Lemon Juice' => 10,
-                    'Olive Oil (Extra Virgin)' => 4,
-                    'Water (Filtered)' => 120,
-                    'Vegetable Stock' => 30,
-                    'Quinoa Flatbread (Base)' => 45,
+                    'Lentils (Red)' => 40.0,
+                    'Cauliflower' => 100.0,
+                    'Chard' => 75.0,
+                    'Cherry Tomatoes' => 30.0,
+                    'White Onion' => 25.0,
+                    'Garlic (Raw)' => 5.0,
+                    'Ginger (Raw)' => 3.0,
+                    'Olive Oil (Extra Virgin)' => 3.0,
+                    'Tahini' => 5.0,
+                    'Lemon Juice' => 10.0,
+                    'Water (Filtered)' => 150.0,
+                    'Cumin Seeds' => 1.0,
+                    'coriander powder' => 1.0,
+                    'Smoked Paprika' => 1.0,
+                    'Chili Flakes' => 0.5,
+                    'Sea Salt' => 1.0,
+                    'Quinoa Flatbread (Base)' => 97.5,
                 ],
+                'short_description' => 'Smoky red lentil and cauliflower curry with wilted chard, lemon, and a tahini drizzle — served with one quinoa flatbread.',
                 'diet_tags' => $veganTags,
             ],
             'Vegan Sri Lankan Red Lentil Dal w Quinoa Bread' => [
                 'ingredients' => [
-                    'Lentils (Red)' => 70,
-                    'Homemade Coconut Milk' => 35,
+                    'Lentils (Red)' => 40,
+                    'Homemade Coconut Milk' => 15,
                     'White Onion' => 25,
-                    'Garlic (Raw)' => 4,
-                    'Ginger (Raw)' => 6,
+                    'Garlic (Raw)' => 5,
+                    'Ginger (Raw)' => 5,
                     'Tomato (Raw)' => 35,
                     'Turmeric Powder' => 1,
                     'cumin powder' => 1,
                     'Coriander Seeds' => 1,
                     'mustard seeds' => 1,
-                    'Chili Flakes' => 1,
                     'Chili Powder' => 1,
-                    'Olive Oil (Extra Virgin)' => 4,
-                    'Water (Filtered)' => 150,
-                    'Quinoa Bread (Base)' => 45,
+                    'Olive Oil (Extra Virgin)' => 3,
+                    'Water (Filtered)' => 175,
+                    'Purslane' => 120,
+                    'Sea Salt' => 0.5,
+                    'Fresh Coriander' => 3,
+                    'Quinoa Flatbread (Base)' => 97.5,
                 ],
                 'diet_tags' => $veganTags,
             ],
@@ -411,38 +476,52 @@ final class BalancedRotationMealRecipeRefiner
             ],
             'Banana Blueberry Balls' => [
                 'ingredients' => [
-                    'Almond Flour' => 16,
-                    'Flaxseeds' => 2,
-                    'Cinnamon' => 0.1,
-                    'Maple Syrup' => 12,
-                    'Almond Butter' => 7,
-                    'Banana' => 11,
-                    'Blueberries' => 9,
+                    'Almond Flour (Base)' => 36.0,
+                    'Banana' => 45.0,
+                    'Blueberries' => 30.0,
+                    'Almond Butter' => 12.0,
+                    'Maple Syrup' => 15.0,
+                    'Flaxseeds' => 6.0,
+                    'Cinnamon' => 3.0,
+                    'Sea Salt' => 0.5,
                 ],
-                'diet_tags' => $vegetarianTags,
-                'short_description' => 'No-bake banana-blueberry energy balls with almond flour, flaxseed, maple syrup, and almond butter — '.self::BANANA_BLUEBERRY_BALLS_PER_SERVING_COUNT.' bites per serving (~193 kcal).',
+                'is_bulk' => true,
+                'servings_count' => self::BANANA_BLUEBERRY_BALLS_SERVINGS_COUNT,
+                'diet_tags' => $veganTags,
+                'short_description' => 'No-bake banana-blueberry energy balls with almond flour, flaxseed, maple syrup, and almond butter — '.self::BANANA_BLUEBERRY_BALLS_PER_SERVING_COUNT.' balls per serving (~150 kcal).',
             ],
             'Cinnamon Raisin Balls' => [
                 'ingredients' => [
-                    'Medjool Dates' => 40,
-                    'Raisins' => 15,
-                    'Almond Butter' => 15,
-                    'Walnuts' => 10,
-                    'Cinnamon' => 3,
-                    'Honey (Raw)' => 4,
+                    'Coconut Flour' => 24.0,
+                    'Medjool Dates' => 36.0,
+                    'Raisins' => 15.0,
+                    'Almond Butter' => 15.0,
+                    'Walnuts' => 15.0,
+                    'Cinnamon' => 3.0,
+                    'Water (Filtered)' => 50.0,
+                    'Sea Salt' => 0.5,
                 ],
-                'diet_tags' => $vegetarianTags,
+                'is_bulk' => true,
+                'servings_count' => self::CINNAMON_RAISIN_BALLS_SERVINGS_COUNT,
+                'diet_tags' => $veganTags,
+                'short_description' => 'No-bake cinnamon-raisin coconut flour balls with dates, almond butter, and walnuts — '.self::CINNAMON_RAISIN_BALLS_PER_SERVING_COUNT.' balls per serving (~147 kcal).',
             ],
             'Saffron Pumpkin Muffin' => [
                 'ingredients' => [
-                    'Butternut Squash' => 80,
-                    'Egg' => 55,
-                    'Almond Flour (Base)' => 25,
-                    'Honey (Raw)' => 8,
-                    'Saffron Threads' => 0.2,
-                    'Cinnamon' => 1,
+                    'Eggs (Large)' => 200.0,
+                    'Almond Flour (Base)' => 250.0,
+                    'Pumpkin Puree' => 350.0,
+                    'Honey (Raw)' => 120.0,
+                    'Saffron Threads' => 0.75,
+                    'Water (Filtered)' => 15.0,
+                    'Cinnamon' => 8.0,
+                    'Baking Powder' => 7.0,
+                    'Sea Salt' => 2.0,
                 ],
+                'is_bulk' => true,
+                'servings_count' => self::SAFFRON_PUMPKIN_MUFFIN_BATCH_SERVINGS_COUNT,
                 'diet_tags' => $vegetarianTags,
+                'short_description' => 'Grain-free saffron pumpkin muffins (batch of '.self::SAFFRON_PUMPKIN_MUFFIN_BATCH_SERVINGS_COUNT.') with almond flour, honey, and bloomed saffron — one muffin per serving.',
             ],
             'Chocolate PB Banana Muffin' => [
                 'ingredients' => [
@@ -465,7 +544,7 @@ final class BalancedRotationMealRecipeRefiner
                 'is_bulk' => true,
                 'servings_count' => self::CHOCOLATE_ORANGE_BROWNIE_SERVINGS_COUNT,
                 'diet_tags' => $vegetarianTags,
-                'short_description' => 'Rich grain-free cocoa-orange brownie batch ('.self::CHOCOLATE_ORANGE_BROWNIE_SERVINGS_COUNT.' small squares) with date-orange sweetener, Dutch cocoa, grass-fed butter, blanched almond flour, tapioca, and psyllium husks for fiber.',
+                'short_description' => 'Rich grain-free cocoa-orange brownie batch ('.self::CHOCOLATE_ORANGE_BROWNIE_SERVINGS_COUNT.' small squares) with date-orange sweetener, Dutch cocoa, grass-fed butter, blanched almond flour, tapioca, and psyllium — about 169 kcal per square.',
             ],
             self::SALTED_TAHINI_CARAMEL_CHOCOLATE_BAR_NAME => [
                 'ingredients' => $this->saltedTahiniCaramelChocolateBarBatchIngredients(),
