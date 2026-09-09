@@ -55,6 +55,52 @@ final class MealTiersAuthoredPlates
 
     public const PestoChickenKoosaMealName = 'Pesto Chicken Koosa Noodles';
 
+    public const ButternutSquashFrittataName = 'Butternut Squash Frittata';
+
+    /**
+     * One-skillet frittata tabs: 80–100 g squash, 10 g oil, eggs locked to the breakfast tab.
+     *
+     * @var array<int, array<string, float>>
+     */
+    private const ButternutSquashFrittataPlates = [
+        300 => [
+            'Eggs (Large)' => 100.0,
+            'Butternut Squash' => 90.0,
+            'Olive Oil' => 10.0,
+            'Red Onion' => 25.0,
+            'Chickpea Flour' => 8.0,
+            'Gruyere Cheese' => 15.0,
+            'Greek Yogurt' => 20.0,
+            'Marinara Sauce (Base)' => 40.0,
+            'Dill (Fresh)' => 5.0,
+            'Paprika' => 1.0,
+        ],
+        400 => [
+            'Eggs (Large)' => 150.0,
+            'Butternut Squash' => 100.0,
+            'Olive Oil' => 10.0,
+            'Red Onion' => 30.0,
+            'Chickpea Flour' => 10.0,
+            'Gruyere Cheese' => 25.0,
+            'Greek Yogurt' => 30.0,
+            'Marinara Sauce (Base)' => 50.0,
+            'Dill (Fresh)' => 8.0,
+            'Paprika' => 1.0,
+        ],
+        500 => [
+            'Eggs (Large)' => 200.0,
+            'Butternut Squash' => 100.0,
+            'Olive Oil' => 10.0,
+            'Red Onion' => 35.0,
+            'Chickpea Flour' => 15.0,
+            'Gruyere Cheese' => 35.0,
+            'Greek Yogurt' => 40.0,
+            'Marinara Sauce (Base)' => 60.0,
+            'Dill (Fresh)' => 10.0,
+            'Paprika' => 1.0,
+        ],
+    ];
+
     /**
      * 500 kcal kitchen plate (½ tbsp oil for vegetables).
      *
@@ -73,6 +119,10 @@ final class MealTiersAuthoredPlates
     public static function gramsAtTierForMealName(string $name, int $calorieTier): ?array
     {
         $name = trim($name);
+
+        if (isset(self::ButternutSquashFrittataPlates[$calorieTier]) && $name === self::ButternutSquashFrittataName) {
+            return self::ButternutSquashFrittataPlates[$calorieTier];
+        }
 
         if ($calorieTier !== self::ReferenceCalorieTier) {
             return null;
@@ -160,7 +210,25 @@ final class MealTiersAuthoredPlates
 
     public static function scalesFrom500(Meal $meal): bool
     {
-        return self::gramsAt500ForMealName((string) $meal->name) !== null;
+        $name = trim((string) $meal->name);
+
+        if ($name === self::ButternutSquashFrittataName) {
+            return false;
+        }
+
+        return self::gramsAt500ForMealName($name) !== null;
+    }
+
+    /**
+     * @return array<int, float>|null ingredient id => grams
+     */
+    public static function breakfastTabGrams(Meal $meal, int $calorieTier): ?array
+    {
+        if (trim((string) $meal->name) !== self::ButternutSquashFrittataName) {
+            return null;
+        }
+
+        return self::gramsByIngredientIdForTier($meal, $calorieTier);
     }
 
     /**

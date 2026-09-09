@@ -347,44 +347,10 @@ Serve chilled.',
             0 => 'eggs',
         ],
     ],
-    'Butternut Squash & Eggs' => [
-        'synced_at' => '2026-07-12T10:11:47+00:00',
-        'ingredients' => [
-            'Butternut Squash' => 45.0,
-            'Chickpea Flour' => 15.0,
-            'Dill (Fresh)' => 10.0,
-            'Eggs (Large)' => 250.0,
-            'Marinara Sauce (Base)' => 80.0,
-            'Olive Oil' => 10.0,
-            'Paprika' => 1.0,
-            'Red Onion' => 35.0,
-        ],
-        'highlight' => 'Roasted butternut squash baked with eggs, chickpea flour, and dill — topped with fried eggs and warm marinara on the side.',
-        'short_description' => 'Roasted butternut squash baked with eggs, chickpea flour, and dill — topped with fried eggs and warm marinara on the side.',
-        'instructions' => '1. Preheat the oven to 180°C (350°F).
-2. Cut butternut squash into 2 cm cubes. Toss with half the olive oil, paprika, and sea salt. Roast on a tray until tender and lightly golden (25–30 min).
-3. Dice red onion (or thinly slice spring onion). Sauté in the remaining olive oil in an oven-safe skillet until softened (4–5 min).
-4. Whisk two large eggs with chickpea flour and chopped dill. Fold in roasted squash and sautéed onion.
-5. Pour into the skillet and bake until the centre is just set (15–18 min).
-6. Fry two large eggs in a little olive oil until whites are crisp and yolks are runny.
-7. Prepare Marinara Sauce (Base) per base recipe instructions. Warm and serve on the side.
-8. Top the bake with fried eggs and serve with marinara.',
-        'diet_tags' => [
-            0 => 'Dairy-free',
-            1 => 'Gluten-free',
-            2 => 'Vegetarian',
-            3 => 'Gluten-Free',
-        ],
-        'food_filter_tags' => [
-            0 => 'beans',
-            1 => 'eggs',
-            2 => 'nightshades',
-        ],
-    ],
     'Butternut Squash Frittata' => [
         'synced_at' => '2026-07-12T10:11:47+00:00',
         'ingredients' => [
-            'Butternut Squash' => 200.0,
+            'Butternut Squash' => 100.0,
             'Chickpea Flour' => 15.0,
             'Dill (Fresh)' => 10.0,
             'Eggs (Large)' => 200.0,
@@ -395,16 +361,14 @@ Serve chilled.',
             'Paprika' => 1.0,
             'Red Onion' => 35.0,
         ],
-        'highlight' => 'Roasted butternut squash frittata with gruyère, chickpea flour, dill, and Greek yogurt — topped with fried eggs and warm marinara on the side.',
-        'short_description' => 'Roasted butternut squash frittata with gruyère, chickpea flour, dill, and Greek yogurt — topped with fried eggs and warm marinara on the side.',
-        'instructions' => '1. Preheat the oven to 180°C (350°F).
-2. Cut butternut squash into 2 cm cubes. Toss with half the olive oil, paprika, and sea salt. Roast on a tray until tender and lightly golden (25–30 min).
-3. Dice red onion (or thinly slice spring onion). Sauté in the remaining olive oil in an oven-safe skillet until softened (4–5 min).
-4. Whisk two large eggs with Greek yogurt, chickpea flour, chopped dill, and half the shredded gruyère. Fold in roasted squash and sautéed onion.
-5. Pour into the skillet, scatter the remaining gruyère on top, and bake until the centre is just set (15–18 min).
-6. Fry two large eggs in a little olive oil until whites are crisp and yolks are runny.
-7. Prepare Marinara Sauce (Base) per base recipe instructions. Warm and serve on the side.
-8. Top the frittata with fried eggs and serve with marinara.',
+        'highlight' => 'Skillet butternut squash frittata with gruyère, chickpea flour, and dill — all eggs baked in one pan, marinara on the side.',
+        'short_description' => 'Skillet butternut squash frittata with gruyère, chickpea flour, and dill — all eggs baked in one pan, marinara on the side.',
+        'instructions' => '1. Heat the oven to 180°C (350°F).
+2. Cut butternut squash into 1 cm cubes.
+3. Heat all the olive oil in an oven-safe skillet over medium heat. Add squash and onion, season with paprika and sea salt, and sauté 4–5 minutes. Cover and steam until the squash is just tender (6–8 minutes).
+4. Whisk all the eggs with Greek yogurt, chickpea flour, chopped dill, and half the shredded gruyère. Fold in the squash and onion.
+5. Pour into the same skillet, scatter the remaining gruyère, and bake until the centre is just set (12–15 minutes).
+6. Warm Marinara Sauce (Base) and serve on the side.',
         'diet_tags' => [
             0 => 'Dairy-free',
             1 => 'Gluten-free',

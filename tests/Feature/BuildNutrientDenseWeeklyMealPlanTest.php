@@ -8,6 +8,7 @@ use App\Enums\RecipeCategory;
 use App\Models\Ingredient;
 use App\Models\Meal;
 use App\Models\MealPlan;
+use App\Services\NutrientDenseEggBreakfastRecipeRefiner;
 use App\Services\NutrientDenseWeeklyMealPlanBuilder;
 use App\Services\NutrientDenseWeeklyRotationSchedule;
 
@@ -131,10 +132,12 @@ test('rebuilding nutrient dense weekly plan replaces existing plan with same nam
 test('nutrient dense weekly plan build with skip refine creates missing egg breakfasts', function (): void {
     seedNutrientDenseWeeklyPlanDeck();
 
-    Meal::query()->where('name', 'Butternut Squash & Eggs')->delete();
+    Meal::query()->where('name', 'Butternut Squash Frittata')->delete();
 
     $result = app(NutrientDenseWeeklyMealPlanBuilder::class)->build(refineRecipes: false);
 
-    expect(Meal::queryForMealLibrary()->where('name', 'Butternut Squash & Eggs')->exists())->toBeTrue()
+    expect(Meal::queryForMealLibrary()->where('name', 'Butternut Squash Frittata')->exists())->toBeTrue()
+        ->and(Meal::queryForMealLibrary()->where('name', 'Butternut Squash Frittata')->value('image_path'))
+        ->toBe(NutrientDenseEggBreakfastRecipeRefiner::BUTTERNUT_SQUASH_FRITTATA_IMAGE)
         ->and($result['slots'])->toBeGreaterThan(0);
 });

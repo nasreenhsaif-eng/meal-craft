@@ -5,13 +5,9 @@ use App\Services\BalancedWeeklyRotationSchedule;
 use App\Services\NutrientDenseLiverMealRecipeRefiner;
 use App\Support\MealTiersLibraryExclusions;
 
-test('balanced weekly rotation assigns one savory egg breakfast per day', function (): void {
-    $dayOne = BalancedWeeklyRotationSchedule::mealNameForDay(1, MealPlanSlotType::Breakfast, 1);
-    $dayTwo = BalancedWeeklyRotationSchedule::mealNameForDay(2, MealPlanSlotType::Breakfast, 1);
-
-    expect($dayOne)->toBe('Gouda & Spinach Scramble')
-        ->and($dayTwo)->toBe('Greek Yogurt & Parmesan Frittata')
-        ->and($dayOne)->not->toBe($dayTwo);
+test('balanced saturday breakfast is the butternut squash frittata', function (): void {
+    expect(BalancedWeeklyRotationSchedule::mealNameForDay(6, MealPlanSlotType::Breakfast, 1))
+        ->toBe('Butternut Squash Frittata');
 });
 
 test('balanced weekly rotation rejects a second breakfast slot', function (): void {

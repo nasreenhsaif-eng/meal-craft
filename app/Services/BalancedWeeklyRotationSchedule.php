@@ -74,7 +74,7 @@ final class BalancedWeeklyRotationSchedule
         'Hummus Egg Stack',
         'Kuku Sabzi Egg Muffins',
         'Sweet Potato Egg Hash',
-        'Butternut Squash & Eggs',
+        'Butternut Squash Frittata',
         'Smashed Beans & Eggs',
     ];
 

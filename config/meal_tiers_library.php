@@ -118,6 +118,7 @@ return [
     */
     'excluded_classic_meal_names' => [
         'Blueberry Walnut Chia Pudding',
+        'Butternut Squash & Eggs',
         'Cacao & Almond Chia',
         'Carrot Cumin Soup',
         'Chia Pudding Smoothie',
@@ -147,6 +148,7 @@ return [
     */
     'weekly_protocol_replacements' => [
         'Shaved Fennel Rocca Salad' => 'Coconut Grapefruit Salad',
+        'Butternut Squash & Eggs' => 'Butternut Squash Frittata',
         'Vegan Curry Lentil Salad' => 'Baked Eggplant Lentils Hummus',
         'Carrot Cumin Soup' => 'Lentil Carrot Soup',
         'Sweet Potato Fennel Soup' => 'Butternut Squash Soup',

@@ -154,3 +154,8 @@ test('nutrient dense rotation does not schedule meals excluded from the Meal Tie
         }
     }
 });
+
+test('nutrient dense saturday breakfast is the butternut squash frittata', function (): void {
+    expect(NutrientDenseWeeklyRotationSchedule::mealNameForDay(6, MealPlanSlotType::Breakfast, 1))
+        ->toBe('Butternut Squash Frittata');
+});

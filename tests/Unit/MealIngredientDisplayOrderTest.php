@@ -2,6 +2,7 @@
 
 use App\Models\Ingredient;
 use App\Support\MealIngredientDisplayOrder;
+use App\Support\MealTiersLibraryPresentation;
 
 test('sorts ingredients protein carbs vegetables herbs sauces fats', function () {
     $protein = Ingredient::factory()->make(['name' => 'Beef Ground Lean', 'usda_food_category' => 'Proteins']);
@@ -51,4 +52,15 @@ test('classifies bell peppers as vegetables not seasonings', function () {
         ->and(MealIngredientDisplayOrder::groupRank($black))->toBe(MealIngredientDisplayOrder::GROUP_HERBS_SPICES)
         ->and(MealIngredientDisplayOrder::groupRank($cayenne))->toBe(MealIngredientDisplayOrder::GROUP_HERBS_SPICES)
         ->and(MealIngredientDisplayOrder::groupRank($dressing))->toBe(MealIngredientDisplayOrder::GROUP_SAUCES);
+});
+
+test('classifies butternut squash as a vegetable not a fat', function () {
+    $squash = Ingredient::factory()->make(['name' => 'Butternut Squash', 'usda_food_category' => 'Vegetables']);
+    $butter = Ingredient::factory()->make(['name' => 'Grass Fed Butter', 'usda_food_category' => 'Fats']);
+    $seeds = Ingredient::factory()->make(['name' => 'Pumpkin Seeds', 'usda_food_category' => 'Nuts']);
+
+    expect(MealIngredientDisplayOrder::groupRank($squash))->toBe(MealIngredientDisplayOrder::GROUP_VEGETABLES)
+        ->and(MealTiersLibraryPresentation::tiersLibraryGroupKey($squash))->toBe('carbs_veg')
+        ->and(MealIngredientDisplayOrder::groupRank($butter))->toBe(MealIngredientDisplayOrder::GROUP_FATS)
+        ->and(MealIngredientDisplayOrder::groupRank($seeds))->toBe(MealIngredientDisplayOrder::GROUP_FATS);
 });

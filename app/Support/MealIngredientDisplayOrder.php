@@ -37,6 +37,10 @@ final class MealIngredientDisplayOrder
             return self::GROUP_VEGETABLES;
         }
 
+        if (self::nameIndicatesSquashOrPumpkinVegetable($name)) {
+            return self::GROUP_VEGETABLES;
+        }
+
         if (self::nameIndicatesSauce($name)) {
             return self::GROUP_SAUCES;
         }
@@ -196,7 +200,6 @@ final class MealIngredientDisplayOrder
         foreach ([
             ' oil',
             'oil ',
-            'butter',
             'ghee',
             'tahini',
             'avocado',
@@ -217,7 +220,22 @@ final class MealIngredientDisplayOrder
             }
         }
 
+        if (preg_match('/\bbutter\b/u', $name) === 1 && ! str_contains($name, 'butternut')) {
+            return true;
+        }
+
         return str_starts_with($name, 'olive oil');
+    }
+
+    private static function nameIndicatesSquashOrPumpkinVegetable(string $name): bool
+    {
+        if (str_contains($name, 'seed')) {
+            return false;
+        }
+
+        return str_contains($name, 'butternut')
+            || str_contains($name, 'pumpkin')
+            || preg_match('/\bsquash\b/u', $name) === 1;
     }
 
     private static function nameIndicatesHerbOrSpice(string $name): bool

@@ -294,14 +294,12 @@ Drizzle with tamari. Serve with garlicky green beans."
 "Thai Rainbow Peanut Salad","Side Salad","Bell Pepper (Red):35 | Cabbage (Purple):80 | Carrots:45 | Cucumber:45 | Fresh Coriander:5 | Peanut Butter Dressing (Base):15 | Peanuts (Crushed):5 | Red Onion:12",350,35,35,7.8,,,,,false,1,,,"Nightshades, Nuts, Sesame, Soy, Spicy",images/meals/thai_rainbow_peanut_salad.png,"Crunchy rainbow salad of shredded purple cabbage, carrots, cucumber, and peppers with crushed peanuts — packed for a 500 ml bowl with peanut butter dressing on the side.","1. Finely shred the purple cabbage. Julienne the carrots. Cut cucumber into matchsticks or thinly sliced half-moons. Cut red pepper into thin strips. Very thinly shave the red onion. Chop the coriander. Use roasted unsalted crushed peanuts.
 2. Toss cabbage, carrots, cucumber, red pepper, red onion, coriander, and crushed peanuts. Portion into a 500 ml container.
 3. Serve Peanut Butter Dressing (Base) on the side in a 20 ml cup."
-"Butternut Squash Frittata",Breakfast,"Butternut Squash:200 | Chickpea Flour:15 | Dill (Fresh):10 | Eggs (Large):200 | Greek Yogurt:40 | Gruyere Cheese:35 | Marinara Sauce (Base):80 | Olive Oil:10 | Paprika:1 | Red Onion:35",350,35,35,7.8,,,,,false,1,Balanced,,"Beans, Dairy, Eggs, G6PD Trigger, Nightshades",images/meals/butternut_squash_fritters_eggs_marinara.png,"Roasted butternut squash frittata with gruyère, chickpea flour, dill, and Greek yogurt — topped with fried eggs and warm marinara on the side.","1. Preheat the oven to 180°C (350°F).
-2. Cut butternut squash into 2 cm cubes. Toss with half the olive oil, paprika, and sea salt. Roast on a tray until tender and lightly golden (25–30 min).
-3. Dice red onion (or thinly slice spring onion). Sauté in the remaining olive oil in an oven-safe skillet until softened (4–5 min).
-4. Whisk two large eggs with Greek yogurt, chickpea flour, chopped dill, and half the shredded gruyère. Fold in roasted squash and sautéed onion.
-5. Pour into the skillet, scatter the remaining gruyère on top, and bake until the centre is just set (15–18 min).
-6. Fry two large eggs in a little olive oil until whites are crisp and yolks are runny.
-7. Prepare Marinara Sauce (Base) per base recipe instructions. Warm and serve on the side.
-8. Top the frittata with fried eggs and serve with marinara."
+"Butternut Squash Frittata",Breakfast,"Butternut Squash:100 | Chickpea Flour:15 | Dill (Fresh):10 | Eggs (Large):200 | Greek Yogurt:40 | Gruyere Cheese:35 | Marinara Sauce (Base):80 | Olive Oil:10 | Paprika:1 | Red Onion:35",350,35,35,7.8,,,,,false,1,Balanced,,"Beans, Dairy, Eggs, G6PD Trigger, Nightshades",images/meals/butternut_squash_fritters_eggs_marinara.png,"Skillet butternut squash frittata with gruyère, chickpea flour, and dill — all eggs baked in one pan, marinara on the side.","1. Heat the oven to 180°C (350°F).
+2. Cut butternut squash into 1 cm cubes.
+3. Heat all the olive oil in an oven-safe skillet over medium heat. Add squash and onion, season with paprika and sea salt, and sauté 4–5 minutes. Cover and steam until the squash is just tender (6–8 minutes).
+4. Whisk all the eggs with Greek yogurt, chickpea flour, chopped dill, and half the shredded gruyère. Fold in the squash and onion.
+5. Pour into the same skillet, scatter the remaining gruyère, and bake until the centre is just set (12–15 minutes).
+6. Warm Marinara Sauce (Base) and serve on the side."
 "Chia Pudding Smoothie",Dessert,"Banana:25 | Coconut Chia Pudding (Base):120 | Strawberries:30",350,35,35,7.8,,,,,false,1,,,,images/meals/chia_pudding_smoothie.png,"Layered coconut chia pudding with a strawberry-banana smoothie top.","Prepare Coconut Chia Pudding (Base) ahead and chill until thick.
 Spoon the set pudding into the bottom of a glass or jar.
 Blend strawberries and banana until smooth.
@@ -606,14 +604,6 @@ Serve livers with garlicky cabbage and peppers alongside warm quinoa flatbread."
 2. Dice gouda and melt it in the remaining butter over medium-low heat until just beginning to soften.
 3. Beat eggs, add to the skillet with a little more butter if the pan looks dry, and scramble gently until just set.
 4. Fold gouda and spinach through the eggs. Season with black pepper and serve warm."
-"Butternut Squash & Eggs",Breakfast,"Butternut Squash:19.5778 | Chickpea Flour:15 | Dill (Fresh):10 | Eggs (Large):258 | Marinara Sauce (Base):80 | Olive Oil:10 | Paprika:1 | Red Onion:35",,,,,,,,,false,,NutrientDense,,"Beans, Eggs, G6PD Trigger, Nightshades",,"Roasted butternut squash baked with eggs, chickpea flour, and dill — topped with fried eggs and warm marinara on the side.","1. Preheat the oven to 180°C (350°F).
-2. Cut butternut squash into 2 cm cubes. Toss with half the olive oil, paprika, and sea salt. Roast on a tray until tender and lightly golden (25–30 min).
-3. Dice red onion (or thinly slice spring onion). Sauté in the remaining olive oil in an oven-safe skillet until softened (4–5 min).
-4. Whisk two large eggs with chickpea flour and chopped dill. Fold in roasted squash and sautéed onion.
-5. Pour into the skillet and bake until the centre is just set (15–18 min).
-6. Fry two large eggs in a little olive oil until whites are crisp and yolks are runny.
-7. Prepare Marinara Sauce (Base) per base recipe instructions. Warm and serve on the side.
-8. Top the bake with fried eggs and serve with marinara."
 "Peri Peri Chicken Liver w Zucchini Bread",Meal,"Bay Leaves:5 | Bell Pepper (Red):48 | Black Pepper:1 | Cashew Cream (Base):50 | Chicken Liver:166 | Fire Roasted Tomatoes (Base):30 | Fresh Parsley:5 | Garlic (Raw):5 | Grass Fed Butter:5 | Lemon Juice:8.7273 | Olive Oil (Extra Virgin):5 | Oregano:1 | Red Chili:5 | Sea Salt:1 | Smoked Paprika:1 | White Onion:2.4 | Worcestershire:5 | Zucchini Almond Bread (Base):45 | cumin powder:1",,,,,,,,,false,,"Balanced, NutrientDense",,"Dairy, Eggs, Gluten, Nightshades, Nuts",images/meals/peri_peri_chicken_liver_zucchini_bread.png,"Creamy peri peri chicken livers with smoked paprika, chili, and lemon, served with warm zucchini almond bread.","Prepare Zucchini Almond Bread (Base) per base recipe instructions; keep warm.
 Pat Chicken Liver dry and season with Sea Salt and Black Pepper.
 Warm Grass Fed Butter and Olive Oil (Extra Virgin) in a wide pan. Soften White Onion, then add Garlic (Raw), Bell Pepper (Red), and Red Chili until fragrant.

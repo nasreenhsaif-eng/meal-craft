@@ -20,6 +20,7 @@ final class SavoryEggBreakfastMeals
     /** @var array<string, string> Legacy library names still referenced by older production plans. */
     private const LEGACY_MEAL_NAME_ALIASES = [
         'Halloumi & Spinach Scramble' => 'Gouda & Spinach Scramble',
+        'Butternut Squash & Eggs' => 'Butternut Squash Frittata',
     ];
 
     public static function canonicalMealName(string $mealName): string

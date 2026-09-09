@@ -86,7 +86,7 @@ final class NutrientDenseWeeklyRotationSchedule
         'Hummus Egg Stack',
         NutrientDenseFermentedRecipeRefiner::KEFIR_TURKISH_EGGS_NAME,
         'Sweet Potato Egg Hash',
-        'Butternut Squash & Eggs',
+        'Butternut Squash Frittata',
         'Smashed Beans & Eggs',
     ];
 

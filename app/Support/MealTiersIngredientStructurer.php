@@ -46,6 +46,11 @@ final class MealTiersIngredientStructurer
      */
     public static function gramsForTier(Meal $meal, array $baseline, int $calorieTier): array
     {
+        $authoredBreakfast = MealTiersAuthoredPlates::breakfastTabGrams($meal, $calorieTier);
+
+        if ($authoredBreakfast !== null) {
+            return $authoredBreakfast;
+        }
         if (MealTiersAuthoredPlates::scalesFrom500($meal)) {
             $authoredBaseline = MealTiersAuthoredPlates::gramsByIngredientIdForTier(
                 $meal,

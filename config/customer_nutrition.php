@@ -190,6 +190,7 @@ return [
             'Olive Oil' => 5.0,
             'Olive Oil (Extra Virgin)' => 5.0,
             'Sweet Potato' => 100.0,
+            'Butternut Squash' => 80.0,
         ],
         'per_meal_minimum_grams' => [
             'Sweet Potato Egg Hash' => [
@@ -198,6 +199,11 @@ return [
                 'Bell Pepper (Red)' => 50.0,
                 'Spinach (Fresh)' => 30.0,
                 'Olive Oil' => 5.0,
+            ],
+            'Butternut Squash Frittata' => [
+                'Butternut Squash' => 80.0,
+                'Olive Oil' => 10.0,
+                'Red Onion' => 25.0,
             ],
         ],
         'herb_spice_maximum_grams' => [
@@ -228,6 +234,7 @@ return [
         'Beetroot',
         'Zucchini',
         'Pumpkin',
+        'Butternut Squash',
         'Green Beans',
         'Mushrooms',
         'Carrots',

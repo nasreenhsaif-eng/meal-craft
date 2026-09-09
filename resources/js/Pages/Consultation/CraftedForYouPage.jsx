@@ -29,6 +29,7 @@ import {
     scheduledFullCraftCategoryMealsForDay,
     scheduledSoupConsultationMealsForDay,
 } from '../../consultation/mapAdaptedMenuMeals.js';
+import { resolveProtocolBreakfastSeedId } from '../../consultation/seedProtocolBreakfast.js';
 import { buildCraftPlanSubmissionPayload, submitCraftPlan } from '../../consultation/submitCraftPlan.js';
 import { craftDayCaloriesForKey, dailyMacroTargetsFromPlan, dayMacroToleranceFromPlan, fixedPortionCaloriesForAdapt, nutritionPlanMatchesTier, selectedFixedSlotsFromSelections } from '../../consultation/craftCalorieTargets.js';
 import {
@@ -1128,30 +1129,17 @@ export default function CraftedForYouPage({
                 };
 
                 const assigned = scheduledFullCraftCategoryMealsForDay(scheduledFullCraftByWeekday, day);
-                const breakfastDeck = assigned?.breakfasts ?? [];
-                const recommendedBreakfast =
-                    breakfastDeck.find((meal) => meal?.isRecommended) ?? breakfastDeck[0];
-                const deckBreakfast = consultationDeckOptionsForSlotKey(catalogMeals, 'breakfast')[0];
-                const breakfast = recommendedBreakfast ?? deckBreakfast;
+                const breakfastId = resolveProtocolBreakfastSeedId({
+                    assignedBreakfasts: assigned?.breakfasts,
+                    currentBreakfastId: current.breakfasts?.[0],
+                    protectExisting: dietProtocol === 'nutrient_dense',
+                });
 
-                if (!breakfast?.id) {
+                if (!breakfastId) {
                     continue;
                 }
 
-                const breakfastId = normalizeConsultationMealId(breakfast.id);
-
-                // Nutrient Density: seed once with the recommended egg breakfast; never overwrite a customer swap.
-                if (dietProtocol === 'nutrient_dense') {
-                    if ((current.breakfasts?.length ?? 0) > 0) {
-                        continue;
-                    }
-
-                    next[day] = { ...current, breakfasts: [breakfastId] };
-                    changed = true;
-                    continue;
-                }
-
-                if (current.breakfasts?.[0] === breakfastId) {
+                if (normalizeConsultationMealId(current.breakfasts?.[0]) === breakfastId) {
                     continue;
                 }
 
@@ -1161,7 +1149,7 @@ export default function CraftedForYouPage({
 
             return changed ? next : prev;
         });
-    }, [craft, sortedSelectedDays, scheduledFullCraftByWeekday, catalogMeals, dietProtocol]);
+    }, [craft, sortedSelectedDays, scheduledFullCraftByWeekday, dietProtocol]);
 
     useEffect(() => {
         if (dietProtocol !== 'nutrient_dense' || !craft || sortedSelectedDays.length === 0) {
