@@ -18,8 +18,8 @@ export default function AdminPreviewTierPicker({
     onSelectTier,
     compact = false,
     loading = false,
-    description = 'Admin preview — pick a calorie tier to scale breakfast and mains for this session.',
-    compactHint = 'Meal portions scale to the tier you pick. Remembered for this browser session.',
+    description = 'Pick a daily total to load the matching Meal Tiers Library portions. Meal cards show one calorie.',
+    compactHint = 'Pick a daily total to load the matching Meal Tiers Library portions. Meal cards show one calorie. Side salads, desserts, and soup stay at their authored kitchen portions.',
 }) {
     return (
         <div
@@ -55,7 +55,7 @@ export default function AdminPreviewTierPicker({
             </div>
             <p className="mt-2 font-body text-xs text-[#555555]">
                 {loading
-                    ? 'Scaling meals to this tier…'
+                    ? 'Loading Meal Tiers Library portions…'
                     : compact
                       ? compactHint
                       : `Currently testing at ${selectedTier} kcal. Your choice is remembered for this browser session.`}

@@ -165,8 +165,7 @@ test('kitchen daily sheet returns adapted ingredient lines for scalable meals', 
     $lines = $response->json('ingredient_lines');
     expect($lines)->not->toBeEmpty()
         ->and($lines[0]['ingredient'])->toBe('Chicken Breast')
-        ->and((float) $lines[0]['adapted_amount_grams'])->toBeGreaterThan(140)
-        ->and((float) $lines[0]['adapted_amount_grams'])->toBeLessThan(200);
+        ->and((float) $lines[0]['adapted_amount_grams'])->toEqualWithDelta(200.0, 0.5);
 });
 
 test('guests cannot submit craft plans', function () {
@@ -243,6 +242,9 @@ test('customer can view meal plan summary after submitting selections', function
             ->component('App/MealPlanSummary')
             ->where('craftPlan.craftTitle', 'Full Craft')
             ->where('craftPlan.planTierCalories', 2000)
+            ->where('sex', 'female')
+            ->where('activityLevel', 'moderate')
+            ->where('dailyCalorieTarget', 2000)
             ->has('craftPlan.days', 2)
             ->where('craftPlan.days.0.label', 'Sunday')
             ->where('craftPlan.days.0.categories.breakfasts.0.title', 'Sunday Oats'));

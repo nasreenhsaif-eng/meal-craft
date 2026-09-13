@@ -12,11 +12,14 @@ use App\Http\Controllers\Admin\MealController;
 use App\Http\Controllers\Admin\MealLibraryController;
 use App\Http\Controllers\Admin\MealLibraryCsvImportController;
 use App\Http\Controllers\Admin\MealPlanLibraryController;
+use App\Http\Controllers\Admin\MealTiersLibraryController;
 use App\Http\Controllers\Api\AdaptedMenuController;
 use App\Http\Controllers\Api\CustomerCraftPlanController;
+use App\Http\Controllers\Api\IngredientDetailViewController;
 use App\Http\Controllers\Api\MealDetailViewController;
 use App\Http\Controllers\Auth\PortalChoiceController;
 use App\Http\Controllers\Auth\WelcomeController;
+use App\Http\Controllers\Customer\CheckoutController;
 use App\Http\Controllers\Customer\ConsultationCraftedForYouController;
 use App\Http\Controllers\Customer\ConsultationCraftedForYouEditController;
 use App\Http\Controllers\Customer\CustomerAppController;
@@ -76,6 +79,12 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
                 Route::post('/meal-library/bulk-destroy', [MealLibraryController::class, 'bulkDestroy'])->name('meal-library.bulk-destroy');
                 Route::post('/meal-library/reorder', [MealLibraryController::class, 'reorder'])->name('meal-library.reorder');
                 Route::post('/meal-library/{meal}', [MealController::class, 'update'])->name('meal-library.update');
+                Route::get('/meal-tiers-library', [MealTiersLibraryController::class, 'index'])->name('meal-tiers-library');
+                Route::post('/meal-tiers-library', [MealTiersLibraryController::class, 'store'])->name('meal-tiers-library.store');
+                Route::post('/meal-tiers-library/copy', [MealTiersLibraryController::class, 'copy'])->name('meal-tiers-library.copy');
+                Route::post('/meal-tiers-library/copy-all', [MealTiersLibraryController::class, 'copyAll'])->name('meal-tiers-library.copy-all');
+                Route::post('/meal-tiers-library/{meal}', [MealTiersLibraryController::class, 'update'])->name('meal-tiers-library.update');
+                Route::delete('/meal-tiers-library/{meal}', [MealTiersLibraryController::class, 'destroy'])->name('meal-tiers-library.destroy');
                 Route::get('/meal-plan-library', [MealPlanLibraryController::class, 'index'])->name('meal-plan-library');
                 Route::post('/meal-plan-library', [MealPlanLibraryController::class, 'store'])->name('meal-plan-library.store');
                 Route::get('/meal-plan-library/meals/search', [MealPlanLibraryController::class, 'searchMeals'])->name('meal-plan-library.meals.search');
@@ -148,9 +157,16 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
                 });
             });
 
+        Route::middleware('onboarding.complete')->group(function (): void {
+            Route::get('/checkout', [CheckoutController::class, 'fulfillment'])->name('checkout.fulfillment');
+            Route::get('/checkout/delivery', [CheckoutController::class, 'delivery'])->name('checkout.delivery');
+            Route::get('/meal-plan/recipes', [CustomerAppController::class, 'mealPlan'])->name('meal-plan.recipes');
+        });
+
         Route::prefix('api')->group(function (): void {
             Route::get('/menu/adapted', AdaptedMenuController::class)->name('api.menu.adapted');
             Route::get('/meals/{meal}/detail-view', MealDetailViewController::class)->name('api.meals.detail-view');
+            Route::get('/ingredients/{ingredient}/detail-view', IngredientDetailViewController::class)->name('api.ingredients.detail-view');
             Route::post('/customer/craft-plan', [CustomerCraftPlanController::class, 'store'])
                 ->name('api.customer.craft-plan.store');
         });

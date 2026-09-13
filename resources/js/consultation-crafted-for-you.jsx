@@ -4,7 +4,7 @@ import CraftedForYouPage from './Pages/Consultation/CraftedForYouPage.jsx';
 import { syncCsrfMetaTag } from './lib/csrfToken.js';
 
 // Bump when consultation curation shell changes so stale Fast Refresh clients reload.
-export const CONSULTATION_CURATION_BUNDLE_EPOCH = '2026-07-20-card-modal-macro-sync';
+export const CONSULTATION_CURATION_BUNDLE_EPOCH = '2026-09-13-no-preview-tier';
 
 const rootEl = document.getElementById('mc-consultation-crafted-root');
 const configEl = document.getElementById('mc-consultation-crafted-config');
@@ -13,7 +13,7 @@ if (typeof window !== 'undefined') {
     window.__MC_CONSULTATION_CURATION_BUNDLE_EPOCH__ = CONSULTATION_CURATION_BUNDLE_EPOCH;
 }
 
-/** @type {{ closeHref?: string; homeHref?: string; backHref?: string; summaryHref?: string; loginUrl?: string; signOutUrl?: string; csrfToken?: string; isCustomerAccount?: boolean; isAdminPreview?: boolean; pageEyebrow?: string; adaptedMenuUrl?: string; mealLibraryRevision?: number; planTier?: number | null; planTiers?: number[]; editDraft?: object | null }} */
+/** @type {{ closeHref?: string; homeHref?: string; backHref?: string; summaryHref?: string; loginUrl?: string; signOutUrl?: string; csrfToken?: string; isCustomerAccount?: boolean; isAdminPreview?: boolean; pageEyebrow?: string; adaptedMenuUrl?: string; mealLibraryRevision?: number; planTier?: number | null; planTiers?: number[]; editDraft?: object | null; dietProtocol?: string | null; sex?: string | null; activityLevel?: string | null; dailyCalorieTarget?: number | null }} */
 let config = {};
 
 if (configEl) {
@@ -97,11 +97,13 @@ if (rootEl) {
                         typeof config.mealLibraryRevision === 'number' ? config.mealLibraryRevision : 0
                     }
                     initialPlanTier={typeof config.planTier === 'number' ? config.planTier : null}
-                    initialPlanTiers={Array.isArray(config.planTiers) ? config.planTiers : undefined}
                     initialEditDraft={
                         config.editDraft && typeof config.editDraft === 'object' ? config.editDraft : null
                     }
                     dietProtocol={typeof config.dietProtocol === 'string' ? config.dietProtocol : null}
+                    sex={typeof config.sex === 'string' ? config.sex : null}
+                    activityLevel={typeof config.activityLevel === 'string' ? config.activityLevel : null}
+                    dailyCalorieTarget={typeof config.dailyCalorieTarget === 'number' ? config.dailyCalorieTarget : null}
                 />
             </ConsultationErrorBoundary>
         </StrictMode>,

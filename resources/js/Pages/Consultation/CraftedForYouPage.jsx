@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import Button from '../../Components/Atoms/Button.jsx';
 import PillButton from '../../Components/Atoms/Button/Button.jsx';
-import AdminPreviewTierPicker from '../../Components/Admin/AdminPreviewTierPicker.jsx';
 import ChooseYourMeals, {
     applyDeckSelectionToggle,
     applyFixedChoiceToggle,
@@ -29,6 +28,7 @@ import {
     scheduledFullCraftCategoryMealsForDay,
     scheduledSoupConsultationMealsForDay,
 } from '../../consultation/mapAdaptedMenuMeals.js';
+import { resolveProtocolBreakfastSeedId } from '../../consultation/seedProtocolBreakfast.js';
 import { buildCraftPlanSubmissionPayload, submitCraftPlan } from '../../consultation/submitCraftPlan.js';
 import { craftDayCaloriesForKey, dailyMacroTargetsFromPlan, dayMacroToleranceFromPlan, fixedPortionCaloriesForAdapt, nutritionPlanMatchesTier, selectedFixedSlotsFromSelections } from '../../consultation/craftCalorieTargets.js';
 import {
@@ -42,37 +42,8 @@ import { useMealDetailModal } from '../../meal-library/useMealDetailModal.js';
 const PAGE_BG = 'bg-[#F8F9F6]';
 const WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const WEEKDAY_LONG = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-const DEFAULT_PLAN_TIERS = [1000, 1200, 1500, 1800, 2000];
-const PREVIEW_PLAN_TIER_STORAGE_KEY = 'mc-admin-preview-plan-tier';
 const CONSULTATION_BACK_HREF_STORAGE_KEY = 'mc-consultation-back-href';
 
-/**
- * @param {number[]} planTiers
- * @param {number} fallback
- */
-function readStoredPreviewPlanTier(planTiers, fallback) {
-    try {
-        const raw = sessionStorage.getItem(PREVIEW_PLAN_TIER_STORAGE_KEY);
-        const value = Number(raw);
-
-        if (Number.isFinite(value) && planTiers.includes(value)) {
-            return value;
-        }
-    } catch {
-        // sessionStorage may be unavailable
-    }
-
-    return fallback;
-}
-
-/**
- * @param {{
- *   tiers: number[];
- *   selectedTier: number;
- *   onSelectTier: (tier: number) => void;
- *   compact?: boolean;
- * }} props
- */
 const CRAFTS = [
     {
         key: 'full',
@@ -173,7 +144,6 @@ function slotId(dayIdx, slotKey, index) {
  *   mealDetailViewUrlTemplate?: string;
  *   mealLibraryRevision?: number;
  *   initialPlanTier?: number | null;
- *   initialPlanTiers?: number[];
  *   disableAdaptedMenuFetch?: boolean;
  *   initialEditDraft?: {
  *     craftKey?: string;
@@ -185,6 +155,10 @@ function slotId(dayIdx, slotKey, index) {
  *       categories?: Record<string, unknown[]>;
  *     }>;
  *   } | null;
+ *   dietProtocol?: string | null;
+ *   sex?: string | null;
+ *   activityLevel?: string | null;
+ *   dailyCalorieTarget?: number | null;
  * }} [props]
  */
 export default function CraftedForYouPage({
@@ -201,10 +175,12 @@ export default function CraftedForYouPage({
     mealDetailViewUrlTemplate = '/api/meals/{id}/detail-view',
     mealLibraryRevision = 0,
     initialPlanTier = null,
-    initialPlanTiers = DEFAULT_PLAN_TIERS,
     disableAdaptedMenuFetch = false,
     initialEditDraft = null,
     dietProtocol = null,
+    sex = null,
+    activityLevel = null,
+    dailyCalorieTarget = null,
 } = {}) {
     const initialRestoreDraft = useMemo(
         () => readInitialConsultationRestoreDraft(initialEditDraft),
@@ -278,19 +254,6 @@ export default function CraftedForYouPage({
             // sessionStorage may be unavailable
         }
     }, [backHref]);
-
-    const availablePlanTiers = useMemo(
-        () => (initialPlanTiers.length > 0 ? initialPlanTiers : DEFAULT_PLAN_TIERS),
-        [initialPlanTiers],
-    );
-    const [previewPlanTier, setPreviewPlanTier] = useState(() => {
-        const fallback =
-            typeof initialPlanTier === 'number' && initialPlanTier > 0
-                ? initialPlanTier
-                : availablePlanTiers[availablePlanTiers.length - 1] ?? 2000;
-
-        return isAdminPreview ? readStoredPreviewPlanTier(availablePlanTiers, fallback) : fallback;
-    });
 
     // Slot selection state (chosen meal ids per category, per day)
     const [selectedByDay, setSelectedByDay] = useState(
@@ -390,10 +353,6 @@ export default function CraftedForYouPage({
     );
 
     const basePlanTier = useMemo(() => {
-        if (isAdminPreview && typeof previewPlanTier === 'number' && previewPlanTier > 0) {
-            return previewPlanTier;
-        }
-
         const fromPlan = nutritionPlan?.plan_tier ?? nutritionPlan?.core_day_calories;
         if (typeof fromPlan === 'number' && fromPlan > 0) {
             return Math.round(fromPlan);
@@ -401,21 +360,12 @@ export default function CraftedForYouPage({
         if (typeof initialPlanTier === 'number' && initialPlanTier > 0) {
             return initialPlanTier;
         }
+        if (typeof dailyCalorieTarget === 'number' && dailyCalorieTarget > 0) {
+            return dailyCalorieTarget;
+        }
 
         return 1200;
-    }, [nutritionPlan, initialPlanTier, isAdminPreview, previewPlanTier]);
-
-    useEffect(() => {
-        if (!isAdminPreview) {
-            return;
-        }
-
-        try {
-            sessionStorage.setItem(PREVIEW_PLAN_TIER_STORAGE_KEY, String(previewPlanTier));
-        } catch {
-            // sessionStorage may be unavailable
-        }
-    }, [isAdminPreview, previewPlanTier]);
+    }, [nutritionPlan, initialPlanTier, dailyCalorieTarget]);
 
     const planTierCalories = useMemo(() => {
         const planSynced = nutritionPlan && nutritionPlanMatchesTier(nutritionPlan, basePlanTier);
@@ -835,7 +785,6 @@ export default function CraftedForYouPage({
             scheduledDessertBaseline,
             scheduledSoupBaseline,
             dayOfWeek: adaptedMenuDay ?? null,
-            planTier: isAdminPreview ? previewPlanTier : null,
             breakfastId: breakfastId ?? null,
             selectedMainMealIds,
         });
@@ -850,8 +799,6 @@ export default function CraftedForYouPage({
         selectedByDay,
         scheduledFullCraftByWeekday,
         scheduledSoupsByWeekday,
-        isAdminPreview,
-        previewPlanTier,
         catalogMeals,
     ]);
 
@@ -918,7 +865,6 @@ export default function CraftedForYouPage({
             sideSaladCalories: fixedPortion.sideSaladCalories || undefined,
             dessertCalories: fixedPortion.dessertCalories || undefined,
             dayOfWeek: adaptedMenuDay,
-            planTier: isAdminPreview ? previewPlanTier : undefined,
             selectedMainMealIds: selectedByDay[adaptedMenuDay]?.meals ?? [],
             selectedBreakfastMealIds: selectedByDay[adaptedMenuDay]?.breakfasts ?? [],
         };
@@ -933,8 +879,6 @@ export default function CraftedForYouPage({
         scheduledSoupsByWeekday,
         selectedByDay,
         catalogMeals,
-        isAdminPreview,
-        previewPlanTier,
     ]);
 
     const resolveMealDetailQueryString = useCallback(() => {
@@ -949,9 +893,8 @@ export default function CraftedForYouPage({
             ...base,
             craftKey: detailCraftKey,
             dayOfWeek: base.dayOfWeek ?? calorieDay ?? undefined,
-            planTier: base.planTier ?? (isAdminPreview ? previewPlanTier : undefined),
         });
-    }, [adaptedMenuFetchParams, craftKey, calorieDay, isAdminPreview, previewPlanTier]);
+    }, [adaptedMenuFetchParams, craftKey, calorieDay]);
 
     const { mealDetailModal, detailLoading, openMealDetail, closeMealDetail } = useMealDetailModal(
         mealDetailViewUrlTemplate,
@@ -975,7 +918,7 @@ export default function CraftedForYouPage({
             return undefined;
         }
 
-        const cacheIdentity = `${craftKey}|${isAdminPreview ? previewPlanTier : 'profile'}|${mealLibraryRevision}`;
+        const cacheIdentity = `${craftKey}|profile|${mealLibraryRevision}`;
         const dayKey = adaptedMenuDay != null ? String(adaptedMenuDay) : '';
 
         if (scheduleCacheIdentityRef.current !== cacheIdentity) {
@@ -1076,7 +1019,6 @@ export default function CraftedForYouPage({
         craftKey,
         adaptedMenuFetchParams,
         isAdminPreview,
-        previewPlanTier,
         adaptedMenuDay,
         mealLibraryRevision,
     ]);
@@ -1128,30 +1070,17 @@ export default function CraftedForYouPage({
                 };
 
                 const assigned = scheduledFullCraftCategoryMealsForDay(scheduledFullCraftByWeekday, day);
-                const breakfastDeck = assigned?.breakfasts ?? [];
-                const recommendedBreakfast =
-                    breakfastDeck.find((meal) => meal?.isRecommended) ?? breakfastDeck[0];
-                const deckBreakfast = consultationDeckOptionsForSlotKey(catalogMeals, 'breakfast')[0];
-                const breakfast = recommendedBreakfast ?? deckBreakfast;
+                const breakfastId = resolveProtocolBreakfastSeedId({
+                    assignedBreakfasts: assigned?.breakfasts,
+                    currentBreakfastId: current.breakfasts?.[0],
+                    protectExisting: dietProtocol === 'nutrient_dense',
+                });
 
-                if (!breakfast?.id) {
+                if (!breakfastId) {
                     continue;
                 }
 
-                const breakfastId = normalizeConsultationMealId(breakfast.id);
-
-                // Nutrient Density: seed once with the recommended egg breakfast; never overwrite a customer swap.
-                if (dietProtocol === 'nutrient_dense') {
-                    if ((current.breakfasts?.length ?? 0) > 0) {
-                        continue;
-                    }
-
-                    next[day] = { ...current, breakfasts: [breakfastId] };
-                    changed = true;
-                    continue;
-                }
-
-                if (current.breakfasts?.[0] === breakfastId) {
+                if (normalizeConsultationMealId(current.breakfasts?.[0]) === breakfastId) {
                     continue;
                 }
 
@@ -1161,7 +1090,7 @@ export default function CraftedForYouPage({
 
             return changed ? next : prev;
         });
-    }, [craft, sortedSelectedDays, scheduledFullCraftByWeekday, catalogMeals, dietProtocol]);
+    }, [craft, sortedSelectedDays, scheduledFullCraftByWeekday, dietProtocol]);
 
     useEffect(() => {
         if (dietProtocol !== 'nutrient_dense' || !craft || sortedSelectedDays.length === 0) {
@@ -1356,9 +1285,9 @@ export default function CraftedForYouPage({
         craftKey !== null && (isLgViewport !== true ? true : weekDuration !== null);
     const canGoNextFromManualDays = weekDuration !== null && sortedSelectedDays.length === weekDuration;
 
-    /** Full / Afternoon / Day / Intermittent share the weekly category carousels (same meal options). */
+    /** Weekly crafts share the default + SEE OTHER OPTIONS day view (no carousel). */
     const usesWeeklyCategoryLayout = useMemo(
-        () => Boolean(craft && ['full', 'afternoon', 'day', 'intermittent'].includes(craft.key)),
+        () => Boolean(craft && ['full', 'afternoon', 'day', 'intermittent', 'business'].includes(craft.key)),
         [craft],
     );
 
@@ -1639,14 +1568,6 @@ export default function CraftedForYouPage({
                             </div>
                         </div>
 
-                        {isAdminPreview && isCurationScreen ? (
-                            <AdminPreviewTierPicker
-                                compact
-                                tiers={availablePlanTiers}
-                                selectedTier={previewPlanTier}
-                                onSelectTier={setPreviewPlanTier}
-                            />
-                        ) : null}
                     </div>
                 </div>
 
@@ -1672,15 +1593,6 @@ export default function CraftedForYouPage({
                 {/* Screen 1 — Craft & Duration */}
                 {screen === 1 ? (
                     <section className="rounded-[12px] border border-gray-200 bg-white p-6 shadow-sm">
-                        {isAdminPreview ? (
-                            <div className="mb-6">
-                                <AdminPreviewTierPicker
-                                    tiers={availablePlanTiers}
-                                    selectedTier={previewPlanTier}
-                                    onSelectTier={setPreviewPlanTier}
-                                />
-                            </div>
-                        ) : null}
                         <h2 className="font-montserrat text-[16px] font-bold tracking-tight text-[#262A22]">
                             The Craft &amp; Duration
                         </h2>
@@ -1762,15 +1674,6 @@ export default function CraftedForYouPage({
                 {/* Screen 2 — Manual Day Selection */}
                 {screen === 2 && usesManualDaySelection ? (
                     <section className="rounded-[12px] border border-gray-200 bg-white p-6 shadow-sm">
-                        {isAdminPreview ? (
-                            <div className="mb-6">
-                                <AdminPreviewTierPicker
-                                    tiers={availablePlanTiers}
-                                    selectedTier={previewPlanTier}
-                                    onSelectTier={setPreviewPlanTier}
-                                />
-                            </div>
-                        ) : null}
                         <h2 className="font-montserrat text-[16px] font-bold tracking-tight text-[#262A22]">
                             Manual Day Selection
                         </h2>
@@ -1992,6 +1895,7 @@ export default function CraftedForYouPage({
                                 scheduledSoupMeals={scheduledSoupForDay(curationDay)}
                                 onViewDetails={openMealDetailWhenScheduleReady}
                                 dietProtocol={dietProtocol}
+                                protocolSelectedLayout
                                 isMenuPending={isMenuPending}
                             >
                                 {usesWeeklyCategoryLayout ? null : (

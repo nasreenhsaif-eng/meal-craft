@@ -8,16 +8,29 @@ import MealCardClientViewNano from '../../Components/MealCardClientViewNano.jsx'
 const mealOptionsDemo = consultationDeckOptionsForSlotKey(consultationMeals, 'meal');
 
 export default {
-    title: 'MealCraft/Pages/Admin/Consultation/CraftedForYou',
+    title: 'MealCraft/Pages/Admin/Consultation',
     component: CraftedForYouPage,
     parameters: {
         layout: 'fullscreen',
         a11y: { config: { rules: [{ id: 'color-contrast', enabled: true }] } },
+        docs: {
+            description: {
+                component:
+                    'Admin consultation preview of Crafted for YOU: craft type, week duration, day selection, and meal decks with mock library data (no adapted-menu API).',
+            },
+        },
     },
 };
 
-export const Default = {
-    render: () => <CraftedForYouPage disableAdaptedMenuFetch />,
+export const CraftedForYour = {
+    name: 'Crafted for your',
+    render: () => (
+        <CraftedForYouPage
+            disableAdaptedMenuFetch
+            isAdminPreview
+            pageEyebrow="Admin / Consultation"
+        />
+    ),
 };
 
 /**

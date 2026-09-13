@@ -134,13 +134,12 @@ test('balanced configurator creates bone broth cup soup meal', function (): void
     expect($meal)->not->toBeNull()
         ->and($meal->meal_type)->toBe(MealType::Soup)
         ->and($meal->is_bulk)->toBeTrue()
-        ->and((float) $meal->servings_count)->toBe((float) BalancedCanonicalMealRecipeRefiner::BATCH_SOUP_SERVINGS_COUNT)
+        ->and((float) $meal->servings_count)->toBe((float) BalancedMealLibraryConfigurator::BONE_BROTH_BATCH_SERVINGS_COUNT)
         ->and((float) $meal->ingredients->firstWhere('name', 'Bone Broth (Base)')->pivot->amount_grams)
-        ->toBe(BalancedMealLibraryConfigurator::BONE_BROTH_SERVING_GRAMS * BalancedCanonicalMealRecipeRefiner::BATCH_SOUP_SERVINGS_COUNT)
-        ->and((float) $meal->ingredients->firstWhere('name', 'Psyllium Husks')->pivot->amount_grams)
-        ->toBe(BalancedCanonicalMealRecipeRefiner::BATCH_SOUP_PSYLLIUM_TABLESPOON_GRAMS * BalancedCanonicalMealRecipeRefiner::BATCH_SOUP_SERVINGS_COUNT)
-        ->and((float) $meal->total_calories)->toBeGreaterThan(130.0)
-        ->and((float) $meal->total_calories)->toBeLessThan(165.0);
+        ->toBe(BalancedMealLibraryConfigurator::BONE_BROTH_SERVING_GRAMS * BalancedMealLibraryConfigurator::BONE_BROTH_BATCH_SERVINGS_COUNT)
+        ->and($meal->ingredients->firstWhere('name', 'Psyllium Husks'))->toBeNull()
+        ->and((float) $meal->total_calories)->toBeGreaterThan(70.0)
+        ->and((float) $meal->total_calories)->toBeLessThan(100.0);
 });
 
 test('adapted menu lists canonical breakfasts and mains before demoted library meals', function (): void {

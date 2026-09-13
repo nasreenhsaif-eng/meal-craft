@@ -218,6 +218,26 @@ final class KitchenPortionRounding
     }
 
     /**
+     * Fresh whole/sliced chillies measured in teaspoons — not flakes, powders, or sauces.
+     */
+    public static function isFreshChilli(Ingredient $ingredient): bool
+    {
+        $name = strtolower(trim($ingredient->name));
+
+        if (! str_contains($name, 'chilli') && ! str_contains($name, 'chili')) {
+            return false;
+        }
+
+        foreach (['flake', 'powder', 'dressing', 'sauce', 'paste', 'oil', 'marinade'] as $exclude) {
+            if (str_contains($name, $exclude)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
      * Dry powders / seasonings measured in pinches or teaspoons — whole grams only.
      * Fresh aromatics (garlic, ginger) use five-gram steps; fresh herbs use whole grams.
      */
@@ -321,6 +341,10 @@ final class KitchenPortionRounding
         }
 
         if (self::isSoftFreshHerb($ingredient)) {
+            return self::snapFineSpiceGrams($grams);
+        }
+
+        if (self::isFreshChilli($ingredient)) {
             return self::snapFineSpiceGrams($grams);
         }
 

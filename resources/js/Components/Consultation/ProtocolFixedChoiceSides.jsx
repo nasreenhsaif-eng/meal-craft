@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import SquareCheckbox from '../Atoms/Icons/SquareCheckbox.jsx';
-import ProtocolMealRow from './ProtocolMealRow.jsx';
+import MealCardClientViewNano from '../MealCardClientViewNano.jsx';
 import {
     FIXED_CHOICE_MAX_COUNT,
     FIXED_CHOICE_MIN_COUNT,
     FIXED_CHOICE_TOGGLE_OPTIONS,
     countFixedChoiceSelections,
+    resolveFixedChoiceSelectedMeals,
 } from '../../consultation/fixedChoiceSelection.js';
 
 /** @param {unknown} id */
@@ -17,8 +18,11 @@ function normalizeMealId(id) {
     return String(id);
 }
 
+/** Portrait Nano card footprint under a checked side category. */
+const MEAL_CARD_WIDTH = 'w-full max-w-[280px] shrink-0';
+
 /**
- * ND protocol sides: checkbox per category; expand selected meal rows when checked.
+ * ND protocol sides: checkbox per category; expand selected old-style meal cards when checked.
  *
  * @param {object} props
  * @param {Partial<Record<'sideSalads'|'desserts'|'soup', string[]>>} props.categorySelections
@@ -29,6 +33,7 @@ function normalizeMealId(id) {
  * @param {(categoryKey: 'sideSalads'|'desserts'|'soup') => void} [props.onClearCategory]
  * @param {(categoryKey: 'sideSalads'|'desserts'|'soup') => void} [props.onSeeOtherOptions]
  * @param {(meal: object) => void} [props.onViewDetails]
+ * @param {(meal: object) => void} [props.onEditMeal]
  * @param {string} [props.className]
  */
 export default function ProtocolFixedChoiceSides({
@@ -40,6 +45,7 @@ export default function ProtocolFixedChoiceSides({
     onClearCategory,
     onSeeOtherOptions,
     onViewDetails,
+    onEditMeal,
     className = '',
 }) {
     const [limitWarning, setLimitWarning] = useState(/** @type {string | null} */ (null));
@@ -108,15 +114,28 @@ export default function ProtocolFixedChoiceSides({
 
             <ul className="m-0 list-none divide-y divide-gray-100 p-0">
                 {FIXED_CHOICE_TOGGLE_OPTIONS.map((option) => {
-                    const cards = displayDecks?.[option.selectionKey] ?? [];
+                    const assignedCards = displayDecks?.[option.selectionKey] ?? [];
+                    const cards =
+                        assignedCards.length > 0
+                            ? assignedCards
+                            : Object.values(displayDecks ?? {})
+                                  .flat()
+                                  .filter((meal) => {
+                                      const label = String(meal?.mealType ?? meal?.category ?? '').toLowerCase();
+                                      const expected = String(option.mealTypeLabel ?? option.label).toLowerCase();
+
+                                      return label === expected || label === `${expected}s`;
+                                  });
                     const selectedIds = (categorySelections?.[option.selectionKey] ?? []).map((id) =>
                         normalizeMealId(id),
                     );
-                    const selectedSet = new Set(selectedIds);
-                    const selectedMeals = cards.filter((meal) =>
-                        selectedSet.has(normalizeMealId(meal?.id)),
+                    const selectedMeals = resolveFixedChoiceSelectedMeals(
+                        selectedIds,
+                        cards,
+                        displayDecks,
                     );
                     const isChecked = selectedMeals.length > 0 || selectedIds.length > 0;
+                    const hasOptions = cards.length > 0;
 
                     return (
                         <li key={option.selectionKey} className="px-3 py-3 sm:px-4">
@@ -124,7 +143,7 @@ export default function ProtocolFixedChoiceSides({
                                 <button
                                     type="button"
                                     className="mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-[4px] border-0 bg-transparent p-0 outline-none focus-visible:ring-2 focus-visible:ring-[#5A6B44] focus-visible:ring-offset-1 disabled:opacity-50"
-                                    disabled={!pickEnabled || cards.length === 0}
+                                    disabled={!pickEnabled || !hasOptions}
                                     onClick={() => toggleCategory(option.selectionKey, cards, isChecked)}
                                     aria-pressed={isChecked}
                                     aria-label={
@@ -141,13 +160,13 @@ export default function ProtocolFixedChoiceSides({
                                         <button
                                             type="button"
                                             className="text-left font-montserrat text-sm font-bold text-[#262A22] disabled:opacity-50"
-                                            disabled={!pickEnabled || cards.length === 0}
+                                            disabled={!pickEnabled || !hasOptions}
                                             onClick={() => toggleCategory(option.selectionKey, cards, isChecked)}
                                         >
                                             {option.label}
                                         </button>
 
-                                        {isChecked && typeof onSeeOtherOptions === 'function' && pickEnabled ? (
+                                        {isChecked && hasOptions && typeof onSeeOtherOptions === 'function' && pickEnabled ? (
                                             <button
                                                 type="button"
                                                 onClick={() => onSeeOtherOptions(option.selectionKey)}
@@ -158,37 +177,39 @@ export default function ProtocolFixedChoiceSides({
                                         ) : null}
                                     </div>
 
-                                    {cards.length === 0 ? (
+                                    {!hasOptions ? (
                                         <p className="mt-1 font-body text-xs text-[#666666]">
                                             No {option.label.toLowerCase()} options for this day yet.
                                         </p>
                                     ) : null}
 
                                     {isChecked && selectedMeals.length > 0 ? (
-                                        <div
-                                            className={[
-                                                'mt-3 flex gap-3',
-                                                selectedMeals.length <= 2
-                                                    ? 'flex-wrap justify-center'
-                                                    : 'flex-col',
-                                            ].join(' ')}
-                                        >
+                                        <div className="mt-3 flex flex-wrap justify-center gap-3">
                                             {selectedMeals.map((meal, index) => (
                                                 <div
                                                     key={normalizeMealId(meal?.id) || index}
-                                                    className={[
-                                                        'overflow-hidden rounded-[10px] border border-gray-200 bg-[#F8F9F6]',
-                                                        selectedMeals.length <= 2
-                                                            ? 'w-full min-w-0 md:w-[calc(50%-0.375rem)] md:max-w-[calc(50%-0.375rem)]'
-                                                            : 'w-full',
-                                                    ].join(' ')}
+                                                    className={MEAL_CARD_WIDTH}
                                                 >
-                                                    <ProtocolMealRow
-                                                        meal={meal}
-                                                        compact
+                                                    <MealCardClientViewNano
+                                                        deck
+                                                        alignActionsBottom
+                                                        hideCraftButton
+                                                        selected
+                                                        title={String(meal?.title ?? '').trim() || 'Meal'}
+                                                        imageUrl={
+                                                            typeof meal?.imageUrl === 'string'
+                                                                ? meal.imageUrl
+                                                                : undefined
+                                                        }
+                                                        macros={meal?.macros}
                                                         onViewDetails={
                                                             typeof onViewDetails === 'function'
                                                                 ? () => onViewDetails(meal)
+                                                                : undefined
+                                                        }
+                                                        onEdit={
+                                                            typeof onEditMeal === 'function'
+                                                                ? () => onEditMeal(meal)
                                                                 : undefined
                                                         }
                                                     />

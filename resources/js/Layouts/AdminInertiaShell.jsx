@@ -28,6 +28,13 @@ const SHELL_BY_COMPONENT = {
         hidePageTitle: false,
         contentWrapperClassName: WIDE,
     },
+    'Admin/MealTiersLibrary': {
+        pageTitle: 'Meal Tiers Library',
+        activePath: ADMIN_NAV_PATHS.mealTiers,
+        showSearch: false,
+        hidePageTitle: false,
+        contentWrapperClassName: WIDE,
+    },
     'Admin/MealPlanLibrary': {
         pageTitle: 'Meal Plan Library',
         activePath: ADMIN_NAV_PATHS.mealPlans,

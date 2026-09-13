@@ -10,6 +10,7 @@ import {
     getPreviousTabStep,
     getVisibleOnboardingSteps,
 } from '../../meal-craft/onboarding/onboardingTabFlow.js';
+import { resolveOnboardingStepDefaults } from '../../meal-craft/onboarding/resolveOnboardingStepDefaults.js';
 import { validateOnboardingStep } from '../../meal-craft/onboarding/validateOnboardingStep.js';
 import customerOnboardingLayout from '../../Layouts/customerOnboardingLayout.jsx';
 import { OnboardingActivityInner } from './Activity.jsx';
@@ -48,6 +49,7 @@ export default function Container() {
     const pageProps = usePage().props;
     const onboarding = onboardingFromPage(pageProps);
     const activeStep = pageProps.activeStep ?? 'gender';
+    const inertiaErrors = pageProps.errors ?? {};
     const { state, patch, profileInput, computeTargetsBeforeSummary } = useOnboardingStore();
     const [processing, setProcessing] = useState(false);
     const [validationErrors, setValidationErrors] = useState(/** @type {Record<string, string>} */ ({}));
@@ -100,7 +102,13 @@ export default function Container() {
     }, [activeStep, visibleSteps, visitStep]);
 
     const handleNext = useCallback(() => {
-        const { valid, errors } = validateOnboardingStep(activeStep, state);
+        const resolvedState = resolveOnboardingStepDefaults(activeStep, state);
+
+        if (resolvedState !== state) {
+            patch(resolvedState);
+        }
+
+        const { valid, errors } = validateOnboardingStep(activeStep, resolvedState);
 
         if (!valid) {
             setValidationErrors(errors);
@@ -121,7 +129,7 @@ export default function Container() {
             computeTargetsBeforeSummary();
         }
 
-        const payload = buildOnboardingStepPayload(activeStep, state);
+        const payload = buildOnboardingStepPayload(activeStep, resolvedState);
 
         setProcessing(true);
 
@@ -140,6 +148,7 @@ export default function Container() {
 
                 if (next) {
                     patch({ currentStep: next });
+                    visitStep(next);
                 }
             },
         });
@@ -150,6 +159,7 @@ export default function Container() {
         computeTargetsBeforeSummary,
         visibleSteps,
         patch,
+        visitStep,
     ]);
 
     const handleGenderSelect = useCallback(
@@ -249,7 +259,7 @@ export default function Container() {
         currentStep: activeStep,
         customerName: onboarding.customerName ?? '',
         processing,
-        errors: validationErrors,
+        errors: { ...inertiaErrors, ...validationErrors },
         onSubmit: handleNext,
     };
 

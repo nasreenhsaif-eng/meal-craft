@@ -1,8 +1,12 @@
 <?php
 
+use App\Enums\CustomerActivityLevel;
+use App\Enums\CustomerGoal;
+use App\Enums\CustomerSex;
 use App\Enums\OnboardingStep;
 use App\Models\CustomerProfile;
 use App\Models\User;
+use App\Services\Nutrition\OnboardingDailyTargetsCalculator;
 use App\Support\MealCraftInertiaSharedData;
 
 test('legacy onboarding welcome url redirects to gender', function () {
@@ -187,6 +191,25 @@ test('gender onboarding page renders with shared props', function () {
             ->has('mealCraft.onboarding.urls.gender')
             ->has('mealCraft.onboarding.options.sex')
             ->where('mealCraft.onboarding.currentStep', OnboardingStep::Gender->value));
+});
+
+test('customer can save birthday on the first day of the minimum picker year', function () {
+    $customer = User::factory()->customer()->create();
+    CustomerProfile::factory()->for($customer)->withoutOnboarding()->create([
+        'onboarding_step' => OnboardingStep::Birthday,
+        'sex' => 'female',
+    ]);
+
+    $date = now()->subYears(100)->startOfYear()->toDateString();
+
+    $this->actingAs($customer)
+        ->post(route('onboarding.birthday.store'), [
+            'date_of_birth' => $date,
+        ])
+        ->assertRedirect(route('onboarding.show', ['step' => OnboardingStep::Height->value]));
+
+    expect($customer->fresh()->customerProfile?->date_of_birth?->toDateString())->toBe($date)
+        ->and($customer->fresh()->currentOnboardingStep())->toBe(OnboardingStep::Height);
 });
 
 test('customer can save birthday and advance to height', function () {
@@ -411,7 +434,7 @@ test('diet protocol submission calculates and persists daily targets', function 
     $profile = $customer->fresh()->customerProfile;
 
     expect($profile?->diet_protocol)->toBe('ketobiotic')
-        ->and($profile?->daily_calorie_target)->toBeIn([1000, 1200, 1500, 1800, 2000])
+        ->and($profile?->daily_calorie_target)->toBeIn([1250, 1500, 1800, 2000])
         ->and($profile?->fat_percentage)->toBe(70.0)
         ->and($customer->fresh()->currentOnboardingStep())->toBe(OnboardingStep::Birthday);
 
@@ -495,6 +518,34 @@ test('completed onboarding redirects to meal selection', function () {
             ->component('App/Home')
             ->where('consultationUrl', route('consultation.crafted-for-you'))
             ->where('craftPlan', null));
+});
+
+test('customer home shows the onboarding calorie target range instead of the snapped plan tier', function () {
+    $customer = User::factory()->customer()->create();
+    $profile = CustomerProfile::factory()->for($customer)->create([
+        'daily_calorie_target' => 1500,
+        'goal' => CustomerGoal::LoseWeight,
+        'weight_kg' => 72,
+        'target_weight_kg' => 65,
+        'height_cm' => 168,
+        'age' => 32,
+        'sex' => CustomerSex::Female,
+        'activity_level' => CustomerActivityLevel::LightlyActive,
+    ]);
+
+    $targets = OnboardingDailyTargetsCalculator::calculate($profile);
+
+    expect($targets['daily_calories_min'])->not->toBe(1500)
+        ->and($targets['daily_calories_max'])->not->toBe(1500);
+
+    $this->actingAs($customer)
+        ->get(route('app.home'))
+        ->assertSuccessful()
+        ->assertInertia(fn ($page) => $page
+            ->component('App/Home')
+            ->where('profile.dailyCalorieTarget', 1500)
+            ->where('profile.dailyCaloriesMin', $targets['daily_calories_min'])
+            ->where('profile.dailyCaloriesMax', $targets['daily_calories_max']));
 });
 
 test('inertia food filter completion uses external location redirect to meal selection', function () {

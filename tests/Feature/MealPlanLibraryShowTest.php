@@ -146,7 +146,46 @@ test('authenticated users can view meal plan detail with day categories', functi
             ->has('libraryUrl')
             ->has('planTiers')
             ->has('defaultPlanTier')
-            ->has('tierPreviewUrl'));
+            ->has('tierPreviewUrl')
+            ->where('dietProtocol', 'balanced'));
+});
+
+test('nutrient dense meal plans expose nutrient_dense diet protocol to the admin picker', function (): void {
+    $user = User::factory()->create();
+
+    $plan = MealPlan::query()->create([
+        'name' => 'Nutrient Density Protocol',
+        'goal' => 'Weekly nutrient density rotation.',
+        'schema_type' => MealPlanSchemaType::WeeklyStructured,
+        'plan_category' => MealPlanLibraryCategory::NutrientDense,
+        'target_total_calories' => 10500,
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('admin.meal-plan-library.show', $plan))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Admin/MealPlanDetail')
+            ->where('dietProtocol', 'nutrient_dense'));
+});
+
+test('tbd weekly protocol plans use the customer onboarding nutrient dense picker', function (): void {
+    $user = User::factory()->create();
+
+    $plan = MealPlan::query()->create([
+        'name' => 'TBD Weekly Protocol',
+        'goal' => 'Weekly nutrient density rotation.',
+        'schema_type' => MealPlanSchemaType::WeeklyStructured,
+        'plan_category' => MealPlanLibraryCategory::Balanced,
+        'target_total_calories' => 10500,
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('admin.meal-plan-library.show', $plan))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Admin/MealPlanDetail')
+            ->where('dietProtocol', 'nutrient_dense'));
 });
 
 test('meal plan tier preview returns tier-scaled days for admin', function (): void {
@@ -646,4 +685,244 @@ test('meal plan tier preview micronutrients follow selected mains', function ():
     $highIronTotal = sumSelectedDayIron($highIronDay, $highIronSelection[1]);
 
     expect($highIronTotal)->toBeGreaterThan($lowIronTotal);
+});
+
+test('meal plan tier preview at 1800 serves authored library tabs without a calorie tab strip', function (): void {
+    $user = User::factory()->create();
+
+    $breakfastFood = Ingredient::factory()->create([
+        'name' => 'Preview Eggs',
+        'calories' => 400,
+        'protein' => 28,
+        'carbs' => 4,
+        'fat' => 28,
+        'usda_food_category' => 'Proteins',
+    ]);
+    $mainFood = Ingredient::factory()->create([
+        'name' => 'Preview Chicken',
+        'calories' => 500,
+        'protein' => 45,
+        'carbs' => 20,
+        'fat' => 22,
+        'usda_food_category' => 'Proteins',
+    ]);
+
+    $breakfast = Meal::factory()->tiers()->create([
+        'name' => 'Library Preview Omelet',
+        'category' => RecipeCategory::Breakfast,
+        'meal_type' => MealType::Breakfast,
+        'total_calories' => 500,
+    ]);
+    $breakfast->ingredients()->attach($breakfastFood->id, ['amount_grams' => 125]);
+    $breakfastTier = $breakfast->calorieTiers()->create([
+        'calorie_tier' => 400,
+        'designed_calories' => 400,
+        'total_calories' => 400,
+        'total_protein' => 28,
+        'total_carbs' => 4,
+        'total_fat' => 28,
+        'nutrition' => ['calories' => 400, 'protein' => 28, 'carbs' => 4, 'fat' => 28],
+    ]);
+    $breakfastTier->ingredients()->attach($breakfastFood->id, ['amount_grams' => 100]);
+
+    $main = Meal::factory()->tiers()->create([
+        'name' => 'Library Preview Chicken',
+        'category' => RecipeCategory::Meal,
+        'meal_type' => MealType::Main,
+        'total_calories' => 550,
+    ]);
+    $main->ingredients()->attach($mainFood->id, ['amount_grams' => 110]);
+    $mainTier = $main->calorieTiers()->create([
+        'calorie_tier' => 500,
+        'designed_calories' => 500,
+        'total_calories' => 500,
+        'total_protein' => 45,
+        'total_carbs' => 20,
+        'total_fat' => 22,
+        'nutrition' => ['calories' => 500, 'protein' => 45, 'carbs' => 20, 'fat' => 22],
+    ]);
+    $mainTier->ingredients()->attach($mainFood->id, ['amount_grams' => 100]);
+
+    $plan = MealPlan::query()->create([
+        'name' => 'Library Tab Preview Plan',
+        'goal' => 'Tiers library portions.',
+        'schema_type' => MealPlanSchemaType::WeeklyStructured,
+        'plan_category' => MealPlanLibraryCategory::Balanced,
+        'target_total_calories' => 12600,
+    ]);
+
+    $plan->dayMeals()->createMany([
+        [
+            'meal_id' => $breakfast->id,
+            'day_number' => 1,
+            'slot_type' => MealPlanSlotType::Breakfast,
+            'slot_index' => 1,
+            'is_option_b' => false,
+        ],
+        [
+            'meal_id' => $main->id,
+            'day_number' => 1,
+            'slot_type' => MealPlanSlotType::Main,
+            'slot_index' => 1,
+            'is_option_b' => false,
+        ],
+        [
+            'meal_id' => $main->id,
+            'day_number' => 1,
+            'slot_type' => MealPlanSlotType::Main,
+            'slot_index' => 2,
+            'is_option_b' => false,
+        ],
+    ]);
+
+    $preview = $this->actingAs($user)
+        ->getJson(route('admin.meal-plan-library.tier-preview', [
+            'mealPlan' => $plan,
+            'plan_tier' => 1800,
+        ]))
+        ->assertOk()
+        ->json('days.0.categories');
+
+    $breakfastRow = $preview['breakfasts'][0] ?? [];
+    $mainRow = $preview['meals'][0] ?? [];
+
+    expect((float) ($breakfastRow['macros']['calories'] ?? 0))->toEqualWithDelta(400, 5)
+        ->and((float) ($mainRow['macros']['calories'] ?? 0))->toEqualWithDelta(500, 5)
+        ->and($breakfastRow['isScaled'] ?? true)->toBeFalse()
+        ->and($mainRow['isScaled'] ?? true)->toBeFalse()
+        ->and($breakfastRow)->not->toHaveKey('calorieTierTabs')
+        ->and($mainRow)->not->toHaveKey('calorieTierTabs');
+});
+
+test('meal plan library preview loads tiers copies when the stored plan still points at classic meals', function (): void {
+    $user = User::factory()->create();
+
+    $breakfastFood = Ingredient::factory()->create([
+        'name' => 'Classic Preview Eggs',
+        'calories' => 400,
+        'protein' => 28,
+        'carbs' => 4,
+        'fat' => 28,
+        'usda_food_category' => 'Proteins',
+    ]);
+    $mainFood = Ingredient::factory()->create([
+        'name' => 'Classic Preview Chicken',
+        'calories' => 500,
+        'protein' => 45,
+        'carbs' => 20,
+        'fat' => 22,
+        'usda_food_category' => 'Proteins',
+    ]);
+
+    $classicBreakfast = Meal::factory()->create([
+        'name' => 'Stored Classic Omelet',
+        'category' => RecipeCategory::Breakfast,
+        'meal_type' => MealType::Breakfast,
+        'total_calories' => 220,
+    ]);
+    $classicBreakfast->ingredients()->attach($breakfastFood->id, ['amount_grams' => 80]);
+
+    $classicMain = Meal::factory()->create([
+        'name' => 'Stored Classic Chicken',
+        'category' => RecipeCategory::Meal,
+        'meal_type' => MealType::Main,
+        'total_calories' => 330,
+    ]);
+    $classicMain->ingredients()->attach($mainFood->id, ['amount_grams' => 200]);
+
+    $breakfast = Meal::factory()->tiers()->create([
+        'name' => 'Stored Classic Omelet',
+        'category' => RecipeCategory::Breakfast,
+        'meal_type' => MealType::Breakfast,
+        'total_calories' => 500,
+    ]);
+    $breakfast->ingredients()->attach($breakfastFood->id, ['amount_grams' => 125]);
+    $breakfastTier = $breakfast->calorieTiers()->create([
+        'calorie_tier' => 400,
+        'designed_calories' => 400,
+        'total_calories' => 400,
+        'total_protein' => 28,
+        'total_carbs' => 4,
+        'total_fat' => 28,
+        'nutrition' => ['calories' => 400, 'protein' => 28, 'carbs' => 4, 'fat' => 28],
+    ]);
+    $breakfastTier->ingredients()->attach($breakfastFood->id, ['amount_grams' => 100]);
+
+    $main = Meal::factory()->tiers()->create([
+        'name' => 'Stored Classic Chicken',
+        'category' => RecipeCategory::Meal,
+        'meal_type' => MealType::Main,
+        'total_calories' => 550,
+    ]);
+    $main->ingredients()->attach($mainFood->id, ['amount_grams' => 110]);
+    $mainTier = $main->calorieTiers()->create([
+        'calorie_tier' => 500,
+        'designed_calories' => 500,
+        'total_calories' => 500,
+        'total_protein' => 45,
+        'total_carbs' => 20,
+        'total_fat' => 22,
+        'nutrition' => ['calories' => 500, 'protein' => 45, 'carbs' => 20, 'fat' => 22],
+    ]);
+    $mainTier->ingredients()->attach($mainFood->id, ['amount_grams' => 100]);
+
+    $plan = MealPlan::query()->create([
+        'name' => 'Classic Ids Preview Plan',
+        'goal' => 'Still pointing at classic meals.',
+        'schema_type' => MealPlanSchemaType::WeeklyStructured,
+        'plan_category' => MealPlanLibraryCategory::Balanced,
+        'target_total_calories' => 12600,
+    ]);
+
+    $plan->dayMeals()->createMany([
+        [
+            'meal_id' => $classicBreakfast->id,
+            'day_number' => 1,
+            'slot_type' => MealPlanSlotType::Breakfast,
+            'slot_index' => 1,
+            'is_option_b' => false,
+        ],
+        [
+            'meal_id' => $classicMain->id,
+            'day_number' => 1,
+            'slot_type' => MealPlanSlotType::Main,
+            'slot_index' => 1,
+            'is_option_b' => false,
+        ],
+        [
+            'meal_id' => $classicMain->id,
+            'day_number' => 1,
+            'slot_type' => MealPlanSlotType::Main,
+            'slot_index' => 2,
+            'is_option_b' => false,
+        ],
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('admin.meal-plan-library.show', $plan))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Admin/MealPlanDetail')
+            ->where('days.0.categories.breakfasts.0.id', (string) $breakfast->id)
+            ->where('days.0.categories.meals.0.id', (string) $main->id)
+            ->has('days.0.categories.breakfasts.0.calorieTiers')
+            ->has('days.0.categories.meals.0.calorieTiers'));
+
+    $preview = $this->actingAs($user)
+        ->getJson(route('admin.meal-plan-library.tier-preview', [
+            'mealPlan' => $plan,
+            'plan_tier' => 1800,
+        ]))
+        ->assertOk()
+        ->json('days.0.categories');
+
+    $breakfastRow = $preview['breakfasts'][0] ?? [];
+    $mainRow = $preview['meals'][0] ?? [];
+
+    expect((int) ($breakfastRow['id'] ?? 0))->toBe((int) $breakfast->id)
+        ->and((int) ($mainRow['id'] ?? 0))->toBe((int) $main->id)
+        ->and((float) ($breakfastRow['macros']['calories'] ?? 0))->toEqualWithDelta(400, 5)
+        ->and((float) ($mainRow['macros']['calories'] ?? 0))->toEqualWithDelta(500, 5)
+        ->and($breakfastRow['isScaled'] ?? true)->toBeFalse()
+        ->and($mainRow['isScaled'] ?? true)->toBeFalse();
 });

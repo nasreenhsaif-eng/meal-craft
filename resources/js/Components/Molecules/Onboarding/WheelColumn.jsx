@@ -55,6 +55,7 @@ export function WheelColumn({
     const [scrollTop, setScrollTop] = useState(0);
 
     const selectedIndex = findSelectedIndex(items, value);
+    const isProgrammaticScrollRef = useRef(false);
 
     const syncScrollPosition = useCallback(() => {
         if (!listRef.current || selectedIndex < 0) {
@@ -62,8 +63,13 @@ export function WheelColumn({
         }
 
         const nextScrollTop = selectedIndex * WHEEL_ITEM_HEIGHT;
+        isProgrammaticScrollRef.current = true;
+        window.clearTimeout(scrollTimeoutRef.current);
         listRef.current.scrollTop = nextScrollTop;
         setScrollTop(nextScrollTop);
+        window.requestAnimationFrame(() => {
+            isProgrammaticScrollRef.current = false;
+        });
     }, [selectedIndex]);
 
     useLayoutEffect(() => {
@@ -112,7 +118,11 @@ export function WheelColumn({
     }, [visible, syncScrollPosition]);
 
     const syncFromScroll = useCallback(() => {
-        if (!listRef.current || items.length === 0) {
+        if (!visible || !listRef.current || items.length === 0) {
+            return;
+        }
+
+        if (isProgrammaticScrollRef.current || listRef.current.clientHeight === 0) {
             return;
         }
 
@@ -128,9 +138,13 @@ export function WheelColumn({
         if (nextValue !== value && Number(nextValue) !== Number(value)) {
             onChange(nextValue);
         }
-    }, [items, onChange, value]);
+    }, [items, onChange, value, visible]);
 
     const handleScroll = () => {
+        if (isProgrammaticScrollRef.current) {
+            return;
+        }
+
         if (rafRef.current) {
             window.cancelAnimationFrame(rafRef.current);
         }

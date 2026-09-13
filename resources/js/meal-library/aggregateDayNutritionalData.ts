@@ -143,14 +143,16 @@ export type DayMicronutrientRow = AggregatedNutrientRow & {
 
 /**
  * @param {Partial<Record<string, MealWithNutrition[]>> | null | undefined} categories
+ * @param {Record<string, number> | null | undefined} [targets]
  */
 export function aggregateDayMicronutrientRows(
     categories: Partial<Record<string, MealWithNutrition[]>> | null | undefined,
+    targets?: Record<string, number> | null,
 ): DayMicronutrientRow[] {
     return aggregateDayNutrientTotals(categories)
         .filter((row) => shouldIncludeMicronutrientRow(row.sectionTitle, row.label))
         .map((row) => {
-            const rdiPercent = nutrientRdiPercent(row.label, row.total);
+            const rdiPercent = nutrientRdiPercent(row.label, row.total, targets ?? undefined);
 
             return {
                 ...row,

@@ -50,6 +50,11 @@ class ConsultationCraftedForYouController extends Controller
                 : null,
             'editDraft' => $editDraft,
             'dietProtocol' => $profile?->diet_protocol ?? 'balanced',
+            'sex' => $profile?->sex?->value,
+            'activityLevel' => $profile?->activity_level?->value,
+            'dailyCalorieTarget' => $profile?->daily_calorie_target !== null
+                ? (int) $profile->daily_calorie_target
+                : null,
         ];
 
         return view('pages.consultation.crafted-for-you', [

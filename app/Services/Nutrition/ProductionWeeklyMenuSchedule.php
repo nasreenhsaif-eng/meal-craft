@@ -13,8 +13,10 @@ use App\Services\BalancedWeeklyRotationSchedule;
 use App\Services\NutrientDenseWeeklyMealPlanBuilder;
 use App\Services\NutrientDenseWeeklyRotationSchedule;
 use App\Support\ChiaDessertMeals;
+use App\Support\MealTiersLibraryExclusions;
 use App\Support\NutrientDenseDessertMeals;
 use App\Support\SavoryEggBreakfastMeals;
+use App\Support\ScheduledTiersMealResolver;
 use Illuminate\Support\Collection;
 
 /**
@@ -100,7 +102,7 @@ final class ProductionWeeklyMenuSchedule
         $rowsQuery = MealPlanDayMeal::query()
             ->where('meal_plan_id', $plan->id)
             ->where('is_option_b', false)
-            ->with(['meal.ingredients'])
+            ->with(['meal.ingredients', 'meal.calorieTiers.ingredients'])
             ->orderBy('day_number')
             ->orderBy('slot_type')
             ->orderBy('slot_index');
@@ -217,10 +219,21 @@ final class ProductionWeeklyMenuSchedule
             ? NutrientDenseWeeklyRotationSchedule::mealNameForDay($dayNumber, MealPlanSlotType::Dessert, 1)
             : BalancedWeeklyRotationSchedule::mealNameForDay($dayNumber, MealPlanSlotType::Dessert, 1);
 
-        $meal = Meal::queryForMealLibrary()
+        $meal = Meal::queryScheduledTiersMeals()
             ->where('name', $name)
             ->with('ingredients')
             ->first();
+
+        if (! $meal instanceof Meal) {
+            $meal = Meal::queryForMealLibrary()
+                ->where('name', $name)
+                ->with('ingredients')
+                ->first();
+
+            if ($meal instanceof Meal && MealTiersLibraryExclusions::isExcluded($meal)) {
+                $meal = null;
+            }
+        }
 
         if (! $meal instanceof Meal) {
             return null;
@@ -273,7 +286,7 @@ final class ProductionWeeklyMenuSchedule
             ->where('meal_plan_id', $plan->id)
             ->where('is_option_b', false)
             ->where('slot_type', MealPlanSlotType::Soup->value)
-            ->with(['meal.ingredients'])
+            ->with(['meal.ingredients', 'meal.calorieTiers.ingredients'])
             ->orderBy('day_number')
             ->orderBy('slot_index');
 
@@ -300,7 +313,11 @@ final class ProductionWeeklyMenuSchedule
                     continue;
                 }
 
-                $adapted = AdaptedMenuBuilder::adaptMealForProfile($profile, $row->meal, $dayAdaptOptions);
+                $adapted = AdaptedMenuBuilder::adaptMealForProfile(
+                    $profile,
+                    ScheduledTiersMealResolver::forMeal($row->meal),
+                    $dayAdaptOptions,
+                );
 
                 if ($adapted !== null) {
                     $adaptedMeals[] = $adapted;
