@@ -6,6 +6,7 @@ import { G6PD_HIGHLIGHT_BADGE } from '../../meal-library/mealSafetyAndSickle.ts'
 import { aggregateDayMicronutrientRows } from '../../meal-library/aggregateDayNutritionalData.ts';
 import {
     BEST_EFFORT_NUTRIENT_LABELS,
+    calculateMicronutrientTargets,
     FLOOR_RDI_TARGET_PERCENT,
     isMicronutrientTierEnforced,
 } from '../../meal-library/nutrientDailyRdi.ts';
@@ -357,13 +358,28 @@ function MicronutrientRdiTable({ rows, planTierCalories = 0 }) {
  * @param {Partial<Record<string, unknown[]>>} props.categories
  * @param {string} [props.dayLabel]
  * @param {number} [props.planTierCalories]
+ * @param {string | null} [props.sex]
+ * @param {string | null} [props.activityLevel]
+ * @param {number | null} [props.dailyCalories]
  */
 export function DayMicronutrientsTabPanel({
     categories,
     dayLabel = 'Day',
     planTierCalories = 0,
+    sex = null,
+    activityLevel = null,
+    dailyCalories = null,
 }) {
-    const micronutrientRows = useMemo(() => aggregateDayMicronutrientRows(categories), [categories]);
+    const micronutrientRows = useMemo(() => {
+        const calories = Number(dailyCalories ?? planTierCalories);
+        const targets = calculateMicronutrientTargets({
+            sex: sex ?? 'female',
+            activityLevel: activityLevel ?? 'sedentary',
+            dailyCalories: Number.isFinite(calories) && calories > 0 ? calories : null,
+        });
+
+        return aggregateDayMicronutrientRows(categories, targets);
+    }, [activityLevel, categories, dailyCalories, planTierCalories, sex]);
 
     return (
         <SummarySection
@@ -469,6 +485,9 @@ export function DaySickleCellTabPanel({ categories }) {
  * @param {string} [props.planCategoryLabel]
  * @param {string | null | undefined} [props.craftKey]
  * @param {number} [props.planTierCalories]
+ * @param {string | null} [props.sex]
+ * @param {string | null} [props.activityLevel]
+ * @param {number | null} [props.dailyCalories]
  * @param {Record<string, unknown> | null | undefined} [props.nutritionPlan]
  * @param {DayMacroMicroTabId} [props.initialTab]
  */
@@ -478,6 +497,9 @@ export function DayMacroMicroTabPanel({
     planCategoryLabel = '',
     craftKey = 'full',
     planTierCalories = 0,
+    sex = null,
+    activityLevel = null,
+    dailyCalories = null,
     nutritionPlan = null,
     initialTab = 'macronutrients',
 }) {
@@ -519,6 +541,9 @@ export function DayMacroMicroTabPanel({
                     categories={categories}
                     dayLabel={dayLabel}
                     planTierCalories={planTierCalories}
+                    sex={sex}
+                    activityLevel={activityLevel}
+                    dailyCalories={dailyCalories}
                 />
             )}
         </div>
@@ -533,6 +558,9 @@ export function DayMacroMicroTabPanel({
  * @param {string} [props.planCategoryLabel]
  * @param {number} [props.planTierCalories]
  * @param {string | null | undefined} [props.craftKey]
+ * @param {string | null} [props.sex]
+ * @param {string | null} [props.activityLevel]
+ * @param {number | null} [props.dailyCalories]
  * @param {Record<string, unknown> | null | undefined} [props.nutritionPlan]
  * @param {(meal: object) => void} [props.onOpenMeal]
  */
@@ -543,6 +571,9 @@ export default function DayNutritionalSummaryPanel({
     planCategoryLabel = '',
     planTierCalories = 0,
     craftKey = 'full',
+    sex = null,
+    activityLevel = null,
+    dailyCalories = null,
     nutritionPlan = null,
     onOpenMeal,
 }) {
@@ -568,6 +599,9 @@ export default function DayNutritionalSummaryPanel({
                     categories={categories}
                     dayLabel={dayLabel}
                     planTierCalories={planTierCalories}
+                    sex={sex}
+                    activityLevel={activityLevel}
+                    dailyCalories={dailyCalories}
                 />
             );
         case 'allergies':

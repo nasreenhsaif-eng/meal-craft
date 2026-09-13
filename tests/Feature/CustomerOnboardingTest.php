@@ -1,8 +1,12 @@
 <?php
 
+use App\Enums\CustomerActivityLevel;
+use App\Enums\CustomerGoal;
+use App\Enums\CustomerSex;
 use App\Enums\OnboardingStep;
 use App\Models\CustomerProfile;
 use App\Models\User;
+use App\Services\Nutrition\OnboardingDailyTargetsCalculator;
 use App\Support\MealCraftInertiaSharedData;
 
 test('legacy onboarding welcome url redirects to gender', function () {
@@ -514,6 +518,34 @@ test('completed onboarding redirects to meal selection', function () {
             ->component('App/Home')
             ->where('consultationUrl', route('consultation.crafted-for-you'))
             ->where('craftPlan', null));
+});
+
+test('customer home shows the onboarding calorie target range instead of the snapped plan tier', function () {
+    $customer = User::factory()->customer()->create();
+    $profile = CustomerProfile::factory()->for($customer)->create([
+        'daily_calorie_target' => 1500,
+        'goal' => CustomerGoal::LoseWeight,
+        'weight_kg' => 72,
+        'target_weight_kg' => 65,
+        'height_cm' => 168,
+        'age' => 32,
+        'sex' => CustomerSex::Female,
+        'activity_level' => CustomerActivityLevel::LightlyActive,
+    ]);
+
+    $targets = OnboardingDailyTargetsCalculator::calculate($profile);
+
+    expect($targets['daily_calories_min'])->not->toBe(1500)
+        ->and($targets['daily_calories_max'])->not->toBe(1500);
+
+    $this->actingAs($customer)
+        ->get(route('app.home'))
+        ->assertSuccessful()
+        ->assertInertia(fn ($page) => $page
+            ->component('App/Home')
+            ->where('profile.dailyCalorieTarget', 1500)
+            ->where('profile.dailyCaloriesMin', $targets['daily_calories_min'])
+            ->where('profile.dailyCaloriesMax', $targets['daily_calories_max']));
 });
 
 test('inertia food filter completion uses external location redirect to meal selection', function () {

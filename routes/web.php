@@ -19,6 +19,7 @@ use App\Http\Controllers\Api\IngredientDetailViewController;
 use App\Http\Controllers\Api\MealDetailViewController;
 use App\Http\Controllers\Auth\PortalChoiceController;
 use App\Http\Controllers\Auth\WelcomeController;
+use App\Http\Controllers\Customer\CheckoutController;
 use App\Http\Controllers\Customer\ConsultationCraftedForYouController;
 use App\Http\Controllers\Customer\ConsultationCraftedForYouEditController;
 use App\Http\Controllers\Customer\CustomerAppController;
@@ -155,6 +156,12 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
                     Route::get('/', [CustomerAppController::class, 'home'])->name('home');
                 });
             });
+
+        Route::middleware('onboarding.complete')->group(function (): void {
+            Route::get('/checkout', [CheckoutController::class, 'fulfillment'])->name('checkout.fulfillment');
+            Route::get('/checkout/delivery', [CheckoutController::class, 'delivery'])->name('checkout.delivery');
+            Route::get('/meal-plan/recipes', [CustomerAppController::class, 'mealPlan'])->name('meal-plan.recipes');
+        });
 
         Route::prefix('api')->group(function (): void {
             Route::get('/menu/adapted', AdaptedMenuController::class)->name('api.menu.adapted');

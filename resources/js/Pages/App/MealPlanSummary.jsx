@@ -51,6 +51,9 @@ function formatMacroValue(value) {
  * @param {string} [props.consultationUrl]
  * @param {string} [props.consultationEditUrl]
  * @param {string} [props.homeUrl]
+ * @param {string | null} [props.sex]
+ * @param {string | null} [props.activityLevel]
+ * @param {number | null} [props.dailyCalorieTarget]
  */
 export default function MealPlanSummary({
     customerName = '',
@@ -58,6 +61,9 @@ export default function MealPlanSummary({
     consultationUrl = '/consultation/crafted-for-you',
     consultationEditUrl = '',
     homeUrl = '/app',
+    sex = null,
+    activityLevel = null,
+    dailyCalorieTarget = null,
 }) {
     const days = craftPlan.days ?? [];
     const [activeDay, setActiveDay] = useState(() => days[0]?.dayNumber ?? 1);
@@ -239,6 +245,9 @@ export default function MealPlanSummary({
                                 planCategoryLabel={planCategoryLabel}
                                 planTierCalories={craftPlan.planTierCalories ?? 0}
                                 craftKey={craftPlan.craftKey ?? 'full'}
+                                sex={sex}
+                                activityLevel={activityLevel}
+                                dailyCalories={dailyCalorieTarget ?? craftPlan.planTierCalories ?? 0}
                                 dietProtocol={craftPlan.dietProtocol ?? null}
                                 onOpenMeal={openMealDetail}
                                 onEditMeals={handleEditSelections}

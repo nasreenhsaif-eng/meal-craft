@@ -115,6 +115,7 @@ test('calculateUserPlan derives scaling multiplier from scalable budget and libr
 
 test('snapToPlanTier returns nearest configured tier', function () {
     expect(UserPlanCalculator::snapToPlanTier(1480))->toBe(1500.0)
+        ->and(UserPlanCalculator::snapToPlanTier(1464))->toBe(1500.0)
         ->and(UserPlanCalculator::snapToPlanTier(1100))->toBe(1250.0)
         ->and(UserPlanCalculator::snapToPlanTier(1620))->toBe(1500.0)
         ->and(UserPlanCalculator::snapToPlanTier(1900))->toBe(1800.0);

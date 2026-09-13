@@ -39,6 +39,7 @@ final class DayMicronutrientCoverageAnalyzer
 
     /**
      * @param  array<string, float>  $dayNutrition
+     * @param  array<string, float>|null  $targets
      * @return list<array{
      *     label: string,
      *     key: string,
@@ -49,20 +50,21 @@ final class DayMicronutrientCoverageAnalyzer
      *     meets_target: bool,
      * }>
      */
-    public static function analyzeDayNutrition(array $dayNutrition, int $planTier): array
+    public static function analyzeDayNutrition(array $dayNutrition, int $planTier, ?array $targets = null): array
     {
         $enforced = NutrientDailyRdi::tierEnforced($planTier);
+        $targets ??= NutrientDailyRdi::defaultTargets((float) $planTier);
         $rows = [];
 
         foreach (NutrientDailyRdi::NUTRITION_KEY_TO_LABEL as $key => $label) {
-            $rdi = NutrientDailyRdi::rdiForLabel($label);
+            $rdi = NutrientDailyRdi::rdiForLabel($label, $targets);
 
             if ($rdi === null) {
                 continue;
             }
 
             $total = (float) ($dayNutrition[$key] ?? 0);
-            $percent = NutrientDailyRdi::percentOfRdi($label, $total) ?? 0.0;
+            $percent = NutrientDailyRdi::percentOfRdi($label, $total, $targets) ?? 0.0;
             $status = NutrientDailyRdi::nutrientStatus($label);
 
             $meetsTarget = match ($status) {
@@ -113,8 +115,10 @@ final class DayMicronutrientCoverageAnalyzer
             $withLiverSwap,
         );
 
-        $nutrients = self::analyzeDayNutrition($simulation['day_nutrition'], (int) round($planTier));
-        $enforced = NutrientDailyRdi::tierEnforced((int) round($planTier));
+        $tier = (int) round($planTier);
+        $targets = NutrientDailyRdi::forProfile($profile, $planTier);
+        $nutrients = self::analyzeDayNutrition($simulation['day_nutrition'], $tier, $targets);
+        $enforced = NutrientDailyRdi::tierEnforced($tier);
 
         $failingFloor = [];
         $failingCeiling = [];

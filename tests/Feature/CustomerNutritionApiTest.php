@@ -69,16 +69,16 @@ test('adapted menu auto provisions a preview profile for admin staff without one
     expect($admin->fresh()->customerProfile?->daily_calorie_target)->toBe(2000);
 });
 
-test('admin staff can preview adapted menu at a chosen plan tier', function () {
+test('adapted menu ignores plan_tier query and keeps the stored daily target', function () {
     $admin = User::factory()->create();
 
     $this->actingAs($admin)
         ->getJson('/api/menu/adapted?plan_tier=1500')
         ->assertSuccessful()
-        ->assertJsonPath('plan.plan_tier', 1500)
-        ->assertJsonPath('daily_calorie_target', 1500);
+        ->assertJsonPath('plan.plan_tier', 2000)
+        ->assertJsonPath('daily_calorie_target', 2000);
 
-    expect($admin->fresh()->customerProfile?->daily_calorie_target)->toBe(1500);
+    expect($admin->fresh()->customerProfile?->daily_calorie_target)->toBe(2000);
 });
 
 test('customers cannot override plan tier via adapted menu query', function () {

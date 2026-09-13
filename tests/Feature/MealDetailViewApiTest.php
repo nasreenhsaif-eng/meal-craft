@@ -211,11 +211,13 @@ test('meal detail view api matches scheduled savory breakfast calories for full 
     }
 
     $user = User::factory()->create();
+    $profile = AdminConsultationPreviewProfile::resolve($user);
+    $profile->update(['daily_calorie_target' => 1250]);
 
     $scheduled = ProductionWeeklyMenuSchedule::scheduledFullCraftByWeekday(
-        AdminConsultationPreviewProfile::resolve($user),
+        $profile->fresh(),
         null,
-        ['plan_tier' => 1250, 'craft_key' => CraftCaloriePlanner::CRAFT_FULL],
+        ['craft_key' => CraftCaloriePlanner::CRAFT_FULL],
     );
 
     $expectedCalories = null;
@@ -235,7 +237,6 @@ test('meal detail view api matches scheduled savory breakfast calories for full 
     $this->actingAs($user)
         ->getJson(route('api.meals.detail-view', $meal).'?'.http_build_query([
             'craft_key' => CraftCaloriePlanner::CRAFT_FULL,
-            'plan_tier' => 1250,
             'day_of_week' => 1,
         ]))
         ->assertOk()

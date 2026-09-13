@@ -61,6 +61,7 @@ test('admin users can preview the customer consultation page', function () {
     $config = json_decode($matches[1] ?? '{}', true);
 
     expect($config['isAdminPreview'] ?? null)->toBeTrue()
+        ->and($config['planTier'] ?? null)->toBe(2000)
         ->and($config['planTiers'] ?? null)->toBe(UserPlanCalculator::planTiers());
 });
 
@@ -81,7 +82,9 @@ test('customer consultation page does not enable admin tier preview', function (
     $config = json_decode($matches[1] ?? '{}', true);
 
     expect($config['isAdminPreview'] ?? null)->toBeFalse()
-        ->and($config['planTiers'] ?? null)->toBe([1250, 1500, 1800, 2000]);
+        ->and($config['planTiers'] ?? null)->toBe([1250, 1500, 1800, 2000])
+        ->and($config['sex'] ?? null)->toBe('female')
+        ->and($config['activityLevel'] ?? null)->toBe('moderate');
 });
 
 test('consultation page exposes onboarding back link when opened from onboarding', function () {
