@@ -3,7 +3,7 @@ import RoundIconButton from './RoundIconButton.jsx';
 import { IconDelete, IconEdit, IconLayoutGrid, IconLayoutList } from '../SvgIcons.jsx';
 
 export default {
-    title: 'MealCraft/Atoms/Buttons & Links/Icons/RoundIconButton',
+    title: 'MealCraft/Atoms/Buttons & Links/Icons/IconButton',
     component: RoundIconButton,
     parameters: { layout: 'padded' },
     argTypes: {
@@ -23,8 +23,6 @@ export const AdminActions = {
         </div>
     ),
 };
-
-export const Default = AdminActions;
 
 /** Same markup/classes as Meal Library view toggle (segmented group). */
 export const ViewModeToggle = {

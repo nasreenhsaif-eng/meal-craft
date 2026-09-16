@@ -3,12 +3,16 @@
 namespace App\Models;
 
 use App\Enums\CustomerActivityLevel;
+use App\Enums\CustomerContactPreference;
+use App\Enums\CustomerDeliveryTime;
 use App\Enums\CustomerGoal;
+use App\Enums\CustomerPlanType;
 use App\Enums\CustomerSex;
 use App\Enums\DietType;
 use App\Enums\MacroSplitStyle;
 use App\Enums\OnboardingStep;
 use App\Services\Nutrition\UserPlanCalculator;
+use App\Support\CustomerIntake;
 use Database\Factories\CustomerProfileFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -23,6 +27,10 @@ class CustomerProfile extends Model
     protected $fillable = [
         'user_id',
         'onboarding_step',
+        'first_name',
+        'last_name',
+        'phone',
+        'contact_preference',
         'weight_kg',
         'target_weight_kg',
         'height_cm',
@@ -35,6 +43,8 @@ class CustomerProfile extends Model
         'goal',
         'diet_type',
         'diet_protocol',
+        'plan_type',
+        'plan_days',
         'macro_split_style',
         'daily_calorie_target',
         'protein_percentage',
@@ -46,6 +56,19 @@ class CustomerProfile extends Model
         'allergies',
         'food_filters',
         'dislikes',
+        'delivery_time',
+        'area',
+        'block',
+        'road',
+        'house_number',
+        'gate_flat_number',
+        'country',
+        'planned_start_date',
+        'follow_instagram',
+        'customer_question',
+        'uncalculated_plan',
+        'unique_code',
+        'intake_submission_id',
         'onboarding_completed_at',
     ];
 
@@ -64,6 +87,8 @@ class CustomerProfile extends Model
             'activity_level' => CustomerActivityLevel::class,
             'goal' => CustomerGoal::class,
             'diet_type' => DietType::class,
+            'plan_type' => CustomerPlanType::class,
+            'plan_days' => 'integer',
             'macro_split_style' => MacroSplitStyle::class,
             'daily_calorie_target' => 'integer',
             'protein_percentage' => 'float',
@@ -75,11 +100,22 @@ class CustomerProfile extends Model
             'average_cycle_length' => 'integer',
             'onboarding_step' => OnboardingStep::class,
             'onboarding_completed_at' => 'datetime',
+            'contact_preference' => CustomerContactPreference::class,
+            'delivery_time' => CustomerDeliveryTime::class,
+            'planned_start_date' => 'date',
+            'follow_instagram' => 'boolean',
+            'uncalculated_plan' => 'boolean',
         ];
     }
 
     protected static function booted(): void
     {
+        static::creating(function (CustomerProfile $profile): void {
+            if ($profile->unique_code === null || $profile->unique_code === '') {
+                $profile->unique_code = CustomerIntake::generateUniqueCode();
+            }
+        });
+
         static::saving(function (CustomerProfile $profile): void {
             if ($profile->sex !== null) {
                 $profile->gender = $profile->sex->value;

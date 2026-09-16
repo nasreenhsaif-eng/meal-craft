@@ -22,7 +22,7 @@ const preview = {
     },
     decorators: [
         (Story, context) => {
-            const mode = context.globals.canvasBackground ?? 'grey';
+            const mode = context.parameters.canvasBackground ?? context.globals.canvasBackground ?? 'grey';
             const backgroundColor =
                 mode === 'dark' ? '#111827' : mode === 'white' ? '#FFFFFF' : '#F9FAFB';
             const color = mode === 'dark' ? '#e5e7eb' : '#374151';
@@ -121,13 +121,12 @@ const preview = {
                 if (inActionA && inActionB) {
                     const actionOrder = [
                         `${actionAtomsBase}Buttons`,
-                        `${actionAtomsBase}NavButton`,
-                        `${actionAtomsBase}Icons/RoundIconButton`,
+                        `${actionAtomsBase}Icons/IconButton`,
                         `${actionAtomsBase}Icons/SquareCheckbox`,
                         `${actionAtomsBase}TextLink`,
                     ];
-                    const ia = actionOrder.indexOf(ta);
-                    const ib = actionOrder.indexOf(tb);
+                    const ia = actionOrder.findIndex((t) => ta === t || ta.startsWith(`${t}/`));
+                    const ib = actionOrder.findIndex((t) => tb === t || tb.startsWith(`${t}/`));
                     const ra = ia === -1 ? 1000 : ia;
                     const rb = ib === -1 ? 1000 : ib;
                     if (ra !== rb) {

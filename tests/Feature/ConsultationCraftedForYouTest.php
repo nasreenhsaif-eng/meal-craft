@@ -125,3 +125,12 @@ test('consultation page omits onboarding back link for direct visits', function 
 
     expect($config['backHref'] ?? null)->toBeNull();
 });
+
+test('admin navigation does not include consultation', function () {
+    $admin = User::factory()->create();
+
+    $this->actingAs($admin)
+        ->get(route('meals.index'))
+        ->assertOk()
+        ->assertDontSee(route('consultation.crafted-for-you'), false);
+});

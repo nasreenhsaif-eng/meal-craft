@@ -7,8 +7,15 @@ const RIBBON_COPIES = 3;
 /** Overlaid nav buttons — track peeks underneath. */
 const RIBBON_ARROW_ZONE_CLASS = 'w-10 lg:w-11';
 
-/** Gradual edge blur strips — wider than arrow zone so peek softens into center cards. */
-const RIBBON_EDGE_BLUR_WIDTH_CLASS = 'w-12 md:w-14 lg:w-16';
+/**
+ * Edge dim from the frame to the focused card’s CRAFT THIS MEAL button (card `px-3`).
+ * Side cards stay visible under the fade instead of clipping off at a short strip.
+ */
+const RIBBON_EDGE_DIM_WIDTH_CLASS = [
+    'w-[max(2.75rem,calc(50%-min(8.75rem,calc((100vw-5.5rem)/2))+0.75rem))]',
+    'md:w-[max(3.5rem,calc(50%-8.9375rem+0.75rem))]',
+    'lg:w-[max(4rem,calc(50%-9.4375rem+0.75rem))]',
+].join(' ');
 
 /**
  * Ribbon slide — gentle start (aggressive ease-out felt like a jump on arrow click).
@@ -585,10 +592,9 @@ export default function StackedDeckCarousel({ title: _title, items: itemsProp, m
     const ribbonArrowButtonClass =
         'pointer-events-auto flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-0 bg-white/90 text-[#262A22] shadow-sm shadow-[#262A22]/10 outline-none ring-0 backdrop-blur-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5A6B44]/35 focus-visible:ring-offset-0 disabled:pointer-events-none disabled:opacity-30';
 
-    const ribbonEdgeBlurClass = [
+    const ribbonEdgeDimClass = [
         'pointer-events-none absolute inset-y-4 z-[100]',
-        RIBBON_EDGE_BLUR_WIDTH_CLASS,
-        'bg-white/20 backdrop-blur-[6px] md:backdrop-blur-[8px]',
+        RIBBON_EDGE_DIM_WIDTH_CLASS,
     ].join(' ');
 
     return (
@@ -613,6 +619,7 @@ export default function StackedDeckCarousel({ title: _title, items: itemsProp, m
                                         copies,
                                     );
                                     const isNearFocus = Math.abs(physicalIdx - focusedPhysical) <= 1;
+                                    const isFocused = physicalIdx === focusedPhysical;
 
                                     return (
                                         <div
@@ -621,7 +628,7 @@ export default function StackedDeckCarousel({ title: _title, items: itemsProp, m
                                                 cardRefs.current[physicalIdx] = el;
                                             }}
                                             data-ribbon-card=""
-                                            className={RIBBON_CARD_SHELL}
+                                            className={`${RIBBON_CARD_SHELL} ${isFocused ? 'relative z-[105]' : 'relative z-0'}`}
                                         >
                                             <div className="flex min-h-0 flex-1 flex-col rounded-[12px]">
                                                 {renderMealCard(item, idx, {
@@ -635,16 +642,15 @@ export default function StackedDeckCarousel({ title: _title, items: itemsProp, m
                                 }),
                             ).flat()}
                         </motion.div>
+                        <div
+                            className={`${ribbonEdgeDimClass} left-0 bg-gradient-to-r from-[#F8F9F6] from-[12%] via-[#F8F9F6]/55 via-[28%] to-transparent [mask-image:linear-gradient(to_right,black_0%,black_18%,transparent_62%)] [-webkit-mask-image:linear-gradient(to_right,black_0%,black_18%,transparent_62%)]`}
+                            aria-hidden="true"
+                        />
+                        <div
+                            className={`${ribbonEdgeDimClass} right-0 bg-gradient-to-l from-[#F8F9F6] from-[12%] via-[#F8F9F6]/55 via-[28%] to-transparent [mask-image:linear-gradient(to_left,black_0%,black_18%,transparent_62%)] [-webkit-mask-image:linear-gradient(to_left,black_0%,black_18%,transparent_62%)]`}
+                            aria-hidden="true"
+                        />
                     </div>
-
-                    <div
-                        className={`${ribbonEdgeBlurClass} left-0 [mask-image:linear-gradient(to_right,black_0%,transparent_100%)] [-webkit-mask-image:linear-gradient(to_right,black_0%,transparent_100%)]`}
-                        aria-hidden="true"
-                    />
-                    <div
-                        className={`${ribbonEdgeBlurClass} right-0 [mask-image:linear-gradient(to_left,black_0%,transparent_100%)] [-webkit-mask-image:linear-gradient(to_left,black_0%,transparent_100%)]`}
-                        aria-hidden="true"
-                    />
 
                     <div
                         className={`pointer-events-none absolute inset-y-0 left-0 z-[110] flex ${RIBBON_ARROW_ZONE_CLASS} items-center justify-center`}

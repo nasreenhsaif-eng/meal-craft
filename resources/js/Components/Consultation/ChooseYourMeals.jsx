@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import PillButton from '../Atoms/Button/Button.jsx';
+import Button from '../Atoms/Button.jsx';
 import SquareCheckbox from '../Atoms/Icons/SquareCheckbox.jsx';
 import StackedDeckCarousel from '../MealCard/StackedDeckCarousel.jsx';
 import MealCardClientViewNano from '../MealCardClientViewNano.jsx';
@@ -22,10 +23,7 @@ import {
     macroCaloriePercentsFromGrams,
     macroSplitPercentagesFromPlan,
 } from '../../consultation/craftCalorieTargets.js';
-import {
-    consultationMealCardCalories,
-    sumConsultationMealCardMacros,
-} from '../../consultation/balanceMainMealProtein.ts';
+import { sumConsultationMealCardMacros } from '../../consultation/balanceMainMealProtein.ts';
 
 export {
     FIXED_CHOICE_CATEGORY_KEYS,
@@ -768,10 +766,6 @@ const PLAN_MACRO_CELL_META = Object.freeze([
 const PLAN_MACRO_TABLE_GRID =
     'grid grid-cols-[5.5rem_repeat(4,minmax(0,1fr))] items-center gap-x-2 gap-y-2 sm:grid-cols-[6rem_repeat(4,minmax(0,1fr))] sm:gap-x-3';
 
-/** Consultation footer: label column + four macro columns, one row at a time. */
-const CONSULTATION_MACRO_FOOTER_ROW_GRID =
-    'grid grid-cols-[4.25rem_repeat(4,minmax(0,1fr))] items-baseline gap-x-2 sm:grid-cols-[4.75rem_repeat(4,minmax(0,1fr))] sm:gap-x-3';
-
 /** @param {'calories' | 'protein' | 'carbs' | 'fat'} key @param {number | string | null | undefined} raw */
 function formatPlanMacroValue(key, raw) {
     const n = Number(raw ?? 0);
@@ -928,38 +922,17 @@ export function PlanMacroColumnHeaderRow() {
 }
 
 /**
- * Selected macros in the consultation footer — label left, values on same baseline.
+ * Compact selected macros in the consultation footer — column labels + values only.
  *
  * @param {object} props
  * @param {MacroTotals} props.totals
  * @param {Array<'calories' | 'protein' | 'carbs' | 'fat'>} [props.highlightKeys]
  */
 function ConsultationDayMacroFooterGrid({ totals, highlightKeys = [] }) {
-    const selectedMacroPercents = useMemo(() => macroCaloriePercentsFromGrams(totals), [totals]);
-
     return (
-        <div className="space-y-1.5" role="table" aria-label="Selected day macros">
-            <div className={CONSULTATION_MACRO_FOOTER_ROW_GRID} role="row">
-                <span aria-hidden="true" />
-                {PLAN_MACRO_CELL_META.map((cell) => (
-                    <p
-                        key={cell.key}
-                        className="truncate text-center font-montserrat text-[9px] font-semibold uppercase tracking-[0.12em] text-[#6B7280] sm:text-[10px]"
-                    >
-                        {cell.shortLabel}
-                    </p>
-                ))}
-            </div>
-            <div className={CONSULTATION_MACRO_FOOTER_ROW_GRID} role="row">
-                <p className="font-montserrat text-[10px] font-semibold uppercase leading-none tracking-[0.08em] text-[#555555]">
-                    Selected
-                </p>
-                <PlanMacroValueCells
-                    macros={totals}
-                    macroPercents={selectedMacroPercents}
-                    highlightKeys={highlightKeys}
-                />
-            </div>
+        <div role="table" aria-label="Selected day macros">
+            <PlanMacroColumnHeaderRow />
+            <PlanMacroSummaryRow macros={totals} ariaLabel="Selected macros" highlightKeys={highlightKeys} />
         </div>
     );
 }
@@ -1868,22 +1841,6 @@ export default function ChooseYourMeals({
     const footerMacroTotals =
         layout === 'categories' ? (displayFooterMacros ?? { calories: 0, protein: 0, carbs: 0, fat: 0 }) : dayMacroTotals;
 
-    const footerSelectedPlatesLabel = useMemo(() => {
-        if (layout !== 'categories' || selectedFooterMeals.length === 0) {
-            return null;
-        }
-
-        return selectedFooterMeals
-            .map((meal) => {
-                const kcal = consultationMealCardCalories(meal);
-                const title = String(meal.title ?? 'Meal').trim() || 'Meal';
-                const short = title.length > 28 ? `${title.slice(0, 26)}…` : title;
-
-                return `${short} ${kcal}`;
-            })
-            .join(' · ');
-    }, [layout, selectedFooterMeals]);
-
     useLayoutEffect(() => {
         const scroller = scrollContainerRef.current;
         if (scroller) {
@@ -2172,6 +2129,22 @@ export default function ChooseYourMeals({
         );
     }, [optionsSlotKey]);
 
+    const optionsCards = optionsSlotKey ? (weeklyDisplayDecks?.[optionsSlotKey] ?? []) : [];
+    const optionsSelectedIds = optionsSlotKey
+        ? (categorySelections?.[optionsSlotKey] ?? []).map((id) => normalizeConsultationMealId(id))
+        : [];
+    let optionsMaxSelected = 1;
+    if (optionsSlotKey) {
+        if (FIXED_CHOICE_CATEGORY_KEYS.includes(optionsSlotKey)) {
+            optionsMaxSelected = 1;
+        } else if (maxSelectionsByCategory?.[optionsSlotKey] !== undefined) {
+            optionsMaxSelected = /** @type {number} */ (maxSelectionsByCategory[optionsSlotKey]);
+        } else {
+            optionsMaxSelected = optionsSectionDef?.defaultMax ?? 1;
+        }
+    }
+    const optionsPrefix = deckScopePrefix ? `${deckScopePrefix}-` : '';
+
     const optionsScreen =
         useProtocolSelectedLayout && optionsSlotKey && optionsSectionDef && categorySelections ? (
             <ProtocolMealOptionsScreen
@@ -2183,29 +2156,29 @@ export default function ChooseYourMeals({
                           ? 'Breakfast'
                           : optionsSectionDef.header
                 }
-                options={weeklyDisplayDecks?.[optionsSlotKey] ?? []}
-                selectedIds={(categorySelections[optionsSlotKey] ?? []).map((id) =>
-                    normalizeConsultationMealId(id),
-                )}
-                maxSelected={
-                    FIXED_CHOICE_CATEGORY_KEYS.includes(optionsSlotKey)
-                        ? 1
-                        : maxSelectionsByCategory?.[optionsSlotKey] !== undefined
-                          ? /** @type {number} */ (maxSelectionsByCategory[optionsSlotKey])
-                          : (optionsSectionDef.defaultMax ?? 1)
-                }
-                onToggle={(meal) => {
-                    if (!categoryPickEnabled) {
-                        return;
-                    }
-
-                    onToggleCategory?.(optionsSlotKey, meal);
-                }}
-                onViewDetails={onViewDetails}
-                onEditMeal={onEditMeal}
+                optionCount={optionsCards.length}
+                selectedCount={optionsSelectedIds.length}
+                maxSelected={optionsMaxSelected}
                 onBack={() => setOptionsSlotKey(null)}
                 onConfirm={() => setOptionsSlotKey(null)}
-            />
+            >
+                <MealSlotCarousel
+                    title=""
+                    cards={optionsCards}
+                    selectedIds={optionsSelectedIds}
+                    maxSelected={optionsMaxSelected}
+                    onSelect={(meal) => {
+                        if (!categoryPickEnabled) {
+                            return;
+                        }
+
+                        onToggleCategory?.(optionsSlotKey, meal);
+                    }}
+                    deckScopeKey={`${optionsPrefix}${optionsSlotKey}-options`}
+                    onViewDetails={onViewDetails}
+                    onEditMeal={onEditMeal}
+                />
+            </ProtocolMealOptionsScreen>
         ) : null;
 
     const mainScrollable =
@@ -2271,10 +2244,7 @@ export default function ChooseYourMeals({
         <section
             className={`box-border flex w-full flex-col overflow-x-clip border border-gray-200 bg-white shadow-sm max-md:rounded-none max-md:border-x-0 max-md:shadow-none md:rounded-[12px] ${panelClassName}`.trim()}
         >
-            {optionsScreen ? (
-                optionsScreen
-            ) : (
-                <>
+            {optionsScreen}
             <div className="shrink-0 border-b border-gray-200 px-4 py-3 text-left max-md:px-4 sm:px-5 sm:py-4 md:p-6">
                 <div className="min-w-0 space-y-1 sm:space-y-1.5">
                     <p className="font-montserrat text-[15px] font-bold leading-snug tracking-tight text-[#262A22] sm:text-[16px]">
@@ -2294,7 +2264,7 @@ export default function ChooseYourMeals({
                     <div className="relative z-0 min-w-0 space-y-0">{mainScrollable}</div>
                 </div>
 
-                <div className="z-[120] shrink-0 border-t border-gray-200 bg-white p-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-[0_-4px_24px_rgba(15,23,42,0.06)] max-md:px-4 md:sticky md:bottom-0 md:px-6">
+                <div className="z-[80] shrink-0 border-t border-gray-200 bg-white px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-4px_24px_rgba(15,23,42,0.06)] max-md:px-4 md:sticky md:bottom-0 md:px-6">
                     {incompleteWarning ? (
                         <div
                             className="mb-3 rounded-[12px] border border-red-200 bg-red-50 px-4 py-3"
@@ -2306,53 +2276,41 @@ export default function ChooseYourMeals({
                     ) : null}
 
                     {footerMacroTotals ? (
-                        <div>
-                            <ConsultationDayMacroFooterGrid
-                                totals={
-                                    footerMacroTotals.calories > 0
-                                        ? footerMacroTotals
-                                        : { calories: 0, protein: 0, carbs: 0, fat: 0 }
-                                }
-                                highlightKeys={
-                                    footerMacroTotals.calories > 0 ? macroHighlightKeys : []
-                                }
-                            />
-                        </div>
+                        <ConsultationDayMacroFooterGrid
+                            totals={
+                                footerMacroTotals.calories > 0
+                                    ? footerMacroTotals
+                                    : { calories: 0, protein: 0, carbs: 0, fat: 0 }
+                            }
+                            highlightKeys={
+                                footerMacroTotals.calories > 0 ? macroHighlightKeys : []
+                            }
+                        />
                     ) : null}
 
-                    <div className="mt-1.5 flex min-h-[1.25rem] items-baseline justify-between gap-3">
-                        {footerSelectedPlatesLabel ? (
-                            <p className="min-w-0 flex-1 font-body text-[11px] leading-snug text-[#6B7280]">
-                                Sum of {selectedFooterMeals.length} selected plate
-                                {selectedFooterMeals.length === 1 ? '' : 's'}: {footerSelectedPlatesLabel}
-                            </p>
-                        ) : (
-                            <span className="min-w-0 flex-1" aria-hidden="true" />
-                        )}
-                        <p
-                            className={[
-                                'shrink-0 font-montserrat text-sm font-bold tabular-nums',
-                                Math.abs(Math.round(footerTotalKcal) - Math.round(targetCalories)) >
-                                dayCalorieTolerance
-                                    ? 'text-amber-800'
-                                    : 'text-[#1F2937]',
-                            ]
-                                .join(' ')
-                                .trim()}
-                        >
-                            Total: {Math.round(footerTotalKcal)} kcal
-                            <span className="ml-1.5 font-body text-xs font-normal text-[#555555]">
-                                (target {Math.round(targetCalories)} ±{dayCalorieTolerance})
-                            </span>
-                        </p>
-                    </div>
+                    <p
+                        className={[
+                            'mt-1.5 text-right font-montserrat text-sm font-bold tabular-nums',
+                            Math.abs(Math.round(footerTotalKcal) - Math.round(targetCalories)) >
+                            dayCalorieTolerance
+                                ? 'text-amber-800'
+                                : 'text-[#1F2937]',
+                        ]
+                            .join(' ')
+                            .trim()}
+                    >
+                        Total: {Math.round(footerTotalKcal)} kcal
+                        <span className="ml-1.5 font-body text-xs font-normal text-[#555555]">
+                            (target {Math.round(targetCalories)} ±{dayCalorieTolerance})
+                        </span>
+                    </p>
 
                     {showStickyFooterNav ? (
                         <div
                             className={`mt-3 flex flex-wrap items-center gap-3 ${typeof onFooterBack === 'function' ? 'justify-between' : 'justify-center'}`}
                         >
                             {typeof onFooterBack === 'function' ? (
-                                <PillButton
+                                <Button
                                     type="button"
                                     label="BACK"
                                     variant="outline"
@@ -2380,8 +2338,6 @@ export default function ChooseYourMeals({
                     <div className="relative z-[70] shrink-0 border-t border-gray-200/80 bg-white">{navigation}</div>
                 ) : null}
             </div>
-                </>
-            )}
         </section>
     );
 }

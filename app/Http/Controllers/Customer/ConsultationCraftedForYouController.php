@@ -40,7 +40,7 @@ class ConsultationCraftedForYouController extends Controller
             'csrfToken' => csrf_token(),
             'isCustomerAccount' => $isCustomer,
             'isAdminPreview' => $isAdminPreview,
-            'pageEyebrow' => $isCustomer ? 'Your plan' : 'Admin / Consultation',
+            'pageEyebrow' => $isCustomer ? 'Your plan' : 'Consultation',
             'adaptedMenuUrl' => route('api.menu.adapted', absolute: false),
             'mealDetailViewUrlTemplate' => '/api/meals/{id}/detail-view',
             'mealLibraryRevision' => Meal::libraryRevisionTimestamp(),

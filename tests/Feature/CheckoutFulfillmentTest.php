@@ -42,6 +42,7 @@ test('completed customers can open the fresh delivery checkout step', function (
         ->assertInertia(fn ($page) => $page
             ->component('Checkout/Delivery')
             ->where('fulfillmentUrl', route('checkout.fulfillment'))
+            ->where('detailsUrl', route('checkout.details'))
             ->where('homeUrl', route('app.home')));
 });
 

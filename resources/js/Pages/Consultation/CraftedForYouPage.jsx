@@ -170,7 +170,7 @@ export default function CraftedForYouPage({
     signOutUrl,
     csrfToken = '',
     isAdminPreview = false,
-    pageEyebrow = 'Admin / Consultation',
+    pageEyebrow = 'Your plan',
     adaptedMenuUrl = '/api/menu/adapted',
     mealDetailViewUrlTemplate = '/api/meals/{id}/detail-view',
     mealLibraryRevision = 0,

@@ -31,6 +31,10 @@ class CustomerProfileFactory extends Factory
         return [
             'user_id' => User::factory()->customer(),
             'onboarding_step' => OnboardingStep::Review,
+            'first_name' => fake()->firstName(),
+            'last_name' => fake()->lastName(),
+            'phone' => null,
+            'contact_preference' => null,
             'weight_kg' => 72.5,
             'target_weight_kg' => 68.0,
             'height_cm' => 175.0,

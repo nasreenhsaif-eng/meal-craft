@@ -19,7 +19,15 @@ const buttonLabelSpecs = [
 export default {
     title: 'MealCraft/Atoms/Buttons & Links/Buttons',
     component: Button,
+    decorators: [
+        (Story) => (
+            <div className="min-h-screen w-full bg-white p-6">
+                <Story />
+            </div>
+        ),
+    ],
     parameters: {
+        canvasBackground: 'white',
         design: {
             type: 'figma',
             url: figmaPrimaryButtonFrame,
@@ -87,7 +95,7 @@ export const Outline = {
 export const SecondaryRow = {
     name: 'Secondary row',
     render: () => (
-        <div className="flex flex-wrap items-center gap-3 bg-white p-6 dark:bg-zinc-900">
+        <div className="flex flex-wrap items-center gap-3 bg-white p-6">
             <Button label="Nutrition tips" variant="secondary" />
             <Button label="View guidelines" variant="secondary" />
             <Button label="Cycle sync" variant="secondary" />
@@ -99,7 +107,7 @@ export const SecondaryRow = {
 export const OutlineWithPrimary = {
     name: 'Outline with primary',
     render: () => (
-        <div className="flex flex-wrap items-center gap-3 bg-white p-4 dark:bg-zinc-900">
+        <div className="flex flex-wrap items-center gap-3 bg-white p-4">
             <Button label="Save meal" variant="primary" />
             <Button label="View details" variant="outline" />
         </div>
@@ -126,8 +134,12 @@ export const SecondaryShortLabel = {
 
 export const States = {
     name: 'States (primary / secondary / ghost)',
+    parameters: {
+        canvasBackground: 'white',
+        layout: 'fullscreen',
+    },
     render: () => (
-        <div className="flex flex-wrap items-center gap-3 bg-white p-6 dark:bg-zinc-900">
+        <div className="flex min-h-screen w-full flex-wrap content-start items-start gap-3 bg-white p-6">
             <Button label="Primary" variant="primary" size="sm" />
             <Button label="Secondary" variant="secondary" size="sm" />
             <Button label="Ghost" variant="ghost" size="sm" />
@@ -139,7 +151,7 @@ export const States = {
 export const Interactions = {
     name: 'Interactions (hover + click)',
     render: () => (
-        <div className="flex flex-wrap items-center gap-3 bg-white p-6 dark:bg-zinc-900">
+        <div className="flex flex-wrap items-center gap-3 bg-white p-6">
             <Button label="Hover & click me" variant="primary" size="sm" />
         </div>
     ),

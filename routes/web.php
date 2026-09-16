@@ -92,6 +92,8 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
                 Route::put('/meal-plan-library/{mealPlan}/default-selections', [MealPlanLibraryController::class, 'storeDefaultSelections'])->name('meal-plan-library.default-selections');
                 Route::get('/meal-plan-library/{mealPlan}/tier-preview', [MealPlanLibraryController::class, 'tierPreview'])->name('meal-plan-library.tier-preview');
                 Route::get('/customers', [CustomerProfileController::class, 'index'])->name('customers');
+                Route::get('/customers/{customer}', [CustomerProfileController::class, 'show'])->name('customers.show');
+                Route::put('/customers/{customer}', [CustomerProfileController::class, 'update'])->name('customers.update');
                 Route::get('/kitchen-logistics', [KitchenLogisticsController::class, 'index'])->name('kitchen-logistics');
 
                 Route::prefix('settings')->name('settings.')->group(function (): void {
@@ -160,6 +162,8 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         Route::middleware('onboarding.complete')->group(function (): void {
             Route::get('/checkout', [CheckoutController::class, 'fulfillment'])->name('checkout.fulfillment');
             Route::get('/checkout/delivery', [CheckoutController::class, 'delivery'])->name('checkout.delivery');
+            Route::get('/checkout/details', [CheckoutController::class, 'details'])->name('checkout.details');
+            Route::post('/checkout/details', [CheckoutController::class, 'storeDetails'])->name('checkout.details.store');
             Route::get('/meal-plan/recipes', [CustomerAppController::class, 'mealPlan'])->name('meal-plan.recipes');
         });
 

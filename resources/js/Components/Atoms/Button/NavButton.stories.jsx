@@ -64,7 +64,7 @@ function IconChart({ className }) {
 }
 
 export default {
-    title: 'MealCraft/Atoms/Buttons & Links/NavButton',
+    title: 'MealCraft/Atoms/Buttons & Links/Buttons/NavButton',
     component: NavButton,
     parameters: { layout: 'padded' },
     argTypes: {

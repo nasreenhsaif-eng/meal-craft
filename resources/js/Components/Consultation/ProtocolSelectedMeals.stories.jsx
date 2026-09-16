@@ -1,3 +1,5 @@
+import { useState } from 'react';
+import { MealSlotCarousel } from './ChooseYourMeals.jsx';
 import ProtocolMealRow from './ProtocolMealRow.jsx';
 import ProtocolMealSlotCard from './ProtocolMealSlotCard.jsx';
 import ProtocolMealOptionsScreen from './ProtocolMealOptionsScreen.jsx';
@@ -46,8 +48,84 @@ const mainOptions = [
 function StoryCanvas({ children, wide = false }) {
     return (
         <div className="min-h-[80vh] w-full bg-[#F8F9F6] px-4 py-8">
-            <div className={`mx-auto ${wide ? 'max-w-[1100px]' : 'max-w-md'}`}>{children}</div>
+            <div className={`mx-auto ${wide ? 'max-w-[1100px]' : 'max-w-[28rem]'}`}>{children}</div>
         </div>
+    );
+}
+
+/**
+ * @param {{
+ *   dayLabel: string;
+ *   sectionTitle: string;
+ *   cards: Array<object>;
+ *   selectedMeals: Array<object>;
+ *   maxSelected: number;
+ *   multiSelect?: boolean;
+ *   deckScopeKey: string;
+ * }} props
+ */
+function OptionsModalDemo({
+    dayLabel,
+    sectionTitle,
+    cards,
+    selectedMeals,
+    maxSelected,
+    multiSelect = false,
+    deckScopeKey,
+}) {
+    const [open, setOpen] = useState(true);
+    const [selectedIds, setSelectedIds] = useState(() => selectedMeals.map((meal) => String(meal.id)));
+
+    const visibleSelected = cards.filter((meal) => selectedIds.includes(String(meal.id)));
+
+    return (
+        <StoryCanvas wide={cards.length > 2}>
+            <ProtocolMealSlotCard
+                title={sectionTitle}
+                selectedMeals={visibleSelected}
+                multiSelect={multiSelect}
+                onSeeOtherOptions={() => setOpen(true)}
+                onViewDetails={() => {}}
+            />
+            {open ? (
+                <ProtocolMealOptionsScreen
+                    dayLabel={dayLabel}
+                    sectionTitle={sectionTitle}
+                    optionCount={cards.length}
+                    selectedCount={selectedIds.length}
+                    maxSelected={maxSelected}
+                    onBack={() => setOpen(false)}
+                    onConfirm={() => setOpen(false)}
+                >
+                    <MealSlotCarousel
+                        title=""
+                        cards={cards}
+                        selectedIds={selectedIds}
+                        maxSelected={maxSelected}
+                        onSelect={(meal) => {
+                            const id = String(meal.id);
+                            setSelectedIds((prev) => {
+                                if (maxSelected <= 1) {
+                                    return prev.includes(id) ? [] : [id];
+                                }
+
+                                if (prev.includes(id)) {
+                                    return prev.filter((item) => item !== id);
+                                }
+
+                                if (prev.length >= maxSelected) {
+                                    return prev;
+                                }
+
+                                return [...prev, id];
+                            });
+                        }}
+                        deckScopeKey={deckScopeKey}
+                        onViewDetails={() => {}}
+                    />
+                </ProtocolMealOptionsScreen>
+            ) : null}
+        </StoryCanvas>
     );
 }
 
@@ -56,8 +134,8 @@ export default {
     parameters: { layout: 'fullscreen' },
 };
 
-export const MealRow = {
-    name: 'Protocol meal card (old Nano)',
+export const NanoMealCard = {
+    name: 'Meal card — Nano',
     render: () => (
         <StoryCanvas>
             <div className="mx-auto max-w-[280px]">
@@ -97,41 +175,30 @@ export const SlotCardMains = {
 };
 
 export const OptionsBreakfast = {
-    name: 'Options screen — breakfast (2)',
+    name: 'Options modal — breakfast (2)',
     render: () => (
-        <StoryCanvas wide>
-            <div className="h-[720px] overflow-hidden rounded-[16px] border border-gray-200 shadow-sm">
-                <ProtocolMealOptionsScreen
-                    dayLabel="Sunday"
-                    sectionTitle="Breakfast"
-                    options={[omeletteMeal, chiaMeal]}
-                    selectedIds={['b1']}
-                    maxSelected={1}
-                    onToggle={() => {}}
-                    onViewDetails={() => {}}
-                    onBack={() => {}}
-                />
-            </div>
-        </StoryCanvas>
+        <OptionsModalDemo
+            dayLabel="Sunday"
+            sectionTitle="Breakfast"
+            cards={[omeletteMeal, chiaMeal]}
+            selectedMeals={[omeletteMeal]}
+            maxSelected={1}
+            deckScopeKey="story-options-breakfast"
+        />
     ),
 };
 
 export const OptionsMains = {
-    name: 'Options screen — mains (6)',
+    name: 'Options modal — mains (6)',
     render: () => (
-        <StoryCanvas wide>
-            <div className="h-[720px] overflow-hidden rounded-[16px] border border-gray-200 shadow-sm">
-                <ProtocolMealOptionsScreen
-                    dayLabel="Sunday"
-                    sectionTitle="Main Meals"
-                    options={mainOptions}
-                    selectedIds={['1', '5']}
-                    maxSelected={2}
-                    onToggle={() => {}}
-                    onViewDetails={() => {}}
-                    onBack={() => {}}
-                />
-            </div>
-        </StoryCanvas>
+        <OptionsModalDemo
+            dayLabel="Sunday"
+            sectionTitle="Main Meals"
+            cards={mainOptions}
+            selectedMeals={[chickenMeal, liverMeal]}
+            maxSelected={2}
+            multiSelect
+            deckScopeKey="story-options-mains"
+        />
     ),
 };

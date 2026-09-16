@@ -56,6 +56,13 @@ const SHELL_BY_COMPONENT = {
         hidePageTitle: true,
         contentWrapperClassName: WIDE,
     },
+    'Admin/CustomerProfileShow': {
+        pageTitle: 'Customer Profile',
+        activePath: ADMIN_NAV_PATHS.customerProfiles,
+        showSearch: false,
+        hidePageTitle: true,
+        contentWrapperClassName: WIDE,
+    },
     'Admin/KitchenLogistics': {
         pageTitle: 'Kitchen Production',
         activePath: ADMIN_NAV_PATHS.kitchenLogistics,

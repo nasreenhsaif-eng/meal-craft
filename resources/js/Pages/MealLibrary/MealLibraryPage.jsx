@@ -689,11 +689,15 @@ export function MealLibraryPageContent({
     }, [mealCsvImportFlash]);
 
     const reloadMealLibraryRows = useCallback(() => {
-        void router.reload({
-            only: ['meals'],
-            preserveState: true,
-            preserveScroll: true,
-        });
+        try {
+            void router.reload({
+                only: ['meals'],
+                preserveState: true,
+                preserveScroll: true,
+            });
+        } catch {
+            // Storybook and other non-Inertia mounts have no current page.
+        }
     }, []);
 
     const dismissMealCsvImportModal = useCallback(() => {
@@ -713,14 +717,6 @@ export function MealLibraryPageContent({
     useEffect(() => {
         setMealRows(meals);
     }, [meals]);
-
-    useEffect(() => {
-        void router.reload({
-            only: ['meals'],
-            preserveScroll: true,
-            preserveState: true,
-        });
-    }, []);
 
     useEffect(() => {
         if (initialViewMode !== undefined) {
@@ -1166,10 +1162,10 @@ export function MealLibraryPageContent({
                     },
                 );
             } catch {
-                void router.reload({ only: ['meals'], preserveScroll: true });
+                reloadMealLibraryRows();
             }
         },
-        [csrfToken, handleMealRowReorder, mealReorderUrl],
+        [csrfToken, handleMealRowReorder, mealReorderUrl, reloadMealLibraryRows],
     );
 
     function handleConfirmDelete() {

@@ -1,4 +1,4 @@
-import { Link } from '@inertiajs/react';
+import { Link, router } from '@inertiajs/react';
 import PartnerKitchenCard from '../../Components/Checkout/PartnerKitchenCard.jsx';
 import CustomerAppHeaderActions from '../../Components/Molecules/Customer/CustomerAppHeaderActions.jsx';
 import CustomerInertiaShell from '../../Layouts/CustomerInertiaShell.jsx';
@@ -8,11 +8,13 @@ import { resolveInertiaLayoutChild } from '../../lib/resolveInertiaLayoutChild.j
  * @param {object} props
  * @param {string} [props.customerName]
  * @param {string} [props.fulfillmentUrl]
+ * @param {string} [props.detailsUrl]
  * @param {string} [props.homeUrl]
  */
 export default function Delivery({
     customerName = '',
     fulfillmentUrl = '/checkout',
+    detailsUrl = '/checkout/details',
     homeUrl = '/app',
 }) {
     return (
@@ -39,6 +41,7 @@ export default function Delivery({
                         reviewCount={128}
                         price="BHD 385"
                         billingCadence="week"
+                        onSelect={() => router.visit(detailsUrl)}
                     />
                 </div>
             </div>

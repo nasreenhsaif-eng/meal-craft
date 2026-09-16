@@ -144,9 +144,6 @@ export default function MealCardClientViewNano({
     const photoR = deck ? '' : 'rounded-t-[10px]';
     const titleClass = deck ? 'min-h-0 text-[17px] leading-snug' : 'min-h-[32px] text-[14px]';
     const bodyPad = deck ? '' : 'gap-0.5 px-2 pb-10 pt-2';
-    const btnRow = deck
-        ? '!h-[36px] !min-h-[36px] !px-3 !text-[12px]'
-        : '!h-[34px] !min-h-[34px] !px-3 !text-[12px]';
 
     const craftPrimaryAria =
         selected === true
@@ -247,10 +244,11 @@ export default function MealCardClientViewNano({
                                 <Button
                                     type="button"
                                     variant={selected ? 'primary' : 'secondary'}
+                                    size="sm"
                                     disabled={disabled}
                                     label={selected ? 'SELECTED' : 'CRAFT THIS MEAL'}
                                     aria-label={craftPrimaryAria}
-                                    className={`w-full justify-center rounded-[12px] ${btnRow} ${
+                                    className={`w-full justify-center ${
                                         disabled && vibrantCraftWhenAtLimit ? '!cursor-default !opacity-100' : ''
                                     }`.trim()}
                                     onClick={(e) => {
@@ -328,9 +326,10 @@ export default function MealCardClientViewNano({
                                 <Button
                                     type="button"
                                     variant={selected ? 'primary' : 'secondary'}
+                                    size="sm"
                                     disabled={disabled}
                                     label={selected ? 'SELECTED' : 'CRAFT THIS MEAL'}
-                                    className={`w-full justify-center rounded-[12px] ${btnRow}`}
+                                    className="w-full justify-center"
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         onToggleSelected?.();

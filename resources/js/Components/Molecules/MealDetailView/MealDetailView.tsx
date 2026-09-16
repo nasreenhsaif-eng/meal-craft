@@ -98,15 +98,15 @@ export function MealNutritionSummaryTable({ data }: { data: MealNutritionalData 
             role="region"
             aria-label="Nutritional breakdown"
             tabIndex={0}
-            className="overflow-x-auto rounded-[12px] border border-gray-200 bg-white outline-none [-webkit-overflow-scrolling:touch] focus:outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#5A6B44]/35"
+            className="rounded-[12px] border border-gray-200 bg-white outline-none focus:outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#5A6B44]/35"
         >
-            <table className="w-full min-w-[280px] border-collapse text-left text-sm">
+            <table className="w-full border-collapse text-left">
                 <thead>
                     <tr className="border-b border-gray-200 bg-[#F8F9F6]">
-                        <th className="px-3 py-2.5 font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#374151]">
+                        <th className="min-w-0 px-2 py-1.5 font-montserrat text-[10px] font-bold uppercase tracking-[0.08em] text-[#374151] sm:px-3 sm:py-2 sm:text-xs sm:tracking-[0.14em]">
                             Nutrient
                         </th>
-                        <th className="px-3 py-2.5 text-right font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#374151]">
+                        <th className="w-[1%] whitespace-nowrap px-2 py-1.5 text-right font-montserrat text-[10px] font-bold uppercase tracking-[0.08em] text-[#374151] sm:px-3 sm:py-2 sm:text-xs sm:tracking-[0.14em]">
                             {valueColumnLabel}
                         </th>
                     </tr>
@@ -117,17 +117,19 @@ export function MealNutritionSummaryTable({ data }: { data: MealNutritionalData 
                             <tr className="bg-[#F8F9F6]">
                                 <td
                                     colSpan={2}
-                                    className="px-3 py-2 font-montserrat text-xs font-bold uppercase tracking-[0.12em] text-[#5A6B44]"
+                                    className="px-2 py-1.5 font-montserrat text-[10px] font-bold uppercase tracking-[0.08em] text-[#5A6B44] sm:px-3 sm:py-2 sm:text-xs sm:tracking-[0.12em]"
                                 >
                                     {sec.title}
                                 </td>
                             </tr>
                             {sec.rows.map((r) => (
                                 <tr key={`${sec.title}-${r.label}`} className="border-b border-gray-100 last:border-b-0">
-                                    <td className="px-3 py-2.5 font-montserrat text-sm font-medium text-[#374151]">{r.label}</td>
+                                    <td className="min-w-0 px-2 py-1.5 font-montserrat text-xs font-medium leading-snug text-[#374151] sm:px-3 sm:py-2 sm:text-sm">
+                                        {r.label}
+                                    </td>
                                     <td
                                         className={[
-                                            'px-3 py-2.5 text-right font-montserrat text-sm font-bold tabular-nums text-[#1F2937]',
+                                            'w-[1%] whitespace-nowrap px-2 py-1.5 text-right font-montserrat text-xs font-bold tabular-nums text-[#1F2937] sm:px-3 sm:py-2 sm:text-sm',
                                             r.valueClass ?? '',
                                         ].join(' ')}
                                     >
@@ -242,9 +244,9 @@ export default function MealDetailView({
                 .join(' ')}
         >
             <div className="grid grid-cols-1 gap-0 lg:grid-cols-[13fr_7fr]">
-                <article className="space-y-8 rounded-[12px] border border-gray-200 bg-white p-6 shadow-sm md:p-8 lg:rounded-r-none lg:border-r-0">
+                <article className="space-y-6 rounded-[12px] border border-gray-200 bg-white p-4 shadow-sm sm:space-y-8 sm:p-6 md:p-8 lg:rounded-r-none lg:border-r-0">
                     {!hideImage ? (
-                        <div className="-mx-6 -mt-6 mb-6 aspect-[4/3] w-[calc(100%+3rem)] max-w-none overflow-hidden rounded-t-[12px] bg-[#F8F9F6] md:-mx-8 md:-mt-8 md:w-[calc(100%+4rem)]">
+                        <div className="-mx-4 -mt-4 mb-4 aspect-[4/3] w-[calc(100%+2rem)] max-w-none overflow-hidden rounded-t-[12px] bg-[#F8F9F6] sm:-mx-6 sm:-mt-6 sm:mb-6 sm:w-[calc(100%+3rem)] md:-mx-8 md:-mt-8 md:w-[calc(100%+4rem)]">
                             {showImage ? (
                                 <img
                                     src={resolvedImageUrl}
@@ -399,7 +401,7 @@ export default function MealDetailView({
                     </section>
                 </article>
 
-                <aside className="space-y-6 rounded-[12px] border border-gray-200 bg-[#F8F9F6] p-6 lg:rounded-l-none lg:border-l">
+                <aside className="space-y-5 rounded-[12px] border border-gray-200 bg-[#F8F9F6] p-4 sm:space-y-6 sm:p-6 lg:rounded-l-none lg:border-l">
                     {hasG6pdTrigger ? (
                         <div className="rounded-[12px] border-2 border-[#B91C1C] bg-[#FEF2F2] p-4 shadow-sm">
                             <p className="font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#991B1B]">
