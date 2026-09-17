@@ -1,8 +1,10 @@
 import { useId } from 'react';
 import Button from '../Atoms/Button/Button.jsx';
+import { GenderOptionButton, genderOptionIcon } from '../Atoms/Button/GenderOptionButton.jsx';
+import OnboardingOptionButton from '../Atoms/Button/OnboardingOptionButton.jsx';
 import SquareCheckbox from '../Atoms/Icons/SquareCheckbox.jsx';
-import DropdownTextInput from '../Atoms/TextInput/DropdownTextInput.jsx';
 import TextInput from '../Atoms/TextInput/TextInput.jsx';
+import FoodFilterPill from '../MealSystem/FoodFilterPill.jsx';
 import CalendarDateField from '../Molecules/Calendar/CalendarDateField.jsx';
 
 /**
@@ -15,23 +17,67 @@ import CalendarDateField from '../Molecules/Calendar/CalendarDateField.jsx';
  *   value: string;
  *   options?: IntakeOption[];
  *   onChange: (value: string) => void;
- *   className?: string;
+ *   error?: string;
  * }} props
  */
-function LabeledDropdown({ label, value, options = [], onChange, className = '' }) {
-    const selected = options.find((option) => option.value === value);
+function OptionPillGroup({ label, value, options = [], onChange, error }) {
+    const groupLabel = label;
 
     return (
-        <DropdownTextInput
-            label={label}
-            value={selected?.label ?? ''}
-            options={options.map((option) => option.label)}
-            onChange={(nextLabel) => {
-                const match = options.find((option) => option.label === nextLabel);
-                onChange(match?.value ?? '');
-            }}
-            className={`!max-w-full ${className}`.trim()}
-        />
+        <div className="md:col-span-2">
+            <p className="mb-2 font-montserrat text-sm font-bold leading-snug tracking-tight text-grey-94">
+                {groupLabel}
+            </p>
+            <div className="flex flex-wrap gap-2" role="group" aria-label={groupLabel}>
+                {options.map((option) => (
+                    <FoodFilterPill
+                        key={option.value}
+                        label={option.label}
+                        isActive={value === option.value}
+                        onClick={() => onChange(option.value)}
+                    />
+                ))}
+            </div>
+            {error ? (
+                <p className="mt-1.5 text-sm text-status-error" role="alert">
+                    {error}
+                </p>
+            ) : null}
+        </div>
+    );
+}
+
+/**
+ * @param {{
+ *   label: string;
+ *   value: string;
+ *   options?: IntakeOption[];
+ *   onChange: (value: string) => void;
+ *   error?: string;
+ * }} props
+ */
+function OptionButtonStack({ label, value, options = [], onChange, error }) {
+    return (
+        <div className="md:col-span-2">
+            <p className="mb-2 font-montserrat text-sm font-bold leading-snug tracking-tight text-grey-94">
+                {label}
+            </p>
+            <div className="flex w-full flex-col gap-2.5" role="group" aria-label={label}>
+                {options.map((option) => (
+                    <OnboardingOptionButton
+                        key={option.value}
+                        label={option.label}
+                        selected={value === option.value}
+                        onSelect={() => onChange(option.value)}
+                    />
+                ))}
+            </div>
+            {error ? (
+                <p className="mt-1.5 text-sm text-status-error" role="alert">
+                    {error}
+                </p>
+            ) : null}
+        </div>
     );
 }
 
@@ -147,10 +193,17 @@ export default function CustomerIntakeForm({
     onSubmit,
 }) {
     const fieldClass = 'w-full !max-w-full';
+    const genderOptions = options.genders ?? [];
+    const maxDob = (() => {
+        const d = new Date();
+        d.setFullYear(d.getFullYear() - 13);
+
+        return d.toISOString().slice(0, 10);
+    })();
 
     return (
         <form
-            className="flex flex-col gap-5"
+            className="flex w-full min-w-0 flex-col gap-5"
             onSubmit={(event) => {
                 event.preventDefault();
                 onSubmit();
@@ -191,29 +244,45 @@ export default function CustomerIntakeForm({
                     autoComplete="tel"
                     className={fieldClass}
                 />
-                <LabeledDropdown
+                <OptionPillGroup
                     label="How would you like us to contact you"
                     value={data.contact_preference ?? ''}
                     options={options.contactPreferences}
                     onChange={(value) => setData('contact_preference', value)}
+                    error={errors.contact_preference}
                 />
             </Section>
 
             <Section title="Body & plan">
-                <TextInput
+                <CalendarDateField
                     label="Date of birth"
-                    type="date"
                     value={data.date_of_birth ?? ''}
-                    onChange={(event) => setData('date_of_birth', event.target.value)}
+                    onChange={(iso) => setData('date_of_birth', iso)}
                     error={errors.date_of_birth}
+                    maxDate={maxDob}
                     className={fieldClass}
                 />
-                <LabeledDropdown
-                    label="Gender"
-                    value={data.gender ?? ''}
-                    options={options.genders}
-                    onChange={(value) => setData('gender', value)}
-                />
+                <div className="md:col-span-2">
+                    <p className="mb-2 font-montserrat text-sm font-bold leading-snug tracking-tight text-grey-94">
+                        Gender
+                    </p>
+                    <div className="flex w-full flex-col gap-3" role="group" aria-label="Gender">
+                        {genderOptions.map((option) => (
+                            <GenderOptionButton
+                                key={option.value}
+                                label={option.label}
+                                selected={(data.gender ?? '') === option.value}
+                                onSelect={() => setData('gender', option.value)}
+                                icon={genderOptionIcon(/** @type {'male' | 'female'} */ (option.value))}
+                            />
+                        ))}
+                    </div>
+                    {errors.gender ? (
+                        <p className="mt-1.5 text-sm text-status-error" role="alert">
+                            {errors.gender}
+                        </p>
+                    ) : null}
+                </div>
                 <TextInput
                     label="Height (cm)"
                     type="number"
@@ -238,29 +307,33 @@ export default function CustomerIntakeForm({
                     error={errors.target_weight_kg}
                     className={fieldClass}
                 />
-                <LabeledDropdown
+                <OptionButtonStack
                     label="Activity level"
                     value={data.activity_level ?? ''}
                     options={options.activityLevels}
                     onChange={(value) => setData('activity_level', value)}
+                    error={errors.activity_level}
                 />
-                <LabeledDropdown
+                <OptionPillGroup
                     label="Type of plan"
                     value={data.plan_type ?? ''}
                     options={options.planTypes}
                     onChange={(value) => setData('plan_type', value)}
+                    error={errors.plan_type}
                 />
-                <LabeledDropdown
+                <OptionPillGroup
                     label="Days"
-                    value={data.plan_days ?? ''}
+                    value={String(data.plan_days ?? '')}
                     options={options.planDays}
                     onChange={(value) => setData('plan_days', value)}
+                    error={errors.plan_days}
                 />
-                <LabeledDropdown
+                <OptionButtonStack
                     label="Diet protocol"
                     value={data.diet_protocol ?? ''}
                     options={options.dietProtocols}
                     onChange={(value) => setData('diet_protocol', value)}
+                    error={errors.diet_protocol}
                 />
                 <div className="md:col-span-2">
                     <TextAreaField
@@ -273,11 +346,12 @@ export default function CustomerIntakeForm({
             </Section>
 
             <Section title="Delivery address">
-                <LabeledDropdown
+                <OptionPillGroup
                     label="Delivery time"
                     value={data.delivery_time ?? ''}
                     options={options.deliveryTimes}
                     onChange={(value) => setData('delivery_time', value)}
+                    error={errors.delivery_time}
                 />
                 <CalendarDateField
                     label="Planned starting date"
@@ -371,8 +445,13 @@ export default function CustomerIntakeForm({
                 />
             </Section>
 
-            <div>
-                <Button type="submit" label={processing ? 'Saving…' : submitLabel} disabled={processing} />
+            <div className="flex w-full justify-center pt-1">
+                <Button
+                    type="submit"
+                    label={processing ? 'Saving…' : submitLabel}
+                    disabled={processing}
+                    className="w-full min-w-[200px] max-w-sm uppercase tracking-[0.08em]"
+                />
             </div>
         </form>
     );

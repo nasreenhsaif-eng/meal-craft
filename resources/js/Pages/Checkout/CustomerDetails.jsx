@@ -1,4 +1,5 @@
-import { Link, useForm, usePage } from '@inertiajs/react';
+import { Link, router, useForm, usePage } from '@inertiajs/react';
+import Button from '../../Components/Atoms/Button/Button.jsx';
 import CustomerIntakeForm from '../../Components/CustomerIntake/CustomerIntakeForm.jsx';
 import CustomerAppHeaderActions from '../../Components/Molecules/Customer/CustomerAppHeaderActions.jsx';
 import CustomerInertiaShell from '../../Layouts/CustomerInertiaShell.jsx';
@@ -31,23 +32,25 @@ export default function CustomerDetails({
 
     return (
         <CustomerInertiaShell customerName={customerName} headerActions={<CustomerAppHeaderActions />}>
-            <div className="mx-auto w-full max-w-3xl">
-                <Link
-                    href={deliveryUrl}
-                    className="inline-flex items-center gap-1 font-montserrat text-sm font-semibold text-[#5A6B44] hover:underline"
-                >
-                    ← Back to kitchen
-                </Link>
-                <h1 className="mt-3 font-montserrat text-3xl font-semibold tracking-tight text-brand-primary-pressed">
+            <div className="mx-auto w-full min-w-0 max-w-3xl">
+                <Button
+                    type="button"
+                    label="← Back to kitchen"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => router.visit(deliveryUrl)}
+                    className="!h-auto !min-h-0 px-0"
+                />
+                <h1 className="mt-3 font-montserrat text-3xl font-semibold tracking-tight text-[#262A22]">
                     Your details
                 </h1>
-                <p className="mt-3 font-body text-sm leading-relaxed text-grey-33 sm:text-base">
+                <p className="mt-3 font-body text-sm leading-relaxed text-[#555555] sm:text-base">
                     Confirm how we should reach you, where to deliver, and the plan you want to start.
                 </p>
                 {flashSuccess ? (
                     <p className="mt-4 font-body text-sm font-medium text-[#5A6B44]">{flashSuccess}</p>
                 ) : null}
-                <div className="mt-6">
+                <div className="mt-6 w-full min-w-0">
                     <CustomerIntakeForm
                         data={data}
                         setData={setData}
