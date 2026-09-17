@@ -12,7 +12,7 @@ export default {
         docs: {
             description: {
                 component:
-                    'Pale-green selection button used for diet protocol, activity, and gender. The full diet protocol screen is under Templates & Pages / Onboarding / DietProtocolView.',
+                    'Full-width washed-green selection button (uppercase). Used for diet protocol, activity, gender, and craft. Pair with OnboardingInlineDescription under the selected row.',
             },
         },
     },

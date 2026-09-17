@@ -14,7 +14,8 @@ export default {
         canvasBackground: 'white',
         docs: {
             description: {
-                component: 'White bordered tab button. Used for day and filter tabs, not page navigation.',
+                component:
+                    'Tab uses the same washed-green look as secondary. Selected tabs in product UI use variant primary.',
             },
         },
     },

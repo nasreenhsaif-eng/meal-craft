@@ -1,3 +1,4 @@
+import Button from '../Atoms/Button/Button.jsx';
 import MealCardClientViewNano from '../MealCardClientViewNano.jsx';
 
 /**
@@ -48,13 +49,14 @@ export default function ProtocolMealSlotCard({
         >
             {typeof onSeeOtherOptions === 'function' ? (
                 <div className="absolute right-3 top-3 z-10">
-                    <button
+                    <Button
                         type="button"
+                        label="See other options"
+                        variant="secondary"
+                        size="sm"
                         onClick={onSeeOtherOptions}
-                        className="rounded-[8px] border border-[#5A6B44]/40 bg-[#F8F9F6] px-2.5 py-1.5 font-montserrat text-[10px] font-bold uppercase tracking-wide text-[#5A6B44] hover:bg-[#6E8C47]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5A6B44] sm:text-[11px]"
-                    >
-                        SEE OTHER OPTIONS
-                    </button>
+                        className="h-auto min-h-0 px-2.5 py-1.5 text-[10px] sm:text-[11px]"
+                    />
                 </div>
             ) : null}
 

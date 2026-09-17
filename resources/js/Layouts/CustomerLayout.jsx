@@ -52,9 +52,9 @@ export default function CustomerLayout({
     }
 
     return (
-        <div className="min-h-screen bg-[#F8F9F6] font-sans text-[#262A22]">
+        <div className="min-h-screen w-full bg-[#F8F9F6] font-sans text-[#262A22]">
             {header}
-            <main className="mx-auto max-w-4xl px-6 py-10">{children}</main>
+            <main className="mx-auto w-full max-w-4xl px-6 py-10">{children}</main>
         </div>
     );
 }

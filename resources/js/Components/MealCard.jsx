@@ -241,7 +241,7 @@ export default function MealCard({
                             <div className="mt-1 w-full shrink-0 pb-0.5">
                                 <Button
                                     type="button"
-                                    variant={selected ? 'primary' : 'secondary'}
+                                    variant="secondary"
                                     disabled={disabled}
                                     label={selected ? 'SELECTED' : 'CRAFT THIS MEAL'}
                                     aria-label={craftPrimaryAria}

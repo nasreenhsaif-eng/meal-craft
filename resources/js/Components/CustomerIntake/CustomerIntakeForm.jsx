@@ -3,6 +3,7 @@ import Button from '../Atoms/Button/Button.jsx';
 import SquareCheckbox from '../Atoms/Icons/SquareCheckbox.jsx';
 import DropdownTextInput from '../Atoms/TextInput/DropdownTextInput.jsx';
 import TextInput from '../Atoms/TextInput/TextInput.jsx';
+import CalendarDateField from '../Molecules/Calendar/CalendarDateField.jsx';
 
 /**
  * @typedef {{ value: string; label: string }} IntakeOption
@@ -278,11 +279,10 @@ export default function CustomerIntakeForm({
                     options={options.deliveryTimes}
                     onChange={(value) => setData('delivery_time', value)}
                 />
-                <TextInput
+                <CalendarDateField
                     label="Planned starting date"
-                    type="date"
                     value={data.planned_start_date ?? ''}
-                    onChange={(event) => setData('planned_start_date', event.target.value)}
+                    onChange={(iso) => setData('planned_start_date', iso)}
                     error={errors.planned_start_date}
                     className={fieldClass}
                 />

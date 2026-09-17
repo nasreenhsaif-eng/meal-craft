@@ -98,8 +98,15 @@ export default function Container() {
 
         if (previous) {
             visitStep(previous);
+            return;
         }
-    }, [activeStep, visibleSteps, visitStep]);
+
+        // First step while editing a finished profile → return to Welcome Back.
+        if (onboarding.completed) {
+            const homeUrl = onboarding.urls?.appHome ?? '/app';
+            router.visit(homeUrl);
+        }
+    }, [activeStep, visibleSteps, visitStep, onboarding.completed, onboarding.urls]);
 
     const handleNext = useCallback(() => {
         const resolvedState = resolveOnboardingStepDefaults(activeStep, state);
@@ -194,12 +201,13 @@ export default function Container() {
 
                         if (next) {
                             patch({ currentStep: next });
+                            visitStep(next);
                         }
                     },
                 },
             );
         },
-        [processing, patch, onboarding.urls, steps],
+        [processing, patch, onboarding.urls, steps, visitStep],
     );
 
     const handleDietProtocolSelect = useCallback(
@@ -239,6 +247,7 @@ export default function Container() {
 
                     if (next) {
                         patch({ currentStep: next });
+                        visitStep(next);
                     }
                 },
             });
@@ -250,6 +259,7 @@ export default function Container() {
             computeTargetsBeforeSummary,
             state,
             steps,
+            visitStep,
         ],
     );
 
@@ -358,6 +368,8 @@ export default function Container() {
     };
 
     const hideFooterNext = meta.hideNext === true && activeStep !== 'diet_protocol';
+    const canGoBack =
+        Boolean(getPreviousTabStep(activeStep, visibleSteps)) || Boolean(onboarding.completed);
 
     return (
         <OnboardingShell
@@ -371,6 +383,7 @@ export default function Container() {
             titleClassName={meta.titleClassName ?? ''}
             visibleSteps={visibleSteps}
             onBack={handleBack}
+            canGoBack={canGoBack}
         >
             <div className="relative min-h-[200px] w-full">
                 {steps.map((step) => (

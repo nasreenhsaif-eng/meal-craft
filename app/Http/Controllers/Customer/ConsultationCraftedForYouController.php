@@ -9,11 +9,18 @@ use App\Services\Nutrition\UserPlanCalculator;
 use App\Support\AdminConsultationPreviewProfile;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
+use Symfony\Component\HttpFoundation\Response;
 
 class ConsultationCraftedForYouController extends Controller
 {
-    public function __invoke(Request $request): View
+    public function __invoke(Request $request): View|Response
     {
+        // Soft Inertia visits must full-reload into this Blade page.
+        if ($request->header('X-Inertia')) {
+            return Inertia::location($request->fullUrl());
+        }
+
         $user = $request->user();
         $profile = $user !== null ? AdminConsultationPreviewProfile::resolve($user) : null;
         $isCustomer = $user?->isCustomer() === true;

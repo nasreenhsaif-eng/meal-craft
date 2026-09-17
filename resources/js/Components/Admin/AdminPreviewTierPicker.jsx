@@ -1,4 +1,4 @@
-import PillButton from '../Atoms/Button/Button.jsx';
+import Button from '../Atoms/Button/Button.jsx';
 
 /**
  * Admin-only calorie tier pills for previewing scaled breakfast and mains.
@@ -42,14 +42,13 @@ export default function AdminPreviewTierPicker({
             </p>
             <div className="mt-2 flex flex-wrap gap-2">
                 {tiers.map((tier) => (
-                    <PillButton
+                    <Button
                         key={tier}
                         label={`${tier} kcal`}
-                        variant={selectedTier === tier ? 'primary' : 'outline'}
+                        variant={selectedTier === tier ? 'primary' : 'tab'}
                         size="sm"
                         disabled={loading}
                         onClick={() => onSelectTier(tier)}
-                        className={selectedTier === tier ? '' : 'ring-1 ring-[#E5E7EB]'}
                     />
                 ))}
             </div>

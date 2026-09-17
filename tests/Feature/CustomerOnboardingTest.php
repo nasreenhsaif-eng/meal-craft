@@ -580,13 +580,23 @@ test('completed customers can reset onboarding for testing', function () {
         ->and($profile?->onboarding_step)->toBe(OnboardingStep::Gender);
 });
 
-test('completed customers are redirected away from onboarding', function () {
+test('completed customers can revisit earlier onboarding steps', function () {
     $customer = User::factory()->customer()->create();
     CustomerProfile::factory()->for($customer)->create();
 
     $this->actingAs($customer)
         ->get(route('onboarding.show', ['step' => OnboardingStep::Gender->value]))
-        ->assertRedirect(route('app.home'));
+        ->assertSuccessful()
+        ->assertInertia(fn ($page) => $page
+            ->component('Onboarding/Container')
+            ->where('activeStep', OnboardingStep::Gender->value));
+
+    $this->actingAs($customer)
+        ->get(route('onboarding.show', ['step' => OnboardingStep::DailyTargets->value]))
+        ->assertSuccessful()
+        ->assertInertia(fn ($page) => $page
+            ->component('Onboarding/Container')
+            ->where('activeStep', OnboardingStep::DailyTargets->value));
 });
 
 test('completed customers can revisit food filters from meal consultation', function () {
@@ -596,6 +606,21 @@ test('completed customers can revisit food filters from meal consultation', func
     $this->actingAs($customer)
         ->get(route('onboarding.show', ['step' => OnboardingStep::FoodFilters->value]))
         ->assertSuccessful();
+});
+
+test('completed customers can continue editing profile through onboarding steps', function () {
+    $customer = User::factory()->customer()->create();
+    CustomerProfile::factory()->for($customer)->create([
+        'sex' => 'male',
+    ]);
+
+    $this->actingAs($customer)
+        ->post(route('onboarding.gender.store'), [
+            'sex' => 'female',
+        ])
+        ->assertRedirect(route('onboarding.show', ['step' => OnboardingStep::DietProtocol->value]));
+
+    expect($customer->fresh()->customerProfile?->sex?->value)->toBe('female');
 });
 
 test('admin can view customer profiles list', function () {

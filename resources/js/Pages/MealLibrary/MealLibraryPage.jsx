@@ -7,7 +7,6 @@ import TextInput from '../../Components/Atoms/TextInput/TextInput.jsx';
 import DropdownTextInput from '../../Components/Atoms/TextInput/DropdownTextInput.jsx';
 import MultiPillDropdown from '../../Components/Atoms/TextInput/MultiPillDropdown.jsx';
 import Button from '../../Components/Atoms/Button.jsx';
-import PillButton from '../../Components/Atoms/Button/Button.jsx';
 import MealCard from '../../Components/MealCard.jsx';
 import MealBrowseTabs from '../../Components/MealBrowseTabs.jsx';
 import MealDetailView from '../../Components/Molecules/MealDetailView/MealDetailView';
@@ -2880,7 +2879,7 @@ export function MealLibraryPageContent({
                                                             />
 
                                                             <div className="flex justify-end">
-                                                                <PillButton
+                                                                <Button
                                                                     label="Remove"
                                                                     variant="outline"
                                                                     size="sm"

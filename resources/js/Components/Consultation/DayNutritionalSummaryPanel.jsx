@@ -1,5 +1,5 @@
 import { Fragment, useMemo, useState } from 'react';
-import PillButton from '../Atoms/Button/Button.jsx';
+import Button from '../Atoms/Button/Button.jsx';
 import NutrientBadge from '../MealSystem/NutrientBadge.jsx';
 import SafetyAlerts from '../MealSystem/SafetyAlerts.jsx';
 import { G6PD_HIGHLIGHT_BADGE } from '../../meal-library/mealSafetyAndSickle.ts';
@@ -513,16 +513,16 @@ export function DayMacroMicroTabPanel({
                 aria-label={`${dayLabel} nutrition`}
             >
                 {DAY_MACRO_MICRO_TABS.map((item) => (
-                    <PillButton
+                    <Button
                         key={item.id}
                         type="button"
                         role="tab"
                         aria-selected={tab === item.id}
                         label={item.label}
-                        variant={tab === item.id ? 'primary' : 'tab'}
+                        variant="ghost"
                         size="sm"
                         onClick={() => setTab(item.id)}
-                        className="shrink-0"
+                        className={['shrink-0', tab === item.id ? 'bg-[#5A6B44]/10' : ''].join(' ').trim()}
                     />
                 ))}
             </div>

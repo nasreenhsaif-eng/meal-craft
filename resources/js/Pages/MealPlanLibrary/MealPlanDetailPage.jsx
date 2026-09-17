@@ -4,7 +4,6 @@ import { Link, router, usePage } from '@inertiajs/react';
 import { AnimatePresence, motion } from 'framer-motion';
 import adminInertiaLayout from '../../lib/adminInertiaLayout.jsx';
 import { resolveUrl } from '../../meal-craft/mealCraftPageProps.js';
-import PillButton from '../../Components/Atoms/Button/Button.jsx';
 import Button from '../../Components/Atoms/Button.jsx';
 import AdminPreviewTierPicker from '../../Components/Admin/AdminPreviewTierPicker.jsx';
 import ChooseYourMeals, {
@@ -706,7 +705,7 @@ export default function MealPlanDetailPage({
                             {planDays.map((day) => {
                                 const selected = day.dayNumber === activeDay;
                                 return (
-                                    <PillButton
+                                    <Button
                                         key={day.dayNumber}
                                         type="button"
                                         role="tab"

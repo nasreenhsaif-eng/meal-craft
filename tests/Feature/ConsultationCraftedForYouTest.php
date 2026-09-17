@@ -107,6 +107,17 @@ test('consultation page exposes onboarding back link when opened from onboarding
     );
 });
 
+test('inertia visits to consultation force a full page location redirect', function () {
+    $user = User::factory()->customer()->create();
+    CustomerProfile::factory()->for($user)->create();
+
+    $this->actingAs($user)
+        ->withHeaders(['X-Inertia' => 'true'])
+        ->get(route('consultation.crafted-for-you'))
+        ->assertStatus(409)
+        ->assertHeader('X-Inertia-Location', route('consultation.crafted-for-you'));
+});
+
 test('consultation page omits onboarding back link for direct visits', function () {
     $user = User::factory()->customer()->create();
     CustomerProfile::factory()->for($user)->create();

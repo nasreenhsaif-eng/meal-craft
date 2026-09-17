@@ -243,7 +243,7 @@ export default function MealCardClientViewNano({
                             >
                                 <Button
                                     type="button"
-                                    variant={selected ? 'primary' : 'secondary'}
+                                    variant="secondary"
                                     size="sm"
                                     disabled={disabled}
                                     label={selected ? 'SELECTED' : 'CRAFT THIS MEAL'}
@@ -325,7 +325,7 @@ export default function MealCardClientViewNano({
                             <div className="absolute bottom-2 left-2 right-2">
                                 <Button
                                     type="button"
-                                    variant={selected ? 'primary' : 'secondary'}
+                                    variant="secondary"
                                     size="sm"
                                     disabled={disabled}
                                     label={selected ? 'SELECTED' : 'CRAFT THIS MEAL'}

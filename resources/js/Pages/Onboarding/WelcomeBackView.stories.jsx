@@ -15,7 +15,7 @@ export default {
         docs: {
             description: {
                 component:
-                    'Post-onboarding customer home — welcome-back card with daily calorie range, macro style, and meal-plan actions.',
+                    'Post-login home for customers who finished onboarding — welcome-back card with daily targets and onboarding-style choices (edit profile, edit meals plan, view summary). Actions continue from the meal plan summary.',
             },
         },
     },
@@ -23,27 +23,14 @@ export default {
 };
 
 export const Default = {
-    name: 'Welcome back — plan saved',
+    name: 'Welcome back',
     render: () => (
         <WelcomeBackInner
             customerName="Nasreen"
             profile={NASREEN_PROFILE}
-            hasSubmittedPlan
+            onEditProfile={() => undefined}
+            onEditMealsPlan={() => undefined}
             onViewSummary={() => undefined}
-            onEditPlan={() => undefined}
-            onActions={() => undefined}
-        />
-    ),
-};
-
-export const ChooseMeals = {
-    name: 'Welcome back — choose meals',
-    render: () => (
-        <WelcomeBackInner
-            customerName="Nasreen"
-            profile={NASREEN_PROFILE}
-            onStartPlan={() => undefined}
-            onActions={() => undefined}
         />
     ),
 };

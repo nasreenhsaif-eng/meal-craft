@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import Button from '../../Components/Atoms/Button.jsx';
-import PillButton from '../../Components/Atoms/Button/Button.jsx';
+import OnboardingOptionButton from '../../Components/Atoms/Button/OnboardingOptionButton.jsx';
+import FoodFilterPill from '../../Components/MealSystem/FoodFilterPill.jsx';
+import OnboardingInlineDescription from '../../Components/Molecules/Onboarding/OnboardingInlineDescription.jsx';
 import ChooseYourMeals, {
     applyDeckSelectionToggle,
     applyFixedChoiceToggle,
@@ -1603,24 +1605,33 @@ export default function CraftedForYouPage({
                         <div className="mt-6 grid gap-6 lg:grid-cols-2">
                             <div>
                                 <h3 className="font-montserrat text-sm font-bold text-[#262A22]">What’s Your Craft</h3>
-                                <div className="mt-4 grid gap-3">
+                                <div className="mt-4 flex w-full flex-col gap-2.5">
                                     {CRAFTS.map((c) => {
                                         const active = c.key === craftKey;
+                                        const descriptionId = `craft-desc-${c.key}`;
+
                                         return (
-                                            <button
-                                                key={c.key}
-                                                type="button"
-                                                onClick={() => setCraftKey(c.key)}
-                                                aria-pressed={active}
-                                                className={[
-                                                    'w-full rounded-[12px] border p-4 text-left transition-colors',
-                                                    active ? 'border-[#5A6B44] bg-[#F8F9F6]' : 'border-gray-200 bg-white hover:bg-[#F8F9F6]',
-                                                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5A6B44] focus-visible:ring-offset-2',
-                                                ].join(' ')}
-                                            >
-                                                <p className="font-montserrat text-sm font-bold text-[#262A22]">{c.title}</p>
-                                                <p className="mt-1 font-body text-sm text-[#555555]">{c.description}</p>
-                                            </button>
+                                            <div key={c.key} className="flex w-full flex-col">
+                                                <OnboardingOptionButton
+                                                    label={c.title}
+                                                    selected={active}
+                                                    onSelect={() => setCraftKey(c.key)}
+                                                    describedBy={descriptionId}
+                                                />
+                                                <div
+                                                    className={[
+                                                        'grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none',
+                                                        active ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]',
+                                                    ].join(' ')}
+                                                    aria-hidden={!active}
+                                                >
+                                                    <div className="min-h-0 overflow-hidden">
+                                                        <OnboardingInlineDescription id={descriptionId}>
+                                                            {c.description}
+                                                        </OnboardingInlineDescription>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         );
                                     })}
                                 </div>
@@ -1633,13 +1644,11 @@ export default function CraftedForYouPage({
                                 </p>
                                 <div className="mt-3 flex flex-wrap gap-2">
                                     {[5, 6, 7].map((n) => (
-                                        <PillButton
+                                        <FoodFilterPill
                                             key={n}
                                             label={`${n} days`}
-                                            variant={weekDuration === n ? 'primary' : 'outline'}
-                                            size="sm"
+                                            isActive={weekDuration === n}
                                             onClick={() => setWeekDuration(n)}
-                                            className={weekDuration === n ? '' : 'ring-1 ring-[#E5E7EB]'}
                                         />
                                     ))}
                                 </div>
@@ -1687,13 +1696,11 @@ export default function CraftedForYouPage({
                             </p>
                             <div className="mt-3 flex flex-wrap gap-2">
                                 {[5, 6, 7].map((n) => (
-                                    <PillButton
+                                    <FoodFilterPill
                                         key={n}
                                         label={`${n} days`}
-                                        variant={weekDuration === n ? 'primary' : 'outline'}
-                                        size="sm"
+                                        isActive={weekDuration === n}
                                         onClick={() => setWeekDuration(n)}
-                                        className={weekDuration === n ? '' : 'ring-1 ring-[#E5E7EB]'}
                                     />
                                 ))}
                             </div>
@@ -1711,13 +1718,11 @@ export default function CraftedForYouPage({
                                     const dayIdx = i + 1;
                                     const isOn = sortedSelectedDays.includes(dayIdx);
                                     return (
-                                        <PillButton
+                                        <FoodFilterPill
                                             key={label}
                                             label={label}
-                                            variant={isOn ? 'primary' : 'outline'}
-                                            size="sm"
+                                            isActive={isOn}
                                             onClick={() => toggleDay(dayIdx)}
-                                            className={isOn ? '' : 'ring-1 ring-[#E5E7EB]'}
                                         />
                                     );
                                 })}
@@ -1973,13 +1978,12 @@ export default function CraftedForYouPage({
                                                                 ].map((opt) => {
                                                                     const on = side === opt.key;
                                                                     return (
-                                                                        <PillButton
+                                                                        <Button
                                                                             key={opt.key}
                                                                             label={opt.label}
-                                                                            variant={on ? 'primary' : 'outline'}
+                                                                            variant={on ? 'primary' : 'tab'}
                                                                             size="sm"
                                                                             onClick={() => setBusinessSideChoice(day, /** @type {any} */ (opt.key))}
-                                                                            className={on ? '' : 'ring-1 ring-[#E5E7EB]'}
                                                                         />
                                                                     );
                                                                 })}

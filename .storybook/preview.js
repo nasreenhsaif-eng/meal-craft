@@ -124,7 +124,6 @@ const preview = {
                 if (inAtomsA && inAtomsB) {
                     const atomsOrder = [
                         `${atomsBase}Button`,
-                        `${atomsBase}Button/Pill`,
                         `${atomsBase}Button/Tab`,
                         `${atomsBase}Button/PrimaryButton`,
                         `${atomsBase}Button/NavButton`,

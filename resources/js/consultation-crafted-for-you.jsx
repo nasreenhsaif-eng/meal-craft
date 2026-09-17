@@ -54,8 +54,8 @@ class ConsultationErrorBoundary extends Component {
                     : String(this.state.error ?? 'Unknown error');
 
             return (
-                <div className="min-h-[100dvh] w-full bg-[#F8F9F6] p-6">
-                    <div className="mx-auto w-full max-w-lg rounded-[12px] border border-red-200 bg-white p-6 font-sans text-sm text-[#262A22] shadow-sm">
+                <div className="box-border min-h-[100dvh] w-full min-w-0 bg-[#F8F9F6] p-6">
+                    <div className="mx-auto w-full min-w-0 max-w-lg rounded-[12px] border border-red-200 bg-white p-6 font-sans text-sm text-[#262A22] shadow-sm">
                         <h1 className="font-montserrat text-lg font-bold">Could not load meal selection</h1>
                         <p className="mt-2 text-[#555555]">
                             Refresh the page. If this keeps happening, open DevTools → Console and share the error with

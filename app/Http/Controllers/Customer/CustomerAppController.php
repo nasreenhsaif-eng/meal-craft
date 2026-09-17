@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Customer;
 
+use App\Enums\OnboardingStep;
 use App\Http\Controllers\Controller;
 use App\Models\CustomerProfile;
 use App\Services\CustomerCraftPlanPresentationService;
@@ -30,7 +31,9 @@ class CustomerAppController extends Controller
             'customerName' => $user?->name ?? '',
             'consultationUrl' => route('consultation.crafted-for-you'),
             'mealPlanSummaryUrl' => route('app.meal-plan'),
-            'fulfillmentUrl' => route('checkout.fulfillment'),
+            'profileEditUrl' => route('onboarding.show', [
+                'step' => OnboardingStep::entry()->value,
+            ]),
             'profile' => $profile ? [
                 'dailyCalorieTarget' => $profile->daily_calorie_target,
                 'dailyCaloriesMin' => $calorieRange['min'] ?? null,
@@ -68,6 +71,7 @@ class CustomerAppController extends Controller
             'consultationUrl' => route('consultation.crafted-for-you'),
             'consultationEditUrl' => route('consultation.crafted-for-you.edit'),
             'homeUrl' => route('app.home'),
+            'fulfillmentUrl' => route('checkout.fulfillment'),
             'sex' => $profile->sex?->value,
             'activityLevel' => $profile->activity_level?->value,
             'dailyCalorieTarget' => (int) $profile->daily_calorie_target,

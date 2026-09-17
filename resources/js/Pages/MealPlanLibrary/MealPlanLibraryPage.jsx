@@ -4,7 +4,6 @@ import { router, usePage } from '@inertiajs/react';
 import adminInertiaLayout from '../../lib/adminInertiaLayout.jsx';
 import { mealPlanLibraryUrls, resolveUrl } from '../../meal-craft/mealCraftPageProps.js';
 import Button from '../../Components/Atoms/Button.jsx';
-import PillButton from '../../Components/Atoms/Button/Button.jsx';
 import TextInput from '../../Components/Atoms/TextInput/TextInput.jsx';
 import CSVUploader from '../../Components/CSVUploader.jsx';
 import MealPlanCard from '../../Components/MealPlanCard.jsx';
@@ -634,13 +633,12 @@ export function MealPlanLibraryPageContent({
                                                 const day = i + 1; // internal day index (1..7)
                                                 const isActive = day === activeDay;
                                                 return (
-                                                    <PillButton
+                                                    <Button
                                                         key={day}
                                                         label={label}
-                                                        variant={isActive ? 'primary' : 'outline'}
+                                                        variant={isActive ? 'primary' : 'tab'}
                                                         size="sm"
                                                         onClick={() => setActiveDay(day)}
-                                                        className={isActive ? '' : 'ring-1 ring-[#E5E7EB]'}
                                                     />
                                                 );
                                             })}

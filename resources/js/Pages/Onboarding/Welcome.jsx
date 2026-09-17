@@ -11,6 +11,7 @@ import { getOnboardingStepIndex } from '../../meal-craft/onboarding/onboardingTa
  * @param {string} props.customerName
  * @param {Array<{ value: string, label: string }>} [props.visibleSteps]
  * @param {() => void} [props.onBack]
+ * @param {boolean} [props.canGoBack]
  * @param {boolean} [props.centerHeader]
  * @param {boolean} [props.hideDefaultHeader]
  * @param {string} [props.titleClassName]
@@ -25,6 +26,7 @@ export function OnboardingShell({
     customerName,
     visibleSteps,
     onBack,
+    canGoBack: canGoBackProp,
     centerHeader = false,
     hideDefaultHeader = false,
     titleClassName = '',
@@ -34,7 +36,10 @@ export function OnboardingShell({
     const headerAlign = centerHeader ? 'text-center' : '';
     const stepsForNav = visibleSteps ?? steps;
     const stepIndex = getOnboardingStepIndex(currentStep, stepsForNav);
-    const canGoBack = stepIndex > 0;
+    const canGoBack =
+        typeof canGoBackProp === 'boolean'
+            ? canGoBackProp && typeof onBack === 'function'
+            : stepIndex > 0 && typeof onBack === 'function';
 
     const navigation =
         navHeader ??
@@ -43,7 +48,7 @@ export function OnboardingShell({
                 steps={stepsForNav}
                 activeStep={currentStep}
                 onBack={onBack}
-                canGoBack={canGoBack && typeof onBack === 'function'}
+                canGoBack={canGoBack}
             />
         ) : null);
 

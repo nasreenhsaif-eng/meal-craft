@@ -1,6 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import PillButton from '../Atoms/Button/Button.jsx';
 import Button from '../Atoms/Button.jsx';
 import SquareCheckbox from '../Atoms/Icons/SquareCheckbox.jsx';
 import StackedDeckCarousel from '../MealCard/StackedDeckCarousel.jsx';
@@ -2321,7 +2320,7 @@ export default function ChooseYourMeals({
                             ) : (
                                 <span className="hidden min-w-[120px] sm:block" aria-hidden="true" />
                             )}
-                            <PillButton
+                            <Button
                                 type="button"
                                 label={footerNextLabel}
                                 variant="primary"

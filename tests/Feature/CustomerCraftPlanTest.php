@@ -245,6 +245,7 @@ test('customer can view meal plan summary after submitting selections', function
             ->where('sex', 'female')
             ->where('activityLevel', 'moderate')
             ->where('dailyCalorieTarget', 2000)
+            ->where('fulfillmentUrl', route('checkout.fulfillment'))
             ->has('craftPlan.days', 2)
             ->where('craftPlan.days.0.label', 'Sunday')
             ->where('craftPlan.days.0.categories.breakfasts.0.title', 'Sunday Oats'));

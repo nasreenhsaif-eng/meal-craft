@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import Button from '../Atoms/Button/Button.jsx';
 import SquareCheckbox from '../Atoms/Icons/SquareCheckbox.jsx';
 import MealCardClientViewNano from '../MealCardClientViewNano.jsx';
 import {
@@ -167,13 +168,14 @@ export default function ProtocolFixedChoiceSides({
                                         </button>
 
                                         {isChecked && hasOptions && typeof onSeeOtherOptions === 'function' && pickEnabled ? (
-                                            <button
+                                            <Button
                                                 type="button"
+                                                label="See other options"
+                                                variant="secondary"
+                                                size="sm"
                                                 onClick={() => onSeeOtherOptions(option.selectionKey)}
-                                                className="shrink-0 rounded-[8px] border border-[#5A6B44]/40 bg-[#F8F9F6] px-2 py-1 font-montserrat text-[10px] font-bold uppercase tracking-wide text-[#5A6B44] hover:bg-[#6E8C47]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5A6B44] sm:text-[11px]"
-                                            >
-                                                SEE OTHER OPTIONS
-                                            </button>
+                                                className="h-auto min-h-0 shrink-0 px-2 py-1 text-[10px] sm:text-[11px]"
+                                            />
                                         ) : null}
                                     </div>
 

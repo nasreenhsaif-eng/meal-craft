@@ -84,13 +84,14 @@ export default function ProtocolMealOptionsScreen({
                             {optionCount} options · {selectedCount}/{maxSelected} selected
                         </p>
                     </div>
-                    <button
+                    <Button
                         type="button"
-                        className="shrink-0 font-montserrat text-sm font-bold text-[#5A6B44]"
+                        label="Close"
+                        variant="ghost"
+                        size="sm"
                         onClick={handleClose}
-                    >
-                        Close
-                    </button>
+                        className="shrink-0"
+                    />
                 </div>
 
                 <div className="min-h-0 flex-1 overflow-x-clip overflow-y-auto px-0 py-3 sm:py-4">

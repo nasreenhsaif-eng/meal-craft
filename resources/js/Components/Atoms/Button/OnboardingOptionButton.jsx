@@ -34,7 +34,7 @@ export function OnboardingOptionButton({
             className={[
                 'box-border flex h-[68px] w-full min-w-0 items-center rounded-[12px] border-0 px-4 py-2 text-left shadow-none',
                 icon ? 'gap-3' : '',
-                'font-montserrat text-[13px] font-bold leading-tight tracking-wide text-[#364153]',
+                'font-montserrat text-[13px] font-bold uppercase leading-tight tracking-wide text-[#364153]',
                 'transition-all duration-200 ease-in-out',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6E8C47] focus-visible:ring-offset-2',
                 'disabled:pointer-events-none disabled:opacity-60',

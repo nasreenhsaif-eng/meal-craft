@@ -1,35 +1,20 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { Link, router } from '@inertiajs/react';
 import { AnimatePresence, motion } from 'framer-motion';
-import PillButton from '../../Components/Atoms/Button/Button.jsx';
 import Button from '../../Components/Atoms/Button.jsx';
 import DayNutritionalSummaryPanel, {
     DAY_SUMMARY_TABS,
 } from '../../Components/Consultation/DayNutritionalSummaryPanel.jsx';
 import CustomerAppHeaderActions from '../../Components/Molecules/Customer/CustomerAppHeaderActions.jsx';
-import {
-    PLAN_MACRO_CATEGORY_ROWS,
-    sumActiveDayMacros,
-} from '../../Components/Consultation/ChooseYourMeals.jsx';
+import { PLAN_MACRO_CATEGORY_ROWS } from '../../Components/Consultation/ChooseYourMeals.jsx';
 import MealDetailModalPortal from '../../Components/Molecules/MealDetailModalPortal.jsx';
+import FoodFilterPill from '../../Components/MealSystem/FoodFilterPill.jsx';
 import CustomerInertiaShell from '../../Layouts/CustomerInertiaShell.jsx';
 import { saveSummaryCraftPlanAndNavigateToEdit } from '../../consultation/consultationDraft.js';
-import { dailyMacroTargetsFromPlan } from '../../consultation/craftCalorieTargets.js';
 import { resolveInertiaLayoutChild } from '../../lib/resolveInertiaLayoutChild.js';
 import { useMealDetailModal } from '../../meal-library/useMealDetailModal.js';
 
 const PAGE_BG = 'bg-[#F8F9F6]';
-
-/**
- * @param {number} value
- */
-function formatMacroValue(value) {
-    if (!Number.isFinite(value)) {
-        return '0';
-    }
-
-    return Number.isInteger(value) ? String(value) : value.toFixed(1);
-}
 
 /**
  * @param {object} props
@@ -51,6 +36,7 @@ function formatMacroValue(value) {
  * @param {string} [props.consultationUrl]
  * @param {string} [props.consultationEditUrl]
  * @param {string} [props.homeUrl]
+ * @param {string} [props.fulfillmentUrl]
  * @param {string | null} [props.sex]
  * @param {string | null} [props.activityLevel]
  * @param {number | null} [props.dailyCalorieTarget]
@@ -61,6 +47,7 @@ export default function MealPlanSummary({
     consultationUrl = '/consultation/crafted-for-you',
     consultationEditUrl = '',
     homeUrl = '/app',
+    fulfillmentUrl = '/checkout',
     sex = null,
     activityLevel = null,
     dailyCalorieTarget = null,
@@ -106,38 +93,7 @@ export default function MealPlanSummary({
         return out;
     }, [activeDayData]);
 
-    const weekOverview = useMemo(
-        () =>
-            days.map((day) => {
-                /** @type {Record<string, unknown[]>} */
-                const categories = {};
-
-                for (const row of PLAN_MACRO_CATEGORY_ROWS) {
-                    const items = day.categories?.[row.key] ?? [];
-                    if (row.optional && items.length === 0) {
-                        continue;
-                    }
-
-                    categories[row.key] = items;
-                }
-
-                const totals = sumActiveDayMacros(categories);
-
-                return {
-                    dayNumber: day.dayNumber,
-                    label: day.label,
-                    totals,
-                };
-            }),
-        [days],
-    );
-
     const planCategoryLabel = `${craftPlan.craftTitle ?? 'Craft'} · ${craftPlan.planTierCalories ?? ''} kcal`.trim();
-
-    const dayMacroTargets = useMemo(
-        () => dailyMacroTargetsFromPlan(null, craftPlan.planTierCalories ?? 0, craftPlan.craftKey ?? 'full'),
-        [craftPlan.planTierCalories, craftPlan.craftKey],
-    );
 
     const handleEditSelections = useCallback(() => {
         const editUrl =
@@ -177,33 +133,20 @@ export default function MealPlanSummary({
                         </p>
                     </div>
 
-                    {weekOverview.length > 1 ? (
-                        <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                            {weekOverview.map((day) => {
-                                const selected = day.dayNumber === activeDay;
-
-                                return (
-                                    <button
-                                        key={day.dayNumber}
-                                        type="button"
-                                        onClick={() => setActiveDay(day.dayNumber)}
-                                        className={[
-                                            'rounded-[12px] border px-4 py-3 text-left transition',
-                                            selected
-                                                ? 'border-[#5A6B44] bg-white shadow-sm'
-                                                : 'border-gray-200 bg-white/80 hover:border-[#5A6B44]/40',
-                                        ].join(' ')}
-                                    >
-                                        <p className="font-montserrat text-sm font-bold text-[#262A22]">{day.label}</p>
-                                        <p className="mt-1 font-body text-xs text-[#555555]">
-                                            {formatMacroValue(day.totals.calories)} / {formatMacroValue(dayMacroTargets.calories)} kcal · P{' '}
-                                            {formatMacroValue(day.totals.protein)}/{formatMacroValue(dayMacroTargets.protein)}g · C{' '}
-                                            {formatMacroValue(day.totals.carbs)}/{formatMacroValue(dayMacroTargets.carbs)}g · F{' '}
-                                            {formatMacroValue(day.totals.fat)}/{formatMacroValue(dayMacroTargets.fat)}g
-                                        </p>
-                                    </button>
-                                );
-                            })}
+                    {days.length > 1 ? (
+                        <div
+                            className="mb-6 flex flex-wrap gap-2"
+                            role="tablist"
+                            aria-label="Plan days"
+                        >
+                            {days.map((day) => (
+                                <FoodFilterPill
+                                    key={day.dayNumber}
+                                    label={day.label}
+                                    isActive={day.dayNumber === activeDay}
+                                    onClick={() => setActiveDay(day.dayNumber)}
+                                />
+                            ))}
                         </div>
                     ) : null}
 
@@ -214,16 +157,21 @@ export default function MealPlanSummary({
                             aria-label="Day content"
                         >
                             {DAY_SUMMARY_TABS.map((tab) => (
-                                <PillButton
+                                <Button
                                     key={tab.id}
                                     type="button"
                                     role="tab"
                                     aria-selected={contentTab === tab.id}
                                     label={tab.label}
-                                    variant={contentTab === tab.id ? 'primary' : 'tab'}
+                                    variant="ghost"
                                     size="sm"
                                     onClick={() => setContentTab(tab.id)}
-                                    className="shrink-0"
+                                    className={[
+                                        'shrink-0',
+                                        contentTab === tab.id ? 'bg-[#5A6B44]/10' : '',
+                                    ]
+                                        .join(' ')
+                                        .trim()}
                                 />
                             ))}
                         </div>
@@ -263,9 +211,9 @@ export default function MealPlanSummary({
                             className="px-8"
                         />
                         <Button
-                            label="Done"
+                            label="Actions"
                             variant="primary"
-                            onClick={() => window.location.assign(homeUrl)}
+                            onClick={() => router.visit(fulfillmentUrl)}
                             className="px-10"
                         />
                     </div>

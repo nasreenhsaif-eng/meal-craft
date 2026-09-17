@@ -55,7 +55,7 @@ test('digital recipes path opens the printable meal plan or sends the customer t
         ->assertRedirect(route('consultation.crafted-for-you'));
 });
 
-test('customer home actions link to fulfillment selection', function () {
+test('customer home offers profile, meals plan, and summary destinations', function () {
     $customer = User::factory()->customer()->create();
     CustomerProfile::factory()->for($customer)->create();
 
@@ -64,5 +64,8 @@ test('customer home actions link to fulfillment selection', function () {
         ->assertSuccessful()
         ->assertInertia(fn ($page) => $page
             ->component('App/Home')
-            ->where('fulfillmentUrl', route('checkout.fulfillment')));
+            ->where('profileEditUrl', route('onboarding.show', ['step' => OnboardingStep::Gender->value]))
+            ->where('consultationUrl', route('consultation.crafted-for-you'))
+            ->where('mealPlanSummaryUrl', route('app.meal-plan'))
+            ->missing('fulfillmentUrl'));
 });

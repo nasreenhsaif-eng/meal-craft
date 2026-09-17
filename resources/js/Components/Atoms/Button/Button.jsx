@@ -1,80 +1,77 @@
 /**
- * Pill buttons — brand palette (`#6E8C47`, `#364153`): `primary` (solid green),
- * `secondary` (soft green wash), `outline` (solid black), `tab` (white bordered).
+ * Smart Kitchen action button — single design-system atom.
+ *
+ * Variants:
+ * - primary: solid brand dark green
+ * - secondary: Figma hover wash — 50% `#6E8C47` mixed with white
+ * - outline: same as ghost (transparent green text)
+ * - ghost: transparent, minimal affordance
+ * - tab: same wash family as secondary (day/filter chips; selected chips use primary)
  *
  * @param {{
  *   label: string;
- *   variant?: 'primary' | 'secondary' | 'outline' | 'tab';
+ *   variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'tab';
  *   size?: 'md' | 'sm';
  *   className?: string;
  *   type?: 'button' | 'submit' | 'reset';
+ *   disabled?: boolean;
+ *   style?: import('react').CSSProperties;
  * }} props
  */
-function Button({ label, variant = 'primary', size = 'md', className = '', type = 'button', ...props }) {
+export default function Button({
+    label,
+    variant = 'primary',
+    type = 'button',
+    size = 'md',
+    disabled = false,
+    className = '',
+    style,
+    ...props
+}) {
     const base =
-        'inline-flex items-center justify-center rounded-[12px] font-montserrat font-bold uppercase tracking-wider transition-all duration-200 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6E8C47] focus-visible:ring-offset-2 focus-visible:ring-offset-mc-cream disabled:cursor-not-allowed disabled:opacity-50 dark:focus-visible:ring-offset-zinc-900';
+        'inline-flex items-center justify-center rounded-[12px] font-montserrat font-bold uppercase tracking-wider ' +
+        'transition-all duration-200 ease-in-out ' +
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5A6B44] focus-visible:ring-offset-2 focus-visible:ring-offset-white';
 
     const sizes = {
         md: 'h-[50px] min-h-[50px] px-6 text-[16px] leading-none',
         sm: 'h-[40px] min-h-[40px] px-4 text-[14px] leading-none',
     };
 
+    const secondaryWash = [
+        'border border-transparent bg-[color-mix(in_srgb,#6E8C47_50%,white)] text-[#364153]',
+        'hover:bg-[color-mix(in_srgb,#6E8C47_70%,white)] hover:text-[#364153]',
+        'active:border-[#6E8C47] active:bg-[#6E8C47] active:text-white active:scale-[0.98]',
+    ].join(' ');
+
+    const ghost =
+        'border border-transparent bg-transparent text-[#5A6B44] hover:bg-[#5A6B44]/10';
+
     const variants = {
         primary: [
-            'border-2 border-[#5A6B44] bg-[#5A6B44] text-white shadow-sm',
-            'hover:bg-[#4F5F3D] hover:border-[#4F5F3D] hover:text-white',
-            'active:bg-[#3E4F28] active:border-[#3E4F28] active:text-white',
-            'dark:border-2 dark:border-[#5A6B44] dark:bg-[#5A6B44] dark:text-white dark:shadow-sm',
-            'dark:hover:bg-[#4F5F3D] dark:hover:border-[#4F5F3D]',
-            'dark:active:bg-[#3E4F28] dark:active:border-[#3E4F28]',
+            'border border-transparent bg-[#5A6B44] text-white shadow-sm',
+            'hover:bg-[#485636] hover:shadow-md hover:scale-[1.02]',
+            'active:bg-[#485636] active:shadow-inner active:scale-[0.98]',
         ].join(' '),
-        secondary: [
-            'border-0 bg-[#6E8C47]/10 text-[#364153]',
-            'hover:bg-[#6E8C47]/20',
-            'active:scale-95 active:bg-[#6E8C47]/30',
-            'dark:border-0 dark:bg-[#6E8C47]/15 dark:text-[#364153]',
-            'dark:hover:bg-[#6E8C47]/25',
-            'dark:active:bg-[#6E8C47]/35',
-        ].join(' '),
-        outline: [
-            'border-2 border-[#1F2937] bg-[#1F2937] text-white shadow-sm',
-            'hover:border-[#111827] hover:bg-[#111827] hover:text-white',
-            'active:border-black active:bg-black active:text-white',
-            'dark:border-2 dark:border-[#1F2937] dark:bg-[#1F2937] dark:text-white',
-            'dark:hover:border-[#111827] dark:hover:bg-[#111827]',
-            'dark:active:border-black dark:active:bg-black',
-        ].join(' '),
-        tab: [
-            'box-border border border-[#E5E7EB] bg-white text-[#364153] shadow-none',
-            'hover:bg-[#F3F4F6] hover:text-[#364153]',
-            'active:bg-[#E5E7EB] active:scale-95',
-        ].join(' '),
+        secondary: secondaryWash,
+        tab: secondaryWash,
+        ghost,
+        outline: ghost,
     };
 
-    let variantClass;
-    switch (variant) {
-        case 'secondary':
-            variantClass = variants.secondary;
-            break;
-        case 'outline':
-            variantClass = variants.outline;
-            break;
-        case 'tab':
-            variantClass = variants.tab;
-            break;
-        case 'primary':
-        default:
-            variantClass = variants.primary;
-            break;
-    }
-
+    const disabledClass = disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer';
     const sizeClass = sizes[size] ?? sizes.md;
+    const variantClass = variants[variant] ?? variants.primary;
 
     return (
-        <button type={type} className={`${base} ${sizeClass} ${variantClass} ${className}`.trim()} {...props}>
+        <button
+            type={type}
+            disabled={disabled}
+            className={`${base} ${sizeClass} ${variantClass} ${disabledClass} ${className}`.trim()}
+            style={style}
+            {...props}
+        >
             {label}
         </button>
     );
 }
-
-export default Button;
