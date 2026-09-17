@@ -1,6 +1,6 @@
 /**
- * Pill buttons — brand palette (`#6E8C47`, `#364153`): `primary` (solid border + fill states),
- * `secondary` (soft green wash), `outline` (ghost).
+ * Pill buttons — brand palette (`#6E8C47`, `#364153`): `primary` (solid green),
+ * `secondary` (soft green wash), `outline` (solid black), `tab` (white bordered).
  *
  * @param {{
  *   label: string;
@@ -12,7 +12,7 @@
  */
 function Button({ label, variant = 'primary', size = 'md', className = '', type = 'button', ...props }) {
     const base =
-        'inline-flex items-center justify-center rounded-[12px] font-montserrat font-bold transition-all duration-200 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6E8C47] focus-visible:ring-offset-2 focus-visible:ring-offset-mc-cream dark:focus-visible:ring-offset-zinc-900';
+        'inline-flex items-center justify-center rounded-[12px] font-montserrat font-bold uppercase tracking-wider transition-all duration-200 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6E8C47] focus-visible:ring-offset-2 focus-visible:ring-offset-mc-cream disabled:cursor-not-allowed disabled:opacity-50 dark:focus-visible:ring-offset-zinc-900';
 
     const sizes = {
         md: 'h-[50px] min-h-[50px] px-6 text-[16px] leading-none',
@@ -37,12 +37,12 @@ function Button({ label, variant = 'primary', size = 'md', className = '', type 
             'dark:active:bg-[#6E8C47]/35',
         ].join(' '),
         outline: [
-            'border-0 bg-transparent shadow-none text-[#364153]',
-            'hover:bg-[#F3F4F6] hover:text-[#364153]',
-            'active:bg-[#E5E7EB] active:scale-95',
-            'dark:border-0 dark:bg-transparent dark:text-zinc-300',
-            'dark:hover:bg-zinc-800 dark:hover:text-zinc-100',
-            'dark:active:bg-zinc-700',
+            'border-2 border-[#1F2937] bg-[#1F2937] text-white shadow-sm',
+            'hover:border-[#111827] hover:bg-[#111827] hover:text-white',
+            'active:border-black active:bg-black active:text-white',
+            'dark:border-2 dark:border-[#1F2937] dark:bg-[#1F2937] dark:text-white',
+            'dark:hover:border-[#111827] dark:hover:bg-[#111827]',
+            'dark:active:border-black dark:active:bg-black',
         ].join(' '),
         tab: [
             'box-border border border-[#E5E7EB] bg-white text-[#364153] shadow-none',

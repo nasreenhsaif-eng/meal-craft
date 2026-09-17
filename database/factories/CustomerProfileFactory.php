@@ -34,6 +34,7 @@ class CustomerProfileFactory extends Factory
             'first_name' => fake()->firstName(),
             'last_name' => fake()->lastName(),
             'phone' => null,
+            'phone_verified_at' => now(),
             'contact_preference' => null,
             'weight_kg' => 72.5,
             'target_weight_kg' => 68.0,
@@ -52,6 +53,14 @@ class CustomerProfileFactory extends Factory
             'dislikes' => ['cilantro'],
             'onboarding_completed_at' => now(),
         ];
+    }
+
+    public function unverifiedSignup(): static
+    {
+        return $this->state(fn (): array => [
+            'phone' => '+973'.fake()->unique()->numerify('3#######'),
+            'phone_verified_at' => null,
+        ]);
     }
 
     public function withoutOnboarding(): static

@@ -1,7 +1,7 @@
-import SafetyAlerts from '../MealSystem/SafetyAlerts.jsx';
+import SafetyAlerts from './SafetyAlerts.jsx';
 
 export default {
-    title: 'MealCraft/Atoms/Meal System/SafetyAlerts',
+    title: 'Design System/02. Atoms/Badge/SafetyAlerts',
     component: SafetyAlerts,
     parameters: { layout: 'padded' },
 };

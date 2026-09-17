@@ -1,6 +1,6 @@
 import { Fragment, useMemo, useState } from 'react';
 import PillButton from '../Atoms/Button/Button.jsx';
-import NutrientBadge from '../Atoms/MealSystem/NutrientBadge.jsx';
+import NutrientBadge from '../MealSystem/NutrientBadge.jsx';
 import SafetyAlerts from '../MealSystem/SafetyAlerts.jsx';
 import { G6PD_HIGHLIGHT_BADGE } from '../../meal-library/mealSafetyAndSickle.ts';
 import { aggregateDayMicronutrientRows } from '../../meal-library/aggregateDayNutritionalData.ts';

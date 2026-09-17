@@ -1,6 +1,6 @@
 import { Fragment, type ReactElement, useState } from 'react';
 import SafetyAlerts from '../../MealSystem/SafetyAlerts.jsx';
-import NutrientBadge from '../../Atoms/MealSystem/NutrientBadge.jsx';
+import NutrientBadge from '../../MealSystem/NutrientBadge.jsx';
 import MealCraftLogo from '../../Atoms/Logo/MealCraftLogo.jsx';
 import { CyclePhaseTag, type CyclePhase } from './CyclePhaseTag';
 import { resolveMealImageUrl } from '../../../meal-library/resolveMealImageUrl.ts';

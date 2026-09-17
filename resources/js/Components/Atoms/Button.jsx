@@ -4,7 +4,7 @@
  * Variants:
  * - primary: solid brand dark green
  * - secondary: Figma hover wash — 50% `#6E8C47` mixed with white (not alpha over the parent)
- * - outline: same as ghost (transparent + ghost hover only)
+ * - outline: solid black (not ghost)
  * - ghost: transparent, minimal affordance
  */
 export default function Button({
@@ -42,7 +42,11 @@ export default function Button({
             'active:border-[#6E8C47] active:bg-[#6E8C47] active:text-white active:scale-[0.98]',
         ].join(' '),
         ghost,
-        outline: ghost,
+        outline: [
+            'border border-[#1F2937] bg-[#1F2937] text-white shadow-sm',
+            'hover:border-[#111827] hover:bg-[#111827] hover:shadow-md hover:scale-[1.02]',
+            'active:border-black active:bg-black active:shadow-inner active:scale-[0.98]',
+        ].join(' '),
     };
 
     const disabledClass = disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer';

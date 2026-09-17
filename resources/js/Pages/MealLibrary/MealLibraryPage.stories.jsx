@@ -98,7 +98,7 @@ export function MealLibraryStoryShell({ children }) {
 }
 
 export default {
-    title: 'MealCraft/Pages/Admin/MealLibrary',
+    title: 'Design System/05. Templates & Pages/Admin/MealLibrary',
     component: MealLibraryPageContent,
     parameters: {
         layout: 'fullscreen',

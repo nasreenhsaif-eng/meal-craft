@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { router, useForm, usePage } from '@inertiajs/react';
-import { GenderOptionCard, genderOptionIcon } from '../../Components/Molecules/Onboarding/GenderOptionCard.jsx';
+import { GenderOptionButton, genderOptionIcon } from '../../Components/Atoms/Button/GenderOptionButton.jsx';
 import { onboardingFromPage } from '../../meal-craft/mealCraftPageProps.js';
 import { useOnboardingStore } from '../../meal-craft/onboarding/OnboardingProvider.jsx';
 import OnboardingStepFrame from '../../Components/Molecules/Onboarding/OnboardingStepFrame.jsx';
@@ -94,7 +94,7 @@ export function OnboardingGenderInner({
                             const busy = pendingValue === option.value && isAdvancing;
 
                             return (
-                                <GenderOptionCard
+                                <GenderOptionButton
                                     key={option.value}
                                     label={option.label}
                                     selected={selected}

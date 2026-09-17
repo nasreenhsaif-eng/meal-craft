@@ -2,7 +2,7 @@ import { FulfillmentSelectionInner } from '../Checkout/FulfillmentSelection.jsx'
 import { withOnboardingMobileFrame } from './onboardingStoryDecorators.jsx';
 
 export default {
-    title: 'MealCraft/Pages/Onboarding/FulfillmentSelection',
+    title: 'Design System/05. Templates & Pages/Onboarding/FulfillmentSelection',
     component: FulfillmentSelectionInner,
     parameters: {
         layout: 'fullscreen',

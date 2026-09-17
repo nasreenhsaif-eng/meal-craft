@@ -35,7 +35,7 @@ function CurationPanelShell({ children }) {
 }
 
 export default {
-    title: 'MealCraft/Consultation/ChooseYourMeals',
+    title: 'Design System/04. Organisms/ChooseYourMeals',
     component: ChooseYourMeals,
     parameters: {
         layout: 'fullscreen',

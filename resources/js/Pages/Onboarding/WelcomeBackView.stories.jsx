@@ -8,7 +8,7 @@ const NASREEN_PROFILE = {
 };
 
 export default {
-    title: 'MealCraft/Pages/Onboarding/WelcomeBack',
+    title: 'Design System/05. Templates & Pages/Onboarding/WelcomeBack',
     component: WelcomeBackInner,
     parameters: {
         layout: 'fullscreen',

@@ -1,7 +1,7 @@
-import DietaryTags, { DIETARY_TAG_OPTIONS } from '../MealSystem/DietaryTags.jsx';
+import DietaryTags, { DIETARY_TAG_OPTIONS } from './DietaryTags.jsx';
 
 export default {
-    title: 'MealCraft/Atoms/Meal System/DietaryTags',
+    title: 'Design System/02. Atoms/Badge/DietaryTags',
     component: DietaryTags,
     parameters: { layout: 'padded' },
 };

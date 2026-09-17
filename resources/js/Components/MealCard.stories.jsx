@@ -19,7 +19,7 @@ function MealCardStoryCanvas({ children }) {
 }
 
 export default {
-    title: 'MealCraft/Components/MealCard',
+    title: 'Design System/04. Organisms/DataCard/MealCard',
     component: MealCard,
     parameters: {
         layout: 'fullscreen',

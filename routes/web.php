@@ -17,6 +17,7 @@ use App\Http\Controllers\Api\AdaptedMenuController;
 use App\Http\Controllers\Api\CustomerCraftPlanController;
 use App\Http\Controllers\Api\IngredientDetailViewController;
 use App\Http\Controllers\Api\MealDetailViewController;
+use App\Http\Controllers\Auth\JoinVerificationController;
 use App\Http\Controllers\Auth\PortalChoiceController;
 use App\Http\Controllers\Auth\WelcomeController;
 use App\Http\Controllers\Customer\CheckoutController;
@@ -47,6 +48,14 @@ Route::middleware('guest')->group(function (): void {
 });
 
 Route::view('/sign-out', 'pages::auth.sign-out')->name('sign-out');
+
+Route::middleware('auth')->group(function (): void {
+    Route::get('/join/verify', [JoinVerificationController::class, 'show'])->name('join.verify');
+    Route::post('/join/verify', [JoinVerificationController::class, 'store'])->name('join.verify.store');
+    Route::post('/join/verify/resend', [JoinVerificationController::class, 'resend'])
+        ->middleware('throttle:3,1')
+        ->name('join.verify.resend');
+});
 
 Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('/login/portal-choice', [PortalChoiceController::class, 'show'])
@@ -124,7 +133,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         })->name('recipes.redirect.edit');
     });
 
-    Route::middleware('customer')->group(function (): void {
+    Route::middleware(['customer', 'signup.verified'])->group(function (): void {
         Route::post('/onboarding/reset', [OnboardingController::class, 'resetForTesting'])
             ->name('onboarding.reset');
 

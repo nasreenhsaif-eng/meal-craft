@@ -12,6 +12,10 @@ final class PostAuthenticationRedirect
 {
     public static function pathFor(User $user): string
     {
+        if ($user->needsSignupVerification()) {
+            return route('join.verify', absolute: false);
+        }
+
         if ($user->isAdmin()) {
             return route('login.portal-choice', absolute: false);
         }

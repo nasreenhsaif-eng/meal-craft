@@ -1,4 +1,4 @@
-import { SICKLE_CELL_BADGE_TOOLTIPS } from '../../../meal-library/sickleCellNutrientRdi.ts';
+import { SICKLE_CELL_BADGE_TOOLTIPS } from '../../meal-library/sickleCellNutrientRdi.ts';
 
 const NUTRIENT_STYLES = {
     Folate: { label: 'FOLATE', color: '#8F55A8' },

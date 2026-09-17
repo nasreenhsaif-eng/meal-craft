@@ -114,7 +114,7 @@ function Section({ title, children }) {
     return (
         <section className="rounded-[12px] border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
             <h2 className="m-0 font-montserrat text-base font-bold tracking-tight text-[#262A22]">{title}</h2>
-            <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">{children}</div>
+            <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 [&>*]:min-w-0">{children}</div>
         </section>
     );
 }

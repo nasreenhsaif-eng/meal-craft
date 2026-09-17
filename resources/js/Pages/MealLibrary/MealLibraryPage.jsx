@@ -16,7 +16,7 @@ import CSVUploader from '../../Components/CSVUploader.jsx';
 import RoundIconButton from '../../Components/Atoms/Icons/RoundIconButton.jsx';
 import { IconLayoutGrid, IconLayoutList } from '../../Components/Atoms/SvgIcons.jsx';
 import SquareCheckbox from '../../Components/Atoms/Icons/SquareCheckbox.jsx';
-import NutrientBadge from '../../Components/Atoms/MealSystem/NutrientBadge.jsx';
+import NutrientBadge from '../../Components/MealSystem/NutrientBadge.jsx';
 import { aggregateNutritionFromIngredientRows, isPureCookingFatName, isVegetableOilName, normalizeIngredientKey, PURE_OIL_DENSITY_G_PER_ML } from '../../meal-library/aggregateIngredientNutrition.ts';
 import { calculateMealNutrition, calorieWarningsForCategory, resolveMealLibraryCategory } from '../../meal-library/calculateMealNutrition.ts';
 import { resolveMealImageUrl } from '../../meal-library/resolveMealImageUrl.ts';

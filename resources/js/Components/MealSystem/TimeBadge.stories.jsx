@@ -1,7 +1,7 @@
-import TimeBadge from '../MealSystem/TimeBadge.jsx';
+import TimeBadge from './TimeBadge.jsx';
 
 export default {
-    title: 'MealCraft/Atoms/Meal System/TimeBadge',
+    title: 'Design System/02. Atoms/Badge/TimeBadge',
     component: TimeBadge,
     parameters: { layout: 'padded' },
     argTypes: {

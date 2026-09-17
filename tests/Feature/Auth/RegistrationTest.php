@@ -18,12 +18,13 @@ test('new users can register', function () {
     $response = $this->post(route('register.store'), [
         'name' => 'John Doe',
         'email' => 'test@example.com',
+        'phone' => '+97333004444',
         'password' => 'password',
         'password_confirmation' => 'password',
     ]);
 
     $response->assertSessionHasNoErrors()
-        ->assertRedirect(route('onboarding.show', ['step' => 'gender'], absolute: false));
+        ->assertRedirect(route('join.verify'));
 
     $this->assertAuthenticated();
 });

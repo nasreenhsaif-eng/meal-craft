@@ -3,7 +3,7 @@ import RoundIconButton from './RoundIconButton.jsx';
 import { IconDelete, IconEdit, IconLayoutGrid, IconLayoutList } from '../SvgIcons.jsx';
 
 export default {
-    title: 'MealCraft/Atoms/Buttons & Links/Icons/IconButton',
+    title: 'Design System/02. Atoms/Button/IconButton',
     component: RoundIconButton,
     parameters: { layout: 'padded' },
     argTypes: {

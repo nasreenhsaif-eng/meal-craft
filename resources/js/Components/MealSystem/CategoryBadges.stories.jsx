@@ -1,7 +1,7 @@
-import CategoryBadge from '../MealSystem/CategoryBadges.jsx';
+import CategoryBadge from './CategoryBadges.jsx';
 
 export default {
-    title: 'MealCraft/Atoms/Meal System/CategoryBadges',
+    title: 'Design System/02. Atoms/Badge/CategoryBadges',
     component: CategoryBadge,
     parameters: { layout: 'padded' },
     argTypes: {

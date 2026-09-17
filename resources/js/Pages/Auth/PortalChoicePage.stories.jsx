@@ -2,7 +2,7 @@ import { fn } from 'storybook/test';
 import PortalChoicePage from './PortalChoicePage';
 
 export default {
-    title: 'MealCraft/Pages/Auth/PortalChoicePage',
+    title: 'Design System/05. Templates & Pages/Auth/PortalChoicePage',
     component: PortalChoicePage,
     parameters: {
         layout: 'fullscreen',

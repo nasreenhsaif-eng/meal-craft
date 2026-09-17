@@ -1,7 +1,7 @@
 import WelcomePage from './WelcomePage';
 
 export default {
-    title: 'MealCraft/Pages/Auth/WelcomePage',
+    title: 'Design System/05. Templates & Pages/Auth/WelcomePage',
     component: WelcomePage,
     parameters: {
         layout: 'fullscreen',

@@ -4,7 +4,7 @@ import { withOnboardingMobileFrame } from './onboardingStoryDecorators.jsx';
 import { ONBOARDING_STEPS } from './onboardingSteps.js';
 
 export default {
-    title: 'MealCraft/Pages/Onboarding/FoodFilterView',
+    title: 'Design System/05. Templates & Pages/Onboarding/FoodFilterView',
     component: OnboardingFoodFilterInner,
     parameters: {
         layout: 'fullscreen',

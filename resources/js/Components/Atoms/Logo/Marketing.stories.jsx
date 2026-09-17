@@ -4,7 +4,7 @@ import { mealCraftLogoPageDecorator } from './logoStoryDecorators.jsx';
 /** Isolated marketing tier — horizontal + vertical lockups. */
 /** @type {import('@storybook/react-vite').Meta} */
 const meta = {
-    title: 'MealCraft/Identity/All Variants/Marketing',
+    title: 'Design System/01. Foundations/Logos/All Variants/Marketing',
     component: MealCraftLogo,
     decorators: [mealCraftLogoPageDecorator],
     parameters: {

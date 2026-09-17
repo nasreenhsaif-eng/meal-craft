@@ -8,7 +8,7 @@ import MealCardClientViewNano from '../../Components/MealCardClientViewNano.jsx'
 const mealOptionsDemo = consultationDeckOptionsForSlotKey(consultationMeals, 'meal');
 
 export default {
-    title: 'MealCraft/Pages/Consultation',
+    title: 'Design System/05. Templates & Pages/Consultation',
     component: CraftedForYouPage,
     parameters: {
         layout: 'fullscreen',

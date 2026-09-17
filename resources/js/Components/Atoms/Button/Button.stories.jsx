@@ -17,7 +17,7 @@ const buttonLabelSpecs = [
 ];
 
 export default {
-    title: 'MealCraft/Atoms/Buttons & Links/Buttons',
+    title: 'Design System/02. Atoms/Button',
     component: Button,
     decorators: [
         (Story) => (

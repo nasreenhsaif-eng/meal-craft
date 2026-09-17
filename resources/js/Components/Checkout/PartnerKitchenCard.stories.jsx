@@ -1,7 +1,7 @@
 import PartnerKitchenCard from './PartnerKitchenCard.jsx';
 
 export default {
-    title: 'MealCraft/Components/Checkout/PartnerKitchenCard',
+    title: 'Design System/04. Organisms/DataCard/PartnerKitchenCard',
     component: PartnerKitchenCard,
     parameters: {
         layout: 'padded',

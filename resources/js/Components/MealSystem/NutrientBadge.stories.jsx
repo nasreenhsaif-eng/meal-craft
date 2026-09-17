@@ -1,7 +1,7 @@
 import NutrientBadge, { NUTRIENT_BADGE_TYPES } from './NutrientBadge.jsx';
 
 export default {
-    title: 'MealCraft/Atoms/Meal System/NutrientBadge',
+    title: 'Design System/02. Atoms/Badge/NutrientBadge',
     component: NutrientBadge,
     parameters: { layout: 'padded' },
     argTypes: {

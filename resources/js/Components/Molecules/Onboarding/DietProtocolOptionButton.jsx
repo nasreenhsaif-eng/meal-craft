@@ -1,2 +1,2 @@
-export { OnboardingOptionButton as DietProtocolOptionButton } from './OnboardingOptionButton.jsx';
-export { default } from './OnboardingOptionButton.jsx';
+export { OnboardingOptionButton as DietProtocolOptionButton } from '../../Atoms/Button/OnboardingOptionButton.jsx';
+export { default } from '../../Atoms/Button/OnboardingOptionButton.jsx';

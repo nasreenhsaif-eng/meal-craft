@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import MealIngredientRowsEditor from '../../Components/MealPlan/MealIngredientRowsEditor.jsx';
 import TextInput from '../../Components/Atoms/TextInput/TextInput.jsx';
-import NutrientBadge from '../../Components/Atoms/MealSystem/NutrientBadge.jsx';
+import NutrientBadge from '../../Components/MealSystem/NutrientBadge.jsx';
 import { MealNutritionSummaryTable } from '../../Components/Molecules/MealDetailView/MealDetailView.tsx';
 import { aggregateNutritionFromIngredientRows } from '../../meal-library/aggregateIngredientNutrition.ts';
 import {

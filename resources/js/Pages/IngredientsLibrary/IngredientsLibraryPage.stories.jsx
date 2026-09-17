@@ -124,7 +124,7 @@ function setInputValue(input, value) {
 }
 
 export default {
-    title: 'MealCraft/Pages/Admin/IngredientsLibrary',
+    title: 'Design System/05. Templates & Pages/Admin/IngredientsLibrary',
     component: IngredientsLibraryPageView,
     parameters: {
         layout: 'fullscreen',

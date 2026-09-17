@@ -1,7 +1,7 @@
 import LoginPage from './LoginPage';
 
 export default {
-    title: 'MealCraft/Pages/Auth/LoginPage',
+    title: 'Design System/05. Templates & Pages/Auth/LoginPage',
     component: LoginPage,
     parameters: {
         layout: 'fullscreen',

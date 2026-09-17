@@ -130,7 +130,7 @@ function OptionsModalDemo({
 }
 
 export default {
-    title: 'MealCraft/Consultation/ProtocolSelectedMeals',
+    title: 'Design System/04. Organisms/ProtocolSelectedMeals',
     parameters: { layout: 'fullscreen' },
 };
 
