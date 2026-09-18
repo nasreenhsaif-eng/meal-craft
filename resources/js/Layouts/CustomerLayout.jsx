@@ -20,7 +20,7 @@ export default function CustomerLayout({
             className={
                 isOnboarding
                     ? 'flex w-full items-center justify-between py-3 md:rounded-xl md:border md:border-gray-100 md:bg-white md:px-5 md:py-4 md:shadow-sm'
-                    : 'flex w-full items-center justify-between border-b border-gray-100 bg-white px-6 py-4'
+                    : 'flex w-full items-center justify-between border-b border-gray-100 bg-white px-3 py-4 md:px-6'
             }
         >
             <div className="flex min-w-0 items-center gap-3">
@@ -54,7 +54,7 @@ export default function CustomerLayout({
     return (
         <div className="min-h-screen w-full bg-[#F8F9F6] font-sans text-[#262A22]">
             {header}
-            <main className="mx-auto w-full max-w-4xl px-6 py-10">{children}</main>
+            <main className="mx-auto w-full max-w-4xl px-3 py-6 md:px-6 md:py-10">{children}</main>
         </div>
     );
 }

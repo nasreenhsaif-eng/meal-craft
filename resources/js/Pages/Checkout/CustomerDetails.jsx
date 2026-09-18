@@ -1,6 +1,6 @@
 import { Link, router, useForm, usePage } from '@inertiajs/react';
 import Button from '../../Components/Atoms/Button/Button.jsx';
-import CustomerIntakeForm from '../../Components/CustomerIntake/CustomerIntakeForm.jsx';
+import CustomerCheckoutDetailsReview from '../../Components/CustomerIntake/CustomerCheckoutDetailsReview.jsx';
 import CustomerAppHeaderActions from '../../Components/Molecules/Customer/CustomerAppHeaderActions.jsx';
 import CustomerInertiaShell from '../../Layouts/CustomerInertiaShell.jsx';
 import { resolveInertiaLayoutChild } from '../../lib/resolveInertiaLayoutChild.js';
@@ -15,6 +15,9 @@ import { resolveInertiaLayoutChild } from '../../lib/resolveInertiaLayoutChild.j
  * @param {string} [props.submitUrl]
  * @param {string} [props.deliveryUrl]
  * @param {string} [props.homeUrl]
+ * @param {string} [props.profileEditUrl]
+ * @param {boolean} [props.phoneEditable]
+ * @param {boolean} [props.declarationAccepted]
  */
 export default function CustomerDetails({
     form,
@@ -25,10 +28,16 @@ export default function CustomerDetails({
     submitUrl = '/checkout/details',
     deliveryUrl = '/checkout/delivery',
     homeUrl = '/app',
+    profileEditUrl = '/onboarding/gender',
+    phoneEditable = false,
+    declarationAccepted = false,
 }) {
     const page = usePage();
     const flashSuccess = typeof page.props?.flash?.success === 'string' ? page.props.flash.success : null;
-    const { data, setData, post, processing, errors } = useForm({ ...form });
+    const { data, setData, post, processing, errors } = useForm({
+        ...form,
+        declaration_accepted: declarationAccepted,
+    });
 
     return (
         <CustomerInertiaShell customerName={customerName} headerActions={<CustomerAppHeaderActions />}>
@@ -45,13 +54,14 @@ export default function CustomerDetails({
                     Your details
                 </h1>
                 <p className="mt-3 font-body text-sm leading-relaxed text-[#555555] sm:text-base">
-                    Confirm how we should reach you, where to deliver, and the plan you want to start.
+                    Review your onboarding details, complete delivery information, and confirm everything is
+                    correct.
                 </p>
                 {flashSuccess ? (
                     <p className="mt-4 font-body text-sm font-medium text-[#5A6B44]">{flashSuccess}</p>
                 ) : null}
                 <div className="mt-6 w-full min-w-0">
-                    <CustomerIntakeForm
+                    <CustomerCheckoutDetailsReview
                         data={data}
                         setData={setData}
                         errors={errors}
@@ -59,7 +69,8 @@ export default function CustomerDetails({
                         options={options}
                         uniqueCode={uniqueCode}
                         intakeSubmissionId={intakeSubmissionId}
-                        submitLabel="Save details"
+                        profileEditUrl={profileEditUrl}
+                        phoneEditable={phoneEditable}
                         onSubmit={() => post(submitUrl)}
                     />
                 </div>

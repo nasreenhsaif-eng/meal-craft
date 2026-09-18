@@ -51,7 +51,7 @@ export function WelcomeBackInner({
 
     return (
         <CustomerInertiaShell customerName={customerName} headerActions={headerActions}>
-            <div className="w-full min-w-0 rounded-[16px] border border-gray-200 bg-white p-8 shadow-sm">
+            <div className="w-full min-w-0 rounded-[16px] border border-gray-200 bg-white px-4 py-6 shadow-sm sm:p-8">
                 <h1 className="font-montserrat text-3xl font-semibold text-[#262A22]">
                     Welcome back{customerName ? `, ${customerName}` : ''}
                 </h1>
@@ -60,7 +60,7 @@ export function WelcomeBackInner({
                 </p>
 
                 {profile ? (
-                    <dl className="mt-8 grid w-full gap-4 rounded-[12px] bg-[#F8F9F6] p-5 text-sm sm:grid-cols-2">
+                    <dl className="mt-8 grid w-full gap-4 rounded-[12px] bg-[#F8F9F6] p-4 text-sm sm:grid-cols-2 sm:p-5">
                         <div className="min-w-0">
                             <dt className="text-[#555555]">Daily calories</dt>
                             <dd className="mt-1 text-lg font-semibold text-[#262A22]">{dailyCaloriesLabel ?? '—'}</dd>
@@ -79,9 +79,9 @@ export function WelcomeBackInner({
                     role="group"
                     aria-label="Welcome back options"
                 >
-                    <OnboardingOptionButton label="Edit your profile" onSelect={onEditProfile} />
-                    <OnboardingOptionButton label="Edit your meals plan" onSelect={onEditMealsPlan} />
-                    <OnboardingOptionButton label="View meal plan summary" onSelect={onViewSummary} />
+                    <OnboardingOptionButton label="Edit your profile" size="sm" onSelect={onEditProfile} />
+                    <OnboardingOptionButton label="Edit your meals plan" size="sm" onSelect={onEditMealsPlan} />
+                    <OnboardingOptionButton label="View meal plan summary" size="sm" onSelect={onViewSummary} />
                 </div>
             </div>
         </CustomerInertiaShell>

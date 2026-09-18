@@ -15,7 +15,7 @@ class StoreCheckoutDetailsRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
-        $this->merge(CustomerIntake::prepare($this->all()));
+        $this->merge(CustomerIntake::prepareCheckout($this->all()));
     }
 
     /**
@@ -23,6 +23,6 @@ class StoreCheckoutDetailsRequest extends FormRequest
      */
     public function rules(): array
     {
-        return CustomerIntake::rules($this->user()?->id, true);
+        return CustomerIntake::checkoutRules($this->user()?->customerProfile);
     }
 }

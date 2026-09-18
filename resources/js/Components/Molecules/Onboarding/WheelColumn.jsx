@@ -36,6 +36,7 @@ function findSelectedIndex(items, value) {
  *   ariaLabel: string;
  *   unitLabel?: string;
  *   columnClassName?: string;
+ *   compact?: boolean;
  *   visible?: boolean;
  * }} props
  */
@@ -47,6 +48,7 @@ export function WheelColumn({
     ariaLabel,
     unitLabel,
     columnClassName = '',
+    compact = false,
     visible = true,
 }) {
     const listRef = useRef(null);
@@ -198,7 +200,10 @@ export function WheelColumn({
                                 backfaceVisibility: 'hidden',
                             }}
                             className={[
-                                'mx-1 flex shrink-0 snap-center items-center justify-center rounded-[10px] px-1 font-montserrat text-base leading-none will-change-transform sm:mx-2 sm:px-2',
+                                'flex shrink-0 snap-center items-center justify-center rounded-[10px] font-montserrat text-base leading-none will-change-transform',
+                                compact
+                                    ? 'mx-0.5 px-0.5'
+                                    : 'mx-1 px-1 sm:mx-2 sm:px-2',
                                 visual.tier === 'selected'
                                     ? 'font-bold text-[#364153]'
                                     : 'font-medium text-[#6B7280]',
@@ -207,7 +212,14 @@ export function WheelColumn({
                         >
                             <span>{formatItem(item)}</span>
                             {visual.tier === 'selected' && unitLabel ? (
-                                <span className="ml-1.5 shrink-0 text-sm font-semibold text-[#364153]">{unitLabel}</span>
+                                <span
+                                    className={[
+                                        'shrink-0 font-semibold text-[#364153]',
+                                        compact ? 'ml-1 text-xs' : 'ml-1.5 text-sm',
+                                    ].join(' ')}
+                                >
+                                    {unitLabel}
+                                </span>
                             ) : null}
                         </li>
                     );

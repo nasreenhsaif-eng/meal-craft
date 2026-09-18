@@ -70,6 +70,7 @@ class CustomerProfile extends Model
         'uncalculated_plan',
         'unique_code',
         'intake_submission_id',
+        'intake_declaration_accepted_at',
         'onboarding_completed_at',
     ];
 
@@ -107,6 +108,7 @@ class CustomerProfile extends Model
             'planned_start_date' => 'date',
             'follow_instagram' => 'boolean',
             'uncalculated_plan' => 'boolean',
+            'intake_declaration_accepted_at' => 'datetime',
         ];
     }
 

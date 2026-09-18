@@ -57,10 +57,10 @@ class CheckoutController extends Controller
 
         abort_if($profile === null, 404);
 
-        CustomerIntake::apply($profile, $request->validated(), assignSubmissionId: true);
+        CustomerIntake::applyCheckout($profile, $request->validated());
 
         return redirect()
             ->route('checkout.details')
-            ->with('success', 'Your details were saved.');
+            ->with('success', 'Your details were confirmed.');
     }
 }

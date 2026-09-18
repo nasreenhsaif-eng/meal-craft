@@ -1,4 +1,5 @@
 import { Link, router } from '@inertiajs/react';
+import { useEffect, useState } from 'react';
 import Button from '../../Components/Atoms/Button/Button.jsx';
 import CustomerAppHeaderActions from '../../Components/Molecules/Customer/CustomerAppHeaderActions.jsx';
 import CustomerInertiaShell from '../../Layouts/CustomerInertiaShell.jsx';
@@ -78,6 +79,18 @@ export function FulfillmentSelectionInner({
     recipesUrl = '/meal-plan/recipes',
     headerActions = null,
 }) {
+    const [comingSoonVisible, setComingSoonVisible] = useState(false);
+
+    useEffect(() => {
+        if (!comingSoonVisible) {
+            return undefined;
+        }
+
+        const timer = window.setTimeout(() => setComingSoonVisible(false), 2200);
+
+        return () => window.clearTimeout(timer);
+    }, [comingSoonVisible]);
+
     return (
         <CustomerInertiaShell customerName={customerName} headerActions={headerActions}>
             <div className="mx-auto w-full max-w-5xl">
@@ -118,10 +131,18 @@ export function FulfillmentSelectionInner({
                             'Ingredient breakdowns matched to your targets',
                         ]}
                         buttonLabel="Unlock Digital Plan & Recipes"
-                        onSelect={() => router.visit(recipesUrl)}
+                        onSelect={() => setComingSoonVisible(true)}
                     />
                 </div>
             </div>
+
+            {comingSoonVisible ? (
+                <div className="fixed bottom-6 left-1/2 z-[110] w-full max-w-[640px] -translate-x-1/2 px-4">
+                    <div className="rounded-[12px] border border-gray-200 bg-white px-4 py-3 shadow-lg">
+                        <p className="font-body text-sm text-[#555555]">Coming soon</p>
+                    </div>
+                </div>
+            ) : null}
         </CustomerInertiaShell>
     );
 }

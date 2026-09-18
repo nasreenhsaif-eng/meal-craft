@@ -8,6 +8,8 @@
  *   selected?: boolean;
  *   disabled?: boolean;
  *   busy?: boolean;
+ *   size?: 'md' | 'sm';
+ *   align?: 'start' | 'center';
  *   onSelect?: () => void;
  *   describedBy?: string;
  *   className?: string;
@@ -19,10 +21,15 @@ export function OnboardingOptionButton({
     selected = false,
     disabled = false,
     busy = false,
+    size = 'md',
+    align = 'start',
     onSelect,
     describedBy,
     className = '',
 }) {
+    const sizeClass = size === 'sm' ? 'h-[52px]' : 'h-[68px]';
+    const isCentered = align === 'center';
+
     return (
         <button
             type="button"
@@ -32,7 +39,9 @@ export function OnboardingOptionButton({
             aria-busy={busy}
             aria-describedby={selected && describedBy ? describedBy : undefined}
             className={[
-                'box-border flex h-[68px] w-full min-w-0 items-center rounded-[12px] border-0 px-4 py-2 text-left shadow-none',
+                'box-border flex w-full min-w-0 items-center rounded-[12px] border-0 px-4 py-2 shadow-none',
+                sizeClass,
+                isCentered ? 'justify-center text-center' : 'text-left',
                 icon ? 'gap-3' : '',
                 'font-montserrat text-[13px] font-bold uppercase leading-tight tracking-wide text-[#364153]',
                 'transition-all duration-200 ease-in-out',
@@ -49,7 +58,7 @@ export function OnboardingOptionButton({
                     {icon}
                 </span>
             ) : null}
-            <span className="min-w-0 flex-1">{label}</span>
+            <span className={isCentered ? 'min-w-0' : 'min-w-0 flex-1'}>{label}</span>
             {busy ? (
                 <span
                     className="inline-flex h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-current border-t-transparent"

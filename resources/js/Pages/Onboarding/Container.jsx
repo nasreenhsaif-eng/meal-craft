@@ -39,6 +39,10 @@ function nextButtonLabel(step) {
         return 'Confirm';
     }
 
+    if (step === 'gender') {
+        return 'Continue';
+    }
+
     return 'Next';
 }
 
@@ -141,6 +145,13 @@ export default function Container() {
         setProcessing(true);
 
         const isFinalStep = activeStep === 'food_filters';
+        const nextVisibleSteps =
+            activeStep === 'gender'
+                ? getVisibleOnboardingSteps(steps, {
+                      gender: resolvedState.gender,
+                      dietProtocol: resolvedState.dietProtocol,
+                  })
+                : visibleSteps;
 
         router.post(postUrl, payload, {
             preserveState: !isFinalStep,
@@ -151,7 +162,7 @@ export default function Container() {
                     return;
                 }
 
-                const next = getNextTabStep(activeStep, visibleSteps);
+                const next = getNextTabStep(activeStep, nextVisibleSteps);
 
                 if (next) {
                     patch({ currentStep: next });
@@ -165,50 +176,10 @@ export default function Container() {
         onboarding.urls,
         computeTargetsBeforeSummary,
         visibleSteps,
+        steps,
         patch,
         visitStep,
     ]);
-
-    const handleGenderSelect = useCallback(
-        (value) => {
-            if (processing) {
-                return;
-            }
-
-            patch({ gender: value });
-            setValidationErrors({});
-
-            const urls = onboarding.urls ?? {};
-            const postUrl = resolveOnboardingStepPostUrl('gender', urls);
-
-            if (!postUrl) {
-                return;
-            }
-
-            const nextVisibleSteps = getVisibleOnboardingSteps(steps, { gender: value });
-
-            setProcessing(true);
-
-            router.post(
-                postUrl,
-                { sex: value },
-                {
-                    preserveState: true,
-                    preserveScroll: true,
-                    onFinish: () => setProcessing(false),
-                    onSuccess: () => {
-                        const next = getNextTabStep('gender', nextVisibleSteps);
-
-                        if (next) {
-                            patch({ currentStep: next });
-                            visitStep(next);
-                        }
-                    },
-                },
-            );
-        },
-        [processing, patch, onboarding.urls, steps, visitStep],
-    );
 
     const handleDietProtocolSelect = useCallback(
         (value) => {
@@ -279,7 +250,7 @@ export default function Container() {
                 {...sharedInner}
                 sex={state.gender}
                 options={options.sex?.length ? options.sex : undefined}
-                onSexSelect={handleGenderSelect}
+                onSexChange={(value) => patch({ gender: value })}
             />
         ),
         period_tracking: (

@@ -2,6 +2,7 @@ import { OnboardingOptionButton } from './OnboardingOptionButton.jsx';
 
 /**
  * Male / female choice — same pale-green selection button as diet protocol.
+ * Icon + label are centered as a pair.
  *
  * @param {{
  *   label: string;
@@ -30,6 +31,7 @@ export function GenderOptionButton({
             busy={busy}
             onSelect={onSelect}
             icon={icon}
+            align="center"
             className={className}
         />
     );
