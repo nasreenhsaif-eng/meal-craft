@@ -27,23 +27,21 @@ const preview = {
                 mode === 'dark' ? '#111827' : mode === 'white' ? '#FFFFFF' : '#F9FAFB';
             const color = mode === 'dark' ? '#e5e7eb' : '#374151';
 
+            // Avoid position:fixed + overflow:auto — it traps touch/wheel scroll inside
+            // Storybook's mobile viewport iframe. Let the document scroll instead.
             return React.createElement(
                 'div',
                 {
                     style: {
-                        position: 'fixed',
-                        inset: 0,
-                        backgroundColor,
-                        color,
                         boxSizing: 'border-box',
                         width: '100%',
                         minWidth: '100%',
                         maxWidth: 'none',
-                        minHeight: '100vh',
-                        height: '100%',
+                        minHeight: '100%',
                         margin: 0,
                         padding: 0,
-                        overflow: 'auto',
+                        backgroundColor,
+                        color,
                     },
                 },
                 React.createElement(Story),
@@ -199,8 +197,6 @@ const preview = {
                         `${organismsBase}DataCard/PartnerKitchenCard`,
                         `${organismsBase}DataCard/MealDetailView`,
                         `${organismsBase}Table`,
-                        `${organismsBase}ChooseYourMeals`,
-                        `${organismsBase}ProtocolSelectedMeals`,
                     ];
                     const ia = organismsOrder.findIndex((t) => ta === t || ta.startsWith(`${t}/`));
                     const ib = organismsOrder.findIndex((t) => tb === t || tb.startsWith(`${t}/`));
@@ -215,6 +211,41 @@ const preview = {
                 const inPagesA = ta.startsWith(pagesBase);
                 const inPagesB = tb.startsWith(pagesBase);
                 if (inPagesA && inPagesB) {
+                    const consultationBase = `${pagesBase}Consultation`;
+                    const bothConsultation =
+                        (ta === consultationBase || ta.startsWith(`${consultationBase}/`)) &&
+                        (tb === consultationBase || tb.startsWith(`${consultationBase}/`));
+
+                    if (bothConsultation) {
+                        const consultationOrder = [
+                            `${consultationBase}`,
+                            `${consultationBase}/ChooseYourMeals`,
+                            `${consultationBase}/ProtocolSelectedMeals`,
+                            `${consultationBase}/ProtocolFixedChoiceSides`,
+                            `${consultationBase}/DayNutritionalSummaryPanel`,
+                            `${consultationBase}/CaloricThresholdNotice`,
+                        ];
+                        const ia = consultationOrder.findIndex((t) => {
+                            if (t === consultationBase) {
+                                return ta === consultationBase;
+                            }
+
+                            return ta === t || ta.startsWith(`${t}/`);
+                        });
+                        const ib = consultationOrder.findIndex((t) => {
+                            if (t === consultationBase) {
+                                return tb === consultationBase;
+                            }
+
+                            return tb === t || tb.startsWith(`${t}/`);
+                        });
+                        const ra = ia === -1 ? 1000 : ia;
+                        const rb = ib === -1 ? 1000 : ib;
+                        if (ra !== rb) {
+                            return ra - rb;
+                        }
+                    }
+
                     const pagesOrder = [
                         `${pagesBase}DashboardLayout`,
                         `${pagesBase}SettingsView`,

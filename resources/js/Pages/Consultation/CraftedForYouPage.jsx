@@ -147,6 +147,7 @@ function slotId(dayIdx, slotKey, index) {
  *   mealLibraryRevision?: number;
  *   initialPlanTier?: number | null;
  *   disableAdaptedMenuFetch?: boolean;
+ *   embedInScrollParent?: boolean;
  *   initialEditDraft?: {
  *     craftKey?: string;
  *     weekDuration?: number;
@@ -178,6 +179,7 @@ export default function CraftedForYouPage({
     mealLibraryRevision = 0,
     initialPlanTier = null,
     disableAdaptedMenuFetch = false,
+    embedInScrollParent = false,
     initialEditDraft = null,
     dietProtocol = null,
     sex = null,
@@ -1506,14 +1508,20 @@ export default function CraftedForYouPage({
         return `Please select: ${missing.join(', ')}.`;
     }, [craft, curationDay, requiredSlotsByCraft, selectedByDay, businessSideChoiceByDay]);
 
+    const mobileNavBarClass = embedInScrollParent
+        ? 'mt-8 flex items-center justify-between gap-3 border-t border-gray-200/70 bg-[#F8F9F6] p-3 sm:mt-6 sm:border-t-0 sm:bg-transparent sm:p-0'
+        : 'mt-8 flex items-center justify-between gap-3 fixed bottom-0 left-0 right-0 z-40 border-t border-gray-200/70 bg-[#F8F9F6]/95 p-3 backdrop-blur sm:static sm:mt-6 sm:border-t-0 sm:bg-transparent sm:p-0';
+
     return (
         <div
             className={[
                 PAGE_BG,
                 'font-sans',
-                isCurationScreen
-                    ? 'flex h-[100dvh] min-h-0 flex-col overflow-hidden max-md:px-0 max-md:py-0 md:min-h-screen md:overflow-visible md:px-4 md:py-4 md:pb-4'
-                    : 'min-h-screen px-4 py-4 pb-24 sm:pb-4 md:px-4',
+                embedInScrollParent
+                    ? 'w-full px-4 py-4 pb-8'
+                    : isCurationScreen
+                      ? 'flex h-[100dvh] min-h-0 flex-col overflow-hidden max-md:px-0 max-md:py-0 md:min-h-screen md:overflow-visible md:px-4 md:py-4 md:pb-4'
+                      : 'min-h-screen px-4 py-4 pb-24 sm:pb-4 md:px-4',
             ].join(' ')}
         >
             <style>{`
@@ -1529,13 +1537,21 @@ export default function CraftedForYouPage({
             <div
                 className={[
                     'mx-auto w-full max-w-[1100px]',
-                    isCurationScreen ? 'flex min-h-0 flex-1 flex-col max-md:space-y-0 md:space-y-4' : 'space-y-4',
+                    embedInScrollParent
+                        ? 'space-y-4'
+                        : isCurationScreen
+                          ? 'flex min-h-0 flex-1 flex-col max-md:space-y-0 md:space-y-4'
+                          : 'space-y-4',
                 ].join(' ')}
             >
                 <div
                     className={[
                         'z-50 border-b border-gray-200/70 bg-[#F8F9F6]/95 px-4 pb-3 pt-2 backdrop-blur sm:pb-4',
-                        isCurationScreen ? 'shrink-0 sticky top-0' : 'sticky top-0 -mx-4 md:-mx-8 md:px-8',
+                        embedInScrollParent
+                            ? '-mx-4'
+                            : isCurationScreen
+                              ? 'shrink-0 sticky top-0'
+                              : 'sticky top-0 -mx-4 md:-mx-8 md:px-8',
                     ].join(' ')}
                 >
                     <div className="mx-auto max-w-[1100px]">
@@ -1658,7 +1674,7 @@ export default function CraftedForYouPage({
                             </div>
                         </div>
 
-                        <div className="mt-8 flex items-center justify-between gap-3 fixed bottom-0 left-0 right-0 z-40 border-t border-gray-200/70 bg-[#F8F9F6]/95 p-3 backdrop-blur sm:static sm:mt-6 sm:border-t-0 sm:bg-transparent sm:p-0">
+                        <div className={mobileNavBarClass}>
                             <Button label="BACK" variant="outline" onClick={goBackFromPlanSetup} className="px-10" />
                             <Button
                                 label="NEXT"
@@ -1732,7 +1748,7 @@ export default function CraftedForYouPage({
                             </p>
                         </div>
 
-                        <div className="mt-8 flex items-center justify-between gap-3 fixed bottom-0 left-0 right-0 z-40 border-t border-gray-200/70 bg-[#F8F9F6]/95 p-3 backdrop-blur sm:static sm:border-t-0 sm:bg-transparent sm:p-0">
+                        <div className={mobileNavBarClass}>
                             <Button label="BACK" variant="outline" onClick={() => setScreen(1)} className="px-10" />
                             <Button
                                 label="NEXT"
@@ -1827,9 +1843,10 @@ export default function CraftedForYouPage({
                             };
 
                             return (
-                            <div className="flex min-h-0 w-full flex-1 flex-col">
+                            <div className={embedInScrollParent ? 'w-full' : 'flex min-h-0 w-full flex-1 flex-col'}>
                             <ChooseYourMeals
-                                panelClassName="h-full min-h-0"
+                                panelClassName={embedInScrollParent ? 'w-full' : 'h-full min-h-0'}
+                                documentScroll={embedInScrollParent}
                                 soupCatalogMeals={catalogMeals}
                                 dayName={WEEKDAY_LONG[curationDay - 1] ?? ''}
                                 totalKcal={dayCaloriesTotal}
@@ -2131,7 +2148,7 @@ export default function CraftedForYouPage({
                             </div>
                         </div>
 
-                        <div className="mt-8 flex items-center justify-between gap-3 fixed bottom-0 left-0 right-0 z-40 border-t border-gray-200/70 bg-[#F8F9F6]/95 p-3 backdrop-blur sm:static sm:border-t-0 sm:bg-transparent sm:p-0">
+                        <div className={mobileNavBarClass}>
                             <Button
                                 label="BACK"
                                 variant="outline"

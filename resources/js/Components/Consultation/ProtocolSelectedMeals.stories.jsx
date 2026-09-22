@@ -4,6 +4,7 @@ import ProtocolMealRow from './ProtocolMealRow.jsx';
 import ProtocolMealSlotCard from './ProtocolMealSlotCard.jsx';
 import ProtocolMealOptionsScreen from './ProtocolMealOptionsScreen.jsx';
 import { mushroomOmeletteAdminMealFixture } from '../mealCardStoryFixtures.js';
+import { withConsultationMobileFrame } from '../../Pages/Consultation/consultationStoryDecorators.jsx';
 
 const saladImage =
     'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=800&q=80';
@@ -47,8 +48,8 @@ const mainOptions = [
 
 function StoryCanvas({ children, wide = false }) {
     return (
-        <div className="min-h-[80vh] w-full bg-[#F8F9F6] px-4 py-8">
-            <div className={`mx-auto ${wide ? 'max-w-[1100px]' : 'max-w-[28rem]'}`}>{children}</div>
+        <div className="w-full px-3 py-4 sm:px-6 sm:py-8">
+            <div className={`mx-auto w-full ${wide ? 'sm:max-w-[1100px]' : 'sm:max-w-[28rem]'}`}>{children}</div>
         </div>
     );
 }
@@ -91,14 +92,12 @@ function OptionsModalDemo({
                 <ProtocolMealOptionsScreen
                     dayLabel={dayLabel}
                     sectionTitle={sectionTitle}
-                    optionCount={cards.length}
-                    selectedCount={selectedIds.length}
-                    maxSelected={maxSelected}
                     onBack={() => setOpen(false)}
                     onConfirm={() => setOpen(false)}
                 >
                     <MealSlotCarousel
                         title=""
+                        deckOnly
                         cards={cards}
                         selectedIds={selectedIds}
                         maxSelected={maxSelected}
@@ -130,15 +129,24 @@ function OptionsModalDemo({
 }
 
 export default {
-    title: 'Design System/04. Organisms/ProtocolSelectedMeals',
-    parameters: { layout: 'fullscreen' },
+    title: 'Design System/05. Templates & Pages/Consultation/ProtocolSelectedMeals',
+    decorators: withConsultationMobileFrame,
+    parameters: {
+        layout: 'fullscreen',
+        docs: {
+            description: {
+                component:
+                    'Protocol meal slot cards, nano rows, and options screens used inside ChooseYourMeals.',
+            },
+        },
+    },
 };
 
 export const NanoMealCard = {
     name: 'Meal card — Nano',
     render: () => (
         <StoryCanvas>
-            <div className="mx-auto max-w-[280px]">
+            <div className="mx-auto w-full max-w-[280px]">
                 <ProtocolMealRow meal={chickenMeal} selected onViewDetails={() => {}} onSelect={() => {}} />
             </div>
         </StoryCanvas>

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import CraftedForYouPage from './CraftedForYouPage.jsx';
+import { withConsultationMobileFrame } from './consultationStoryDecorators.jsx';
 import { consultationMeals } from '../../consultation/consultationMockMeals.js';
 import { consultationDeckOptionsForSlotKey } from '../../Components/Consultation/ChooseYourMeals.jsx';
 import StackedDeckCarousel from '../../Components/MealCard/StackedDeckCarousel.jsx';
@@ -10,6 +11,7 @@ const mealOptionsDemo = consultationDeckOptionsForSlotKey(consultationMeals, 'me
 export default {
     title: 'Design System/05. Templates & Pages/Consultation',
     component: CraftedForYouPage,
+    decorators: withConsultationMobileFrame,
     parameters: {
         layout: 'fullscreen',
         a11y: { config: { rules: [{ id: 'color-contrast', enabled: true }] } },
@@ -22,18 +24,24 @@ export default {
     },
 };
 
+/**
+ * Embed mode grows with content (no nested overflow / fixed footers) so Storybook
+ * mobile viewports can scroll the document.
+ */
 export const CraftedForYour = {
     name: 'Crafted for your',
     render: () => (
         <CraftedForYouPage
             disableAdaptedMenuFetch
+            embedInScrollParent
             pageEyebrow="Your plan"
         />
     ),
 };
 
 /**
- * Isolated meal ribbon — same 4 capped mains as production consultation decks.
+ * Isolated meal ribbon — same capped mains as production consultation decks.
+ * Story id: design-system-05-templates-pages-consultation--stacked-deck-consultation-meals
  */
 export const StackedDeckConsultationMeals = {
     render: () => {
@@ -52,11 +60,11 @@ export const StackedDeckConsultationMeals = {
         };
 
         return (
-            <div className="min-h-screen bg-[#F8F9F6] p-6">
+            <div className="w-full px-3 py-4 sm:px-6 sm:py-6">
                 <p className="mb-4 font-montserrat text-sm font-bold text-[#262A22]">
                     Meals of the Day deck — 6 options, select exactly 2 (mock fixtures)
                 </p>
-                <div className="max-w-5xl rounded-[12px] border border-gray-200 bg-white p-6 shadow-sm">
+                <div className="w-full rounded-[12px] border border-gray-200 bg-white p-3 shadow-sm sm:p-6">
                     <StackedDeckCarousel
                         title=""
                         meals={mealOptionsDemo}

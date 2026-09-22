@@ -1393,7 +1393,7 @@ export function MealSlotCarousel({
             ) : null}
 
             <div
-                className={`relative mx-auto flex w-full max-w-full flex-col items-center justify-center overflow-y-visible px-4 [-webkit-overflow-scrolling:touch] max-md:overflow-x-clip md:overflow-x-visible md:px-0 ${deckOnly ? 'mt-0 min-h-[calc(min(90vw,280px)+5.5rem)] py-1.5' : 'mt-0.5 min-h-[calc(min(90vw,280px)+5.5rem)] py-1'}`}
+                className={`relative mx-auto flex w-full max-w-full flex-col items-center justify-center overflow-y-visible px-4 [-webkit-overflow-scrolling:touch] max-md:overflow-x-clip md:overflow-x-visible md:px-0 ${deckOnly ? 'mt-0 min-h-[calc(min(90vw,280px)+4.5rem)] py-0' : 'mt-0.5 min-h-[calc(min(90vw,280px)+5.5rem)] py-1'}`}
                 data-consultation-deck=""
             >
                 {cards.length === 0 ? (
@@ -1708,6 +1708,7 @@ export function FixedChoicePicker({
  * @param {(meal: ConsultationMeal) => void} [props.onViewDetails]
  * @param {(meal: ConsultationMeal) => void} [props.onEditMeal]
  * @param {string} [props.panelClassName] Height class for the viewport-locked panel shell.
+ * @param {boolean} [props.documentScroll] Grow with content and scroll the parent (Storybook / embed).
  * @param {boolean} [props.isMenuPending] Adapted menu / weekly schedule still loading from the API.
  * @param {boolean} [props.protocolSelectedLayout] Force the customer onboarding slot cards (SEE OTHER OPTIONS).
  */
@@ -1749,11 +1750,14 @@ export default function ChooseYourMeals({
     onClearFixedChoiceCategory,
     onViewDetails,
     onEditMeal,
-    panelClassName = 'h-[100dvh] min-h-screen',
+    panelClassName,
+    documentScroll = false,
     isMenuPending = false,
     dietProtocol = null,
     protocolSelectedLayout = false,
 }) {
+    const resolvedPanelClassName =
+        panelClassName ?? (documentScroll ? 'w-full' : 'h-[100dvh] min-h-screen');
     const craftingSubtitle = `CRAFTING YOUR ${String(dayName).trim().toUpperCase()}`;
     /** Daily option decks stay interactive whenever the parent wires selection (hides CRAFT THIS MEAL only in true read-only review). */
     const categoryPickEnabled = typeof onToggleCategory === 'function' && !categoriesReadOnly;
@@ -2155,14 +2159,12 @@ export default function ChooseYourMeals({
                           ? 'Breakfast'
                           : optionsSectionDef.header
                 }
-                optionCount={optionsCards.length}
-                selectedCount={optionsSelectedIds.length}
-                maxSelected={optionsMaxSelected}
                 onBack={() => setOptionsSlotKey(null)}
                 onConfirm={() => setOptionsSlotKey(null)}
             >
                 <MealSlotCarousel
                     title=""
+                    deckOnly
                     cards={optionsCards}
                     selectedIds={optionsSelectedIds}
                     maxSelected={optionsMaxSelected}
@@ -2241,7 +2243,7 @@ export default function ChooseYourMeals({
 
     return (
         <section
-            className={`box-border flex w-full flex-col overflow-x-clip border border-gray-200 bg-white shadow-sm max-md:rounded-none max-md:border-x-0 max-md:shadow-none md:rounded-[12px] ${panelClassName}`.trim()}
+            className={`box-border flex w-full flex-col overflow-x-clip border border-gray-200 bg-white shadow-sm max-md:rounded-none max-md:border-x-0 max-md:shadow-none md:rounded-[12px] ${resolvedPanelClassName}`.trim()}
         >
             {optionsScreen}
             <div className="shrink-0 border-b border-gray-200 px-4 py-3 text-left max-md:px-4 sm:px-5 sm:py-4 md:p-6">
@@ -2255,10 +2257,20 @@ export default function ChooseYourMeals({
                 </div>
             </div>
 
-            <div className="flex min-h-0 flex-1 flex-col overflow-x-clip">
+            <div
+                className={
+                    documentScroll
+                        ? 'flex w-full flex-col overflow-x-clip'
+                        : 'flex min-h-0 flex-1 flex-col overflow-x-clip'
+                }
+            >
                 <div
                     ref={scrollContainerRef}
-                    className="mc-choose-meals-scroll min-h-0 flex-1 overflow-y-auto overscroll-y-contain [scrollbar-gutter:stable] pt-2 max-md:px-0 max-md:pb-4 md:px-5 md:pb-8 md:pt-4 [-webkit-overflow-scrolling:touch]"
+                    className={
+                        documentScroll
+                            ? 'mc-choose-meals-scroll w-full overflow-x-clip pt-2 max-md:px-0 max-md:pb-4 md:px-5 md:pb-8 md:pt-4'
+                            : 'mc-choose-meals-scroll min-h-0 flex-1 overflow-y-auto overscroll-y-contain [scrollbar-gutter:stable] pt-2 max-md:px-0 max-md:pb-4 md:px-5 md:pb-8 md:pt-4 [-webkit-overflow-scrolling:touch]'
+                    }
                 >
                     <div className="relative z-0 min-w-0 space-y-0">{mainScrollable}</div>
                 </div>

@@ -174,7 +174,7 @@ export default function ProtocolFixedChoiceSides({
                                                 variant="secondary"
                                                 size="sm"
                                                 onClick={() => onSeeOtherOptions(option.selectionKey)}
-                                                className="h-auto min-h-0 shrink-0 px-2 py-1 text-[10px] sm:text-[11px]"
+                                                className="!h-7 !min-h-0 shrink-0 !rounded-[8px] !px-2 !py-0 !text-[9px] !leading-none !tracking-wide sm:!text-[10px]"
                                             />
                                         ) : null}
                                     </div>

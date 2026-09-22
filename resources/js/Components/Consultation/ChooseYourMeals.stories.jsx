@@ -1,45 +1,76 @@
 import { useMemo, useState } from 'react';
 import ChooseYourMeals, {
     applyDeckSelectionToggle,
+    applyFixedChoiceToggle,
+    buildWeeklyConsultationDisplayDecks,
     DEFAULT_FULL_CRAFT_MAX_SELECTIONS,
-    buildConsultationDeckCatalog,
+    FIXED_CHOICE_CATEGORY_KEYS,
     soupOfTheDayMeals,
 } from './ChooseYourMeals.jsx';
 import { consultationMeals } from '../../consultation/consultationMockMeals.js';
+import { withConsultationMobileFrame } from '../../Pages/Consultation/consultationStoryDecorators.jsx';
 
-const consultationDeckMeals = buildConsultationDeckCatalog(consultationMeals);
-const mealRowDemo = consultationDeckMeals.filter((m) => m.mealType === 'Meal');
+const mealRowDemo = consultationMeals.filter((m) => m.mealType === 'Meal');
 const scheduledSoupDemo = soupOfTheDayMeals(consultationMeals);
 
-const emptyCategorySelections = () => ({
-    breakfasts: [],
-    meals: [],
-    sideSalads: [],
-    desserts: [],
-    soup: [],
+const fullCraftDisplayDecks = buildWeeklyConsultationDisplayDecks({
+    meals: consultationMeals,
+    scheduledSoupMeals: scheduledSoupDemo,
+    soupCatalogMeals: consultationMeals,
+    includeBreakfast: true,
 });
 
-/** Matches curation day shell on CraftedForYouPage (full viewport flex column). */
-function CurationPanelShell({ children }) {
-    return (
-        <div className="flex h-[100dvh] min-h-0 flex-col overflow-hidden bg-[#F8F9F6]">
-            <div className="shrink-0 border-b border-gray-200/70 px-4 py-3">
-                <p className="font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#555555]">
-                    Story shell
-                </p>
-                <p className="font-montserrat text-lg font-bold text-[#262A22]">Crafted for YOU</p>
-            </div>
-            <div className="flex min-h-0 flex-1 flex-col">{children}</div>
-        </div>
-    );
+function emptyCategorySelections() {
+    return {
+        breakfasts: [],
+        meals: [],
+        sideSalads: [],
+        desserts: [],
+        soup: [],
+    };
+}
+
+/** Pre-seed so slot cards and fixed-choice sides show selected Nano meals immediately. */
+function seededFullCraftSelections() {
+    const breakfastId = fullCraftDisplayDecks.breakfasts[0]?.id;
+    const mealIds = fullCraftDisplayDecks.meals.slice(0, 2).map((meal) => meal.id);
+    const sideId = fullCraftDisplayDecks.sideSalads[0]?.id;
+
+    return {
+        breakfasts: breakfastId ? [String(breakfastId)] : [],
+        meals: mealIds.map((id) => String(id)),
+        sideSalads: sideId ? [String(sideId)] : [],
+        desserts: [],
+        soup: [],
+    };
+}
+
+function sumSelectionCalories(categorySelections) {
+    const byId = new Map(consultationMeals.map((meal) => [String(meal.id), meal]));
+    const ids = [
+        ...categorySelections.breakfasts,
+        ...categorySelections.meals,
+        ...categorySelections.sideSalads,
+        ...categorySelections.desserts,
+        ...categorySelections.soup,
+    ];
+
+    return ids.reduce((acc, id) => acc + (byId.get(String(id))?.caloriesNumber ?? 0), 0);
 }
 
 export default {
-    title: 'Design System/04. Organisms/ChooseYourMeals',
+    title: 'Design System/05. Templates & Pages/Consultation/ChooseYourMeals',
     component: ChooseYourMeals,
+    decorators: withConsultationMobileFrame,
     parameters: {
         layout: 'fullscreen',
         a11y: { config: { rules: [{ id: 'color-contrast', enabled: true }] } },
+        docs: {
+            description: {
+                component:
+                    'Consultation meal curation panel — single-deck or full-craft category layouts used by Crafted for YOU.',
+            },
+        },
     },
 };
 
@@ -47,6 +78,7 @@ export default {
  * Legacy single-deck API (`selections` as id array) — `layout="custom"`.
  */
 export const SingleDeckPropsApi = {
+    name: 'Single deck',
     render: () => {
         const maxSelected = 4;
         const [selections, setSelections] = useState(/** @type {string[]} */ ([]));
@@ -70,81 +102,147 @@ export const SingleDeckPropsApi = {
         }, [selections]);
 
         return (
-            <CurationPanelShell>
-                <ChooseYourMeals
-                    panelClassName="h-full min-h-0"
-                    layout="custom"
-                    dayName="Tuesday"
-                    totalKcal={totalKcal}
-                    summaryLabel="Tue selections"
-                    meals={mealRowDemo}
-                    selections={selections}
-                    onSelectMeal={onSelectMeal}
-                    maxSelected={maxSelected}
-                    deckScopeKey="story-choose-your-meals-single"
-                    craftTitle="Full Craft"
-                    targetCalories={1200}
-                    dayProgressLabel="Day 1 of 5"
-                />
-            </CurationPanelShell>
+            <ChooseYourMeals
+                documentScroll
+                panelClassName="w-full"
+                layout="custom"
+                dayName="Tuesday"
+                totalKcal={totalKcal}
+                summaryLabel="Tue selections"
+                meals={mealRowDemo}
+                selections={selections}
+                onSelectMeal={onSelectMeal}
+                maxSelected={maxSelected}
+                deckScopeKey="story-choose-your-meals-single"
+                craftTitle="Full Craft"
+                targetCalories={1200}
+                dayProgressLabel="Day 1 of 5"
+            />
         );
     },
 };
 
 /**
- * Full Craft category flow — capped deck catalog (1 / 6 / 2 / 3), optional soup, sticky footer nav.
+ * Production Full Craft day view: selected meal cards + SEE OTHER OPTIONS modal + sides toggles.
  */
 export const VerticalFullCraftCategories = {
+    name: 'Full craft — cards + options modal',
     render: () => {
-        const [categorySelections, setCategorySelections] = useState(emptyCategorySelections());
+        const [categorySelections, setCategorySelections] = useState(seededFullCraftSelections);
 
         const onToggleCategory = (categoryKey, meal) => {
-            const id = /** @type {{ id: string }} */ (meal).id;
-            const max = DEFAULT_FULL_CRAFT_MAX_SELECTIONS[categoryKey];
-            setCategorySelections((prev) => ({
-                ...prev,
-                [categoryKey]: applyDeckSelectionToggle(prev[categoryKey], id, max),
-            }));
+            const id = String(/** @type {{ id: string }} */ (meal).id);
+
+            setCategorySelections((prev) => {
+                if (FIXED_CHOICE_CATEGORY_KEYS.includes(categoryKey)) {
+                    const { next, blocked } = applyFixedChoiceToggle(prev, categoryKey, id);
+
+                    return blocked ? prev : next;
+                }
+
+                const max =
+                    DEFAULT_FULL_CRAFT_MAX_SELECTIONS[
+                        /** @type {keyof typeof DEFAULT_FULL_CRAFT_MAX_SELECTIONS} */ (categoryKey)
+                    ] ?? 1;
+
+                return {
+                    ...prev,
+                    [categoryKey]: applyDeckSelectionToggle(prev[categoryKey] ?? [], id, max),
+                };
+            });
         };
 
-        const totalKcal = useMemo(() => {
-            const byId = new Map(consultationMeals.map((m) => [m.id, m]));
-            const ids = [
-                ...categorySelections.breakfasts,
-                ...categorySelections.meals,
-                ...categorySelections.sideSalads,
-                ...categorySelections.desserts,
-                ...categorySelections.soup,
-            ];
-            return ids.reduce((acc, id) => acc + (byId.get(id)?.caloriesNumber ?? 0), 0);
-        }, [categorySelections]);
+        const totalKcal = useMemo(() => sumSelectionCalories(categorySelections), [categorySelections]);
 
         return (
-            <CurationPanelShell>
-                <ChooseYourMeals
-                    panelClassName="h-full min-h-0"
-                    layout="categories"
-                    dayName="Monday"
-                    totalKcal={totalKcal}
-                    summaryLabel="Mon selections"
-                    meals={consultationDeckMeals}
-                    soupCatalogMeals={consultationMeals}
-                    scheduledSoupMeals={scheduledSoupDemo}
-                    categorySelections={categorySelections}
-                    onToggleCategory={onToggleCategory}
-                    onSoupOptInChange={(enabled) => {
-                        if (!enabled) {
-                            setCategorySelections((prev) => ({ ...prev, soup: [] }));
-                        }
-                    }}
-                    deckScopePrefix="story-day"
-                    craftTitle="Full Craft"
-                    targetCalories={2000}
-                    dayProgressLabel="Day 1 of 5"
-                    onFooterBack={() => {}}
-                    onFooterNext={() => {}}
-                />
-            </CurationPanelShell>
+            <ChooseYourMeals
+                documentScroll
+                panelClassName="w-full"
+                layout="categories"
+                protocolSelectedLayout
+                dayName="Monday"
+                totalKcal={totalKcal}
+                summaryLabel="Mon selections"
+                meals={consultationMeals}
+                displayDecks={fullCraftDisplayDecks}
+                soupCatalogMeals={consultationMeals}
+                scheduledSoupMeals={scheduledSoupDemo}
+                categorySelections={categorySelections}
+                maxSelectionsByCategory={DEFAULT_FULL_CRAFT_MAX_SELECTIONS}
+                onToggleCategory={onToggleCategory}
+                onClearFixedChoiceCategory={(categoryKey) => {
+                    setCategorySelections((prev) => ({ ...prev, [categoryKey]: [] }));
+                }}
+                deckScopePrefix="story-day"
+                craftTitle="Full Craft"
+                targetCalories={2000}
+                dayProgressLabel="Day 1 of 5"
+                onFooterBack={() => {}}
+                onFooterNext={() => {}}
+                onViewDetails={() => {}}
+            />
+        );
+    },
+};
+
+/**
+ * Empty day — open SEE OTHER OPTIONS to pick meals from scratch.
+ */
+export const FullCraftEmptyThenOptions = {
+    name: 'Full craft — empty then options',
+    render: () => {
+        const [categorySelections, setCategorySelections] = useState(emptyCategorySelections);
+
+        const onToggleCategory = (categoryKey, meal) => {
+            const id = String(/** @type {{ id: string }} */ (meal).id);
+
+            setCategorySelections((prev) => {
+                if (FIXED_CHOICE_CATEGORY_KEYS.includes(categoryKey)) {
+                    const { next, blocked } = applyFixedChoiceToggle(prev, categoryKey, id);
+
+                    return blocked ? prev : next;
+                }
+
+                const max =
+                    DEFAULT_FULL_CRAFT_MAX_SELECTIONS[
+                        /** @type {keyof typeof DEFAULT_FULL_CRAFT_MAX_SELECTIONS} */ (categoryKey)
+                    ] ?? 1;
+
+                return {
+                    ...prev,
+                    [categoryKey]: applyDeckSelectionToggle(prev[categoryKey] ?? [], id, max),
+                };
+            });
+        };
+
+        const totalKcal = useMemo(() => sumSelectionCalories(categorySelections), [categorySelections]);
+
+        return (
+            <ChooseYourMeals
+                documentScroll
+                panelClassName="w-full"
+                layout="categories"
+                protocolSelectedLayout
+                dayName="Wednesday"
+                totalKcal={totalKcal}
+                meals={consultationMeals}
+                displayDecks={fullCraftDisplayDecks}
+                soupCatalogMeals={consultationMeals}
+                scheduledSoupMeals={scheduledSoupDemo}
+                categorySelections={categorySelections}
+                maxSelectionsByCategory={DEFAULT_FULL_CRAFT_MAX_SELECTIONS}
+                onToggleCategory={onToggleCategory}
+                onClearFixedChoiceCategory={(categoryKey) => {
+                    setCategorySelections((prev) => ({ ...prev, [categoryKey]: [] }));
+                }}
+                deckScopePrefix="story-empty"
+                craftTitle="Full Craft"
+                targetCalories={2000}
+                dayProgressLabel="Day 2 of 5"
+                onFooterBack={() => {}}
+                onFooterNext={() => {}}
+                onViewDetails={() => {}}
+            />
         );
     },
 };

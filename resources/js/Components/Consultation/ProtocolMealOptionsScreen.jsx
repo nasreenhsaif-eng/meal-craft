@@ -8,9 +8,6 @@ import Button from '../Atoms/Button.jsx';
  * @param {object} props
  * @param {string} [props.dayLabel] e.g. "SUNDAY"
  * @param {string} [props.sectionTitle] e.g. "Main Meals"
- * @param {number} [props.optionCount]
- * @param {number} [props.selectedCount]
- * @param {number} [props.maxSelected]
  * @param {() => void} props.onBack
  * @param {() => void} [props.onConfirm] Defaults to onBack when omitted.
  * @param {import('react').ReactNode} [props.children]
@@ -19,9 +16,6 @@ import Button from '../Atoms/Button.jsx';
 export default function ProtocolMealOptionsScreen({
     dayLabel = '',
     sectionTitle = 'Meals',
-    optionCount = 0,
-    selectedCount = 0,
-    maxSelected = 1,
     onBack,
     onConfirm,
     children,
@@ -48,7 +42,7 @@ export default function ProtocolMealOptionsScreen({
     }
 
     return createPortal(
-        <div className="fixed inset-0 z-[110] flex items-end justify-center p-0 sm:items-center sm:p-6">
+        <div className="fixed inset-0 z-[110] flex items-end justify-center p-0 pt-14 sm:items-center sm:p-6">
             <button
                 type="button"
                 className="absolute inset-0 bg-black/40"
@@ -60,29 +54,26 @@ export default function ProtocolMealOptionsScreen({
                 aria-modal="true"
                 aria-labelledby="mc-options-modal-title"
                 className={[
-                    'relative flex max-h-[92dvh] w-full max-w-5xl flex-col overflow-hidden',
+                    'relative flex max-h-[calc(100dvh-3.5rem)] w-full max-w-5xl flex-col overflow-hidden sm:max-h-[92dvh]',
                     'rounded-t-[16px] bg-[#F8F9F6] shadow-2xl sm:rounded-[16px]',
                     className,
                 ]
                     .join(' ')
                     .trim()}
             >
-                <div className="flex shrink-0 items-start justify-between gap-3 border-b border-gray-200 px-4 py-3 sm:px-5 sm:py-4">
+                <div className="flex shrink-0 items-center justify-between gap-3 border-b border-gray-200 px-4 py-2 sm:px-5 sm:py-2.5">
                     <div className="min-w-0 flex-1">
                         {day ? (
-                            <p className="font-montserrat text-[13px] font-bold uppercase tracking-wide text-[#262A22]">
+                            <p className="font-montserrat text-[12px] font-bold uppercase tracking-wide text-[#555555]">
                                 CRAFTING YOUR {day}
                             </p>
                         ) : null}
                         <h2
                             id="mc-options-modal-title"
-                            className="mt-1 font-montserrat text-xl font-bold tracking-tight text-[#262A22] sm:text-2xl"
+                            className="font-montserrat text-lg font-bold tracking-tight text-[#262A22] sm:text-xl"
                         >
                             {sectionTitle}
                         </h2>
-                        <p className="mt-0.5 font-body text-sm italic text-[#555555]">
-                            {optionCount} options · {selectedCount}/{maxSelected} selected
-                        </p>
                     </div>
                     <Button
                         type="button"
@@ -94,11 +85,11 @@ export default function ProtocolMealOptionsScreen({
                     />
                 </div>
 
-                <div className="min-h-0 flex-1 overflow-x-clip overflow-y-auto px-0 py-3 sm:py-4">
+                <div className="min-h-0 flex-1 overflow-x-clip overflow-y-auto px-0 py-0 sm:py-1">
                     {children}
                 </div>
 
-                <div className="shrink-0 border-t border-gray-200 bg-white p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+                <div className="shrink-0 border-t border-gray-200 bg-white p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:p-4 sm:pb-[max(1rem,env(safe-area-inset-bottom))]">
                     <div className="flex items-center justify-between gap-3">
                         <Button
                             type="button"
