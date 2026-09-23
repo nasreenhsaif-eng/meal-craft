@@ -146,7 +146,7 @@ export const NanoMealCard = {
     name: 'Meal card — Nano',
     render: () => (
         <StoryCanvas>
-            <div className="mx-auto w-full max-w-[280px]">
+            <div className="mx-auto w-full max-w-[240px]">
                 <ProtocolMealRow meal={chickenMeal} selected onViewDetails={() => {}} onSelect={() => {}} />
             </div>
         </StoryCanvas>

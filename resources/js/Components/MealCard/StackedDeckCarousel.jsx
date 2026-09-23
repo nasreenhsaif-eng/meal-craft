@@ -8,37 +8,30 @@ const RIBBON_COPIES = 3;
 const RIBBON_ARROW_ZONE_CLASS = 'w-10 lg:w-11';
 
 /**
- * Edge dim from the frame to the focused card’s CRAFT THIS MEAL button (card `px-3`).
- * Side cards stay visible under the fade instead of clipping off at a short strip.
+ * Edge dim from the frame to the focused card (half of fixed 240px + craft pad).
  */
-const RIBBON_EDGE_DIM_WIDTH_CLASS = [
-    'w-[max(2.75rem,calc(50%-min(8.75rem,calc((100vw-5.5rem)/2))+0.75rem))]',
-    'md:w-[max(3.5rem,calc(50%-8.9375rem+0.75rem))]',
-    'lg:w-[max(4rem,calc(50%-9.4375rem+0.75rem))]',
-].join(' ');
+const RIBBON_EDGE_DIM_WIDTH_CLASS =
+    'w-[max(2.75rem,calc(50%-7.5rem+0.75rem))]';
 
 /**
  * Ribbon slide — gentle start (aggressive ease-out felt like a jump on arrow click).
- * Edge blur + dots carry focus; card chrome stays uniform so index changes don't pop.
  */
 function ribbonSlideTransition() {
     return { type: 'tween', duration: 0.42, ease: [0.4, 0, 0.2, 1] };
 }
 
-/** Ribbon slide cell — consistent width on mobile and desktop */
+/** Slide cell — fixed 240px everywhere. */
 const RIBBON_CARD_SHELL =
-    'flex min-h-[232px] w-[min(280px,calc(100vw-5.5rem))] shrink-0 flex-col items-stretch sm:min-h-[248px] md:w-[286px] lg:min-h-[264px] lg:w-[302px] transform-gpu';
+    'flex w-[240px] max-w-[240px] shrink-0 flex-col items-stretch transform-gpu';
 
 const STATIC_CARD_SHELL_SINGLE =
-    'flex min-h-[232px] w-full max-w-[302px] shrink-0 flex-col items-stretch sm:min-h-[248px] sm:w-[286px] lg:min-h-[264px] lg:w-[302px] transform-gpu';
+    'flex w-[240px] max-w-[240px] shrink-0 flex-col items-stretch transform-gpu';
 
-/** Desktop side-by-side pair — fixed equal width; stretch to matched height. */
 const STATIC_PAIR_CARD_SHELL =
-    'flex h-full w-full min-w-0 max-w-[302px] flex-1 flex-col md:w-[302px] md:flex-none transform-gpu';
+    'flex w-[240px] max-w-[240px] shrink-0 flex-col transform-gpu';
 
-/** Desktop side-by-side triple — equal flex columns within a 960px row. */
 const STATIC_TRIPLE_CARD_SHELL =
-    'flex h-full w-full min-w-0 max-w-[302px] flex-1 flex-col transform-gpu';
+    'flex w-[240px] max-w-[240px] shrink-0 flex-col transform-gpu';
 
 const DESKTOP_MIN_WIDTH_PX = 768;
 
@@ -538,7 +531,7 @@ export default function StackedDeckCarousel({ title: _title, items: itemsProp, m
     if (itemCount === 1) {
         return (
             <div className="relative w-full px-4 py-4">
-                <div className="mx-auto max-w-[302px]">
+                <div className="mx-auto w-[240px] max-w-[240px]">
                     <div className={STATIC_CARD_SHELL_SINGLE}>
                         {renderMealCard(items[0], 0, {
                             isFront: true,

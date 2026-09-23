@@ -4,14 +4,14 @@ import { mealDetailViewFixture } from './Molecules/MealDetailView/mealDetailView
 import { mushroomOmeletteAdminMealFixture } from './mealCardStoryFixtures.js';
 
 /**
- * Mirrors the meal library grid shell: white panel on `#F8F9F6`, `p-5`, column width matches {@link MealCard} deck shell (`270px`).
+ * Mirrors the meal library grid shell: white panel on `#F8F9F6`, `p-5`, column width matches {@link MealCard} deck shell (`240px`).
  */
 function MealCardStoryCanvas({ children }) {
     return (
         <div className="min-h-[80vh] w-full bg-[#F8F9F6] px-4 py-8 md:px-8">
             <div className="mx-auto max-w-5xl rounded-[12px] border border-gray-200 bg-white p-5 shadow-sm">
                 <ul className="m-0 flex list-none justify-center p-0">
-                    <li className="flex w-full max-w-[270px] justify-center">{children}</li>
+                    <li className="flex w-full max-w-[240px] justify-center">{children}</li>
                 </ul>
             </div>
         </div>

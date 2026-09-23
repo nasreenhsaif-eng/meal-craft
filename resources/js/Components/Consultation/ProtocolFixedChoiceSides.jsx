@@ -19,11 +19,8 @@ function normalizeMealId(id) {
     return String(id);
 }
 
-/** Portrait Nano card footprint under a checked side category. */
-const MEAL_CARD_WIDTH = 'w-full max-w-[280px] shrink-0';
-
 /**
- * ND protocol sides: checkbox per category; expand selected old-style meal cards when checked.
+ * ND protocol sides: checkbox per category; expand selected meal cards when checked.
  *
  * @param {object} props
  * @param {Partial<Record<'sideSalads'|'desserts'|'soup', string[]>>} props.categorySelections
@@ -140,10 +137,10 @@ export default function ProtocolFixedChoiceSides({
 
                     return (
                         <li key={option.selectionKey} className="px-3 py-3 sm:px-4">
-                            <div className="flex items-start gap-3">
+                            <div className="flex items-center gap-3">
                                 <button
                                     type="button"
-                                    className="mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-[4px] border-0 bg-transparent p-0 outline-none focus-visible:ring-2 focus-visible:ring-[#5A6B44] focus-visible:ring-offset-1 disabled:opacity-50"
+                                    className="inline-flex size-5 shrink-0 items-center justify-center rounded-[4px] border-0 bg-transparent p-0 outline-none focus-visible:ring-2 focus-visible:ring-[#5A6B44] focus-visible:ring-offset-1 disabled:opacity-50"
                                     disabled={!pickEnabled || !hasOptions}
                                     onClick={() => toggleCategory(option.selectionKey, cards, isChecked)}
                                     aria-pressed={isChecked}
@@ -156,71 +153,63 @@ export default function ProtocolFixedChoiceSides({
                                     <SquareCheckbox checked={isChecked} presentational />
                                 </button>
 
-                                <div className="min-w-0 flex-1">
-                                    <div className="flex items-center justify-between gap-2">
-                                        <button
-                                            type="button"
-                                            className="text-left font-montserrat text-sm font-bold text-[#262A22] disabled:opacity-50"
-                                            disabled={!pickEnabled || !hasOptions}
-                                            onClick={() => toggleCategory(option.selectionKey, cards, isChecked)}
-                                        >
-                                            {option.label}
-                                        </button>
+                                <button
+                                    type="button"
+                                    className="min-w-0 flex-1 text-left font-montserrat text-sm font-bold text-[#262A22] disabled:opacity-50"
+                                    disabled={!pickEnabled || !hasOptions}
+                                    onClick={() => toggleCategory(option.selectionKey, cards, isChecked)}
+                                >
+                                    {option.label}
+                                </button>
 
-                                        {isChecked && hasOptions && typeof onSeeOtherOptions === 'function' && pickEnabled ? (
-                                            <Button
-                                                type="button"
-                                                label="See other options"
-                                                variant="secondary"
-                                                size="sm"
-                                                onClick={() => onSeeOtherOptions(option.selectionKey)}
-                                                className="!h-7 !min-h-0 shrink-0 !rounded-[8px] !px-2 !py-0 !text-[9px] !leading-none !tracking-wide sm:!text-[10px]"
-                                            />
-                                        ) : null}
-                                    </div>
-
-                                    {!hasOptions ? (
-                                        <p className="mt-1 font-body text-xs text-[#666666]">
-                                            No {option.label.toLowerCase()} options for this day yet.
-                                        </p>
-                                    ) : null}
-
-                                    {isChecked && selectedMeals.length > 0 ? (
-                                        <div className="mt-3 flex flex-wrap justify-center gap-3">
-                                            {selectedMeals.map((meal, index) => (
-                                                <div
-                                                    key={normalizeMealId(meal?.id) || index}
-                                                    className={MEAL_CARD_WIDTH}
-                                                >
-                                                    <MealCardClientViewNano
-                                                        deck
-                                                        alignActionsBottom
-                                                        hideCraftButton
-                                                        selected
-                                                        title={String(meal?.title ?? '').trim() || 'Meal'}
-                                                        imageUrl={
-                                                            typeof meal?.imageUrl === 'string'
-                                                                ? meal.imageUrl
-                                                                : undefined
-                                                        }
-                                                        macros={meal?.macros}
-                                                        onViewDetails={
-                                                            typeof onViewDetails === 'function'
-                                                                ? () => onViewDetails(meal)
-                                                                : undefined
-                                                        }
-                                                        onEdit={
-                                                            typeof onEditMeal === 'function'
-                                                                ? () => onEditMeal(meal)
-                                                                : undefined
-                                                        }
-                                                    />
-                                                </div>
-                                            ))}
-                                        </div>
-                                    ) : null}
-                                </div>
+                                {isChecked && hasOptions && typeof onSeeOtherOptions === 'function' && pickEnabled ? (
+                                    <Button
+                                        type="button"
+                                        label="See other options"
+                                        variant="secondary"
+                                        size="sm"
+                                        onClick={() => onSeeOtherOptions(option.selectionKey)}
+                                        className="!h-7 !min-h-0 shrink-0 !rounded-[8px] !px-2 !py-0 !text-[9px] !leading-none !tracking-wide sm:!text-[10px]"
+                                    />
+                                ) : null}
                             </div>
+
+                            {!hasOptions ? (
+                                <p className="mt-1 pl-8 font-body text-xs text-[#666666]">
+                                    No {option.label.toLowerCase()} options for this day yet.
+                                </p>
+                            ) : null}
+
+                            {isChecked && selectedMeals.length > 0 ? (
+                                <div className="mt-3 flex w-full justify-center">
+                                    {selectedMeals.map((meal, index) => (
+                                        <MealCardClientViewNano
+                                            key={normalizeMealId(meal?.id) || index}
+                                            deck
+                                            alignActionsBottom
+                                            hideCraftButton
+                                            selected
+                                            title={String(meal?.title ?? '').trim() || 'Meal'}
+                                            imageUrl={
+                                                typeof meal?.imageUrl === 'string'
+                                                    ? meal.imageUrl
+                                                    : undefined
+                                            }
+                                            macros={meal?.macros}
+                                            onViewDetails={
+                                                typeof onViewDetails === 'function'
+                                                    ? () => onViewDetails(meal)
+                                                    : undefined
+                                            }
+                                            onEdit={
+                                                typeof onEditMeal === 'function'
+                                                    ? () => onEditMeal(meal)
+                                                    : undefined
+                                            }
+                                        />
+                                    ))}
+                                </div>
+                            ) : null}
                         </li>
                     );
                 })}

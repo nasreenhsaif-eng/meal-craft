@@ -105,7 +105,7 @@ export function soupOfTheDayMeals(source) {
 
 /** Max cards shown per category deck in consultation (matches weekly main carousel: 6 mains). */
 export const CONSULTATION_DECK_OPTION_LIMITS = Object.freeze({
-    breakfast: 1,
+    breakfast: 2,
     meal: 6,
     sidesalad: 2,
     /** Balanced keeps 3 (baked + fruit + chia). TBD Weekly Protocol uses 2 via preferBakedDesserts. */
@@ -239,11 +239,14 @@ export function buildWeeklyConsultationDisplayDecks({
     const catalogMains = filterMealsByCategory(meals ?? [], 'Meal');
 
     if (includeBreakfast) {
-        const assignedBreakfasts = assignedMealsByCategory?.breakfasts ?? [];
-        decks.breakfasts =
-            assignedBreakfasts.length > 0
-                ? assignedBreakfasts
-                : consultationDeckOptionsForSlotKey(meals ?? [], 'breakfast');
+        const catalogBreakfasts = filterMealsByCategory(meals ?? [], 'Breakfast').filter(
+            (meal) => typeof meal.savoryEggCount === 'number' && meal.savoryEggCount > 0,
+        );
+        decks.breakfasts = padConsultationDeckOptions(
+            assignedMealsByCategory?.breakfasts ?? [],
+            catalogBreakfasts,
+            CONSULTATION_DECK_OPTION_LIMITS.breakfast,
+        );
     }
 
     decks.meals = padConsultationDeckOptions(
@@ -1393,7 +1396,7 @@ export function MealSlotCarousel({
             ) : null}
 
             <div
-                className={`relative mx-auto flex w-full max-w-full flex-col items-center justify-center overflow-y-visible px-4 [-webkit-overflow-scrolling:touch] max-md:overflow-x-clip md:overflow-x-visible md:px-0 ${deckOnly ? 'mt-0 min-h-[calc(min(90vw,280px)+4.5rem)] py-0' : 'mt-0.5 min-h-[calc(min(90vw,280px)+5.5rem)] py-1'}`}
+                className={`relative mx-auto flex w-full max-w-full flex-col items-center justify-center overflow-y-visible [-webkit-overflow-scrolling:touch] max-md:overflow-x-clip md:overflow-x-visible ${deckOnly ? 'mt-0 min-h-[calc(240px+4.5rem)] px-0 py-0' : 'mt-0.5 min-h-[calc(240px+5.5rem)] px-4 py-1 md:px-0'}`}
                 data-consultation-deck=""
             >
                 {cards.length === 0 ? (

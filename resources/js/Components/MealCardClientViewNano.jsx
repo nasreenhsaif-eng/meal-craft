@@ -46,6 +46,7 @@ function MacroGridSection({ macros, variant, macroAbbreviated = false }) {
 
 /**
  * **Consultation / `MealCard/StackedDeckCarousel.jsx` deck card** — use `deck` (+ optional `ribbon`, `deckStackRole`).
+ * Flat / protocol deck shells use fixed `240px` everywhere.
  * Standalone “nano” preview uses `deck={false}` (fixed 240×320).
  *
  * Nano mobile-first client card (square photo).
@@ -64,8 +65,8 @@ function MacroGridSection({ macros, variant, macroAbbreviated = false }) {
  * @param {boolean} [props.deck] Smaller sequential layout for stacked deck carousels.
  * @param {'front'|'back'|undefined} [props.deckStackRole] Depth cue for carousel: front gets a subtle left-facing stack shadow.
  * @param {'eager'|'lazy'} [props.imageLoading] Hero/front slides should use eager; stack backs use lazy.
- * @param {boolean} [props.ribbon] Desktop Netflix ribbon: fill slide cell width.
- * @param {boolean} [props.alignActionsBottom] Static two-up row: align craft buttons on the same baseline.
+ * @param {boolean} [props.ribbon] Options-modal / ribbon carousel (same fixed 240px shell).
+ * @param {boolean} [props.alignActionsBottom] Align craft buttons on the same baseline in multi-card rows.
  * @param {boolean} [props.macroAbbreviated] Narrow / two-up deck: CAL · P · C · F labels.
  * @param {string} [props.className] Extra classes on the outer article.
  * @param {boolean} [props.vibrantCraftWhenAtLimit] Deck only: when selection slots are full, keep cards/buttons full-opacity (no greyed deck).
@@ -127,17 +128,16 @@ export default function MealCardClientViewNano({
         !isFlatDeckCard && deck && !ribbon && !selected && deckStackRole === 'back'
             ? 'ring-1 ring-white/90 shadow-[inset_-1px_0_0_0_rgba(38,42,34,0.06)]'
             : '';
-    /** Flat deck / protocol: always MealCard-style `shadow-md` (selected and unselected). */
-    const articleShadowDeck = isFlatDeckCard ? 'shadow-md' : '';
+    /** Every deck Nano uses MealCard elevation. */
+    const articleShadowDeck = deck ? 'shadow-md' : '';
     const selectedDeckRaise =
         deck && selected ? 'relative z-[1]' : '';
 
+    /**
+     * Fixed 240px everywhere (selected slots, sides, options modal).
+     */
     const shell = deck
-        ? ribbon
-            ? 'h-full w-full min-h-0 min-w-0 max-w-full rounded-[12px] flex flex-col'
-            : pinActionsBottom
-              ? 'flex h-full w-full min-h-0 min-w-0 max-w-full flex-col rounded-[12px]'
-              : 'mx-auto w-[280px] max-w-[min(280px,100%)] shrink-0 rounded-[12px] flex flex-col'
+        ? 'mx-auto w-[240px] max-w-[240px] shrink-0 rounded-[12px] flex flex-col bg-[#FFFFFF]'
         : 'w-[240px] h-[320px] rounded-[12px]';
     /** Inner face radius — uniform; no gradient padding inset. */
     const innerR = deck ? 'rounded-[12px]' : 'rounded-[10px]';
@@ -152,7 +152,7 @@ export default function MealCardClientViewNano({
 
     return (
         <article
-            className={`relative font-montserrat ${shell} ${pinActionsBottom && deck ? 'h-full' : ''} ${selectedShellClass} ${articleShadowDeck} ${articleDeckStackShadow} ${deckBackRimClass} ${selectedDeckRaise} ${deck ? 'bg-[#FFFFFF]' : ''} ${className}`.trim()}
+            className={`relative font-montserrat ${shell} ${selectedShellClass} ${articleShadowDeck} ${articleDeckStackShadow} ${deckBackRimClass} ${selectedDeckRaise} ${className}`.trim()}
         >
             {deck ? (
                 <div

@@ -1,30 +1,9 @@
 import Button from '../Atoms/Button/Button.jsx';
 import MealCardClientViewNano from '../MealCardClientViewNano.jsx';
 
-/** Same Nano footprint for breakfast, mains, and every selected slot. */
-const SELECTED_CARD_WIDTH = 'w-[280px] max-w-[280px] shrink-0 snap-start sm:w-full sm:max-w-[280px] sm:snap-none';
-
 /**
- * Mobile: horizontal snap scroll — full-width 280px cards; next card peeks on the right.
- * sm+: centered grid (one or two 280px tracks).
- *
- * @param {number} count
- */
-function mealCardsLayoutClass(count) {
-    if (count <= 1) {
-        return 'flex w-full justify-center gap-3 overflow-x-visible px-0';
-    }
-
-    return [
-        'flex w-full gap-3 overflow-x-auto overscroll-x-contain pl-3 pr-4 pb-1',
-        'snap-x snap-mandatory [-webkit-overflow-scrolling:touch] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
-        'sm:grid sm:justify-center sm:justify-items-stretch sm:gap-3 sm:overflow-visible sm:px-0 sm:pb-0 sm:snap-none',
-        'sm:grid-cols-[repeat(2,minmax(0,280px))]',
-    ].join(' ');
-}
-
-/**
- * Day-overview slot card: olive border, SEE OTHER OPTIONS, selected old-style meal cards.
+ * Day-overview slot card: olive border, SEE OTHER OPTIONS, selected meal cards.
+ * Cards are fixed 240px everywhere.
  *
  * @param {object} props
  * @param {string} props.title
@@ -46,12 +25,19 @@ export default function ProtocolMealSlotCard({
 }) {
     const meals = Array.isArray(selectedMeals) ? selectedMeals : [];
 
+    const cardsLayout =
+        meals.length <= 1
+            ? 'flex w-full justify-center gap-3 overflow-x-visible px-0'
+            : [
+                  'flex w-full gap-3 overflow-x-auto overscroll-x-contain pb-1 pr-4',
+                  'snap-x snap-mandatory [-webkit-overflow-scrolling:touch] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
+                  'sm:grid sm:justify-center sm:justify-items-center sm:gap-3 sm:overflow-visible sm:px-0 sm:pb-0 sm:snap-none',
+                  'sm:grid-cols-[repeat(2,240px)]',
+              ].join(' ');
+
     return (
         <section
-            className={[
-                'relative rounded-[12px] border border-[#5A6B44] bg-white',
-                className,
-            ]
+            className={['relative rounded-[12px] border border-[#5A6B44] bg-white', className]
                 .join(' ')
                 .trim()}
             aria-label={title}
@@ -79,9 +65,9 @@ export default function ProtocolMealSlotCard({
                         No meal selected yet.
                     </p>
                 ) : (
-                    <div className={mealCardsLayoutClass(meals.length)}>
+                    <div className={cardsLayout}>
                         {meals.map((meal, index) => (
-                            <div key={String(meal?.id ?? index)} className={SELECTED_CARD_WIDTH}>
+                            <div key={String(meal?.id ?? index)} className="shrink-0 snap-start">
                                 <MealCardClientViewNano
                                     deck
                                     alignActionsBottom
