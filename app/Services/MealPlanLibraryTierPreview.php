@@ -413,9 +413,7 @@ final class MealPlanLibraryTierPreview
                 $categories['sideSalads'] = [];
             }
 
-            if (! $map['include_dessert']) {
-                $categories['desserts'] = [];
-            }
+            // Dessert options stay available when the tier does not preselect dessert.
 
             if (! $map['include_soup']) {
                 $categories['soup'] = [];

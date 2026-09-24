@@ -22,12 +22,28 @@ test('full craft omits dessert at 1250', function () {
         ->and($row['include_side_salad'])->toBeTrue();
 });
 
+test('full craft keeps 1200–1391 needs on the 1250 row without dessert', function () {
+    expect(CraftLibraryTierMap::snapToCraftTotal(1375, 'full'))->toBe(1250)
+        ->and(CraftLibraryTierMap::row('full', 1375)['include_dessert'])->toBeFalse()
+        ->and(CraftLibraryTierMap::snapToCraftTotal(1400, 'full'))->toBe(1500)
+        ->and(CraftLibraryTierMap::row('full', 1500)['include_dessert'])->toBeTrue();
+});
+
 test('afternoon 1800 uses 700 kcal mains and no breakfast', function () {
     $row = CraftLibraryTierMap::row('afternoon', 1800);
 
     expect($row['breakfast'])->toBe(0)
         ->and($row['main_each'])->toBe(700)
         ->and($row['main_count'])->toBe(2);
+});
+
+test('afternoon below 1500 omits dessert and stays off the 1500 plate', function () {
+    expect(CraftLibraryTierMap::snapToCraftTotal(1000, 'afternoon'))->toBe(950)
+        ->and(CraftLibraryTierMap::row('afternoon', 1000)['include_dessert'])->toBeFalse()
+        ->and(CraftLibraryTierMap::snapToCraftTotal(1250, 'afternoon'))->toBe(1200)
+        ->and(CraftLibraryTierMap::row('afternoon', 1250)['include_dessert'])->toBeFalse()
+        ->and(CraftLibraryTierMap::snapToCraftTotal(1391, 'afternoon'))->toBe(1200)
+        ->and(CraftLibraryTierMap::row('afternoon', 1500)['include_dessert'])->toBeTrue();
 });
 
 test('day craft snaps 1500 needs to 1400', function () {

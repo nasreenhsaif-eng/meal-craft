@@ -20,7 +20,7 @@ const CRAFT_LIBRARY_TIERS = Object.freeze({
     }),
     afternoon: Object.freeze({
         950: { breakfast: 0, mainEach: 400, mainCount: 2, includeSideSalad: true, includeDessert: false, includeSoup: false },
-        1200: { breakfast: 0, mainEach: 400, mainCount: 2, includeSideSalad: true, includeDessert: true, includeSoup: false },
+        1200: { breakfast: 0, mainEach: 400, mainCount: 2, includeSideSalad: true, includeDessert: false, includeSoup: false },
         1500: { breakfast: 0, mainEach: 550, mainCount: 2, includeSideSalad: true, includeDessert: true, includeSoup: false },
         1800: { breakfast: 0, mainEach: 700, mainCount: 2, includeSideSalad: true, includeDessert: true, includeSoup: false },
         2000: { breakfast: 0, mainEach: 800, mainCount: 2, includeSideSalad: true, includeDessert: true, includeSoup: false },
@@ -63,10 +63,24 @@ function craftLibraryRows(craftKey) {
  */
 export function snapToCraftTotal(calories, craftKey = 'full') {
     const rows = craftLibraryRows(craftKey);
-    const totals = Object.keys(rows).map((total) => Number(total)).filter((total) => Number.isFinite(total));
+    let totals = Object.keys(rows).map((total) => Number(total)).filter((total) => Number.isFinite(total));
 
     if (totals.length === 0) {
         return Math.max(0, Math.round(calories));
+    }
+
+    // Keep the 1200–1391 band off the 1500 plate so dessert stays optional by default.
+    if (craftKey === 'afternoon' && calories < 1400) {
+        totals = totals.filter((total) => total < 1400);
+    }
+
+    // Full Craft 1200–1400 needs stay on the 1250 row (no default dessert).
+    if (craftKey === 'full' && calories < 1400) {
+        totals = totals.filter((total) => total < 1400);
+    }
+
+    if (totals.length === 0) {
+        totals = Object.keys(rows).map((total) => Number(total)).filter((total) => Number.isFinite(total));
     }
 
     let nearest = totals[0];
@@ -82,6 +96,27 @@ export function snapToCraftTotal(calories, craftKey = 'full') {
     }
 
     return nearest;
+}
+
+/**
+ * Preselect dessert only when the day target sits on a ~1500+ craft row.
+ * Full Craft 1200–1400 and Afternoon below 1500 leave dessert unchecked (customer may still add one).
+ *
+ * @param {number} calories
+ * @param {string | null | undefined} [craftKey]
+ */
+export function craftDefaultsDessert(calories, craftKey = 'full') {
+    return craftLibrarySlotRow(calories, craftKey).includeDessert;
+}
+
+/**
+ * Afternoon Craft preselects a dessert only when the day target sits on the 1500 tier.
+ * Below 1200 (950) and the 1200–1391 band stay without a dessert.
+ *
+ * @param {number} calories
+ */
+export function afternoonCraftDefaultsDessert(calories) {
+    return craftDefaultsDessert(calories, 'afternoon');
 }
 
 /**

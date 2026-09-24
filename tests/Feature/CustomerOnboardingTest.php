@@ -494,7 +494,7 @@ test('onboarding pages receive shared meal craft onboarding props', function () 
             ->where('mealCraft.onboarding.currentStep', OnboardingStep::Activity->value));
 });
 
-test('completed onboarding redirects to meal selection', function () {
+test('completed onboarding redirects to home', function () {
     $customer = User::factory()->customer()->create();
     CustomerProfile::factory()->for($customer)->withoutOnboarding()->create([
         'onboarding_step' => OnboardingStep::FoodFilters,
@@ -504,7 +504,7 @@ test('completed onboarding redirects to meal selection', function () {
         ->post(route('onboarding.food-filters.store'), [
             'allergies' => ['gluten', 'dairy'],
         ])
-        ->assertRedirect(route('consultation.crafted-for-you', ['from' => 'onboarding'], absolute: false));
+        ->assertRedirect(route('app.home'));
 
     $profile = $customer->fresh()->customerProfile;
 
@@ -548,7 +548,7 @@ test('customer home shows the onboarding calorie target range instead of the sna
             ->where('profile.dailyCaloriesMax', $targets['daily_calories_max']));
 });
 
-test('inertia food filter completion uses external location redirect to meal selection', function () {
+test('inertia food filter completion redirects to home', function () {
     $customer = User::factory()->customer()->create();
     CustomerProfile::factory()->for($customer)->withoutOnboarding()->create([
         'onboarding_step' => OnboardingStep::FoodFilters,
@@ -560,8 +560,7 @@ test('inertia food filter completion uses external location redirect to meal sel
         ], [
             'X-Inertia' => 'true',
         ])
-        ->assertStatus(409)
-        ->assertHeader('X-Inertia-Location', route('consultation.crafted-for-you', ['from' => 'onboarding'], absolute: false));
+        ->assertRedirect(route('app.home'));
 });
 
 test('completed customers can reset onboarding for testing', function () {
@@ -606,6 +605,25 @@ test('completed customers can revisit food filters from meal consultation', func
     $this->actingAs($customer)
         ->get(route('onboarding.show', ['step' => OnboardingStep::FoodFilters->value]))
         ->assertSuccessful();
+});
+
+test('completed customers finish profile edits at food filters and return home', function () {
+    $customer = User::factory()->customer()->create();
+    CustomerProfile::factory()->for($customer)->create([
+        'allergies' => ['dairy'],
+        'food_filters' => ['dairy'],
+    ]);
+
+    $this->actingAs($customer)
+        ->post(route('onboarding.food-filters.store'), [
+            'allergies' => ['gluten'],
+        ])
+        ->assertRedirect(route('app.home'));
+
+    $profile = $customer->fresh()->customerProfile;
+
+    expect($profile?->food_filters)->toBe(['gluten'])
+        ->and($profile?->onboarding_completed_at)->not->toBeNull();
 });
 
 test('completed customers can continue editing profile through onboarding steps', function () {

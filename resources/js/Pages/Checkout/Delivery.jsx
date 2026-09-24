@@ -35,7 +35,7 @@ export default function Delivery({
 
                 <div className="mt-8">
                     <PartnerKitchenCard
-                        name="Picnic"
+                        name="Picniq"
                         logoUrl="/images/partners/picniq-gourmet.png"
                         rating={4.5}
                         reviewCount={128}

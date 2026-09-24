@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\CustomerActivityLevel;
+use App\Enums\CustomerContactPreference;
 use App\Enums\CustomerDeliveryTime;
 use App\Enums\CustomerPlanType;
 use App\Enums\CustomerSex;
@@ -17,6 +18,7 @@ function checkoutConfirmPayload(array $overrides = []): array
     return array_merge([
         'declaration_accepted' => true,
         'phone' => '+973 1234 5678',
+        'contact_preference' => CustomerContactPreference::Whatsapp->value,
         'delivery_time' => CustomerDeliveryTime::Morning->value,
         'area' => 'Adliya',
         'block' => '338',
@@ -54,6 +56,7 @@ test('completed customers see onboarding details for review on checkout', functi
         'first_name' => 'Ada',
         'last_name' => 'Lovelace',
         'phone' => '+973 1111 2222',
+        'contact_preference' => CustomerContactPreference::Email,
         'height_cm' => 165,
         'weight_kg' => 70,
         'target_weight_kg' => 65,
@@ -78,6 +81,8 @@ test('completed customers see onboarding details for review on checkout', functi
             ->where('form.first_name', 'Ada')
             ->where('form.last_name', 'Lovelace')
             ->where('form.email', 'ada@example.com')
+            ->where('form.phone', '+973 1111 2222')
+            ->where('form.contact_preference', 'email')
             ->where('form.height_cm', '165')
             ->where('form.weight_kg', '70')
             ->where('form.gender', 'female')
@@ -86,9 +91,8 @@ test('completed customers see onboarding details for review on checkout', functi
             ->where('form.plan_type', 'full')
             ->where('form.plan_days', '5')
             ->where('form.country', 'Bahrain')
-            ->where('phoneEditable', false)
             ->where('declarationAccepted', false)
-            ->where('profileEditUrl', route('onboarding.show', ['step' => OnboardingStep::Gender->value]))
+            ->missing('phoneEditable')
             ->where('uniqueCode', $profile->fresh()->unique_code));
 });
 
@@ -129,7 +133,7 @@ test('customers can confirm checkout details without overwriting onboarding body
             'plan_days' => 3,
             'dislikes_and_allergies' => 'should-not-apply',
         ]))
-        ->assertRedirect(route('checkout.details'))
+        ->assertRedirect(route('checkout.payment'))
         ->assertSessionHas('success');
 
     $profile->refresh();
@@ -142,7 +146,8 @@ test('customers can confirm checkout details without overwriting onboarding body
         ->and($profile->plan_days)->toBe(5)
         ->and($profile->allergies)->toBe(['peanuts'])
         ->and($profile->dislikes)->toBe(['cilantro'])
-        ->and($profile->phone)->toBe('+973 1234 5678')
+        ->and($profile->phone)->toBe('+97312345678')
+        ->and($profile->contact_preference)->toBe(CustomerContactPreference::Whatsapp)
         ->and($profile->delivery_time)->toBe(CustomerDeliveryTime::Morning)
         ->and($profile->area)->toBe('Adliya')
         ->and($profile->follow_instagram)->toBeTrue()
@@ -158,12 +163,12 @@ test('customers can confirm checkout details without overwriting onboarding body
             'phone' => '+973 8888 1111',
             'area' => 'Juffair',
         ]))
-        ->assertRedirect(route('checkout.details'));
+        ->assertRedirect(route('checkout.payment'));
 
     $profile->refresh();
 
     expect($profile->intake_submission_id)->toBe($submissionId)
-        ->and($profile->phone)->toBe('+973 8888 1111')
+        ->and($profile->phone)->toBe('+97388881111')
         ->and($profile->area)->toBe('Juffair')
         ->and($profile->intake_declaration_accepted_at)->not->toBeNull()
         ->and($profile->intake_declaration_accepted_at->greaterThanOrEqualTo($declaredAt))->toBeTrue();
@@ -180,4 +185,60 @@ test('checkout confirmation requires a phone number when profile has none', func
             'phone' => null,
         ]))
         ->assertSessionHasErrors('phone');
+});
+
+test('checkout confirmation requires a contact preference', function () {
+    $customer = User::factory()->customer()->create();
+    CustomerProfile::factory()->for($customer)->create([
+        'phone' => '+973 1234 5678',
+        'contact_preference' => null,
+    ]);
+
+    $this->actingAs($customer)
+        ->post(route('checkout.details.store'), checkoutConfirmPayload([
+            'contact_preference' => null,
+        ]))
+        ->assertSessionHasErrors('contact_preference');
+});
+
+test('checkout confirmation requires a phone number even when profile already has one', function () {
+    $customer = User::factory()->customer()->create();
+    CustomerProfile::factory()->for($customer)->create([
+        'phone' => '+973 1111 2222',
+        'contact_preference' => CustomerContactPreference::Email,
+    ]);
+
+    $this->actingAs($customer)
+        ->post(route('checkout.details.store'), checkoutConfirmPayload([
+            'phone' => null,
+        ]))
+        ->assertSessionHasErrors('phone');
+});
+
+test('checkout confirmation requires delivery address fields', function () {
+    $customer = User::factory()->customer()->create();
+    CustomerProfile::factory()->for($customer)->create([
+        'phone' => '+973 1234 5678',
+        'contact_preference' => CustomerContactPreference::Whatsapp,
+    ]);
+
+    $this->actingAs($customer)
+        ->post(route('checkout.details.store'), checkoutConfirmPayload([
+            'delivery_time' => null,
+            'planned_start_date' => null,
+            'area' => null,
+            'block' => null,
+            'road' => null,
+            'house_number' => null,
+            'country' => null,
+        ]))
+        ->assertSessionHasErrors([
+            'delivery_time',
+            'planned_start_date',
+            'area',
+            'block',
+            'road',
+            'house_number',
+            'country',
+        ]);
 });

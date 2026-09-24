@@ -30,6 +30,7 @@ class CustomerAppController extends Controller
         return Inertia::render('App/Home', [
             'customerName' => $user?->name ?? '',
             'consultationUrl' => route('consultation.crafted-for-you'),
+            'consultationEditUrl' => route('consultation.crafted-for-you.edit'),
             'mealPlanSummaryUrl' => route('app.meal-plan'),
             'profileEditUrl' => route('onboarding.show', [
                 'step' => OnboardingStep::entry()->value,

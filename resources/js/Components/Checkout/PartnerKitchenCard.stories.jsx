@@ -17,7 +17,7 @@ export default {
         onSelect: { action: 'select' },
     },
     args: {
-        name: 'Picnic',
+        name: 'Picniq',
         logoUrl: '/images/partners/picniq-gourmet.png',
         rating: 4.5,
         reviewCount: 128,
@@ -27,7 +27,7 @@ export default {
 };
 
 export const Default = {
-    name: 'Picnic',
+    name: 'Picniq',
     render: (args) => (
         <div className="w-full max-w-3xl bg-bg-page p-6">
             <PartnerKitchenCard {...args} />

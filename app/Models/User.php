@@ -61,6 +61,32 @@ class User extends Authenticatable
     }
 
     /**
+     * Customer finished onboarding and submitted at least one craft meal plan.
+     */
+    public function hasSubmittedMealPlan(): bool
+    {
+        $profile = $this->customerProfile;
+
+        if ($profile === null) {
+            return false;
+        }
+
+        return $profile->craftPlans()
+            ->whereNotNull('submitted_at')
+            ->exists();
+    }
+
+    /**
+     * Welcome back home is for customers who finished profile + meal selections.
+     */
+    public function shouldLandOnWelcomeBack(): bool
+    {
+        return $this->isCustomer()
+            && $this->hasCompletedOnboarding()
+            && $this->hasSubmittedMealPlan();
+    }
+
+    /**
      * New customers must confirm one OTP sent to email and WhatsApp.
      * Customers without a profile are not gated (staff preview and legacy rows).
      */
@@ -96,8 +122,12 @@ class User extends Authenticatable
             return route('admin.dashboard', absolute: false);
         }
 
-        if ($this->hasCompletedOnboarding()) {
+        if ($this->shouldLandOnWelcomeBack()) {
             return route('app.home', absolute: false);
+        }
+
+        if ($this->hasCompletedOnboarding()) {
+            return route('consultation.crafted-for-you', absolute: false);
         }
 
         return route('onboarding.show', [

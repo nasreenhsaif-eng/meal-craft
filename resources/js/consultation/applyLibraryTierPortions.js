@@ -19,7 +19,8 @@ export function daysUseLibraryPortions(days) {
 
 /**
  * Swap breakfast/main cards onto the authored library tab for a daily total.
- * Sides/desserts/soup stay one-size; omitted slots are hidden.
+ * Sides/desserts/soup stay one-size. Soup/side may be omitted from the composed day;
+ * dessert options stay available even when the tier does not preselect dessert.
  *
  * @param {Array<{ dayNumber?: number; label?: string; categories?: Record<string, object[]> }>} [days]
  * @param {number} planTier
@@ -36,10 +37,6 @@ export function applyLibraryTierPortions(days, planTier, craftKey = 'full') {
 
         if (!row.includeSideSalad) {
             categories.sideSalads = [];
-        }
-
-        if (!row.includeDessert) {
-            categories.desserts = [];
         }
 
         if (!row.includeSoup) {

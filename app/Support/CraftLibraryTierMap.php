@@ -51,6 +51,20 @@ final class CraftLibraryTierMap
             return (int) max(0, round($calories));
         }
 
+        // Keep the 1200–1391 band off the 1500 plate so dessert stays optional by default.
+        if ($craftKey === 'afternoon' && $calories < 1400) {
+            $tiers = array_values(array_filter($tiers, fn (int $tier): bool => $tier < 1400));
+        }
+
+        // Full Craft 1200–1400 needs stay on the 1250 row (no default dessert).
+        if ($craftKey === 'full' && $calories < 1400) {
+            $tiers = array_values(array_filter($tiers, fn (int $tier): bool => $tier < 1400));
+        }
+
+        if ($tiers === []) {
+            $tiers = self::totalsForCraft($craftKey);
+        }
+
         $nearest = $tiers[0];
         $smallestDistance = abs($calories - $nearest);
 

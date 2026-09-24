@@ -9,7 +9,7 @@ import MealCardClientViewNano from '../../Components/MealCardClientViewNano.jsx'
 const mealOptionsDemo = consultationDeckOptionsForSlotKey(consultationMeals, 'meal');
 
 export default {
-    title: 'Design System/05. Templates & Pages/Consultation',
+    title: 'Design System/05. Templates & Pages/Crafted for you',
     component: CraftedForYouPage,
     decorators: withConsultationMobileFrame,
     parameters: {
@@ -41,7 +41,7 @@ export const CraftedForYour = {
 
 /**
  * Isolated meal ribbon — same capped mains as production consultation decks.
- * Story id: design-system-05-templates-pages-consultation--stacked-deck-consultation-meals
+ * Story id: design-system-05-templates-pages-crafted-for-you--stacked-deck-consultation-meals
  */
 export const StackedDeckConsultationMeals = {
     render: () => {

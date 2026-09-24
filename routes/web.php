@@ -173,6 +173,8 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             Route::get('/checkout/delivery', [CheckoutController::class, 'delivery'])->name('checkout.delivery');
             Route::get('/checkout/details', [CheckoutController::class, 'details'])->name('checkout.details');
             Route::post('/checkout/details', [CheckoutController::class, 'storeDetails'])->name('checkout.details.store');
+            Route::get('/checkout/payment', [CheckoutController::class, 'payment'])->name('checkout.payment');
+            Route::post('/checkout/payment', [CheckoutController::class, 'storePayment'])->name('checkout.payment.store');
             Route::get('/meal-plan/recipes', [CustomerAppController::class, 'mealPlan'])->name('meal-plan.recipes');
         });
 

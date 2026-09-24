@@ -53,12 +53,12 @@ describe('applyLibraryTierPortions', () => {
         expect(day.categories.desserts).toHaveLength(1);
     });
 
-    it('hides dessert at 1250 and keeps one-size sides', () => {
+    it('keeps dessert options at 1250 when dessert is not preselected', () => {
         const [day] = applyLibraryTierPortions(days, 1250);
 
         expect(day.categories.breakfasts[0].macros.calories).toBe(300);
         expect(day.categories.meals[0].macros.calories).toBe(400);
-        expect(day.categories.desserts).toHaveLength(0);
+        expect(day.categories.desserts).toHaveLength(1);
         expect(day.categories.sideSalads[0].macros.calories).toBe(150);
     });
 });

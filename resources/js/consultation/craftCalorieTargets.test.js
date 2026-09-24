@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
     categoryMacroTargetsFromPlan,
     craftDayCaloriesForKey,
+    craftDefaultsDessert,
     dailyMacroTargetsFromPlan,
     dayMacroToleranceFromPlan,
     isMacroOutsideTolerance,
@@ -9,6 +10,7 @@ import {
     macroSplitPercentagesFromPlan,
     mainSlotMacroTargetsFromPlan,
     nutritionPlanMatchesTier,
+    afternoonCraftDefaultsDessert,
     snapToCraftTotal,
 } from './craftCalorieTargets.js';
 
@@ -155,6 +157,26 @@ describe('craft library snap', () => {
             breakfasts: [{}],
             meals: [{}, {}],
         }).meals?.calories).toBe(1200);
+    });
+
+    it('leaves Afternoon Craft dessert off below 1500 and on around 1500', () => {
+        expect(afternoonCraftDefaultsDessert(1000)).toBe(false);
+        expect(afternoonCraftDefaultsDessert(1250)).toBe(false);
+        expect(afternoonCraftDefaultsDessert(1391)).toBe(false);
+        expect(afternoonCraftDefaultsDessert(1500)).toBe(true);
+        expect(afternoonCraftDefaultsDessert(1800)).toBe(true);
+        expect(snapToCraftTotal(1000, 'afternoon')).toBe(950);
+        expect(snapToCraftTotal(1250, 'afternoon')).toBe(1200);
+        expect(snapToCraftTotal(1391, 'afternoon')).toBe(1200);
+        expect(snapToCraftTotal(1500, 'afternoon')).toBe(1500);
+    });
+
+    it('leaves Full Craft dessert off around 1200–1400', () => {
+        expect(craftDefaultsDessert(1250, 'full')).toBe(false);
+        expect(craftDefaultsDessert(1375, 'full')).toBe(false);
+        expect(craftDefaultsDessert(1500, 'full')).toBe(true);
+        expect(snapToCraftTotal(1375, 'full')).toBe(1250);
+        expect(snapToCraftTotal(1400, 'full')).toBe(1500);
     });
 
     it('snaps Day Craft 2000 needs to 1400', () => {

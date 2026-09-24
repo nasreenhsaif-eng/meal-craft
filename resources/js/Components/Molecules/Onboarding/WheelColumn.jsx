@@ -65,11 +65,20 @@ export function WheelColumn({
         }
 
         const nextScrollTop = selectedIndex * WHEEL_ITEM_HEIGHT;
+        const node = listRef.current;
         isProgrammaticScrollRef.current = true;
         window.clearTimeout(scrollTimeoutRef.current);
-        listRef.current.scrollTop = nextScrollTop;
+        const previousBehavior = node.style.scrollBehavior;
+        node.style.scrollBehavior = 'auto';
+        node.scrollTop = nextScrollTop;
+        node.style.scrollBehavior = previousBehavior;
         setScrollTop(nextScrollTop);
         window.requestAnimationFrame(() => {
+            if (listRef.current && Math.abs(listRef.current.scrollTop - nextScrollTop) > 1) {
+                listRef.current.style.scrollBehavior = 'auto';
+                listRef.current.scrollTop = nextScrollTop;
+                listRef.current.style.scrollBehavior = previousBehavior;
+            }
             isProgrammaticScrollRef.current = false;
         });
     }, [selectedIndex]);
@@ -175,7 +184,7 @@ export function WheelColumn({
                     WebkitMaskImage: WHEEL_MASK_IMAGE,
                     maskImage: WHEEL_MASK_IMAGE,
                 }}
-                className="snap-y snap-mandatory overflow-x-hidden overflow-y-auto overscroll-y-contain scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                className="snap-y snap-mandatory overflow-x-hidden overflow-y-auto overscroll-y-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
             >
                 {Array.from({ length: WHEEL_PAD_COUNT }).map((_, index) => (
                     <li

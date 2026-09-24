@@ -32,7 +32,7 @@ import {
 } from '../../consultation/mapAdaptedMenuMeals.js';
 import { resolveProtocolBreakfastSeedId } from '../../consultation/seedProtocolBreakfast.js';
 import { buildCraftPlanSubmissionPayload, submitCraftPlan } from '../../consultation/submitCraftPlan.js';
-import { craftDayCaloriesForKey, dailyMacroTargetsFromPlan, dayMacroToleranceFromPlan, fixedPortionCaloriesForAdapt, nutritionPlanMatchesTier, selectedFixedSlotsFromSelections } from '../../consultation/craftCalorieTargets.js';
+import { craftDayCaloriesForKey, craftDefaultsDessert, dailyMacroTargetsFromPlan, dayMacroToleranceFromPlan, fixedPortionCaloriesForAdapt, nutritionPlanMatchesTier, selectedFixedSlotsFromSelections } from '../../consultation/craftCalorieTargets.js';
 import {
     resolveInitialConsultationRestoreDraft,
     saveConsultationDraft,
@@ -1185,10 +1185,14 @@ export default function CraftedForYouPage({
         });
     }, [craft, dietProtocol, sortedSelectedDays, scheduledFullCraftByWeekday]);
 
+    const afternoonDessertKeptRef = useRef(/** @type {Set<number>} */ (new Set()));
+
     useEffect(() => {
         if (dietProtocol !== 'nutrient_dense' || !craft || sortedSelectedDays.length === 0) {
             return;
         }
+
+        const includeDefaultDessert = craftDefaultsDessert(basePlanTier, craft.key);
 
         setSelectedByDay((prev) => {
             let changed = false;
@@ -1196,13 +1200,23 @@ export default function CraftedForYouPage({
             const next = { ...prev };
 
             for (const day of sortedSelectedDays) {
-                const current = next[day] ?? {
+                let current = next[day] ?? {
                     breakfasts: [],
                     meals: [],
                     sideSalads: [],
                     desserts: [],
                     soup: [],
                 };
+
+                if (
+                    !includeDefaultDessert &&
+                    (current.desserts?.length ?? 0) > 0 &&
+                    !afternoonDessertKeptRef.current.has(day)
+                ) {
+                    current = { ...current, desserts: [] };
+                    next[day] = current;
+                    changed = true;
+                }
 
                 const hasSides =
                     (current.sideSalads?.length ?? 0) > 0 ||
@@ -1228,7 +1242,11 @@ export default function CraftedForYouPage({
 
                 let remaining = 2;
 
-                for (const key of /** @type {const} */ (['sideSalads', 'desserts', 'soup'])) {
+                const sideSeedKeys = includeDefaultDessert
+                    ? /** @type {const} */ (['sideSalads', 'desserts', 'soup'])
+                    : /** @type {const} */ (['sideSalads', 'soup']);
+
+                for (const key of sideSeedKeys) {
                     if (remaining <= 0) {
                         break;
                     }
@@ -1258,7 +1276,7 @@ export default function CraftedForYouPage({
 
             return changed ? next : prev;
         });
-    }, [craft, dietProtocol, sortedSelectedDays, scheduledFullCraftByWeekday]);
+    }, [craft, dietProtocol, basePlanTier, sortedSelectedDays, scheduledFullCraftByWeekday]);
 
     const assignedMealsForCalorieDay = useMemo(() => {
         if (!calorieDay) {
@@ -1781,6 +1799,10 @@ export default function CraftedForYouPage({
                             const daySelections = selectedByDay[day] ?? emptyDaySelections;
 
                             const toggle = (key, max) => (meal) => {
+                                if (key === 'desserts') {
+                                    afternoonDessertKeptRef.current.add(day);
+                                }
+
                                 setSelectedByDay((prev) => {
                                     const current = prev[day] ?? {
                                         breakfasts: [],
@@ -1807,6 +1829,10 @@ export default function CraftedForYouPage({
                             };
 
                             const toggleFixedChoice = (categoryKey, meal) => {
+                                if (categoryKey === 'desserts') {
+                                    afternoonDessertKeptRef.current.add(day);
+                                }
+
                                 setSelectedByDay((prev) => {
                                     const current = prev[day] ?? {
                                         breakfasts: [],

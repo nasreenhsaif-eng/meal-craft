@@ -1,4 +1,5 @@
 import Button from '../Atoms/Button/Button.jsx';
+import MealCraftLogo from '../Atoms/Logo/MealCraftLogo.jsx';
 import MealCardClientViewNano from '../MealCardClientViewNano.jsx';
 
 /**
@@ -61,9 +62,14 @@ export default function ProtocolMealSlotCard({
 
             <div className={multiSelect || meals.length > 0 ? 'px-3 pb-3' : 'pb-1'}>
                 {meals.length === 0 ? (
-                    <p className="px-4 py-6 text-center font-body text-sm text-[#555555]">
-                        No meal selected yet.
-                    </p>
+                    <div
+                        className="flex justify-center py-6"
+                        role="status"
+                        aria-live="polite"
+                        aria-label="Loading meal options"
+                    >
+                        <MealCraftLogo variant="minimal-animated" width={88} alt="" />
+                    </div>
                 ) : (
                     <div className={cardsLayout}>
                         {meals.map((meal, index) => (

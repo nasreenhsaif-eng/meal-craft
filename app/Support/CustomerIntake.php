@@ -8,7 +8,6 @@ use App\Enums\CustomerDeliveryTime;
 use App\Enums\CustomerPlanType;
 use App\Enums\CustomerSex;
 use App\Enums\DietProtocol;
-use App\Enums\OnboardingStep;
 use App\Models\CustomerProfile;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -132,27 +131,24 @@ final class CustomerIntake
     }
 
     /**
-     * Validation for customer checkout confirmation (delivery + declaration only).
+     * Validation for customer checkout confirmation (delivery + contact + declaration).
      *
      * @return array<string, mixed>
      */
     public static function checkoutRules(?CustomerProfile $profile): array
     {
-        $phoneRequired = $profile === null
-            || $profile->phone === null
-            || trim((string) $profile->phone) === '';
-
         return [
             'declaration_accepted' => ['accepted'],
-            'phone' => [$phoneRequired ? 'required' : 'nullable', 'string', 'max:32'],
-            'delivery_time' => ['nullable', 'string', Rule::enum(CustomerDeliveryTime::class)],
-            'area' => ['nullable', 'string', 'max:120'],
-            'block' => ['nullable', 'string', 'max:32'],
-            'road' => ['nullable', 'string', 'max:64'],
-            'house_number' => ['nullable', 'string', 'max:64'],
+            'phone' => ['required', 'string', 'max:32'],
+            'contact_preference' => ['required', 'string', Rule::enum(CustomerContactPreference::class)],
+            'delivery_time' => ['required', 'string', Rule::enum(CustomerDeliveryTime::class)],
+            'area' => ['required', 'string', 'max:120'],
+            'block' => ['required', 'string', 'max:32'],
+            'road' => ['required', 'string', 'max:64'],
+            'house_number' => ['required', 'string', 'max:64'],
             'gate_flat_number' => ['nullable', 'string', 'max:64'],
-            'country' => ['nullable', 'string', 'max:64'],
-            'planned_start_date' => ['nullable', 'date'],
+            'country' => ['required', 'string', 'max:64'],
+            'planned_start_date' => ['required', 'date'],
             'follow_instagram' => ['sometimes', 'boolean'],
             'customer_question' => ['nullable', 'string', 'max:5000'],
             'uncalculated_plan' => ['sometimes', 'boolean'],
@@ -167,6 +163,7 @@ final class CustomerIntake
     {
         $nullable = [
             'phone',
+            'contact_preference',
             'delivery_time',
             'area',
             'block',
@@ -205,6 +202,8 @@ final class CustomerIntake
     {
         DB::transaction(function () use ($profile, $validated): void {
             $fill = [
+                'phone' => PhoneNumber::normalize((string) $validated['phone']) ?? $validated['phone'],
+                'contact_preference' => CustomerContactPreference::from($validated['contact_preference']),
                 'delivery_time' => self::nullableEnum(CustomerDeliveryTime::class, $validated['delivery_time'] ?? null),
                 'area' => $validated['area'] ?? null,
                 'block' => $validated['block'] ?? null,
@@ -221,10 +220,6 @@ final class CustomerIntake
                 'intake_declaration_accepted_at' => now(),
             ];
 
-            if (array_key_exists('phone', $validated) && ($validated['phone'] ?? null) !== null) {
-                $fill['phone'] = $validated['phone'];
-            }
-
             $profile->fill($fill);
 
             if ($profile->intake_submission_id === null || $profile->intake_submission_id === '') {
@@ -236,22 +231,17 @@ final class CustomerIntake
     }
 
     /**
-     * @return array{form: array<string, mixed>, options: array<string, list<array{value: string, label: string}>>, uniqueCode: string, intakeSubmissionId: string, profileEditUrl: string, phoneEditable: bool}
+     * @return array{form: array<string, mixed>, options: array<string, list<array{value: string, label: string}>>, uniqueCode: string, intakeSubmissionId: string}
      */
     public static function pageProps(CustomerProfile $profile): array
     {
         $form = self::toFormArray($profile);
-        $phone = trim((string) ($form['phone'] ?? ''));
 
         return [
             'form' => $form,
             'options' => self::optionLists(),
             'uniqueCode' => (string) ($profile->unique_code ?? ''),
             'intakeSubmissionId' => (string) ($profile->intake_submission_id ?? ''),
-            'profileEditUrl' => route('onboarding.show', [
-                'step' => OnboardingStep::entry()->value,
-            ]),
-            'phoneEditable' => $phone === '',
             'declarationAccepted' => $profile->intake_declaration_accepted_at !== null,
         ];
     }

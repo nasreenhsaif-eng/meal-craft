@@ -42,7 +42,7 @@ export default function ProtocolMealOptionsScreen({
     }
 
     return createPortal(
-        <div className="fixed inset-0 z-[110] flex items-end justify-center p-0 pt-14 sm:items-center sm:p-6">
+        <div className="fixed inset-0 z-[110] flex items-start justify-center overflow-y-auto overscroll-contain p-3 pt-3 sm:items-center sm:overflow-hidden sm:p-6">
             <button
                 type="button"
                 className="absolute inset-0 bg-black/40"
@@ -54,8 +54,8 @@ export default function ProtocolMealOptionsScreen({
                 aria-modal="true"
                 aria-labelledby="mc-options-modal-title"
                 className={[
-                    'relative flex max-h-[calc(100dvh-3.5rem)] w-full max-w-5xl flex-col overflow-hidden sm:max-h-[92dvh]',
-                    'rounded-t-[16px] bg-[#F8F9F6] shadow-2xl sm:rounded-[16px]',
+                    'relative my-0 flex w-full max-w-5xl flex-col sm:my-auto sm:max-h-[92dvh] sm:overflow-hidden',
+                    'rounded-[16px] bg-[#F8F9F6] shadow-2xl',
                     className,
                 ]
                     .join(' ')
@@ -85,7 +85,7 @@ export default function ProtocolMealOptionsScreen({
                     />
                 </div>
 
-                <div className="min-h-0 flex-1 overflow-x-clip overflow-y-auto px-0 py-0 sm:py-1">
+                <div className="min-h-0 overflow-x-clip px-0 py-0 sm:flex-1 sm:overflow-y-auto sm:py-1">
                     {children}
                 </div>
 

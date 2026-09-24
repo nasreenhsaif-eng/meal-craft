@@ -211,7 +211,7 @@ const preview = {
                 const inPagesA = ta.startsWith(pagesBase);
                 const inPagesB = tb.startsWith(pagesBase);
                 if (inPagesA && inPagesB) {
-                    const consultationBase = `${pagesBase}Consultation`;
+                    const consultationBase = `${pagesBase}Crafted for you`;
                     const bothConsultation =
                         (ta === consultationBase || ta.startsWith(`${consultationBase}/`)) &&
                         (tb === consultationBase || tb.startsWith(`${consultationBase}/`));
@@ -252,7 +252,7 @@ const preview = {
                         `${pagesBase}Auth`,
                         `${pagesBase}Onboarding`,
                         `${pagesBase}Admin`,
-                        `${pagesBase}Consultation`,
+                        `${pagesBase}Crafted for you`,
                     ];
                     const ia = pagesOrder.findIndex((t) => ta === t || ta.startsWith(`${t}/`));
                     const ib = pagesOrder.findIndex((t) => tb === t || tb.startsWith(`${t}/`));

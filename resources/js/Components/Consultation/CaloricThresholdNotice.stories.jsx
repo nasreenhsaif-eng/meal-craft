@@ -2,7 +2,7 @@ import CaloricThresholdNotice from './CaloricThresholdNotice.jsx';
 import { withConsultationMobileFrame } from '../../Pages/Consultation/consultationStoryDecorators.jsx';
 
 export default {
-    title: 'Design System/05. Templates & Pages/Consultation/CaloricThresholdNotice',
+    title: 'Design System/05. Templates & Pages/Crafted for you/CaloricThresholdNotice',
     component: CaloricThresholdNotice,
     decorators: withConsultationMobileFrame,
     parameters: {

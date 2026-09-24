@@ -15,8 +15,6 @@ import { resolveInertiaLayoutChild } from '../../lib/resolveInertiaLayoutChild.j
  * @param {string} [props.submitUrl]
  * @param {string} [props.deliveryUrl]
  * @param {string} [props.homeUrl]
- * @param {string} [props.profileEditUrl]
- * @param {boolean} [props.phoneEditable]
  * @param {boolean} [props.declarationAccepted]
  */
 export default function CustomerDetails({
@@ -28,8 +26,6 @@ export default function CustomerDetails({
     submitUrl = '/checkout/details',
     deliveryUrl = '/checkout/delivery',
     homeUrl = '/app',
-    profileEditUrl = '/onboarding/gender',
-    phoneEditable = false,
     declarationAccepted = false,
 }) {
     const page = usePage();
@@ -69,8 +65,6 @@ export default function CustomerDetails({
                         options={options}
                         uniqueCode={uniqueCode}
                         intakeSubmissionId={intakeSubmissionId}
-                        profileEditUrl={profileEditUrl}
-                        phoneEditable={phoneEditable}
                         onSubmit={() => post(submitUrl)}
                     />
                 </div>

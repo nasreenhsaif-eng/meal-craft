@@ -64,7 +64,7 @@ return [
             'main_each' => 400,
             'main_count' => 2,
             'include_side_salad' => true,
-            'include_dessert' => true,
+            'include_dessert' => false,
             'include_soup' => false,
         ],
         1500 => [

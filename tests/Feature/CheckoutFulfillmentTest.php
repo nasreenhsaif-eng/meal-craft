@@ -66,6 +66,7 @@ test('customer home offers profile, meals plan, and summary destinations', funct
             ->component('App/Home')
             ->where('profileEditUrl', route('onboarding.show', ['step' => OnboardingStep::Gender->value]))
             ->where('consultationUrl', route('consultation.crafted-for-you'))
+            ->where('consultationEditUrl', route('consultation.crafted-for-you.edit'))
             ->where('mealPlanSummaryUrl', route('app.meal-plan'))
             ->missing('fulfillmentUrl'));
 });

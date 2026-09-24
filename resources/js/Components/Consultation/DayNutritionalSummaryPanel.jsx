@@ -16,10 +16,6 @@ import {
     PlanMacroSummaryPanel,
     sumActiveDayMacros,
 } from './ChooseYourMeals.jsx';
-import {
-    categoryMacroTargetsFromPlan,
-    dailyMacroTargetsFromPlan,
-} from '../../consultation/craftCalorieTargets.js';
 
 export const DAY_SUMMARY_TABS = /** @type {const} */ ([
     { id: 'meals', label: 'Meals' },
@@ -215,33 +211,23 @@ export function DayMealsTabPanel({ meals, onOpenMeal }) {
  * @param {Partial<Record<string, unknown[]>>} props.categories
  * @param {string} [props.dayLabel]
  * @param {string} [props.planCategoryLabel]
- * @param {string | null | undefined} [props.craftKey]
- * @param {number} [props.planTierCalories]
+ * @param {string | null | undefined} [props.craftKey] Reserved for callers; day targets are not shown.
+ * @param {number} [props.planTierCalories] Reserved for callers; day targets are not shown.
  * @param {Record<string, unknown> | null | undefined} [props.nutritionPlan]
  */
 export function DayMacronutrientsTabPanel({
     categories,
     dayLabel = 'Day',
     planCategoryLabel = '',
-    craftKey = 'full',
-    planTierCalories = 0,
+    craftKey: _craftKey = 'full',
+    planTierCalories: _planTierCalories = 0,
     nutritionPlan = null,
 }) {
     const activeDayTotals = useMemo(() => sumActiveDayMacros(categories), [categories]);
-    const dayMacroTargets = useMemo(
-        () => dailyMacroTargetsFromPlan(nutritionPlan, planTierCalories, craftKey ?? 'full'),
-        [nutritionPlan, planTierCalories, craftKey],
-    );
-    const categoryMacroTargets = useMemo(
-        () => categoryMacroTargetsFromPlan(craftKey, planTierCalories, nutritionPlan, categories),
-        [craftKey, planTierCalories, nutritionPlan, categories],
-    );
 
     return (
         <PlanMacroSummaryPanel
             activeDayTotals={activeDayTotals}
-            dayMacroTargets={dayMacroTargets}
-            categoryMacroTargets={categoryMacroTargets}
             categories={categories}
             dayLabel={dayLabel}
             planCategoryLabel={planCategoryLabel}

@@ -203,17 +203,14 @@ export default function MealPlanSummary({
                         </motion.div>
                     </AnimatePresence>
 
-                    <div className="mt-4 flex flex-wrap gap-3 border-t border-gray-200 pt-6">
+                    <div className="mt-4 flex flex-wrap justify-end gap-3 border-t border-gray-200 pt-6">
                         <Button
-                            label="Edit selections"
-                            variant="outline"
-                            onClick={handleEditSelections}
-                            className="px-8"
-                        />
-                        <Button
-                            label="Actions"
+                            label="Next"
                             variant="primary"
-                            onClick={() => router.visit(fulfillmentUrl)}
+                            onClick={() => {
+                                const base = String(homeUrl || '/app').split('?')[0] || '/app';
+                                router.visit(`${base}?from=summary`);
+                            }}
                             className="px-10"
                         />
                     </div>

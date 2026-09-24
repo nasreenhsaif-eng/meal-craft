@@ -97,7 +97,7 @@ export function parseIsoDate(iso) {
 }
 
 /**
- * Default picker value for new customers (~32 years old, March 3 per design mock).
+ * Default picker value for new customers (30 years old, March 3 per design mock).
  */
 export function defaultBirthdayValue() {
     const currentYear = new Date().getFullYear();
@@ -105,6 +105,6 @@ export function defaultBirthdayValue() {
     return {
         month: 3,
         day: 3,
-        year: currentYear - 32,
+        year: currentYear - 30,
     };
 }

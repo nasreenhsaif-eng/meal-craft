@@ -1,6 +1,7 @@
-import { useId } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import Button from '../Atoms/Button/Button.jsx';
 import SquareCheckbox from '../Atoms/Icons/SquareCheckbox.jsx';
+import DropdownTextInput from '../Atoms/TextInput/DropdownTextInput.jsx';
 import TextInput from '../Atoms/TextInput/TextInput.jsx';
 import CalendarDateField from '../Molecules/Calendar/CalendarDateField.jsx';
 import FoodFilterPill from '../MealSystem/FoodFilterPill.jsx';
@@ -8,6 +9,21 @@ import FoodFilterPill from '../MealSystem/FoodFilterPill.jsx';
 /**
  * @typedef {{ value: string; label: string }} IntakeOption
  */
+
+const CONTACT_FIELDS = /** @type {const} */ (['phone', 'contact_preference']);
+const DELIVERY_FIELDS = /** @type {const} */ ([
+    'delivery_time',
+    'planned_start_date',
+    'area',
+    'block',
+    'road',
+    'house_number',
+    'country',
+]);
+const CONFIRM_FIELDS = /** @type {const} */ (['declaration_accepted']);
+
+/** Common dial codes — Bahrain first (signup default). */
+const PHONE_COUNTRY_CODES = ['+973', '+966', '+971', '+965', '+974', '+968', '+961', '+20', '+44', '+1'];
 
 /**
  * @param {string | null | undefined} iso
@@ -42,32 +58,247 @@ function labelFor(value, options = []) {
 }
 
 /**
- * @param {{ title: string; children: import('react').ReactNode; action?: import('react').ReactNode }} props
+ * @param {unknown} value
+ * @returns {boolean}
  */
-function Section({ title, children, action = null }) {
+function isMissing(value) {
+    if (typeof value === 'boolean') {
+        return !value;
+    }
+
+    return value == null || String(value).trim() === '';
+}
+
+/**
+ * @param {string | null | undefined} phone
+ * @returns {{ countryCode: string; nationalNumber: string }}
+ */
+function splitPhone(phone) {
+    const trimmed = String(phone ?? '').trim();
+
+    if (trimmed === '') {
+        return { countryCode: '+973', nationalNumber: '' };
+    }
+
+    const digitsWithPlus = trimmed.startsWith('+')
+        ? `+${trimmed.slice(1).replace(/\D/g, '')}`
+        : `+${trimmed.replace(/\D/g, '')}`;
+
+    const codes = [...PHONE_COUNTRY_CODES].sort((a, b) => b.length - a.length);
+
+    for (const code of codes) {
+        if (digitsWithPlus.startsWith(code)) {
+            return {
+                countryCode: code,
+                nationalNumber: digitsWithPlus.slice(code.length),
+            };
+        }
+    }
+
+    return {
+        countryCode: '+973',
+        nationalNumber: digitsWithPlus.replace(/^\+/, ''),
+    };
+}
+
+/**
+ * @param {string} countryCode
+ * @param {string} nationalNumber
+ * @returns {string}
+ */
+function combinePhone(countryCode, nationalNumber) {
+    const code = String(countryCode || '+973').startsWith('+')
+        ? String(countryCode || '+973')
+        : `+${String(countryCode || '973').replace(/\D/g, '')}`;
+    const national = String(nationalNumber ?? '').replace(/\D/g, '');
+
+    if (national === '') {
+        return '';
+    }
+
+    return `${code}${national}`;
+}
+
+/**
+ * @param {string | null | undefined} phone
+ * @returns {string}
+ */
+function formatPhoneDisplay(phone) {
+    if (isMissing(phone)) {
+        return '—';
+    }
+
+    const { countryCode, nationalNumber } = splitPhone(phone);
+
+    if (!nationalNumber) {
+        return String(phone);
+    }
+
+    return `${countryCode} ${nationalNumber}`;
+}
+
+/**
+ * @param {Record<string, mixed>} data
+ * @returns {Record<string, string>}
+ */
+function buildClientFieldErrors(data) {
+    /** @type {Record<string, string>} */
+    const fieldErrors = {};
+
+    if (isMissing(data.phone)) {
+        fieldErrors.phone = 'Phone number is required.';
+    }
+
+    if (isMissing(data.contact_preference)) {
+        fieldErrors.contact_preference = 'Select a contact preference.';
+    }
+
+    if (isMissing(data.delivery_time)) {
+        fieldErrors.delivery_time = 'Select a delivery time.';
+    }
+
+    if (isMissing(data.planned_start_date)) {
+        fieldErrors.planned_start_date = 'Planned starting date is required.';
+    }
+
+    if (isMissing(data.area)) {
+        fieldErrors.area = 'Area is required.';
+    }
+
+    if (isMissing(data.block)) {
+        fieldErrors.block = 'Block is required.';
+    }
+
+    if (isMissing(data.road)) {
+        fieldErrors.road = 'Road is required.';
+    }
+
+    if (isMissing(data.house_number)) {
+        fieldErrors.house_number = 'House number is required.';
+    }
+
+    if (isMissing(data.country)) {
+        fieldErrors.country = 'Country is required.';
+    }
+
+    if (!data.declaration_accepted) {
+        fieldErrors.declaration_accepted = 'Please accept the declaration to continue.';
+    }
+
+    return fieldErrors;
+}
+
+/**
+ * @param {Record<string, string>} fieldErrors
+ * @param {readonly string[]} keys
+ * @returns {boolean}
+ */
+function sectionHasErrors(fieldErrors, keys) {
+    return keys.some((key) => Boolean(fieldErrors[key]));
+}
+
+/**
+ * Plain underlined text action — no ghost/pill background.
+ *
+ * @param {{ label?: string; onClick: () => void }} props
+ */
+function UnderlineEditButton({ label = 'Edit', onClick }) {
     return (
-        <section className="rounded-[12px] border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
+        <button
+            type="button"
+            onClick={onClick}
+            className="shrink-0 appearance-none border-0 bg-transparent p-0 font-montserrat text-sm font-semibold text-[#5A6B44] underline decoration-[#5A6B44]/40 underline-offset-2 outline-none transition-colors hover:text-[#485636] hover:decoration-[#5A6B44] focus-visible:rounded-[4px] focus-visible:ring-2 focus-visible:ring-[#5A6B44] focus-visible:ring-offset-2"
+        >
+            {label}
+        </button>
+    );
+}
+
+/**
+ * @param {{
+ *   title: string;
+ *   children: import('react').ReactNode;
+ *   action?: import('react').ReactNode;
+ *   invalid?: boolean;
+ *   errorMessage?: string | null;
+ *   sectionRef?: import('react').RefObject<HTMLElement | null>;
+ * }} props
+ */
+function Section({ title, children, action = null, invalid = false, errorMessage = null, sectionRef = null }) {
+    return (
+        <section
+            ref={sectionRef}
+            className={[
+                'rounded-[12px] border bg-white p-5 shadow-sm sm:p-6',
+                invalid ? 'border-status-error' : 'border-gray-200',
+            ].join(' ')}
+            aria-invalid={invalid ? 'true' : undefined}
+        >
             <div className="flex flex-wrap items-start justify-between gap-3">
-                <h2 className="m-0 font-montserrat text-base font-bold tracking-tight text-[#262A22]">{title}</h2>
+                <h2
+                    className={[
+                        'm-0 font-montserrat text-base font-bold tracking-tight',
+                        invalid ? 'text-status-error' : 'text-[#262A22]',
+                    ].join(' ')}
+                >
+                    {title}
+                </h2>
                 {action}
             </div>
+            {invalid && errorMessage ? (
+                <p className="mt-2 font-body text-sm text-status-error" role="alert">
+                    {errorMessage}
+                </p>
+            ) : null}
             <div className="mt-4">{children}</div>
         </section>
     );
 }
 
 /**
- * @param {{ rows: Array<{ label: string; value: string }> }} props
+ * Scroll the first incomplete section into view (with a little top offset for the header).
+ *
+ * @param {HTMLElement | null | undefined} element
+ */
+function scrollToSection(element) {
+    if (!element) {
+        return;
+    }
+
+    const top = element.getBoundingClientRect().top + window.scrollY - 24;
+    window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+}
+
+/**
+ * @param {{ rows: Array<{ label: string; value: string; invalid?: boolean }> }} props
  */
 function DefinitionList({ rows }) {
     return (
         <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {rows.map((row) => (
-                <div key={row.label} className="min-w-0 rounded-[12px] bg-[#F8F9F6] px-4 py-3">
-                    <dt className="font-montserrat text-xs font-bold uppercase tracking-wide text-[#555555]">
+                <div
+                    key={row.label}
+                    className={[
+                        'min-w-0 rounded-[12px] px-4 py-3',
+                        row.invalid ? 'bg-status-error/10 ring-1 ring-status-error' : 'bg-[#F8F9F6]',
+                    ].join(' ')}
+                >
+                    <dt
+                        className={[
+                            'font-montserrat text-xs font-bold uppercase tracking-wide',
+                            row.invalid ? 'text-status-error' : 'text-[#555555]',
+                        ].join(' ')}
+                    >
                         {row.label}
                     </dt>
-                    <dd className="mt-1 break-words font-body text-sm font-medium text-[#262A22]">{row.value}</dd>
+                    <dd
+                        className={[
+                            'mt-1 break-words font-body text-sm font-medium',
+                            row.invalid ? 'text-status-error' : 'text-[#262A22]',
+                        ].join(' ')}
+                    >
+                        {row.value}
+                    </dd>
                 </div>
             ))}
         </dl>
@@ -75,7 +306,123 @@ function DefinitionList({ rows }) {
 }
 
 /**
- * Customer checkout review: onboarding summary (read-only) + editable delivery + declaration.
+ * @param {{
+ *   label: string;
+ *   value: string;
+ *   options?: IntakeOption[];
+ *   onChange: (value: string) => void;
+ *   error?: string;
+ * }} props
+ */
+function OptionPillGroup({ label, value, options = [], onChange, error }) {
+    return (
+        <div className="w-full min-w-0">
+            <p
+                className={[
+                    'mb-2 font-montserrat text-sm font-bold leading-snug tracking-tight',
+                    error ? 'text-status-error' : 'text-grey-94',
+                ].join(' ')}
+            >
+                {label}
+            </p>
+            <div className="flex flex-wrap gap-2" role="group" aria-label={label}>
+                {options.map((option) => (
+                    <FoodFilterPill
+                        key={option.value}
+                        label={option.label}
+                        isActive={value === option.value}
+                        onClick={() => onChange(option.value)}
+                    />
+                ))}
+            </div>
+            {error ? (
+                <p className="mt-1.5 text-sm text-status-error" role="alert">
+                    {error}
+                </p>
+            ) : null}
+        </div>
+    );
+}
+
+/**
+ * Country code + national number fields that write a combined E.164 `phone` value.
+ *
+ * @param {{
+ *   phone: string;
+ *   onPhoneChange: (phone: string) => void;
+ *   error?: string;
+ * }} props
+ */
+function PhoneNumberFields({ phone, onPhoneChange, error }) {
+    const split = useMemo(() => splitPhone(phone), [phone]);
+    const [countryCode, setCountryCode] = useState(split.countryCode);
+    const [nationalNumber, setNationalNumber] = useState(split.nationalNumber);
+
+    useEffect(() => {
+        setCountryCode(split.countryCode);
+        setNationalNumber(split.nationalNumber);
+    }, [split.countryCode, split.nationalNumber]);
+
+    /**
+     * @param {string} nextCode
+     * @param {string} nextNational
+     */
+    const commit = (nextCode, nextNational) => {
+        setCountryCode(nextCode);
+        setNationalNumber(nextNational);
+        onPhoneChange(combinePhone(nextCode, nextNational));
+    };
+
+    return (
+        <div className="w-full min-w-0">
+            <p
+                className={[
+                    'mb-2 font-montserrat text-sm font-bold leading-snug tracking-tight',
+                    error ? 'text-status-error' : 'text-grey-94',
+                ].join(' ')}
+            >
+                Phone number
+            </p>
+            <div className="grid grid-cols-[7.5rem_minmax(0,1fr)] gap-2 sm:grid-cols-[8.5rem_minmax(0,1fr)] sm:gap-3">
+                <DropdownTextInput
+                    label="Country code"
+                    hideLabel
+                    listboxAriaLabel="Country code"
+                    value={countryCode}
+                    options={PHONE_COUNTRY_CODES}
+                    onChange={(nextCode) => commit(nextCode, nationalNumber)}
+                    className="!max-w-none"
+                />
+                <TextInput
+                    label="Mobile number"
+                    className="!max-w-none [&_label]:sr-only"
+                    type="tel"
+                    inputMode="tel"
+                    placeholder="XXXX XXXX"
+                    value={nationalNumber}
+                    onChange={(event) => commit(countryCode, event.target.value)}
+                    autoComplete="tel-national"
+                />
+            </div>
+            {error ? (
+                <p className="mt-1.5 text-sm text-status-error" role="alert">
+                    {error}
+                </p>
+            ) : null}
+        </div>
+    );
+}
+
+/**
+ * @param {Record<string, mixed>} data
+ * @returns {boolean}
+ */
+function isDeliveryIncomplete(data) {
+    return DELIVERY_FIELDS.some((key) => isMissing(data[key]));
+}
+
+/**
+ * Customer checkout review: onboarding summary (read-only) + editable contact/delivery + declaration.
  *
  * @param {{
  *   data: Record<string, mixed>;
@@ -85,8 +432,6 @@ function DefinitionList({ rows }) {
  *   options?: Record<string, IntakeOption[]>;
  *   uniqueCode?: string;
  *   intakeSubmissionId?: string;
- *   profileEditUrl?: string;
- *   phoneEditable?: boolean;
  *   declarationAccepted?: boolean;
  *   onSubmit: () => void;
  * }} props
@@ -99,13 +444,66 @@ export default function CustomerCheckoutDetailsReview({
     options = {},
     uniqueCode = '',
     intakeSubmissionId = '',
-    profileEditUrl = '/onboarding/gender',
-    phoneEditable = false,
     onSubmit,
 }) {
     const declarationId = useId();
     const fieldClass = 'w-full !max-w-full';
     const declarationChecked = Boolean(data.declaration_accepted);
+    const phoneMissing = isMissing(data.phone);
+    const contactPreferenceMissing = isMissing(data.contact_preference);
+    const contactSectionRef = useRef(/** @type {HTMLElement | null} */ (null));
+    const deliverySectionRef = useRef(/** @type {HTMLElement | null} */ (null));
+    const confirmSectionRef = useRef(/** @type {HTMLElement | null} */ (null));
+
+    const [editingContact, setEditingContact] = useState(
+        () => phoneMissing || contactPreferenceMissing,
+    );
+    const [editingDelivery, setEditingDelivery] = useState(() => isDeliveryIncomplete(data));
+    const [showValidation, setShowValidation] = useState(false);
+
+    const clientErrors = useMemo(() => buildClientFieldErrors(data), [data]);
+    const fieldErrors = useMemo(() => {
+        if (!showValidation && Object.keys(errors).length === 0) {
+            return {};
+        }
+
+        return { ...clientErrors, ...errors };
+    }, [clientErrors, errors, showValidation]);
+
+    const contactInvalid = sectionHasErrors(fieldErrors, CONTACT_FIELDS);
+    const deliveryInvalid = sectionHasErrors(fieldErrors, DELIVERY_FIELDS);
+    const confirmInvalid = sectionHasErrors(fieldErrors, CONFIRM_FIELDS);
+
+    /**
+     * @param {Record<string, string>} nextErrors
+     */
+    const focusFirstIncompleteSection = (nextErrors) => {
+        if (sectionHasErrors(nextErrors, CONTACT_FIELDS)) {
+            setEditingContact(true);
+            requestAnimationFrame(() => scrollToSection(contactSectionRef.current));
+            return;
+        }
+
+        if (sectionHasErrors(nextErrors, DELIVERY_FIELDS)) {
+            setEditingDelivery(true);
+            requestAnimationFrame(() => scrollToSection(deliverySectionRef.current));
+            return;
+        }
+
+        if (sectionHasErrors(nextErrors, CONFIRM_FIELDS)) {
+            requestAnimationFrame(() => scrollToSection(confirmSectionRef.current));
+        }
+    };
+
+    useEffect(() => {
+        if (Object.keys(errors).length === 0) {
+            return;
+        }
+
+        setShowValidation(true);
+        focusFirstIncompleteSection(errors);
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- only react to new server errors
+    }, [errors]);
 
     const contactRows = [
         {
@@ -113,10 +511,15 @@ export default function CustomerCheckoutDetailsReview({
             value: [data.first_name, data.last_name].filter(Boolean).join(' ') || '—',
         },
         { label: 'Email', value: data.email || '—' },
-        ...(!phoneEditable ? [{ label: 'Phone', value: data.phone || '—' }] : []),
+        {
+            label: 'Phone',
+            value: formatPhoneDisplay(data.phone),
+            invalid: Boolean(fieldErrors.phone),
+        },
         {
             label: 'Contact preference',
             value: labelFor(data.contact_preference, options.contactPreferences),
+            invalid: Boolean(fieldErrors.contact_preference),
         },
     ];
 
@@ -136,137 +539,197 @@ export default function CustomerCheckoutDetailsReview({
         },
     ];
 
+    const deliveryRows = [
+        {
+            label: 'Delivery time',
+            value: labelFor(data.delivery_time, options.deliveryTimes),
+            invalid: Boolean(fieldErrors.delivery_time),
+        },
+        {
+            label: 'Planned starting date',
+            value: formatDisplayDate(data.planned_start_date),
+            invalid: Boolean(fieldErrors.planned_start_date),
+        },
+        { label: 'Area', value: data.area || '—', invalid: Boolean(fieldErrors.area) },
+        { label: 'Block', value: data.block || '—', invalid: Boolean(fieldErrors.block) },
+        { label: 'Road', value: data.road || '—', invalid: Boolean(fieldErrors.road) },
+        {
+            label: 'House number',
+            value: data.house_number || '—',
+            invalid: Boolean(fieldErrors.house_number),
+        },
+        { label: 'Gate / flat number', value: data.gate_flat_number || '—' },
+        { label: 'Country', value: data.country || '—', invalid: Boolean(fieldErrors.country) },
+    ];
+
     return (
         <form
             className="flex w-full min-w-0 flex-col gap-5"
             onSubmit={(event) => {
                 event.preventDefault();
-                if (!declarationChecked || processing) {
+                if (processing) {
                     return;
                 }
+
+                const nextErrors = buildClientFieldErrors(data);
+                const hasClientErrors = Object.keys(nextErrors).length > 0;
+
+                setShowValidation(true);
+
+                if (hasClientErrors) {
+                    focusFirstIncompleteSection(nextErrors);
+                    return;
+                }
+
                 onSubmit();
             }}
+            noValidate
         >
             <Section
                 title="Contact"
+                sectionRef={contactSectionRef}
+                invalid={contactInvalid}
+                errorMessage={contactInvalid ? 'Complete the missing contact details.' : null}
                 action={
-                    <Button
-                        type="button"
-                        label="Edit profile"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => window.location.assign(profileEditUrl)}
-                        className="!h-auto !min-h-0 shrink-0 px-0"
+                    <UnderlineEditButton
+                        onClick={() => setEditingContact((open) => !open)}
                     />
                 }
             >
-                <DefinitionList rows={contactRows} />
-                {phoneEditable ? (
-                    <div className="mt-4">
-                        <TextInput
-                            label="Phone number"
-                            type="tel"
-                            value={data.phone ?? ''}
-                            onChange={(event) => setData('phone', event.target.value)}
-                            error={errors.phone}
-                            autoComplete="tel"
-                            className={fieldClass}
+                {editingContact ? (
+                    <div className="flex w-full min-w-0 flex-col gap-4">
+                        <DefinitionList
+                            rows={[
+                                {
+                                    label: 'Name',
+                                    value:
+                                        [data.first_name, data.last_name].filter(Boolean).join(' ') ||
+                                        '—',
+                                },
+                                { label: 'Email', value: data.email || '—' },
+                            ]}
+                        />
+                        <PhoneNumberFields
+                            phone={String(data.phone ?? '')}
+                            onPhoneChange={(nextPhone) => setData('phone', nextPhone)}
+                            error={fieldErrors.phone}
+                        />
+                        <OptionPillGroup
+                            label="Contact preference"
+                            value={data.contact_preference ?? ''}
+                            options={options.contactPreferences}
+                            onChange={(value) => setData('contact_preference', value)}
+                            error={fieldErrors.contact_preference}
                         />
                     </div>
-                ) : null}
+                ) : (
+                    <DefinitionList rows={contactRows} />
+                )}
             </Section>
 
-            <Section
-                title="Body & plan"
-                action={
-                    <Button
-                        type="button"
-                        label="Edit profile"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => window.location.assign(profileEditUrl)}
-                        className="!h-auto !min-h-0 shrink-0 px-0"
-                    />
-                }
-            >
+            <Section title="Plan & Biometrics">
                 <DefinitionList rows={bodyPlanRows} />
             </Section>
 
-            <Section title="Delivery address">
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 [&>*]:min-w-0">
-                    <div className="md:col-span-2">
-                        <p className="mb-2 font-montserrat text-sm font-bold leading-snug tracking-tight text-grey-94">
-                            Delivery time
-                        </p>
-                        <div className="flex flex-wrap gap-2" role="group" aria-label="Delivery time">
-                            {(options.deliveryTimes ?? []).map((option) => (
-                                <FoodFilterPill
-                                    key={option.value}
-                                    label={option.label}
-                                    isActive={(data.delivery_time ?? '') === option.value}
-                                    onClick={() => setData('delivery_time', option.value)}
-                                />
-                            ))}
-                        </div>
-                        {errors.delivery_time ? (
-                            <p className="mt-1.5 text-sm text-status-error" role="alert">
-                                {errors.delivery_time}
+            <Section
+                title="Delivery address"
+                sectionRef={deliverySectionRef}
+                invalid={deliveryInvalid}
+                errorMessage={deliveryInvalid ? 'Complete the missing delivery details.' : null}
+                action={
+                    <UnderlineEditButton
+                        onClick={() => setEditingDelivery((open) => !open)}
+                    />
+                }
+            >
+                {editingDelivery ? (
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 [&>*]:min-w-0">
+                        <div className="md:col-span-2">
+                            <p
+                                className={[
+                                    'mb-2 font-montserrat text-sm font-bold leading-snug tracking-tight',
+                                    fieldErrors.delivery_time ? 'text-status-error' : 'text-grey-94',
+                                ].join(' ')}
+                            >
+                                Delivery time
                             </p>
-                        ) : null}
+                            <div className="flex flex-wrap gap-2" role="group" aria-label="Delivery time">
+                                {(options.deliveryTimes ?? []).map((option) => (
+                                    <FoodFilterPill
+                                        key={option.value}
+                                        label={option.label}
+                                        isActive={(data.delivery_time ?? '') === option.value}
+                                        onClick={() => setData('delivery_time', option.value)}
+                                    />
+                                ))}
+                            </div>
+                            {fieldErrors.delivery_time ? (
+                                <p className="mt-1.5 text-sm text-status-error" role="alert">
+                                    {fieldErrors.delivery_time}
+                                </p>
+                            ) : null}
+                        </div>
+                        <CalendarDateField
+                            label="Planned starting date"
+                            value={data.planned_start_date ?? ''}
+                            onChange={(iso) => setData('planned_start_date', iso)}
+                            error={fieldErrors.planned_start_date}
+                            className={fieldClass}
+                        />
+                        <TextInput
+                            label="Area"
+                            value={data.area ?? ''}
+                            onChange={(event) => setData('area', event.target.value)}
+                            error={fieldErrors.area}
+                            className={fieldClass}
+                        />
+                        <TextInput
+                            label="Block"
+                            value={data.block ?? ''}
+                            onChange={(event) => setData('block', event.target.value)}
+                            error={fieldErrors.block}
+                            className={fieldClass}
+                        />
+                        <TextInput
+                            label="Road"
+                            value={data.road ?? ''}
+                            onChange={(event) => setData('road', event.target.value)}
+                            error={fieldErrors.road}
+                            className={fieldClass}
+                        />
+                        <TextInput
+                            label="House number"
+                            value={data.house_number ?? ''}
+                            onChange={(event) => setData('house_number', event.target.value)}
+                            error={fieldErrors.house_number}
+                            className={fieldClass}
+                        />
+                        <TextInput
+                            label="Gate / flat number"
+                            value={data.gate_flat_number ?? ''}
+                            onChange={(event) => setData('gate_flat_number', event.target.value)}
+                            error={fieldErrors.gate_flat_number}
+                            className={fieldClass}
+                        />
+                        <TextInput
+                            label="Country"
+                            value={data.country ?? ''}
+                            onChange={(event) => setData('country', event.target.value)}
+                            error={fieldErrors.country}
+                            className={fieldClass}
+                        />
                     </div>
-                    <CalendarDateField
-                        label="Planned starting date"
-                        value={data.planned_start_date ?? ''}
-                        onChange={(iso) => setData('planned_start_date', iso)}
-                        error={errors.planned_start_date}
-                        className={fieldClass}
-                    />
-                    <TextInput
-                        label="Area"
-                        value={data.area ?? ''}
-                        onChange={(event) => setData('area', event.target.value)}
-                        error={errors.area}
-                        className={fieldClass}
-                    />
-                    <TextInput
-                        label="Block"
-                        value={data.block ?? ''}
-                        onChange={(event) => setData('block', event.target.value)}
-                        error={errors.block}
-                        className={fieldClass}
-                    />
-                    <TextInput
-                        label="Road"
-                        value={data.road ?? ''}
-                        onChange={(event) => setData('road', event.target.value)}
-                        error={errors.road}
-                        className={fieldClass}
-                    />
-                    <TextInput
-                        label="House number"
-                        value={data.house_number ?? ''}
-                        onChange={(event) => setData('house_number', event.target.value)}
-                        error={errors.house_number}
-                        className={fieldClass}
-                    />
-                    <TextInput
-                        label="Gate / flat number"
-                        value={data.gate_flat_number ?? ''}
-                        onChange={(event) => setData('gate_flat_number', event.target.value)}
-                        error={errors.gate_flat_number}
-                        className={fieldClass}
-                    />
-                    <TextInput
-                        label="Country"
-                        value={data.country ?? ''}
-                        onChange={(event) => setData('country', event.target.value)}
-                        error={errors.country}
-                        className={fieldClass}
-                    />
-                </div>
+                ) : (
+                    <DefinitionList rows={deliveryRows} />
+                )}
             </Section>
 
-            <Section title="Confirm">
+            <Section
+                title="Confirm"
+                sectionRef={confirmSectionRef}
+                invalid={confirmInvalid}
+                errorMessage={confirmInvalid ? 'Accept the declaration to continue.' : null}
+            >
                 <div className="space-y-4">
                     <label
                         htmlFor={declarationId}
@@ -279,23 +742,35 @@ export default function CustomerCheckoutDetailsReview({
                             onChange={(event) => setData('declaration_accepted', event.target.checked)}
                             className="peer sr-only"
                         />
-                        <span className="mt-0.5 inline-flex shrink-0 rounded-[4px] peer-focus-visible:ring-2 peer-focus-visible:ring-[#556C37] peer-focus-visible:ring-offset-2">
+                        <span
+                            className={[
+                                'mt-0.5 inline-flex shrink-0 rounded-[4px] peer-focus-visible:ring-2 peer-focus-visible:ring-offset-2',
+                                confirmInvalid
+                                    ? 'peer-focus-visible:ring-status-error'
+                                    : 'peer-focus-visible:ring-[#556C37]',
+                            ].join(' ')}
+                        >
                             <SquareCheckbox presentational checked={declarationChecked} />
                         </span>
-                        <span className="font-montserrat text-sm font-bold uppercase leading-snug tracking-wide text-[#262A22]">
+                        <span
+                            className={[
+                                'font-montserrat text-sm font-bold uppercase leading-snug tracking-wide',
+                                confirmInvalid ? 'text-status-error' : 'text-[#262A22]',
+                            ].join(' ')}
+                        >
                             I declare that all the information that was provided is true and to the best of my
                             knowledge
                         </span>
                     </label>
-                    {errors.declaration_accepted ? (
+                    {fieldErrors.declaration_accepted ? (
                         <p className="text-sm text-status-error" role="alert">
-                            {errors.declaration_accepted}
+                            {fieldErrors.declaration_accepted}
                         </p>
                     ) : null}
 
                     <ul className="space-y-2 font-body text-xs leading-relaxed text-[#555555] sm:text-sm">
                         <li>
-                            Meal Craft only facilitates meal delivery. It is not responsible for Picnic kitchen
+                            Meal Craft only facilitates meal delivery. It is not responsible for Picniq kitchen
                             cross-contamination or allergy handling.
                         </li>
                         <li>
@@ -334,7 +809,7 @@ export default function CustomerCheckoutDetailsReview({
                 <Button
                     type="submit"
                     label={processing ? 'Confirming…' : 'Confirm details'}
-                    disabled={processing || !declarationChecked}
+                    disabled={processing}
                     className="w-full min-w-[200px] max-w-sm uppercase tracking-[0.08em]"
                 />
             </div>

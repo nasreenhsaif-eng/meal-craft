@@ -59,7 +59,7 @@ function sumSelectionCalories(categorySelections) {
 }
 
 export default {
-    title: 'Design System/05. Templates & Pages/Consultation/ChooseYourMeals',
+    title: 'Design System/05. Templates & Pages/Crafted for you/ChooseYourMeals',
     component: ChooseYourMeals,
     decorators: withConsultationMobileFrame,
     parameters: {

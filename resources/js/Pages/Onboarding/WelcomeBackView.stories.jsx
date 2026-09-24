@@ -15,7 +15,7 @@ export default {
         docs: {
             description: {
                 component:
-                    'Post-login home for customers who finished onboarding — welcome-back card with daily targets and onboarding-style choices (edit profile, edit meals plan, view summary). Actions continue from the meal plan summary.',
+                    'Post-login home (Welcome back + ghost outline actions) and summary-flow receive mode (Partner Kitchen / DIY cards, then the same actions under the cards).',
             },
         },
     },
@@ -28,6 +28,21 @@ export const Default = {
         <WelcomeBackInner
             customerName="Nasreen"
             profile={NASREEN_PROFILE}
+            mode="welcome"
+            onEditProfile={() => undefined}
+            onEditMealsPlan={() => undefined}
+            onViewSummary={() => undefined}
+        />
+    ),
+};
+
+export const FromSummary = {
+    name: 'From summary — receive meal plan',
+    render: () => (
+        <WelcomeBackInner
+            customerName="Nasreen"
+            profile={NASREEN_PROFILE}
+            mode="receive"
             onEditProfile={() => undefined}
             onEditMealsPlan={() => undefined}
             onViewSummary={() => undefined}

@@ -18,7 +18,7 @@ const fixtureCategories = {
 };
 
 export default {
-    title: 'Design System/05. Templates & Pages/Consultation/DayNutritionalSummaryPanel',
+    title: 'Design System/05. Templates & Pages/Crafted for you/DayNutritionalSummaryPanel',
     component: DayNutritionalSummaryPanel,
     decorators: withConsultationMobileFrame,
     parameters: {
