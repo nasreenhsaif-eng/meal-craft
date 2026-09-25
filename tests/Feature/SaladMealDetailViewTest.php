@@ -14,6 +14,7 @@ test('salad meal detail view separates salad and dressing ingredients and instru
         'Romaine Lettuce',
         'Tomato (Raw)',
         'Cucumber',
+        'Carrots',
         'Bell Pepper (Red)',
         'Cabbage (Purple)',
         'Red Onion',

@@ -1,6 +1,6 @@
 /**
  * Logistics operational sheets. For the **meal-plan date picker** UI, use
- * `MealCraft/Components/Calendar` — single + range selection with MealCraft green chrome.
+ * `Design System/03. Molecules/Form and pickers/Calendar` — single + range selection with MealCraft green chrome.
  */
 import { useState } from 'react';
 import { AdminLayout } from '../Admin/AdminLayout.jsx';
@@ -35,7 +35,7 @@ function logisticsCsvDownload(filenameBase) {
 }
 
 export default {
-    title: 'MealCraft/Pages/Admin/Logistics',
+    title: 'Design System/05. Templates & Pages/Admin/Logistics',
     parameters: {
         layout: 'fullscreen',
     },
@@ -56,26 +56,6 @@ export const UserSubmissionsAdmin = {
                     onExportCsv={logisticsCsvDownload(`user-submissions-export-${date}`)}
                 />
             </AdminLayout>
-        );
-    },
-};
-
-export const UserSubmissionsTable = {
-    name: 'User submissions (table only)',
-    parameters: { layout: 'padded' },
-    render: function Render() {
-        const [date, setDate] = useState('');
-        return (
-            <div className="mx-auto max-w-6xl bg-[#F9FAFB] p-6">
-                <UserSubmissions
-                    submissions={mockUserSubmissions}
-                    selectedDate={date}
-                    onDateChange={setDate}
-                    onPrint={() => window.print()}
-                    onSendToGoogleDrive={logisticsCsvDownload('user-submissions-drive-all')}
-                    onExportCsv={logisticsCsvDownload('user-submissions-export-all')}
-                />
-            </div>
         );
     },
 };

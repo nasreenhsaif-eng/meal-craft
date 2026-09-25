@@ -14,9 +14,9 @@
         'title' => __('Crafted for YOU — Consultation'),
     ])
 </head>
-<body class="h-full min-h-[100dvh] bg-[#F8F9F6] antialiased">
+<body class="h-full min-h-[100dvh] w-full bg-[#F8F9F6] antialiased">
     <script id="mc-consultation-crafted-config" type="application/json">@json($consultationConfig)</script>
-    <div id="mc-consultation-crafted-root" class="h-full min-h-0"></div>
+    <div id="mc-consultation-crafted-root" class="h-full min-h-0 w-full"></div>
     @fluxScripts
 </body>
 </html>

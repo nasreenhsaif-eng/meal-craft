@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import Button from '../../Components/Atoms/Button.jsx';
-import PillButton from '../../Components/Atoms/Button/Button.jsx';
-import AdminPreviewTierPicker from '../../Components/Admin/AdminPreviewTierPicker.jsx';
+import OnboardingOptionButton from '../../Components/Atoms/Button/OnboardingOptionButton.jsx';
+import FoodFilterPill from '../../Components/MealSystem/FoodFilterPill.jsx';
+import OnboardingInlineDescription from '../../Components/Molecules/Onboarding/OnboardingInlineDescription.jsx';
 import ChooseYourMeals, {
     applyDeckSelectionToggle,
     applyFixedChoiceToggle,
@@ -29,8 +30,9 @@ import {
     scheduledFullCraftCategoryMealsForDay,
     scheduledSoupConsultationMealsForDay,
 } from '../../consultation/mapAdaptedMenuMeals.js';
+import { resolveProtocolBreakfastSeedId } from '../../consultation/seedProtocolBreakfast.js';
 import { buildCraftPlanSubmissionPayload, submitCraftPlan } from '../../consultation/submitCraftPlan.js';
-import { craftDayCaloriesForKey, dailyMacroTargetsFromPlan, dayMacroToleranceFromPlan, fixedPortionCaloriesForAdapt, nutritionPlanMatchesTier, selectedFixedSlotsFromSelections } from '../../consultation/craftCalorieTargets.js';
+import { craftDayCaloriesForKey, craftDefaultsDessert, dailyMacroTargetsFromPlan, dayMacroToleranceFromPlan, fixedPortionCaloriesForAdapt, nutritionPlanMatchesTier, selectedFixedSlotsFromSelections } from '../../consultation/craftCalorieTargets.js';
 import {
     resolveInitialConsultationRestoreDraft,
     saveConsultationDraft,
@@ -42,37 +44,8 @@ import { useMealDetailModal } from '../../meal-library/useMealDetailModal.js';
 const PAGE_BG = 'bg-[#F8F9F6]';
 const WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const WEEKDAY_LONG = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-const DEFAULT_PLAN_TIERS = [1000, 1200, 1500, 1800, 2000];
-const PREVIEW_PLAN_TIER_STORAGE_KEY = 'mc-admin-preview-plan-tier';
 const CONSULTATION_BACK_HREF_STORAGE_KEY = 'mc-consultation-back-href';
 
-/**
- * @param {number[]} planTiers
- * @param {number} fallback
- */
-function readStoredPreviewPlanTier(planTiers, fallback) {
-    try {
-        const raw = sessionStorage.getItem(PREVIEW_PLAN_TIER_STORAGE_KEY);
-        const value = Number(raw);
-
-        if (Number.isFinite(value) && planTiers.includes(value)) {
-            return value;
-        }
-    } catch {
-        // sessionStorage may be unavailable
-    }
-
-    return fallback;
-}
-
-/**
- * @param {{
- *   tiers: number[];
- *   selectedTier: number;
- *   onSelectTier: (tier: number) => void;
- *   compact?: boolean;
- * }} props
- */
 const CRAFTS = [
     {
         key: 'full',
@@ -173,8 +146,8 @@ function slotId(dayIdx, slotKey, index) {
  *   mealDetailViewUrlTemplate?: string;
  *   mealLibraryRevision?: number;
  *   initialPlanTier?: number | null;
- *   initialPlanTiers?: number[];
  *   disableAdaptedMenuFetch?: boolean;
+ *   embedInScrollParent?: boolean;
  *   initialEditDraft?: {
  *     craftKey?: string;
  *     weekDuration?: number;
@@ -185,6 +158,10 @@ function slotId(dayIdx, slotKey, index) {
  *       categories?: Record<string, unknown[]>;
  *     }>;
  *   } | null;
+ *   dietProtocol?: string | null;
+ *   sex?: string | null;
+ *   activityLevel?: string | null;
+ *   dailyCalorieTarget?: number | null;
  * }} [props]
  */
 export default function CraftedForYouPage({
@@ -196,15 +173,18 @@ export default function CraftedForYouPage({
     signOutUrl,
     csrfToken = '',
     isAdminPreview = false,
-    pageEyebrow = 'Admin / Consultation',
+    pageEyebrow = 'Your plan',
     adaptedMenuUrl = '/api/menu/adapted',
     mealDetailViewUrlTemplate = '/api/meals/{id}/detail-view',
     mealLibraryRevision = 0,
     initialPlanTier = null,
-    initialPlanTiers = DEFAULT_PLAN_TIERS,
     disableAdaptedMenuFetch = false,
+    embedInScrollParent = false,
     initialEditDraft = null,
     dietProtocol = null,
+    sex = null,
+    activityLevel = null,
+    dailyCalorieTarget = null,
 } = {}) {
     const initialRestoreDraft = useMemo(
         () => readInitialConsultationRestoreDraft(initialEditDraft),
@@ -254,6 +234,14 @@ export default function CraftedForYouPage({
             return backHref;
         }
 
+        if (typeof homeHref === 'string' && homeHref.trim() !== '') {
+            return homeHref;
+        }
+
+        if (typeof closeHref === 'string' && closeHref.trim() !== '') {
+            return closeHref;
+        }
+
         try {
             const stored = sessionStorage.getItem(CONSULTATION_BACK_HREF_STORAGE_KEY);
 
@@ -265,32 +253,23 @@ export default function CraftedForYouPage({
         }
 
         return null;
-    }, [backHref]);
+    }, [backHref, closeHref, homeHref]);
 
     useEffect(() => {
-        if (typeof backHref !== 'string' || backHref.trim() === '') {
+        const hrefToStore =
+            (typeof backHref === 'string' && backHref.trim() !== '' ? backHref : null) ??
+            (typeof homeHref === 'string' && homeHref.trim() !== '' ? homeHref : null);
+
+        if (hrefToStore === null) {
             return;
         }
 
         try {
-            sessionStorage.setItem(CONSULTATION_BACK_HREF_STORAGE_KEY, backHref);
+            sessionStorage.setItem(CONSULTATION_BACK_HREF_STORAGE_KEY, hrefToStore);
         } catch {
             // sessionStorage may be unavailable
         }
-    }, [backHref]);
-
-    const availablePlanTiers = useMemo(
-        () => (initialPlanTiers.length > 0 ? initialPlanTiers : DEFAULT_PLAN_TIERS),
-        [initialPlanTiers],
-    );
-    const [previewPlanTier, setPreviewPlanTier] = useState(() => {
-        const fallback =
-            typeof initialPlanTier === 'number' && initialPlanTier > 0
-                ? initialPlanTier
-                : availablePlanTiers[availablePlanTiers.length - 1] ?? 2000;
-
-        return isAdminPreview ? readStoredPreviewPlanTier(availablePlanTiers, fallback) : fallback;
-    });
+    }, [backHref, homeHref]);
 
     // Slot selection state (chosen meal ids per category, per day)
     const [selectedByDay, setSelectedByDay] = useState(
@@ -390,10 +369,6 @@ export default function CraftedForYouPage({
     );
 
     const basePlanTier = useMemo(() => {
-        if (isAdminPreview && typeof previewPlanTier === 'number' && previewPlanTier > 0) {
-            return previewPlanTier;
-        }
-
         const fromPlan = nutritionPlan?.plan_tier ?? nutritionPlan?.core_day_calories;
         if (typeof fromPlan === 'number' && fromPlan > 0) {
             return Math.round(fromPlan);
@@ -401,21 +376,12 @@ export default function CraftedForYouPage({
         if (typeof initialPlanTier === 'number' && initialPlanTier > 0) {
             return initialPlanTier;
         }
+        if (typeof dailyCalorieTarget === 'number' && dailyCalorieTarget > 0) {
+            return dailyCalorieTarget;
+        }
 
         return 1200;
-    }, [nutritionPlan, initialPlanTier, isAdminPreview, previewPlanTier]);
-
-    useEffect(() => {
-        if (!isAdminPreview) {
-            return;
-        }
-
-        try {
-            sessionStorage.setItem(PREVIEW_PLAN_TIER_STORAGE_KEY, String(previewPlanTier));
-        } catch {
-            // sessionStorage may be unavailable
-        }
-    }, [isAdminPreview, previewPlanTier]);
+    }, [nutritionPlan, initialPlanTier, dailyCalorieTarget]);
 
     const planTierCalories = useMemo(() => {
         const planSynced = nutritionPlan && nutritionPlanMatchesTier(nutritionPlan, basePlanTier);
@@ -602,12 +568,6 @@ export default function CraftedForYouPage({
     function goBackFromPlanSetup() {
         if (planSetupBackHref) {
             window.location.assign(planSetupBackHref);
-
-            return;
-        }
-
-        if (typeof window !== 'undefined' && window.history.length > 1) {
-            window.history.back();
 
             return;
         }
@@ -835,7 +795,6 @@ export default function CraftedForYouPage({
             scheduledDessertBaseline,
             scheduledSoupBaseline,
             dayOfWeek: adaptedMenuDay ?? null,
-            planTier: isAdminPreview ? previewPlanTier : null,
             breakfastId: breakfastId ?? null,
             selectedMainMealIds,
         });
@@ -850,8 +809,6 @@ export default function CraftedForYouPage({
         selectedByDay,
         scheduledFullCraftByWeekday,
         scheduledSoupsByWeekday,
-        isAdminPreview,
-        previewPlanTier,
         catalogMeals,
     ]);
 
@@ -918,7 +875,6 @@ export default function CraftedForYouPage({
             sideSaladCalories: fixedPortion.sideSaladCalories || undefined,
             dessertCalories: fixedPortion.dessertCalories || undefined,
             dayOfWeek: adaptedMenuDay,
-            planTier: isAdminPreview ? previewPlanTier : undefined,
             selectedMainMealIds: selectedByDay[adaptedMenuDay]?.meals ?? [],
             selectedBreakfastMealIds: selectedByDay[adaptedMenuDay]?.breakfasts ?? [],
         };
@@ -933,8 +889,6 @@ export default function CraftedForYouPage({
         scheduledSoupsByWeekday,
         selectedByDay,
         catalogMeals,
-        isAdminPreview,
-        previewPlanTier,
     ]);
 
     const resolveMealDetailQueryString = useCallback(() => {
@@ -949,9 +903,8 @@ export default function CraftedForYouPage({
             ...base,
             craftKey: detailCraftKey,
             dayOfWeek: base.dayOfWeek ?? calorieDay ?? undefined,
-            planTier: base.planTier ?? (isAdminPreview ? previewPlanTier : undefined),
         });
-    }, [adaptedMenuFetchParams, craftKey, calorieDay, isAdminPreview, previewPlanTier]);
+    }, [adaptedMenuFetchParams, craftKey, calorieDay]);
 
     const { mealDetailModal, detailLoading, openMealDetail, closeMealDetail } = useMealDetailModal(
         mealDetailViewUrlTemplate,
@@ -975,7 +928,7 @@ export default function CraftedForYouPage({
             return undefined;
         }
 
-        const cacheIdentity = `${craftKey}|${isAdminPreview ? previewPlanTier : 'profile'}|${mealLibraryRevision}`;
+        const cacheIdentity = `${craftKey}|profile|${mealLibraryRevision}`;
         const dayKey = adaptedMenuDay != null ? String(adaptedMenuDay) : '';
 
         if (scheduleCacheIdentityRef.current !== cacheIdentity) {
@@ -1076,7 +1029,6 @@ export default function CraftedForYouPage({
         craftKey,
         adaptedMenuFetchParams,
         isAdminPreview,
-        previewPlanTier,
         adaptedMenuDay,
         mealLibraryRevision,
     ]);
@@ -1128,30 +1080,17 @@ export default function CraftedForYouPage({
                 };
 
                 const assigned = scheduledFullCraftCategoryMealsForDay(scheduledFullCraftByWeekday, day);
-                const breakfastDeck = assigned?.breakfasts ?? [];
-                const recommendedBreakfast =
-                    breakfastDeck.find((meal) => meal?.isRecommended) ?? breakfastDeck[0];
-                const deckBreakfast = consultationDeckOptionsForSlotKey(catalogMeals, 'breakfast')[0];
-                const breakfast = recommendedBreakfast ?? deckBreakfast;
+                const breakfastId = resolveProtocolBreakfastSeedId({
+                    assignedBreakfasts: assigned?.breakfasts,
+                    currentBreakfastId: current.breakfasts?.[0],
+                    protectExisting: dietProtocol === 'nutrient_dense',
+                });
 
-                if (!breakfast?.id) {
+                if (!breakfastId) {
                     continue;
                 }
 
-                const breakfastId = normalizeConsultationMealId(breakfast.id);
-
-                // Nutrient Density: seed once with the recommended egg breakfast; never overwrite a customer swap.
-                if (dietProtocol === 'nutrient_dense') {
-                    if ((current.breakfasts?.length ?? 0) > 0) {
-                        continue;
-                    }
-
-                    next[day] = { ...current, breakfasts: [breakfastId] };
-                    changed = true;
-                    continue;
-                }
-
-                if (current.breakfasts?.[0] === breakfastId) {
+                if (normalizeConsultationMealId(current.breakfasts?.[0]) === breakfastId) {
                     continue;
                 }
 
@@ -1161,7 +1100,7 @@ export default function CraftedForYouPage({
 
             return changed ? next : prev;
         });
-    }, [craft, sortedSelectedDays, scheduledFullCraftByWeekday, catalogMeals, dietProtocol]);
+    }, [craft, sortedSelectedDays, scheduledFullCraftByWeekday, dietProtocol]);
 
     useEffect(() => {
         if (dietProtocol !== 'nutrient_dense' || !craft || sortedSelectedDays.length === 0) {
@@ -1252,10 +1191,14 @@ export default function CraftedForYouPage({
         });
     }, [craft, dietProtocol, sortedSelectedDays, scheduledFullCraftByWeekday]);
 
+    const afternoonDessertKeptRef = useRef(/** @type {Set<number>} */ (new Set()));
+
     useEffect(() => {
         if (dietProtocol !== 'nutrient_dense' || !craft || sortedSelectedDays.length === 0) {
             return;
         }
+
+        const includeDefaultDessert = craftDefaultsDessert(basePlanTier, craft.key);
 
         setSelectedByDay((prev) => {
             let changed = false;
@@ -1263,13 +1206,23 @@ export default function CraftedForYouPage({
             const next = { ...prev };
 
             for (const day of sortedSelectedDays) {
-                const current = next[day] ?? {
+                let current = next[day] ?? {
                     breakfasts: [],
                     meals: [],
                     sideSalads: [],
                     desserts: [],
                     soup: [],
                 };
+
+                if (
+                    !includeDefaultDessert &&
+                    (current.desserts?.length ?? 0) > 0 &&
+                    !afternoonDessertKeptRef.current.has(day)
+                ) {
+                    current = { ...current, desserts: [] };
+                    next[day] = current;
+                    changed = true;
+                }
 
                 const hasSides =
                     (current.sideSalads?.length ?? 0) > 0 ||
@@ -1295,7 +1248,11 @@ export default function CraftedForYouPage({
 
                 let remaining = 2;
 
-                for (const key of /** @type {const} */ (['sideSalads', 'desserts', 'soup'])) {
+                const sideSeedKeys = includeDefaultDessert
+                    ? /** @type {const} */ (['sideSalads', 'desserts', 'soup'])
+                    : /** @type {const} */ (['sideSalads', 'soup']);
+
+                for (const key of sideSeedKeys) {
                     if (remaining <= 0) {
                         break;
                     }
@@ -1325,7 +1282,7 @@ export default function CraftedForYouPage({
 
             return changed ? next : prev;
         });
-    }, [craft, dietProtocol, sortedSelectedDays, scheduledFullCraftByWeekday]);
+    }, [craft, dietProtocol, basePlanTier, sortedSelectedDays, scheduledFullCraftByWeekday]);
 
     const assignedMealsForCalorieDay = useMemo(() => {
         if (!calorieDay) {
@@ -1356,9 +1313,9 @@ export default function CraftedForYouPage({
         craftKey !== null && (isLgViewport !== true ? true : weekDuration !== null);
     const canGoNextFromManualDays = weekDuration !== null && sortedSelectedDays.length === weekDuration;
 
-    /** Full / Afternoon / Day / Intermittent share the weekly category carousels (same meal options). */
+    /** Weekly crafts share the default + SEE OTHER OPTIONS day view (no carousel). */
     const usesWeeklyCategoryLayout = useMemo(
-        () => Boolean(craft && ['full', 'afternoon', 'day', 'intermittent'].includes(craft.key)),
+        () => Boolean(craft && ['full', 'afternoon', 'day', 'intermittent', 'business'].includes(craft.key)),
         [craft],
     );
 
@@ -1575,14 +1532,20 @@ export default function CraftedForYouPage({
         return `Please select: ${missing.join(', ')}.`;
     }, [craft, curationDay, requiredSlotsByCraft, selectedByDay, businessSideChoiceByDay]);
 
+    const mobileNavBarClass = embedInScrollParent
+        ? 'mt-8 flex items-center justify-between gap-3 border-t border-gray-200/70 bg-[#F8F9F6] p-3 sm:mt-6 sm:border-t-0 sm:bg-transparent sm:p-0'
+        : 'mt-8 flex items-center justify-between gap-3 fixed bottom-0 left-0 right-0 z-40 border-t border-gray-200/70 bg-[#F8F9F6]/95 p-3 backdrop-blur sm:static sm:mt-6 sm:border-t-0 sm:bg-transparent sm:p-0';
+
     return (
         <div
             className={[
                 PAGE_BG,
                 'font-sans',
-                isCurationScreen
-                    ? 'flex h-[100dvh] min-h-0 flex-col overflow-hidden max-md:px-0 max-md:py-0 md:min-h-screen md:overflow-visible md:px-4 md:py-4 md:pb-4'
-                    : 'min-h-screen px-4 py-4 pb-24 sm:pb-4 md:px-4',
+                embedInScrollParent
+                    ? 'w-full px-4 py-4 pb-8'
+                    : isCurationScreen
+                      ? 'flex h-[100dvh] min-h-0 flex-col overflow-hidden max-md:px-0 max-md:py-0 md:min-h-screen md:overflow-visible md:px-4 md:py-4 md:pb-4'
+                      : 'min-h-screen px-4 py-4 pb-24 sm:pb-4 md:px-4',
             ].join(' ')}
         >
             <style>{`
@@ -1598,13 +1561,21 @@ export default function CraftedForYouPage({
             <div
                 className={[
                     'mx-auto w-full max-w-[1100px]',
-                    isCurationScreen ? 'flex min-h-0 flex-1 flex-col max-md:space-y-0 md:space-y-4' : 'space-y-4',
+                    embedInScrollParent
+                        ? 'space-y-4'
+                        : isCurationScreen
+                          ? 'flex min-h-0 flex-1 flex-col max-md:space-y-0 md:space-y-4'
+                          : 'space-y-4',
                 ].join(' ')}
             >
                 <div
                     className={[
                         'z-50 border-b border-gray-200/70 bg-[#F8F9F6]/95 px-4 pb-3 pt-2 backdrop-blur sm:pb-4',
-                        isCurationScreen ? 'shrink-0 sticky top-0' : 'sticky top-0 -mx-4 md:-mx-8 md:px-8',
+                        embedInScrollParent
+                            ? '-mx-4'
+                            : isCurationScreen
+                              ? 'shrink-0 sticky top-0'
+                              : 'sticky top-0 -mx-4 md:-mx-8 md:px-8',
                     ].join(' ')}
                 >
                     <div className="mx-auto max-w-[1100px]">
@@ -1639,14 +1610,6 @@ export default function CraftedForYouPage({
                             </div>
                         </div>
 
-                        {isAdminPreview && isCurationScreen ? (
-                            <AdminPreviewTierPicker
-                                compact
-                                tiers={availablePlanTiers}
-                                selectedTier={previewPlanTier}
-                                onSelectTier={setPreviewPlanTier}
-                            />
-                        ) : null}
                     </div>
                 </div>
 
@@ -1672,15 +1635,6 @@ export default function CraftedForYouPage({
                 {/* Screen 1 — Craft & Duration */}
                 {screen === 1 ? (
                     <section className="rounded-[12px] border border-gray-200 bg-white p-6 shadow-sm">
-                        {isAdminPreview ? (
-                            <div className="mb-6">
-                                <AdminPreviewTierPicker
-                                    tiers={availablePlanTiers}
-                                    selectedTier={previewPlanTier}
-                                    onSelectTier={setPreviewPlanTier}
-                                />
-                            </div>
-                        ) : null}
                         <h2 className="font-montserrat text-[16px] font-bold tracking-tight text-[#262A22]">
                             The Craft &amp; Duration
                         </h2>
@@ -1691,24 +1645,33 @@ export default function CraftedForYouPage({
                         <div className="mt-6 grid gap-6 lg:grid-cols-2">
                             <div>
                                 <h3 className="font-montserrat text-sm font-bold text-[#262A22]">What’s Your Craft</h3>
-                                <div className="mt-4 grid gap-3">
+                                <div className="mt-4 flex w-full flex-col gap-2.5">
                                     {CRAFTS.map((c) => {
                                         const active = c.key === craftKey;
+                                        const descriptionId = `craft-desc-${c.key}`;
+
                                         return (
-                                            <button
-                                                key={c.key}
-                                                type="button"
-                                                onClick={() => setCraftKey(c.key)}
-                                                aria-pressed={active}
-                                                className={[
-                                                    'w-full rounded-[12px] border p-4 text-left transition-colors',
-                                                    active ? 'border-[#5A6B44] bg-[#F8F9F6]' : 'border-gray-200 bg-white hover:bg-[#F8F9F6]',
-                                                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5A6B44] focus-visible:ring-offset-2',
-                                                ].join(' ')}
-                                            >
-                                                <p className="font-montserrat text-sm font-bold text-[#262A22]">{c.title}</p>
-                                                <p className="mt-1 font-body text-sm text-[#555555]">{c.description}</p>
-                                            </button>
+                                            <div key={c.key} className="flex w-full flex-col">
+                                                <OnboardingOptionButton
+                                                    label={c.title}
+                                                    selected={active}
+                                                    onSelect={() => setCraftKey(c.key)}
+                                                    describedBy={descriptionId}
+                                                />
+                                                <div
+                                                    className={[
+                                                        'grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none',
+                                                        active ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]',
+                                                    ].join(' ')}
+                                                    aria-hidden={!active}
+                                                >
+                                                    <div className="min-h-0 overflow-hidden">
+                                                        <OnboardingInlineDescription id={descriptionId}>
+                                                            {c.description}
+                                                        </OnboardingInlineDescription>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         );
                                     })}
                                 </div>
@@ -1721,13 +1684,11 @@ export default function CraftedForYouPage({
                                 </p>
                                 <div className="mt-3 flex flex-wrap gap-2">
                                     {[5, 6, 7].map((n) => (
-                                        <PillButton
+                                        <FoodFilterPill
                                             key={n}
                                             label={`${n} days`}
-                                            variant={weekDuration === n ? 'primary' : 'outline'}
-                                            size="sm"
+                                            isActive={weekDuration === n}
                                             onClick={() => setWeekDuration(n)}
-                                            className={weekDuration === n ? '' : 'ring-1 ring-[#E5E7EB]'}
                                         />
                                     ))}
                                 </div>
@@ -1737,7 +1698,7 @@ export default function CraftedForYouPage({
                             </div>
                         </div>
 
-                        <div className="mt-8 flex items-center justify-between gap-3 fixed bottom-0 left-0 right-0 z-40 border-t border-gray-200/70 bg-[#F8F9F6]/95 p-3 backdrop-blur sm:static sm:mt-6 sm:border-t-0 sm:bg-transparent sm:p-0">
+                        <div className={mobileNavBarClass}>
                             <Button label="BACK" variant="outline" onClick={goBackFromPlanSetup} className="px-10" />
                             <Button
                                 label="NEXT"
@@ -1762,15 +1723,6 @@ export default function CraftedForYouPage({
                 {/* Screen 2 — Manual Day Selection */}
                 {screen === 2 && usesManualDaySelection ? (
                     <section className="rounded-[12px] border border-gray-200 bg-white p-6 shadow-sm">
-                        {isAdminPreview ? (
-                            <div className="mb-6">
-                                <AdminPreviewTierPicker
-                                    tiers={availablePlanTiers}
-                                    selectedTier={previewPlanTier}
-                                    onSelectTier={setPreviewPlanTier}
-                                />
-                            </div>
-                        ) : null}
                         <h2 className="font-montserrat text-[16px] font-bold tracking-tight text-[#262A22]">
                             Manual Day Selection
                         </h2>
@@ -1784,13 +1736,11 @@ export default function CraftedForYouPage({
                             </p>
                             <div className="mt-3 flex flex-wrap gap-2">
                                 {[5, 6, 7].map((n) => (
-                                    <PillButton
+                                    <FoodFilterPill
                                         key={n}
                                         label={`${n} days`}
-                                        variant={weekDuration === n ? 'primary' : 'outline'}
-                                        size="sm"
+                                        isActive={weekDuration === n}
                                         onClick={() => setWeekDuration(n)}
-                                        className={weekDuration === n ? '' : 'ring-1 ring-[#E5E7EB]'}
                                     />
                                 ))}
                             </div>
@@ -1808,13 +1758,11 @@ export default function CraftedForYouPage({
                                     const dayIdx = i + 1;
                                     const isOn = sortedSelectedDays.includes(dayIdx);
                                     return (
-                                        <PillButton
+                                        <FoodFilterPill
                                             key={label}
                                             label={label}
-                                            variant={isOn ? 'primary' : 'outline'}
-                                            size="sm"
+                                            isActive={isOn}
                                             onClick={() => toggleDay(dayIdx)}
-                                            className={isOn ? '' : 'ring-1 ring-[#E5E7EB]'}
                                         />
                                     );
                                 })}
@@ -1824,7 +1772,7 @@ export default function CraftedForYouPage({
                             </p>
                         </div>
 
-                        <div className="mt-8 flex items-center justify-between gap-3 fixed bottom-0 left-0 right-0 z-40 border-t border-gray-200/70 bg-[#F8F9F6]/95 p-3 backdrop-blur sm:static sm:border-t-0 sm:bg-transparent sm:p-0">
+                        <div className={mobileNavBarClass}>
                             <Button label="BACK" variant="outline" onClick={() => setScreen(1)} className="px-10" />
                             <Button
                                 label="NEXT"
@@ -1857,6 +1805,10 @@ export default function CraftedForYouPage({
                             const daySelections = selectedByDay[day] ?? emptyDaySelections;
 
                             const toggle = (key, max) => (meal) => {
+                                if (key === 'desserts') {
+                                    afternoonDessertKeptRef.current.add(day);
+                                }
+
                                 setSelectedByDay((prev) => {
                                     const current = prev[day] ?? {
                                         breakfasts: [],
@@ -1883,6 +1835,10 @@ export default function CraftedForYouPage({
                             };
 
                             const toggleFixedChoice = (categoryKey, meal) => {
+                                if (categoryKey === 'desserts') {
+                                    afternoonDessertKeptRef.current.add(day);
+                                }
+
                                 setSelectedByDay((prev) => {
                                     const current = prev[day] ?? {
                                         breakfasts: [],
@@ -1919,9 +1875,10 @@ export default function CraftedForYouPage({
                             };
 
                             return (
-                            <div className="flex min-h-0 w-full flex-1 flex-col">
+                            <div className={embedInScrollParent ? 'w-full' : 'flex min-h-0 w-full flex-1 flex-col'}>
                             <ChooseYourMeals
-                                panelClassName="h-full min-h-0"
+                                panelClassName={embedInScrollParent ? 'w-full' : 'h-full min-h-0'}
+                                documentScroll={embedInScrollParent}
                                 soupCatalogMeals={catalogMeals}
                                 dayName={WEEKDAY_LONG[curationDay - 1] ?? ''}
                                 totalKcal={dayCaloriesTotal}
@@ -1992,6 +1949,7 @@ export default function CraftedForYouPage({
                                 scheduledSoupMeals={scheduledSoupForDay(curationDay)}
                                 onViewDetails={openMealDetailWhenScheduleReady}
                                 dietProtocol={dietProtocol}
+                                protocolSelectedLayout
                                 isMenuPending={isMenuPending}
                             >
                                 {usesWeeklyCategoryLayout ? null : (
@@ -2069,13 +2027,12 @@ export default function CraftedForYouPage({
                                                                 ].map((opt) => {
                                                                     const on = side === opt.key;
                                                                     return (
-                                                                        <PillButton
+                                                                        <Button
                                                                             key={opt.key}
                                                                             label={opt.label}
-                                                                            variant={on ? 'primary' : 'outline'}
+                                                                            variant={on ? 'primary' : 'tab'}
                                                                             size="sm"
                                                                             onClick={() => setBusinessSideChoice(day, /** @type {any} */ (opt.key))}
-                                                                            className={on ? '' : 'ring-1 ring-[#E5E7EB]'}
                                                                         />
                                                                     );
                                                                 })}
@@ -2223,7 +2180,7 @@ export default function CraftedForYouPage({
                             </div>
                         </div>
 
-                        <div className="mt-8 flex items-center justify-between gap-3 fixed bottom-0 left-0 right-0 z-40 border-t border-gray-200/70 bg-[#F8F9F6]/95 p-3 backdrop-blur sm:static sm:border-t-0 sm:bg-transparent sm:p-0">
+                        <div className={mobileNavBarClass}>
                             <Button
                                 label="BACK"
                                 variant="outline"

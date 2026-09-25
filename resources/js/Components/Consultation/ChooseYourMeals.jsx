@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import PillButton from '../Atoms/Button/Button.jsx';
+import Button from '../Atoms/Button.jsx';
 import SquareCheckbox from '../Atoms/Icons/SquareCheckbox.jsx';
 import StackedDeckCarousel from '../MealCard/StackedDeckCarousel.jsx';
 import MealCardClientViewNano from '../MealCardClientViewNano.jsx';
@@ -22,10 +22,7 @@ import {
     macroCaloriePercentsFromGrams,
     macroSplitPercentagesFromPlan,
 } from '../../consultation/craftCalorieTargets.js';
-import {
-    consultationMealCardCalories,
-    sumConsultationMealCardMacros,
-} from '../../consultation/balanceMainMealProtein.ts';
+import { sumConsultationMealCardMacros } from '../../consultation/balanceMainMealProtein.ts';
 
 export {
     FIXED_CHOICE_CATEGORY_KEYS,
@@ -108,7 +105,7 @@ export function soupOfTheDayMeals(source) {
 
 /** Max cards shown per category deck in consultation (matches weekly main carousel: 6 mains). */
 export const CONSULTATION_DECK_OPTION_LIMITS = Object.freeze({
-    breakfast: 1,
+    breakfast: 2,
     meal: 6,
     sidesalad: 2,
     /** Balanced keeps 3 (baked + fruit + chia). TBD Weekly Protocol uses 2 via preferBakedDesserts. */
@@ -160,6 +157,56 @@ export function normalizeConsultationMealId(id) {
 }
 
 /**
+ * Resolve selected meals in selection order, looking in the slot deck first, then every on-screen deck.
+ *
+ * @param {Array<string|number>} selectedIds
+ * @param {ConsultationMeal[]} [categoryCards]
+ * @param {Partial<Record<string, ConsultationMeal[]>> | null | undefined} [allDecks]
+ * @returns {ConsultationMeal[]}
+ */
+export function selectedMealsForSlotFromDecks(selectedIds, categoryCards = [], allDecks = null) {
+    /** @type {Map<string, ConsultationMeal>} */
+    const byId = new Map();
+
+    for (const meal of categoryCards ?? []) {
+        const id = normalizeConsultationMealId(meal?.id);
+        if (id !== '') {
+            byId.set(id, meal);
+        }
+    }
+
+    for (const cards of Object.values(allDecks ?? {})) {
+        for (const meal of cards ?? []) {
+            const id = normalizeConsultationMealId(meal?.id);
+            if (id !== '' && !byId.has(id)) {
+                byId.set(id, meal);
+            }
+        }
+    }
+
+    /** @type {ConsultationMeal[]} */
+    const selected = [];
+    const seen = new Set();
+
+    for (const rawId of selectedIds ?? []) {
+        const id = normalizeConsultationMealId(rawId);
+        if (id === '' || seen.has(id)) {
+            continue;
+        }
+
+        const meal = byId.get(id);
+        if (!meal) {
+            continue;
+        }
+
+        seen.add(id);
+        selected.push(meal);
+    }
+
+    return selected;
+}
+
+/**
  * Card arrays shown in weekly category carousels (same objects MacroGrid reads).
  *
  * @param {{
@@ -192,11 +239,14 @@ export function buildWeeklyConsultationDisplayDecks({
     const catalogMains = filterMealsByCategory(meals ?? [], 'Meal');
 
     if (includeBreakfast) {
-        const assignedBreakfasts = assignedMealsByCategory?.breakfasts ?? [];
-        decks.breakfasts =
-            assignedBreakfasts.length > 0
-                ? assignedBreakfasts
-                : consultationDeckOptionsForSlotKey(meals ?? [], 'breakfast');
+        const catalogBreakfasts = filterMealsByCategory(meals ?? [], 'Breakfast').filter(
+            (meal) => typeof meal.savoryEggCount === 'number' && meal.savoryEggCount > 0,
+        );
+        decks.breakfasts = padConsultationDeckOptions(
+            assignedMealsByCategory?.breakfasts ?? [],
+            catalogBreakfasts,
+            CONSULTATION_DECK_OPTION_LIMITS.breakfast,
+        );
     }
 
     decks.meals = padConsultationDeckOptions(
@@ -207,7 +257,7 @@ export function buildWeeklyConsultationDisplayDecks({
 
     const catalogSource = (soupCatalogMeals.length > 0 ? soupCatalogMeals : meals) ?? [];
     decks.desserts = consultationDessertDeckForDay(catalogSource, assignedMealsByCategory?.desserts ?? [], {
-        preferBakedDesserts: dietProtocol === 'nutrient_dense',
+        preferBakedDesserts: dietProtocol === 'nutrient_dense' || dietProtocol === 'balanced',
     });
     decks.sideSalads = consultationSideSaladDeckForDay(meals ?? [], assignedMealsByCategory?.sideSalads ?? []);
 
@@ -475,7 +525,7 @@ export function consultationSideSaladDeckForDay(source, scheduledSideSalads = []
         deck.push(meal);
     }
 
-    for (const meal of source.filter((entry) => entry.mealType === 'Side salad')) {
+    for (const meal of source.filter((entry) => mealMatchesConsultationCategory(entry, 'Side salad'))) {
         if (deck.length >= limit) {
             break;
         }
@@ -718,10 +768,6 @@ const PLAN_MACRO_CELL_META = Object.freeze([
 const PLAN_MACRO_TABLE_GRID =
     'grid grid-cols-[5.5rem_repeat(4,minmax(0,1fr))] items-center gap-x-2 gap-y-2 sm:grid-cols-[6rem_repeat(4,minmax(0,1fr))] sm:gap-x-3';
 
-/** Consultation footer: label column + four macro columns, one row at a time. */
-const CONSULTATION_MACRO_FOOTER_ROW_GRID =
-    'grid grid-cols-[4.25rem_repeat(4,minmax(0,1fr))] items-baseline gap-x-2 sm:grid-cols-[4.75rem_repeat(4,minmax(0,1fr))] sm:gap-x-3';
-
 /** @param {'calories' | 'protein' | 'carbs' | 'fat'} key @param {number | string | null | undefined} raw */
 function formatPlanMacroValue(key, raw) {
     const n = Number(raw ?? 0);
@@ -878,38 +924,17 @@ export function PlanMacroColumnHeaderRow() {
 }
 
 /**
- * Selected macros in the consultation footer — label left, values on same baseline.
+ * Compact selected macros in the consultation footer — column labels + values only.
  *
  * @param {object} props
  * @param {MacroTotals} props.totals
  * @param {Array<'calories' | 'protein' | 'carbs' | 'fat'>} [props.highlightKeys]
  */
 function ConsultationDayMacroFooterGrid({ totals, highlightKeys = [] }) {
-    const selectedMacroPercents = useMemo(() => macroCaloriePercentsFromGrams(totals), [totals]);
-
     return (
-        <div className="space-y-1.5" role="table" aria-label="Selected day macros">
-            <div className={CONSULTATION_MACRO_FOOTER_ROW_GRID} role="row">
-                <span aria-hidden="true" />
-                {PLAN_MACRO_CELL_META.map((cell) => (
-                    <p
-                        key={cell.key}
-                        className="truncate text-center font-montserrat text-[9px] font-semibold uppercase tracking-[0.12em] text-[#6B7280] sm:text-[10px]"
-                    >
-                        {cell.shortLabel}
-                    </p>
-                ))}
-            </div>
-            <div className={CONSULTATION_MACRO_FOOTER_ROW_GRID} role="row">
-                <p className="font-montserrat text-[10px] font-semibold uppercase leading-none tracking-[0.08em] text-[#555555]">
-                    Selected
-                </p>
-                <PlanMacroValueCells
-                    macros={totals}
-                    macroPercents={selectedMacroPercents}
-                    highlightKeys={highlightKeys}
-                />
-            </div>
+        <div role="table" aria-label="Selected day macros">
+            <PlanMacroColumnHeaderRow />
+            <PlanMacroSummaryRow macros={totals} ariaLabel="Selected macros" highlightKeys={highlightKeys} />
         </div>
     );
 }
@@ -1371,7 +1396,7 @@ export function MealSlotCarousel({
             ) : null}
 
             <div
-                className={`relative mx-auto flex w-full max-w-full flex-col items-center justify-center overflow-y-visible px-4 [-webkit-overflow-scrolling:touch] max-md:overflow-x-clip md:overflow-x-visible md:px-0 ${deckOnly ? 'mt-0 min-h-[calc(min(90vw,280px)+5.5rem)] py-1.5' : 'mt-0.5 min-h-[calc(min(90vw,280px)+5.5rem)] py-1'}`}
+                className={`relative mx-auto flex w-full max-w-full flex-col items-center justify-center overflow-y-visible [-webkit-overflow-scrolling:touch] max-md:overflow-x-clip md:overflow-x-visible ${deckOnly ? 'mt-0 min-h-[calc(240px+4.5rem)] px-0 py-0' : 'mt-0.5 min-h-[calc(240px+5.5rem)] px-4 py-1 md:px-0'}`}
                 data-consultation-deck=""
             >
                 {cards.length === 0 ? (
@@ -1568,7 +1593,7 @@ export function FixedChoicePicker({
                 const catalogSource = (soupCatalogMeals.length > 0 ? soupCatalogMeals : meals) ?? [];
 
                 return consultationDessertDeckForDay(catalogSource, assignedMealsByCategory?.desserts ?? [], {
-                    preferBakedDesserts: dietProtocol === 'nutrient_dense',
+                    preferBakedDesserts: dietProtocol === 'nutrient_dense' || dietProtocol === 'balanced',
                 });
             }
 
@@ -1684,8 +1709,11 @@ export function FixedChoicePicker({
  * @param {boolean} [props.categoriesReadOnly]
  * @param {(categoryKey: SelectionCategoryKey) => void} [props.onClearFixedChoiceCategory]
  * @param {(meal: ConsultationMeal) => void} [props.onViewDetails]
+ * @param {(meal: ConsultationMeal) => void} [props.onEditMeal]
  * @param {string} [props.panelClassName] Height class for the viewport-locked panel shell.
+ * @param {boolean} [props.documentScroll] Grow with content and scroll the parent (Storybook / embed).
  * @param {boolean} [props.isMenuPending] Adapted menu / weekly schedule still loading from the API.
+ * @param {boolean} [props.protocolSelectedLayout] Force the customer onboarding slot cards (SEE OTHER OPTIONS).
  */
 export default function ChooseYourMeals({
     dayName = '',
@@ -1724,14 +1752,19 @@ export default function ChooseYourMeals({
     categoriesReadOnly = false,
     onClearFixedChoiceCategory,
     onViewDetails,
-    panelClassName = 'h-[100dvh] min-h-screen',
+    onEditMeal,
+    panelClassName,
+    documentScroll = false,
     isMenuPending = false,
     dietProtocol = null,
+    protocolSelectedLayout = false,
 }) {
+    const resolvedPanelClassName =
+        panelClassName ?? (documentScroll ? 'w-full' : 'h-[100dvh] min-h-screen');
     const craftingSubtitle = `CRAFTING YOUR ${String(dayName).trim().toUpperCase()}`;
     /** Daily option decks stay interactive whenever the parent wires selection (hides CRAFT THIS MEAL only in true read-only review). */
     const categoryPickEnabled = typeof onToggleCategory === 'function' && !categoriesReadOnly;
-    const useProtocolSelectedLayout = dietProtocol === 'nutrient_dense' && layout === 'categories';
+    const useProtocolSelectedLayout = Boolean(protocolSelectedLayout) || layout === 'categories';
 
     const [validationFlashKeys, setValidationFlashKeys] = useState(/** @type {(SelectionCategoryKey | 'fixedChoice')[]} */ ([]));
     const [incompleteWarning, setIncompleteWarning] = useState(/** @type {string | null} */ (null));
@@ -1754,7 +1787,23 @@ export default function ChooseYourMeals({
         }
 
         if (displayDecks && typeof displayDecks === 'object') {
-            return displayDecks;
+            const decks = {
+                breakfasts: displayDecks.breakfasts ?? [],
+                meals: displayDecks.meals ?? [],
+                sideSalads: displayDecks.sideSalads ?? [],
+                desserts: displayDecks.desserts ?? [],
+                soup: displayDecks.soup ?? [],
+            };
+            const catalog = [...(meals ?? []), ...Object.values(decks).flat()];
+
+            if (decks.sideSalads.length === 0) {
+                decks.sideSalads = consultationSideSaladDeckForDay(
+                    catalog,
+                    assignedMealsByCategory?.sideSalads ?? [],
+                );
+            }
+
+            return decks;
         }
 
         return buildWeeklyConsultationDisplayDecks({
@@ -1797,22 +1846,6 @@ export default function ChooseYourMeals({
         layout === 'categories' ? (displayFooterMacros?.calories ?? 0) : totalKcal;
     const footerMacroTotals =
         layout === 'categories' ? (displayFooterMacros ?? { calories: 0, protein: 0, carbs: 0, fat: 0 }) : dayMacroTotals;
-
-    const footerSelectedPlatesLabel = useMemo(() => {
-        if (layout !== 'categories' || selectedFooterMeals.length === 0) {
-            return null;
-        }
-
-        return selectedFooterMeals
-            .map((meal) => {
-                const kcal = consultationMealCardCalories(meal);
-                const title = String(meal.title ?? 'Meal').trim() || 'Meal';
-                const short = title.length > 28 ? `${title.slice(0, 26)}…` : title;
-
-                return `${short} ${kcal}`;
-            })
-            .join(' · ');
-    }, [layout, selectedFooterMeals]);
 
     useLayoutEffect(() => {
         const scroller = scrollContainerRef.current;
@@ -1974,9 +2007,10 @@ export default function ChooseYourMeals({
                 def.selectionKey === 'meals' && max === 1 ? 'Choose Your Meal of the Day' : def.header;
 
             if (useProtocolSelectedLayout) {
-                const selectedSet = new Set(selectedIds);
-                const selectedMeals = cards.filter((meal) =>
-                    selectedSet.has(normalizeConsultationMealId(meal?.id)),
+                const selectedMeals = selectedMealsForSlotFromDecks(
+                    selectedIds,
+                    cards,
+                    weeklyDisplayDecks,
                 );
                 const slotTitle =
                     def.selectionKey === 'meals'
@@ -1995,6 +2029,7 @@ export default function ChooseYourMeals({
                             categoryPickEnabled ? () => setOptionsSlotKey(def.selectionKey) : undefined
                         }
                         onViewDetails={onViewDetails}
+                        onEditMeal={onEditMeal}
                         className={flash ? 'ring-2 ring-red-300' : ''}
                     />
                 );
@@ -2016,6 +2051,7 @@ export default function ChooseYourMeals({
                     isLoading={isAutoAssigned && isMenuPending && cards.length === 0}
                     onSelect={categoryPickEnabled && !isAutoAssigned ? (meal) => onToggleCategory?.(def.selectionKey, meal) : () => {}}
                     onViewDetails={onViewDetails}
+                    onEditMeal={onEditMeal}
                 />
             );
         });
@@ -2031,6 +2067,7 @@ export default function ChooseYourMeals({
         categoriesReadOnly,
         categoryPickEnabled,
         onViewDetails,
+        onEditMeal,
         isMenuPending,
         weeklyDisplayDecks,
         useProtocolSelectedLayout,
@@ -2052,6 +2089,7 @@ export default function ChooseYourMeals({
                     categoryPickEnabled ? (key) => setOptionsSlotKey(key) : undefined
                 }
                 onViewDetails={onViewDetails}
+                onEditMeal={onEditMeal}
             />
         ) : null;
 
@@ -2097,6 +2135,22 @@ export default function ChooseYourMeals({
         );
     }, [optionsSlotKey]);
 
+    const optionsCards = optionsSlotKey ? (weeklyDisplayDecks?.[optionsSlotKey] ?? []) : [];
+    const optionsSelectedIds = optionsSlotKey
+        ? (categorySelections?.[optionsSlotKey] ?? []).map((id) => normalizeConsultationMealId(id))
+        : [];
+    let optionsMaxSelected = 1;
+    if (optionsSlotKey) {
+        if (FIXED_CHOICE_CATEGORY_KEYS.includes(optionsSlotKey)) {
+            optionsMaxSelected = 1;
+        } else if (maxSelectionsByCategory?.[optionsSlotKey] !== undefined) {
+            optionsMaxSelected = /** @type {number} */ (maxSelectionsByCategory[optionsSlotKey]);
+        } else {
+            optionsMaxSelected = optionsSectionDef?.defaultMax ?? 1;
+        }
+    }
+    const optionsPrefix = deckScopePrefix ? `${deckScopePrefix}-` : '';
+
     const optionsScreen =
         useProtocolSelectedLayout && optionsSlotKey && optionsSectionDef && categorySelections ? (
             <ProtocolMealOptionsScreen
@@ -2108,28 +2162,27 @@ export default function ChooseYourMeals({
                           ? 'Breakfast'
                           : optionsSectionDef.header
                 }
-                options={weeklyDisplayDecks?.[optionsSlotKey] ?? []}
-                selectedIds={(categorySelections[optionsSlotKey] ?? []).map((id) =>
-                    normalizeConsultationMealId(id),
-                )}
-                maxSelected={
-                    FIXED_CHOICE_CATEGORY_KEYS.includes(optionsSlotKey)
-                        ? 1
-                        : maxSelectionsByCategory?.[optionsSlotKey] !== undefined
-                          ? /** @type {number} */ (maxSelectionsByCategory[optionsSlotKey])
-                          : (optionsSectionDef.defaultMax ?? 1)
-                }
-                onToggle={(meal) => {
-                    if (!categoryPickEnabled) {
-                        return;
-                    }
-
-                    onToggleCategory?.(optionsSlotKey, meal);
-                }}
-                onViewDetails={onViewDetails}
                 onBack={() => setOptionsSlotKey(null)}
                 onConfirm={() => setOptionsSlotKey(null)}
-            />
+            >
+                <MealSlotCarousel
+                    title=""
+                    deckOnly
+                    cards={optionsCards}
+                    selectedIds={optionsSelectedIds}
+                    maxSelected={optionsMaxSelected}
+                    onSelect={(meal) => {
+                        if (!categoryPickEnabled) {
+                            return;
+                        }
+
+                        onToggleCategory?.(optionsSlotKey, meal);
+                    }}
+                    deckScopeKey={`${optionsPrefix}${optionsSlotKey}-options`}
+                    onViewDetails={onViewDetails}
+                    onEditMeal={onEditMeal}
+                />
+            </ProtocolMealOptionsScreen>
         ) : null;
 
     const mainScrollable =
@@ -2193,12 +2246,9 @@ export default function ChooseYourMeals({
 
     return (
         <section
-            className={`box-border flex w-full flex-col overflow-x-clip border border-gray-200 bg-white shadow-sm max-md:rounded-none max-md:border-x-0 max-md:shadow-none md:rounded-[12px] ${panelClassName}`.trim()}
+            className={`box-border flex w-full flex-col overflow-x-clip border border-gray-200 bg-white shadow-sm max-md:rounded-none max-md:border-x-0 max-md:shadow-none md:rounded-[12px] ${resolvedPanelClassName}`.trim()}
         >
-            {optionsScreen ? (
-                optionsScreen
-            ) : (
-                <>
+            {optionsScreen}
             <div className="shrink-0 border-b border-gray-200 px-4 py-3 text-left max-md:px-4 sm:px-5 sm:py-4 md:p-6">
                 <div className="min-w-0 space-y-1 sm:space-y-1.5">
                     <p className="font-montserrat text-[15px] font-bold leading-snug tracking-tight text-[#262A22] sm:text-[16px]">
@@ -2210,15 +2260,25 @@ export default function ChooseYourMeals({
                 </div>
             </div>
 
-            <div className="flex min-h-0 flex-1 flex-col overflow-x-clip">
+            <div
+                className={
+                    documentScroll
+                        ? 'flex w-full flex-col overflow-x-clip'
+                        : 'flex min-h-0 flex-1 flex-col overflow-x-clip'
+                }
+            >
                 <div
                     ref={scrollContainerRef}
-                    className="mc-choose-meals-scroll min-h-0 flex-1 overflow-y-auto overscroll-y-contain [scrollbar-gutter:stable] pt-2 max-md:px-0 max-md:pb-4 md:px-5 md:pb-8 md:pt-4 [-webkit-overflow-scrolling:touch]"
+                    className={
+                        documentScroll
+                            ? 'mc-choose-meals-scroll w-full overflow-x-clip pt-2 max-md:px-0 max-md:pb-4 md:px-5 md:pb-8 md:pt-4'
+                            : 'mc-choose-meals-scroll min-h-0 flex-1 overflow-y-auto overscroll-y-contain [scrollbar-gutter:stable] pt-2 max-md:px-0 max-md:pb-4 md:px-5 md:pb-8 md:pt-4 [-webkit-overflow-scrolling:touch]'
+                    }
                 >
                     <div className="relative z-0 min-w-0 space-y-0">{mainScrollable}</div>
                 </div>
 
-                <div className="z-[120] shrink-0 border-t border-gray-200 bg-white p-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-[0_-4px_24px_rgba(15,23,42,0.06)] max-md:px-4 md:sticky md:bottom-0 md:px-6">
+                <div className="z-[80] shrink-0 border-t border-gray-200 bg-white px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-4px_24px_rgba(15,23,42,0.06)] max-md:px-4 md:sticky md:bottom-0 md:px-6">
                     {incompleteWarning ? (
                         <div
                             className="mb-3 rounded-[12px] border border-red-200 bg-red-50 px-4 py-3"
@@ -2230,53 +2290,41 @@ export default function ChooseYourMeals({
                     ) : null}
 
                     {footerMacroTotals ? (
-                        <div>
-                            <ConsultationDayMacroFooterGrid
-                                totals={
-                                    footerMacroTotals.calories > 0
-                                        ? footerMacroTotals
-                                        : { calories: 0, protein: 0, carbs: 0, fat: 0 }
-                                }
-                                highlightKeys={
-                                    footerMacroTotals.calories > 0 ? macroHighlightKeys : []
-                                }
-                            />
-                        </div>
+                        <ConsultationDayMacroFooterGrid
+                            totals={
+                                footerMacroTotals.calories > 0
+                                    ? footerMacroTotals
+                                    : { calories: 0, protein: 0, carbs: 0, fat: 0 }
+                            }
+                            highlightKeys={
+                                footerMacroTotals.calories > 0 ? macroHighlightKeys : []
+                            }
+                        />
                     ) : null}
 
-                    <div className="mt-1.5 flex min-h-[1.25rem] items-baseline justify-between gap-3">
-                        {footerSelectedPlatesLabel ? (
-                            <p className="min-w-0 flex-1 font-body text-[11px] leading-snug text-[#6B7280]">
-                                Sum of {selectedFooterMeals.length} selected plate
-                                {selectedFooterMeals.length === 1 ? '' : 's'}: {footerSelectedPlatesLabel}
-                            </p>
-                        ) : (
-                            <span className="min-w-0 flex-1" aria-hidden="true" />
-                        )}
-                        <p
-                            className={[
-                                'shrink-0 font-montserrat text-sm font-bold tabular-nums',
-                                Math.abs(Math.round(footerTotalKcal) - Math.round(targetCalories)) >
-                                dayCalorieTolerance
-                                    ? 'text-amber-800'
-                                    : 'text-[#1F2937]',
-                            ]
-                                .join(' ')
-                                .trim()}
-                        >
-                            Total: {Math.round(footerTotalKcal)} kcal
-                            <span className="ml-1.5 font-body text-xs font-normal text-[#555555]">
-                                (target {Math.round(targetCalories)} ±{dayCalorieTolerance})
-                            </span>
-                        </p>
-                    </div>
+                    <p
+                        className={[
+                            'mt-1.5 text-right font-montserrat text-sm font-bold tabular-nums',
+                            Math.abs(Math.round(footerTotalKcal) - Math.round(targetCalories)) >
+                            dayCalorieTolerance
+                                ? 'text-amber-800'
+                                : 'text-[#1F2937]',
+                        ]
+                            .join(' ')
+                            .trim()}
+                    >
+                        Total: {Math.round(footerTotalKcal)} kcal
+                        <span className="ml-1.5 font-body text-xs font-normal text-[#555555]">
+                            (target {Math.round(targetCalories)} ±{dayCalorieTolerance})
+                        </span>
+                    </p>
 
                     {showStickyFooterNav ? (
                         <div
                             className={`mt-3 flex flex-wrap items-center gap-3 ${typeof onFooterBack === 'function' ? 'justify-between' : 'justify-center'}`}
                         >
                             {typeof onFooterBack === 'function' ? (
-                                <PillButton
+                                <Button
                                     type="button"
                                     label="BACK"
                                     variant="outline"
@@ -2287,7 +2335,7 @@ export default function ChooseYourMeals({
                             ) : (
                                 <span className="hidden min-w-[120px] sm:block" aria-hidden="true" />
                             )}
-                            <PillButton
+                            <Button
                                 type="button"
                                 label={footerNextLabel}
                                 variant="primary"
@@ -2304,8 +2352,6 @@ export default function ChooseYourMeals({
                     <div className="relative z-[70] shrink-0 border-t border-gray-200/80 bg-white">{navigation}</div>
                 ) : null}
             </div>
-                </>
-            )}
         </section>
     );
 }

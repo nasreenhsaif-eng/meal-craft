@@ -6,6 +6,7 @@ use App\Enums\MealType;
 use App\Enums\RecipeCategory;
 use App\Models\Ingredient;
 use App\Models\Meal;
+use App\Support\BoneBrothBaseRecipe;
 use App\Support\MealLibraryBulkNutrition;
 use Illuminate\Support\Facades\DB;
 
@@ -179,25 +180,21 @@ final class NutrientDenseMealLibraryConfigurator
         }
 
         /** @var Ingredient|null $broth */
-        $broth = Ingredient::query()->where('name', 'Bone Broth (Base)')->first();
+        $broth = Ingredient::query()->where('name', BoneBrothBaseRecipe::NAME)->first();
 
-        /** @var Ingredient|null $psyllium */
-        $psyllium = Ingredient::query()->where('name', 'Psyllium Husks')->first();
-
-        if ($broth === null || $psyllium === null) {
+        if ($broth === null) {
             return false;
         }
 
-        $servingsCount = (float) BalancedCanonicalMealRecipeRefiner::BATCH_SOUP_SERVINGS_COUNT;
+        $servingsCount = (float) BalancedMealLibraryConfigurator::BONE_BROTH_BATCH_SERVINGS_COUNT;
         $batchBrothGrams = BalancedMealLibraryConfigurator::BONE_BROTH_SERVING_GRAMS * $servingsCount;
-        $batchPsylliumGrams = BalancedCanonicalMealRecipeRefiner::BATCH_SOUP_PSYLLIUM_TABLESPOON_GRAMS * $servingsCount;
 
         $meal = Meal::query()->create([
             'name' => self::BONE_BROTH_MEAL_NAME,
             'category' => RecipeCategory::Soup,
             'meal_type' => MealType::Soup,
-            'short_description' => '500 ml cup of defatted house bone broth — long-simmered, gelatin-rich, with psyllium husks for fiber.',
-            'instructions' => 'Heat the full batch of defatted Bone Broth (Base) gently (do not boil hard). Whisk psyllium husks into the batch (1 tablespoon / 15 g per serving). Portion 500 ml per cup and serve hot.',
+            'short_description' => '500 ml cup of fully defatted house bone broth — long-simmered, gelatin-rich collagen broth from cracked beef leg bones.',
+            'instructions' => 'Prepare Bone Broth (Base) per base recipe instructions (roast, long simmer, strain, calibrate to 10 L, and fully defat). Gently warm the gelatinized broth only until liquefied. Ladle into 20 containers at 500 ml each. One cup is one serving.',
             'meal_plan_tags' => ['Balanced', 'NutrientDense'],
             'meal_plan_tag' => 'NutrientDense',
             'diet_tags' => ['Dairy-free', 'Gluten-free'],
@@ -211,11 +208,6 @@ final class NutrientDenseMealLibraryConfigurator
             $broth->id => [
                 'amount_grams' => $batchBrothGrams,
                 'amount' => $batchBrothGrams,
-                'unit' => 'g',
-            ],
-            $psyllium->id => [
-                'amount_grams' => $batchPsylliumGrams,
-                'amount' => $batchPsylliumGrams,
                 'unit' => 'g',
             ],
         ]);

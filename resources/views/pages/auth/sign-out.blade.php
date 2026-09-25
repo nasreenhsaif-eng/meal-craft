@@ -13,17 +13,16 @@
                 </p>
             </div>
 
-            <form method="POST" action="{{ route('logout') }}" class="flex w-full flex-col gap-4">
+            <form method="POST" action="{{ route('logout') }}" class="flex w-full justify-center">
                 @csrf
-                <x-mc-pill-button type="submit" class="min-w-[190px] w-full" data-test="logout-button">
+                <button
+                    type="submit"
+                    data-test="logout-button"
+                    class="inline-flex h-[50px] min-h-[50px] min-w-[190px] cursor-pointer items-center justify-center rounded-[12px] border border-transparent bg-[#5A6B44] px-6 font-montserrat text-[16px] font-bold uppercase leading-none tracking-wider text-white shadow-sm transition-all duration-200 ease-in-out hover:scale-[1.02] hover:bg-[#485636] hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5A6B44] focus-visible:ring-offset-2 focus-visible:ring-offset-white active:scale-[0.98] active:bg-[#485636] active:shadow-inner"
+                >
                     {{ __('Log out') }}
-                </x-mc-pill-button>
+                </button>
             </form>
-
-            <p class="text-sm text-[#555555]">
-                {{ __('After signing out, go to') }}
-                <a href="{{ route('join') }}" class="font-semibold text-[#556C37] underline underline-offset-2">{{ __('customer signup') }}</a>
-            </p>
         @else
             <div class="flex w-full flex-col gap-[19px]">
                 <h1 class="text-2xl font-semibold leading-tight text-black">{{ __('You are not signed in') }}</h1>
@@ -33,10 +32,10 @@
             </div>
 
             <div class="flex w-full flex-col items-center gap-3 sm:flex-row sm:justify-center">
-                <a href="{{ route('join') }}" class="inline-flex min-w-[190px] items-center justify-center rounded-full bg-[#6E8C47] px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#5A6B44] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#556C37] focus-visible:ring-offset-2">
+                <a href="{{ route('join') }}" class="inline-flex h-[50px] min-h-[50px] min-w-[190px] items-center justify-center rounded-[12px] border border-transparent bg-[#5A6B44] px-6 font-montserrat text-[16px] font-bold uppercase leading-none tracking-wider text-white shadow-sm transition-all duration-200 ease-in-out hover:scale-[1.02] hover:bg-[#485636] hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5A6B44] focus-visible:ring-offset-2 focus-visible:ring-offset-white active:scale-[0.98] active:bg-[#485636] active:shadow-inner">
                     {{ __('Customer signup') }}
                 </a>
-                <a href="{{ route('login') }}" class="inline-flex min-w-[190px] items-center justify-center rounded-full border border-[#6E8C47] px-6 py-3 text-sm font-semibold text-[#556C37] transition-colors hover:bg-[#6E8C47]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#556C37] focus-visible:ring-offset-2">
+                <a href="{{ route('login') }}" class="inline-flex h-[50px] min-h-[50px] min-w-[190px] items-center justify-center rounded-[12px] border border-transparent bg-transparent px-6 font-montserrat text-[16px] font-bold uppercase leading-none tracking-wider text-[#5A6B44] transition-all duration-200 ease-in-out hover:bg-[#5A6B44]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5A6B44] focus-visible:ring-offset-2 focus-visible:ring-offset-white">
                     {{ __('Log in') }}
                 </a>
             </div>

@@ -17,6 +17,8 @@ use InvalidArgumentException;
  */
 final class NutrientDenseEggBreakfastRecipeRefiner
 {
+    public const BUTTERNUT_SQUASH_FRITTATA_IMAGE = 'images/meals/butternut_squash_fritters_eggs_marinara.png';
+
     /**
      * @return list<string>
      */
@@ -51,6 +53,7 @@ final class NutrientDenseEggBreakfastRecipeRefiner
                     $definition['diet_tags'] ?? WholeFoodDietPolicy::REQUIRED_MEAL_DIET_TAGS,
                     $definition['highlight'] ?? null,
                     $definition['food_filter_tags'] ?? null,
+                    $definition['image_path'] ?? null,
                 );
                 $updated[] = $mealName;
             }
@@ -89,7 +92,7 @@ final class NutrientDenseEggBreakfastRecipeRefiner
     }
 
     /**
-     * @param  array{ingredients: array<string, float>, diet_tags?: list<string>, highlight?: string, food_filter_tags?: list<string>}  $definition
+     * @param  array{ingredients: array<string, float>, diet_tags?: list<string>, highlight?: string, food_filter_tags?: list<string>, image_path?: string}  $definition
      */
     private function ensureMealExists(string $mealName, array $definition): Meal
     {
@@ -101,6 +104,7 @@ final class NutrientDenseEggBreakfastRecipeRefiner
 
         $dietTags = $definition['diet_tags'] ?? WholeFoodDietPolicy::REQUIRED_MEAL_DIET_TAGS;
         $highlight = isset($definition['highlight']) ? trim((string) $definition['highlight']) : null;
+        $imagePath = isset($definition['image_path']) ? trim((string) $definition['image_path']) : '';
 
         return Meal::query()->create([
             'name' => $mealName,
@@ -112,6 +116,7 @@ final class NutrientDenseEggBreakfastRecipeRefiner
             'food_filter_tags' => $definition['food_filter_tags'] ?? null,
             'short_description' => $highlight !== '' ? $highlight : null,
             'highlight' => $highlight !== '' ? $highlight : null,
+            'image_path' => $imagePath !== '' ? $imagePath : null,
             'library_sort_order' => Meal::nextLibrarySortOrder(),
             'nutrition_aggregates_synced' => false,
         ]);
@@ -120,6 +125,7 @@ final class NutrientDenseEggBreakfastRecipeRefiner
     /**
      * @param  array<string, float>  $ingredientGrams
      * @param  list<string>  $dietTags
+     * @param  list<string>|null  $foodFilterTags
      */
     private function syncMeal(
         Meal $meal,
@@ -127,6 +133,7 @@ final class NutrientDenseEggBreakfastRecipeRefiner
         array $dietTags,
         ?string $highlight = null,
         ?array $foodFilterTags = null,
+        ?string $imagePath = null,
     ): void {
         $sync = [];
 
@@ -158,6 +165,8 @@ final class NutrientDenseEggBreakfastRecipeRefiner
         $fresh = $meal->fresh(['ingredients']);
         $nutrition = RecipeNutritionCalculator::fromMeal($fresh);
 
+        $resolvedImagePath = $imagePath !== null ? trim($imagePath) : '';
+
         $meal->update(array_merge(
             Meal::nutritionSummaryToPersistedAttributes($nutrition),
             [
@@ -169,13 +178,16 @@ final class NutrientDenseEggBreakfastRecipeRefiner
                 'short_description' => trim($highlight),
                 'highlight' => trim($highlight),
             ] : [],
+            $resolvedImagePath !== '' && blank($meal->image_path) ? [
+                'image_path' => $resolvedImagePath,
+            ] : [],
         ));
 
         MealRecipeAsIngredientSyncService::syncFromPersistedMeal($fresh->fresh(['ingredients']), false);
     }
 
     /**
-     * @return array<string, array{ingredients: array<string, float>, diet_tags?: list<string>, highlight?: string, food_filter_tags?: list<string>}>
+     * @return array<string, array{ingredients: array<string, float>, diet_tags?: list<string>, highlight?: string, food_filter_tags?: list<string>, image_path?: string}>
      */
     private function recipeDefinitions(): array
     {
@@ -349,7 +361,7 @@ final class NutrientDenseEggBreakfastRecipeRefiner
             ],
             'Butternut Squash Frittata' => [
                 'ingredients' => [
-                    'Butternut Squash' => 200,
+                    'Butternut Squash' => 100,
                     'Eggs (Large)' => 200,
                     'Gruyere Cheese' => 35,
                     'Chickpea Flour' => 15,
@@ -361,25 +373,10 @@ final class NutrientDenseEggBreakfastRecipeRefiner
                     'Olive Oil' => 10,
                     'Marinara Sauce (Base)' => 80,
                 ],
-                'highlight' => 'Roasted butternut squash frittata with gruyère, chickpea flour, dill, and Greek yogurt — topped with fried eggs and warm marinara on the side.',
+                'highlight' => 'Skillet butternut squash frittata with gruyère, chickpea flour, and dill — all eggs baked in one pan, marinara on the side.',
                 'diet_tags' => $tags,
                 'food_filter_tags' => array_merge($dairyTags, ['nightshades', 'beans']),
-            ],
-            'Butternut Squash & Eggs' => [
-                'ingredients' => [
-                    'Butternut Squash' => 200,
-                    'Eggs (Large)' => 200,
-                    'Chickpea Flour' => 15,
-                    'Paprika' => 1,
-                    'Sea Salt' => 1,
-                    'Dill (Fresh)' => 8,
-                    'Red Onion' => 35,
-                    'Olive Oil' => 10,
-                    'Marinara Sauce (Base)' => 80,
-                ],
-                'highlight' => 'Roasted butternut squash baked with eggs, chickpea flour, and dill — topped with fried eggs and warm marinara on the side.',
-                'diet_tags' => array_merge(WholeFoodDietPolicy::REQUIRED_MEAL_DIET_TAGS, ['Vegetarian', 'Gluten-Free']),
-                'food_filter_tags' => ['eggs', 'nightshades', 'beans'],
+                'image_path' => self::BUTTERNUT_SQUASH_FRITTATA_IMAGE,
             ],
             'Smashed Beans & Eggs' => [
                 'ingredients' => [

@@ -20,7 +20,8 @@ class LoginResponse implements LoginResponseContract
 
         $target = PostAuthenticationRedirect::pathFor($user);
 
-        $redirect = $user->isAdmin()
+        // Ready customers always land on Welcome back — ignore a stale intended URL.
+        $redirect = $user->isAdmin() || $user->shouldLandOnWelcomeBack()
             ? redirect()->to($target)
             : redirect()->intended($target);
 

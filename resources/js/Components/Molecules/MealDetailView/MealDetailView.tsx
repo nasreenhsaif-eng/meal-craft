@@ -1,6 +1,6 @@
 import { Fragment, type ReactElement, useState } from 'react';
 import SafetyAlerts from '../../MealSystem/SafetyAlerts.jsx';
-import NutrientBadge from '../../Atoms/MealSystem/NutrientBadge.jsx';
+import NutrientBadge from '../../MealSystem/NutrientBadge.jsx';
 import MealCraftLogo from '../../Atoms/Logo/MealCraftLogo.jsx';
 import { CyclePhaseTag, type CyclePhase } from './CyclePhaseTag';
 import { resolveMealImageUrl } from '../../../meal-library/resolveMealImageUrl.ts';
@@ -33,7 +33,13 @@ export type MealSafetyAlert = {
 
 export type MealIngredientSection = {
     title: string;
-    items: string[];
+    items: string[] | MealIngredientItem[];
+};
+
+export type MealIngredientItem = {
+    line: string;
+    ingredientId?: number;
+    isBaseRecipe?: boolean;
 };
 
 export type MealInstructionSection = {
@@ -54,7 +60,10 @@ export type MealDetailModel = {
     sickleRdiFootnote?: string;
     nutritionalData: MealNutritionalData;
     ingredients: string[];
+    ingredientItems?: MealIngredientItem[];
     ingredientSections?: MealIngredientSection[];
+    /** Legend for raw / dry / pre-cooked prep weights on every recipe. */
+    ingredientsPrepNote?: string | null;
     /** Estimated cooked plated weight from raw/dry inputs + pre-cooked bases. */
     cookingYieldNote?: string | null;
     instructions: string[] | string;
@@ -72,6 +81,7 @@ export type MealDetailViewProps = {
     hideImage?: boolean;
     /** When true, omit outer max-height so a parent modal owns scrolling (title stays visible). */
     embedded?: boolean;
+    onBaseRecipeClick?: (item: MealIngredientItem) => void;
 };
 
 const G6PD_SAFETY_ALERT_BADGE = 'G6PD Safety Alert';
@@ -88,15 +98,15 @@ export function MealNutritionSummaryTable({ data }: { data: MealNutritionalData 
             role="region"
             aria-label="Nutritional breakdown"
             tabIndex={0}
-            className="overflow-x-auto rounded-[12px] border border-gray-200 bg-white outline-none [-webkit-overflow-scrolling:touch] focus:outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#5A6B44]/35"
+            className="rounded-[12px] border border-gray-200 bg-white outline-none focus:outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#5A6B44]/35"
         >
-            <table className="w-full min-w-[280px] border-collapse text-left text-sm">
+            <table className="w-full border-collapse text-left">
                 <thead>
                     <tr className="border-b border-gray-200 bg-[#F8F9F6]">
-                        <th className="px-3 py-2.5 font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#374151]">
+                        <th className="min-w-0 px-2 py-1.5 font-montserrat text-[10px] font-bold uppercase tracking-[0.08em] text-[#374151] sm:px-3 sm:py-2 sm:text-xs sm:tracking-[0.14em]">
                             Nutrient
                         </th>
-                        <th className="px-3 py-2.5 text-right font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#374151]">
+                        <th className="w-[1%] whitespace-nowrap px-2 py-1.5 text-right font-montserrat text-[10px] font-bold uppercase tracking-[0.08em] text-[#374151] sm:px-3 sm:py-2 sm:text-xs sm:tracking-[0.14em]">
                             {valueColumnLabel}
                         </th>
                     </tr>
@@ -107,17 +117,19 @@ export function MealNutritionSummaryTable({ data }: { data: MealNutritionalData 
                             <tr className="bg-[#F8F9F6]">
                                 <td
                                     colSpan={2}
-                                    className="px-3 py-2 font-montserrat text-xs font-bold uppercase tracking-[0.12em] text-[#5A6B44]"
+                                    className="px-2 py-1.5 font-montserrat text-[10px] font-bold uppercase tracking-[0.08em] text-[#5A6B44] sm:px-3 sm:py-2 sm:text-xs sm:tracking-[0.12em]"
                                 >
                                     {sec.title}
                                 </td>
                             </tr>
                             {sec.rows.map((r) => (
                                 <tr key={`${sec.title}-${r.label}`} className="border-b border-gray-100 last:border-b-0">
-                                    <td className="px-3 py-2.5 font-montserrat text-sm font-medium text-[#374151]">{r.label}</td>
+                                    <td className="min-w-0 px-2 py-1.5 font-montserrat text-xs font-medium leading-snug text-[#374151] sm:px-3 sm:py-2 sm:text-sm">
+                                        {r.label}
+                                    </td>
                                     <td
                                         className={[
-                                            'px-3 py-2.5 text-right font-montserrat text-sm font-bold tabular-nums text-[#1F2937]',
+                                            'w-[1%] whitespace-nowrap px-2 py-1.5 text-right font-montserrat text-xs font-bold tabular-nums text-[#1F2937] sm:px-3 sm:py-2 sm:text-sm',
                                             r.valueClass ?? '',
                                         ].join(' ')}
                                     >
@@ -133,7 +145,51 @@ export function MealNutritionSummaryTable({ data }: { data: MealNutritionalData 
     );
 }
 
-export default function MealDetailView({ meal, className = '', hideImage = false, embedded = false }: MealDetailViewProps): ReactElement {
+function normalizeIngredientItem(item: string | MealIngredientItem): MealIngredientItem {
+    if (typeof item === 'string') {
+        return { line: item };
+    }
+
+    return {
+        line: String(item.line ?? ''),
+        ingredientId: item.ingredientId,
+        isBaseRecipe: item.isBaseRecipe,
+    };
+}
+
+function MealIngredientLine({
+    item,
+    onBaseRecipeClick,
+}: {
+    item: string | MealIngredientItem;
+    onBaseRecipeClick?: (item: MealIngredientItem) => void;
+}): ReactElement {
+    const normalized = normalizeIngredientItem(item);
+    const canOpenBaseRecipe =
+        normalized.isBaseRecipe === true && normalized.ingredientId != null && typeof onBaseRecipeClick === 'function';
+
+    if (canOpenBaseRecipe) {
+        return (
+            <button
+                type="button"
+                className="text-left underline decoration-[#5A6B44]/40 underline-offset-2 outline-none hover:text-[#5A6B44] focus-visible:ring-2 focus-visible:ring-[#5A6B44]/35"
+                onClick={() => onBaseRecipeClick(normalized)}
+            >
+                {normalized.line}
+            </button>
+        );
+    }
+
+    return <>{normalized.line}</>;
+}
+
+export default function MealDetailView({
+    meal,
+    className = '',
+    hideImage = false,
+    embedded = false,
+    onBaseRecipeClick,
+}: MealDetailViewProps): ReactElement {
     const [mediaFailed, setMediaFailed] = useState(false);
     const {
         shortDescription,
@@ -143,7 +199,9 @@ export default function MealDetailView({ meal, className = '', hideImage = false
         sickleCellHighlights = [],
         nutritionalData,
         ingredients,
+        ingredientItems,
         ingredientSections,
+        ingredientsPrepNote,
         cookingYieldNote,
         instructions,
         instructionSections,
@@ -163,6 +221,10 @@ export default function MealDetailView({ meal, className = '', hideImage = false
     const scBadges = sickleCellHighlights.filter((b) => b !== G6PD_HIGHLIGHT_BADGE);
 
     const hasIngredientSections = Array.isArray(ingredientSections) && ingredientSections.length > 0;
+    const hasStructuredIngredientItems = Array.isArray(ingredientItems) && ingredientItems.length > 0;
+    const flatIngredientItems = hasStructuredIngredientItems
+        ? ingredientItems
+        : ingredients.map((line) => ({ line }));
     const hasInstructionSections = Array.isArray(instructionSections) && instructionSections.length > 0;
     const mealBlurb = String(shortDescription || description || '').trim();
 
@@ -182,9 +244,9 @@ export default function MealDetailView({ meal, className = '', hideImage = false
                 .join(' ')}
         >
             <div className="grid grid-cols-1 gap-0 lg:grid-cols-[13fr_7fr]">
-                <article className="space-y-8 rounded-[12px] border border-gray-200 bg-white p-6 shadow-sm md:p-8 lg:rounded-r-none lg:border-r-0">
+                <article className="space-y-6 rounded-[12px] border border-gray-200 bg-white p-4 shadow-sm sm:space-y-8 sm:p-6 md:p-8 lg:rounded-r-none lg:border-r-0">
                     {!hideImage ? (
-                        <div className="-mx-6 -mt-6 mb-6 aspect-[4/3] w-[calc(100%+3rem)] max-w-none overflow-hidden rounded-t-[12px] bg-[#F8F9F6] md:-mx-8 md:-mt-8 md:w-[calc(100%+4rem)]">
+                        <div className="-mx-4 -mt-4 mb-4 aspect-[4/3] w-[calc(100%+2rem)] max-w-none overflow-hidden rounded-t-[12px] bg-[#F8F9F6] sm:-mx-6 sm:-mt-6 sm:mb-6 sm:w-[calc(100%+3rem)] md:-mx-8 md:-mt-8 md:w-[calc(100%+4rem)]">
                             {showImage ? (
                                 <img
                                     src={resolvedImageUrl}
@@ -239,6 +301,11 @@ export default function MealDetailView({ meal, className = '', hideImage = false
                         >
                             Ingredients
                         </h2>
+                        {String(ingredientsPrepNote ?? '').trim() !== '' ? (
+                            <p className="font-montserrat text-sm font-medium leading-relaxed text-[#5A6B44] md:text-[15px]">
+                                {String(ingredientsPrepNote).trim()}
+                            </p>
+                        ) : null}
                         {hasIngredientSections ? (
                             <div className="space-y-6">
                                 {ingredientSections.map((section) => (
@@ -247,23 +314,33 @@ export default function MealDetailView({ meal, className = '', hideImage = false
                                             {section.title}
                                         </h3>
                                         <ul className="space-y-3 font-montserrat text-sm font-medium leading-relaxed text-[#374151] md:text-[15px]">
-                                            {section.items.map((line, idx) => (
-                                                <li
-                                                    key={`${section.title}-${idx}-${line}`}
-                                                    className="border-b border-gray-100 pb-3 last:border-b-0 last:pb-0"
-                                                >
-                                                    {line}
-                                                </li>
-                                            ))}
+                                            {section.items.map((item, idx) => {
+                                                const normalized = normalizeIngredientItem(item);
+
+                                                return (
+                                                    <li
+                                                        key={`${section.title}-${idx}-${normalized.line}`}
+                                                        className="border-b border-gray-100 pb-3 last:border-b-0 last:pb-0"
+                                                    >
+                                                        <MealIngredientLine
+                                                            item={item}
+                                                            onBaseRecipeClick={onBaseRecipeClick}
+                                                        />
+                                                    </li>
+                                                );
+                                            })}
                                         </ul>
                                     </div>
                                 ))}
                             </div>
                         ) : (
                             <ul className="space-y-3 font-montserrat text-sm font-medium leading-relaxed text-[#374151] md:text-[15px]">
-                                {ingredients.map((line, idx) => (
-                                    <li key={`${idx}-${line}`} className="border-b border-gray-100 pb-3 last:border-b-0 last:pb-0">
-                                        {line}
+                                {flatIngredientItems.map((item, idx) => (
+                                    <li
+                                        key={`${idx}-${item.line}`}
+                                        className="border-b border-gray-100 pb-3 last:border-b-0 last:pb-0"
+                                    >
+                                        <MealIngredientLine item={item} onBaseRecipeClick={onBaseRecipeClick} />
                                     </li>
                                 ))}
                             </ul>
@@ -324,7 +401,7 @@ export default function MealDetailView({ meal, className = '', hideImage = false
                     </section>
                 </article>
 
-                <aside className="space-y-6 rounded-[12px] border border-gray-200 bg-[#F8F9F6] p-6 lg:rounded-l-none lg:border-l">
+                <aside className="space-y-5 rounded-[12px] border border-gray-200 bg-[#F8F9F6] p-4 sm:space-y-6 sm:p-6 lg:rounded-l-none lg:border-l">
                     {hasG6pdTrigger ? (
                         <div className="rounded-[12px] border-2 border-[#B91C1C] bg-[#FEF2F2] p-4 shadow-sm">
                             <p className="font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#991B1B]">

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import MacroGrid from './MacroGrid.jsx';
+import MealCalorieTierTabs from './MealCalorieTierTabs.jsx';
 import Button from './Atoms/Button.jsx';
 import RoundIconButton from './Atoms/Icons/RoundIconButton.jsx';
 import { IconEdit } from './Atoms/SvgIcons.jsx';
@@ -8,12 +9,12 @@ import CategoryBadge from './MealSystem/CategoryBadges.jsx';
 import { resolveMealImageUrl } from '../meal-library/resolveMealImageUrl.ts';
 import { resolveMealCategoryBadgeProps } from '../meal-library/mealCategoryBadge.ts';
 import SelectionCheckBadge from './Atoms/Icons/SelectionCheckBadge.jsx';
+import { MEAL_CARD_DECK_SHELL_CLASS } from './Consultation/consultationNanoCardWidth.js';
 
 /**
- * Same shell as {@link MealCardClientViewNano} `deck` (consultation card, non-ribbon).
+ * Same shell as consultation Nano / options-modal cards (fixed 240px).
  */
-const DECK_SHELL =
-    'mx-auto w-[270px] max-w-[min(270px,100%)] shrink-0 rounded-[12px] flex flex-col bg-[#FFFFFF] shadow-md font-montserrat';
+const DECK_SHELL = `${MEAL_CARD_DECK_SHELL_CLASS} shadow-md font-montserrat`;
 
 /**
  * @param {{ macros?: { calories: unknown; protein: unknown; carbs: unknown; fat: unknown } | null }} props
@@ -41,7 +42,7 @@ function MacroGridDeckSection({ macros }) {
 
 /**
  * Unified meal card — layout matches {@link MealCardClientViewNano} **deck (consultation)** card:
- * `270px` shell, `aspect-[4/3]` hero, deck `MacroGrid` (fluid), title + VIEW DETAILS + CRAFT THIS MEAL.
+ * `240px` shell, `aspect-[4/3]` hero, deck `MacroGrid` (fluid), title + VIEW DETAILS + CRAFT THIS MEAL.
  *
  * @param {object} props
  * @param {object} [props.meal]
@@ -63,6 +64,9 @@ function MacroGridDeckSection({ macros }) {
  * @param {() => void} [props.onCraftThisMeal]
  * @param {boolean} [props.disabled]
  * @param {string} [props.className]
+ * @param {number[]} [props.calorieTierTabs] Admin Meal Tiers Library only. Omit on the classic Meal Library.
+ * @param {object[]} [props.calorieTiers]
+ * @param {(tier: number, payload: object | null) => void} [props.onCalorieTierChange]
  */
 export default function MealCard({
     meal,
@@ -84,6 +88,9 @@ export default function MealCard({
     onCraftThisMeal,
     disabled = false,
     className = '',
+    calorieTierTabs = null,
+    calorieTiers = null,
+    onCalorieTierChange,
 }) {
     const [mediaFailed, setMediaFailed] = useState(false);
 
@@ -207,7 +214,15 @@ export default function MealCard({
                         </h3>
                     </div>
 
-                    <MacroGridDeckSection macros={resolvedMacros} />
+                    {Array.isArray(calorieTierTabs) && calorieTierTabs.length > 0 && isAdmin ? (
+                        <MealCalorieTierTabs
+                            tabValues={calorieTierTabs}
+                            calorieTiers={calorieTiers ?? mealRecord?.calorieTiers ?? []}
+                            onCalorieTierChange={onCalorieTierChange}
+                        />
+                    ) : (
+                        <MacroGridDeckSection macros={resolvedMacros} />
+                    )}
 
                     {!isAdmin ? (
                         <>
@@ -226,7 +241,7 @@ export default function MealCard({
                             <div className="mt-1 w-full shrink-0 pb-0.5">
                                 <Button
                                     type="button"
-                                    variant={selected ? 'primary' : 'secondary'}
+                                    variant="secondary"
                                     disabled={disabled}
                                     label={selected ? 'SELECTED' : 'CRAFT THIS MEAL'}
                                     aria-label={craftPrimaryAria}

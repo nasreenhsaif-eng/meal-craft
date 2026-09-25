@@ -14,8 +14,8 @@ enum DietProtocol: string
     public function label(): string
     {
         return match ($this) {
-            self::Balanced => __('Balanced Protocol'),
-            self::NutrientDense => __('Nutrient Density Protocol'),
+            self::Balanced => __('Balanced Anti-inflammatory'),
+            self::NutrientDense => __('Balanced Anti-inflammatory'),
             self::Ketobiotic => __('Ketobiotic'),
             self::CycleSync => __('Cycle sync'),
             self::Thyroid => __('Thyroid Protocol'),

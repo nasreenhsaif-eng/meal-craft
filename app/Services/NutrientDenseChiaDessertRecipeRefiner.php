@@ -183,7 +183,7 @@ final class NutrientDenseChiaDessertRecipeRefiner
             Meal::nutritionSummaryToPersistedAttributes($nutrition),
             [
                 'meal_type' => MealType::Dessert,
-                'category' => RecipeCategory::Dessert,
+                'category' => RecipeCategory::ChiaPudding,
                 'nutrition_aggregates_synced' => true,
                 'diet_tags' => array_merge($dietTags, $isVegan ? ['Vegan'] : ['Vegetarian']),
                 'instructions' => MealInstructionsText::normalizeForStorage(implode("\n", $instructionLines)),

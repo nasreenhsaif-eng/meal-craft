@@ -30,3 +30,9 @@ test('lines from raw normalizes literal backslash n sequences', function () {
 test('normalize for storage returns null for blank cells', function () {
     expect(MealInstructionsText::normalizeForStorage('   '))->toBeNull();
 });
+
+test('needs backfill detects empty and placeholder instructions', function () {
+    expect(MealInstructionsText::needsBackfill(null, null))->toBeTrue()
+        ->and(MealInstructionsText::needsBackfill('nut-free basil pesto', null))->toBeTrue()
+        ->and(MealInstructionsText::needsBackfill("1. Spiralize zucchini\n2. Pan-sear chicken", null))->toBeFalse();
+});

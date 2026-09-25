@@ -20,6 +20,7 @@ export function HeightFeetInchesPicker({ feet, inches, onFeetChange, onInchesCha
             <WheelColumn
                 ariaLabel="Feet"
                 columnClassName="flex-1 basis-0"
+                compact
                 items={HEIGHT_FEET_OPTIONS}
                 value={feet}
                 onChange={(next) => onFeetChange(Number(next))}
@@ -29,6 +30,7 @@ export function HeightFeetInchesPicker({ feet, inches, onFeetChange, onInchesCha
             <WheelColumn
                 ariaLabel="Inches"
                 columnClassName="flex-1 basis-0"
+                compact
                 items={HEIGHT_INCHES}
                 value={inches}
                 onChange={(next) => onInchesChange(Number(next))}

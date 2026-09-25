@@ -126,7 +126,7 @@ export default function MealCardClientView({
                         />
                         <Button
                             type="button"
-                            variant={selected ? 'primary' : 'secondary'}
+                            variant="secondary"
                             disabled={disabled}
                             label={selected ? 'SELECTED' : 'CRAFT THIS MEAL'}
                             aria-label={

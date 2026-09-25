@@ -3,7 +3,7 @@ import { AdminLayout } from './AdminLayout.jsx';
 import { ADMIN_NAV_PATHS } from './AdminSidebar.jsx';
 
 export default {
-    title: 'MealCraft/Pages/Admin/_Shell/AdminLayout',
+    title: 'Design System/04. Organisms/Header Navbar/AdminLayout',
     component: AdminLayout,
     parameters: { layout: 'fullscreen' },
 };

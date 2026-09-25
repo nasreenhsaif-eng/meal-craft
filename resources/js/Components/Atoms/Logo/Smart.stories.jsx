@@ -5,7 +5,7 @@ import { mealCraftLogoPageDecorator } from './logoStoryDecorators.jsx';
 
 /** @type {import('@storybook/react-vite').Meta} */
 const meta = {
-    title: 'MealCraft/Identity/All Variants/Smart',
+    title: 'Design System/01. Foundations/Logos/All Variants/Smart',
     component: MealCraftLogo,
     decorators: [mealCraftLogoPageDecorator],
     parameters: {

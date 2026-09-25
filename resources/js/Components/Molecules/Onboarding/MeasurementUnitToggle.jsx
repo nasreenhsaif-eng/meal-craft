@@ -32,7 +32,7 @@ export function MeasurementUnitToggle({ value, onChange, className = '' }) {
                         onClick={() => onChange(option.id)}
                         aria-pressed={active}
                         className={[
-                            'rounded-[8px] px-2.5 py-1.5 font-montserrat text-xs font-bold leading-none transition-colors duration-200',
+                            'rounded-[8px] px-2 py-1.5 font-montserrat text-[11px] font-bold leading-none transition-colors duration-200 sm:px-2.5 sm:text-xs',
                             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6E8C47] focus-visible:ring-offset-1',
                             active
                                 ? 'bg-[#5A6B44] text-white'

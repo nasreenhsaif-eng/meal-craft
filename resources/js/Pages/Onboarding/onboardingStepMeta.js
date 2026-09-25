@@ -6,7 +6,6 @@ export const ONBOARDING_STEP_META = {
         title: 'Create your profile',
         description: 'Select your gender so we can personalize calorie and macro calculations.',
         centerHeader: true,
-        hideNext: true,
     },
     period_tracking: {
         title: 'Track your period',

@@ -108,7 +108,7 @@ export default function MacroGrid({
         ? abbreviated
             ? fluid
                 ? 'h-auto min-h-[48px] w-full max-w-full gap-x-1'
-                : 'h-[48px] w-full max-w-[min(280px,100%)]'
+                : 'h-[48px] w-full max-w-[240px]'
             : fluid
               ? 'h-auto min-h-[40px] w-full max-w-full gap-x-0.5'
               : narrow

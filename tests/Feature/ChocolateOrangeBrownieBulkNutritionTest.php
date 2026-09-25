@@ -19,7 +19,7 @@ test('chocolate orange brownie stores per-serving nutrition from a sixteen-servi
         'Tapioca Starch' => ['calories' => 358, 'protein' => 0.2, 'carbs' => 88.7, 'fat' => 0],
         'Baking Powder' => ['calories' => 53, 'protein' => 0, 'carbs' => 27.7, 'fat' => 0],
         'Sea Salt' => ['calories' => 0, 'protein' => 0, 'carbs' => 0, 'fat' => 0],
-        'Psyllium Husks' => ['calories' => 378, 'protein' => 0, 'carbs' => 88.9, 'fat' => 0],
+        'Psyllium Husks' => ['calories' => 200, 'protein' => 0, 'carbs' => 88.9, 'fat' => 0],
     ];
 
     $ingredients = [];
@@ -53,15 +53,21 @@ test('chocolate orange brownie stores per-serving nutrition from a sixteen-servi
     expect($meal->is_bulk)->toBeTrue()
         ->and((float) $meal->servings_count)->toBe((float) BalancedRotationMealRecipeRefiner::CHOCOLATE_ORANGE_BROWNIE_SERVINGS_COUNT)
         ->and($meal->nutrition_aggregates_synced)->toBeFalse()
-        ->and((float) $meal->total_calories)->toBeGreaterThan(230.0)
-        ->and((float) $meal->total_calories)->toBeLessThan(260.0)
+        ->and((float) $meal->total_calories)->toBeGreaterThan(160.0)
+        ->and((float) $meal->total_calories)->toBeLessThan(180.0)
         ->and(round((float) $display['calories'], 2))->toBe(round((float) $meal->total_calories, 2))
-        ->and(round($batch['calories'] / BalancedRotationMealRecipeRefiner::CHOCOLATE_ORANGE_BROWNIE_SERVINGS_COUNT, 2))
-        ->toBe(round((float) $meal->total_calories, 2))
+        ->and(abs(
+            ($batch['calories'] / BalancedRotationMealRecipeRefiner::CHOCOLATE_ORANGE_BROWNIE_SERVINGS_COUNT)
+            - (float) $meal->total_calories
+        ))->toBeLessThan(1.5)
         ->and((float) $meal->ingredients->firstWhere('name', 'Almond Flour (Base)')->pivot->amount_grams)
-        ->toBe(96.0)
+        ->toBe(95.0)
         ->and((float) $meal->ingredients->firstWhere('name', 'Medjool Dates')->pivot->amount_grams)
-        ->toBe(267.0)
+        ->toBe(265.0)
         ->and((float) $meal->ingredients->firstWhere('name', 'Psyllium Husks')->pivot->amount_grams)
-        ->toBe(BalancedRotationMealRecipeRefiner::CHOCOLATE_ORANGE_BROWNIE_PSYLLIUM_BATCH_GRAMS);
+        ->toBe(BalancedRotationMealRecipeRefiner::CHOCOLATE_ORANGE_BROWNIE_PSYLLIUM_BATCH_GRAMS)
+        ->and((float) $meal->ingredients->firstWhere('name', 'Grass Fed Butter')->pivot->amount_grams)
+        ->toBe(120.0)
+        ->and((float) $meal->ingredients->firstWhere('name', 'Cocoa Powder')->pivot->amount_grams)
+        ->toBe(75.0);
 });

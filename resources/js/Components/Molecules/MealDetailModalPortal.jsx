@@ -1,4 +1,5 @@
 import { createPortal } from 'react-dom';
+import Button from '../Atoms/Button/Button.jsx';
 import MealDetailView from './MealDetailView/MealDetailView';
 
 /**
@@ -35,13 +36,14 @@ export default function MealDetailModalPortal({ mealDetailModal, onClose, loadin
                             </p>
                         ) : null}
                     </div>
-                    <button
+                    <Button
                         type="button"
-                        className="shrink-0 font-montserrat text-sm font-bold text-[#5A6B44]"
+                        label="Close"
+                        variant="ghost"
+                        size="sm"
                         onClick={onClose}
-                    >
-                        Close
-                    </button>
+                        className="shrink-0"
+                    />
                 </div>
                 {loading ? (
                     <p className="px-5 py-8 text-center font-body text-sm text-[#555555] sm:px-6">Loading meal details…</p>

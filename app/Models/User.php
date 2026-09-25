@@ -60,6 +60,51 @@ class User extends Authenticatable
         return $this->customerProfile?->onboarding_completed_at !== null;
     }
 
+    /**
+     * Customer finished onboarding and submitted at least one craft meal plan.
+     */
+    public function hasSubmittedMealPlan(): bool
+    {
+        $profile = $this->customerProfile;
+
+        if ($profile === null) {
+            return false;
+        }
+
+        return $profile->craftPlans()
+            ->whereNotNull('submitted_at')
+            ->exists();
+    }
+
+    /**
+     * Welcome back home is for customers who finished profile + meal selections.
+     */
+    public function shouldLandOnWelcomeBack(): bool
+    {
+        return $this->isCustomer()
+            && $this->hasCompletedOnboarding()
+            && $this->hasSubmittedMealPlan();
+    }
+
+    /**
+     * New customers must confirm one OTP sent to email and WhatsApp.
+     * Customers without a profile are not gated (staff preview and legacy rows).
+     */
+    public function needsSignupVerification(): bool
+    {
+        if (! $this->isCustomer()) {
+            return false;
+        }
+
+        $profile = $this->customerProfile;
+
+        if ($profile === null) {
+            return false;
+        }
+
+        return $profile->phone_verified_at === null;
+    }
+
     public function currentOnboardingStep(): OnboardingStep
     {
         $step = $this->customerProfile?->onboarding_step ?? OnboardingStep::Gender;
@@ -69,12 +114,20 @@ class User extends Authenticatable
 
     public function homePath(): string
     {
+        if ($this->needsSignupVerification()) {
+            return route('join.verify', absolute: false);
+        }
+
         if ($this->isAdmin()) {
             return route('admin.dashboard', absolute: false);
         }
 
-        if ($this->hasCompletedOnboarding()) {
+        if ($this->shouldLandOnWelcomeBack()) {
             return route('app.home', absolute: false);
+        }
+
+        if ($this->hasCompletedOnboarding()) {
+            return route('consultation.crafted-for-you', absolute: false);
         }
 
         return route('onboarding.show', [

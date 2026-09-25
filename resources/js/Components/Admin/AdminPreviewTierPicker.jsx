@@ -1,4 +1,4 @@
-import PillButton from '../Atoms/Button/Button.jsx';
+import Button from '../Atoms/Button/Button.jsx';
 
 /**
  * Admin-only calorie tier pills for previewing scaled breakfast and mains.
@@ -18,8 +18,8 @@ export default function AdminPreviewTierPicker({
     onSelectTier,
     compact = false,
     loading = false,
-    description = 'Admin preview — pick a calorie tier to scale breakfast and mains for this session.',
-    compactHint = 'Meal portions scale to the tier you pick. Remembered for this browser session.',
+    description = '',
+    compactHint = 'Pick a daily total to load the matching Meal Tiers Library portions. Meal cards show one calorie. Side salads, desserts, and soup stay at their authored kitchen portions.',
 }) {
     return (
         <div
@@ -35,31 +35,28 @@ export default function AdminPreviewTierPicker({
             <p
                 className={[
                     'font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#555555]',
-                    compact ? '' : 'mt-3',
+                    !compact && description ? 'mt-3' : '',
                 ].join(' ')}
             >
                 Preview calorie tier
             </p>
             <div className="mt-2 flex flex-wrap gap-2">
                 {tiers.map((tier) => (
-                    <PillButton
+                    <Button
                         key={tier}
                         label={`${tier} kcal`}
-                        variant={selectedTier === tier ? 'primary' : 'outline'}
+                        variant={selectedTier === tier ? 'primary' : 'tab'}
                         size="sm"
                         disabled={loading}
                         onClick={() => onSelectTier(tier)}
-                        className={selectedTier === tier ? '' : 'ring-1 ring-[#E5E7EB]'}
                     />
                 ))}
             </div>
-            <p className="mt-2 font-body text-xs text-[#555555]">
-                {loading
-                    ? 'Scaling meals to this tier…'
-                    : compact
-                      ? compactHint
-                      : `Currently testing at ${selectedTier} kcal. Your choice is remembered for this browser session.`}
-            </p>
+            {loading ? (
+                <p className="mt-2 font-body text-xs text-[#555555]">Loading Meal Tiers Library portions…</p>
+            ) : compact && compactHint ? (
+                <p className="mt-2 font-body text-xs text-[#555555]">{compactHint}</p>
+            ) : null}
         </div>
     );
 }

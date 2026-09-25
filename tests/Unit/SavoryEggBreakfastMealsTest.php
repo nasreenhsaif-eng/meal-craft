@@ -8,8 +8,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 uses(RefreshDatabase::class);
 
 test('savory egg breakfast tier counts follow plan tiers', function () {
-    expect(SavoryEggBreakfastMeals::eggCountForPlanTier(1000))->toBe(2)
-        ->and(SavoryEggBreakfastMeals::eggCountForPlanTier(1200))->toBe(2)
+    expect(SavoryEggBreakfastMeals::eggCountForPlanTier(1250))->toBe(3)
         ->and(SavoryEggBreakfastMeals::eggCountForPlanTier(1500))->toBe(3)
         ->and(SavoryEggBreakfastMeals::eggCountForPlanTier(1800))->toBe(4)
         ->and(SavoryEggBreakfastMeals::eggCountForPlanTier(2000))->toBe(4)
@@ -22,18 +21,18 @@ test('savory egg breakfast side multiplier tracks egg count', function () {
         'amount_grams' => 100,
     ]);
 
-    expect(SavoryEggBreakfastMeals::sidePortionMultiplierForMeal($meal, 1000))->toBe(1.0)
+    expect(SavoryEggBreakfastMeals::sidePortionMultiplierForMeal($meal, 1250))->toBe(1.5)
         ->and(SavoryEggBreakfastMeals::sidePortionMultiplierForMeal($meal, 2000))->toBe(2.0);
 });
 
 test('savory egg breakfast enforces minimum avocado portion scaled by plan tier', function () {
     $avocado = Ingredient::factory()->create(['name' => 'Avocado']);
 
-    expect(SavoryEggBreakfastMeals::minimumSideGramsForPlanTier($avocado, 1000))->toBe(25.0)
-        ->and(SavoryEggBreakfastMeals::minimumSideGramsForPlanTier($avocado, 1500))->toBe(37.5)
-        ->and(SavoryEggBreakfastMeals::minimumSideGramsForPlanTier($avocado, 2000))->toBe(56.25)
-        ->and(SavoryEggBreakfastMeals::adaptedSideGrams($avocado, 20.0, 1.0, 1000))->toBe(25.0)
-        ->and(SavoryEggBreakfastMeals::adaptedSideGrams($avocado, 20.0, 2.0, 2000))->toBe(56.25);
+    expect(SavoryEggBreakfastMeals::minimumSideGramsForPlanTier($avocado, 1250))->toBe(25.0)
+        ->and(SavoryEggBreakfastMeals::minimumSideGramsForPlanTier($avocado, 1500))->toBe(25.0)
+        ->and(SavoryEggBreakfastMeals::minimumSideGramsForPlanTier($avocado, 2000))->toBe(41.67)
+        ->and(SavoryEggBreakfastMeals::adaptedSideGrams($avocado, 20.0, 1.0, 1250))->toBe(25.0)
+        ->and(SavoryEggBreakfastMeals::adaptedSideGrams($avocado, 20.0, 2.0, 2000))->toBe(41.67);
 });
 
 test('savory egg breakfast keeps cooking oil at recipe baseline when eggs scale', function () {

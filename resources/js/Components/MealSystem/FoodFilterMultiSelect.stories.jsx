@@ -3,7 +3,7 @@ import FoodFilterMultiSelect from './FoodFilterMultiSelect.jsx';
 import { FOOD_FILTER_OTHER_ID } from './foodFilterOptions.js';
 
 export default {
-    title: 'MealCraft/Meal System/FoodFilterMultiSelect',
+    title: 'Design System/03. Molecules/Dropdown/FoodFilterMultiSelect',
     component: FoodFilterMultiSelect,
     parameters: {
         layout: 'padded',

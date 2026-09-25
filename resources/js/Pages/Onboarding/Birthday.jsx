@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useForm, usePage } from '@inertiajs/react';
 import Button from '../../Components/Atoms/Button/Button.jsx';
 import WheelDatePicker from '../../Components/Molecules/Onboarding/WheelDatePicker.jsx';
@@ -59,6 +59,14 @@ export function OnboardingBirthdayInner({
 
     const yearOptions = useMemo(() => buildYearOptions(minAge, maxAge), [minAge, maxAge]);
     const dayOptions = useMemo(() => buildDayOptions(month, year), [month, year]);
+
+    useEffect(() => {
+        if (!visible || !onDateChange || parseIsoDate(dateOfBirthProp)) {
+            return;
+        }
+
+        onDateChange(toIsoDate(defaultBirthdayValue()));
+    }, [visible, dateOfBirthProp, onDateChange]);
 
     const updateParts = (nextParts) => {
         const clamped = {
