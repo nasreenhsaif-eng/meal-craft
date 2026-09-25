@@ -7,19 +7,19 @@ import { useMemo, useState } from 'react';
 /**
  * MealPlanCard — mirrors MealCard architecture but for protocol plans.
  *
- * @param {{
- *  title: string;
- *  imageUrl?: string | null;
- *  imageAlt?: string;
- *  dailyMacros: { calories: number; protein: number; carbs: number; fat: number };
- *  tags: string[];
- *  onPrimaryAction?: () => void;
- *  primaryActionLabel?: string;
- *  className?: string;
- * }} props
+ * @param {string} [props.title]
+ * @param {string | null} [props.dateRangeLabel]
+ * @param {string | null} [props.imageUrl]
+ * @param {string} [props.imageAlt]
+ * @param {{ calories: number; protein: number; carbs: number; fat: number }} props.dailyMacros
+ * @param {string[]} props.tags
+ * @param {() => void} [props.onPrimaryAction]
+ * @param {string} [props.primaryActionLabel]
+ * @param {string} [props.className]
  */
 export default function MealPlanCard({
     title,
+    dateRangeLabel = null,
     imageUrl,
     imageAlt = '',
     dailyMacros,
@@ -44,7 +44,7 @@ export default function MealPlanCard({
     return (
         <article
             className={[
-                'w-full overflow-hidden rounded-[12px] border border-gray-200 bg-white shadow-sm',
+                'box-border w-full min-w-0 overflow-hidden rounded-[12px] border border-gray-200 bg-white shadow-sm',
                 className,
             ].join(' ')}
         >
@@ -76,6 +76,9 @@ export default function MealPlanCard({
             <div className="min-w-0 px-4 pb-6 pt-4 sm:px-5">
                 <header className="min-w-0 space-y-3">
                     <h3 className="font-montserrat text-[16px] font-bold tracking-tight text-[#262A22]">{title}</h3>
+                    {dateRangeLabel ? (
+                        <p className="-mt-2 font-body text-sm font-semibold text-[#5A6B44]">{dateRangeLabel}</p>
+                    ) : null}
                     <div className="min-w-0 rounded-[12px] border border-gray-100 bg-[#F8F9F6] px-2 py-3 sm:px-2.5">
                         <p className="mb-2 font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#555555]">
                             Daily average macros

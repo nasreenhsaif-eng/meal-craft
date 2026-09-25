@@ -234,6 +234,14 @@ export default function CraftedForYouPage({
             return backHref;
         }
 
+        if (typeof homeHref === 'string' && homeHref.trim() !== '') {
+            return homeHref;
+        }
+
+        if (typeof closeHref === 'string' && closeHref.trim() !== '') {
+            return closeHref;
+        }
+
         try {
             const stored = sessionStorage.getItem(CONSULTATION_BACK_HREF_STORAGE_KEY);
 
@@ -245,19 +253,23 @@ export default function CraftedForYouPage({
         }
 
         return null;
-    }, [backHref]);
+    }, [backHref, closeHref, homeHref]);
 
     useEffect(() => {
-        if (typeof backHref !== 'string' || backHref.trim() === '') {
+        const hrefToStore =
+            (typeof backHref === 'string' && backHref.trim() !== '' ? backHref : null) ??
+            (typeof homeHref === 'string' && homeHref.trim() !== '' ? homeHref : null);
+
+        if (hrefToStore === null) {
             return;
         }
 
         try {
-            sessionStorage.setItem(CONSULTATION_BACK_HREF_STORAGE_KEY, backHref);
+            sessionStorage.setItem(CONSULTATION_BACK_HREF_STORAGE_KEY, hrefToStore);
         } catch {
             // sessionStorage may be unavailable
         }
-    }, [backHref]);
+    }, [backHref, homeHref]);
 
     // Slot selection state (chosen meal ids per category, per day)
     const [selectedByDay, setSelectedByDay] = useState(
@@ -556,12 +568,6 @@ export default function CraftedForYouPage({
     function goBackFromPlanSetup() {
         if (planSetupBackHref) {
             window.location.assign(planSetupBackHref);
-
-            return;
-        }
-
-        if (typeof window !== 'undefined' && window.history.length > 1) {
-            window.history.back();
 
             return;
         }

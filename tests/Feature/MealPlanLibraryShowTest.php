@@ -173,7 +173,7 @@ test('tbd weekly protocol plans use the customer onboarding nutrient dense picke
     $user = User::factory()->create();
 
     $plan = MealPlan::query()->create([
-        'name' => 'TBD Weekly Protocol',
+        'name' => 'Balanced Anti-inflammatory',
         'goal' => 'Weekly nutrient density rotation.',
         'schema_type' => MealPlanSchemaType::WeeklyStructured,
         'plan_category' => MealPlanLibraryCategory::Balanced,

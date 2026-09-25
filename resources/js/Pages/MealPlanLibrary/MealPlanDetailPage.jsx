@@ -6,6 +6,7 @@ import adminInertiaLayout from '../../lib/adminInertiaLayout.jsx';
 import { resolveUrl } from '../../meal-craft/mealCraftPageProps.js';
 import Button from '../../Components/Atoms/Button.jsx';
 import AdminPreviewTierPicker from '../../Components/Admin/AdminPreviewTierPicker.jsx';
+import CalendarRangeField from '../../Components/Molecules/Calendar/CalendarRangeField.jsx';
 import ChooseYourMeals, {
     applyDeckSelectionToggle,
     DEFAULT_FULL_CRAFT_MAX_SELECTIONS,
@@ -377,6 +378,11 @@ export default function MealPlanDetailPage({
     );
     const [savingDefaults, setSavingDefaults] = useState(false);
     const [saveDefaultsError, setSaveDefaultsError] = useState(/** @type {string | null} */ (null));
+    const [planDescription, setPlanDescription] = useState(() => String(mealPlan?.description ?? mealPlan?.goal ?? ''));
+    const [publishRange, setPublishRange] = useState(() => ({
+        start: mealPlan?.publishedStartsOn ?? null,
+        end: mealPlan?.publishedEndsOn ?? null,
+    }));
     const [mealEditModal, setMealEditModal] = useState(
         /** @type {{ dayNumber: number; categoryKey: string; meal: object } | null} */ (null),
     );
@@ -400,7 +406,12 @@ export default function MealPlanDetailPage({
     useEffect(() => {
         setSourceDays(days);
         setDaySelections(resolveInitialDaySelections(days, defaultDaySelections));
-    }, [days, defaultDaySelections]);
+        setPlanDescription(String(mealPlan?.description ?? mealPlan?.goal ?? ''));
+        setPublishRange({
+            start: mealPlan?.publishedStartsOn ?? null,
+            end: mealPlan?.publishedEndsOn ?? null,
+        });
+    }, [days, defaultDaySelections, mealPlan?.description, mealPlan?.goal, mealPlan?.publishedStartsOn, mealPlan?.publishedEndsOn]);
 
     const daySelectionsJson = useMemo(() => JSON.stringify(daySelections), [daySelections]);
 
@@ -598,28 +609,33 @@ export default function MealPlanDetailPage({
             return;
         }
 
+        if (!publishRange.start || !publishRange.end) {
+            setSaveDefaultsError('Select a start and end date on the calendar before publishing.');
+            return;
+        }
+
         setSavingDefaults(true);
         setSaveDefaultsError(null);
 
         router.put(
             saveDefaultSelectionsUrl,
-            { selections: daySelections },
+            {
+                selections: daySelections,
+                description: planDescription,
+                published_starts_on: publishRange.start,
+                published_ends_on: publishRange.end,
+            },
             {
                 preserveScroll: true,
                 onFinish: () => setSavingDefaults(false),
                 onError: () => {
-                    setSaveDefaultsError('Could not save default selections. Please try again.');
+                    setSaveDefaultsError('Could not publish the meal plan. Please try again.');
                 },
             },
         );
-    }, [daySelections, saveDefaultSelectionsUrl]);
+    }, [daySelections, planDescription, publishRange.end, publishRange.start, saveDefaultSelectionsUrl]);
 
     const planCategoryLabel = String(mealPlan?.category ?? '').trim();
-    const goalText = String(mealPlan?.goal ?? '').trim();
-    const showGoalDescription =
-        goalText !== '' &&
-        goalText.toLowerCase() !== planCategoryLabel.toLowerCase() &&
-        goalText.toLowerCase() !== 'balanced';
 
     const categoryMaxSelections = useMemo(() => {
         const breakfastCount = activeDayData?.categories?.breakfasts?.length ?? 0;
@@ -665,33 +681,58 @@ export default function MealPlanDetailPage({
                     >
                         ← Back to Meal Plan Library
                     </Link>
-                    <h1 className="mt-2 font-montserrat text-2xl font-bold tracking-tight text-[#262A22] sm:text-3xl">
-                        {mealPlan?.name ?? 'Meal plan'}
-                    </h1>
-                    {showGoalDescription ? (
-                        <p className="mt-2 max-w-3xl font-body text-sm leading-relaxed text-[#555555] sm:text-base">
-                            {goalText}
-                        </p>
-                    ) : null}
-                    <p className="mt-3 max-w-3xl font-body text-sm text-[#555555]">
-                        Select the default meals for each day, then save. Customers start with these picks and can still
-                        change them via SEE OTHER OPTIONS.
-                    </p>
-                    <div className="mt-4 flex flex-wrap items-center gap-3">
-                        <Button
-                            type="button"
-                            variant="primary"
-                            size="sm"
-                            label={savingDefaults ? 'Saving defaults…' : 'Save as customer defaults'}
-                            disabled={!saveDefaultSelectionsUrl || savingDefaults}
-                            onClick={saveDefaultSelections}
-                        />
-                        {flashSuccess ? (
-                            <p className="font-body text-sm text-[#5A6B44]">{String(flashSuccess)}</p>
-                        ) : null}
-                        {saveDefaultsError ? (
-                            <p className="font-body text-sm text-red-700">{saveDefaultsError}</p>
-                        ) : null}
+
+                    <div className="mt-4 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(240px,320px)]">
+                        <div className="min-w-0">
+                            <h1 className="font-montserrat text-2xl font-bold tracking-tight text-[#262A22] sm:text-3xl">
+                                {mealPlan?.name ?? 'Meal plan'}
+                            </h1>
+                            <label className="mt-3 block">
+                                <span className="sr-only">Meal plan description</span>
+                                <textarea
+                                    value={planDescription}
+                                    onChange={(event) => setPlanDescription(event.target.value)}
+                                    rows={4}
+                                    placeholder="Nutrient-dense meal plan with balanced macronutrients and anti-inflammatory whole foods."
+                                    className="w-full resize-none rounded-[12px] border border-gray-200 bg-white px-3 py-2 font-body text-sm leading-relaxed text-[#262A22] placeholder:text-[#777777] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#6E8C47] focus-visible:ring-offset-2"
+                                />
+                            </label>
+                            <p className="mt-3 max-w-3xl font-body text-sm text-[#555555]">
+                                Select the default meals for each day, then publish. Customers start with these picks and
+                                can still change them via SEE OTHER OPTIONS.
+                            </p>
+                            {planCategoryLabel ? (
+                                <p className="mt-2 font-body text-xs font-semibold uppercase tracking-wide text-[#5A6B44]">
+                                    {planCategoryLabel}
+                                </p>
+                            ) : null}
+                            <div className="mt-4 flex flex-wrap items-center gap-3">
+                                <Button
+                                    type="button"
+                                    variant="primary"
+                                    size="sm"
+                                    label={savingDefaults ? 'Publishing…' : 'Publish meal plan'}
+                                    disabled={!saveDefaultSelectionsUrl || savingDefaults}
+                                    onClick={saveDefaultSelections}
+                                />
+                                {flashSuccess ? (
+                                    <p className="font-body text-sm text-[#5A6B44]">{String(flashSuccess)}</p>
+                                ) : null}
+                                {saveDefaultsError ? (
+                                    <p className="font-body text-sm text-red-700">{saveDefaultsError}</p>
+                                ) : null}
+                            </div>
+                        </div>
+
+                        <div className="min-w-0 lg:justify-self-end lg:w-full">
+                            <CalendarRangeField
+                                label="Plan week"
+                                rangeValue={publishRange}
+                                onRangeChange={setPublishRange}
+                                placeholder="Select week"
+                                className="w-full max-w-[320px] lg:ml-auto"
+                            />
+                        </div>
                     </div>
                 </div>
 
@@ -729,8 +770,7 @@ export default function MealPlanDetailPage({
                             selectedTier={selectedTier}
                             onSelectTier={setSelectedTier}
                             loading={tierLoading}
-                            description="Pick a daily total to load the matching Meal Tiers Library portions. Meal cards show one calorie. Side salads, desserts, and soup stay at their authored kitchen portions."
-                            compactHint="Pick a daily total to load the matching Meal Tiers Library portions. Meal cards show one calorie. Side salads, desserts, and soup stay at their authored kitchen portions."
+                            description=""
                         />
                         {activeDayReconciliationWarnings.length > 0 ? (
                             <div className="mt-2 rounded-[10px] border border-amber-200 bg-amber-50 px-3 py-2 font-body text-sm text-amber-900">

@@ -6,10 +6,14 @@ use App\Enums\OnboardingStep;
 use App\Http\Controllers\Controller;
 use App\Models\CustomerProfile;
 use App\Services\CustomerCraftPlanPresentationService;
+use App\Services\MealPlanPublishService;
 use App\Services\Nutrition\OnboardingDailyTargetsCalculator;
+use App\Services\Nutrition\ProductionWeeklyMenuSchedule;
 use App\Services\Nutrition\UserPlanCalculator;
 use App\Support\AdminConsultationPreviewProfile;
+use App\Support\MealPlanDateRange;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Carbon;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -26,6 +30,33 @@ class CustomerAppController extends Controller
             ->first();
 
         $calorieRange = $profile !== null ? self::calorieTargetRange($profile) : null;
+        $publishedPlan = $profile !== null
+            ? ProductionWeeklyMenuSchedule::resolveProductionMealPlan($profile)
+            : null;
+
+        $planDateRange = MealPlanDateRange::forWeek(
+            selectedWeekdays: array_values($latestCraftPlan?->selected_weekdays ?? []),
+        );
+        $showPlanReady = false;
+
+        if (
+            $profile !== null
+            && $publishedPlan !== null
+            && $publishedPlan->published_starts_on !== null
+            && $publishedPlan->published_ends_on !== null
+        ) {
+            $starts = Carbon::parse($publishedPlan->published_starts_on)->startOfDay();
+            $ends = Carbon::parse($publishedPlan->published_ends_on)->startOfDay();
+            $remainingWeekdays = MealPlanDateRange::remainingWeekdays($starts, $ends);
+            $remainingRange = MealPlanDateRange::forRemainingWeekdays($starts, $ends, $remainingWeekdays);
+
+            if ($remainingRange !== null) {
+                $planDateRange = $remainingRange;
+            }
+
+            $showPlanReady = $remainingWeekdays !== []
+                && ! MealPlanPublishService::customerAlreadyChoseForWeek($profile, $starts, $ends);
+        }
 
         return Inertia::render('App/Home', [
             'customerName' => $user?->name ?? '',
@@ -47,6 +78,8 @@ class CustomerAppController extends Controller
                 'weekDuration' => $latestCraftPlan->week_duration,
                 'submittedAt' => $latestCraftPlan->submitted_at?->toIso8601String(),
             ] : null,
+            'planDateRange' => $planDateRange,
+            'showPlanReady' => $showPlanReady,
         ]);
     }
 

@@ -26,9 +26,11 @@ const PAGE_BG = 'bg-[#F8F9F6]';
  *   planTierCalories?: number;
  *   dietProtocol?: string | null;
  *   submittedAt?: string | null;
+ *   planDateRange?: { startsOn?: string; endsOn?: string; label?: string };
  *   days?: Array<{
  *     dayNumber: number;
  *     label: string;
+ *     dateLabel?: string;
  *     includeSoup?: boolean;
  *     categories?: Record<string, Array<{ id: string; title?: string; detailView?: object }>>;
  *   }>;
@@ -129,6 +131,12 @@ export default function MealPlanSummary({
                         </h1>
                         <p className="mt-2 font-body text-sm text-[#555555] sm:text-base">
                             {planCategoryLabel}
+                            {craftPlan.planDateRange?.label ? (
+                                <span className="font-semibold text-[#262A22]">
+                                    {' '}
+                                    · {craftPlan.planDateRange.label}
+                                </span>
+                            ) : null}
                             {days.length > 0 ? ` · ${days.length} delivery ${days.length === 1 ? 'day' : 'days'}` : null}
                         </p>
                     </div>
@@ -142,7 +150,7 @@ export default function MealPlanSummary({
                             {days.map((day) => (
                                 <FoodFilterPill
                                     key={day.dayNumber}
-                                    label={day.label}
+                                    label={day.dateLabel ? `${day.label} ${day.dateLabel}` : day.label}
                                     isActive={day.dayNumber === activeDay}
                                     onClick={() => setActiveDay(day.dayNumber)}
                                 />

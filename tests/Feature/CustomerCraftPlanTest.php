@@ -248,6 +248,8 @@ test('customer can view meal plan summary after submitting selections', function
             ->where('fulfillmentUrl', route('checkout.fulfillment'))
             ->has('craftPlan.days', 2)
             ->where('craftPlan.days.0.label', 'Sunday')
+            ->has('craftPlan.planDateRange.label')
+            ->has('craftPlan.days.0.dateLabel')
             ->where('craftPlan.days.0.categories.breakfasts.0.title', 'Sunday Oats'));
 });
 

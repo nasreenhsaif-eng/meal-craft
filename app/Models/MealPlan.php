@@ -15,6 +15,7 @@ class MealPlan extends Model
     protected $fillable = [
         'name',
         'goal',
+        'description',
         'schema_type',
         'plan_category',
         'cycle_phase',
@@ -23,6 +24,8 @@ class MealPlan extends Model
         'target_total_carbs_g',
         'target_total_fat_g',
         'default_day_selections',
+        'published_starts_on',
+        'published_ends_on',
     ];
 
     protected function casts(): array
@@ -36,6 +39,8 @@ class MealPlan extends Model
             'target_total_carbs_g' => 'float',
             'target_total_fat_g' => 'float',
             'default_day_selections' => 'array',
+            'published_starts_on' => 'date',
+            'published_ends_on' => 'date',
         ];
     }
 
@@ -60,7 +65,16 @@ class MealPlan extends Model
             return true;
         }
 
-        return str_contains(strtolower((string) ($this->name ?? '')), 'tbd');
+        $name = strtolower((string) ($this->name ?? ''));
+
+        return str_contains($name, 'tbd')
+            || str_contains($name, 'anti-inflammatory')
+            || str_contains($name, 'anti inflammatory');
+    }
+
+    public function isPublished(): bool
+    {
+        return $this->published_starts_on !== null && $this->published_ends_on !== null;
     }
 
     public function dietProtocol(): DietProtocol

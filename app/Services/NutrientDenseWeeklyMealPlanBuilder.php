@@ -19,9 +19,9 @@ use InvalidArgumentException;
  */
 final class NutrientDenseWeeklyMealPlanBuilder
 {
-    public const PLAN_NAME = 'TBD Weekly Protocol';
+    public const PLAN_NAME = 'Balanced Anti-inflammatory';
 
-    public const PLAN_GOAL = 'TBD — micronutrient-optimized whole foods within your calorie tier.';
+    public const PLAN_GOAL = 'Nutrient-dense meal plan with balanced macronutrients and anti-inflammatory whole foods.';
 
     public const PROTOCOL_SLUG = 'nutrient_dense';
 

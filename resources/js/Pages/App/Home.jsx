@@ -82,6 +82,8 @@ function WelcomeBackGhostActions({ onEditProfile, onEditMealsPlan, onViewSummary
  * @param {() => void} [props.onEditProfile]
  * @param {() => void} [props.onEditMealsPlan]
  * @param {() => void} [props.onViewSummary]
+ * @param {string} [props.planDateRangeLabel]
+ * @param {boolean} [props.showPlanReady]
  */
 export function WelcomeBackInner({
     customerName = '',
@@ -92,6 +94,8 @@ export function WelcomeBackInner({
     onEditProfile,
     onEditMealsPlan,
     onViewSummary,
+    planDateRangeLabel = '',
+    showPlanReady = false,
 }) {
     const isReceive = mode === 'receive';
     const dailyCaloriesLabel = dailyCaloriesDisplay(profile);
@@ -122,23 +126,37 @@ export function WelcomeBackInner({
                         <p className="mt-3 max-w-2xl font-body text-sm leading-relaxed text-[#555555] sm:text-base">
                             Looking forward to crafting your meals!
                         </p>
-                        <p className="mt-2 max-w-2xl font-body text-sm leading-relaxed text-[#555555] sm:text-base">
-                            Your meal plan is ready for next week.
-                        </p>
-                        <div className="mt-6">
-                            <Button
-                                type="button"
-                                label="Choose your meals"
-                                variant="primary"
-                                onClick={onEditMealsPlan}
-                                className="w-full sm:w-auto"
-                            />
-                        </div>
-                        <p className="mt-3 max-w-2xl font-body text-[11px] leading-snug text-[#777777] sm:text-xs">
-                            Please submit your choices prior to end of day{' '}
-                            <span className="font-semibold uppercase tracking-wide text-[#555555]">Friday</span>, or
-                            our system will automatically choose the meals for your kind self!
-                        </p>
+                        {showPlanReady ? (
+                            <>
+                                <p className="mt-2 max-w-2xl font-body text-sm leading-relaxed text-[#555555] sm:text-base">
+                                    Your meal plan is ready
+                                    {planDateRangeLabel ? (
+                                        <>
+                                            {' '}
+                                            for{' '}
+                                            <span className="font-semibold text-[#262A22]">{planDateRangeLabel}</span>
+                                        </>
+                                    ) : (
+                                        ' for next week'
+                                    )}
+                                    .
+                                </p>
+                                <div className="mt-6">
+                                    <Button
+                                        type="button"
+                                        label="Choose your meals"
+                                        variant="primary"
+                                        onClick={onEditMealsPlan}
+                                        className="w-full sm:w-auto"
+                                    />
+                                </div>
+                                <p className="mt-3 max-w-2xl font-body text-[11px] leading-snug text-[#777777] sm:text-xs">
+                                    Please submit your choices prior to end of day{' '}
+                                    <span className="font-semibold uppercase tracking-wide text-[#555555]">Friday</span>,
+                                    or our system will automatically choose the meals for your kind self!
+                                </p>
+                            </>
+                        ) : null}
                     </>
                 )}
 
@@ -179,6 +197,8 @@ export function WelcomeBackInner({
  * @param {string} [props.profileEditUrl]
  * @param {string} [props.deliveryUrl]
  * @param {{ craftKey?: string; weekDuration?: number; submittedAt?: string } | null} [props.craftPlan]
+ * @param {{ startsOn?: string; endsOn?: string; label?: string } | null} [props.planDateRange]
+ * @param {boolean} [props.showPlanReady]
  */
 export default function Home({
     customerName,
@@ -189,6 +209,8 @@ export default function Home({
     profileEditUrl = '/onboarding/gender',
     deliveryUrl = '/checkout/delivery',
     craftPlan = null,
+    planDateRange = null,
+    showPlanReady = false,
 }) {
     const page = usePage();
     const fromSummary = String(page.url ?? '').includes('from=summary');
@@ -211,6 +233,8 @@ export default function Home({
                 window.location.assign(mealsPlanUrl);
             }}
             onViewSummary={() => router.visit(mealPlanSummaryUrl)}
+            planDateRangeLabel={planDateRange?.label ?? ''}
+            showPlanReady={showPlanReady}
         />
     );
 }

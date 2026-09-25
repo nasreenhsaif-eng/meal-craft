@@ -23,7 +23,7 @@ export default {
 };
 
 export const Default = {
-    name: 'Welcome back',
+    name: 'Welcome back — plan ready',
     render: () => (
         <WelcomeBackInner
             customerName="Nasreen"
@@ -32,6 +32,23 @@ export const Default = {
             onEditProfile={() => undefined}
             onEditMealsPlan={() => undefined}
             onViewSummary={() => undefined}
+            planDateRangeLabel="27th September to 3rd October"
+            showPlanReady
+        />
+    ),
+};
+
+export const AlreadyChose = {
+    name: 'Welcome back — already chose',
+    render: () => (
+        <WelcomeBackInner
+            customerName="Nasreen"
+            profile={NASREEN_PROFILE}
+            mode="welcome"
+            onEditProfile={() => undefined}
+            onEditMealsPlan={() => undefined}
+            onViewSummary={() => undefined}
+            showPlanReady={false}
         />
     ),
 };

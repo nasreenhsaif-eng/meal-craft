@@ -18,7 +18,7 @@ export default function AdminPreviewTierPicker({
     onSelectTier,
     compact = false,
     loading = false,
-    description = 'Pick a daily total to load the matching Meal Tiers Library portions. Meal cards show one calorie.',
+    description = '',
     compactHint = 'Pick a daily total to load the matching Meal Tiers Library portions. Meal cards show one calorie. Side salads, desserts, and soup stay at their authored kitchen portions.',
 }) {
     return (
@@ -35,7 +35,7 @@ export default function AdminPreviewTierPicker({
             <p
                 className={[
                     'font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#555555]',
-                    compact ? '' : 'mt-3',
+                    !compact && description ? 'mt-3' : '',
                 ].join(' ')}
             >
                 Preview calorie tier
@@ -52,13 +52,11 @@ export default function AdminPreviewTierPicker({
                     />
                 ))}
             </div>
-            <p className="mt-2 font-body text-xs text-[#555555]">
-                {loading
-                    ? 'Loading Meal Tiers Library portions…'
-                    : compact
-                      ? compactHint
-                      : `Currently testing at ${selectedTier} kcal. Your choice is remembered for this browser session.`}
-            </p>
+            {loading ? (
+                <p className="mt-2 font-body text-xs text-[#555555]">Loading Meal Tiers Library portions…</p>
+            ) : compact && compactHint ? (
+                <p className="mt-2 font-body text-xs text-[#555555]">{compactHint}</p>
+            ) : null}
         </div>
     );
 }

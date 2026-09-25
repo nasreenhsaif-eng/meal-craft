@@ -257,7 +257,7 @@ export function buildWeeklyConsultationDisplayDecks({
 
     const catalogSource = (soupCatalogMeals.length > 0 ? soupCatalogMeals : meals) ?? [];
     decks.desserts = consultationDessertDeckForDay(catalogSource, assignedMealsByCategory?.desserts ?? [], {
-        preferBakedDesserts: dietProtocol === 'nutrient_dense',
+        preferBakedDesserts: dietProtocol === 'nutrient_dense' || dietProtocol === 'balanced',
     });
     decks.sideSalads = consultationSideSaladDeckForDay(meals ?? [], assignedMealsByCategory?.sideSalads ?? []);
 
@@ -1593,7 +1593,7 @@ export function FixedChoicePicker({
                 const catalogSource = (soupCatalogMeals.length > 0 ? soupCatalogMeals : meals) ?? [];
 
                 return consultationDessertDeckForDay(catalogSource, assignedMealsByCategory?.desserts ?? [], {
-                    preferBakedDesserts: dietProtocol === 'nutrient_dense',
+                    preferBakedDesserts: dietProtocol === 'nutrient_dense' || dietProtocol === 'balanced',
                 });
             }
 

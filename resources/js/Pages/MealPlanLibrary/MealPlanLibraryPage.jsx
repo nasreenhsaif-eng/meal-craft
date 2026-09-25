@@ -474,6 +474,7 @@ export function MealPlanLibraryPageContent({
                                     <li key={p.id} className="w-full max-w-[310px]">
                                         <MealPlanCard
                                             title={p.name}
+                                            dateRangeLabel={p.dateRangeLabel ?? null}
                                             imageUrl={p.imageUrl}
                                             dailyMacros={p.dailyMacros}
                                             tags={p.tags}

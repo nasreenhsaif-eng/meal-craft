@@ -26,7 +26,11 @@ final class ProductionWeeklyMenuSchedule
 {
     public static function resolveProductionMealPlan(?CustomerProfile $profile = null): ?MealPlan
     {
-        if ($profile !== null && DietProtocol::tryFromStored($profile->diet_protocol) === DietProtocol::NutrientDense) {
+        $protocol = $profile !== null
+            ? DietProtocol::tryFromStored($profile->diet_protocol)
+            : null;
+
+        if ($protocol === DietProtocol::NutrientDense || $protocol === DietProtocol::Balanced) {
             $configuredId = config('customer_nutrition.nutrient_dense_production_meal_plan_id');
 
             if (is_numeric($configuredId) && (int) $configuredId > 0) {
@@ -47,6 +51,16 @@ final class ProductionWeeklyMenuSchedule
 
             if ($named !== null) {
                 return $named;
+            }
+
+            $legacy = MealPlan::query()
+                ->where('schema_type', MealPlanSchemaType::WeeklyStructured)
+                ->where('name', 'TBD Weekly Protocol')
+                ->latest('id')
+                ->first();
+
+            if ($legacy !== null) {
+                return $legacy;
             }
         }
 

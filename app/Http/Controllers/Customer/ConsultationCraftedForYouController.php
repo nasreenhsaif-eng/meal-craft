@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Customer;
 
-use App\Enums\OnboardingStep;
 use App\Http\Controllers\Controller;
 use App\Models\Meal;
 use App\Services\Nutrition\UserPlanCalculator;
@@ -33,8 +32,8 @@ class ConsultationCraftedForYouController extends Controller
             $editDraft = $request->session()->pull('consultation_edit_draft');
         }
 
-        $backHref = $request->query('from') === 'onboarding'
-            ? route('onboarding.show', ['step' => OnboardingStep::FoodFilters->value], absolute: false)
+        $backHref = $isCustomer
+            ? route('app.home', absolute: false)
             : null;
 
         $consultationConfig = [

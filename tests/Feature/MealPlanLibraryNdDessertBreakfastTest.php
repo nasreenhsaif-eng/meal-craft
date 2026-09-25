@@ -39,7 +39,7 @@ test('tbd weekly protocol admin detail moves chia from desserts to breakfasts', 
     ]);
 
     $plan = MealPlan::query()->create([
-        'name' => 'TBD Weekly Protocol Detail',
+        'name' => 'Balanced Anti-inflammatory Detail',
         'goal' => 'Nutrient dense rotation.',
         'schema_type' => MealPlanSchemaType::WeeklyStructured,
         'plan_category' => MealPlanLibraryCategory::NutrientDense,
@@ -138,7 +138,7 @@ test('tbd weekly protocol with balanced category still previews chia on breakfas
     ]);
 
     $plan = MealPlan::query()->create([
-        'name' => 'TBD Weekly Protocol',
+        'name' => 'Balanced Anti-inflammatory',
         'goal' => 'Nutrient dense rotation.',
         'schema_type' => MealPlanSchemaType::WeeklyStructured,
         'plan_category' => MealPlanLibraryCategory::Balanced,

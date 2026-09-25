@@ -16,8 +16,10 @@ use App\Models\Meal;
 use App\Models\MealPlan;
 use App\Services\MealPlanDefaultDaySelections;
 use App\Services\MealPlanLibraryTierPreview;
+use App\Services\MealPlanPublishService;
 use App\Services\MealPlanService;
 use App\Services\Nutrition\UserPlanCalculator;
+use App\Support\MealPlanDateRange;
 use App\Support\MealTiersLibraryExclusions;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
@@ -61,6 +63,10 @@ class MealPlanLibraryController extends Controller
             ->map(function (MealPlan $plan): array {
                 $dailyMacros = $this->mealPlanService->averageDailyNutritionForOption($plan, false);
                 $category = $plan->plan_category;
+                $publishedRange = MealPlanDateRange::fromPublishedDates(
+                    $plan->published_starts_on,
+                    $plan->published_ends_on,
+                );
 
                 $tags = [$category instanceof MealPlanLibraryCategory ? $category->label() : __('Balanced')];
                 if ($plan->cycle_phase instanceof MealCyclePhaseTag) {
@@ -74,6 +80,7 @@ class MealPlanLibraryController extends Controller
                     'imageUrl' => null,
                     'tags' => $tags,
                     'showUrl' => route('admin.meal-plan-library.show', $plan),
+                    'dateRangeLabel' => $publishedRange['label'] ?? null,
                     'dailyMacros' => [
                         'calories' => (float) ($dailyMacros['calories'] ?? 0),
                         'protein' => (float) ($dailyMacros['protein'] ?? 0),
@@ -109,11 +116,17 @@ class MealPlanLibraryController extends Controller
         $planTiers = UserPlanCalculator::planTiers();
         $defaultPlanTier = in_array(1500, $planTiers, true) ? 1500 : ($planTiers[2] ?? $planTiers[0] ?? 1500);
 
+        $defaultWeek = MealPlanDateRange::fromPublishedDates(
+            $mealPlan->published_starts_on,
+            $mealPlan->published_ends_on,
+        ) ?? MealPlanDateRange::forWeek();
+
         return Inertia::render('Admin/MealPlanDetail', [
             'mealPlan' => [
                 'id' => $mealPlan->id,
                 'name' => $mealPlan->name,
                 'goal' => $mealPlan->goal,
+                'description' => $mealPlan->description ?? $mealPlan->goal,
                 'category' => $category instanceof MealPlanLibraryCategory ? $category->label() : __('Balanced'),
                 'tags' => $tags,
                 'dailyMacros' => [
@@ -122,6 +135,9 @@ class MealPlanLibraryController extends Controller
                     'carbs' => (float) ($dailyMacros['carbs'] ?? 0),
                     'fat' => (float) ($dailyMacros['fat'] ?? 0),
                 ],
+                'publishedStartsOn' => $defaultWeek['startsOn'],
+                'publishedEndsOn' => $defaultWeek['endsOn'],
+                'dateRangeLabel' => $defaultWeek['label'],
             ],
             'days' => $days,
             'defaultDaySelections' => MealPlanDefaultDaySelections::forPlan($mealPlan),
@@ -139,11 +155,20 @@ class MealPlanLibraryController extends Controller
         StoreMealPlanDefaultDaySelectionsRequest $request,
         MealPlan $mealPlan,
     ): RedirectResponse {
-        MealPlanDefaultDaySelections::store($mealPlan, $request->normalizedSelections());
+        $result = MealPlanPublishService::publish(
+            $mealPlan,
+            $request->normalizedSelections(),
+            (string) $request->validated('published_starts_on'),
+            (string) $request->validated('published_ends_on'),
+            $request->validated('description'),
+        );
 
         return redirect()
             ->route('admin.meal-plan-library.show', $mealPlan)
-            ->with('success', __('Default meal selections saved. Customers will start with these picks and can still change them.'));
+            ->with('success', __('Meal plan published for :count customers (:skipped already chose).', [
+                'count' => $result['seeded'],
+                'skipped' => $result['skipped'],
+            ]));
     }
 
     public function tierPreview(Request $request, MealPlan $mealPlan): JsonResponse
