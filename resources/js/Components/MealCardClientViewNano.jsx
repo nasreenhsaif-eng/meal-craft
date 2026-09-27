@@ -243,12 +243,14 @@ export default function MealCardClientViewNano({
                             >
                                 <Button
                                     type="button"
-                                    variant="secondary"
+                                    variant={selected ? 'secondary' : 'ghost'}
                                     size="sm"
                                     disabled={disabled}
                                     label={selected ? 'SELECTED' : 'CRAFT THIS MEAL'}
                                     aria-label={craftPrimaryAria}
                                     className={`w-full justify-center ${
+                                        selected ? '' : 'border border-[#5A6B44]'
+                                    } ${
                                         disabled && vibrantCraftWhenAtLimit ? '!cursor-default !opacity-100' : ''
                                     }`.trim()}
                                     onClick={(e) => {
@@ -325,11 +327,13 @@ export default function MealCardClientViewNano({
                             <div className="absolute bottom-2 left-2 right-2">
                                 <Button
                                     type="button"
-                                    variant="secondary"
+                                    variant={selected ? 'secondary' : 'ghost'}
                                     size="sm"
                                     disabled={disabled}
                                     label={selected ? 'SELECTED' : 'CRAFT THIS MEAL'}
-                                    className="w-full justify-center"
+                                    className={`w-full justify-center ${
+                                        selected ? '' : 'border border-[#5A6B44]'
+                                    }`.trim()}
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         onToggleSelected?.();

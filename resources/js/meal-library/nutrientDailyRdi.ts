@@ -114,7 +114,7 @@ export const ENFORCED_MICRONUTRIENT_TIERS = [1500, 1800, 2000] as const;
 
 export const INFORMATIONAL_MICRONUTRIENT_TIERS = [1000, 1200] as const;
 
-export const FLOOR_RDI_TARGET_PERCENT = 98;
+export const FLOOR_RDI_TARGET_PERCENT = 95;
 
 export const BEST_EFFORT_NUTRIENT_LABELS = new Set(['Vitamin D (mcg)']);
 

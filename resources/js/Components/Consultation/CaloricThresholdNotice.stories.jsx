@@ -10,14 +10,14 @@ export default {
         docs: {
             description: {
                 component:
-                    'Amber notice shown when the plan tier is below the micronutrient-enforcement calorie threshold.',
+                    'Amber notice shown when the plan tier is at or below 1200 kcal.',
             },
         },
     },
 };
 
 export const BelowThreshold = {
-    name: 'Below threshold (1200 kcal)',
+    name: 'At or below 1200 kcal',
     render: () => (
         <div className="w-full px-3 py-4 sm:mx-auto sm:max-w-[40rem] sm:px-6 sm:py-8">
             <CaloricThresholdNotice planTierCalories={1200} />
@@ -26,13 +26,13 @@ export const BelowThreshold = {
 };
 
 export const HiddenWhenAbove = {
-    name: 'At or above 1500 — renders nothing',
+    name: 'Above 1200 — renders nothing',
     render: () => (
         <div className="w-full px-3 py-4 sm:mx-auto sm:max-w-[40rem] sm:px-6 sm:py-8">
             <p className="mb-3 font-body text-sm text-[#555555]">
-                Expect an empty canvas when the plan is at or above the micronutrient floor (1500 kcal).
+                Expect an empty canvas when the plan is above 1200 kcal.
             </p>
-            <CaloricThresholdNotice planTierCalories={1500} />
+            <CaloricThresholdNotice planTierCalories={1250} />
         </div>
     ),
 };

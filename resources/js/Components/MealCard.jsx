@@ -241,11 +241,13 @@ export default function MealCard({
                             <div className="mt-1 w-full shrink-0 pb-0.5">
                                 <Button
                                     type="button"
-                                    variant="secondary"
+                                    variant={selected ? 'secondary' : 'ghost'}
                                     disabled={disabled}
                                     label={selected ? 'SELECTED' : 'CRAFT THIS MEAL'}
                                     aria-label={craftPrimaryAria}
-                                    className={`w-full justify-center rounded-[12px] ${btnRow}`}
+                                    className={`w-full justify-center rounded-[12px] ${btnRow} ${
+                                        selected ? '' : 'border border-[#5A6B44]'
+                                    }`.trim()}
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         craftHandler?.();

@@ -1761,7 +1761,6 @@ export default function ChooseYourMeals({
 }) {
     const resolvedPanelClassName =
         panelClassName ?? (documentScroll ? 'w-full' : 'h-[100dvh] min-h-screen');
-    const craftingSubtitle = `CRAFTING YOUR ${String(dayName).trim().toUpperCase()}`;
     /** Daily option decks stay interactive whenever the parent wires selection (hides CRAFT THIS MEAL only in true read-only review). */
     const categoryPickEnabled = typeof onToggleCategory === 'function' && !categoriesReadOnly;
     const useProtocolSelectedLayout = Boolean(protocolSelectedLayout) || layout === 'categories';
@@ -1902,6 +1901,10 @@ export default function ChooseYourMeals({
     );
 
     useLayoutEffect(() => {
+        if (documentScroll) {
+            return undefined;
+        }
+
         const scroller = scrollContainerRef.current;
         if (!scroller) {
             return undefined;
@@ -1914,7 +1917,7 @@ export default function ChooseYourMeals({
             scroller.removeEventListener('wheel', forwardWheelToMealScroller, { capture: true });
             document.removeEventListener('wheel', forwardWheelToMealScroller, { capture: true });
         };
-    }, [forwardWheelToMealScroller]);
+    }, [documentScroll, forwardWheelToMealScroller]);
 
     useEffect(() => {
         if (
@@ -2207,7 +2210,7 @@ export default function ChooseYourMeals({
             />
         ) : null;
 
-    const showStickyFooterNav = typeof onFooterNext === 'function';
+    const showFooterNav = typeof onFooterNext === 'function';
 
     const showLegacyNavigation = typeof onFooterNext !== 'function' && navigation;
 
@@ -2244,20 +2247,87 @@ export default function ChooseYourMeals({
         return keys;
     }, [footerMacroTotals, dayMacroTargets, dayMacroTolerance, dayCalorieTolerance]);
 
+    const dayMacroSummary = (
+        <>
+            {incompleteWarning ? (
+                <div
+                    className="mb-3 rounded-[12px] border border-red-200 bg-red-50 px-4 py-3"
+                    role="alert"
+                    aria-live="polite"
+                >
+                    <p className="font-body text-sm font-semibold text-red-800">{incompleteWarning}</p>
+                </div>
+            ) : null}
+
+            {footerMacroTotals ? (
+                <ConsultationDayMacroFooterGrid
+                    totals={
+                        footerMacroTotals.calories > 0
+                            ? footerMacroTotals
+                            : { calories: 0, protein: 0, carbs: 0, fat: 0 }
+                    }
+                    highlightKeys={footerMacroTotals.calories > 0 ? macroHighlightKeys : []}
+                />
+            ) : null}
+
+            <p
+                className={[
+                    'mt-1.5 text-right font-montserrat text-sm font-bold tabular-nums',
+                    Math.abs(Math.round(footerTotalKcal) - Math.round(targetCalories)) > dayCalorieTolerance
+                        ? 'text-amber-800'
+                        : 'text-[#1F2937]',
+                ]
+                    .join(' ')
+                    .trim()}
+            >
+                Total: {Math.round(footerTotalKcal)} kcal
+                <span className="ml-1.5 font-body text-xs font-normal text-[#555555]">
+                    (target {Math.round(targetCalories)} ±{dayCalorieTolerance})
+                </span>
+            </p>
+
+            {dayProgressLabel ? (
+                <p className="mt-2 font-body text-sm leading-snug text-[#555555]">{dayProgressLabel}</p>
+            ) : null}
+        </>
+    );
+
+    const footerNav = showFooterNav ? (
+        <div
+            className={`mt-6 flex flex-wrap items-center gap-3 border-t border-gray-200 pt-4 ${typeof onFooterBack === 'function' ? 'justify-between' : 'justify-center'}`}
+        >
+            {typeof onFooterBack === 'function' ? (
+                <Button
+                    type="button"
+                    label="BACK"
+                    variant="outline"
+                    size="md"
+                    className="min-w-[120px] px-10"
+                    onClick={onFooterBack}
+                />
+            ) : (
+                <span className="hidden min-w-[120px] sm:block" aria-hidden="true" />
+            )}
+            <Button
+                type="button"
+                label={footerNextLabel}
+                variant="primary"
+                size="md"
+                aria-disabled={craftFooterDisabled}
+                className={['min-w-[140px] px-10', craftFooterDisabled ? 'opacity-60' : ''].join(' ')}
+                onClick={handleFooterNextClick}
+            />
+        </div>
+    ) : null;
+
     return (
         <section
             className={`box-border flex w-full flex-col overflow-x-clip border border-gray-200 bg-white shadow-sm max-md:rounded-none max-md:border-x-0 max-md:shadow-none md:rounded-[12px] ${resolvedPanelClassName}`.trim()}
+            aria-label={dayName ? `Crafting your ${String(dayName).trim()}` : 'Crafting your day'}
         >
             {optionsScreen}
-            <div className="shrink-0 border-b border-gray-200 px-4 py-3 text-left max-md:px-4 sm:px-5 sm:py-4 md:p-6">
-                <div className="min-w-0 space-y-1 sm:space-y-1.5">
-                    <p className="font-montserrat text-[15px] font-bold leading-snug tracking-tight text-[#262A22] sm:text-[16px]">
-                        {craftingSubtitle}
-                    </p>
-                    {dayProgressLabel ? (
-                        <p className="font-body text-sm leading-snug text-[#555555]">{dayProgressLabel}</p>
-                    ) : null}
-                </div>
+            <div className="shrink-0 border-b border-gray-200 bg-white px-4 py-3 max-md:px-4 sm:px-5 sm:py-4 md:px-6 md:py-4">
+                {dayMacroSummary}
             </div>
 
             <div
@@ -2271,86 +2341,16 @@ export default function ChooseYourMeals({
                     ref={scrollContainerRef}
                     className={
                         documentScroll
-                            ? 'mc-choose-meals-scroll w-full overflow-x-clip pt-2 max-md:px-0 max-md:pb-4 md:px-5 md:pb-8 md:pt-4'
-                            : 'mc-choose-meals-scroll min-h-0 flex-1 overflow-y-auto overscroll-y-contain [scrollbar-gutter:stable] pt-2 max-md:px-0 max-md:pb-4 md:px-5 md:pb-8 md:pt-4 [-webkit-overflow-scrolling:touch]'
+                            ? 'mc-choose-meals-scroll w-full overflow-x-clip pt-2 max-md:px-0 max-md:pb-8 md:px-5 md:pb-10 md:pt-4'
+                            : 'mc-choose-meals-scroll min-h-0 flex-1 overflow-y-auto overscroll-y-contain [scrollbar-gutter:stable] pt-2 max-md:px-0 max-md:pb-8 md:px-5 md:pb-10 md:pt-4 [-webkit-overflow-scrolling:touch]'
                     }
                 >
                     <div className="relative z-0 min-w-0 space-y-0">{mainScrollable}</div>
-                </div>
-
-                <div className="z-[80] shrink-0 border-t border-gray-200 bg-white px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-4px_24px_rgba(15,23,42,0.06)] max-md:px-4 md:sticky md:bottom-0 md:px-6">
-                    {incompleteWarning ? (
-                        <div
-                            className="mb-3 rounded-[12px] border border-red-200 bg-red-50 px-4 py-3"
-                            role="alert"
-                            aria-live="polite"
-                        >
-                            <p className="font-body text-sm font-semibold text-red-800">{incompleteWarning}</p>
-                        </div>
-                    ) : null}
-
-                    {footerMacroTotals ? (
-                        <ConsultationDayMacroFooterGrid
-                            totals={
-                                footerMacroTotals.calories > 0
-                                    ? footerMacroTotals
-                                    : { calories: 0, protein: 0, carbs: 0, fat: 0 }
-                            }
-                            highlightKeys={
-                                footerMacroTotals.calories > 0 ? macroHighlightKeys : []
-                            }
-                        />
-                    ) : null}
-
-                    <p
-                        className={[
-                            'mt-1.5 text-right font-montserrat text-sm font-bold tabular-nums',
-                            Math.abs(Math.round(footerTotalKcal) - Math.round(targetCalories)) >
-                            dayCalorieTolerance
-                                ? 'text-amber-800'
-                                : 'text-[#1F2937]',
-                        ]
-                            .join(' ')
-                            .trim()}
-                    >
-                        Total: {Math.round(footerTotalKcal)} kcal
-                        <span className="ml-1.5 font-body text-xs font-normal text-[#555555]">
-                            (target {Math.round(targetCalories)} ±{dayCalorieTolerance})
-                        </span>
-                    </p>
-
-                    {showStickyFooterNav ? (
-                        <div
-                            className={`mt-3 flex flex-wrap items-center gap-3 ${typeof onFooterBack === 'function' ? 'justify-between' : 'justify-center'}`}
-                        >
-                            {typeof onFooterBack === 'function' ? (
-                                <Button
-                                    type="button"
-                                    label="BACK"
-                                    variant="outline"
-                                    size="md"
-                                    className="min-w-[120px] px-10"
-                                    onClick={onFooterBack}
-                                />
-                            ) : (
-                                <span className="hidden min-w-[120px] sm:block" aria-hidden="true" />
-                            )}
-                            <Button
-                                type="button"
-                                label={footerNextLabel}
-                                variant="primary"
-                                size="md"
-                                aria-disabled={craftFooterDisabled}
-                                className={['min-w-[140px] px-10', craftFooterDisabled ? 'opacity-60' : ''].join(' ')}
-                                onClick={handleFooterNextClick}
-                            />
-                        </div>
+                    {footerNav ? <div className="px-4 md:px-0">{footerNav}</div> : null}
+                    {showLegacyNavigation ? (
+                        <div className="relative z-[70] mt-4 border-t border-gray-200/80 bg-white">{navigation}</div>
                     ) : null}
                 </div>
-
-                {showLegacyNavigation ? (
-                    <div className="relative z-[70] shrink-0 border-t border-gray-200/80 bg-white">{navigation}</div>
-                ) : null}
             </div>
         </section>
     );

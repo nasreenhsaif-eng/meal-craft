@@ -21,6 +21,15 @@ import MealPlanMealEditSheet from '../../Components/MealPlan/MealPlanMealEditShe
 import { SCHEDULER_SLOT_SECTIONS } from '../../meal-library/mealSearch.ts';
 import { updateMealInPlanDays } from './mealPlanMealEdit.js';
 import { useMealDetailModal } from '../../meal-library/useMealDetailModal.js';
+import DayShoppingListModal, {
+    SavedShoppingListModal,
+} from '../../Components/MealPlan/DayShoppingListModal.jsx';
+import {
+    aggregateSelectedDayShoppingIngredients,
+    mergeShoppingListItems,
+    readStoredShoppingList,
+    writeStoredShoppingList,
+} from './dayShoppingList.js';
 import {
     applyLibraryTierPortions,
     daysUseLibraryPortions,
@@ -386,6 +395,9 @@ export default function MealPlanDetailPage({
     const [mealEditModal, setMealEditModal] = useState(
         /** @type {{ dayNumber: number; categoryKey: string; meal: object } | null} */ (null),
     );
+    const [dayShoppingListOpen, setDayShoppingListOpen] = useState(false);
+    const [savedShoppingList, setSavedShoppingList] = useState(() => readStoredShoppingList(mealPlanId));
+    const [viewSavedShoppingListOpen, setViewSavedShoppingListOpen] = useState(false);
     const { mealDetailModal, detailLoading, openMealDetail, closeMealDetail } = useMealDetailModal(
         '/api/meals/{id}/detail-view',
         () => {
@@ -397,6 +409,10 @@ export default function MealPlanDetailPage({
             return params.toString();
         },
     );
+
+    useEffect(() => {
+        setSavedShoppingList(readStoredShoppingList(mealPlanId));
+    }, [mealPlanId]);
 
     const planDays = useMemo(
         () => (libraryBacked ? applyLibraryTierPortions(sourceDays, selectedTier) : sourceDays),
@@ -509,6 +525,23 @@ export default function MealPlanDetailPage({
 
         return out;
     }, [activeDayData, activeDaySelections]);
+
+    const dayShoppingIngredients = useMemo(
+        () => aggregateSelectedDayShoppingIngredients(selectedCategoriesForDayNutrition),
+        [selectedCategoriesForDayNutrition],
+    );
+
+    const handleAddToShoppingList = useCallback(
+        (selected) => {
+            setSavedShoppingList((prev) => {
+                const next = mergeShoppingListItems(prev, selected);
+                writeStoredShoppingList(mealPlanId, next);
+
+                return next;
+            });
+        },
+        [mealPlanId],
+    );
 
     const backUrl = resolveUrl(libraryUrl, '/admin/meal-plan-library');
 
@@ -682,12 +715,26 @@ export default function MealPlanDetailPage({
                         ← Back to Meal Plan Library
                     </Link>
 
-                    <div className="mt-4 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(240px,320px)]">
-                        <div className="min-w-0">
+                    <div className="mt-4 grid items-start gap-x-6 gap-y-3 sm:grid-cols-[minmax(0,1fr)_minmax(240px,320px)]">
+                        <div className="min-w-0 sm:col-start-1 sm:row-start-1">
                             <h1 className="font-montserrat text-2xl font-bold tracking-tight text-[#262A22] sm:text-3xl">
                                 {mealPlan?.name ?? 'Meal plan'}
                             </h1>
-                            <label className="mt-3 block">
+                        </div>
+
+                        <div className="flex justify-start sm:col-start-2 sm:row-start-1 sm:justify-end">
+                            <Button
+                                type="button"
+                                variant="primary"
+                                size="sm"
+                                label={savingDefaults ? 'Publishing…' : 'Publish meal plan'}
+                                disabled={!saveDefaultSelectionsUrl || savingDefaults}
+                                onClick={saveDefaultSelections}
+                            />
+                        </div>
+
+                        <div className="min-w-0 sm:col-start-1 sm:row-start-2">
+                            <label className="block">
                                 <span className="sr-only">Meal plan description</span>
                                 <textarea
                                     value={planDescription}
@@ -701,64 +748,71 @@ export default function MealPlanDetailPage({
                                 Select the default meals for each day, then publish. Customers start with these picks and
                                 can still change them via SEE OTHER OPTIONS.
                             </p>
-                            {planCategoryLabel ? (
-                                <p className="mt-2 font-body text-xs font-semibold uppercase tracking-wide text-[#5A6B44]">
-                                    {planCategoryLabel}
-                                </p>
+                            {flashSuccess ? (
+                                <p className="mt-3 font-body text-sm text-[#5A6B44]">{String(flashSuccess)}</p>
                             ) : null}
-                            <div className="mt-4 flex flex-wrap items-center gap-3">
-                                <Button
-                                    type="button"
-                                    variant="primary"
-                                    size="sm"
-                                    label={savingDefaults ? 'Publishing…' : 'Publish meal plan'}
-                                    disabled={!saveDefaultSelectionsUrl || savingDefaults}
-                                    onClick={saveDefaultSelections}
-                                />
-                                {flashSuccess ? (
-                                    <p className="font-body text-sm text-[#5A6B44]">{String(flashSuccess)}</p>
-                                ) : null}
-                                {saveDefaultsError ? (
-                                    <p className="font-body text-sm text-red-700">{saveDefaultsError}</p>
-                                ) : null}
-                            </div>
+                            {saveDefaultsError ? (
+                                <p className="mt-3 font-body text-sm text-red-700">{saveDefaultsError}</p>
+                            ) : null}
                         </div>
 
-                        <div className="min-w-0 lg:justify-self-end lg:w-full">
+                        <div className="min-w-0 sm:col-start-2 sm:row-start-2 sm:justify-self-end sm:w-full">
                             <CalendarRangeField
                                 label="Plan week"
                                 rangeValue={publishRange}
                                 onRangeChange={setPublishRange}
                                 placeholder="Select week"
-                                className="w-full max-w-[320px] lg:ml-auto"
+                                className="w-full max-w-[320px] sm:ml-auto"
                             />
                         </div>
                     </div>
                 </div>
 
                 <div className="mb-6 rounded-[12px] border border-gray-200 bg-white p-3 sm:p-4">
-                    <div className="overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                        <div
-                            className="flex w-max min-w-full items-center gap-2 px-1 py-2"
-                            role="tablist"
-                            aria-label="Meal plan days"
-                        >
-                            {planDays.map((day) => {
-                                const selected = day.dayNumber === activeDay;
-                                return (
-                                    <Button
-                                        key={day.dayNumber}
-                                        type="button"
-                                        role="tab"
-                                        aria-selected={selected}
-                                        label={day.label}
-                                        variant={selected ? 'primary' : 'tab'}
-                                        size="sm"
-                                        onClick={() => setActiveDay(day.dayNumber)}
-                                        className="shrink-0"
-                                    />
-                                );
-                            })}
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                            <div
+                                className="flex w-max min-w-full items-center gap-2 px-1 py-2"
+                                role="tablist"
+                                aria-label="Meal plan days"
+                            >
+                                {planDays.map((day) => {
+                                    const selected = day.dayNumber === activeDay;
+                                    return (
+                                        <Button
+                                            key={day.dayNumber}
+                                            type="button"
+                                            role="tab"
+                                            aria-selected={selected}
+                                            label={day.label}
+                                            variant={selected ? 'secondary' : 'ghost'}
+                                            size="sm"
+                                            onClick={() => setActiveDay(day.dayNumber)}
+                                            className={['shrink-0', selected ? '' : 'border border-[#5A6B44]'].join(' ').trim()}
+                                        />
+                                    );
+                                })}
+                            </div>
+                        </div>
+                        <div className="flex shrink-0 flex-wrap items-center gap-2 px-1 sm:justify-end">
+                            <Button
+                                type="button"
+                                label="Shopping list"
+                                variant="ghost"
+                                size="sm"
+                                className="border border-[#5A6B44]"
+                                onClick={() => setDayShoppingListOpen(true)}
+                            />
+                            {savedShoppingList.length > 0 ? (
+                                <Button
+                                    type="button"
+                                    label={`Saved (${savedShoppingList.length})`}
+                                    variant="outline"
+                                    size="sm"
+                                    className="border border-[#5A6B44]"
+                                    onClick={() => setViewSavedShoppingListOpen(true)}
+                                />
+                            ) : null}
                         </div>
                     </div>
                 </div>
@@ -814,7 +868,8 @@ export default function MealPlanDetailPage({
                     >
                         {activeDayData ? (
                             <ChooseYourMeals
-                                panelClassName="h-[min(78dvh,880px)] min-h-[560px]"
+                                documentScroll
+                                panelClassName="w-full"
                                 dayName={WEEKDAY_LONG[(activeDayData.dayNumber ?? 1) - 1] ?? activeDayData.label}
                                 layout="categories"
                                 dietProtocol={dietProtocol}
@@ -917,6 +972,29 @@ export default function MealPlanDetailPage({
                       document.body,
                   )
                 : null}
+
+            <DayShoppingListModal
+                open={dayShoppingListOpen}
+                dayLabel={
+                    WEEKDAY_LONG[(activeDayData?.dayNumber ?? activeDay) - 1] ??
+                    activeDayData?.label ??
+                    'this day'
+                }
+                ingredients={dayShoppingIngredients}
+                onClose={() => setDayShoppingListOpen(false)}
+                onAddToShoppingList={handleAddToShoppingList}
+            />
+
+            <SavedShoppingListModal
+                open={viewSavedShoppingListOpen}
+                ingredients={savedShoppingList}
+                onClose={() => setViewSavedShoppingListOpen(false)}
+                onClear={() => {
+                    setSavedShoppingList([]);
+                    writeStoredShoppingList(mealPlanId, []);
+                    setViewSavedShoppingListOpen(false);
+                }}
+            />
         </div>
     );
 }

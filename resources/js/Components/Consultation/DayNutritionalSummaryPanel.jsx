@@ -8,7 +8,6 @@ import {
     BEST_EFFORT_NUTRIENT_LABELS,
     calculateMicronutrientTargets,
     FLOOR_RDI_TARGET_PERCENT,
-    isMicronutrientTierEnforced,
 } from '../../meal-library/nutrientDailyRdi.ts';
 import CaloricThresholdNotice from './CaloricThresholdNotice.jsx';
 import {
@@ -236,9 +235,7 @@ export function DayMacronutrientsTabPanel({
     );
 }
 
-function MicronutrientRdiTable({ rows, planTierCalories = 0 }) {
-    const tierEnforced = isMicronutrientTierEnforced(planTierCalories);
-
+function MicronutrientRdiTable({ rows }) {
     if (rows.length === 0) {
         return (
             <p className="font-body text-sm text-[#555555]">No micronutrient data available for this day.</p>
@@ -315,12 +312,11 @@ function MicronutrientRdiTable({ rows, planTierCalories = 0 }) {
                                     <td
                                         className={[
                                             'px-3 py-2.5 text-right font-montserrat text-sm font-bold tabular-nums',
-                                            tierEnforced
-                                              && row.rdiPercent != null
+                                            row.rdiPercent != null
                                               && row.rdiPercent < FLOOR_RDI_TARGET_PERCENT
                                               && !row.label.includes('Sugar')
                                               && !row.label.includes('Sodium')
-                                                ? 'text-amber-800'
+                                                ? 'text-[#C44F5D]'
                                                 : row.rdiPercent != null && row.rdiPercent >= 20
                                                   ? 'text-[#5A6B44]'
                                                   : 'text-[#1F2937]',
@@ -373,7 +369,7 @@ export function DayMicronutrientsTabPanel({
             description={`Full-day totals and % of daily reference intake for ${dayLabel.toLowerCase()}. Vitamin D is shown as best effort — it is difficult to reach 100% from food alone.`}
         >
             <CaloricThresholdNotice planTierCalories={planTierCalories} />
-            <MicronutrientRdiTable rows={micronutrientRows} planTierCalories={planTierCalories} />
+            <MicronutrientRdiTable rows={micronutrientRows} />
         </SummarySection>
     );
 }

@@ -31,10 +31,17 @@ export default function ProtocolEditorMock({
             <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
                 <p className="font-montserrat text-sm font-semibold text-[#5A6B44]">← Back to Meal Plan Library</p>
 
-                <div className="mt-4 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(240px,320px)]">
-                    <div className="min-w-0">
+                <div className="mt-4 grid items-start gap-x-6 gap-y-3 sm:grid-cols-[minmax(0,1fr)_minmax(240px,320px)]">
+                    <div className="min-w-0 sm:col-start-1 sm:row-start-1">
                         <h1 className="font-montserrat text-2xl font-bold tracking-tight text-[#262A22]">{title}</h1>
-                        <label className="mt-3 block">
+                    </div>
+
+                    <div className="flex justify-start sm:col-start-2 sm:row-start-1 sm:justify-end">
+                        <Button type="button" variant="primary" size="sm" label="Publish meal plan" />
+                    </div>
+
+                    <div className="min-w-0 sm:col-start-1 sm:row-start-2">
+                        <label className="block">
                             <span className="sr-only">Meal plan description</span>
                             <textarea
                                 value={draft}
@@ -48,22 +55,15 @@ export default function ProtocolEditorMock({
                             Select the default meals for each day, then publish. Customers start with these picks and
                             can still change them via SEE OTHER OPTIONS.
                         </p>
-                        <Button
-                            type="button"
-                            variant="primary"
-                            size="sm"
-                            label="Publish meal plan"
-                            className="mt-4"
-                        />
                     </div>
 
-                    <div className="min-w-0 lg:justify-self-end lg:w-full">
+                    <div className="min-w-0 sm:col-start-2 sm:row-start-2 sm:justify-self-end sm:w-full">
                         <CalendarRangeField
                             label="Plan week"
                             rangeValue={range}
                             onRangeChange={setRange}
                             placeholder="Select week"
-                            className="w-full max-w-[320px] lg:ml-auto"
+                            className="w-full max-w-[320px] sm:ml-auto"
                         />
                     </div>
                 </div>
@@ -77,9 +77,10 @@ export default function ProtocolEditorMock({
                                 role="tab"
                                 aria-selected={index === activeDay}
                                 label={day}
-                                variant={index === activeDay ? 'primary' : 'tab'}
+                                variant={index === activeDay ? 'secondary' : 'ghost'}
                                 size="sm"
                                 onClick={() => setActiveDay(index)}
+                                className={index === activeDay ? '' : 'border border-[#5A6B44]'}
                             />
                         ))}
                     </div>
@@ -97,9 +98,10 @@ export default function ProtocolEditorMock({
                                 role="tab"
                                 aria-selected={index === activeTier}
                                 label={tier}
-                                variant={index === activeTier ? 'primary' : 'tab'}
+                                variant={index === activeTier ? 'secondary' : 'ghost'}
                                 size="sm"
                                 onClick={() => setActiveTier(index)}
+                                className={index === activeTier ? '' : 'border border-[#5A6B44]'}
                             />
                         ))}
                     </div>

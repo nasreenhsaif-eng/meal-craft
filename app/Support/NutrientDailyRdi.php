@@ -17,7 +17,7 @@ use App\Models\CustomerProfile;
  */
 final class NutrientDailyRdi
 {
-    public const FLOOR_TARGET_PERCENT = 98.0;
+    public const FLOOR_TARGET_PERCENT = 95.0;
 
     public const SODIUM_AI_MG = 1500.0;
 

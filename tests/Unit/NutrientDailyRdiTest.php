@@ -65,7 +65,7 @@ test('nutrient status classifies floor ceiling and best effort nutrients', funct
 
 test('percent of rdi and floor target helpers', function () {
     expect(NutrientDailyRdi::percentOfRdi('Iron (mg)', 9.0))->toBe(50.0)
-        ->and(NutrientDailyRdi::meetsFloorTarget('Iron (mg)', 98.0))->toBeTrue()
-        ->and(NutrientDailyRdi::meetsFloorTarget('Iron (mg)', 97.0))->toBeFalse()
+        ->and(NutrientDailyRdi::meetsFloorTarget('Iron (mg)', 95.0))->toBeTrue()
+        ->and(NutrientDailyRdi::meetsFloorTarget('Iron (mg)', 94.0))->toBeFalse()
         ->and(NutrientDailyRdi::meetsCeilingTarget('Sodium (mg)', 101.0))->toBeFalse();
 });

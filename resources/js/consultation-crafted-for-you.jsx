@@ -74,7 +74,7 @@ class ConsultationErrorBoundary extends Component {
 }
 
 if (rootEl) {
-    rootEl.classList.add('h-full', 'min-h-0', 'w-full');
+    rootEl.classList.add('min-h-full', 'w-full');
 
     createRoot(rootEl).render(
         <StrictMode>

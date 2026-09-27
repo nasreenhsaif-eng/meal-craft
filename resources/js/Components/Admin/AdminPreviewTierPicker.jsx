@@ -26,7 +26,7 @@ export default function AdminPreviewTierPicker({
             className={
                 compact
                     ? 'mt-3 shrink-0 border-t border-[#5A6B44]/15 pt-3'
-                    : 'rounded-[12px] border border-[#5A6B44]/25 bg-[#5A6B44]/10 px-4 py-3'
+                    : 'rounded-[12px] border border-[#D7E0CC] bg-[#F3F6EF] px-4 py-3'
             }
         >
             {!compact && description ? (
@@ -45,10 +45,11 @@ export default function AdminPreviewTierPicker({
                     <Button
                         key={tier}
                         label={`${tier} kcal`}
-                        variant={selectedTier === tier ? 'primary' : 'tab'}
+                        variant={selectedTier === tier ? 'secondary' : 'ghost'}
                         size="sm"
                         disabled={loading}
                         onClick={() => onSelectTier(tier)}
+                        className={selectedTier === tier ? '' : 'border border-[#5A6B44]'}
                     />
                 ))}
             </div>
