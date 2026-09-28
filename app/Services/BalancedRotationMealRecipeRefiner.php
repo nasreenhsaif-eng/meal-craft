@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Ingredient;
 use App\Models\Meal;
 use App\Support\BeefShawarmaBaseRecipe;
+use App\Support\KitchenSpoonPresentation;
 use App\Support\MealLibraryBulkNutrition;
 use App\Support\MealLibraryEditGuard;
 use App\Support\MealLibraryRefinerOverrides;
@@ -263,26 +264,36 @@ final class BalancedRotationMealRecipeRefiner
      */
     private function saltedTahiniCaramelChocolateBarPerServingIngredients(): array
     {
-        return [
-            'Almond Flour (Base)' => 9,
-            'Coconut Oil' => 6.8,
-            'Date Syrup' => 9,
-            'Tahini' => 7.5,
-            'Cocoa Powder' => 3.8,
-            'Sea Salt' => 0.6,
-            'Vanilla Pods' => 0.1,
-        ];
+        return $this->scaleIngredientGrams(
+            $this->saltedTahiniCaramelChocolateBarBatchIngredients(),
+            1 / self::SALTED_CARAMEL_CHOCOLATE_BAR_SERVINGS_COUNT,
+        );
     }
 
     /**
+     * Full 8×8 pan (16 squares) from the kitchen recipe:
+     * shortbread (1½ cups packed almond flour, 3 Tbsp coconut oil, 2 Tbsp date syrup,
+     * ½ tsp vanilla, ¼ tsp salt) + tahini caramel (½ cup tahini, ⅓ cup date syrup,
+     * ⅓ cup coconut oil, 1 tsp vanilla, 1 tsp sea salt) + chocolate (¾ cup dark chocolate,
+     * 1 Tbsp coconut oil) + finishing salt.
+     *
+     * Volumes → grams: packed almond flour 112 g/cup; liquids via density (date syrup 1.3);
+     * sea salt 6 g/tsp ({@see KitchenSpoonPresentation}); vanilla pods stand in
+     * for extract (policy).
+     *
      * @return array<string, float>
      */
     private function saltedTahiniCaramelChocolateBarBatchIngredients(): array
     {
-        return $this->scaleIngredientGrams(
-            $this->saltedTahiniCaramelChocolateBarPerServingIngredients(),
-            self::SALTED_CARAMEL_CHOCOLATE_BAR_SERVINGS_COUNT,
-        );
+        return [
+            'Almond Flour (Base)' => 168.0,
+            'Coconut Oil' => 140.0,
+            'Date Syrup' => 143.0,
+            'Tahini' => 120.0,
+            'Dark Chocolate' => 180.0,
+            'Vanilla Pods' => 4.0,
+            'Sea Salt' => 9.5,
+        ];
     }
 
     /**
@@ -551,7 +562,7 @@ final class BalancedRotationMealRecipeRefiner
                 'is_bulk' => true,
                 'servings_count' => self::SALTED_CARAMEL_CHOCOLATE_BAR_SERVINGS_COUNT,
                 'diet_tags' => $vegetarianTags,
-                'short_description' => 'Three-layer 8x8 no-bake bar (16 squares): almond shortbread, salted tahini-date caramel, and dark cocoa topping.',
+                'short_description' => 'Three-layer 8x8 bar (16 squares): baked almond shortbread, salted tahini-date caramel, and melted dark chocolate.',
             ],
         ];
 

@@ -89,16 +89,9 @@ export default function BaseRecipeDetailModal({
             />
             <div className="relative flex max-h-[92dvh] w-full max-w-3xl flex-col overflow-hidden rounded-t-[16px] bg-white shadow-2xl sm:rounded-[16px]">
                 <div className="flex shrink-0 items-start justify-between gap-3 border-b border-gray-100 px-5 py-4 sm:px-6">
-                    <div className="min-w-0 flex-1">
-                        <h2 className="break-words font-montserrat text-lg font-bold text-[#262A22]">
-                            {resolvedTitle || modal.title}
-                        </h2>
-                        {detailView?.shortDescription ? (
-                            <p className="mt-1 font-montserrat text-sm font-medium leading-snug text-[#555555]">
-                                {detailView.shortDescription}
-                            </p>
-                        ) : null}
-                    </div>
+                    <h2 className="min-w-0 flex-1 break-words font-montserrat text-lg font-bold text-[#262A22]">
+                        {resolvedTitle || modal.title}
+                    </h2>
                     <button
                         type="button"
                         className="shrink-0 font-montserrat text-sm font-bold text-[#5A6B44]"

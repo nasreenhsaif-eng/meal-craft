@@ -1051,7 +1051,8 @@ class MealLibraryController extends Controller
         float $grams,
         ?array $adaptedRow = null,
     ): string {
-        $grams = MealLibraryBulkNutrition::perServingGramsForMealDisplay($meal, $grams);
+        // Bulk meals store pan/batch grams — show those kitchen amounts (never ÷ servings into 1/4 egg).
+        // Per-serving macros stay in nutritionalData via MealLibraryBulkNutrition.
         $formattedGrams = $this->formatTrimmedDecimal($grams, 2);
 
         if (EggIngredientPresentation::isEggIngredient($ingredient)) {
@@ -1241,6 +1242,13 @@ class MealLibraryController extends Controller
 
         $yieldSummary = IngredientCookingYield::mealYieldSummary($meal->ingredients);
 
+        $ingredientsPrepNote = RawPrepIngredientPresentation::ingredientsPrepNote();
+        if ($meal->is_bulk && (float) ($meal->servings_count ?? 0) > 0) {
+            $ingredientsPrepNote = __('Batch recipe for :count servings — ingredient amounts are for the full pan (kitchen quantities), not one serving.', [
+                'count' => (int) $meal->servings_count,
+            ]).' '.$ingredientsPrepNote;
+        }
+
         $payload = [
             'shortDescription' => $shortDescription,
             'cyclePhases' => $cyclePhases,
@@ -1250,7 +1258,7 @@ class MealLibraryController extends Controller
             'sickleCellHighlights' => $sickleCellHighlights,
             'nutritionalData' => $this->nutritionalDataForDetailView($nutrition),
             'ingredients' => $ingredientLines,
-            'ingredientsPrepNote' => RawPrepIngredientPresentation::ingredientsPrepNote(),
+            'ingredientsPrepNote' => $ingredientsPrepNote,
             'cookingYieldNote' => $yieldSummary['note'] !== '' ? $yieldSummary['note'] : null,
             'instructions' => $instructions,
             'imageUrl' => $this->mealImageUrl($meal),
@@ -1575,6 +1583,20 @@ class MealLibraryController extends Controller
             )),
             'is_g6pd_trigger' => IngredientG6pdSafety::ingredientHasEffectiveG6pdTrigger($ingredient),
             'is_prepared_base' => $ingredient->isPreparedBaseIngredient(),
+            'finished_weight_grams' => $ingredient->finished_weight_grams !== null
+                ? (float) $ingredient->finished_weight_grams
+                : null,
+            'components' => $ingredient->relationLoaded('components')
+                ? $ingredient->components
+                    ->map(static fn (Ingredient $child): array => [
+                        'id' => (int) $child->getKey(),
+                        'name' => (string) $child->name,
+                        'amount_grams' => (float) ($child->pivot->amount_grams ?? 0),
+                    ])
+                    ->filter(static fn (array $row): bool => $row['id'] > 0 && $row['name'] !== '' && $row['amount_grams'] > 0)
+                    ->values()
+                    ->all()
+                : [],
         ];
     }
 }

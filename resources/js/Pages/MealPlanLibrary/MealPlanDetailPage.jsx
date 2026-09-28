@@ -527,8 +527,12 @@ export default function MealPlanDetailPage({
     }, [activeDayData, activeDaySelections]);
 
     const dayShoppingIngredients = useMemo(
-        () => aggregateSelectedDayShoppingIngredients(selectedCategoriesForDayNutrition),
-        [selectedCategoriesForDayNutrition],
+        () =>
+            aggregateSelectedDayShoppingIngredients(
+                selectedCategoriesForDayNutrition,
+                ingredientProfiles,
+            ),
+        [selectedCategoriesForDayNutrition, ingredientProfiles],
     );
 
     const handleAddToShoppingList = useCallback(
@@ -797,7 +801,7 @@ export default function MealPlanDetailPage({
                         <div className="flex shrink-0 flex-wrap items-center gap-2 px-1 sm:justify-end">
                             <Button
                                 type="button"
-                                label="Shopping list"
+                                label="Ingredient list"
                                 variant="ghost"
                                 size="sm"
                                 className="border border-[#5A6B44]"
@@ -912,21 +916,12 @@ export default function MealPlanDetailPage({
                               className="relative z-10 flex max-h-[min(92dvh,900px)] w-full max-w-2xl flex-col overflow-hidden rounded-t-[16px] bg-white shadow-2xl sm:rounded-[16px]"
                           >
                               <div className="flex shrink-0 items-start justify-between gap-4 border-b border-gray-100 px-5 py-4">
-                                  <div className="min-w-0 flex-1">
-                                      <h2
-                                          id="meal-plan-detail-modal-title"
-                                          className="break-words font-montserrat text-lg font-bold text-[#262A22]"
-                                      >
-                                          {mealDetailModal.title}
-                                      </h2>
-                                      {mealDetailModal.detailView?.shortDescription ||
-                                      mealDetailModal.detailView?.description ? (
-                                          <p className="mt-1 font-montserrat text-sm font-medium leading-snug text-[#555555]">
-                                              {mealDetailModal.detailView.shortDescription ||
-                                                  mealDetailModal.detailView.description}
-                                          </p>
-                                      ) : null}
-                                  </div>
+                                  <h2
+                                      id="meal-plan-detail-modal-title"
+                                      className="min-w-0 flex-1 break-words font-montserrat text-lg font-bold text-[#262A22]"
+                                  >
+                                      {mealDetailModal.title}
+                                  </h2>
                                   <Button
                                       label="Close"
                                       variant="ghost"

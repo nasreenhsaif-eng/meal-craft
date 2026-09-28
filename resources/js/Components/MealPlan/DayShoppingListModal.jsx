@@ -17,6 +17,13 @@ function formatAmount(amount, unit) {
     return `${rounded} ${unit}`;
 }
 
+/** Avoid flex-1 + max-h parent (collapses to header/footer). Body sizes to content up to this cap. */
+const BODY_SCROLL_STYLE = { maxHeight: 'min(60dvh, 480px)' };
+
+// max-w-lg resolves to --spacing-lg (24px) in this theme; use xl/2xl container tokens.
+const DIALOG_SHELL =
+    'relative z-10 flex w-full max-w-xl flex-col overflow-hidden rounded-t-[16px] bg-white shadow-2xl sm:rounded-[16px]';
+
 /**
  * Modal listing a day's ingredients with checkboxes and an add-to-shopping-list action.
  *
@@ -114,13 +121,13 @@ export default function DayShoppingListModal({
                 type="button"
                 className="absolute inset-0 bg-black/40"
                 onClick={onClose}
-                aria-label="Close shopping list"
+                aria-label="Close ingredient list"
             />
             <div
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="day-shopping-list-modal-title"
-                className="relative z-10 flex max-h-[min(92dvh,720px)] min-h-[min(55dvh,420px)] w-full max-w-lg flex-col overflow-hidden rounded-t-[16px] bg-white shadow-2xl sm:min-h-[min(60dvh,520px)] sm:rounded-[16px]"
+                className={DIALOG_SHELL}
             >
                 <div className="flex shrink-0 items-start justify-between gap-4 border-b border-gray-100 px-5 py-4">
                     <div className="min-w-0 flex-1">
@@ -128,7 +135,7 @@ export default function DayShoppingListModal({
                             id="day-shopping-list-modal-title"
                             className="font-montserrat text-lg font-bold text-[#262A22]"
                         >
-                            Shopping list
+                            Ingredient list
                         </h2>
                         <p className="mt-1 font-body text-sm text-[#555555]">
                             Ingredients for {dayLabel} selected meals
@@ -137,10 +144,13 @@ export default function DayShoppingListModal({
                     <Button label="Close" variant="ghost" type="button" size="sm" onClick={onClose} />
                 </div>
 
-                <div className="min-h-[12rem] flex-1 overflow-y-auto px-5 py-4">
+                <div
+                    className="overflow-y-auto overscroll-contain px-5 py-4"
+                    style={BODY_SCROLL_STYLE}
+                >
                     {ingredients.length === 0 ? (
                         <p className="font-body text-sm text-[#555555]">
-                            No ingredients yet. Select meals for this day to build a shopping list.
+                            No ingredients yet. Select meals for this day to build an ingredient list.
                         </p>
                     ) : (
                         <>
@@ -253,7 +263,7 @@ export function SavedShoppingListModal({ open, ingredients, onClose, onClear }) 
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="saved-shopping-list-modal-title"
-                className="relative z-10 flex max-h-[min(92dvh,720px)] min-h-[min(55dvh,420px)] w-full max-w-lg flex-col overflow-hidden rounded-t-[16px] bg-white shadow-2xl sm:min-h-[min(60dvh,520px)] sm:rounded-[16px]"
+                className={DIALOG_SHELL}
             >
                 <div className="flex shrink-0 items-start justify-between gap-4 border-b border-gray-100 px-5 py-4">
                     <div className="min-w-0 flex-1">
@@ -270,7 +280,10 @@ export function SavedShoppingListModal({ open, ingredients, onClose, onClear }) 
                     <Button label="Close" variant="ghost" type="button" size="sm" onClick={onClose} />
                 </div>
 
-                <div className="min-h-[12rem] flex-1 overflow-y-auto px-5 py-4">
+                <div
+                    className="overflow-y-auto overscroll-contain px-5 py-4"
+                    style={BODY_SCROLL_STYLE}
+                >
                     {ingredients.length === 0 ? (
                         <p className="font-body text-sm text-[#555555]">Your shopping list is empty.</p>
                     ) : (

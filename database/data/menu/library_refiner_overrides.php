@@ -2185,25 +2185,24 @@ Garnish with chopped fresh parsley.',
         ],
     ],
     'Salted Tahini Caramel Chocolate Bar' => [
-        'synced_at' => '2026-07-12T10:11:47+00:00',
+        'synced_at' => '2026-09-28T12:00:00+00:00',
         'ingredients' => [
-            'Almond Flour (Base)' => 145.0,
-            'Cocoa Powder' => 60.0,
-            'Coconut Oil' => 110.0,
-            'Date Syrup' => 145.0,
-            'Sea Salt' => 10.0,
+            'Almond Flour (Base)' => 168.0,
+            'Coconut Oil' => 140.0,
+            'Date Syrup' => 143.0,
             'Tahini' => 120.0,
-            'Vanilla Pods' => 2.0,
+            'Dark Chocolate' => 180.0,
+            'Vanilla Pods' => 4.0,
+            'Sea Salt' => 9.5,
         ],
-        'highlight' => 'Three-layer 8x8 no-bake bar (16 squares): almond shortbread, salted tahini-date caramel, and dark cocoa topping.',
-        'short_description' => 'Three-layer 8x8 no-bake bar (16 squares): almond shortbread, salted tahini-date caramel, and dark cocoa topping.',
-        'instructions' => '1. Heat oven to 175°C. Line an 8x8 inch pan with parchment paper.
-2. Mix almond flour, 3 tablespoons coconut oil, 2 tablespoons date syrup, vanilla, and salt into a crumb. Press evenly into the pan and bake 10 minutes. Cool 10 minutes.
-3. Warm tahini, date syrup, coconut oil, vanilla, and sea salt in a saucepan over medium-low heat for about 2 minutes, stirring often. Pour over the crust.
-4. Refrigerate 30 to 60 minutes until the caramel layer sets.
-5. Whisk cocoa powder, remaining coconut oil, and a little date syrup until smooth and glossy.
-6. Pour the chocolate layer over the caramel, tilt the pan to coat evenly, and chill 1 hour until firm. Sprinkle with flaky sea salt.
-7. Lift from the pan and cut into 16 squares. One square is one serving.',
+        'highlight' => 'Three-layer 8x8 bar (16 squares): baked almond shortbread, salted tahini-date caramel, and melted dark chocolate.',
+        'short_description' => 'Three-layer 8x8 bar (16 squares): baked almond shortbread, salted tahini-date caramel, and melted dark chocolate.',
+        'instructions' => '1. Preheat the oven to 175°C. Line an 8x8 inch square pan with parchment paper.
+2. Shortbread: In a medium bowl mix almond flour, 3 tablespoons coconut oil, 2 tablespoons date syrup, vanilla, and ¼ teaspoon sea salt with a fork until a thick crumb forms. Press evenly into the pan. Bake 10 minutes, then cool 10 minutes.
+3. Salted tahini caramel: Warm tahini, ⅓ cup date syrup, ⅓ cup coconut oil, vanilla, and 1 teaspoon sea salt in a saucepan over medium-low heat about 2 minutes, stirring often. Pour over the slightly cooled crust.
+4. Refrigerate 30–60 minutes until the caramel hardens.
+5. Chocolate layer: Melt dark chocolate with 1 tablespoon coconut oil over low heat until smooth. Pour over the caramel and tilt the pan to coat evenly.
+6. Chill about 1 hour until the chocolate is firm. Lift from the pan, sprinkle with coarse sea salt, and cut into 16 squares. One square is one serving.',
         'diet_tags' => [
             0 => 'Vegan',
             1 => 'Dairy-free',

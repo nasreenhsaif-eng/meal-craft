@@ -2316,21 +2316,12 @@ export function MealLibraryPageContent({
                         className="relative flex max-h-[min(92dvh,calc(100dvh-2rem))] w-full max-w-[960px] flex-col overflow-hidden rounded-t-[12px] bg-[#F8F9F6] shadow-2xl sm:rounded-[12px]"
                     >
                         <div className="flex shrink-0 items-start justify-between gap-3 border-b border-gray-200 px-4 py-4 md:px-6">
-                            <div className="min-w-0 flex-1">
-                                <h2
-                                    id="meal-library-detail-title"
-                                    className="break-words font-montserrat text-xl font-bold tracking-tight text-[#262A22] md:text-2xl"
-                                >
-                                    {mealDetailModal.title}
-                                </h2>
-                                {mealDetailModal.detailView?.shortDescription ||
-                                mealDetailModal.detailView?.description ? (
-                                    <p className="mt-1 font-montserrat text-sm font-medium leading-snug text-[#555555] md:text-base">
-                                        {mealDetailModal.detailView.shortDescription ||
-                                            mealDetailModal.detailView.description}
-                                    </p>
-                                ) : null}
-                            </div>
+                            <h2
+                                id="meal-library-detail-title"
+                                className="min-w-0 flex-1 break-words font-montserrat text-xl font-bold tracking-tight text-[#262A22] md:text-2xl"
+                            >
+                                {mealDetailModal.title}
+                            </h2>
                             <Button label="Close" variant="ghost" type="button" onClick={() => setMealDetailModal(null)} />
                         </div>
                         {detailLoading ? (

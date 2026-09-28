@@ -476,7 +476,6 @@ export function MealPlanLibraryPageContent({
                                             title={p.name}
                                             dateRangeLabel={p.dateRangeLabel ?? null}
                                             imageUrl={p.imageUrl}
-                                            dailyMacros={p.dailyMacros}
                                             tags={p.tags}
                                             onPrimaryAction={() => {
                                                 const url = p.showUrl ?? `/admin/meal-plan-library/${p.id}`;
