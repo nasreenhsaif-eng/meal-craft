@@ -808,14 +808,41 @@ export default function MealPlanDetailPage({
                                 onClick={() => setDayShoppingListOpen(true)}
                             />
                             {savedShoppingList.length > 0 ? (
-                                <Button
+                                <button
                                     type="button"
-                                    label={`Saved (${savedShoppingList.length})`}
-                                    variant="outline"
-                                    size="sm"
-                                    className="border border-[#5A6B44]"
+                                    aria-label={`Shopping list, ${savedShoppingList.length} items`}
+                                    aria-pressed={viewSavedShoppingListOpen}
+                                    title="Shopping list"
                                     onClick={() => setViewSavedShoppingListOpen(true)}
-                                />
+                                    className={[
+                                        'relative inline-flex h-[40px] min-h-[40px] w-[40px] shrink-0 cursor-pointer items-center justify-center',
+                                        'rounded-[12px] transition-all duration-200 ease-in-out',
+                                        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5A6B44] focus-visible:ring-offset-2 focus-visible:ring-offset-white',
+                                        'active:scale-[0.98] active:border-[#6E8C47] active:bg-[#6E8C47] active:text-white',
+                                        viewSavedShoppingListOpen
+                                            ? 'border border-transparent bg-[color-mix(in_srgb,#6E8C47_50%,white)] text-[#364153] hover:bg-[color-mix(in_srgb,#6E8C47_70%,white)]'
+                                            : 'border border-[#5A6B44] bg-transparent text-[#5A6B44] hover:bg-[#5A6B44]/10',
+                                    ].join(' ')}
+                                >
+                                    <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="1.75"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        className="h-5 w-5"
+                                        aria-hidden="true"
+                                    >
+                                        <circle cx="9" cy="20" r="1.25" fill="currentColor" stroke="none" />
+                                        <circle cx="17" cy="20" r="1.25" fill="currentColor" stroke="none" />
+                                        <path d="M3 4h2l1.4 8.4A2 2 0 0 0 8.4 14H17a2 2 0 0 0 2-1.6L20 7H6" />
+                                    </svg>
+                                    <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#5A6B44] px-1 font-montserrat text-[10px] font-bold leading-none text-white">
+                                        {savedShoppingList.length > 99 ? '99+' : savedShoppingList.length}
+                                    </span>
+                                </button>
                             ) : null}
                         </div>
                     </div>

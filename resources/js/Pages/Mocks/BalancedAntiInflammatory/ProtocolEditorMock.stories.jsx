@@ -41,7 +41,7 @@ export const LibraryCard = {
     parameters: { layout: 'padded' },
     render: () => (
         <div className="box-border flex w-full justify-center bg-[#F8F9F6] p-6">
-            <div className="w-full max-w-[310px]">
+            <div className="w-[240px] max-w-[240px]">
                 <LibraryCardMock />
             </div>
         </div>
