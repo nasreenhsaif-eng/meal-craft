@@ -2,7 +2,7 @@ import { useState } from 'react';
 import SquareCheckbox from './SquareCheckbox.jsx';
 
 export default {
-    title: 'MealCraft/Atoms/Buttons & Links/Icons/SquareCheckbox',
+    title: 'Design System/02. Atoms/Button/SquareCheckbox',
     component: SquareCheckbox,
     parameters: { layout: 'padded' },
 };

@@ -39,7 +39,7 @@ function seedComplexCarbRefinerFixtures(): void
         'Turmeric Rice (Base)' => ['calories' => 15.62, 'protein' => 0.39, 'carbs' => 4.32, 'fat' => 0.03],
         'Cooked Quinoa (Base)' => ['calories' => 42.86, 'protein' => 1.57, 'carbs' => 7.61, 'fat' => 0.68],
         'Cooked Brown Basmati Rice (Base)' => ['calories' => 64.8, 'protein' => 1.64, 'carbs' => 13.4, 'fat' => 0.44],
-        'Quinoa Bread (Base)' => ['calories' => 258.96, 'protein' => 8.08, 'carbs' => 39.14, 'fat' => 7.92],
+        'Quinoa Flatbread (Base)' => ['calories' => 136.41, 'protein' => 4.21, 'carbs' => 19.18, 'fat' => 4.92],
         'Steamed Basmati Rice (Base)' => ['calories' => 118.27, 'protein' => 2.36, 'carbs' => 26.11, 'fat' => 0.23],
         'Beef Sirloin' => ['calories' => 162, 'protein' => 27, 'carbs' => 0, 'fat' => 6],
         'Beef Ground Lean' => ['calories' => 182, 'protein' => 26, 'carbs' => 0, 'fat' => 8],

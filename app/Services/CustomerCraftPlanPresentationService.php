@@ -13,6 +13,7 @@ use App\Services\Nutrition\AdaptedMenuBuilder;
 use App\Services\Nutrition\CraftCaloriePlanner;
 use App\Services\Nutrition\DayMacroReconciliation;
 use App\Services\Nutrition\UserPlanCalculator;
+use App\Support\MealPlanDateRange;
 
 final class CustomerCraftPlanPresentationService
 {
@@ -58,9 +59,11 @@ final class CustomerCraftPlanPresentationService
      *     planTierCalories: int,
      *     submittedAt: string|null,
      *     dietProtocol: string|null,
+     *     planDateRange: array{startsOn: string, endsOn: string, label: string},
      *     days: list<array{
      *         dayNumber: int,
      *         label: string,
+     *         dateLabel: string,
      *         includeSoup: bool,
      *         categories: array{
      *             breakfasts: list<array<string, mixed>>,
@@ -91,7 +94,7 @@ final class CustomerCraftPlanPresentationService
         $categoryKeys = ['breakfasts', 'meals', 'sideSalads', 'desserts', 'soup'];
         $emptyCategories = array_fill_keys($categoryKeys, []);
 
-        /** @var list<array{dayNumber: int, label: string, includeSoup: bool, categories: array<string, list<array<string, mixed>>>}> $presentedDays */
+        /** @var list<array{dayNumber: int, label: string, dateLabel: string, includeSoup: bool, categories: array<string, list<array<string, mixed>>>}> $presentedDays */
         $presentedDays = [];
 
         foreach ($plan->days->sortBy('day_of_week')->values() as $day) {
@@ -108,6 +111,7 @@ final class CustomerCraftPlanPresentationService
             $presentedDays[] = [
                 'dayNumber' => $dayNumber,
                 'label' => self::WEEKDAY_LABELS[$dayNumber - 1] ?? __('Day :number', ['number' => $dayNumber]),
+                'dateLabel' => MealPlanDateRange::dateForWeekday($dayNumber)->format('j M'),
                 'includeSoup' => (bool) $day->include_soup,
                 'categories' => $categories !== [] ? $categories : $emptyCategories,
             ];
@@ -121,6 +125,7 @@ final class CustomerCraftPlanPresentationService
             'planTierCalories' => $planTierCalories,
             'submittedAt' => $plan->submitted_at?->toIso8601String(),
             'dietProtocol' => $profile instanceof CustomerProfile ? $profile->diet_protocol : null,
+            'planDateRange' => MealPlanDateRange::forWeek(selectedWeekdays: array_values($plan->selected_weekdays ?? [])),
             'days' => $presentedDays,
         ];
     }

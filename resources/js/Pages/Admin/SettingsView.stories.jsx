@@ -7,7 +7,7 @@ import { AdminSettingsSecurityInner } from './Settings/Security.jsx';
 const SETTINGS_CONTENT_WRAPPER = 'mx-auto w-full max-w-[1400px]';
 
 export default {
-    title: 'MealCraft/Pages/Admin/SettingsView',
+    title: 'Design System/05. Templates & Pages/SettingsView',
     parameters: {
         layout: 'fullscreen',
         docs: {

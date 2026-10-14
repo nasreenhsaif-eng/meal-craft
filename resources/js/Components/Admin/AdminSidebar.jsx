@@ -10,6 +10,7 @@ export const ADMIN_NAV_PATHS = {
     ingredientDb: 'ingredient-db',
     mealHub: 'meal-hub',
     mealPlans: 'meal-plans',
+    mealTiers: 'meal-tiers',
     kitchenLogistics: 'kitchen-logistics',
     customerProfiles: 'customer-profiles',
     discoveryInsights: 'discovery-insights',
@@ -20,6 +21,7 @@ export const ADMIN_NAV_HREFS = {
     [ADMIN_NAV_PATHS.dashboard]: '/admin/dashboard',
     [ADMIN_NAV_PATHS.ingredientDb]: '/admin/ingredient-library',
     [ADMIN_NAV_PATHS.mealHub]: '/admin/meal-library',
+    [ADMIN_NAV_PATHS.mealTiers]: '/admin/meal-tiers-library',
     [ADMIN_NAV_PATHS.mealPlans]: '/admin/meal-plan-library',
     [ADMIN_NAV_PATHS.kitchenLogistics]: '/admin/kitchen-logistics',
     [ADMIN_NAV_PATHS.customerProfiles]: '/admin/customers',
@@ -44,6 +46,12 @@ const GROUPS = [
                 label: 'Meal Library',
                 Icon: IconMealHub,
                 href: ADMIN_NAV_HREFS[ADMIN_NAV_PATHS.mealHub],
+            },
+            {
+                path: ADMIN_NAV_PATHS.mealTiers,
+                label: 'Meal Tiers Library',
+                Icon: IconMealHub,
+                href: ADMIN_NAV_HREFS[ADMIN_NAV_PATHS.mealTiers],
             },
             {
                 path: ADMIN_NAV_PATHS.mealPlans,

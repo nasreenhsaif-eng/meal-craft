@@ -19,6 +19,8 @@ describe('dietProtocolOptionsForGender', () => {
 
         expect(options.some((option) => option.id === 'cycle_sync')).toBe(false);
         expect(options.some((option) => option.id === 'thyroid')).toBe(true);
+        expect(options.some((option) => option.id === 'balanced')).toBe(true);
+        expect(options.some((option) => option.id === 'nutrient_dense')).toBe(false);
         expect(options).toHaveLength(4);
     });
 });

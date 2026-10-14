@@ -76,7 +76,7 @@ function setInputValue(input, value) {
 }
 
 export default {
-    title: 'MealCraft/Pages/Admin/MealLibrary/Create meal',
+    title: 'Design System/05. Templates & Pages/Admin/MealLibrary/Create meal',
     parameters: {
         layout: 'fullscreen',
         docs: {

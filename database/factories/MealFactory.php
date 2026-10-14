@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\MealLibraryKey;
 use App\Enums\MealType;
 use App\Enums\RecipeCategory;
 use App\Models\Meal;
@@ -28,6 +29,14 @@ class MealFactory extends Factory
             'total_carbs' => 30,
             'total_fat' => 12,
             'library_sort_order' => fake()->numberBetween(0, 1000),
+            'library_key' => MealLibraryKey::Classic,
         ];
+    }
+
+    public function tiers(): static
+    {
+        return $this->state(fn (): array => [
+            'library_key' => MealLibraryKey::Tiers,
+        ]);
     }
 }

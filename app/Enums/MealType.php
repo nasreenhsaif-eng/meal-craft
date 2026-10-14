@@ -69,7 +69,7 @@ enum MealType: string
             RecipeCategory::BaseRecipe => self::BaseRecipe,
             RecipeCategory::Soup => self::Soup,
             RecipeCategory::SideSalad, RecipeCategory::MainSalad => self::Salad,
-            RecipeCategory::Dessert => self::Dessert,
+            RecipeCategory::Dessert, RecipeCategory::ChiaPudding => self::Dessert,
         };
     }
 }

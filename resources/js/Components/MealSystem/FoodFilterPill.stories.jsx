@@ -3,7 +3,7 @@ import { IconDairy } from './FoodFilterIcons.jsx';
 import { FOOD_FILTER_OPTIONS } from './foodFilterOptions.js';
 
 export default {
-    title: 'MealCraft/Meal System/FoodFilterPill',
+    title: 'Design System/02. Atoms/Badge/FoodFilterPill',
     component: FoodFilterPill,
     argTypes: {
         label: { control: 'text' },

@@ -8,7 +8,7 @@ import MicronutrientInput from '../../Components/Atoms/TextInput/MicronutrientIn
 import Button from '../../Components/Atoms/Button.jsx';
 import SquareCheckbox from '../../Components/Atoms/Icons/SquareCheckbox.jsx';
 import BaseRecipeEditorView from './BaseRecipeEditorView.jsx';
-import NutrientBadge from '../../Components/Atoms/MealSystem/NutrientBadge.jsx';
+import NutrientBadge from '../../Components/MealSystem/NutrientBadge.jsx';
 import CSVUploader from '../../Components/CSVUploader.jsx';
 import { gramsFromAmountUnitAndDensity } from '../../meal-library/aggregateIngredientNutrition.ts';
 import { filterIngredientsForCombobox } from '../../meal-library/ingredientSearch.ts';

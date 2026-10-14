@@ -12,11 +12,15 @@ use App\Http\Controllers\Admin\MealController;
 use App\Http\Controllers\Admin\MealLibraryController;
 use App\Http\Controllers\Admin\MealLibraryCsvImportController;
 use App\Http\Controllers\Admin\MealPlanLibraryController;
+use App\Http\Controllers\Admin\MealTiersLibraryController;
 use App\Http\Controllers\Api\AdaptedMenuController;
 use App\Http\Controllers\Api\CustomerCraftPlanController;
+use App\Http\Controllers\Api\IngredientDetailViewController;
 use App\Http\Controllers\Api\MealDetailViewController;
+use App\Http\Controllers\Auth\JoinVerificationController;
 use App\Http\Controllers\Auth\PortalChoiceController;
 use App\Http\Controllers\Auth\WelcomeController;
+use App\Http\Controllers\Customer\CheckoutController;
 use App\Http\Controllers\Customer\ConsultationCraftedForYouController;
 use App\Http\Controllers\Customer\ConsultationCraftedForYouEditController;
 use App\Http\Controllers\Customer\CustomerAppController;
@@ -44,6 +48,14 @@ Route::middleware('guest')->group(function (): void {
 });
 
 Route::view('/sign-out', 'pages::auth.sign-out')->name('sign-out');
+
+Route::middleware('auth')->group(function (): void {
+    Route::get('/join/verify', [JoinVerificationController::class, 'show'])->name('join.verify');
+    Route::post('/join/verify', [JoinVerificationController::class, 'store'])->name('join.verify.store');
+    Route::post('/join/verify/resend', [JoinVerificationController::class, 'resend'])
+        ->middleware('throttle:3,1')
+        ->name('join.verify.resend');
+});
 
 Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('/login/portal-choice', [PortalChoiceController::class, 'show'])
@@ -76,6 +88,12 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
                 Route::post('/meal-library/bulk-destroy', [MealLibraryController::class, 'bulkDestroy'])->name('meal-library.bulk-destroy');
                 Route::post('/meal-library/reorder', [MealLibraryController::class, 'reorder'])->name('meal-library.reorder');
                 Route::post('/meal-library/{meal}', [MealController::class, 'update'])->name('meal-library.update');
+                Route::get('/meal-tiers-library', [MealTiersLibraryController::class, 'index'])->name('meal-tiers-library');
+                Route::post('/meal-tiers-library', [MealTiersLibraryController::class, 'store'])->name('meal-tiers-library.store');
+                Route::post('/meal-tiers-library/copy', [MealTiersLibraryController::class, 'copy'])->name('meal-tiers-library.copy');
+                Route::post('/meal-tiers-library/copy-all', [MealTiersLibraryController::class, 'copyAll'])->name('meal-tiers-library.copy-all');
+                Route::post('/meal-tiers-library/{meal}', [MealTiersLibraryController::class, 'update'])->name('meal-tiers-library.update');
+                Route::delete('/meal-tiers-library/{meal}', [MealTiersLibraryController::class, 'destroy'])->name('meal-tiers-library.destroy');
                 Route::get('/meal-plan-library', [MealPlanLibraryController::class, 'index'])->name('meal-plan-library');
                 Route::post('/meal-plan-library', [MealPlanLibraryController::class, 'store'])->name('meal-plan-library.store');
                 Route::get('/meal-plan-library/meals/search', [MealPlanLibraryController::class, 'searchMeals'])->name('meal-plan-library.meals.search');
@@ -83,6 +101,8 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
                 Route::put('/meal-plan-library/{mealPlan}/default-selections', [MealPlanLibraryController::class, 'storeDefaultSelections'])->name('meal-plan-library.default-selections');
                 Route::get('/meal-plan-library/{mealPlan}/tier-preview', [MealPlanLibraryController::class, 'tierPreview'])->name('meal-plan-library.tier-preview');
                 Route::get('/customers', [CustomerProfileController::class, 'index'])->name('customers');
+                Route::get('/customers/{customer}', [CustomerProfileController::class, 'show'])->name('customers.show');
+                Route::put('/customers/{customer}', [CustomerProfileController::class, 'update'])->name('customers.update');
                 Route::get('/kitchen-logistics', [KitchenLogisticsController::class, 'index'])->name('kitchen-logistics');
 
                 Route::prefix('settings')->name('settings.')->group(function (): void {
@@ -113,7 +133,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         })->name('recipes.redirect.edit');
     });
 
-    Route::middleware('customer')->group(function (): void {
+    Route::middleware(['customer', 'signup.verified'])->group(function (): void {
         Route::post('/onboarding/reset', [OnboardingController::class, 'resetForTesting'])
             ->name('onboarding.reset');
 
@@ -148,9 +168,20 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
                 });
             });
 
+        Route::middleware('onboarding.complete')->group(function (): void {
+            Route::get('/checkout', [CheckoutController::class, 'fulfillment'])->name('checkout.fulfillment');
+            Route::get('/checkout/delivery', [CheckoutController::class, 'delivery'])->name('checkout.delivery');
+            Route::get('/checkout/details', [CheckoutController::class, 'details'])->name('checkout.details');
+            Route::post('/checkout/details', [CheckoutController::class, 'storeDetails'])->name('checkout.details.store');
+            Route::get('/checkout/payment', [CheckoutController::class, 'payment'])->name('checkout.payment');
+            Route::post('/checkout/payment', [CheckoutController::class, 'storePayment'])->name('checkout.payment.store');
+            Route::get('/meal-plan/recipes', [CustomerAppController::class, 'mealPlan'])->name('meal-plan.recipes');
+        });
+
         Route::prefix('api')->group(function (): void {
             Route::get('/menu/adapted', AdaptedMenuController::class)->name('api.menu.adapted');
             Route::get('/meals/{meal}/detail-view', MealDetailViewController::class)->name('api.meals.detail-view');
+            Route::get('/ingredients/{ingredient}/detail-view', IngredientDetailViewController::class)->name('api.ingredients.detail-view');
             Route::post('/customer/craft-plan', [CustomerCraftPlanController::class, 'store'])
                 ->name('api.customer.craft-plan.store');
         });

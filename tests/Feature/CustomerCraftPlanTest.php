@@ -125,6 +125,7 @@ test('kitchen daily sheet returns adapted ingredient lines for scalable meals', 
 
     $ingredient = Ingredient::factory()->create([
         'name' => 'Chicken Breast',
+        'usda_food_category' => 'Proteins',
         'calories' => 100,
         'protein' => 20,
         'carbs' => 0,
@@ -162,11 +163,13 @@ test('kitchen daily sheet returns adapted ingredient lines for scalable meals', 
         ->assertJsonPath('rows.0.customer_name', 'Jordan Lee')
         ->assertJsonPath('rows.0.m1', fn ($value) => str_contains((string) $value, 'Test Main'));
 
+    $kitchenInstructions = (string) $response->json('rows.0.kitchen_instructions');
+    expect($kitchenInstructions)->toContain('meal 1: chicken breast 150g');
+
     $lines = $response->json('ingredient_lines');
     expect($lines)->not->toBeEmpty()
         ->and($lines[0]['ingredient'])->toBe('Chicken Breast')
-        ->and((float) $lines[0]['adapted_amount_grams'])->toBeGreaterThan(140)
-        ->and((float) $lines[0]['adapted_amount_grams'])->toBeLessThan(200);
+        ->and((float) $lines[0]['adapted_amount_grams'])->toEqualWithDelta(200.0, 0.5);
 });
 
 test('guests cannot submit craft plans', function () {
@@ -243,8 +246,14 @@ test('customer can view meal plan summary after submitting selections', function
             ->component('App/MealPlanSummary')
             ->where('craftPlan.craftTitle', 'Full Craft')
             ->where('craftPlan.planTierCalories', 2000)
+            ->where('sex', 'female')
+            ->where('activityLevel', 'moderate')
+            ->where('dailyCalorieTarget', 2000)
+            ->where('fulfillmentUrl', route('checkout.fulfillment'))
             ->has('craftPlan.days', 2)
             ->where('craftPlan.days.0.label', 'Sunday')
+            ->has('craftPlan.planDateRange.label')
+            ->has('craftPlan.days.0.dateLabel')
             ->where('craftPlan.days.0.categories.breakfasts.0.title', 'Sunday Oats'));
 });
 

@@ -3,7 +3,7 @@ import { WheelDatePicker } from './WheelDatePicker.jsx';
 import { buildDayOptions, buildYearOptions, defaultBirthdayValue, toIsoDate } from './wheelDateUtils.js';
 
 export default {
-    title: 'MealCraft/Molecules/Onboarding/WheelDatePicker',
+    title: 'Design System/03. Molecules/Form and pickers/WheelDatePicker',
     component: WheelDatePicker,
     parameters: {
         docs: {

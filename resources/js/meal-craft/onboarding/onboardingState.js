@@ -6,6 +6,11 @@
 
 import { calculateAgeFromBirthdate } from './onboardingDates.js';
 import { normalizeActivityLevel, normalizeDietProtocol } from './onboardingNormalize.js';
+import {
+    defaultBirthdayValue,
+    parseIsoDate,
+    toIsoDate,
+} from '../../Components/Molecules/Onboarding/wheelDateUtils.js';
 
 /**
  * @typedef {{
@@ -49,6 +54,20 @@ export function createInitialOnboardingState() {
         allergyOther: '',
         computedTargets: null,
     };
+}
+
+/**
+ * @param {...unknown} values
+ * @returns {string | null}
+ */
+function firstIsoDate(...values) {
+    for (const value of values) {
+        if (typeof value === 'string' && parseIsoDate(value)) {
+            return value;
+        }
+    }
+
+    return null;
 }
 
 /**
@@ -96,7 +115,9 @@ export function hydrateOnboardingFromServer(state, onboarding) {
             averageCycleLength:
                 profile.average_cycle_length ?? profile.averageCycleLength ?? state.periodTracking.averageCycleLength,
         },
-        birthdate: profile.date_of_birth ?? profile.dateOfBirth ?? state.birthdate,
+        birthdate:
+            firstIsoDate(profile.date_of_birth, profile.dateOfBirth, profile.birthdate, state.birthdate) ??
+            toIsoDate(defaultBirthdayValue()),
         height: profile.height_cm ?? profile.heightCm ?? state.height,
         weight: profile.weight_kg ?? profile.weightKg ?? state.weight,
         targetWeight: profile.target_weight_kg ?? profile.targetWeightKg ?? state.targetWeight,

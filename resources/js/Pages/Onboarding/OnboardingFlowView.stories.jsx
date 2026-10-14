@@ -2,7 +2,7 @@ import { OnboardingFlowViewInner } from './OnboardingFlowView.jsx';
 import { withOnboardingMobileFrame } from './onboardingStoryDecorators.jsx';
 
 export default {
-    title: 'MealCraft/Pages/Onboarding/OnboardingFlowView',
+    title: 'Design System/05. Templates & Pages/Onboarding/OnboardingFlowView',
     component: OnboardingFlowViewInner,
     parameters: {
         layout: 'fullscreen',

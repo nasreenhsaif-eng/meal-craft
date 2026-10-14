@@ -16,16 +16,17 @@ test('fortify register page renders the customer join form', function () {
     $this->get('/register')->assertOk();
 });
 
-test('new customers can register through join and are redirected to onboarding', function () {
+test('new customers can register through join and are sent to otp verification', function () {
     $response = $this->post(route('register.store'), [
         'name' => 'Jane Customer',
         'email' => 'customer@example.com',
+        'phone' => '+97333005555',
         'password' => 'password',
         'password_confirmation' => 'password',
     ]);
 
     $response->assertSessionHasNoErrors()
-        ->assertRedirect(route('onboarding.show', ['step' => OnboardingStep::Gender->value], absolute: false));
+        ->assertRedirect(route('join.verify'));
 
     $this->assertAuthenticated();
 
@@ -41,6 +42,7 @@ test('registration creates customer role only', function () {
     $this->post(route('register.store'), [
         'name' => 'Another Customer',
         'email' => 'another@example.com',
+        'phone' => '+97333006666',
         'password' => 'password',
         'password_confirmation' => 'password',
     ]);

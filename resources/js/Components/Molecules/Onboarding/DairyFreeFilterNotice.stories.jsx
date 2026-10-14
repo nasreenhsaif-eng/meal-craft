@@ -1,7 +1,7 @@
 import DairyFreeFilterNotice from './DairyFreeFilterNotice.jsx';
 
 export default {
-    title: 'MealCraft/Molecules/Onboarding/DairyFreeFilterNotice',
+    title: 'Design System/03. Molecules/Form and pickers/DairyFreeFilterNotice',
     component: DairyFreeFilterNotice,
 };
 

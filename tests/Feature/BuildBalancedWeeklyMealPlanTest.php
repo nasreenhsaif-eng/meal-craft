@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\MealLibraryKey;
 use App\Enums\MealPlanSchemaType;
 use App\Enums\MealPlanSlotType;
 use App\Enums\MealType;
@@ -66,7 +67,7 @@ test('balanced weekly plan builder creates seven day rotating menus with fourtee
         ->and($result['slots'])->toBe(7 * $slotsPerDay)
         ->and($plan->dayMeals()->count())->toBe($result['slots'] * 2);
 
-    $dayOneChiaDessert = $plan->dayMeals()
+    $dayOneDessert = $plan->dayMeals()
         ->where('day_number', 1)
         ->where('slot_type', MealPlanSlotType::Dessert->value)
         ->where('slot_index', 1)
@@ -74,10 +75,18 @@ test('balanced weekly plan builder creates seven day rotating menus with fourtee
         ->first()
         ?->meal?->name;
 
-    $dayTwoChiaDessert = $plan->dayMeals()
+    $dayTwoDessert = $plan->dayMeals()
         ->where('day_number', 2)
         ->where('slot_type', MealPlanSlotType::Dessert->value)
         ->where('slot_index', 1)
+        ->where('is_option_b', false)
+        ->first()
+        ?->meal?->name;
+
+    $dayOneChiaDessert = $plan->dayMeals()
+        ->where('day_number', 1)
+        ->where('slot_type', MealPlanSlotType::Dessert->value)
+        ->where('slot_index', 3)
         ->where('is_option_b', false)
         ->first()
         ?->meal?->name;
@@ -90,8 +99,9 @@ test('balanced weekly plan builder creates seven day rotating menus with fourtee
         ->first()
         ?->meal?->name;
 
-    expect($dayOneChiaDessert)->toBe('Blueberry Walnut Chia Pudding')
-        ->and($dayTwoChiaDessert)->toBe('Mango Pumpkin Seed Chia Pudding')
+    expect($dayOneDessert)->toBe(BalancedWeeklyRotationSchedule::mealNameForDay(1, MealPlanSlotType::Dessert, 1))
+        ->and($dayTwoDessert)->toBe(BalancedWeeklyRotationSchedule::mealNameForDay(2, MealPlanSlotType::Dessert, 1))
+        ->and($dayOneChiaDessert)->toBe(BalancedWeeklyRotationSchedule::mealNameForDay(1, MealPlanSlotType::Dessert, 3))
         ->and($dayOneSavoryBreakfast)->toBe('Gouda & Spinach Scramble');
 
     foreach (range(1, 7) as $day) {
@@ -150,6 +160,32 @@ test('balanced weekly plan builder creates seven day rotating menus with fourtee
             BalancedWeeklyRotationSchedule::mealNameForDay($day, MealPlanSlotType::Main, 6),
         );
     }
+});
+
+test('balanced weekly plan prefers meal tiers library copies by name', function (): void {
+    seedBalancedWeeklyPlanDeck();
+
+    $classic = Meal::queryForMealLibrary()->where('name', 'Gouda & Spinach Scramble')->firstOrFail();
+    $tiersCopy = Meal::factory()->tiers()->create([
+        'name' => 'Gouda & Spinach Scramble',
+        'category' => RecipeCategory::Breakfast,
+        'meal_type' => MealType::Breakfast,
+        'total_calories' => 300,
+        'library_sort_order' => 1,
+    ]);
+
+    $result = app(BalancedWeeklyMealPlanBuilder::class)->build(refineRecipes: false);
+
+    $scheduledBreakfast = $result['plan']->dayMeals()
+        ->where('day_number', 1)
+        ->where('slot_type', MealPlanSlotType::Breakfast->value)
+        ->where('slot_index', 1)
+        ->where('is_option_b', false)
+        ->first();
+
+    expect($scheduledBreakfast?->meal_id)->toBe($tiersCopy->id)
+        ->and($scheduledBreakfast?->meal?->library_key)->toBe(MealLibraryKey::Tiers)
+        ->and($classic->id)->not->toBe($tiersCopy->id);
 });
 
 test('chia dessert refiner standardizes deck meals on coconut chia base', function (): void {
@@ -247,6 +283,21 @@ test('chia dessert refiner standardizes deck meals on coconut chia base', functi
         'micronutrients' => [],
     ]);
 
+    Ingredient::query()->create([
+        'name' => 'Black Seeds',
+        'usda_food_category' => 'Spices',
+        'calories' => 345,
+        'protein' => 16,
+        'carbs' => 44,
+        'fat' => 15,
+        'b6' => 0,
+        'b9_folate' => 0,
+        'b12' => 0,
+        'iron' => 0,
+        'magnesium' => 0,
+        'micronutrients' => [],
+    ]);
+
     $meal = Meal::query()->where('name', 'Blueberry Walnut Chia Pudding')->firstOrFail();
     $meal->ingredients()->sync([
         $base->id => ['amount_grams' => 25],
@@ -263,10 +314,11 @@ test('chia dessert refiner standardizes deck meals on coconut chia base', functi
         ->and($names)->toContain('Coconut Chia Pudding (Base)')
         ->and($names)->toContain('Blueberries')
         ->and($names)->toContain('Walnuts')
+        ->and($names)->toContain('Black Seeds')
         ->and($names)->not->toContain('Pumpkin Seeds')
         ->and($names)->toContain('Cinnamon')
         ->and($meal->meal_type)->toBe(MealType::Dessert)
-        ->and($meal->category)->toBe(RecipeCategory::Dessert)
+        ->and($meal->category)->toBe(RecipeCategory::ChiaPudding)
         ->and((float) $baseLine->pivot->amount_grams)->toBe(BalancedChiaDessertRecipeRefiner::COCONUT_CHIA_BASE_GRAMS)
         ->and($meal->total_calories)->toBeGreaterThanOrEqual(BalancedChiaDessertRecipeRefiner::MIN_CALORIES);
 });

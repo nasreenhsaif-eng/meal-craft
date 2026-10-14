@@ -1,3 +1,4 @@
+import { Link, router } from '@inertiajs/react';
 import adminInertiaLayout from '../../lib/adminInertiaLayout.jsx';
 
 /**
@@ -18,6 +19,9 @@ function CustomerProfilesView({ customers }) {
                         <tr>
                             <th className="px-4 py-3 text-left font-semibold text-[#555555]">Name</th>
                             <th className="px-4 py-3 text-left font-semibold text-[#555555]">Email</th>
+                            <th className="px-4 py-3 text-left font-semibold text-[#555555]">Phone</th>
+                            <th className="px-4 py-3 text-left font-semibold text-[#555555]">Unique ID</th>
+                            <th className="px-4 py-3 text-left font-semibold text-[#555555]">Planned start</th>
                             <th className="px-4 py-3 text-left font-semibold text-[#555555]">Onboarding</th>
                             <th className="px-4 py-3 text-left font-semibold text-[#555555]">Calories</th>
                             <th className="px-4 py-3 text-left font-semibold text-[#555555]">Status</th>
@@ -26,23 +30,50 @@ function CustomerProfilesView({ customers }) {
                     <tbody className="divide-y divide-gray-100">
                         {customers.length === 0 ? (
                             <tr>
-                                <td colSpan={5} className="px-4 py-8 text-center text-[#6B7280]">
+                                <td colSpan={8} className="px-4 py-8 text-center text-[#6B7280]">
                                     No customer profiles yet.
                                 </td>
                             </tr>
                         ) : (
                             customers.map((customer) => (
-                                <tr key={customer.id}>
-                                    <td className="px-4 py-3 font-medium text-[#262A22]">{customer.name}</td>
+                                <tr
+                                    key={customer.id}
+                                    className="cursor-pointer hover:bg-[#F8F9F6]"
+                                    onClick={() => {
+                                        if (customer.showUrl) {
+                                            router.visit(customer.showUrl);
+                                        }
+                                    }}
+                                >
+                                    <td className="px-4 py-3 font-medium text-[#262A22]">
+                                        {customer.showUrl ? (
+                                            <Link
+                                                href={customer.showUrl}
+                                                className="text-[#5A6B44] hover:underline"
+                                                onClick={(event) => event.stopPropagation()}
+                                            >
+                                                {customer.name}
+                                            </Link>
+                                        ) : (
+                                            customer.name
+                                        )}
+                                    </td>
                                     <td className="px-4 py-3 text-[#555555]">{customer.email}</td>
+                                    <td className="px-4 py-3 text-[#555555]">{customer.phone || '—'}</td>
+                                    <td className="px-4 py-3 font-mono text-[#555555]">{customer.uniqueCode || '—'}</td>
+                                    <td className="px-4 py-3 text-[#555555]">{customer.plannedStartDate || '—'}</td>
                                     <td className="px-4 py-3 capitalize text-[#555555]">
-                                        {customer.onboardingCompletedAt ? 'Complete' : customer.onboardingStep?.replace('_', ' ')}
+                                        {customer.onboardingCompletedAt
+                                            ? 'Complete'
+                                            : customer.onboardingStep?.replace('_', ' ')}
                                     </td>
                                     <td className="px-4 py-3 text-[#555555]">{customer.dailyCalorieTarget ?? '—'}</td>
                                     <td className="px-4 py-3">
                                         <span
                                             className={`rounded-full px-2 py-1 text-xs font-semibold ${
-                                                customer.isActive ? 'bg-[#E8EFE0] text-[#556C37]' : 'bg-red-50 text-red-700'
+                                                customer.isActive
+                                                    ? 'bg-[#E8EFE0] text-[#556C37]'
+                                                    : 'bg-red-50 text-red-700'
                                             }`}
                                         >
                                             {customer.isActive ? 'Active' : 'Inactive'}

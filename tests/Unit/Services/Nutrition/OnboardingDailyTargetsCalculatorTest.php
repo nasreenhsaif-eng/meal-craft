@@ -44,9 +44,9 @@ it('snaps daily calories to the nearest configured plan tier', function () {
 
     $targets = OnboardingDailyTargetsCalculator::calculate($profile);
 
-    expect($targets['plan_tier'])->toBeIn([1000, 1200, 1500, 1800, 2000])
+    expect($targets['plan_tier'])->toBeIn([1250, 1500, 1800, 2000])
         ->and($targets['daily_calories'])->toBe($targets['plan_tier'])
-        ->and($targets['plan_tiers'])->toBe([1000, 1200, 1500, 1800, 2000]);
+        ->and($targets['plan_tiers'])->toBe([1250, 1500, 1800, 2000]);
 });
 
 it('applies a maintain calorie range from TDEE to TDEE + 100', function () {
@@ -97,8 +97,8 @@ it('uses ketobiotic macro percentages for ketobiotic diet protocol', function ()
 it('uses balanced macro split by default', function () {
     $percentages = OnboardingDailyTargetsCalculator::macroPercentagesForDietProtocol(DietProtocol::Balanced);
 
-    expect($percentages['protein_percentage'])->toBe(40.0)
-        ->and($percentages['carb_percentage'])->toBe(30.0)
+    expect($percentages['protein_percentage'])->toBe(35.0)
+        ->and($percentages['carb_percentage'])->toBe(35.0)
         ->and($percentages['fat_percentage'])->toBe(30.0);
 });
 
@@ -118,8 +118,8 @@ it('uses balanced macros for cycle sync during luteal phase', function () {
         CyclePhase::Luteal,
     );
 
-    expect($percentages['carb_percentage'])->toBe(30.0)
-        ->and($percentages['protein_percentage'])->toBe(40.0);
+    expect($percentages['carb_percentage'])->toBe(35.0)
+        ->and($percentages['protein_percentage'])->toBe(35.0);
 });
 
 it('builds period tracking data with a current phase', function () {

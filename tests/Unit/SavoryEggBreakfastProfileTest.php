@@ -60,3 +60,10 @@ test('legacy halloumi scramble name still resolves as sunday savory breakfast', 
         ->and(SavoryEggBreakfastMeals::isSavoryEggBreakfast('Halloumi & Spinach Scramble'))->toBeTrue()
         ->and(SavoryEggBreakfastMeals::isDairyForwardBreakfast('Halloumi & Spinach Scramble'))->toBeTrue();
 });
+
+test('legacy butternut squash eggs name resolves to the frittata', function (): void {
+    expect(SavoryEggBreakfastMeals::canonicalMealName('Butternut Squash & Eggs'))
+        ->toBe('Butternut Squash Frittata')
+        ->and(SavoryEggBreakfastMeals::isSavoryEggBreakfast('Butternut Squash & Eggs'))->toBeTrue()
+        ->and(SavoryEggBreakfastMeals::isDairyForwardBreakfast('Butternut Squash & Eggs'))->toBeTrue();
+});

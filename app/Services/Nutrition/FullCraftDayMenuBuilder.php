@@ -14,6 +14,7 @@ use App\Support\NutrientDenseBreakfastOptions;
 use App\Support\NutrientDenseDessertMeals;
 use App\Support\PrimaryFullCraftMainSlots;
 use App\Support\SavoryEggBreakfastMeals;
+use App\Support\ScheduledTiersMealResolver;
 use Illuminate\Support\Collection;
 
 /**
@@ -221,7 +222,7 @@ final class FullCraftDayMenuBuilder
             $slotIndex = (int) $row->slot_index;
 
             if ($slotType === MealPlanSlotType::Main && in_array($slotIndex, [1, 2, 3, 4, 5, 6], true)) {
-                $carouselMainsBySlot[$slotIndex] = $row->meal;
+                $carouselMainsBySlot[$slotIndex] = self::resolveMealForProfile($row->meal, $slotType, $profile);
 
                 continue;
             }
@@ -763,6 +764,8 @@ final class FullCraftDayMenuBuilder
 
     private static function resolveMealForProfile(Meal $meal, MealPlanSlotType $slotType, CustomerProfile $profile): Meal
     {
+        $meal = ScheduledTiersMealResolver::forMeal($meal);
+
         if ($slotType === MealPlanSlotType::Breakfast) {
             return SavoryEggBreakfastMeals::resolveMealForProfile($meal, $profile);
         }

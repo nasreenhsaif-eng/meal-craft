@@ -1,10 +1,9 @@
-import Button from '../Button.jsx';
+import Button from './Button.jsx';
 
 /** Figma: primary button default / hover / pressed (node `2482-2384`). */
 const figmaPrimaryButtonFrame =
     'https://www.figma.com/design/YayN7FsAJ6xwrtGUGxna8N/Meal-Craft-App?node-id=2482-2384&t=GM8JRTExU032TFhm-4';
 
-/** Copy deck: common actions — `secondary` is the soft brand wash (merged from former SecondaryButton). */
 const buttonLabelSpecs = [
     { label: 'Save meal', variant: 'primary' },
     { label: 'Choose file', variant: 'ghost' },
@@ -17,12 +16,26 @@ const buttonLabelSpecs = [
 ];
 
 export default {
-    title: 'MealCraft/Atoms/Buttons & Links/Buttons',
+    title: 'Design System/02. Atoms/Button',
     component: Button,
+    decorators: [
+        (Story) => (
+            <div className="min-h-screen w-full bg-white p-6">
+                <Story />
+            </div>
+        ),
+    ],
     parameters: {
+        canvasBackground: 'white',
         design: {
             type: 'figma',
             url: figmaPrimaryButtonFrame,
+        },
+        docs: {
+            description: {
+                component:
+                    'Single action button atom. Variants: primary, secondary, outline (same as ghost), ghost, tab (same wash as secondary).',
+            },
         },
     },
     argTypes: {
@@ -35,7 +48,7 @@ export default {
         },
         variant: {
             control: 'select',
-            options: ['primary', 'secondary', 'outline', 'ghost'],
+            options: ['primary', 'secondary', 'outline', 'ghost', 'tab'],
         },
         disabled: { control: 'boolean' },
     },
@@ -45,9 +58,7 @@ export const Primary = {
     args: {
         label: 'Save meal',
         variant: 'primary',
-        size: "sm",
-        className: "",
-        type: "button"
+        size: 'sm',
     },
     parameters: {
         design: {
@@ -62,32 +73,48 @@ export const Secondary = {
         label: 'Learn more',
         variant: 'secondary',
     },
-    parameters: {
-        design: {
-            type: 'figma',
-            url: figmaPrimaryButtonFrame,
-        },
-    },
 };
 
 export const Outline = {
     args: {
-        label: 'View details',
+        label: 'Outline',
         variant: 'outline',
-    },
-    parameters: {
-        design: {
-            type: 'figma',
-            url: figmaPrimaryButtonFrame,
-        },
     },
 };
 
-/** Former SecondaryButton row — soft wash variant. */
+export const Ghost = {
+    args: {
+        label: 'View details',
+        variant: 'ghost',
+    },
+};
+
+export const Tab = {
+    args: {
+        label: 'Day 1',
+        variant: 'tab',
+        size: 'sm',
+    },
+};
+
+export const AllVariants = {
+    name: 'All variants',
+    render: () => (
+        <div className="flex flex-wrap items-center gap-3">
+            <Button label="Primary" variant="primary" size="sm" />
+            <Button label="Secondary" variant="secondary" size="sm" />
+            <Button label="Outline" variant="outline" size="sm" />
+            <Button label="Ghost" variant="ghost" size="sm" />
+            <Button label="Tab" variant="tab" size="sm" />
+            <Button label="Disabled" variant="primary" size="sm" disabled />
+        </div>
+    ),
+};
+
 export const SecondaryRow = {
     name: 'Secondary row',
     render: () => (
-        <div className="flex flex-wrap items-center gap-3 bg-white p-6 dark:bg-zinc-900">
+        <div className="flex flex-wrap items-center gap-3 bg-white p-6">
             <Button label="Nutrition tips" variant="secondary" />
             <Button label="View guidelines" variant="secondary" />
             <Button label="Cycle sync" variant="secondary" />
@@ -95,11 +122,10 @@ export const SecondaryRow = {
     ),
 };
 
-/** Same `md` / `sm` sizing — primary vs outline alignment. */
 export const OutlineWithPrimary = {
     name: 'Outline with primary',
     render: () => (
-        <div className="flex flex-wrap items-center gap-3 bg-white p-4 dark:bg-zinc-900">
+        <div className="flex flex-wrap items-center gap-3 bg-white p-4">
             <Button label="Save meal" variant="primary" />
             <Button label="View details" variant="outline" />
         </div>
@@ -116,21 +142,19 @@ export const ButtonLabels = {
     ),
 };
 
-export const SecondaryShortLabel = {
-    name: 'Secondary (short label)',
-    args: {
-        label: 'OK',
-        variant: 'secondary',
-    },
-};
-
 export const States = {
-    name: 'States (primary / secondary / ghost)',
+    name: 'States (all variants)',
+    parameters: {
+        canvasBackground: 'white',
+        layout: 'fullscreen',
+    },
     render: () => (
-        <div className="flex flex-wrap items-center gap-3 bg-white p-6 dark:bg-zinc-900">
+        <div className="flex min-h-screen w-full flex-wrap content-start items-start gap-3 bg-white p-6">
             <Button label="Primary" variant="primary" size="sm" />
             <Button label="Secondary" variant="secondary" size="sm" />
+            <Button label="Outline" variant="outline" size="sm" />
             <Button label="Ghost" variant="ghost" size="sm" />
+            <Button label="Tab" variant="tab" size="sm" />
             <Button label="Disabled" variant="primary" size="sm" disabled />
         </div>
     ),
@@ -139,7 +163,7 @@ export const States = {
 export const Interactions = {
     name: 'Interactions (hover + click)',
     render: () => (
-        <div className="flex flex-wrap items-center gap-3 bg-white p-6 dark:bg-zinc-900">
+        <div className="flex flex-wrap items-center gap-3 bg-white p-6">
             <Button label="Hover & click me" variant="primary" size="sm" />
         </div>
     ),

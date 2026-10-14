@@ -27,18 +27,6 @@ class AdaptedMenuController extends Controller
         $includeSoup = $request->boolean('include_soup');
         $buildOptions = AdaptedMenuBuildOptionsFromRequest::resolve($request, $user);
 
-        $isAdminPreview = $user->isAdmin() && $user->isCustomer() !== true;
-
-        if (isset($buildOptions['plan_tier']) && $isAdminPreview) {
-            $planTier = (int) $buildOptions['plan_tier'];
-
-            if ((int) $profile->daily_calorie_target !== $planTier) {
-                $profile->daily_calorie_target = $planTier;
-                $profile->save();
-                $profile->refresh();
-            }
-        }
-
         $menu = AdaptedMenuBuilder::build($profile, $buildOptions);
 
         return response()->json([

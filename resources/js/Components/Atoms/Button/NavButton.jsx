@@ -87,6 +87,9 @@ export default function NavButton({ icon, label, isActive = false, href, onClick
         if (key === 'Meal Library') {
             return <IconMealHub />;
         }
+        if (key === 'Meal Tiers Library') {
+            return <IconMealHub />;
+        }
         if (key === 'Meal Plan Library') {
             return <IconCalendar />;
         }

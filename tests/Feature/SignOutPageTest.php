@@ -10,6 +10,8 @@ test('authenticated users can view the sign out page with logout control', funct
         ->get(route('sign-out'))
         ->assertOk()
         ->assertSee('Log out', false)
+        ->assertSee('bg-[#5A6B44]', false)
+        ->assertDontSee('customer signup', false)
         ->assertSee($admin->email, false);
 });
 

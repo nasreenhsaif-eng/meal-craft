@@ -2,7 +2,6 @@ import {
     IconBalanced,
     IconCycleSync,
     IconKetobiotic,
-    IconNutrientDense,
     IconSickleCellWarrior,
     IconThyroid,
 } from './DietProtocolIcons.jsx';
@@ -27,16 +26,10 @@ export const AUTO_ADVANCE_DIET_PROTOCOL_ID = 'balanced';
 export const DIET_PROTOCOL_OPTIONS = [
     {
         id: 'balanced',
-        label: 'Balanced Protocol',
-        description: 'Flexible macros with varied whole foods for everyday wellness.',
-        Icon: IconBalanced,
-    },
-    {
-        id: 'nutrient_dense',
-        label: 'Nutrient Density Protocol',
+        label: 'Balanced Anti-inflammatory',
         description:
-            'Micronutrient-optimized whole foods — 98% daily RDI targets at 1500+ kcal. Recommended minimum tier: 1500 kcal.',
-        Icon: IconNutrientDense,
+            'Nutrient-dense meal plan with balanced macronutrients and anti-inflammatory whole foods.',
+        Icon: IconBalanced,
     },
     {
         id: 'ketobiotic',

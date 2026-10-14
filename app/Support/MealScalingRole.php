@@ -57,6 +57,7 @@ final class MealScalingRole
             'curry',
             'pesto',
             'hummus',
+            'stew',
         ] as $needle) {
             if (str_contains($name, $needle)) {
                 return true;

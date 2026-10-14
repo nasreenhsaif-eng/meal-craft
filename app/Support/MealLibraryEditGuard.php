@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Enums\MealLibraryKey;
 use App\Models\Ingredient;
 use App\Models\Meal;
 use Illuminate\Support\Facades\Schema;
@@ -17,6 +18,23 @@ final class MealLibraryEditGuard
         return $meal !== null
             && Schema::hasColumn('meals', 'library_edited_at')
             && $meal->library_edited_at !== null;
+    }
+
+    /**
+     * Meal Tiers Library rows are marked edited when calorie tabs are generated; that lock
+     * protects ingredients and macros, not written cooking instructions.
+     */
+    public static function shouldSkipMealInstructionRefinement(?Meal $meal): bool
+    {
+        if ($meal === null) {
+            return false;
+        }
+
+        if ($meal->library_key === MealLibraryKey::Tiers) {
+            return false;
+        }
+
+        return self::shouldSkipMealRefinement($meal);
     }
 
     /**

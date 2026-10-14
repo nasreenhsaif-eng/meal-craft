@@ -89,6 +89,9 @@ test('admin can save meal plan default day selections', function (): void {
     $this->actingAs($user)
         ->put(route('admin.meal-plan-library.default-selections', $plan), [
             'selections' => $selections,
+            'description' => 'Test description',
+            'published_starts_on' => '2026-09-27',
+            'published_ends_on' => '2026-10-03',
         ])
         ->assertRedirect(route('admin.meal-plan-library.show', $plan));
 

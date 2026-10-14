@@ -7,7 +7,7 @@ return [
     | Customer plan calorie tiers (kcal / day)
     |--------------------------------------------------------------------------
     */
-    'plan_tiers' => [1000, 1200, 1500, 1800, 2000],
+    'plan_tiers' => [1250, 1500, 1800, 2000],
 
     /*
     |--------------------------------------------------------------------------
@@ -16,9 +16,10 @@ return [
     |
     | Full Craft day = breakfast + 2× main_each + fixed_choice_count × fixed_choice_calories.
     |
-    | Breakfast is tier-fixed: it only changes with the plan tier (1000/1200/…/2000),
+    | Breakfast is tier-fixed: it only changes with the plan tier (1250/1500/1800/2000),
     | never when the customer picks a heavier/lighter side, dessert, or soup.
-    | Fixed-pick overshoot/undershoot vs the 2×150 budget is absorbed by mains only.
+    | Classic library still absorbs fixed-pick overshoot/undershoot into mains only.
+    | Weekly-protocol crafts overwrite those mains with CraftLibraryTierMap tabs.
     |
     | Main scaling levers: protein + starchy carbs. Cooking fat (olive oil / butter)
     | and vegetables are kitchen floors and are not trimmed. Herbs/spices follow the
@@ -26,11 +27,10 @@ return [
     |
     */
     'tier_slot_calories' => [
-        1000 => ['breakfast' => 200.0, 'main_each' => 250.0],
-        1200 => ['breakfast' => 200.0, 'main_each' => 350.0],
-        1500 => ['breakfast' => 300.0, 'main_each' => 450.0],
-        1800 => ['breakfast' => 400.0, 'main_each' => 550.0],
-        2000 => ['breakfast' => 450.0, 'main_each' => 625.0],
+        1250 => ['breakfast' => 300.0, 'main_each' => 400.0],
+        1500 => ['breakfast' => 300.0, 'main_each' => 400.0],
+        1800 => ['breakfast' => 400.0, 'main_each' => 500.0],
+        2000 => ['breakfast' => 500.0, 'main_each' => 600.0],
     ],
 
     /*
@@ -143,6 +143,7 @@ return [
     'savory_egg_breakfast_tier_counts' => [
         1000 => 2,
         1200 => 2,
+        1250 => 3,
         1500 => 3,
         1800 => 4,
         2000 => 4,
@@ -189,6 +190,7 @@ return [
             'Olive Oil' => 5.0,
             'Olive Oil (Extra Virgin)' => 5.0,
             'Sweet Potato' => 100.0,
+            'Butternut Squash' => 80.0,
         ],
         'per_meal_minimum_grams' => [
             'Sweet Potato Egg Hash' => [
@@ -197,6 +199,11 @@ return [
                 'Bell Pepper (Red)' => 50.0,
                 'Spinach (Fresh)' => 30.0,
                 'Olive Oil' => 5.0,
+            ],
+            'Butternut Squash Frittata' => [
+                'Butternut Squash' => 80.0,
+                'Olive Oil' => 10.0,
+                'Red Onion' => 25.0,
             ],
         ],
         'herb_spice_maximum_grams' => [
@@ -227,6 +234,7 @@ return [
         'Beetroot',
         'Zucchini',
         'Pumpkin',
+        'Butternut Squash',
         'Green Beans',
         'Mushrooms',
         'Carrots',

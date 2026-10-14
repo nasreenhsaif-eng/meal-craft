@@ -118,8 +118,14 @@ export function OnboardingHeightInner({
                     onSubmit?.();
                 }}
             >
-                <div className="flex w-full items-center justify-center gap-4 sm:gap-5">
-                    <div className={`min-w-0 shrink-0 ${unit === 'cm' ? 'w-[168px]' : 'w-[248px]'}`}>
+                <div className="flex w-full min-w-0 items-center justify-center gap-2 sm:gap-5">
+                    <div
+                        className={
+                            unit === 'cm'
+                                ? 'w-[148px] min-w-0 shrink-0 sm:w-[168px]'
+                                : 'w-[168px] max-w-[calc(100%-5.5rem)] min-w-0 shrink sm:w-[220px] sm:max-w-none sm:shrink-0'
+                        }
+                    >
                         {unit === 'cm' ? (
                             <WheelNumberPicker
                                 ariaLabel="Height in centimeters"

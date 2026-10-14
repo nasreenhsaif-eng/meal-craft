@@ -25,7 +25,13 @@ test('customers cannot access the admin dashboard', function () {
 
 test('customers cannot access kitchen routes', function () {
     $customer = User::factory()->customer()->create();
-    CustomerProfile::factory()->for($customer)->create();
+    $profile = CustomerProfile::factory()->for($customer)->create();
+    $profile->craftPlans()->create([
+        'craft_key' => 'full',
+        'week_duration' => 5,
+        'selected_weekdays' => [1, 2, 3, 4, 5],
+        'submitted_at' => now(),
+    ]);
 
     $this->actingAs($customer)
         ->get(route('meals.index'))
@@ -89,14 +95,30 @@ test('admin users are redirected to the portal choice screen after login', funct
     ])->assertRedirect(route('login.portal-choice', absolute: false));
 });
 
-test('customer users with completed onboarding are redirected to the app after login', function () {
+test('customers with completed onboarding and a submitted meal plan land on welcome back after login', function () {
+    $customer = User::factory()->customer()->create();
+    $profile = CustomerProfile::factory()->for($customer)->create();
+    $profile->craftPlans()->create([
+        'craft_key' => 'full',
+        'week_duration' => 5,
+        'selected_weekdays' => [1, 2, 3, 4, 5],
+        'submitted_at' => now(),
+    ]);
+
+    $this->post(route('login.store'), [
+        'email' => $customer->email,
+        'password' => 'password',
+    ])->assertRedirect(route('app.home', absolute: false));
+});
+
+test('customers with completed onboarding but no meal plan are sent to crafted for you after login', function () {
     $customer = User::factory()->customer()->create();
     CustomerProfile::factory()->for($customer)->create();
 
     $this->post(route('login.store'), [
         'email' => $customer->email,
         'password' => 'password',
-    ])->assertRedirect(route('app.home', absolute: false));
+    ])->assertRedirect(route('consultation.crafted-for-you', absolute: false));
 });
 
 test('customer users are redirected to onboarding after login', function () {

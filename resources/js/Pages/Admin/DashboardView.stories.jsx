@@ -4,7 +4,7 @@ import { ADMIN_NAV_PATHS } from '../../Components/Admin/AdminSidebar.jsx';
 import { AdminDashboardInner } from './Dashboard.jsx';
 
 export default {
-    title: 'MealCraft/Pages/Admin/DashboardView',
+    title: 'Design System/05. Templates & Pages/DashboardLayout',
     component: AdminDashboardInner,
     parameters: { layout: 'fullscreen' },
 };

@@ -45,6 +45,10 @@ class DayMacroReconciliation
             return ['dayMenu' => $dayMenu, 'warnings' => []];
         }
 
+        if (self::dayMenuUsesLibraryTierPlates($dayMenu)) {
+            return ['dayMenu' => $dayMenu, 'warnings' => []];
+        }
+
         $plan = UserPlanCalculator::calculateUserPlan($profile, $options);
         $plan = CraftCaloriePlanner::applyCraftToPlan($plan, $craftKey);
         $plan = AdaptedMenuBuilder::planWithBreakfastFloorRebalanceForProfile($profile, $plan, $options);
@@ -111,6 +115,29 @@ class DayMacroReconciliation
         }
 
         return ['dayMenu' => $dayMenu, 'warnings' => $warnings];
+    }
+
+    /**
+     * @param  array{
+     *     breakfasts?: list<array<string, mixed>>,
+     *     meals?: list<array<string, mixed>>,
+     * }  $dayMenu
+     */
+    private static function dayMenuUsesLibraryTierPlates(array $dayMenu): bool
+    {
+        $mains = $dayMenu['meals'] ?? [];
+
+        if ($mains === []) {
+            return false;
+        }
+
+        foreach ($mains as $meal) {
+            if (! is_array($meal) || ! isset($meal['library_calorie_tier'])) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**

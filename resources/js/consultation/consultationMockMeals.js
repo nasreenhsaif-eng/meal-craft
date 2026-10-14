@@ -7,6 +7,7 @@ export const consultationMeals = [
         mealType: 'Breakfast',
         category: 'Breakfast',
         prepMinutes: 18,
+        savoryEggCount: 3,
         macros: { calories: 312, protein: '28g', carbs: '12g', fat: '16g' },
         tags: [
             { label: 'Breakfast', type: 'category' },
@@ -23,6 +24,7 @@ export const consultationMeals = [
         mealType: 'Breakfast',
         category: 'Breakfast',
         prepMinutes: 8,
+        savoryEggCount: 2,
         macros: { calories: 380, protein: '26g', carbs: '44g', fat: '11g' },
         tags: [
             { label: 'Breakfast', type: 'category' },

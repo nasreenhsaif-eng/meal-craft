@@ -3,11 +3,16 @@
 namespace App\Services;
 
 use App\Enums\CustomerCraftMealSlot;
+use App\Enums\MealScalingRole as MealScalingRoleEnum;
 use App\Models\CustomerCraftPlanDay;
 use App\Models\CustomerCraftPlanDayMeal;
+use App\Models\Ingredient;
 use App\Models\Meal;
 use App\Services\Nutrition\AdaptedMenuBuilder;
 use App\Services\Nutrition\DayMacroReconciliation;
+use App\Support\EggIngredientPresentation;
+use App\Support\IngredientCookingYield;
+use App\Support\MealScalingRole;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
@@ -26,6 +31,7 @@ final class CustomerCraftKitchenSheetService
      *     sideSalad: string,
      *     dessert: string,
      *     cutlery: string,
+     *     kitchen_instructions: string,
      *     specialRequests: string,
      *     allergies: string,
      *     adapted_meals: list<array<string, mixed>>
@@ -226,9 +232,10 @@ final class CustomerCraftKitchenSheetService
                     continue;
                 }
 
+                $position = $mainPositions[$index] ?? ($index + 1);
+                $adapted['kitchen_section'] = $position === 1 ? 'meal 1' : 'meal 2';
                 $adaptedMeals[] = $adapted;
                 $label = self::mealLabelWithPortion($adapted);
-                $position = $mainPositions[$index] ?? ($index + 1);
 
                 if ($position === 1) {
                     $slotLabels['m1'] = $label;
@@ -250,6 +257,12 @@ final class CustomerCraftKitchenSheetService
                         continue;
                     }
 
+                    $adapted['kitchen_section'] = match ($slot) {
+                        CustomerCraftMealSlot::Breakfast => 'breakfast',
+                        CustomerCraftMealSlot::Soup => 'soup',
+                        CustomerCraftMealSlot::SideSalad => 'side salad',
+                        CustomerCraftMealSlot::Dessert => 'dessert',
+                    };
                     $adaptedMeals[] = $adapted;
                     $label = self::mealLabelWithPortion($adapted);
 
@@ -276,6 +289,7 @@ final class CustomerCraftKitchenSheetService
                 'sideSalad' => $slotLabels['sideSalad'],
                 'dessert' => $slotLabels['dessert'],
                 'cutlery' => '',
+                'kitchen_instructions' => self::kitchenInstructionsFromAdaptedMeals($adaptedMeals),
                 'specialRequests' => '',
                 'allergies' => $allergies !== '' ? $allergies : '—',
                 'adapted_meals' => $adaptedMeals,
@@ -283,6 +297,271 @@ final class CustomerCraftKitchenSheetService
         }
 
         return $rows;
+    }
+
+    /**
+     * Per-meal kitchen plating notes with cooked/plated grams, e.g.
+     * breakfast: 3 eggs, vegetables: 100g, carbs: 120g
+     * meal 1: chicken 120g, carbs: 180g, vegetables: 50g, sauce: 50g
+     *
+     * @param  list<array<string, mixed>>  $adaptedMeals
+     */
+    public static function kitchenInstructionsFromAdaptedMeals(array $adaptedMeals): string
+    {
+        $ingredientIds = [];
+
+        foreach ($adaptedMeals as $adaptedMeal) {
+            $ingredients = is_array($adaptedMeal['ingredients'] ?? null) ? $adaptedMeal['ingredients'] : [];
+
+            foreach ($ingredients as $ingredientRow) {
+                $ingredientId = (int) ($ingredientRow['id'] ?? 0);
+
+                if ($ingredientId > 0) {
+                    $ingredientIds[$ingredientId] = $ingredientId;
+                }
+            }
+        }
+
+        if ($ingredientIds === [] && ! self::adaptedMealsHaveBreakfastEggCount($adaptedMeals)) {
+            return '';
+        }
+
+        /** @var Collection<int, Ingredient> $ingredientsById */
+        $ingredientsById = $ingredientIds === []
+            ? collect()
+            : Ingredient::query()
+                ->whereIn('id', array_values($ingredientIds))
+                ->get()
+                ->keyBy(static fn (Ingredient $ingredient): int => (int) $ingredient->id);
+
+        /** @var Collection<int, Meal> $mealsById */
+        $mealsById = Meal::query()
+            ->whereIn(
+                'id',
+                collect($adaptedMeals)
+                    ->map(static fn (array $meal): int => (int) ($meal['id'] ?? 0))
+                    ->filter(static fn (int $id): bool => $id > 0)
+                    ->unique()
+                    ->values()
+                    ->all(),
+            )
+            ->get()
+            ->keyBy(static fn (Meal $meal): int => (int) $meal->id);
+
+        /** @var array<string, array{egg_count: int, egg_grams_fallback: float, proteins: array<string, float>, carbs: float, vegetables: float, sauce: float}> $sections */
+        $sections = [];
+
+        foreach ($adaptedMeals as $adaptedMeal) {
+            $sectionKey = self::kitchenSectionKey($adaptedMeal);
+
+            if ($sectionKey === null) {
+                continue;
+            }
+
+            if (! isset($sections[$sectionKey])) {
+                $sections[$sectionKey] = [
+                    'egg_count' => 0,
+                    'egg_grams_fallback' => 0.0,
+                    'proteins' => [],
+                    'carbs' => 0.0,
+                    'vegetables' => 0.0,
+                    'sauce' => 0.0,
+                ];
+            }
+
+            $meal = $mealsById->get((int) ($adaptedMeal['id'] ?? 0));
+            $ingredients = is_array($adaptedMeal['ingredients'] ?? null) ? $adaptedMeal['ingredients'] : [];
+            $isBreakfast = $sectionKey === 'breakfast';
+            $hasSavoryEggCount = $isBreakfast && array_key_exists('savory_egg_count', $adaptedMeal);
+
+            if ($hasSavoryEggCount) {
+                $sections[$sectionKey]['egg_count'] += max(0, (int) $adaptedMeal['savory_egg_count']);
+            }
+
+            foreach ($ingredients as $ingredientRow) {
+                $grams = (float) ($ingredientRow['adapted_amount_grams'] ?? 0);
+
+                if ($grams <= 0) {
+                    continue;
+                }
+
+                $ingredient = $ingredientsById->get((int) ($ingredientRow['id'] ?? 0));
+
+                if ($ingredient === null) {
+                    continue;
+                }
+
+                if ($isBreakfast && EggIngredientPresentation::isWholeEggIngredient($ingredient)) {
+                    if (! $hasSavoryEggCount) {
+                        $sections[$sectionKey]['egg_grams_fallback'] += $grams;
+                    }
+
+                    continue;
+                }
+
+                if ($isBreakfast && EggIngredientPresentation::isEggWhiteIngredient($ingredient) && $hasSavoryEggCount) {
+                    continue;
+                }
+
+                $cookedGrams = IngredientCookingYield::estimatedCookedGrams($ingredient, $grams);
+                $role = MealScalingRole::roleForIngredient($ingredient, $meal);
+
+                if ($role === MealScalingRoleEnum::Protein) {
+                    self::addKitchenProteinGrams(
+                        $sections[$sectionKey]['proteins'],
+                        (string) $ingredient->name,
+                        $cookedGrams,
+                    );
+
+                    continue;
+                }
+
+                match ($role) {
+                    MealScalingRoleEnum::Carb => $sections[$sectionKey]['carbs'] += $cookedGrams,
+                    MealScalingRoleEnum::Vegetable => $sections[$sectionKey]['vegetables'] += $cookedGrams,
+                    MealScalingRoleEnum::Sauce => $sections[$sectionKey]['sauce'] += $cookedGrams,
+                    default => null,
+                };
+            }
+        }
+
+        $lines = [];
+
+        foreach (['breakfast', 'meal 1', 'meal 2'] as $sectionKey) {
+            if (! isset($sections[$sectionKey])) {
+                continue;
+            }
+
+            $line = self::formatKitchenSectionLine($sectionKey, $sections[$sectionKey]);
+
+            if ($line !== '') {
+                $lines[] = $line;
+            }
+        }
+
+        return implode("\n", $lines);
+    }
+
+    /**
+     * @param  array<string, mixed>  $adaptedMeal
+     */
+    private static function kitchenSectionKey(array $adaptedMeal): ?string
+    {
+        $explicit = trim((string) ($adaptedMeal['kitchen_section'] ?? ''));
+
+        if (in_array($explicit, ['breakfast', 'meal 1', 'meal 2'], true)) {
+            return $explicit;
+        }
+
+        return match ((string) ($adaptedMeal['slot'] ?? '')) {
+            'breakfast' => 'breakfast',
+            'main' => 'meal 1',
+            default => null,
+        };
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $adaptedMeals
+     */
+    private static function adaptedMealsHaveBreakfastEggCount(array $adaptedMeals): bool
+    {
+        foreach ($adaptedMeals as $adaptedMeal) {
+            if (self::kitchenSectionKey($adaptedMeal) !== 'breakfast') {
+                continue;
+            }
+
+            if ((int) ($adaptedMeal['savory_egg_count'] ?? 0) > 0) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @param  array<string, float>  $proteinGramsByName
+     */
+    private static function addKitchenProteinGrams(array &$proteinGramsByName, string $name, float $grams): void
+    {
+        $label = self::kitchenProteinLabel($name);
+
+        if ($label === '') {
+            return;
+        }
+
+        $proteinGramsByName[$label] = ($proteinGramsByName[$label] ?? 0.0) + $grams;
+    }
+
+    private static function kitchenProteinLabel(string $name): string
+    {
+        $label = mb_strtolower(trim($name));
+        $label = preg_replace('/\s*\((?:raw|base|canned|large|cooked[^)]*)\)\s*$/iu', '', $label) ?? $label;
+        $label = trim($label);
+
+        return $label;
+    }
+
+    /**
+     * @param  array{egg_count: int, egg_grams_fallback: float, proteins: array<string, float>, carbs: float, vegetables: float, sauce: float}  $section
+     */
+    private static function formatKitchenSectionLine(string $sectionKey, array $section): string
+    {
+        $eggCount = (int) $section['egg_count'];
+
+        if ($eggCount <= 0 && $section['egg_grams_fallback'] > 0) {
+            $eggCount = (int) max(1, round(
+                $section['egg_grams_fallback'] / EggIngredientPresentation::LARGE_EGG_GRAMS,
+            ));
+        }
+
+        $parts = [];
+
+        if ($eggCount > 0) {
+            $parts[] = $eggCount === 1 ? '1 egg' : $eggCount.' eggs';
+        }
+
+        ksort($section['proteins'], SORT_NATURAL | SORT_FLAG_CASE);
+
+        foreach ($section['proteins'] as $name => $grams) {
+            if ($grams <= 0) {
+                continue;
+            }
+
+            $parts[] = $name.' '.self::formatKitchenGrams($grams);
+        }
+
+        if ($sectionKey === 'breakfast') {
+            if ($section['vegetables'] > 0) {
+                $parts[] = 'vegetables: '.self::formatKitchenGrams($section['vegetables']);
+            }
+
+            if ($section['carbs'] > 0) {
+                $parts[] = 'carbs: '.self::formatKitchenGrams($section['carbs']);
+            }
+        } else {
+            if ($section['carbs'] > 0) {
+                $parts[] = 'carbs: '.self::formatKitchenGrams($section['carbs']);
+            }
+
+            if ($section['vegetables'] > 0) {
+                $parts[] = 'vegetables: '.self::formatKitchenGrams($section['vegetables']);
+            }
+        }
+
+        if ($section['sauce'] > 0) {
+            $parts[] = 'sauce: '.self::formatKitchenGrams($section['sauce']);
+        }
+
+        if ($parts === []) {
+            return '';
+        }
+
+        return $sectionKey.': '.implode(', ', $parts);
+    }
+
+    private static function formatKitchenGrams(float $grams): string
+    {
+        return ((int) round($grams)).'g';
     }
 
     /**
@@ -354,5 +633,112 @@ final class CustomerCraftKitchenSheetService
         }
 
         return $lines;
+    }
+
+    /**
+     * Prepared base recipes used across the day's adapted meals, with totals for kitchen prep.
+     *
+     * @param  list<array{
+     *     adapted_meals?: list<array<string, mixed>>
+     * }>  $kitchenRows
+     * @return list<array{
+     *     id: int,
+     *     name: string,
+     *     instructions: string,
+     *     image_path: string|null,
+     *     finished_weight_grams: float|null,
+     *     total_adapted_grams: float,
+     *     usage_count: int,
+     *     components: list<array{id: int, name: string, amount_grams: float}>
+     * }>
+     */
+    public static function baseRecipesFromKitchenRows(array $kitchenRows): array
+    {
+        /** @var array<int, array{total_grams: float, usage_count: int}> $totalsById */
+        $totalsById = [];
+
+        foreach ($kitchenRows as $row) {
+            $adaptedMeals = is_array($row['adapted_meals'] ?? null) ? $row['adapted_meals'] : [];
+
+            foreach ($adaptedMeals as $adaptedMeal) {
+                $ingredients = is_array($adaptedMeal['ingredients'] ?? null) ? $adaptedMeal['ingredients'] : [];
+
+                foreach ($ingredients as $ingredientRow) {
+                    if (! (bool) ($ingredientRow['is_prepared_base'] ?? false)) {
+                        continue;
+                    }
+
+                    $ingredientId = (int) ($ingredientRow['id'] ?? 0);
+                    $grams = (float) ($ingredientRow['adapted_amount_grams'] ?? 0);
+
+                    if ($ingredientId <= 0 || $grams <= 0) {
+                        continue;
+                    }
+
+                    if (! isset($totalsById[$ingredientId])) {
+                        $totalsById[$ingredientId] = [
+                            'total_grams' => 0.0,
+                            'usage_count' => 0,
+                        ];
+                    }
+
+                    $totalsById[$ingredientId]['total_grams'] += $grams;
+                    $totalsById[$ingredientId]['usage_count'] += 1;
+                }
+            }
+        }
+
+        if ($totalsById === []) {
+            return [];
+        }
+
+        /** @var Collection<int, Ingredient> $basesById */
+        $basesById = Ingredient::query()
+            ->with('components')
+            ->whereIn('id', array_keys($totalsById))
+            ->get()
+            ->keyBy(static fn (Ingredient $ingredient): int => (int) $ingredient->id);
+
+        $out = [];
+
+        foreach ($totalsById as $ingredientId => $totals) {
+            $base = $basesById->get($ingredientId);
+
+            if ($base === null || ! $base->isPreparedBaseIngredient()) {
+                continue;
+            }
+
+            $components = $base->components
+                ->map(static fn (Ingredient $child): array => [
+                    'id' => (int) $child->id,
+                    'name' => (string) $child->name,
+                    'amount_grams' => round((float) ($child->pivot->amount_grams ?? 0), 2),
+                ])
+                ->filter(static fn (array $row): bool => $row['id'] > 0 && $row['name'] !== '' && $row['amount_grams'] > 0)
+                ->values()
+                ->all();
+
+            $out[] = [
+                'id' => (int) $base->id,
+                'name' => (string) $base->name,
+                'instructions' => (string) ($base->instructions ?? ''),
+                'image_path' => $base->image_path !== null && $base->image_path !== ''
+                    ? (string) $base->image_path
+                    : null,
+                'finished_weight_grams' => $base->finished_weight_grams !== null
+                    ? (float) $base->finished_weight_grams
+                    : null,
+                'total_adapted_grams' => round($totals['total_grams'], 2),
+                'usage_count' => (int) $totals['usage_count'],
+                'components' => $components,
+            ];
+        }
+
+        usort(
+            $out,
+            static fn (array $a, array $b): int => strcasecmp((string) $a['name'], (string) $b['name']),
+        );
+
+        return $out;
     }
 }

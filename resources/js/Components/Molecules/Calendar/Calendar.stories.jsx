@@ -33,7 +33,7 @@ function DashboardDemoChrome({ children }) {
 
 /** @type {import('@storybook/react-vite').Meta} */
 const meta = {
-    title: 'MealCraft/Components/Calendar',
+    title: 'Design System/03. Molecules/Form and pickers/Calendar',
     component: Calendar,
     parameters: {
         layout: 'padded',

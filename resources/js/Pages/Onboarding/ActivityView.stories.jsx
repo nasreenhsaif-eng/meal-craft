@@ -3,7 +3,7 @@ import { withOnboardingMobileFrame } from './onboardingStoryDecorators.jsx';
 import { ONBOARDING_STEPS } from './onboardingSteps.js';
 
 export default {
-    title: 'MealCraft/Pages/Onboarding/ActivityView',
+    title: 'Design System/05. Templates & Pages/Onboarding/ActivityView',
     component: OnboardingActivityInner,
     parameters: {
         layout: 'fullscreen',

@@ -17,7 +17,7 @@
     $listboxLabel = filled($label) ? $label : __('Options');
 @endphp
 
-<div {{ $attributes->class(['block w-full max-w-[492px] text-left']) }}>
+<div {{ $attributes->class(['block w-full min-w-0 max-w-full text-left']) }}>
     @if (filled($label))
         <label
             for="{{ $id }}"
@@ -40,7 +40,7 @@
             :aria-expanded="open"
             aria-label="Open dropdown"
             @click="open = !open"
-            class="relative flex h-[49px] w-full appearance-none items-center justify-between gap-3 overflow-hidden rounded-[12px] border border-[#E5E7EB] bg-[#FFFFFF] px-[20px] text-left font-montserrat text-[16px] font-medium tracking-tight text-[#364153] shadow-sm outline-none transition-[border-color,box-shadow,background-color] duration-200 hover:bg-[#F8F9F6] focus-visible:border-[#5A6B44] focus-visible:ring-2 focus-visible:ring-[#5A6B44] focus-visible:ring-offset-2"
+            class="relative box-border flex h-[49px] w-full min-w-0 max-w-full appearance-none items-center justify-between gap-3 overflow-hidden rounded-[12px] border border-[#E5E7EB] bg-[#FFFFFF] px-4 text-left font-montserrat text-[16px] font-medium tracking-tight text-[#364153] shadow-sm outline-none transition-[border-color,box-shadow,background-color] duration-200 hover:bg-[#F8F9F6] focus-visible:border-[#5A6B44] focus-visible:ring-2 focus-visible:ring-[#5A6B44] focus-visible:ring-offset-2 sm:px-5"
         >
             <span class="min-w-0 truncate">{{ filled($current) ? $current : $placeholder }}</span>
 

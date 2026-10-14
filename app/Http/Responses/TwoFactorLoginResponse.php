@@ -20,7 +20,7 @@ class TwoFactorLoginResponse implements TwoFactorLoginResponseContract
 
         $target = PostAuthenticationRedirect::pathFor($user);
 
-        $redirect = $user->isAdmin()
+        $redirect = $user->isAdmin() || $user->shouldLandOnWelcomeBack()
             ? redirect()->to($target)
             : redirect()->intended($target);
 
