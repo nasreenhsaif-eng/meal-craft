@@ -9,7 +9,12 @@ import UserSubmissions from './UserSubmissions.jsx';
 import KitchenDailySheet from './KitchenDailySheet.jsx';
 import KitchenShoppingList from './KitchenShoppingList.jsx';
 import { downloadCsv } from './logisticsCsvExport.js';
-import { mockUserSubmissions, mockKitchenDailyRows, mockIngredientChoiceLines } from './logisticsMockData.js';
+import {
+    mockAdaptedKitchenMeals,
+    mockKitchenBaseRecipes,
+    mockUserSubmissions,
+    mockKitchenDailyRows,
+} from './logisticsMockData.js';
 
 /** Simulates US Letter-ish sheet on screen; `@media print` relies on browser print. */
 function printPaperDecorator(Story) {
@@ -95,15 +100,16 @@ export const KitchenProductionPrintPreview = {
 };
 
 export const KitchenShoppingAggregated = {
-    name: 'Kitchen shopping — aggregated list',
+    name: 'Kitchen operation sheets — recipes + bulk',
     parameters: { layout: 'padded' },
     render: () => (
         <div className="mx-auto max-w-6xl bg-[#F9FAFB] p-6">
             <KitchenShoppingList
-                lines={mockIngredientChoiceLines}
+                adaptedMeals={mockAdaptedKitchenMeals}
+                baseRecipes={mockKitchenBaseRecipes}
                 dayLabel="Monday, Apr 14, 2026"
                 onGenerateCsvForDrive={() =>
-                    downloadCsv('kitchen-shopping-demo.csv', 'Section,Row,Value\nBulk,Salmon (g),1950')
+                    downloadCsv('kitchen-operations-demo.csv', 'Section,Row,Value\nBulk,Salmon (g),1950')
                 }
             />
         </div>
@@ -124,10 +130,11 @@ export const KitchenLogisticsInAdminLayout = {
                         onGenerateCsvForDrive={logisticsCsvDownload(`kitchen-daily-${d}`)}
                     />
                     <KitchenShoppingList
-                        lines={mockIngredientChoiceLines}
+                        adaptedMeals={mockAdaptedKitchenMeals}
+                        baseRecipes={mockKitchenBaseRecipes}
                         dayLabel={d}
                         onGenerateCsvForDrive={() =>
-                            downloadCsv(`kitchen-shopping-${d}.csv`, 'Section,Row,Value\nBulk,Salmon (g),1950')
+                            downloadCsv(`kitchen-operations-${d}.csv`, 'Section,Row,Value\nBulk,Salmon (g),1950')
                         }
                     />
                 </div>

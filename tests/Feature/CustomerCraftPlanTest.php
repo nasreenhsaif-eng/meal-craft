@@ -125,6 +125,7 @@ test('kitchen daily sheet returns adapted ingredient lines for scalable meals', 
 
     $ingredient = Ingredient::factory()->create([
         'name' => 'Chicken Breast',
+        'usda_food_category' => 'Proteins',
         'calories' => 100,
         'protein' => 20,
         'carbs' => 0,
@@ -161,6 +162,9 @@ test('kitchen daily sheet returns adapted ingredient lines for scalable meals', 
     $response->assertSuccessful()
         ->assertJsonPath('rows.0.customer_name', 'Jordan Lee')
         ->assertJsonPath('rows.0.m1', fn ($value) => str_contains((string) $value, 'Test Main'));
+
+    $kitchenInstructions = (string) $response->json('rows.0.kitchen_instructions');
+    expect($kitchenInstructions)->toContain('meal 1: chicken breast 150g');
 
     $lines = $response->json('ingredient_lines');
     expect($lines)->not->toBeEmpty()

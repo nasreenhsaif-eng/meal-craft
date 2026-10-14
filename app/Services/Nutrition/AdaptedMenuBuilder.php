@@ -1775,6 +1775,7 @@ final class AdaptedMenuBuilder
                     ? round((float) $pivotAmount * ($adaptedGrams / $baselineGrams), 4)
                     : null,
                 'unit' => $hasDisplayAmount ? (string) $unitRaw : 'g',
+                'is_prepared_base' => $ingredient->isPreparedBaseIngredient(),
                 'adapted_macros' => [
                     'calories' => round(((float) ($per100['calories'] ?? 0)) * $factor, 2),
                     'protein' => round(((float) ($per100['protein'] ?? 0)) * $factor, 2),
@@ -1851,6 +1852,7 @@ final class AdaptedMenuBuilder
                 'baseline_amount' => $hasDisplayAmount ? (float) $pivotAmount : null,
                 'adapted_amount' => $hasDisplayAmount ? round((float) $pivotAmount * $multiplier, 4) : null,
                 'unit' => $hasDisplayAmount ? (string) $unitRaw : 'g',
+                'is_prepared_base' => $ingredient->isPreparedBaseIngredient(),
                 'adapted_macros' => [
                     'calories' => round(((float) ($per100['calories'] ?? 0)) * $factor, 2),
                     'protein' => round(((float) ($per100['protein'] ?? 0)) * $factor, 2),

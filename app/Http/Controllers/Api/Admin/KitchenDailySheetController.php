@@ -28,10 +28,13 @@ class KitchenDailySheetController extends Controller
             ], 422);
         }
 
+        $rows = CustomerCraftKitchenSheetService::kitchenRowsForDate($productionDate);
+
         return response()->json([
             'production_date' => $productionDate->toDateString(),
-            'rows' => CustomerCraftKitchenSheetService::kitchenRowsForDate($productionDate),
+            'rows' => $rows,
             'ingredient_lines' => CustomerCraftKitchenSheetService::ingredientLinesForDate($productionDate),
+            'base_recipes' => CustomerCraftKitchenSheetService::baseRecipesFromKitchenRows($rows),
         ]);
     }
 }
