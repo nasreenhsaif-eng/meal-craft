@@ -24,15 +24,3 @@ export const BelowThreshold = {
         </div>
     ),
 };
-
-export const HiddenWhenAbove = {
-    name: 'Above 1200 — renders nothing',
-    render: () => (
-        <div className="w-full px-3 py-4 sm:mx-auto sm:max-w-[40rem] sm:px-6 sm:py-8">
-            <p className="mb-3 font-body text-sm text-[#555555]">
-                Expect an empty canvas when the plan is above 1200 kcal.
-            </p>
-            <CaloricThresholdNotice planTierCalories={1250} />
-        </div>
-    ),
-};

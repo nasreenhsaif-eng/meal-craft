@@ -9,7 +9,7 @@ export default {
         docs: {
             description: {
                 component:
-                    'Checkout fulfillment choice after the meal-plan dashboard — fresh kitchen delivery or DIY digital recipes.',
+                    'Checkout fulfillment choice after the meal-plan dashboard — vertical Partner Kitchen / DIY options with expandable details and Next (same pattern as diet protocol).',
             },
         },
     },

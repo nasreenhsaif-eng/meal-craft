@@ -1,6 +1,5 @@
 import { Link, router } from '@inertiajs/react';
 import PartnerKitchenCard from '../../Components/Checkout/PartnerKitchenCard.jsx';
-import CustomerAppHeaderActions from '../../Components/Molecules/Customer/CustomerAppHeaderActions.jsx';
 import CustomerInertiaShell from '../../Layouts/CustomerInertiaShell.jsx';
 import { resolveInertiaLayoutChild } from '../../lib/resolveInertiaLayoutChild.js';
 
@@ -18,7 +17,7 @@ export default function Delivery({
     homeUrl = '/app',
 }) {
     return (
-        <CustomerInertiaShell customerName={customerName} headerActions={<CustomerAppHeaderActions />}>
+        <CustomerInertiaShell customerName={customerName}>
             <div className="mx-auto w-full max-w-3xl">
                 <Link
                     href={fulfillmentUrl}

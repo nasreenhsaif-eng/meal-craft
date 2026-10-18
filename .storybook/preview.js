@@ -251,6 +251,7 @@ const preview = {
                         `${pagesBase}SettingsView`,
                         `${pagesBase}Auth`,
                         `${pagesBase}Onboarding`,
+                        `${pagesBase}App`,
                         `${pagesBase}Admin`,
                         `${pagesBase}Crafted for you`,
                     ];

@@ -51,6 +51,9 @@ class CheckoutController extends Controller
             'submitUrl' => route('checkout.details.store'),
             'deliveryUrl' => route('checkout.delivery'),
             'homeUrl' => route('app.home'),
+            'profileUrl' => route('app.profile'),
+            'shopUrl' => route('app.shop'),
+            'mealPlanSummaryUrl' => route('app.meal-plan'),
         ]);
     }
 

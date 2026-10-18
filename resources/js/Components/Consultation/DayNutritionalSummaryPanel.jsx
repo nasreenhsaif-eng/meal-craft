@@ -114,10 +114,10 @@ function SummarySection({ title, description, children, tone = 'white' }) {
         tone === 'muted' ? 'border-gray-200 bg-[#F8F9F6]' : 'border-gray-200 bg-white';
 
     return (
-        <div className={`rounded-[12px] border px-4 py-4 sm:px-5 ${toneClass}`}>
+        <div className={`rounded-[12px] border px-2 py-4 sm:px-5 ${toneClass}`}>
             <p className="font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#374151]">{title}</p>
             {description ? <p className="mt-1 font-body text-xs text-[#6B7280]">{description}</p> : null}
-            <div className="mt-4">{children}</div>
+            <div className="mt-4 min-w-0">{children}</div>
         </div>
     );
 }
@@ -271,16 +271,16 @@ function MicronutrientRdiTable({ rows }) {
             aria-label="Micronutrients with percent RDI"
             className="overflow-x-auto rounded-[12px] border border-gray-200 bg-white"
         >
-            <table className="w-full min-w-[320px] border-collapse text-left text-sm">
+            <table className="w-full min-w-0 border-collapse text-left text-sm">
                 <thead>
                     <tr className="border-b border-gray-200 bg-[#F8F9F6]">
-                        <th className="px-3 py-2.5 font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#374151]">
+                        <th className="px-2 py-2 font-montserrat text-[10px] font-bold uppercase tracking-[0.1em] text-[#374151] sm:px-3 sm:py-2.5 sm:text-xs sm:tracking-[0.14em]">
                             Nutrient
                         </th>
-                        <th className="px-3 py-2.5 text-right font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#374151]">
+                        <th className="px-2 py-2 text-right font-montserrat text-[10px] font-bold uppercase tracking-[0.1em] text-[#374151] sm:px-3 sm:py-2.5 sm:text-xs sm:tracking-[0.14em]">
                             Full day
                         </th>
-                        <th className="px-3 py-2.5 text-right font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#374151]">
+                        <th className="px-2 py-2 text-right font-montserrat text-[10px] font-bold uppercase tracking-[0.1em] text-[#374151] sm:px-3 sm:py-2.5 sm:text-xs sm:tracking-[0.14em]">
                             % RDI
                         </th>
                     </tr>
@@ -291,27 +291,27 @@ function MicronutrientRdiTable({ rows }) {
                             <tr className="bg-[#F8F9F6]">
                                 <td
                                     colSpan={3}
-                                    className="px-3 py-2 font-montserrat text-xs font-bold uppercase tracking-[0.12em] text-[#5A6B44]"
+                                    className="px-2 py-2 font-montserrat text-[10px] font-bold uppercase tracking-[0.1em] text-[#5A6B44] sm:px-3 sm:text-xs sm:tracking-[0.12em]"
                                 >
                                     {section.title}
                                 </td>
                             </tr>
                             {section.rows.map((row) => (
                                 <tr key={`${section.title}-${row.label}`} className="border-b border-gray-100 last:border-b-0">
-                                    <td className="px-3 py-2.5 font-montserrat text-sm font-medium text-[#374151]">
+                                    <td className="max-w-[10.5rem] px-2 py-2 font-montserrat text-xs font-medium leading-snug text-[#374151] sm:max-w-none sm:px-3 sm:py-2.5 sm:text-sm">
                                         {row.label}
                                         {BEST_EFFORT_NUTRIENT_LABELS.has(row.label) ? (
-                                            <span className="ml-1.5 font-body text-xs font-normal text-[#555555]">
+                                            <span className="ml-1 font-body text-[10px] font-normal text-[#555555] sm:ml-1.5 sm:text-xs">
                                                 (best effort)
                                             </span>
                                         ) : null}
                                     </td>
-                                    <td className="px-3 py-2.5 text-right font-montserrat text-sm font-bold tabular-nums text-[#1F2937]">
+                                    <td className="whitespace-nowrap px-2 py-2 text-right font-montserrat text-xs font-bold tabular-nums text-[#1F2937] sm:px-3 sm:py-2.5 sm:text-sm">
                                         {row.formattedTotal}
                                     </td>
                                     <td
                                         className={[
-                                            'px-3 py-2.5 text-right font-montserrat text-sm font-bold tabular-nums',
+                                            'whitespace-nowrap px-2 py-2 text-right font-montserrat text-xs font-bold tabular-nums sm:px-3 sm:py-2.5 sm:text-sm',
                                             row.rdiPercent != null
                                               && row.rdiPercent < FLOOR_RDI_TARGET_PERCENT
                                               && !row.label.includes('Sugar')

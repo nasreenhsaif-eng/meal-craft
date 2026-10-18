@@ -119,7 +119,7 @@ export function OnboardingDietProtocolInner({
             customerName={customerName}
             centerHeader
         >
-            <div className="flex w-full flex-col gap-5">
+            <div className="flex w-full flex-col gap-4">
                 <div
                     className="w-full"
                     role="group"

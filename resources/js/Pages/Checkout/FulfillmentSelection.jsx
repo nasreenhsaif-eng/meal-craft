@@ -1,5 +1,4 @@
 import { Link } from '@inertiajs/react';
-import CustomerAppHeaderActions from '../../Components/Molecules/Customer/CustomerAppHeaderActions.jsx';
 import FulfillmentOptionCards from '../../Components/Molecules/Customer/FulfillmentOptionCards.jsx';
 import CustomerInertiaShell from '../../Layouts/CustomerInertiaShell.jsx';
 import { resolveInertiaLayoutChild } from '../../lib/resolveInertiaLayoutChild.js';
@@ -10,17 +9,15 @@ import { resolveInertiaLayoutChild } from '../../lib/resolveInertiaLayoutChild.j
  * @param {string} [props.homeUrl]
  * @param {string} [props.deliveryUrl]
  * @param {string} [props.recipesUrl]
- * @param {import('react').ReactNode} [props.headerActions]
  */
 export function FulfillmentSelectionInner({
     customerName = '',
     homeUrl = '/app',
     deliveryUrl = '/checkout/delivery',
     recipesUrl = '/meal-plan/recipes',
-    headerActions = null,
 }) {
     return (
-        <CustomerInertiaShell customerName={customerName} headerActions={headerActions}>
+        <CustomerInertiaShell customerName={customerName}>
             <div className="mx-auto w-full max-w-5xl">
                 <Link
                     href={homeUrl}
@@ -60,7 +57,6 @@ export default function FulfillmentSelection({
             homeUrl={homeUrl}
             deliveryUrl={deliveryUrl}
             recipesUrl={recipesUrl}
-            headerActions={<CustomerAppHeaderActions />}
         />
     );
 }

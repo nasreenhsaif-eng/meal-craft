@@ -1,6 +1,6 @@
-import { router, usePage } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 import Button from '../../Components/Atoms/Button/Button.jsx';
-import CustomerAppHeaderActions from '../../Components/Molecules/Customer/CustomerAppHeaderActions.jsx';
+import CustomerAppBottomNav from '../../Components/Molecules/Customer/CustomerAppBottomNav.jsx';
 import FulfillmentOptionCards from '../../Components/Molecules/Customer/FulfillmentOptionCards.jsx';
 import CustomerInertiaShell from '../../Layouts/CustomerInertiaShell.jsx';
 import { resolveInertiaLayoutChild } from '../../lib/resolveInertiaLayoutChild.js';
@@ -26,47 +26,6 @@ function dailyCaloriesDisplay(profile) {
     return Number.isFinite(snapped) && snapped > 0 ? snapped : null;
 }
 
-const GHOST_OUTLINE_CLASS =
-    'w-full border border-[#5A6B44] bg-transparent text-[#5A6B44] hover:bg-[#5A6B44]/10';
-
-/**
- * @param {{
- *   onEditProfile?: () => void;
- *   onEditMealsPlan?: () => void;
- *   onViewSummary?: () => void;
- * }} props
- */
-function WelcomeBackGhostActions({ onEditProfile, onEditMealsPlan, onViewSummary }) {
-    return (
-        <div className="flex w-full min-w-0 flex-col gap-2.5" role="group" aria-label="Account options">
-            <Button
-                type="button"
-                label="Edit your profile"
-                variant="outline"
-                size="sm"
-                onClick={onEditProfile}
-                className={GHOST_OUTLINE_CLASS}
-            />
-            <Button
-                type="button"
-                label="Edit your meals plan"
-                variant="outline"
-                size="sm"
-                onClick={onEditMealsPlan}
-                className={GHOST_OUTLINE_CLASS}
-            />
-            <Button
-                type="button"
-                label="View meal plan summary"
-                variant="outline"
-                size="sm"
-                onClick={onViewSummary}
-                className={GHOST_OUTLINE_CLASS}
-            />
-        </div>
-    );
-}
-
 /**
  * @param {object} props
  * @param {string} [props.customerName]
@@ -78,10 +37,11 @@ function WelcomeBackGhostActions({ onEditProfile, onEditMealsPlan, onViewSummary
  * } | null} [props.profile]
  * @param {'welcome' | 'receive'} [props.mode]
  * @param {string} [props.deliveryUrl]
- * @param {import('react').ReactNode} [props.headerActions]
- * @param {() => void} [props.onEditProfile]
+ * @param {string} [props.homeUrl]
+ * @param {string} [props.profileUrl]
+ * @param {string} [props.shopUrl]
+ * @param {string} [props.mealPlanSummaryUrl]
  * @param {() => void} [props.onEditMealsPlan]
- * @param {() => void} [props.onViewSummary]
  * @param {string} [props.planDateRangeLabel]
  * @param {boolean} [props.showPlanReady]
  */
@@ -90,26 +50,45 @@ export function WelcomeBackInner({
     profile = null,
     mode = 'welcome',
     deliveryUrl = '/checkout/delivery',
-    headerActions = null,
-    onEditProfile,
+    homeUrl = '/app',
+    profileUrl = '/app/profile',
+    shopUrl = '/app/shop',
+    mealPlanSummaryUrl = '/app/meal-plan',
     onEditMealsPlan,
-    onViewSummary,
     planDateRangeLabel = '',
     showPlanReady = false,
 }) {
     const isReceive = mode === 'receive';
     const dailyCaloriesLabel = dailyCaloriesDisplay(profile);
+    const homeHref = String(homeUrl || '/app').split('?')[0] || '/app';
 
     return (
-        <CustomerInertiaShell customerName={customerName} headerActions={headerActions}>
+        <CustomerInertiaShell
+            customerName={customerName}
+            footerNav={
+                isReceive ? null : (
+                    <CustomerAppBottomNav
+                        activeTab="home"
+                        homeUrl={homeHref}
+                        profileUrl={profileUrl}
+                        shopUrl={shopUrl}
+                        mealsUrl={mealPlanSummaryUrl}
+                    />
+                )
+            }
+        >
             <div
-                className={[
-                    'w-full min-w-0 rounded-[16px] border border-gray-200 bg-white px-4 py-6 shadow-sm sm:p-8',
-                    isReceive ? 'max-w-5xl' : '',
-                ]
-                    .join(' ')
-                    .trim()}
+                className="w-full min-w-0 rounded-[16px] border border-gray-200 bg-white px-4 py-6 shadow-sm sm:p-8"
             >
+                {isReceive ? (
+                    <Link
+                        href={homeHref}
+                        className="mb-3 inline-flex items-center gap-1 font-montserrat text-sm font-semibold text-[#5A6B44] hover:underline"
+                    >
+                        ← Back to home
+                    </Link>
+                ) : null}
+
                 <h1 className="font-montserrat text-3xl font-semibold tracking-tight text-[#262A22]">
                     {isReceive
                         ? 'How would you like to receive your meal plan?'
@@ -141,13 +120,13 @@ export function WelcomeBackInner({
                                     )}
                                     .
                                 </p>
-                                <div className="mt-6">
+                                <div className="mt-6 flex w-full justify-center">
                                     <Button
                                         type="button"
                                         label="Choose your meals"
                                         variant="primary"
                                         onClick={onEditMealsPlan}
-                                        className="w-full sm:w-auto"
+                                        className="min-w-[200px] uppercase tracking-[0.08em]"
                                     />
                                 </div>
                                 <p className="mt-3 max-w-2xl font-body text-[11px] leading-snug text-[#777777] sm:text-xs">
@@ -176,14 +155,6 @@ export function WelcomeBackInner({
                 ) : null}
 
                 {isReceive ? <FulfillmentOptionCards deliveryUrl={deliveryUrl} className="mt-8" /> : null}
-
-                <div className="mt-8">
-                    <WelcomeBackGhostActions
-                        onEditProfile={onEditProfile}
-                        onEditMealsPlan={onEditMealsPlan}
-                        onViewSummary={onViewSummary}
-                    />
-                </div>
             </div>
         </CustomerInertiaShell>
     );
@@ -193,8 +164,10 @@ export function WelcomeBackInner({
  * @param {object} props
  * @param {string} [props.consultationUrl]
  * @param {string} [props.consultationEditUrl]
+ * @param {string} [props.homeUrl]
+ * @param {string} [props.profileUrl]
+ * @param {string} [props.shopUrl]
  * @param {string} [props.mealPlanSummaryUrl]
- * @param {string} [props.profileEditUrl]
  * @param {string} [props.deliveryUrl]
  * @param {{ craftKey?: string; weekDuration?: number; submittedAt?: string } | null} [props.craftPlan]
  * @param {{ startsOn?: string; endsOn?: string; label?: string } | null} [props.planDateRange]
@@ -205,8 +178,10 @@ export default function Home({
     profile,
     consultationUrl = '/consultation/crafted-for-you',
     consultationEditUrl = '/consultation/crafted-for-you/edit',
+    homeUrl = '/app',
+    profileUrl = '/app/profile',
+    shopUrl = '/app/shop',
     mealPlanSummaryUrl = '/app/meal-plan',
-    profileEditUrl = '/onboarding/gender',
     deliveryUrl = '/checkout/delivery',
     craftPlan = null,
     planDateRange = null,
@@ -226,13 +201,14 @@ export default function Home({
             profile={profile}
             mode={mode}
             deliveryUrl={deliveryUrl}
-            headerActions={<CustomerAppHeaderActions />}
-            onEditProfile={() => router.visit(profileEditUrl)}
+            homeUrl={homeUrl}
+            profileUrl={profileUrl}
+            shopUrl={shopUrl}
+            mealPlanSummaryUrl={mealPlanSummaryUrl}
             onEditMealsPlan={() => {
                 // Consultation is a standalone Blade/Vite page, not Inertia.
                 window.location.assign(mealsPlanUrl);
             }}
-            onViewSummary={() => router.visit(mealPlanSummaryUrl)}
             planDateRangeLabel={planDateRange?.label ?? ''}
             showPlanReady={showPlanReady}
         />

@@ -21,7 +21,7 @@ const portalChoiceButtonClass =
  */
 export default function PortalChoicePage({
     userName = '',
-    onboardingHref = '/onboarding/gender',
+    onboardingHref = '/app',
     adminHref = '/admin/dashboard',
     onSelectCustomerExperience,
     onSelectAdminPortal,

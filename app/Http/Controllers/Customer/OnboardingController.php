@@ -31,6 +31,10 @@ class OnboardingController extends Controller
     {
         $user = $request->user();
 
+        if ($user !== null && $user->shouldLandOnWelcomeBack()) {
+            return redirect()->route('app.home');
+        }
+
         return redirect()->route('onboarding.show', [
             'step' => $user?->currentOnboardingStep()->value ?? OnboardingStep::entry()->value,
         ]);

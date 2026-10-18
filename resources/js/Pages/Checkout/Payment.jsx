@@ -4,7 +4,6 @@ import Button from '../../Components/Atoms/Button/Button.jsx';
 import SquareCheckbox from '../../Components/Atoms/Icons/SquareCheckbox.jsx';
 import TextInput from '../../Components/Atoms/TextInput/TextInput.jsx';
 import FoodFilterPill from '../../Components/MealSystem/FoodFilterPill.jsx';
-import CustomerAppHeaderActions from '../../Components/Molecules/Customer/CustomerAppHeaderActions.jsx';
 import CustomerInertiaShell from '../../Layouts/CustomerInertiaShell.jsx';
 import { resolveInertiaLayoutChild } from '../../lib/resolveInertiaLayoutChild.js';
 
@@ -94,7 +93,7 @@ export default function Payment({
     const canPay = data.cart_confirmed && data.payment_method === 'benefit_pay' && !processing;
 
     return (
-        <CustomerInertiaShell customerName={customerName} headerActions={<CustomerAppHeaderActions />}>
+        <CustomerInertiaShell customerName={customerName}>
             <div className="mx-auto w-full min-w-0 max-w-3xl">
                 <Button
                     type="button"

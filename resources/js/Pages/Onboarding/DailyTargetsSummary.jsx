@@ -144,7 +144,7 @@ export function DailyTargetsSummaryInner({
             customerName={customerName}
             hideDefaultHeader={embedded || hideDefaultHeader}
         >
-            <div className="w-full space-y-6">
+            <div className="w-full space-y-4">
                 <header className="flex flex-col items-center gap-2 text-center">
                     <CheckmarkBadge />
                     <h1 className="m-0 font-montserrat text-2xl font-bold tracking-tight text-brand-primary-pressed sm:text-3xl">

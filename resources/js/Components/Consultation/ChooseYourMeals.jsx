@@ -766,7 +766,7 @@ const PLAN_MACRO_CELL_META = Object.freeze([
 ]);
 
 const PLAN_MACRO_TABLE_GRID =
-    'grid grid-cols-[5.5rem_repeat(4,minmax(0,1fr))] items-center gap-x-2 gap-y-2 sm:grid-cols-[6rem_repeat(4,minmax(0,1fr))] sm:gap-x-3';
+    'grid w-full min-w-0 grid-cols-[4.5rem_repeat(4,minmax(0,1fr))] items-center gap-x-1 gap-y-2 sm:grid-cols-[6rem_repeat(4,minmax(0,1fr))] sm:gap-x-3';
 
 /** @param {'calories' | 'protein' | 'carbs' | 'fat'} key @param {number | string | null | undefined} raw */
 function formatPlanMacroValue(key, raw) {
@@ -781,26 +781,21 @@ function formatPlanMacroValue(key, raw) {
 }
 
 /**
- * @param {object} props
- * @param {string} [props.planCategoryLabel]
+ * Column headers only — short labels on narrow screens so Cal/Pro/Carb/Fat do not collide.
  */
-function PlanMacroTableHeader({ planCategoryLabel = '' }) {
+function PlanMacroTableHeader() {
     return (
         <>
-            {planCategoryLabel ? (
-                <span className="justify-self-start rounded-full bg-[#E8EFE0] px-2.5 py-1 font-montserrat text-[10px] font-semibold text-[#5A6B44] sm:px-3 sm:text-xs">
-                    {planCategoryLabel}
-                </span>
-            ) : (
-                <div aria-hidden="true" />
-            )}
+            <div aria-hidden="true" />
             {PLAN_MACRO_CELL_META.map((cell) => (
                 <p
                     key={cell.key}
-                    className="truncate text-center font-montserrat text-[9px] font-semibold uppercase tracking-[0.12em] sm:text-[10px]"
+                    className="min-w-0 truncate text-center font-montserrat text-[9px] font-semibold uppercase tracking-[0.06em] sm:text-[10px] sm:tracking-[0.12em]"
                     style={{ color: cell.color }}
+                    title={cell.label}
                 >
-                    {cell.label}
+                    <span className="sm:hidden">{cell.shortLabel}</span>
+                    <span className="hidden sm:inline">{cell.label}</span>
                 </p>
             ))}
         </>
@@ -835,7 +830,7 @@ function PlanMacroValueCells({
                     <div
                         key={cell.key}
                         className={[
-                            'min-w-0 text-center',
+                            'min-w-0 overflow-hidden px-0.5 text-center',
                             cellClassName,
                             index === PLAN_MACRO_CELL_META.length - 1 ? lastCellClassName : '',
                         ]
@@ -844,7 +839,7 @@ function PlanMacroValueCells({
                     >
                         <p
                             className={[
-                                'truncate text-sm font-bold tabular-nums leading-none sm:text-[15px]',
+                                'truncate text-sm font-bold tabular-nums leading-tight sm:text-[15px] sm:leading-none',
                                 muted ? 'font-semibold text-[#9CA3AF]' : '',
                                 highlighted ? 'text-amber-800' : '',
                             ]
@@ -946,12 +941,43 @@ function ConsultationDayMacroFooterGrid({ totals, highlightKeys = [] }) {
  * @param {Partial<Record<SelectionCategoryKey, ConsultationMeal[]>>} props.categories
  * @param {Partial<Record<SelectionCategoryKey, MacroTotals>> | null} [props.categoryTargets]
  * @param {string} [props.dayLabel]
+ * @param {boolean} [props.compact] Mobile: category title above a full-width 4-col value row.
  */
-export function PlanDayMacroBreakdown({ categories, categoryTargets = null, dayLabel }) {
+export function PlanDayMacroBreakdown({ categories, categoryTargets = null, dayLabel, compact = false }) {
     const rows = useMemo(() => buildCategoryMacroBreakdown(categories), [categories]);
 
     if (rows.length === 0) {
         return null;
+    }
+
+    if (compact) {
+        return (
+            <div className="mt-4 space-y-3 border-t border-gray-100 pt-3">
+                <p className="font-montserrat text-[11px] font-bold uppercase tracking-[0.12em] text-[#5A6B44]">
+                    {dayLabel ? `${dayLabel} breakdown` : 'Choice breakdown'}
+                </p>
+                {rows.map((row) => (
+                    <div
+                        key={row.key}
+                        className="rounded-[10px] bg-[#F8F9F6] px-2 py-2"
+                        role="rowgroup"
+                        aria-label={`${row.label} macros`}
+                    >
+                        <p className="mb-2 font-montserrat text-[10px] font-bold leading-tight text-[#262A22]">
+                            {row.label}
+                        </p>
+                        <div className="grid w-full min-w-0 grid-cols-4 gap-x-2">
+                            <PlanMacroValueCells macros={row.totals} />
+                        </div>
+                        {categoryTargets?.[row.key] ? (
+                            <div className="mt-1.5 grid w-full min-w-0 grid-cols-4 gap-x-2">
+                                <PlanMacroValueCells macros={categoryTargets[row.key]} muted />
+                            </div>
+                        ) : null}
+                    </div>
+                ))}
+            </div>
+        );
     }
 
     return (
@@ -963,7 +989,7 @@ export function PlanDayMacroBreakdown({ categories, categoryTargets = null, dayL
                 <div key={row.key} className="contents" role="rowgroup" aria-label={`${row.label} macros`}>
                     <div className="contents" role="row">
                         <p
-                            className="rounded-l-[10px] bg-[#F8F9F6] py-2 pl-2 font-montserrat text-[11px] font-bold leading-tight text-[#262A22] sm:pl-3 sm:text-xs"
+                            className="min-w-0 break-words rounded-l-[10px] bg-[#F8F9F6] py-2 pl-1.5 font-montserrat text-[10px] font-bold leading-tight text-[#262A22] sm:pl-3 sm:text-xs"
                             role="rowheader"
                         >
                             {row.label}
@@ -1052,18 +1078,63 @@ export function PlanMacroSummaryPanel({
     );
 
     return (
-        <div className="w-full rounded-[12px] border border-gray-200 bg-white px-4 py-4 sm:px-5">
-            <div className={PLAN_MACRO_TABLE_GRID} role="table" aria-label={`${dayLabel} macro summary`}>
-                <PlanMacroTableHeader planCategoryLabel={planCategoryLabel} />
+        <div className="w-full min-w-0 overflow-hidden rounded-[12px] border border-gray-200 bg-white px-2 py-4 sm:px-5">
+            {planCategoryLabel ? (
+                <div className="mb-3">
+                    <span className="inline-flex max-w-full truncate rounded-full bg-[#E8EFE0] px-2.5 py-1 font-montserrat text-[10px] font-semibold text-[#5A6B44] sm:px-3 sm:text-xs">
+                        {planCategoryLabel}
+                    </span>
+                </div>
+            ) : null}
 
-                <p className="font-montserrat text-[11px] font-bold uppercase tracking-[0.1em] text-[#5A6B44]">
+            {/* Mobile: full-width 4-col grid — no Total label so numbers can spread. */}
+            <div className="sm:hidden" role="table" aria-label={`${dayLabel} macro summary`}>
+                <div className="grid w-full min-w-0 grid-cols-4 items-start gap-x-2 gap-y-2">
+                    {PLAN_MACRO_CELL_META.map((cell) => (
+                        <p
+                            key={cell.key}
+                            className="min-w-0 truncate text-center font-montserrat text-[9px] font-semibold uppercase tracking-[0.06em]"
+                            style={{ color: cell.color }}
+                        >
+                            {cell.shortLabel}
+                        </p>
+                    ))}
+                    <PlanMacroValueCells macros={activeDayTotals} macroPercents={selectedMacroPercents} />
+                    {dayMacroTargets ? (
+                        <PlanMacroValueCells
+                            macros={dayMacroTargets}
+                            macroPercents={targetMacroPercents}
+                            muted
+                        />
+                    ) : null}
+                </div>
+
+                {categories ? (
+                    <PlanDayMacroBreakdown
+                        categories={categories}
+                        categoryTargets={categoryMacroTargets}
+                        dayLabel={dayLabel}
+                        compact
+                    />
+                ) : null}
+            </div>
+
+            {/* Desktop / tablet: labeled rows. */}
+            <div
+                className={`hidden sm:grid ${PLAN_MACRO_TABLE_GRID}`}
+                role="table"
+                aria-label={`${dayLabel} macro summary`}
+            >
+                <PlanMacroTableHeader />
+
+                <p className="min-w-0 break-words font-montserrat text-[11px] font-bold uppercase leading-tight tracking-[0.1em] text-[#5A6B44]">
                     {dayLabel} total
                 </p>
                 <PlanMacroValueCells macros={activeDayTotals} macroPercents={selectedMacroPercents} />
 
                 {dayMacroTargets ? (
                     <>
-                        <p className="font-montserrat text-[10px] font-semibold uppercase tracking-[0.08em] text-[#9CA3AF]">
+                        <p className="min-w-0 font-montserrat text-[10px] font-semibold uppercase tracking-[0.08em] text-[#9CA3AF]">
                             Target
                         </p>
                         <PlanMacroValueCells

@@ -93,7 +93,7 @@ export function OnboardingBirthdayInner({
             centerHeader
         >
             <form
-                className="flex w-full flex-col gap-6"
+                className="flex w-full flex-col gap-4"
                 onSubmit={(event) => {
                     event.preventDefault();
                     onSubmit?.();

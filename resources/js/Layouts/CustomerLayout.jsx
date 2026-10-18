@@ -1,28 +1,24 @@
 import MealCraftLogo from '../Components/Atoms/Logo/MealCraftLogo.jsx';
+import CustomerOnboardingPhoneFrame from '../Components/Molecules/Customer/CustomerOnboardingPhoneFrame.jsx';
 
 /**
  * @param {object} props
  * @param {import('react').ReactNode} props.children
  * @param {string} [props.customerName]
- * @param {import('react').ReactNode} [props.headerActions]
+ * @param {import('react').ReactNode} [props.footerNav]
  * @param {'default' | 'onboarding'} [props.layoutVariant]
  */
 export default function CustomerLayout({
     children,
     customerName = '',
-    headerActions = null,
+    footerNav = null,
     layoutVariant = 'default',
 }) {
     const isOnboarding = layoutVariant === 'onboarding';
+    const hasFooterNav = footerNav != null;
 
     const header = (
-        <header
-            className={
-                isOnboarding
-                    ? 'flex w-full items-center justify-between py-3 md:rounded-xl md:border md:border-gray-100 md:bg-white md:px-5 md:py-4 md:shadow-sm'
-                    : 'flex w-full items-center justify-between border-b border-gray-100 bg-white px-3 py-4 md:px-6'
-            }
-        >
+        <header className="flex w-full shrink-0 items-center justify-between gap-3 border-b border-gray-100 bg-white px-1 py-3">
             <div className="flex min-w-0 items-center gap-3">
                 <MealCraftLogo variant="seal-xs" width={40} alt="" />
                 <div className="min-w-0">
@@ -32,29 +28,38 @@ export default function CustomerLayout({
                     </p>
                 </div>
             </div>
-            <div className="flex shrink-0 flex-wrap items-center justify-end gap-3 sm:gap-4 md:gap-5">
-                {customerName ? (
-                    <p className="max-w-[9rem] truncate text-sm font-medium text-[#555555] sm:max-w-none">
-                        {customerName}
-                    </p>
-                ) : null}
-                {headerActions}
-            </div>
+            {customerName ? (
+                <p className="max-w-[45%] shrink-0 truncate text-right text-sm font-medium text-[#555555]">
+                    {customerName}
+                </p>
+            ) : null}
         </header>
     );
 
     if (isOnboarding) {
         return (
-            <div className="flex min-h-screen w-full flex-col items-center justify-start bg-white px-3 py-4 font-sans text-[#262A22] md:justify-center md:bg-gray-50 md:px-8 md:py-8">
-                <div className="flex w-full flex-col space-y-6 md:max-w-2xl md:space-y-8">{children}</div>
-            </div>
+            <CustomerOnboardingPhoneFrame>
+                <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-4">{children}</div>
+            </CustomerOnboardingPhoneFrame>
         );
     }
 
     return (
-        <div className="min-h-screen w-full bg-[#F8F9F6] font-sans text-[#262A22]">
-            {header}
-            <main className="mx-auto w-full max-w-4xl px-3 py-6 md:px-6 md:py-10">{children}</main>
-        </div>
+        <CustomerOnboardingPhoneFrame>
+            <div className="relative flex h-full min-h-0 w-full flex-1 flex-col bg-[#F8F9F6] font-sans text-[#262A22]">
+                {header}
+                <main
+                    className={[
+                        'mx-auto min-h-0 w-full flex-1 overflow-y-auto overscroll-contain px-1 py-4',
+                        hasFooterNav ? 'pb-28' : 'pb-4',
+                    ]
+                        .join(' ')
+                        .trim()}
+                >
+                    {children}
+                </main>
+                {footerNav}
+            </div>
+        </CustomerOnboardingPhoneFrame>
     );
 }

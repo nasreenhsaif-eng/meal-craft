@@ -15,7 +15,7 @@ export default {
         docs: {
             description: {
                 component:
-                    'Post-login home (Welcome back + ghost outline actions) and summary-flow receive mode (Partner Kitchen / DIY cards, then the same actions under the cards).',
+                    'Post-login home (Welcome back + calorie/macro summary and optional plan-ready CTA; account destinations live in the bottom nav) and summary-flow receive mode (vertical Partner Kitchen / DIY options with expandable details + Next; Back to home; no bottom nav).',
             },
         },
     },
@@ -29,9 +29,7 @@ export const Default = {
             customerName="Nasreen"
             profile={NASREEN_PROFILE}
             mode="welcome"
-            onEditProfile={() => undefined}
             onEditMealsPlan={() => undefined}
-            onViewSummary={() => undefined}
             planDateRangeLabel="27th September to 3rd October"
             showPlanReady
         />
@@ -45,9 +43,7 @@ export const AlreadyChose = {
             customerName="Nasreen"
             profile={NASREEN_PROFILE}
             mode="welcome"
-            onEditProfile={() => undefined}
             onEditMealsPlan={() => undefined}
-            onViewSummary={() => undefined}
             showPlanReady={false}
         />
     ),
@@ -60,9 +56,7 @@ export const FromSummary = {
             customerName="Nasreen"
             profile={NASREEN_PROFILE}
             mode="receive"
-            onEditProfile={() => undefined}
-            onEditMealsPlan={() => undefined}
-            onViewSummary={() => undefined}
+            homeUrl="/app"
         />
     ),
 };

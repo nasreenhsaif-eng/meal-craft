@@ -20,12 +20,13 @@ test('post authentication redirect sends ready customers to welcome back', funct
         ->and($customer->fresh()->shouldLandOnWelcomeBack())->toBeTrue();
 });
 
-test('post authentication redirect sends profile-complete customers without meals to crafted for you', function () {
+test('post authentication redirect sends profile-complete customers without meals to welcome back', function () {
     $customer = User::factory()->customer()->create();
     CustomerProfile::factory()->for($customer)->create();
 
     expect(PostAuthenticationRedirect::pathFor($customer->fresh()))
-        ->toBe(route('consultation.crafted-for-you', absolute: false));
+        ->toBe(route('app.home', absolute: false))
+        ->and($customer->fresh()->shouldLandOnWelcomeBack())->toBeTrue();
 });
 
 test('post authentication redirect sends incomplete customers to onboarding', function () {
@@ -34,4 +35,13 @@ test('post authentication redirect sends incomplete customers to onboarding', fu
 
     expect(PostAuthenticationRedirect::pathFor($customer->fresh()))
         ->toBe(route('onboarding.show', ['step' => OnboardingStep::Gender->value], absolute: false));
+});
+
+test('completed customers opening onboarding index land on welcome back', function () {
+    $customer = User::factory()->customer()->create();
+    CustomerProfile::factory()->for($customer)->create();
+
+    $this->actingAs($customer)
+        ->get(route('onboarding.index'))
+        ->assertRedirect(route('app.home'));
 });

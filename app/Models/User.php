@@ -77,13 +77,11 @@ class User extends Authenticatable
     }
 
     /**
-     * Welcome back home is for customers who finished profile + meal selections.
+     * Welcome back home is for customers who finished profile onboarding.
      */
     public function shouldLandOnWelcomeBack(): bool
     {
-        return $this->isCustomer()
-            && $this->hasCompletedOnboarding()
-            && $this->hasSubmittedMealPlan();
+        return $this->isCustomer() && $this->hasCompletedOnboarding();
     }
 
     /**
@@ -124,10 +122,6 @@ class User extends Authenticatable
 
         if ($this->shouldLandOnWelcomeBack()) {
             return route('app.home', absolute: false);
-        }
-
-        if ($this->hasCompletedOnboarding()) {
-            return route('consultation.crafted-for-you', absolute: false);
         }
 
         return route('onboarding.show', [

@@ -56,14 +56,14 @@ export function OnboardingGenderInner({
             centerHeader
         >
             <form
-                className="flex w-full flex-col gap-6"
+                className="flex w-full flex-col gap-4"
                 onSubmit={(event) => {
                     event.preventDefault();
                     onSubmit?.();
                 }}
             >
                 <div className="w-full" role="group" aria-label="Gender options">
-                    <div className="flex w-full flex-col gap-3">
+                    <div className="flex w-full flex-col gap-2.5">
                         {options.map((option) => {
                             const selected = sex === option.value;
 

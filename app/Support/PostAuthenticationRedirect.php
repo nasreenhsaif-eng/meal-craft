@@ -20,13 +20,9 @@ final class PostAuthenticationRedirect
             return route('login.portal-choice', absolute: false);
         }
 
-        // Welcome back only after profile onboarding + submitted meal choices.
+        // Welcome back once profile onboarding is complete.
         if ($user->shouldLandOnWelcomeBack()) {
             return route('app.home', absolute: false);
-        }
-
-        if ($user->hasCompletedOnboarding()) {
-            return route('consultation.crafted-for-you', absolute: false);
         }
 
         return route('onboarding.show', [

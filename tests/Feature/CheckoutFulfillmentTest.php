@@ -64,6 +64,9 @@ test('customer home offers profile, meals plan, and summary destinations', funct
         ->assertSuccessful()
         ->assertInertia(fn ($page) => $page
             ->component('App/Home')
+            ->where('homeUrl', route('app.home'))
+            ->where('profileUrl', route('app.profile'))
+            ->where('shopUrl', route('app.shop'))
             ->where('profileEditUrl', route('onboarding.show', ['step' => OnboardingStep::Gender->value]))
             ->where('consultationUrl', route('consultation.crafted-for-you'))
             ->where('consultationEditUrl', route('consultation.crafted-for-you.edit'))

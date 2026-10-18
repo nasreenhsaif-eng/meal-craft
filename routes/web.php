@@ -165,6 +165,8 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
 
                 Route::middleware('onboarding.complete')->group(function (): void {
                     Route::get('/', [CustomerAppController::class, 'home'])->name('home');
+                    Route::get('/profile', [CustomerAppController::class, 'profile'])->name('profile');
+                    Route::get('/shop', [CustomerAppController::class, 'shop'])->name('shop');
                 });
             });
 

@@ -111,14 +111,14 @@ test('customers with completed onboarding and a submitted meal plan land on welc
     ])->assertRedirect(route('app.home', absolute: false));
 });
 
-test('customers with completed onboarding but no meal plan are sent to crafted for you after login', function () {
+test('customers with completed onboarding but no meal plan are sent to welcome back after login', function () {
     $customer = User::factory()->customer()->create();
     CustomerProfile::factory()->for($customer)->create();
 
     $this->post(route('login.store'), [
         'email' => $customer->email,
         'password' => 'password',
-    ])->assertRedirect(route('consultation.crafted-for-you', absolute: false));
+    ])->assertRedirect(route('app.home', absolute: false));
 });
 
 test('customer users are redirected to onboarding after login', function () {

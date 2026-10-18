@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Customer;
 
+use App\Enums\DietProtocol;
 use App\Enums\OnboardingStep;
 use App\Http\Controllers\Controller;
 use App\Models\CustomerProfile;
@@ -62,6 +63,9 @@ class CustomerAppController extends Controller
             'customerName' => $user?->name ?? '',
             'consultationUrl' => route('consultation.crafted-for-you'),
             'consultationEditUrl' => route('consultation.crafted-for-you.edit'),
+            'homeUrl' => route('app.home'),
+            'profileUrl' => route('app.profile'),
+            'shopUrl' => route('app.shop'),
             'mealPlanSummaryUrl' => route('app.meal-plan'),
             'profileEditUrl' => route('onboarding.show', [
                 'step' => OnboardingStep::entry()->value,
@@ -80,6 +84,50 @@ class CustomerAppController extends Controller
             ] : null,
             'planDateRange' => $planDateRange,
             'showPlanReady' => $showPlanReady,
+        ]);
+    }
+
+    public function profile(): Response
+    {
+        $user = request()->user();
+        $profile = $user?->customerProfile;
+        $calorieRange = $profile !== null ? self::calorieTargetRange($profile) : null;
+        $dietProtocol = DietProtocol::tryFromStored($profile?->diet_protocol);
+
+        return Inertia::render('App/Profile', [
+            'customerName' => $user?->name ?? '',
+            'homeUrl' => route('app.home'),
+            'profileUrl' => route('app.profile'),
+            'shopUrl' => route('app.shop'),
+            'mealPlanSummaryUrl' => route('app.meal-plan'),
+            'profileEditUrl' => route('onboarding.show', [
+                'step' => OnboardingStep::entry()->value,
+            ]),
+            'details' => $profile ? [
+                'name' => $user?->name ?? '',
+                'email' => $user?->email ?? '',
+                'phone' => $profile->phone,
+                'address' => self::profileAddress($profile),
+                'deliveryAddress' => self::profileDeliveryAddress($profile),
+                'cards' => [],
+                'sex' => $profile->sex?->value,
+                'sexLabel' => $profile->sex?->label() ?? null,
+                'dietProtocol' => $dietProtocol->value,
+                'dietProtocolLabel' => $dietProtocol->label(),
+                'dateOfBirth' => ($profile->birthdate ?? $profile->date_of_birth)?->toDateString(),
+                'age' => $profile->age,
+                'heightCm' => $profile->height_cm,
+                'weightKg' => $profile->weight_kg,
+                'targetWeightKg' => $profile->target_weight_kg,
+                'activityLevel' => $profile->activity_level?->value,
+                'activityLevelLabel' => $profile->activity_level?->label(),
+                'dailyCalorieTarget' => $profile->daily_calorie_target,
+                'dailyCaloriesMin' => $calorieRange['min'] ?? null,
+                'dailyCaloriesMax' => $calorieRange['max'] ?? null,
+                'macroSplitStyle' => $profile->macro_split_style?->value,
+                'foodFilters' => array_values($profile->food_filters ?? $profile->allergies ?? []),
+                'allergies' => array_values($profile->allergies ?? []),
+            ] : null,
         ]);
     }
 
@@ -105,10 +153,24 @@ class CustomerAppController extends Controller
             'consultationUrl' => route('consultation.crafted-for-you'),
             'consultationEditUrl' => route('consultation.crafted-for-you.edit'),
             'homeUrl' => route('app.home'),
+            'profileUrl' => route('app.profile'),
+            'shopUrl' => route('app.shop'),
+            'mealPlanSummaryUrl' => route('app.meal-plan'),
             'fulfillmentUrl' => route('checkout.fulfillment'),
             'sex' => $profile->sex?->value,
             'activityLevel' => $profile->activity_level?->value,
             'dailyCalorieTarget' => (int) $profile->daily_calorie_target,
+        ]);
+    }
+
+    public function shop(): Response
+    {
+        return Inertia::render('App/Shop', [
+            'customerName' => request()->user()?->name ?? '',
+            'homeUrl' => route('app.home'),
+            'profileUrl' => route('app.profile'),
+            'shopUrl' => route('app.shop'),
+            'mealPlanSummaryUrl' => route('app.meal-plan'),
         ]);
     }
 
@@ -127,5 +189,39 @@ class CustomerAppController extends Controller
             'min' => $targets['daily_calories_min'],
             'max' => $targets['daily_calories_max'],
         ];
+    }
+
+    private static function profileAddress(CustomerProfile $profile): ?string
+    {
+        $area = trim((string) ($profile->area ?? ''));
+        $country = trim((string) ($profile->country ?? ''));
+
+        $parts = array_values(array_filter([
+            $area !== '' ? $area : null,
+            $country !== '' ? $country : null,
+        ]));
+
+        return $parts !== [] ? implode(', ', $parts) : null;
+    }
+
+    private static function profileDeliveryAddress(CustomerProfile $profile): ?string
+    {
+        $area = trim((string) ($profile->area ?? ''));
+        $block = trim((string) ($profile->block ?? ''));
+        $road = trim((string) ($profile->road ?? ''));
+        $houseNumber = trim((string) ($profile->house_number ?? ''));
+        $gateFlat = trim((string) ($profile->gate_flat_number ?? ''));
+        $country = trim((string) ($profile->country ?? ''));
+
+        $parts = array_values(array_filter([
+            $houseNumber !== '' ? 'House '.$houseNumber : null,
+            $gateFlat !== '' ? 'Gate/Flat '.$gateFlat : null,
+            $road !== '' ? 'Road '.$road : null,
+            $block !== '' ? 'Block '.$block : null,
+            $area !== '' ? $area : null,
+            $country !== '' ? $country : null,
+        ]));
+
+        return $parts !== [] ? implode(', ', $parts) : null;
     }
 }

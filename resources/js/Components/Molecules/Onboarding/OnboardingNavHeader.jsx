@@ -42,7 +42,7 @@ export default function OnboardingNavHeader({ steps, activeStep, onBack, canGoBa
             </div>
 
             <div
-                className="mt-3 grid w-full gap-1.5"
+                className="mt-2 grid w-full gap-1"
                 style={{ gridTemplateColumns: `repeat(${Math.max(totalSteps, 1)}, minmax(0, 1fr))` }}
                 role="progressbar"
                 aria-valuemin={1}

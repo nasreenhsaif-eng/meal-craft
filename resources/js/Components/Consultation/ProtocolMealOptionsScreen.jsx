@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import Button from '../Atoms/Button.jsx';
 
 /**
- * SEE OTHER OPTIONS dialog — carousel of alternative plates over the day overview.
+ * SEE OTHER OPTIONS dialog — full-page on mobile, centered sheet on larger viewports.
  *
  * @param {object} props
  * @param {string} [props.dayLabel] e.g. "SUNDAY"
@@ -33,8 +33,14 @@ export default function ProtocolMealOptionsScreen({
             }
         };
 
+        const previousOverflow = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
         window.addEventListener('keydown', onKeyDown);
-        return () => window.removeEventListener('keydown', onKeyDown);
+
+        return () => {
+            document.body.style.overflow = previousOverflow;
+            window.removeEventListener('keydown', onKeyDown);
+        };
     }, [handleClose]);
 
     if (typeof document === 'undefined') {
@@ -42,10 +48,10 @@ export default function ProtocolMealOptionsScreen({
     }
 
     return createPortal(
-        <div className="fixed inset-0 z-[110] flex items-start justify-center overflow-y-auto overscroll-contain p-3 pt-3 sm:items-center sm:overflow-hidden sm:p-6">
+        <div className="fixed inset-0 z-[110] overflow-hidden overscroll-none sm:flex sm:items-center sm:justify-center sm:p-6">
             <button
                 type="button"
-                className="absolute inset-0 bg-black/40"
+                className="absolute inset-0 bg-black/40 max-sm:hidden"
                 aria-label="Close other options"
                 onClick={handleClose}
             />
@@ -54,8 +60,10 @@ export default function ProtocolMealOptionsScreen({
                 aria-modal="true"
                 aria-labelledby="mc-options-modal-title"
                 className={[
-                    'relative my-0 flex w-full max-w-5xl flex-col sm:my-auto sm:max-h-[92dvh] sm:overflow-hidden',
-                    'rounded-[16px] bg-[#F8F9F6] shadow-2xl',
+                    // Mobile: edge-to-edge page with BACK/CONFIRM always pinned at the bottom.
+                    'absolute inset-0 flex w-full flex-col overflow-hidden rounded-none bg-[#F8F9F6]',
+                    // Desktop / tablet: centered modal card.
+                    'sm:relative sm:inset-auto sm:my-auto sm:h-auto sm:max-h-[92dvh] sm:max-w-5xl sm:rounded-[16px] sm:shadow-2xl',
                     className,
                 ]
                     .join(' ')
@@ -85,7 +93,7 @@ export default function ProtocolMealOptionsScreen({
                     />
                 </div>
 
-                <div className="min-h-0 overflow-x-clip px-0 py-0 sm:flex-1 sm:overflow-y-auto sm:py-1">
+                <div className="min-h-0 flex-1 overflow-x-clip overflow-y-auto overscroll-contain px-0 py-0 sm:py-1">
                     {children}
                 </div>
 

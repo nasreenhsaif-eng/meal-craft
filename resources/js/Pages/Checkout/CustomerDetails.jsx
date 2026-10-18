@@ -1,7 +1,7 @@
 import { Link, router, useForm, usePage } from '@inertiajs/react';
 import Button from '../../Components/Atoms/Button/Button.jsx';
 import CustomerCheckoutDetailsReview from '../../Components/CustomerIntake/CustomerCheckoutDetailsReview.jsx';
-import CustomerAppHeaderActions from '../../Components/Molecules/Customer/CustomerAppHeaderActions.jsx';
+import CustomerAppBottomNav from '../../Components/Molecules/Customer/CustomerAppBottomNav.jsx';
 import CustomerInertiaShell from '../../Layouts/CustomerInertiaShell.jsx';
 import { resolveInertiaLayoutChild } from '../../lib/resolveInertiaLayoutChild.js';
 
@@ -15,6 +15,9 @@ import { resolveInertiaLayoutChild } from '../../lib/resolveInertiaLayoutChild.j
  * @param {string} [props.submitUrl]
  * @param {string} [props.deliveryUrl]
  * @param {string} [props.homeUrl]
+ * @param {string} [props.profileUrl]
+ * @param {string} [props.shopUrl]
+ * @param {string} [props.mealPlanSummaryUrl]
  * @param {boolean} [props.declarationAccepted]
  */
 export default function CustomerDetails({
@@ -26,6 +29,9 @@ export default function CustomerDetails({
     submitUrl = '/checkout/details',
     deliveryUrl = '/checkout/delivery',
     homeUrl = '/app',
+    profileUrl = '/app/profile',
+    shopUrl = '/app/shop',
+    mealPlanSummaryUrl = '/app/meal-plan',
     declarationAccepted = false,
 }) {
     const page = usePage();
@@ -36,8 +42,18 @@ export default function CustomerDetails({
     });
 
     return (
-        <CustomerInertiaShell customerName={customerName} headerActions={<CustomerAppHeaderActions />}>
-            <div className="mx-auto w-full min-w-0 max-w-3xl">
+        <CustomerInertiaShell
+            customerName={customerName}
+            footerNav={
+                <CustomerAppBottomNav
+                    homeUrl={homeUrl}
+                    profileUrl={profileUrl}
+                    shopUrl={shopUrl}
+                    mealsUrl={mealPlanSummaryUrl}
+                />
+            }
+        >
+            <div className="mx-auto w-full min-w-0">
                 <Button
                     type="button"
                     label="← Back to kitchen"

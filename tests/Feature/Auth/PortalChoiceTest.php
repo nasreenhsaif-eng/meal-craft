@@ -25,10 +25,24 @@ test('admins can access the portal choice screen after login', function () {
     $this->actingAs($admin)
         ->get(route('login.portal-choice'))
         ->assertOk()
-        ->assertSee('mc-auth-portal-choice-root', false);
+        ->assertSee('mc-auth-portal-choice-root', false)
+        ->assertSee(route('app.home', absolute: false), false);
 });
 
-test('admins choosing customer onboarding can preview onboarding', function () {
+test('admins choosing customer experience land on welcome back', function () {
+    $admin = User::factory()->create(['role' => UserRole::Admin]);
+
+    $this->actingAs($admin)
+        ->get(route('login.portal-choice'))
+        ->assertOk();
+
+    $this->actingAs($admin)
+        ->get(route('app.home'))
+        ->assertSuccessful()
+        ->assertInertia(fn ($page) => $page->component('App/Home'));
+});
+
+test('admins can still preview the onboarding wizard directly', function () {
     $admin = User::factory()->create(['role' => UserRole::Admin]);
 
     $this->actingAs($admin)
