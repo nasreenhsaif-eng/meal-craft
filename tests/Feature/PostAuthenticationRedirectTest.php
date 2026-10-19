@@ -17,16 +17,18 @@ test('post authentication redirect sends ready customers to welcome back', funct
 
     expect(PostAuthenticationRedirect::pathFor($customer->fresh()))
         ->toBe(route('app.home', absolute: false))
-        ->and($customer->fresh()->shouldLandOnWelcomeBack())->toBeTrue();
+        ->and($customer->fresh()->shouldLandOnWelcomeBack())->toBeTrue()
+        ->and($customer->fresh()->shouldLandOnCraftedForYou())->toBeFalse();
 });
 
-test('post authentication redirect sends profile-complete customers without meals to welcome back', function () {
+test('post authentication redirect sends profile-complete customers without meals to crafted for you', function () {
     $customer = User::factory()->customer()->create();
     CustomerProfile::factory()->for($customer)->create();
 
     expect(PostAuthenticationRedirect::pathFor($customer->fresh()))
-        ->toBe(route('app.home', absolute: false))
-        ->and($customer->fresh()->shouldLandOnWelcomeBack())->toBeTrue();
+        ->toBe(route('consultation.crafted-for-you', absolute: false))
+        ->and($customer->fresh()->shouldLandOnWelcomeBack())->toBeFalse()
+        ->and($customer->fresh()->shouldLandOnCraftedForYou())->toBeTrue();
 });
 
 test('post authentication redirect sends incomplete customers to onboarding', function () {
@@ -37,9 +39,24 @@ test('post authentication redirect sends incomplete customers to onboarding', fu
         ->toBe(route('onboarding.show', ['step' => OnboardingStep::Gender->value], absolute: false));
 });
 
-test('completed customers opening onboarding index land on welcome back', function () {
+test('completed customers without meals opening onboarding index land on crafted for you', function () {
     $customer = User::factory()->customer()->create();
     CustomerProfile::factory()->for($customer)->create();
+
+    $this->actingAs($customer)
+        ->get(route('onboarding.index'))
+        ->assertRedirect(route('consultation.crafted-for-you'));
+});
+
+test('completed customers with meals opening onboarding index land on welcome back', function () {
+    $customer = User::factory()->customer()->create();
+    $profile = CustomerProfile::factory()->for($customer)->create();
+    $profile->craftPlans()->create([
+        'craft_key' => 'full',
+        'week_duration' => 5,
+        'selected_weekdays' => [1, 2, 3, 4, 5],
+        'submitted_at' => now(),
+    ]);
 
     $this->actingAs($customer)
         ->get(route('onboarding.index'))

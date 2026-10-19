@@ -1,10 +1,11 @@
 import { createRoot } from 'react-dom/client';
 import { Component, StrictMode } from 'react';
+import CustomerOnboardingPhoneFrame from './Components/Molecules/Customer/CustomerOnboardingPhoneFrame.jsx';
 import CraftedForYouPage from './Pages/Consultation/CraftedForYouPage.jsx';
 import { syncCsrfMetaTag } from './lib/csrfToken.js';
 
 // Bump when consultation curation shell changes so stale Fast Refresh clients reload.
-export const CONSULTATION_CURATION_BUNDLE_EPOCH = '2026-09-13-no-preview-tier';
+export const CONSULTATION_CURATION_BUNDLE_EPOCH = '2026-10-19-customer-phone-frame';
 
 const rootEl = document.getElementById('mc-consultation-crafted-root');
 const configEl = document.getElementById('mc-consultation-crafted-config');
@@ -76,36 +77,62 @@ class ConsultationErrorBoundary extends Component {
 if (rootEl) {
     rootEl.classList.add('min-h-full', 'w-full');
 
-    createRoot(rootEl).render(
-        <StrictMode>
-            <ConsultationErrorBoundary>
-                <CraftedForYouPage
-                    backHref={typeof config.backHref === 'string' ? config.backHref : undefined}
-                    closeHref={typeof config.closeHref === 'string' ? config.closeHref : undefined}
-                    homeHref={typeof config.homeHref === 'string' ? config.homeHref : undefined}
-                    summaryHref={typeof config.summaryHref === 'string' ? config.summaryHref : undefined}
-                    loginUrl={typeof config.loginUrl === 'string' ? config.loginUrl : undefined}
-                    signOutUrl={typeof config.signOutUrl === 'string' ? config.signOutUrl : undefined}
-                    csrfToken={typeof config.csrfToken === 'string' ? config.csrfToken : undefined}
-                    isCustomerAccount={config.isCustomerAccount === true}
-                    isAdminPreview={config.isAdminPreview === true}
-                    pageEyebrow={typeof config.pageEyebrow === 'string' ? config.pageEyebrow : undefined}
-                    adaptedMenuUrl={
-                        typeof config.adaptedMenuUrl === 'string' ? config.adaptedMenuUrl : '/api/menu/adapted'
-                    }
-                    mealLibraryRevision={
-                        typeof config.mealLibraryRevision === 'number' ? config.mealLibraryRevision : 0
-                    }
-                    initialPlanTier={typeof config.planTier === 'number' ? config.planTier : null}
-                    initialEditDraft={
-                        config.editDraft && typeof config.editDraft === 'object' ? config.editDraft : null
-                    }
-                    dietProtocol={typeof config.dietProtocol === 'string' ? config.dietProtocol : null}
-                    sex={typeof config.sex === 'string' ? config.sex : null}
-                    activityLevel={typeof config.activityLevel === 'string' ? config.activityLevel : null}
-                    dailyCalorieTarget={typeof config.dailyCalorieTarget === 'number' ? config.dailyCalorieTarget : null}
-                />
-            </ConsultationErrorBoundary>
-        </StrictMode>,
+    const isCustomerAccount = config.isCustomerAccount === true;
+
+    const page = (
+        <CraftedForYouPage
+            backHref={typeof config.backHref === 'string' ? config.backHref : undefined}
+            closeHref={typeof config.closeHref === 'string' ? config.closeHref : undefined}
+            homeHref={typeof config.homeHref === 'string' ? config.homeHref : undefined}
+            summaryHref={typeof config.summaryHref === 'string' ? config.summaryHref : undefined}
+            loginUrl={typeof config.loginUrl === 'string' ? config.loginUrl : undefined}
+            signOutUrl={typeof config.signOutUrl === 'string' ? config.signOutUrl : undefined}
+            csrfToken={typeof config.csrfToken === 'string' ? config.csrfToken : undefined}
+            isCustomerAccount={isCustomerAccount}
+            isAdminPreview={config.isAdminPreview === true}
+            pageEyebrow={typeof config.pageEyebrow === 'string' ? config.pageEyebrow : undefined}
+            adaptedMenuUrl={
+                typeof config.adaptedMenuUrl === 'string' ? config.adaptedMenuUrl : '/api/menu/adapted'
+            }
+            mealLibraryRevision={typeof config.mealLibraryRevision === 'number' ? config.mealLibraryRevision : 0}
+            initialPlanTier={typeof config.planTier === 'number' ? config.planTier : null}
+            initialEditDraft={config.editDraft && typeof config.editDraft === 'object' ? config.editDraft : null}
+            dietProtocol={typeof config.dietProtocol === 'string' ? config.dietProtocol : null}
+            sex={typeof config.sex === 'string' ? config.sex : null}
+            activityLevel={typeof config.activityLevel === 'string' ? config.activityLevel : null}
+            dailyCalorieTarget={typeof config.dailyCalorieTarget === 'number' ? config.dailyCalorieTarget : null}
+            embedInScrollParent={isCustomerAccount}
+        />
     );
+
+    /** @type {{ current: import('react-dom/client').Root | null }} */
+    const consultationRootRef = (window.__MC_CONSULTATION_ROOT__ ??= { current: null });
+
+    try {
+        if (!consultationRootRef.current) {
+            consultationRootRef.current = createRoot(rootEl);
+        }
+
+        consultationRootRef.current.render(
+            <StrictMode>
+                <ConsultationErrorBoundary>
+                    {isCustomerAccount ? (
+                        <CustomerOnboardingPhoneFrame>
+                            <div className="flex h-full min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain">
+                                {page}
+                            </div>
+                        </CustomerOnboardingPhoneFrame>
+                    ) : (
+                        page
+                    )}
+                </ConsultationErrorBoundary>
+            </StrictMode>,
+        );
+    } catch (error) {
+        // eslint-disable-next-line no-console
+        console.error(error);
+        if (!consultationRootRef.current) {
+            window.location.reload();
+        }
+    }
 }

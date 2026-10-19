@@ -1,23 +1,39 @@
 import { Link } from '@inertiajs/react';
+import CustomerAppBottomNav from '../../Components/Molecules/Customer/CustomerAppBottomNav.jsx';
 import FulfillmentOptionCards from '../../Components/Molecules/Customer/FulfillmentOptionCards.jsx';
 import CustomerInertiaShell from '../../Layouts/CustomerInertiaShell.jsx';
-import { resolveInertiaLayoutChild } from '../../lib/resolveInertiaLayoutChild.js';
 
 /**
  * @param {object} props
  * @param {string} [props.customerName]
  * @param {string} [props.homeUrl]
+ * @param {string} [props.profileUrl]
+ * @param {string} [props.shopUrl]
+ * @param {string} [props.mealPlanSummaryUrl]
  * @param {string} [props.deliveryUrl]
  * @param {string} [props.recipesUrl]
  */
 export function FulfillmentSelectionInner({
     customerName = '',
     homeUrl = '/app',
+    profileUrl = '/app/profile',
+    shopUrl = '/app/shop',
+    mealPlanSummaryUrl = '/app/meal-plan',
     deliveryUrl = '/checkout/delivery',
     recipesUrl = '/meal-plan/recipes',
 }) {
     return (
-        <CustomerInertiaShell customerName={customerName}>
+        <CustomerInertiaShell
+            customerName={customerName}
+            footerNav={
+                <CustomerAppBottomNav
+                    homeUrl={homeUrl}
+                    profileUrl={profileUrl}
+                    shopUrl={shopUrl}
+                    mealsUrl={mealPlanSummaryUrl}
+                />
+            }
+        >
             <div className="mx-auto w-full max-w-5xl">
                 <Link
                     href={homeUrl}
@@ -42,12 +58,18 @@ export function FulfillmentSelectionInner({
  * @param {object} props
  * @param {string} [props.customerName]
  * @param {string} [props.homeUrl]
+ * @param {string} [props.profileUrl]
+ * @param {string} [props.shopUrl]
+ * @param {string} [props.mealPlanSummaryUrl]
  * @param {string} [props.deliveryUrl]
  * @param {string} [props.recipesUrl]
  */
 export default function FulfillmentSelection({
     customerName = '',
     homeUrl = '/app',
+    profileUrl = '/app/profile',
+    shopUrl = '/app/shop',
+    mealPlanSummaryUrl = '/app/meal-plan',
     deliveryUrl = '/checkout/delivery',
     recipesUrl = '/meal-plan/recipes',
 }) {
@@ -55,10 +77,12 @@ export default function FulfillmentSelection({
         <FulfillmentSelectionInner
             customerName={customerName}
             homeUrl={homeUrl}
+            profileUrl={profileUrl}
+            shopUrl={shopUrl}
+            mealPlanSummaryUrl={mealPlanSummaryUrl}
             deliveryUrl={deliveryUrl}
             recipesUrl={recipesUrl}
         />
     );
 }
 
-FulfillmentSelection.layout = (pageOrProps) => resolveInertiaLayoutChild(pageOrProps);

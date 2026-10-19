@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\OnboardingStep;
 use App\Models\CustomerProfile;
 use App\Models\User;
 use App\Services\Nutrition\UserPlanCalculator;
@@ -86,7 +87,7 @@ test('customer consultation page does not enable admin tier preview', function (
         ->and($config['activityLevel'] ?? null)->toBe('moderate');
 });
 
-test('consultation page sends craft duration back to welcome home for customers', function () {
+test('consultation page sends customers without meals back to onboarding food filters', function () {
     $user = User::factory()->customer()->create();
     CustomerProfile::factory()->for($user)->create();
 
@@ -101,9 +102,38 @@ test('consultation page sends craft duration back to welcome home for customers'
     );
 
     $config = json_decode($matches[1] ?? '{}', true);
+    $onboardingBack = route('onboarding.show', [
+        'step' => OnboardingStep::FoodFilters->value,
+    ], absolute: false);
+
+    expect($config['backHref'] ?? null)->toBe($onboardingBack)
+        ->and($config['homeHref'] ?? null)->toBe($onboardingBack);
+});
+
+test('consultation page sends customers with submitted meals back to welcome home', function () {
+    $user = User::factory()->customer()->create();
+    $profile = CustomerProfile::factory()->for($user)->create();
+    $profile->craftPlans()->create([
+        'craft_key' => 'full',
+        'week_duration' => 5,
+        'selected_weekdays' => [1, 2, 3, 4, 5],
+        'submitted_at' => now(),
+    ]);
+
+    $response = $this->actingAs($user)
+        ->get(route('consultation.crafted-for-you'))
+        ->assertOk();
+
+    preg_match(
+        '/id="mc-consultation-crafted-config" type="application\/json">(.*?)<\/script>/s',
+        $response->getContent(),
+        $matches,
+    );
+
+    $config = json_decode($matches[1] ?? '{}', true);
 
     expect($config['backHref'] ?? null)->toBe(route('app.home', absolute: false))
-        ->and($config['homeHref'] ?? null)->toBe(route('app.home'));
+        ->and($config['homeHref'] ?? null)->toBe(route('app.home', absolute: false));
 });
 
 test('inertia visits to consultation force a full page location redirect', function () {
@@ -117,7 +147,7 @@ test('inertia visits to consultation force a full page location redirect', funct
         ->assertHeader('X-Inertia-Location', route('consultation.crafted-for-you'));
 });
 
-test('consultation page always points customer back to welcome home', function () {
+test('consultation page points customers without meals back to onboarding', function () {
     $user = User::factory()->customer()->create();
     CustomerProfile::factory()->for($user)->create();
 
@@ -133,7 +163,9 @@ test('consultation page always points customer back to welcome home', function (
 
     $config = json_decode($matches[1] ?? '{}', true);
 
-    expect($config['backHref'] ?? null)->toBe(route('app.home', absolute: false));
+    expect($config['backHref'] ?? null)->toBe(route('onboarding.show', [
+        'step' => OnboardingStep::FoodFilters->value,
+    ], absolute: false));
 });
 
 test('admin navigation does not include consultation', function () {

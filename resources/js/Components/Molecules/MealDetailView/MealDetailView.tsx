@@ -81,6 +81,8 @@ export type MealDetailViewProps = {
     hideImage?: boolean;
     /** When true, omit outer max-height so a parent modal owns scrolling (title stays visible). */
     embedded?: boolean;
+    /** Hide cooking instructions (e.g. customer meal-plan summary — DIY covers steps later). */
+    hideInstructions?: boolean;
     onBaseRecipeClick?: (item: MealIngredientItem) => void;
 };
 
@@ -188,6 +190,7 @@ export default function MealDetailView({
     className = '',
     hideImage = false,
     embedded = false,
+    hideInstructions = false,
     onBaseRecipeClick,
 }: MealDetailViewProps): ReactElement {
     const [mediaFailed, setMediaFailed] = useState(false);
@@ -209,11 +212,9 @@ export default function MealDetailView({
         imageAlt,
         description,
         nutritionSubheading,
-        sickleRdiFootnote,
     } = meal;
 
     const nutritionSubheadingText = nutritionSubheading ?? 'Per serving totals';
-    const sickleRdiFootnoteText = sickleRdiFootnote ?? 'High Source: ≥20% of daily RDI per serving';
     const resolvedImageUrl = resolveMealImageUrl(imageUrl);
     const resolvedImageAlt = String(imageAlt ?? '').trim();
     const showImage = resolvedImageUrl !== '' && !mediaFailed;
@@ -234,19 +235,41 @@ export default function MealDetailView({
             aria-label="Meal details"
             tabIndex={0}
             className={[
+                // Embedded: parent modal owns scrolling; stay single-column (viewport `lg` must not split).
                 embedded
-                    ? 'min-h-0 flex-1 overflow-y-auto overscroll-y-contain outline-none'
-                    : 'mx-auto max-w-5xl max-h-[min(90vh,calc(100dvh-2rem))] overflow-y-auto overscroll-y-contain rounded-[12px] outline-none',
-                'focus:outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5A6B44]/45 focus-visible:ring-offset-2 focus-visible:ring-offset-[#F8F9F6]',
+                    ? 'w-full outline-none'
+                    : 'mx-auto max-w-5xl max-h-[min(90vh,calc(100dvh-2rem))] overflow-y-auto overscroll-y-contain rounded-[12px] outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-[#F8F9F6]',
+                'focus:outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5A6B44]/45',
                 className,
             ]
                 .filter(Boolean)
                 .join(' ')}
         >
-            <div className="grid grid-cols-1 gap-0 lg:grid-cols-[13fr_7fr]">
-                <article className="space-y-6 rounded-[12px] border border-gray-200 bg-white p-4 shadow-sm sm:space-y-8 sm:p-6 md:p-8 lg:rounded-r-none lg:border-r-0">
+            <div
+                className={
+                    embedded
+                        ? 'grid grid-cols-1 gap-0'
+                        : 'grid grid-cols-1 gap-0 lg:grid-cols-[13fr_7fr]'
+                }
+            >
+                <article
+                    className={
+                        embedded
+                            ? 'space-y-4 bg-white px-3 pb-4 pt-0 sm:space-y-5 sm:px-4'
+                            : [
+                                  'space-y-6 rounded-[12px] border border-gray-200 bg-white p-4 shadow-sm sm:space-y-8 sm:p-6 md:p-8',
+                                  'lg:rounded-r-none lg:border-r-0',
+                              ].join(' ')
+                    }
+                >
                     {!hideImage ? (
-                        <div className="-mx-4 -mt-4 mb-4 aspect-[4/3] w-[calc(100%+2rem)] max-w-none overflow-hidden rounded-t-[12px] bg-[#F8F9F6] sm:-mx-6 sm:-mt-6 sm:mb-6 sm:w-[calc(100%+3rem)] md:-mx-8 md:-mt-8 md:w-[calc(100%+4rem)]">
+                        <div
+                            className={
+                                embedded
+                                    ? '-mx-3 mb-3 aspect-[4/3] w-[calc(100%+1.5rem)] max-w-none overflow-hidden bg-[#F8F9F6] sm:-mx-4 sm:w-[calc(100%+2rem)]'
+                                    : '-mx-4 -mt-4 mb-4 aspect-[4/3] w-[calc(100%+2rem)] max-w-none overflow-hidden rounded-t-[12px] bg-[#F8F9F6] sm:-mx-6 sm:-mt-6 sm:mb-6 sm:w-[calc(100%+3rem)] md:-mx-8 md:-mt-8 md:w-[calc(100%+4rem)]'
+                            }
+                        >
                             {showImage ? (
                                 <img
                                     src={resolvedImageUrl}
@@ -284,6 +307,42 @@ export default function MealDetailView({
                         </section>
                     ) : null}
 
+                    {hasG6pdTrigger ? (
+                        <div className="rounded-[12px] border-2 border-[#B91C1C] bg-[#FEF2F2] p-4 shadow-sm">
+                            <p className="font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#991B1B]">
+                                G6PD safety
+                            </p>
+                            <div className="mt-3">
+                                <NutrientBadge type={G6PD_SAFETY_ALERT_BADGE} />
+                            </div>
+                            <p className="mt-2 font-body text-sm text-[#7F1D1D]">
+                                This meal contains ingredients flagged as unsafe for G6PD deficiency.
+                            </p>
+                        </div>
+                    ) : null}
+
+                    {safetyAlerts?.length ? (
+                        <div className="space-y-2">
+                            <p className="font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#374151]">
+                                Safety alerts
+                            </p>
+                            <SafetyAlerts alerts={safetyAlerts} />
+                        </div>
+                    ) : null}
+
+                    {scBadges.length > 0 ? (
+                        <div className="space-y-2">
+                            <p className="font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#374151]">
+                                Nutrient highlights
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                                {scBadges.map((badge) => (
+                                    <NutrientBadge key={badge} type={badge} />
+                                ))}
+                            </div>
+                        </div>
+                    ) : null}
+
                     {cyclePhases?.length ? (
                         <div className="flex flex-wrap gap-2" role="list" aria-label="Cycle phases">
                             {cyclePhases.map((phase) => (
@@ -301,7 +360,7 @@ export default function MealDetailView({
                         >
                             Ingredients
                         </h2>
-                        {String(ingredientsPrepNote ?? '').trim() !== '' ? (
+                        {!hideInstructions && String(ingredientsPrepNote ?? '').trim() !== '' ? (
                             <p className="font-montserrat text-sm font-medium leading-relaxed text-[#5A6B44] md:text-[15px]">
                                 {String(ingredientsPrepNote).trim()}
                             </p>
@@ -345,49 +404,57 @@ export default function MealDetailView({
                                 ))}
                             </ul>
                         )}
-                        {String(cookingYieldNote ?? '').trim() !== '' ? (
+                        {!hideInstructions && String(cookingYieldNote ?? '').trim() !== '' ? (
                             <p className="font-montserrat text-sm font-medium leading-relaxed text-[#5A6B44] md:text-[15px]">
                                 {String(cookingYieldNote).trim()}
                             </p>
                         ) : null}
                     </section>
 
-                    <section className="space-y-4" aria-labelledby="meal-detail-instructions-heading">
-                        <h2
-                            id="meal-detail-instructions-heading"
-                            className="font-montserrat text-lg font-bold tracking-tight text-[#262A22] md:text-[18px]"
-                        >
-                            Instructions
-                        </h2>
-                        {hasInstructionSections ? (
-                            <div className="space-y-6">
-                                {instructionSections.map((section) => (
-                                    <div key={section.title} className="space-y-3">
-                                        <h3 className="font-montserrat text-sm font-bold uppercase tracking-[0.12em] text-[#5A6B44]">
-                                            {section.title}
-                                        </h3>
-                                        <ol className="list-decimal space-y-4 pl-5 font-montserrat text-sm font-medium leading-relaxed text-[#374151] marker:font-bold md:text-[15px] md:pl-6">
-                                            {section.steps.map((step, idx) => (
-                                                <li key={`${section.title}-${idx}`} className="whitespace-pre-line pl-2">
-                                                    {step}
-                                                </li>
-                                            ))}
-                                        </ol>
-                                    </div>
-                                ))}
-                            </div>
-                        ) : (
-                            <ol className="list-decimal space-y-4 pl-5 font-montserrat text-sm font-medium leading-relaxed text-[#374151] marker:font-bold md:text-[15px] md:pl-6">
-                                {instructionSteps.map((step, idx) => (
-                                    <li key={idx} className="whitespace-pre-line pl-2">
-                                        {step}
-                                    </li>
-                                ))}
-                            </ol>
-                        )}
-                    </section>
+                    {!hideInstructions ? (
+                        <section className="space-y-4" aria-labelledby="meal-detail-instructions-heading">
+                            <h2
+                                id="meal-detail-instructions-heading"
+                                className="font-montserrat text-lg font-bold tracking-tight text-[#262A22] md:text-[18px]"
+                            >
+                                Instructions
+                            </h2>
+                            {hasInstructionSections ? (
+                                <div className="space-y-6">
+                                    {instructionSections.map((section) => (
+                                        <div key={section.title} className="space-y-3">
+                                            <h3 className="font-montserrat text-sm font-bold uppercase tracking-[0.12em] text-[#5A6B44]">
+                                                {section.title}
+                                            </h3>
+                                            <ol className="list-decimal space-y-4 pl-5 font-montserrat text-sm font-medium leading-relaxed text-[#374151] marker:font-bold md:text-[15px] md:pl-6">
+                                                {section.steps.map((step, idx) => (
+                                                    <li
+                                                        key={`${section.title}-${idx}`}
+                                                        className="whitespace-pre-line pl-2"
+                                                    >
+                                                        {step}
+                                                    </li>
+                                                ))}
+                                            </ol>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <ol className="list-decimal space-y-4 pl-5 font-montserrat text-sm font-medium leading-relaxed text-[#374151] marker:font-bold md:text-[15px] md:pl-6">
+                                    {instructionSteps.map((step, idx) => (
+                                        <li key={idx} className="whitespace-pre-line pl-2">
+                                            {step}
+                                        </li>
+                                    ))}
+                                </ol>
+                            )}
+                        </section>
+                    ) : null}
 
-                    <section className="space-y-4 lg:hidden" aria-labelledby="meal-detail-nutrition-heading-mobile">
+                    <section
+                        className={embedded ? 'space-y-4' : 'space-y-4 lg:hidden'}
+                        aria-labelledby="meal-detail-nutrition-heading-mobile"
+                    >
                         <div>
                             <h2
                                 id="meal-detail-nutrition-heading-mobile"
@@ -401,57 +468,27 @@ export default function MealDetailView({
                     </section>
                 </article>
 
-                <aside className="space-y-5 rounded-[12px] border border-gray-200 bg-[#F8F9F6] p-4 sm:space-y-6 sm:p-6 lg:rounded-l-none lg:border-l">
-                    {hasG6pdTrigger ? (
-                        <div className="rounded-[12px] border-2 border-[#B91C1C] bg-[#FEF2F2] p-4 shadow-sm">
-                            <p className="font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#991B1B]">
-                                G6PD safety
-                            </p>
-                            <div className="mt-3">
-                                <NutrientBadge type={G6PD_SAFETY_ALERT_BADGE} />
+                {!embedded ? (
+                    <aside className="space-y-5 rounded-[12px] border border-gray-200 bg-[#F8F9F6] p-4 sm:space-y-6 sm:p-6 lg:rounded-l-none lg:border-l">
+                        <section
+                            className="hidden space-y-4 lg:block"
+                            aria-labelledby="meal-detail-nutrition-heading"
+                        >
+                            <div>
+                                <h2
+                                    id="meal-detail-nutrition-heading"
+                                    className="font-montserrat text-lg font-bold tracking-tight text-[#262A22] md:text-[18px]"
+                                >
+                                    Nutritional summary
+                                </h2>
+                                <p className="mt-1 font-montserrat text-sm font-medium text-[#555555]">
+                                    {nutritionSubheadingText}
+                                </p>
                             </div>
-                            <p className="mt-2 font-body text-sm text-[#7F1D1D]">
-                                This meal contains ingredients flagged as unsafe for G6PD deficiency.
-                            </p>
-                        </div>
-                    ) : null}
-
-                    {safetyAlerts?.length ? (
-                        <div className="space-y-2">
-                            <p className="font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#374151]">
-                                Safety alerts
-                            </p>
-                            <SafetyAlerts alerts={safetyAlerts} />
-                        </div>
-                    ) : null}
-
-                    <div className="space-y-3">
-                        <p className="font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#374151]">
-                            Sickle Cell Highlights
-                        </p>
-                        <p className="font-body text-xs text-[#6B7280]">{sickleRdiFootnoteText}</p>
-                        <div className="flex flex-wrap gap-2">
-                            {scBadges.length > 0 ? (
-                                scBadges.map((badge) => <NutrientBadge key={badge} type={badge} />)
-                            ) : (
-                                <p className="font-body text-sm text-[#555555]">—</p>
-                            )}
-                        </div>
-                    </div>
-
-                    <section className="hidden space-y-4 lg:block" aria-labelledby="meal-detail-nutrition-heading">
-                        <div>
-                            <h2
-                                id="meal-detail-nutrition-heading"
-                                className="font-montserrat text-lg font-bold tracking-tight text-[#262A22] md:text-[18px]"
-                            >
-                                Nutritional summary
-                            </h2>
-                            <p className="mt-1 font-montserrat text-sm font-medium text-[#555555]">{nutritionSubheadingText}</p>
-                        </div>
-                        <MealNutritionSummaryTable data={nutritionalData} />
-                    </section>
-                </aside>
+                            <MealNutritionSummaryTable data={nutritionalData} />
+                        </section>
+                    </aside>
+                ) : null}
             </div>
         </div>
     );

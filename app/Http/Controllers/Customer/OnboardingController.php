@@ -35,6 +35,10 @@ class OnboardingController extends Controller
             return redirect()->route('app.home');
         }
 
+        if ($user !== null && $user->shouldLandOnCraftedForYou()) {
+            return redirect()->route('consultation.crafted-for-you');
+        }
+
         return redirect()->route('onboarding.show', [
             'step' => $user?->currentOnboardingStep()->value ?? OnboardingStep::entry()->value,
         ]);
@@ -274,7 +278,13 @@ class OnboardingController extends Controller
 
     private function redirectAfterOnboardingComplete(): RedirectResponse
     {
-        return redirect()->route('app.home');
+        $user = request()->user();
+
+        if ($user !== null && $user->shouldLandOnWelcomeBack()) {
+            return redirect()->route('app.home');
+        }
+
+        return redirect()->route('consultation.crafted-for-you');
     }
 
     private function advanceStep(Request $request, OnboardingStep $completedStep): RedirectResponse

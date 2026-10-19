@@ -3,7 +3,26 @@ import { createPortal } from 'react-dom';
 import Button from '../Atoms/Button.jsx';
 
 /**
- * SEE OTHER OPTIONS dialog — full-page on mobile, centered sheet on larger viewports.
+ * Resolve the customer phone chrome when present so options fill that screen
+ * instead of the full browser viewport.
+ *
+ * @returns {HTMLElement | null}
+ */
+function resolveOptionsPortalHost() {
+    if (typeof document === 'undefined') {
+        return null;
+    }
+
+    return (
+        document.querySelector('[data-customer-onboarding-frame]') ||
+        document.querySelector('[data-storybook-onboarding-frame]') ||
+        document.body
+    );
+}
+
+/**
+ * SEE OTHER OPTIONS dialog — full-page inside the phone frame / on mobile;
+ * centered sheet on larger bare viewports.
  *
  * @param {object} props
  * @param {string} [props.dayLabel] e.g. "SUNDAY"
@@ -47,29 +66,47 @@ export default function ProtocolMealOptionsScreen({
         return null;
     }
 
+    const host = resolveOptionsPortalHost();
+    if (!host) {
+        return null;
+    }
+
+    const nestedInPhoneFrame = host !== document.body;
+
     return createPortal(
-        <div className="fixed inset-0 z-[110] overflow-hidden overscroll-none sm:flex sm:items-center sm:justify-center sm:p-6">
-            <button
-                type="button"
-                className="absolute inset-0 bg-black/40 max-sm:hidden"
-                aria-label="Close other options"
-                onClick={handleClose}
-            />
+        <div
+            className={
+                nestedInPhoneFrame
+                    ? 'absolute inset-0 z-[110] overflow-hidden overscroll-none'
+                    : 'fixed inset-0 z-[110] overflow-hidden overscroll-none sm:flex sm:items-center sm:justify-center sm:p-6'
+            }
+        >
+            {!nestedInPhoneFrame ? (
+                <button
+                    type="button"
+                    className="absolute inset-0 bg-black/40 max-sm:hidden"
+                    aria-label="Close other options"
+                    onClick={handleClose}
+                />
+            ) : null}
             <div
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="mc-options-modal-title"
                 className={[
-                    // Mobile: edge-to-edge page with BACK/CONFIRM always pinned at the bottom.
-                    'absolute inset-0 flex w-full flex-col overflow-hidden rounded-none bg-[#F8F9F6]',
-                    // Desktop / tablet: centered modal card.
-                    'sm:relative sm:inset-auto sm:my-auto sm:h-auto sm:max-h-[92dvh] sm:max-w-5xl sm:rounded-[16px] sm:shadow-2xl',
+                    'flex w-full flex-col overflow-hidden bg-[#F8F9F6]',
+                    nestedInPhoneFrame
+                        ? 'absolute inset-0 rounded-none'
+                        : [
+                              'absolute inset-0 rounded-none',
+                              'sm:relative sm:inset-auto sm:my-auto sm:h-auto sm:max-h-[92dvh] sm:max-w-5xl sm:rounded-[16px] sm:shadow-2xl',
+                          ].join(' '),
                     className,
                 ]
                     .join(' ')
                     .trim()}
             >
-                <div className="flex shrink-0 items-center justify-between gap-3 border-b border-gray-200 px-4 py-2 sm:px-5 sm:py-2.5">
+                <div className="flex shrink-0 items-center justify-between gap-3 border-b border-gray-200 bg-white px-4 py-2 sm:px-5 sm:py-2.5">
                     <div className="min-w-0 flex-1">
                         {day ? (
                             <p className="font-montserrat text-[12px] font-bold uppercase tracking-wide text-[#555555]">
@@ -93,7 +130,7 @@ export default function ProtocolMealOptionsScreen({
                     />
                 </div>
 
-                <div className="min-h-0 flex-1 overflow-x-clip overflow-y-auto overscroll-contain px-0 py-0 sm:py-1">
+                <div className="min-h-0 flex-1 overflow-x-clip overflow-y-auto overscroll-y-contain px-0 py-0 [-webkit-overflow-scrolling:touch] sm:py-1">
                     {children}
                 </div>
 
@@ -119,6 +156,6 @@ export default function ProtocolMealOptionsScreen({
                 </div>
             </div>
         </div>,
-        document.body,
+        host,
     );
 }

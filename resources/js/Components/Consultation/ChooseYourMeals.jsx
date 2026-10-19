@@ -23,6 +23,7 @@ import {
     macroSplitPercentagesFromPlan,
 } from '../../consultation/craftCalorieTargets.js';
 import { sumConsultationMealCardMacros } from '../../consultation/balanceMainMealProtein.ts';
+import { isBalancedAntiInflammatoryProtocol } from '../Molecules/Onboarding/dietProtocolUtils.js';
 
 export {
     FIXED_CHOICE_CATEGORY_KEYS,
@@ -257,7 +258,7 @@ export function buildWeeklyConsultationDisplayDecks({
 
     const catalogSource = (soupCatalogMeals.length > 0 ? soupCatalogMeals : meals) ?? [];
     decks.desserts = consultationDessertDeckForDay(catalogSource, assignedMealsByCategory?.desserts ?? [], {
-        preferBakedDesserts: dietProtocol === 'nutrient_dense' || dietProtocol === 'balanced',
+        preferBakedDesserts: isBalancedAntiInflammatoryProtocol(dietProtocol),
     });
     decks.sideSalads = consultationSideSaladDeckForDay(meals ?? [], assignedMealsByCategory?.sideSalads ?? []);
 
@@ -1507,6 +1508,7 @@ export function MealSlotCarousel({
                                 title=""
                                 meals={cards}
                                 deckScopeKey={deckScopeKey}
+                                forceRibbon={deckOnly}
                                 getKey={(m) => /** @type {ConsultationMeal} */ (m).id}
                                 renderCard={(m, _idx, { isFront, deckLayout }) => {
                                     const meal = /** @type {ConsultationMeal} */ (m);
@@ -1664,7 +1666,7 @@ export function FixedChoicePicker({
                 const catalogSource = (soupCatalogMeals.length > 0 ? soupCatalogMeals : meals) ?? [];
 
                 return consultationDessertDeckForDay(catalogSource, assignedMealsByCategory?.desserts ?? [], {
-                    preferBakedDesserts: dietProtocol === 'nutrient_dense' || dietProtocol === 'balanced',
+                    preferBakedDesserts: isBalancedAntiInflammatoryProtocol(dietProtocol),
                 });
             }
 
@@ -1912,8 +1914,6 @@ export default function ChooseYourMeals({
     }, [layout, categorySelections, selectedFooterMeals]);
 
     // Categories layout: only sum cards currently on-screen (never parent catalog reconcile).
-    const footerTotalKcal =
-        layout === 'categories' ? (displayFooterMacros?.calories ?? 0) : totalKcal;
     const footerMacroTotals =
         layout === 'categories' ? (displayFooterMacros ?? { calories: 0, protein: 0, carbs: 0, fat: 0 }) : dayMacroTotals;
 
@@ -2261,7 +2261,7 @@ export default function ChooseYourMeals({
 
     const mainScrollable =
         layout === 'categories' ? (
-            <div className={`flex flex-col ${useProtocolSelectedLayout ? 'gap-4 px-4 md:px-0' : 'gap-1.5 md:gap-2'}`}>
+            <div className={`flex flex-col ${useProtocolSelectedLayout ? 'gap-5 px-0' : 'gap-1.5 md:gap-2'}`}>
                 {categorySections}
                 {protocolFixedChoiceBlock}
                 {fixedChoiceBlock}
@@ -2341,22 +2341,6 @@ export default function ChooseYourMeals({
                 />
             ) : null}
 
-            <p
-                className={[
-                    'mt-1.5 text-right font-montserrat text-sm font-bold tabular-nums',
-                    Math.abs(Math.round(footerTotalKcal) - Math.round(targetCalories)) > dayCalorieTolerance
-                        ? 'text-amber-800'
-                        : 'text-[#1F2937]',
-                ]
-                    .join(' ')
-                    .trim()}
-            >
-                Total: {Math.round(footerTotalKcal)} kcal
-                <span className="ml-1.5 font-body text-xs font-normal text-[#555555]">
-                    (target {Math.round(targetCalories)} ±{dayCalorieTolerance})
-                </span>
-            </p>
-
             {dayProgressLabel ? (
                 <p className="mt-2 font-body text-sm leading-snug text-[#555555]">{dayProgressLabel}</p>
             ) : null}
@@ -2393,11 +2377,11 @@ export default function ChooseYourMeals({
 
     return (
         <section
-            className={`box-border flex w-full flex-col overflow-x-clip border border-gray-200 bg-white shadow-sm max-md:rounded-none max-md:border-x-0 max-md:shadow-none md:rounded-[12px] ${resolvedPanelClassName}`.trim()}
+            className={`box-border flex w-full flex-col overflow-x-clip overflow-hidden border border-gray-200 bg-white shadow-sm max-md:rounded-t-[12px] max-md:border-x-0 max-md:shadow-none md:rounded-[12px] ${resolvedPanelClassName}`.trim()}
             aria-label={dayName ? `Crafting your ${String(dayName).trim()}` : 'Crafting your day'}
         >
             {optionsScreen}
-            <div className="shrink-0 border-b border-gray-200 bg-white px-4 py-3 max-md:px-4 sm:px-5 sm:py-4 md:px-6 md:py-4">
+            <div className="shrink-0 rounded-t-[12px] border-b border-gray-200 bg-white px-4 py-3 max-md:px-4 sm:px-5 sm:py-4 md:px-6 md:py-4">
                 {dayMacroSummary}
             </div>
 

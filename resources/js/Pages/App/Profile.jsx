@@ -1,4 +1,4 @@
-import { Link } from '@inertiajs/react';
+import { Link, router } from '@inertiajs/react';
 import CustomerAppBottomNav from '../../Components/Molecules/Customer/CustomerAppBottomNav.jsx';
 import CustomerInertiaShell from '../../Layouts/CustomerInertiaShell.jsx';
 import { resolveInertiaLayoutChild } from '../../lib/resolveInertiaLayoutChild.js';
@@ -122,6 +122,7 @@ function DetailSection({ title, rows, action = null, className = '' }) {
  * @param {string} [props.shopUrl]
  * @param {string} [props.mealPlanSummaryUrl]
  * @param {string} [props.profileEditUrl]
+ * @param {string} [props.logoutUrl]
  * @param {{
  *   name?: string;
  *   email?: string | null;
@@ -152,6 +153,7 @@ export function ProfileInner({
     shopUrl = '/app/shop',
     mealPlanSummaryUrl = '/app/meal-plan',
     profileEditUrl = '/onboarding/gender',
+    logoutUrl = '/logout',
     details = null,
 }) {
     const birthdayLabel =
@@ -235,6 +237,16 @@ export function ProfileInner({
                     }
                 />
                 <DetailSection title="Contact" rows={contactRows} />
+
+                <div className="mt-2 flex justify-center pb-2">
+                    <button
+                        type="button"
+                        onClick={() => router.post(logoutUrl)}
+                        className="font-montserrat text-sm font-semibold text-[#6B7280] underline decoration-[#6B7280]/40 underline-offset-2 hover:text-[#374151] hover:decoration-[#374151]"
+                    >
+                        Sign out
+                    </button>
+                </div>
             </div>
         </CustomerInertiaShell>
     );
@@ -248,6 +260,7 @@ export function ProfileInner({
  * @param {string} [props.shopUrl]
  * @param {string} [props.mealPlanSummaryUrl]
  * @param {string} [props.profileEditUrl]
+ * @param {string} [props.logoutUrl]
  * @param {object | null} [props.details]
  */
 export default function Profile({
@@ -257,6 +270,7 @@ export default function Profile({
     shopUrl = '/app/shop',
     mealPlanSummaryUrl = '/app/meal-plan',
     profileEditUrl = '/onboarding/gender',
+    logoutUrl = '/logout',
     details = null,
 }) {
     return (
@@ -267,6 +281,7 @@ export default function Profile({
             shopUrl={shopUrl}
             mealPlanSummaryUrl={mealPlanSummaryUrl}
             profileEditUrl={profileEditUrl}
+            logoutUrl={logoutUrl}
             details={details}
         />
     );

@@ -84,7 +84,7 @@ test('completed customers see basket summary on payment checkout', function () {
             ->where('basket.benefitPayNumber', '33177718')
             ->where('basket.deliveryAddress.area', 'Adliya')
             ->where('basket.deliveryAddress.formatted', fn ($value) => str_contains((string) $value, 'Adliya'))
-            ->where('basket.planLabel', fn ($label) => str_starts_with((string) $label, 'Balanced Meal plan'))
+            ->where('basket.planLabel', fn ($label) => str_starts_with((string) $label, 'Balanced Anti-inflammatory Meal plan'))
             ->where('detailsUrl', route('checkout.details')));
 
     expect($profile->fresh()->intake_declaration_accepted_at)->not->toBeNull();

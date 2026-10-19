@@ -28,6 +28,7 @@ test('completed customers can view their profile details', function () {
             ->where('shopUrl', route('app.shop'))
             ->where('mealPlanSummaryUrl', route('app.meal-plan'))
             ->where('profileEditUrl', route('onboarding.show', ['step' => OnboardingStep::Gender->value]))
+            ->where('logoutUrl', route('logout'))
             ->where('details.email', 'nasreen@example.com')
             ->where('details.phone', '+97333177718')
             ->where('details.address', 'Adliya, Bahrain')

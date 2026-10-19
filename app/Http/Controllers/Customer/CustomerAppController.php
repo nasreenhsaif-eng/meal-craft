@@ -20,9 +20,14 @@ use Inertia\Response;
 
 class CustomerAppController extends Controller
 {
-    public function home(): Response
+    public function home(): Response|RedirectResponse
     {
         $user = request()->user();
+
+        if ($user?->shouldLandOnCraftedForYou()) {
+            return redirect()->route('consultation.crafted-for-you');
+        }
+
         $profile = $user?->customerProfile;
 
         $latestCraftPlan = $profile?->craftPlans()
@@ -59,6 +64,11 @@ class CustomerAppController extends Controller
                 && ! MealPlanPublishService::customerAlreadyChoseForWeek($profile, $starts, $ends);
         }
 
+        $chooseByFriday = Carbon::now()->startOfDay();
+        if (! $chooseByFriday->isFriday()) {
+            $chooseByFriday = $chooseByFriday->next(Carbon::FRIDAY);
+        }
+
         return Inertia::render('App/Home', [
             'customerName' => $user?->name ?? '',
             'consultationUrl' => route('consultation.crafted-for-you'),
@@ -67,6 +77,8 @@ class CustomerAppController extends Controller
             'profileUrl' => route('app.profile'),
             'shopUrl' => route('app.shop'),
             'mealPlanSummaryUrl' => route('app.meal-plan'),
+            'fulfillmentUrl' => route('checkout.fulfillment'),
+            'chooseByFridayLabel' => MealPlanDateRange::dayLabel($chooseByFriday),
             'profileEditUrl' => route('onboarding.show', [
                 'step' => OnboardingStep::entry()->value,
             ]),
@@ -100,6 +112,7 @@ class CustomerAppController extends Controller
             'profileUrl' => route('app.profile'),
             'shopUrl' => route('app.shop'),
             'mealPlanSummaryUrl' => route('app.meal-plan'),
+            'logoutUrl' => route('logout'),
             'profileEditUrl' => route('onboarding.show', [
                 'step' => OnboardingStep::entry()->value,
             ]),

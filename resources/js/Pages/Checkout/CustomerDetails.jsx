@@ -1,9 +1,36 @@
-import { Link, router, useForm, usePage } from '@inertiajs/react';
+import { useState } from 'react';
+import { router, usePage } from '@inertiajs/react';
 import Button from '../../Components/Atoms/Button/Button.jsx';
 import CustomerCheckoutDetailsReview from '../../Components/CustomerIntake/CustomerCheckoutDetailsReview.jsx';
 import CustomerAppBottomNav from '../../Components/Molecules/Customer/CustomerAppBottomNav.jsx';
 import CustomerInertiaShell from '../../Layouts/CustomerInertiaShell.jsx';
-import { resolveInertiaLayoutChild } from '../../lib/resolveInertiaLayoutChild.js';
+import { submitCheckoutDetailsNative } from './submitCheckoutDetailsNative.js';
+
+/**
+ * @param {unknown} errors
+ * @returns {Record<string, string>}
+ */
+function flattenErrors(errors) {
+    if (!errors || typeof errors !== 'object' || Array.isArray(errors)) {
+        return {};
+    }
+
+    /** @type {Record<string, string>} */
+    const out = {};
+
+    for (const [key, value] of Object.entries(errors)) {
+        if (typeof value === 'string' && value.trim() !== '') {
+            out[key] = value;
+            continue;
+        }
+
+        if (Array.isArray(value) && value.length > 0) {
+            out[key] = String(value[0] ?? '');
+        }
+    }
+
+    return out;
+}
 
 /**
  * @param {object} props
@@ -36,10 +63,37 @@ export default function CustomerDetails({
 }) {
     const page = usePage();
     const flashSuccess = typeof page.props?.flash?.success === 'string' ? page.props.flash.success : null;
-    const { data, setData, post, processing, errors } = useForm({
+    const flashError = typeof page.props?.flash?.error === 'string' ? page.props.flash.error : null;
+    const serverErrors = flattenErrors(page.props?.errors);
+    const [submitting, setSubmitting] = useState(false);
+    const [data, setDataState] = useState(() => ({
         ...form,
         declaration_accepted: declarationAccepted,
-    });
+    }));
+
+    /**
+     * Same call shape as Inertia useForm setData, without Inertia/cloneDeep side effects.
+     *
+     * @param {string | Record<string, mixed> | ((current: Record<string, mixed>) => Record<string, mixed>)} keyOrData
+     * @param {mixed} [maybeValue]
+     */
+    const setData = (keyOrData, maybeValue) => {
+        setDataState((current) => {
+            if (typeof keyOrData === 'function') {
+                return keyOrData(current);
+            }
+
+            if (typeof keyOrData === 'string') {
+                return { ...current, [keyOrData]: maybeValue };
+            }
+
+            if (keyOrData && typeof keyOrData === 'object') {
+                return { ...current, ...keyOrData };
+            }
+
+            return current;
+        });
+    };
 
     return (
         <CustomerInertiaShell
@@ -54,17 +108,19 @@ export default function CustomerDetails({
             }
         >
             <div className="mx-auto w-full min-w-0">
-                <Button
-                    type="button"
-                    label="← Back to kitchen"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => router.visit(deliveryUrl)}
-                    className="!h-auto !min-h-0 px-0"
-                />
-                <h1 className="mt-3 font-montserrat text-3xl font-semibold tracking-tight text-[#262A22]">
-                    Your details
-                </h1>
+                <div className="flex items-start justify-between gap-3">
+                    <h1 className="min-w-0 font-montserrat text-3xl font-semibold tracking-tight text-[#262A22]">
+                        Your details
+                    </h1>
+                    <Button
+                        type="button"
+                        label="Close"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => router.visit(deliveryUrl)}
+                        className="shrink-0"
+                    />
+                </div>
                 <p className="mt-3 font-body text-sm leading-relaxed text-[#555555] sm:text-base">
                     Review your onboarding details, complete delivery information, and confirm everything is
                     correct.
@@ -72,28 +128,43 @@ export default function CustomerDetails({
                 {flashSuccess ? (
                     <p className="mt-4 font-body text-sm font-medium text-[#5A6B44]">{flashSuccess}</p>
                 ) : null}
+                {flashError ? (
+                    <p className="mt-4 font-body text-sm font-medium text-status-error" role="alert">
+                        {flashError}
+                    </p>
+                ) : null}
                 <div className="mt-6 w-full min-w-0">
                     <CustomerCheckoutDetailsReview
                         data={data}
                         setData={setData}
-                        errors={errors}
-                        processing={processing}
+                        errors={serverErrors}
+                        processing={submitting}
                         options={options}
                         uniqueCode={uniqueCode}
                         intakeSubmissionId={intakeSubmissionId}
-                        onSubmit={() => post(submitUrl)}
+                        onSubmit={(payload = data) => {
+                            if (submitting) {
+                                return;
+                            }
+
+                            setSubmitting(true);
+
+                            void submitCheckoutDetailsNative(submitUrl, payload, '/checkout/payment').catch(
+                                (error) => {
+                                    // eslint-disable-next-line no-console
+                                    console.error(error);
+                                    setSubmitting(false);
+                                    window.alert(
+                                        error instanceof Error
+                                            ? error.message
+                                            : 'Could not continue to payment. Refresh and try again.',
+                                    );
+                                },
+                            );
+                        }}
                     />
                 </div>
-                <p className="mt-4 font-body text-xs text-[#6B7280]">
-                    You can return to your dashboard anytime from{' '}
-                    <Link href={homeUrl} className="font-semibold text-[#5A6B44] hover:underline">
-                        Home
-                    </Link>
-                    .
-                </p>
             </div>
         </CustomerInertiaShell>
     );
 }
-
-CustomerDetails.layout = (pageOrProps) => resolveInertiaLayoutChild(pageOrProps);

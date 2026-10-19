@@ -53,11 +53,18 @@ function withSummaryDetailView(meal, highlights = {}) {
     return {
         ...meal,
         detailView: {
-            title: meal.title,
-            safetyAlerts: highlights.safetyAlerts ?? [],
-            sickleCellHighlights: highlights.sickleCellHighlights ?? meal.nutrientHighlights ?? [],
+            ...mealDetailViewFixture,
+            shortDescription: meal.title
+                ? `${meal.title} — adapted for your craft plan.`
+                : mealDetailViewFixture.shortDescription,
+            imageUrl: meal.imageUrl,
+            imageAlt: meal.title,
+            safetyAlerts: highlights.safetyAlerts ?? mealDetailViewFixture.safetyAlerts,
+            sickleCellHighlights:
+                highlights.sickleCellHighlights ?? meal.nutrientHighlights ?? mealDetailViewFixture.sickleCellHighlights,
             hasG6pdTrigger: false,
             nutritionalData: scaledNutritionalData(highlights.nutritionFactor ?? 0.45),
+            nutritionSubheading: 'Adapted for your plan',
         },
     };
 }
@@ -139,13 +146,13 @@ export default {
         docs: {
             description: {
                 component:
-                    'Customer meal-plan summary at `/app/meal-plan`. Same stepped flow on mobile and desktop: pick day → pick topic (Meals / Macros / Micros / Allergy / Sickle) → topic content. Next (fulfillment) stays on the day list (or topic menu for single-day plans).',
+                    'Customer meal-plan summary at `/app/meal-plan`. Pick a delivery day, then scroll full meal details (ingredients, nutrition, safety). Compact pills switch Meals / Macros / Micros / Allergy / Sickle. “Choose a delivery option” stays available.',
             },
         },
     },
 };
 
-/** Stepped flow on a wide viewport — starts on the day picker. */
+/** Day picker with new hero copy — starts on the day list. */
 export const Default = {
     name: 'Full week — 2000 kcal',
     parameters: {
@@ -165,9 +172,9 @@ export const Default = {
     ),
 };
 
-/** Same stepped flow inside the shared mobile story frame. */
+/** Same flow inside the shared mobile story frame. */
 export const MobileFrame = {
-    name: 'Mobile — stepped day → topic → content',
+    name: 'Mobile — day list → full meal details',
     decorators: withOnboardingMobileFrame,
     parameters: {
         viewport: {
@@ -203,9 +210,9 @@ const SINGLE_DAY_PLAN = {
     ],
 };
 
-/** Single delivery day — mobile skips day picker and opens on the topic menu. */
+/** Single delivery day — skips day picker and opens full meal details. */
 export const MobileSingleDay = {
-    name: 'Mobile — single day starts on topics',
+    name: 'Mobile — single day opens full meals',
     decorators: withOnboardingMobileFrame,
     parameters: {
         viewport: {
@@ -224,9 +231,9 @@ export const MobileSingleDay = {
     ),
 };
 
-/** Opens straight on Micronutrients content (mobile stepped screen 3). */
+/** Opens straight on Micronutrients for the first day. */
 export const MobileMicronutrients = {
-    name: 'Mobile — micronutrients',
+    name: 'Mobile — micronutrients pill',
     decorators: withOnboardingMobileFrame,
     parameters: {
         viewport: {
@@ -242,14 +249,14 @@ export const MobileMicronutrients = {
             dailyCalorieTarget={2000}
             enableMealDetailModal={false}
             initialContentTab="micronutrients"
-            initialMobileStep="content"
+            initialMobileStep="day"
         />
     ),
 };
 
-/** Desktop stepped flow opened on Micronutrients content. */
+/** Desktop opened on Micronutrients for the first day. */
 export const DesktopMicronutrients = {
-    name: 'Desktop — micronutrients',
+    name: 'Desktop — micronutrients pill',
     parameters: {
         viewport: {
             defaultViewport: 'desktop',
@@ -264,7 +271,7 @@ export const DesktopMicronutrients = {
             dailyCalorieTarget={2000}
             enableMealDetailModal={false}
             initialContentTab="micronutrients"
-            initialStep="content"
+            initialStep="day"
         />
     ),
 };

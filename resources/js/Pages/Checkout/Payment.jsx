@@ -1,11 +1,11 @@
 import { useMemo, useState } from 'react';
-import { Link, router, useForm, usePage } from '@inertiajs/react';
+import { router, useForm, usePage } from '@inertiajs/react';
 import Button from '../../Components/Atoms/Button/Button.jsx';
 import SquareCheckbox from '../../Components/Atoms/Icons/SquareCheckbox.jsx';
 import TextInput from '../../Components/Atoms/TextInput/TextInput.jsx';
 import FoodFilterPill from '../../Components/MealSystem/FoodFilterPill.jsx';
+import CustomerAppBottomNav from '../../Components/Molecules/Customer/CustomerAppBottomNav.jsx';
 import CustomerInertiaShell from '../../Layouts/CustomerInertiaShell.jsx';
-import { resolveInertiaLayoutChild } from '../../lib/resolveInertiaLayoutChild.js';
 
 /**
  * @param {number | null | undefined} amount
@@ -52,6 +52,9 @@ function formatMoney(amount, currency = 'BHD') {
  * }} [props.basket]
  * @param {string} [props.detailsUrl]
  * @param {string} [props.homeUrl]
+ * @param {string} [props.profileUrl]
+ * @param {string} [props.shopUrl]
+ * @param {string} [props.mealPlanSummaryUrl]
  * @param {string} [props.submitUrl]
  * @param {string} [props.applyPromoUrl]
  */
@@ -60,11 +63,15 @@ export default function Payment({
     basket = {},
     detailsUrl = '/checkout/details',
     homeUrl = '/app',
+    profileUrl = '/app/profile',
+    shopUrl = '/app/shop',
+    mealPlanSummaryUrl = '/app/meal-plan',
     submitUrl = '/checkout/payment',
     applyPromoUrl = '/checkout/payment',
 }) {
     const page = usePage();
     const flashSuccess = typeof page.props?.flash?.success === 'string' ? page.props.flash.success : null;
+    const flashError = typeof page.props?.flash?.error === 'string' ? page.props.flash.error : null;
 
     const currency = basket.currency ?? 'BHD';
     const [promoInput, setPromoInput] = useState(basket.promoCode ?? '');
@@ -93,24 +100,41 @@ export default function Payment({
     const canPay = data.cart_confirmed && data.payment_method === 'benefit_pay' && !processing;
 
     return (
-        <CustomerInertiaShell customerName={customerName}>
-            <div className="mx-auto w-full min-w-0 max-w-3xl">
-                <Button
-                    type="button"
-                    label="← Back to your details"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => router.visit(detailsUrl)}
-                    className="!h-auto !min-h-0 px-0"
+        <CustomerInertiaShell
+            customerName={customerName}
+            footerNav={
+                <CustomerAppBottomNav
+                    homeUrl={homeUrl}
+                    profileUrl={profileUrl}
+                    shopUrl={shopUrl}
+                    mealsUrl={mealPlanSummaryUrl}
                 />
-                <h1 className="mt-3 font-montserrat text-3xl font-semibold tracking-tight text-[#262A22]">
-                    Payment checkout
-                </h1>
+            }
+        >
+            <div className="mx-auto w-full min-w-0 max-w-3xl">
+                <div className="flex items-start justify-between gap-3">
+                    <h1 className="min-w-0 font-montserrat text-3xl font-semibold tracking-tight text-[#262A22]">
+                        Payment checkout
+                    </h1>
+                    <Button
+                        type="button"
+                        label="Close"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => router.visit(detailsUrl)}
+                        className="shrink-0"
+                    />
+                </div>
                 <p className="mt-3 font-body text-sm leading-relaxed text-[#555555] sm:text-base">
                     Review your basket, confirm delivery, and pay with Benefit Pay.
                 </p>
                 {flashSuccess ? (
                     <p className="mt-4 font-body text-sm font-medium text-[#5A6B44]">{flashSuccess}</p>
+                ) : null}
+                {flashError ? (
+                    <p className="mt-4 font-body text-sm font-medium text-status-error" role="alert">
+                        {flashError}
+                    </p>
                 ) : null}
 
                 <section className="mt-8 rounded-[12px] border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
@@ -306,17 +330,8 @@ export default function Payment({
                         />
                     </div>
                 </section>
-
-                <p className="mt-4 font-body text-xs text-[#6B7280]">
-                    You can return to your dashboard anytime from{' '}
-                    <Link href={homeUrl} className="font-semibold text-[#5A6B44] hover:underline">
-                        Home
-                    </Link>
-                    .
-                </p>
             </div>
         </CustomerInertiaShell>
     );
 }
 
-Payment.layout = (pageOrProps) => resolveInertiaLayoutChild(pageOrProps);

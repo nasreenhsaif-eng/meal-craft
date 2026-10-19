@@ -25,9 +25,19 @@ class InertiaErrorBoundary extends Component {
         if (this.state.error) {
             return (
                 <div className="p-6 font-sans text-sm text-zinc-800">
-                    <h1 className="text-lg font-semibold text-zinc-900">Admin app failed to render</h1>
-                    <p className="mt-2 text-zinc-600">Open DevTools → Console for the full stack trace.</p>
-                    <pre className="mt-4 max-h-48 overflow-auto rounded-md bg-zinc-100 p-3 text-xs">{this.state.error.message}</pre>
+                    <h1 className="text-lg font-semibold text-zinc-900">This page failed to render</h1>
+                    <p className="mt-2 text-zinc-600">
+                        Hard refresh (<kbd>Cmd</kbd>+<kbd>Shift</kbd>+<kbd>R</kbd>), then try again. If it keeps
+                        happening, open DevTools → Console and share the red error.
+                    </p>
+                    <pre className="mt-4 max-h-48 overflow-auto rounded-md bg-zinc-100 p-3 text-xs">
+                        {this.state.error.message}
+                    </pre>
+                    <p className="mt-4">
+                        <a className="font-semibold text-[#5A6B44] underline" href="/checkout/payment">
+                            Open payment checkout
+                        </a>
+                    </p>
                 </div>
             );
         }
@@ -50,7 +60,7 @@ createInertiaApp({
         return page;
     },
     setup({ el, App, props }) {
-        const rootEl = el ?? document.getElementById('app');
+        const rootEl = document.getElementById('app') ?? el;
         if (!rootEl) {
             // eslint-disable-next-line no-console
             console.error('Inertia root element not found (expected #app from @inertia).');
@@ -61,17 +71,41 @@ createInertiaApp({
             return;
         }
 
+        const app = (
+            <InertiaErrorBoundary>
+                <App {...props} />
+            </InertiaErrorBoundary>
+        );
+
+        // Persist the React root across Vite HMR. Older builds stored
+        // `{ current: Root }` — migrate that so .render() always exists.
+        const existing = window.__MC_INERTIA_ROOT__;
+        if (existing && typeof existing.render === 'function') {
+            existing.render(app);
+            return;
+        }
+
+        if (
+            existing &&
+            typeof existing === 'object' &&
+            existing.current &&
+            typeof existing.current.render === 'function'
+        ) {
+            window.__MC_INERTIA_ROOT__ = existing.current;
+            window.__MC_INERTIA_ROOT__.render(app);
+            return;
+        }
+
         try {
-            createRoot(rootEl).render(
-                <InertiaErrorBoundary>
-                    <App {...props} />
-                </InertiaErrorBoundary>,
-            );
+            window.__MC_INERTIA_ROOT__ = createRoot(rootEl);
+            window.__MC_INERTIA_ROOT__.render(app);
         } catch (error) {
             // eslint-disable-next-line no-console
-            console.error(error);
-            rootEl.innerHTML =
-                '<p class="p-6 font-sans text-sm text-zinc-800">Failed to start the admin app. Open DevTools → Console for details.</p>';
+            console.warn(error);
+            if (!window.__MC_INERTIA_RELOAD_ATTEMPTED__) {
+                window.__MC_INERTIA_RELOAD_ATTEMPTED__ = true;
+                window.location.reload();
+            }
         }
     },
     progress: {

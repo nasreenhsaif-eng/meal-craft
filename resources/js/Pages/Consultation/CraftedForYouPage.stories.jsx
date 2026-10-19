@@ -18,7 +18,7 @@ export default {
         docs: {
             description: {
                 component:
-                    'Customer Crafted for YOU consultation: craft type, week duration, day selection, and meal decks with mock library data (no adapted-menu API).',
+                    'Customer Crafted for YOU consultation: craft type, then week duration, then day selection (when needed), and meal decks with mock library data (no adapted-menu API).',
             },
         },
     },

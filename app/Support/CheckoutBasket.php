@@ -72,8 +72,8 @@ final class CheckoutBasket
 
         $diet = DietProtocol::tryFromStored($profile->diet_protocol);
         $dietShort = match ($diet) {
-            DietProtocol::Balanced => 'Balanced',
-            DietProtocol::NutrientDense => 'Nutrient Dense',
+            DietProtocol::Balanced => 'Balanced Anti-inflammatory',
+            DietProtocol::NutrientDense => 'Balanced Anti-inflammatory',
             DietProtocol::Ketobiotic => 'Ketobiotic',
             DietProtocol::CycleSync => 'Cycle Sync',
             DietProtocol::Thyroid => 'Thyroid',

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
-import { Link, router } from '@inertiajs/react';
+import { router } from '@inertiajs/react';
 import { AnimatePresence, motion } from 'framer-motion';
 import Button from '../../Components/Atoms/Button.jsx';
 import OnboardingOptionButton from '../../Components/Atoms/Button/OnboardingOptionButton.jsx';
@@ -16,7 +16,7 @@ import { useMealDetailModal } from '../../meal-library/useMealDetailModal.js';
 
 const PAGE_BG = 'bg-[#F8F9F6]';
 
-/** @typedef {'days' | 'topics' | 'content'} SummaryStep */
+/** @typedef {'days' | 'day'} SummaryStep */
 /** @typedef {'meals' | 'macronutrients' | 'micronutrients' | 'allergies' | 'sickle'} DaySummaryTabId */
 
 const slideTransition = { type: 'spring', stiffness: 260, damping: 30, mass: 0.85 };
@@ -41,6 +41,25 @@ const slideTransition = { type: 'spring', stiffness: 260, damping: 30, mass: 0.8
  */
 
 /**
+ * Map legacy Storybook / deep-link step names onto the two-step flow.
+ *
+ * @param {string | undefined} raw
+ * @param {boolean} hasMultipleDays
+ * @returns {SummaryStep}
+ */
+function resolveStartingStep(raw, hasMultipleDays) {
+    if (raw === 'days' && hasMultipleDays) {
+        return 'days';
+    }
+
+    if (raw === 'day' || raw === 'content' || raw === 'topics') {
+        return 'day';
+    }
+
+    return hasMultipleDays ? 'days' : 'day';
+}
+
+/**
  * @param {object} props
  * @param {string} [props.customerName]
  * @param {MealPlanSummaryCraftPlan} [props.craftPlan]
@@ -53,8 +72,8 @@ const slideTransition = { type: 'spring', stiffness: 260, damping: 30, mass: 0.8
  * @param {number | null} [props.dailyCalorieTarget]
  * @param {boolean} [props.enableMealDetailModal]
  * @param {DaySummaryTabId} [props.initialContentTab] Storybook / deep-link: starting topic tab.
- * @param {SummaryStep} [props.initialMobileStep] Storybook / deep-link: starting screen (legacy prop name).
- * @param {SummaryStep} [props.initialStep] Storybook / deep-link: starting screen.
+ * @param {string} [props.initialMobileStep] Storybook / deep-link: starting screen (legacy prop name).
+ * @param {string} [props.initialStep] Storybook / deep-link: starting screen.
  */
 export function MealPlanSummaryInner({
     customerName = '',
@@ -76,7 +95,7 @@ export function MealPlanSummaryInner({
 }) {
     const days = craftPlan.days ?? [];
     const hasMultipleDays = days.length > 1;
-    const startingStep = initialStep ?? initialMobileStep ?? (hasMultipleDays ? 'days' : 'topics');
+    const startingStep = resolveStartingStep(initialStep ?? initialMobileStep, hasMultipleDays);
 
     const [activeDay, setActiveDay] = useState(() => days[0]?.dayNumber ?? 1);
     /** @type {[DaySummaryTabId, import('react').Dispatch<import('react').SetStateAction<DaySummaryTabId>>]} */
@@ -130,7 +149,6 @@ export function MealPlanSummaryInner({
     const activeDayLabel = activeDayData?.dateLabel
         ? `${activeDayData.label} ${activeDayData.dateLabel}`
         : (activeDayData?.label ?? 'Day');
-    const activeTabLabel = DAY_SUMMARY_TABS.find((tab) => tab.id === contentTab)?.label ?? 'Meals';
 
     const handleEditSelections = useCallback(() => {
         const editUrl =
@@ -155,12 +173,8 @@ export function MealPlanSummaryInner({
 
     const handleSelectDay = useCallback((dayNumber) => {
         setActiveDay(dayNumber);
-        setStep('topics');
-    }, []);
-
-    const handleSelectTopic = useCallback((/** @type {DaySummaryTabId} */ tabId) => {
-        setContentTab(tabId);
-        setStep('content');
+        setContentTab('meals');
+        setStep('day');
     }, []);
 
     useLayoutEffect(() => {
@@ -168,21 +182,16 @@ export function MealPlanSummaryInner({
     }, [activeDay, contentTab, step]);
 
     const pageIntro = (
-        <div className="mb-5 min-w-0">
-            <Link
-                href={homeUrl}
-                className="inline-flex items-center gap-1 font-montserrat text-sm font-semibold text-[#5A6B44] hover:underline"
-            >
-                ← Back to home
-            </Link>
-            <h1 className="mt-2 font-montserrat text-2xl font-bold tracking-tight text-[#262A22] sm:text-3xl">
-                Your meal plan
+        <div className="mb-3 min-w-0">
+            <h1 className="font-montserrat text-2xl font-bold tracking-tight text-[#262A22] sm:text-3xl">
+                Your week, crafted.
             </h1>
-            <p className="mt-2 font-body text-sm text-[#555555] sm:text-base">
+            <p className="mt-1 font-body text-sm leading-snug text-[#374151] sm:text-base">
+                Open a day. Every meal, every ingredient, every detail.
+            </p>
+            <p className="mt-1 font-body text-xs text-[#6B7280] sm:text-sm">
                 {planCategoryLabel}
-                {craftPlan.planDateRange?.label ? (
-                    <span className="font-semibold text-[#262A22]"> · {craftPlan.planDateRange.label}</span>
-                ) : null}
+                {craftPlan.planDateRange?.label ? ` · ${craftPlan.planDateRange.label}` : null}
                 {days.length > 0 ? ` · ${days.length} delivery ${days.length === 1 ? 'day' : 'days'}` : null}
             </p>
         </div>
@@ -202,11 +211,12 @@ export function MealPlanSummaryInner({
             dietProtocol={craftPlan.dietProtocol ?? null}
             onOpenMeal={enableMealDetailModal ? openMealDetail : undefined}
             onEditMeals={handleEditSelections}
+            fullMealDetails
         />
     );
 
     const nextFooter = (
-        <div className="mt-4 flex flex-wrap justify-center gap-3 border-t border-gray-200 pt-6">
+        <div className="mt-3 flex flex-wrap justify-center gap-3 border-t border-gray-200 pt-4">
             <Button label="Choose a delivery option" variant="primary" onClick={handleNext} className="px-10" />
         </div>
     );
@@ -214,8 +224,8 @@ export function MealPlanSummaryInner({
     const daysScreen = (
         <>
             {pageIntro}
-            <p className="mb-4 font-body text-sm text-[#555555]">Choose a delivery day to review.</p>
-            <div className="mx-auto flex w-full max-w-xl flex-col gap-3" role="list" aria-label="Plan days">
+            <p className="mb-3 font-body text-sm text-[#555555]">Pick a delivery day to open your meals.</p>
+            <div className="mx-auto flex w-full max-w-xl flex-col gap-2" role="list" aria-label="Plan days">
                 {days.map((day) => {
                     const label = day.dateLabel ? `${day.label} ${day.dateLabel}` : day.label;
 
@@ -234,73 +244,77 @@ export function MealPlanSummaryInner({
         </>
     );
 
-    const topicsScreen = (
+    const dayScreen = (
         <>
-            {hasMultipleDays ? (
-                <div className="mb-5 min-w-0">
-                    <button
-                        type="button"
-                        onClick={() => setStep('days')}
-                        className="inline-flex items-center gap-1 font-montserrat text-sm font-semibold text-[#5A6B44] hover:underline"
-                    >
-                        ← Back to days
-                    </button>
-                    <h1 className="mt-2 font-montserrat text-2xl font-bold tracking-tight text-[#262A22] sm:text-3xl">
-                        {activeDayLabel}
-                    </h1>
-                    <p className="mt-2 font-body text-sm text-[#555555]">What would you like to review?</p>
-                </div>
-            ) : (
-                <>
-                    {pageIntro}
-                    <p className="mb-4 font-body text-sm text-[#555555]">
-                        What would you like to review for {activeDayLabel}?
-                    </p>
-                </>
-            )}
-
-            <div className="mx-auto flex w-full max-w-xl flex-col gap-3" role="list" aria-label="Day content topics">
-                {DAY_SUMMARY_TABS.map((tab) => (
-                    <OnboardingOptionButton
-                        key={tab.id}
-                        label={tab.label}
-                        align="center"
-                        onSelect={() => handleSelectTopic(/** @type {DaySummaryTabId} */ (tab.id))}
-                    />
-                ))}
+            <div className="mb-2 min-w-0">
+                {hasMultipleDays ? (
+                    <>
+                        <div className="flex items-start justify-between gap-3">
+                            <h1 className="min-w-0 font-montserrat text-2xl font-bold tracking-tight text-[#262A22] sm:text-3xl">
+                                {activeDayLabel}
+                            </h1>
+                            <Button
+                                type="button"
+                                label="Close"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setStep('days')}
+                                className="shrink-0"
+                            />
+                        </div>
+                        <p className="mt-0.5 font-body text-sm text-[#555555]">
+                            Every meal, every ingredient, every detail.
+                        </p>
+                    </>
+                ) : (
+                    pageIntro
+                )}
             </div>
 
+            <div
+                className="mb-3 flex gap-1.5 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                role="tablist"
+                aria-label="Day information"
+            >
+                {DAY_SUMMARY_TABS.map((tab) => {
+                    const selected = contentTab === tab.id;
+
+                    return (
+                        <button
+                            key={tab.id}
+                            type="button"
+                            role="tab"
+                            aria-selected={selected}
+                            onClick={() => setContentTab(/** @type {DaySummaryTabId} */ (tab.id))}
+                            className={[
+                                'shrink-0 rounded-full px-2.5 py-1 font-montserrat text-[11px] font-bold tracking-wide transition-colors',
+                                selected
+                                    ? 'bg-[#5A6B44] text-white'
+                                    : 'bg-white text-[#555555] ring-1 ring-gray-200 hover:text-[#262A22]',
+                            ].join(' ')}
+                        >
+                            {tab.label}
+                        </button>
+                    );
+                })}
+            </div>
+
+            <div className="pb-6">{summaryPanel}</div>
             {!hasMultipleDays ? nextFooter : null}
+            {hasMultipleDays ? (
+                <div className="mt-1 flex flex-wrap justify-center gap-3 border-t border-gray-200 pt-4">
+                    <Button
+                        label="Choose a delivery option"
+                        variant="primary"
+                        onClick={handleNext}
+                        className="px-10"
+                    />
+                </div>
+            ) : null}
         </>
     );
 
-    const contentScreen = (
-        <>
-            <div className="mb-5 min-w-0">
-                <button
-                    type="button"
-                    onClick={() => setStep('topics')}
-                    className="inline-flex items-center gap-1 font-montserrat text-sm font-semibold text-[#5A6B44] hover:underline"
-                >
-                    ← Back to topics
-                </button>
-                <p className="mt-2 font-montserrat text-xs font-bold uppercase tracking-wide text-[#555555]">
-                    {activeDayLabel}
-                </p>
-                <h1 className="mt-1 font-montserrat text-2xl font-bold tracking-tight text-[#262A22] sm:text-3xl">
-                    {activeTabLabel}
-                </h1>
-            </div>
-            <div className="pb-12">{summaryPanel}</div>
-        </>
-    );
-
-    let screen = topicsScreen;
-    if (step === 'days' && hasMultipleDays) {
-        screen = daysScreen;
-    } else if (step === 'content') {
-        screen = contentScreen;
-    }
+    const screen = step === 'days' && hasMultipleDays ? daysScreen : dayScreen;
 
     return (
         <CustomerInertiaShell
@@ -316,7 +330,7 @@ export function MealPlanSummaryInner({
             }
         >
             <div className={`min-h-full font-body ${PAGE_BG}`}>
-                <div className="mx-auto w-full max-w-5xl px-3 py-6 sm:px-6 lg:px-8">
+                <div className="mx-auto w-full max-w-5xl px-2 py-3 sm:px-3 sm:py-4">
                     <AnimatePresence mode="wait" initial={false}>
                         <motion.div
                             key={`${step}-${activeDay}-${contentTab}`}
@@ -336,6 +350,7 @@ export function MealPlanSummaryInner({
                     mealDetailModal={mealDetailModal}
                     loading={detailLoading}
                     onClose={closeMealDetail}
+                    hideInstructions
                 />
             ) : null}
         </CustomerInertiaShell>

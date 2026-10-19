@@ -494,7 +494,7 @@ test('onboarding pages receive shared meal craft onboarding props', function () 
             ->where('mealCraft.onboarding.currentStep', OnboardingStep::Activity->value));
 });
 
-test('completed onboarding redirects to home', function () {
+test('completed onboarding redirects to crafted for you', function () {
     $customer = User::factory()->customer()->create();
     CustomerProfile::factory()->for($customer)->withoutOnboarding()->create([
         'onboarding_step' => OnboardingStep::FoodFilters,
@@ -504,7 +504,7 @@ test('completed onboarding redirects to home', function () {
         ->post(route('onboarding.food-filters.store'), [
             'allergies' => ['gluten', 'dairy'],
         ])
-        ->assertRedirect(route('app.home'));
+        ->assertRedirect(route('consultation.crafted-for-you'));
 
     $profile = $customer->fresh()->customerProfile;
 
@@ -513,11 +513,7 @@ test('completed onboarding redirects to home', function () {
 
     $this->actingAs($customer)
         ->get(route('app.home'))
-        ->assertSuccessful()
-        ->assertInertia(fn ($page) => $page
-            ->component('App/Home')
-            ->where('consultationUrl', route('consultation.crafted-for-you'))
-            ->where('craftPlan', null));
+        ->assertRedirect(route('consultation.crafted-for-you'));
 });
 
 test('customer home shows the onboarding calorie target range instead of the snapped plan tier', function () {
@@ -531,6 +527,12 @@ test('customer home shows the onboarding calorie target range instead of the sna
         'age' => 32,
         'sex' => CustomerSex::Female,
         'activity_level' => CustomerActivityLevel::LightlyActive,
+    ]);
+    $profile->craftPlans()->create([
+        'craft_key' => 'full',
+        'week_duration' => 5,
+        'selected_weekdays' => [1, 2, 3, 4, 5],
+        'submitted_at' => now(),
     ]);
 
     $targets = OnboardingDailyTargetsCalculator::calculate($profile);
@@ -548,7 +550,7 @@ test('customer home shows the onboarding calorie target range instead of the sna
             ->where('profile.dailyCaloriesMax', $targets['daily_calories_max']));
 });
 
-test('inertia food filter completion redirects to home', function () {
+test('inertia food filter completion redirects to crafted for you', function () {
     $customer = User::factory()->customer()->create();
     CustomerProfile::factory()->for($customer)->withoutOnboarding()->create([
         'onboarding_step' => OnboardingStep::FoodFilters,
@@ -560,7 +562,7 @@ test('inertia food filter completion redirects to home', function () {
         ], [
             'X-Inertia' => 'true',
         ])
-        ->assertRedirect(route('app.home'));
+        ->assertRedirect(route('consultation.crafted-for-you'));
 });
 
 test('completed customers can reset onboarding for testing', function () {
@@ -607,11 +609,17 @@ test('completed customers can revisit food filters from meal consultation', func
         ->assertSuccessful();
 });
 
-test('completed customers finish profile edits at food filters and return home', function () {
+test('completed customers finish profile edits at food filters and return home when meals are submitted', function () {
     $customer = User::factory()->customer()->create();
-    CustomerProfile::factory()->for($customer)->create([
+    $profile = CustomerProfile::factory()->for($customer)->create([
         'allergies' => ['dairy'],
         'food_filters' => ['dairy'],
+    ]);
+    $profile->craftPlans()->create([
+        'craft_key' => 'full',
+        'week_duration' => 5,
+        'selected_weekdays' => [1, 2, 3, 4, 5],
+        'submitted_at' => now(),
     ]);
 
     $this->actingAs($customer)

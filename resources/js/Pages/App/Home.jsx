@@ -3,8 +3,29 @@ import Button from '../../Components/Atoms/Button/Button.jsx';
 import CustomerAppBottomNav from '../../Components/Molecules/Customer/CustomerAppBottomNav.jsx';
 import FulfillmentOptionCards from '../../Components/Molecules/Customer/FulfillmentOptionCards.jsx';
 import CustomerInertiaShell from '../../Layouts/CustomerInertiaShell.jsx';
-import { resolveInertiaLayoutChild } from '../../lib/resolveInertiaLayoutChild.js';
 import { formatCalorieRange } from '../../meal-craft/dailyTargetsCalculator.js';
+
+/** @type {Array<{ title: string; description: string; ctaHint?: string }>} */
+const HOME_FEATURE_TEASERS = [
+    {
+        title: 'Ingredient Scanner',
+        description:
+            'Instantly identify harmful additives and verify food quality with our smart scanner.',
+        ctaHint: 'Coming soon',
+    },
+    {
+        title: 'Non-Toxic Kitchen Guide',
+        description:
+            'Audit your kitchen tools and discover which items may be leaching harmful chemicals into your food.',
+        ctaHint: 'Take the Quiz — Coming soon',
+    },
+    {
+        title: 'Health Tracking',
+        description:
+            'Monitor inflammation markers and track your wellness journey with detailed insights.',
+        ctaHint: 'Coming soon',
+    },
+];
 
 /**
  * @param {{
@@ -37,12 +58,13 @@ function dailyCaloriesDisplay(profile) {
  * } | null} [props.profile]
  * @param {'welcome' | 'receive'} [props.mode]
  * @param {string} [props.deliveryUrl]
+ * @param {string} [props.fulfillmentUrl]
  * @param {string} [props.homeUrl]
  * @param {string} [props.profileUrl]
  * @param {string} [props.shopUrl]
  * @param {string} [props.mealPlanSummaryUrl]
- * @param {() => void} [props.onEditMealsPlan]
- * @param {string} [props.planDateRangeLabel]
+ * @param {() => void} [props.onChooseMeals]
+ * @param {string} [props.chooseByFridayLabel]
  * @param {boolean} [props.showPlanReady]
  */
 export function WelcomeBackInner({
@@ -50,12 +72,13 @@ export function WelcomeBackInner({
     profile = null,
     mode = 'welcome',
     deliveryUrl = '/checkout/delivery',
+    fulfillmentUrl = '/checkout/fulfillment',
     homeUrl = '/app',
     profileUrl = '/app/profile',
     shopUrl = '/app/shop',
     mealPlanSummaryUrl = '/app/meal-plan',
-    onEditMealsPlan,
-    planDateRangeLabel = '',
+    onChooseMeals,
+    chooseByFridayLabel = '',
     showPlanReady = false,
 }) {
     const isReceive = mode === 'receive';
@@ -77,9 +100,7 @@ export function WelcomeBackInner({
                 )
             }
         >
-            <div
-                className="w-full min-w-0 rounded-[16px] border border-gray-200 bg-white px-4 py-6 shadow-sm sm:p-8"
-            >
+            <div className="w-full min-w-0 rounded-[16px] border border-gray-200 bg-white px-4 py-6 shadow-sm sm:p-8">
                 {isReceive ? (
                     <Link
                         href={homeHref}
@@ -101,42 +122,9 @@ export function WelcomeBackInner({
                         home.
                     </p>
                 ) : (
-                    <>
-                        <p className="mt-3 max-w-2xl font-body text-sm leading-relaxed text-[#555555] sm:text-base">
-                            Looking forward to crafting your meals!
-                        </p>
-                        {showPlanReady ? (
-                            <>
-                                <p className="mt-2 max-w-2xl font-body text-sm leading-relaxed text-[#555555] sm:text-base">
-                                    Your meal plan is ready
-                                    {planDateRangeLabel ? (
-                                        <>
-                                            {' '}
-                                            for{' '}
-                                            <span className="font-semibold text-[#262A22]">{planDateRangeLabel}</span>
-                                        </>
-                                    ) : (
-                                        ' for next week'
-                                    )}
-                                    .
-                                </p>
-                                <div className="mt-6 flex w-full justify-center">
-                                    <Button
-                                        type="button"
-                                        label="Choose your meals"
-                                        variant="primary"
-                                        onClick={onEditMealsPlan}
-                                        className="min-w-[200px] uppercase tracking-[0.08em]"
-                                    />
-                                </div>
-                                <p className="mt-3 max-w-2xl font-body text-[11px] leading-snug text-[#777777] sm:text-xs">
-                                    Please submit your choices prior to end of day{' '}
-                                    <span className="font-semibold uppercase tracking-wide text-[#555555]">Friday</span>,
-                                    or our system will automatically choose the meals for your kind self!
-                                </p>
-                            </>
-                        ) : null}
-                    </>
+                    <p className="mt-3 max-w-2xl font-body text-sm leading-relaxed text-[#555555] sm:text-base">
+                        Looking forward to crafting your meals!
+                    </p>
                 )}
 
                 {!isReceive && profile ? (
@@ -154,6 +142,54 @@ export function WelcomeBackInner({
                     </dl>
                 ) : null}
 
+                {!isReceive && profile && showPlanReady ? (
+                    <div className="mt-6">
+                        <p className="max-w-2xl font-body text-sm leading-relaxed text-[#555555] sm:text-base">
+                            Your meal plan is ready.
+                        </p>
+                        <p className="mt-2 max-w-2xl font-body text-[11px] leading-snug tracking-wide text-[#777777] uppercase sm:text-xs">
+                            Please submit your choices prior to end of day Friday
+                            {chooseByFridayLabel ? (
+                                <>
+                                    ,{' '}
+                                    <span className="font-semibold text-[#555555]">{chooseByFridayLabel}</span>
+                                </>
+                            ) : null}
+                            , or our system will automatically choose the meals for your kind self!
+                        </p>
+                        <div className="mt-6 flex w-full justify-center">
+                            <Button
+                                type="button"
+                                label="Choose your meals"
+                                variant="primary"
+                                onClick={onChooseMeals}
+                                className="min-w-[200px] uppercase tracking-[0.08em]"
+                            />
+                        </div>
+                    </div>
+                ) : null}
+
+                {!isReceive ? (
+                    <ul className="mt-8 flex w-full min-w-0 flex-col gap-3">
+                        {HOME_FEATURE_TEASERS.map((feature) => (
+                            <li
+                                key={feature.title}
+                                className="rounded-[12px] border border-gray-200 bg-[#F8F9F6] px-4 py-4 sm:px-5"
+                            >
+                                <h2 className="font-montserrat text-base font-semibold tracking-tight text-[#262A22]">
+                                    {feature.title}
+                                </h2>
+                                <p className="mt-2 font-body text-sm leading-relaxed text-[#555555]">
+                                    {feature.description}
+                                </p>
+                                <p className="mt-3 font-montserrat text-xs font-bold uppercase tracking-[0.08em] text-[#5A6B44]">
+                                    {feature.ctaHint}
+                                </p>
+                            </li>
+                        ))}
+                    </ul>
+                ) : null}
+
                 {isReceive ? <FulfillmentOptionCards deliveryUrl={deliveryUrl} className="mt-8" /> : null}
             </div>
         </CustomerInertiaShell>
@@ -162,29 +198,31 @@ export function WelcomeBackInner({
 
 /**
  * @param {object} props
- * @param {string} [props.consultationUrl]
- * @param {string} [props.consultationEditUrl]
  * @param {string} [props.homeUrl]
  * @param {string} [props.profileUrl]
  * @param {string} [props.shopUrl]
  * @param {string} [props.mealPlanSummaryUrl]
  * @param {string} [props.deliveryUrl]
+ * @param {string} [props.fulfillmentUrl]
+ * @param {string} [props.consultationUrl]
+ * @param {string} [props.consultationEditUrl]
+ * @param {string} [props.chooseByFridayLabel]
  * @param {{ craftKey?: string; weekDuration?: number; submittedAt?: string } | null} [props.craftPlan]
- * @param {{ startsOn?: string; endsOn?: string; label?: string } | null} [props.planDateRange]
  * @param {boolean} [props.showPlanReady]
  */
 export default function Home({
     customerName,
     profile,
-    consultationUrl = '/consultation/crafted-for-you',
-    consultationEditUrl = '/consultation/crafted-for-you/edit',
     homeUrl = '/app',
     profileUrl = '/app/profile',
     shopUrl = '/app/shop',
     mealPlanSummaryUrl = '/app/meal-plan',
     deliveryUrl = '/checkout/delivery',
+    fulfillmentUrl = '/checkout/fulfillment',
+    consultationUrl = '/consultation/crafted-for-you',
+    consultationEditUrl = '/consultation/crafted-for-you/edit',
     craftPlan = null,
-    planDateRange = null,
+    chooseByFridayLabel = '',
     showPlanReady = false,
 }) {
     const page = usePage();
@@ -201,18 +239,18 @@ export default function Home({
             profile={profile}
             mode={mode}
             deliveryUrl={deliveryUrl}
+            fulfillmentUrl={fulfillmentUrl}
             homeUrl={homeUrl}
             profileUrl={profileUrl}
             shopUrl={shopUrl}
             mealPlanSummaryUrl={mealPlanSummaryUrl}
-            onEditMealsPlan={() => {
+            chooseByFridayLabel={chooseByFridayLabel}
+            showPlanReady={showPlanReady}
+            onChooseMeals={() => {
                 // Consultation is a standalone Blade/Vite page, not Inertia.
                 window.location.assign(mealsPlanUrl);
             }}
-            planDateRangeLabel={planDateRange?.label ?? ''}
-            showPlanReady={showPlanReady}
         />
     );
 }
 
-Home.layout = (pageOrProps) => resolveInertiaLayoutChild(pageOrProps);

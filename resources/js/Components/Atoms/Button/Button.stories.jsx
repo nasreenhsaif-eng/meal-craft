@@ -16,7 +16,9 @@ const buttonLabelSpecs = [
 ];
 
 export default {
-    title: 'Design System/02. Atoms/Button',
+    // Nest under Button/… so sibling titles (GenderOptionButton, Tab, etc.) do not
+    // turn this path into a folder-only entry that hides Primary / Ghost / …
+    title: 'Design System/02. Atoms/Button/Button',
     component: Button,
     decorators: [
         (Story) => (

@@ -1,31 +1,39 @@
-import { Link, router } from '@inertiajs/react';
+import { router } from '@inertiajs/react';
 import PartnerKitchenCard from '../../Components/Checkout/PartnerKitchenCard.jsx';
+import CustomerAppBottomNav from '../../Components/Molecules/Customer/CustomerAppBottomNav.jsx';
 import CustomerInertiaShell from '../../Layouts/CustomerInertiaShell.jsx';
-import { resolveInertiaLayoutChild } from '../../lib/resolveInertiaLayoutChild.js';
 
 /**
  * @param {object} props
  * @param {string} [props.customerName]
- * @param {string} [props.fulfillmentUrl]
  * @param {string} [props.detailsUrl]
  * @param {string} [props.homeUrl]
+ * @param {string} [props.profileUrl]
+ * @param {string} [props.shopUrl]
+ * @param {string} [props.mealPlanSummaryUrl]
  */
 export default function Delivery({
     customerName = '',
-    fulfillmentUrl = '/checkout',
     detailsUrl = '/checkout/details',
     homeUrl = '/app',
+    profileUrl = '/app/profile',
+    shopUrl = '/app/shop',
+    mealPlanSummaryUrl = '/app/meal-plan',
 }) {
     return (
-        <CustomerInertiaShell customerName={customerName}>
+        <CustomerInertiaShell
+            customerName={customerName}
+            footerNav={
+                <CustomerAppBottomNav
+                    homeUrl={homeUrl}
+                    profileUrl={profileUrl}
+                    shopUrl={shopUrl}
+                    mealsUrl={mealPlanSummaryUrl}
+                />
+            }
+        >
             <div className="mx-auto w-full max-w-3xl">
-                <Link
-                    href={fulfillmentUrl}
-                    className="inline-flex items-center gap-1 font-montserrat text-sm font-semibold text-[#5A6B44] hover:underline"
-                >
-                    ← Back to fulfillment
-                </Link>
-                <h1 className="mt-3 font-montserrat text-3xl font-semibold tracking-tight text-brand-primary-pressed">
+                <h1 className="font-montserrat text-3xl font-semibold tracking-tight text-brand-primary-pressed">
                     Select a partner kitchen
                 </h1>
                 <p className="mt-3 font-body text-sm leading-relaxed text-grey-33 sm:text-base">
@@ -48,4 +56,3 @@ export default function Delivery({
     );
 }
 
-Delivery.layout = (pageOrProps) => resolveInertiaLayoutChild(pageOrProps);

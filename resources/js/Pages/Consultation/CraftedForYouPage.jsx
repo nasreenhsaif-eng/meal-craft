@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import Button from '../../Components/Atoms/Button.jsx';
+import { resolveCustomerPhoneFrameHost } from '../../Components/Molecules/Customer/resolveCustomerPhoneFrameHost.js';
 import OnboardingOptionButton from '../../Components/Atoms/Button/OnboardingOptionButton.jsx';
 import FoodFilterPill from '../../Components/MealSystem/FoodFilterPill.jsx';
 import OnboardingInlineDescription from '../../Components/Molecules/Onboarding/OnboardingInlineDescription.jsx';
@@ -38,6 +40,7 @@ import {
     saveConsultationDraft,
 } from '../../consultation/consultationDraft.js';
 import { consultationMeals as MOCK_MEALS } from '../../consultation/consultationMockMeals.js';
+import { isBalancedAntiInflammatoryProtocol } from '../../Components/Molecules/Onboarding/dietProtocolUtils.js';
 import MealDetailModalPortal from '../../Components/Molecules/MealDetailModalPortal.jsx';
 import { useMealDetailModal } from '../../meal-library/useMealDetailModal.js';
 
@@ -164,6 +167,28 @@ function slotId(dayIdx, slotKey, index) {
  *   dailyCalorieTarget?: number | null;
  * }} [props]
  */
+
+/**
+ * Render overlays inside the customer phone frame when present.
+ *
+ * @param {{ children: import('react').ReactNode | ((ctx: { nested: boolean }) => import('react').ReactNode) }} props
+ */
+function PhoneFramePortal({ children }) {
+    if (typeof document === 'undefined') {
+        return null;
+    }
+
+    const host = resolveCustomerPhoneFrameHost();
+    if (!host) {
+        return null;
+    }
+
+    const nested = host !== document.body;
+    const content = typeof children === 'function' ? children({ nested }) : children;
+
+    return createPortal(content, host);
+}
+
 export default function CraftedForYouPage({
     closeHref,
     homeHref,
@@ -300,8 +325,6 @@ export default function CraftedForYouPage({
     /** Snapshot of weekday schedules for skip-fetch checks without stale closures. */
     const scheduledFullCraftByWeekdayRef = useRef(scheduledFullCraftByWeekday);
     scheduledFullCraftByWeekdayRef.current = scheduledFullCraftByWeekday;
-    const [isLgViewport, setIsLgViewport] = useState(/** @type {boolean | null} */ (null));
-
     useLayoutEffect(() => {
         if (!initialRestoreDraft) {
             return;
@@ -414,19 +437,10 @@ export default function CraftedForYouPage({
             return;
         }
         // Poka‑Yoke: a 7-day plan always includes all days; manual selection is redundant.
-        // If the user is currently on the manual day selection screen, leap into Day 1 (Sunday).
-        if (screen === 2) {
-            const all = [1, 2, 3, 4, 5, 6, 7];
-            setSelectedDays((prev) => {
-                if (prev.length > 0) {
-                    return prev;
-                }
-
-                return all;
-            });
-            setActiveDay((prev) => prev ?? 1);
-        }
-    }, [weekDuration, screen]);
+        const all = [1, 2, 3, 4, 5, 6, 7];
+        setSelectedDays(all);
+        setActiveDay((prev) => prev ?? 1);
+    }, [weekDuration]);
 
     useEffect(() => {
         // Keep active day valid.
@@ -445,14 +459,6 @@ export default function CraftedForYouPage({
         const t = window.setTimeout(() => setToast({ message: '', visible: false }), 1800);
         return () => window.clearTimeout(t);
     }, [toast.visible]);
-
-    useEffect(() => {
-        const mq = window.matchMedia('(min-width: 1024px)');
-        const fn = () => setIsLgViewport(mq.matches);
-        fn();
-        mq.addEventListener('change', fn);
-        return () => mq.removeEventListener('change', fn);
-    }, []);
 
     const sortedSelectedDays = useMemo(
         () => Array.from(new Set(selectedDays)).filter((d) => d >= 1 && d <= 7).sort((a, b) => a - b),
@@ -615,7 +621,8 @@ export default function CraftedForYouPage({
     const usesManualDaySelection = weekDuration !== 7;
 
     const totalCurationDays = sortedSelectedDays.length;
-    const curationStartScreen = usesManualDaySelection ? 3 : 2; // skip manual-day screen for 7-day plans
+    // Screens: 1 craft → 2 duration → (3 choose days when not 7-day) → curation…
+    const curationStartScreen = usesManualDaySelection ? 4 : 3;
     const finalScreen = curationStartScreen + totalCurationDays;
     const totalScreens =
         weekDuration !== null ? curationStartScreen + weekDuration : Math.max(finalScreen, screen);
@@ -629,9 +636,12 @@ export default function CraftedForYouPage({
             return WEEKDAY_LONG[curationDay - 1] ?? '';
         }
         if (screen === 1) {
-            return 'Plan setup';
+            return 'What’s Your Craft';
         }
-        if (screen === 2 && usesManualDaySelection) {
+        if (screen === 2) {
+            return 'Week duration';
+        }
+        if (screen === 3 && usesManualDaySelection) {
             return 'Choose your days';
         }
         if (screen === finalScreen) {
@@ -1083,7 +1093,7 @@ export default function CraftedForYouPage({
                 const breakfastId = resolveProtocolBreakfastSeedId({
                     assignedBreakfasts: assigned?.breakfasts,
                     currentBreakfastId: current.breakfasts?.[0],
-                    protectExisting: dietProtocol === 'nutrient_dense',
+                    protectExisting: isBalancedAntiInflammatoryProtocol(dietProtocol),
                 });
 
                 if (!breakfastId) {
@@ -1103,7 +1113,17 @@ export default function CraftedForYouPage({
     }, [craft, sortedSelectedDays, scheduledFullCraftByWeekday, dietProtocol]);
 
     useEffect(() => {
-        if (dietProtocol !== 'nutrient_dense' || !craft || sortedSelectedDays.length === 0) {
+        // Seed admin-recommended / primary-slot mains for every protocol (not only nutrient-dense).
+        if (!craft || sortedSelectedDays.length === 0) {
+            return;
+        }
+
+        const mealCap =
+            craft.slots.find((slot) => slot.id === 'meal')?.count ??
+            DEFAULT_FULL_CRAFT_MAX_SELECTIONS.meals ??
+            2;
+
+        if (mealCap <= 0) {
             return;
         }
 
@@ -1121,26 +1141,28 @@ export default function CraftedForYouPage({
                     soup: [],
                 };
 
-                if ((current.meals?.length ?? 0) >= 2) {
+                if ((current.meals?.length ?? 0) >= mealCap) {
                     continue;
                 }
 
                 const assigned = scheduledFullCraftCategoryMealsForDay(scheduledFullCraftByWeekday, day);
                 const mains = assigned?.meals ?? [];
-                const recommended = mains.filter((meal) => meal?.isRecommended);
+                const recommended = mains.filter(
+                    (meal) => meal?.isRecommended || meal?.is_recommended,
+                );
                 const byPrimarySlots = mains.filter((meal) => {
                     const slot = Number(meal?.plan_slot_index ?? meal?.planSlotIndex ?? 0);
 
                     return slot === 1 || slot === 5;
                 });
                 const seedSource =
-                    recommended.length >= 2
+                    recommended.length >= mealCap
                         ? recommended
-                        : byPrimarySlots.length >= 2
+                        : byPrimarySlots.length >= mealCap
                           ? byPrimarySlots
                           : recommended.length > 0
                             ? recommended
-                            : mains.slice(0, 2);
+                            : mains.slice(0, mealCap);
 
                 /** @type {string[]} */
                 const preferredIds = seedSource
@@ -1157,7 +1179,7 @@ export default function CraftedForYouPage({
                 const merged = [...existingIds];
 
                 for (const id of preferredIds) {
-                    if (merged.length >= 2) {
+                    if (merged.length >= mealCap) {
                         break;
                     }
 
@@ -1166,9 +1188,9 @@ export default function CraftedForYouPage({
                     }
                 }
 
-                if (merged.length < 2 && preferredIds.length >= 2) {
-                    // Prefer the two recommended/primary ids over a stale single pick.
-                    merged.splice(0, merged.length, ...preferredIds.slice(0, 2));
+                if (merged.length < mealCap && preferredIds.length >= mealCap) {
+                    // Prefer the recommended/primary ids over a stale partial pick.
+                    merged.splice(0, merged.length, ...preferredIds.slice(0, mealCap));
                 }
 
                 if (merged.length === 0) {
@@ -1183,18 +1205,23 @@ export default function CraftedForYouPage({
                     continue;
                 }
 
-                next[day] = { ...current, meals: merged.slice(0, 2) };
+                next[day] = { ...current, meals: merged.slice(0, mealCap) };
                 changed = true;
             }
 
             return changed ? next : prev;
         });
-    }, [craft, dietProtocol, sortedSelectedDays, scheduledFullCraftByWeekday]);
+    }, [craft, sortedSelectedDays, scheduledFullCraftByWeekday]);
 
     const afternoonDessertKeptRef = useRef(/** @type {Set<number>} */ (new Set()));
 
     useEffect(() => {
-        if (dietProtocol !== 'nutrient_dense' || !craft || sortedSelectedDays.length === 0) {
+        // Seed admin-recommended sides (1–2 of salad / dessert / soup) for every protocol.
+        if (!craft || sortedSelectedDays.length === 0) {
+            return;
+        }
+
+        if (!craft.slots.some((slot) => slot.id === 'fixedChoice')) {
             return;
         }
 
@@ -1219,9 +1246,19 @@ export default function CraftedForYouPage({
                     (current.desserts?.length ?? 0) > 0 &&
                     !afternoonDessertKeptRef.current.has(day)
                 ) {
-                    current = { ...current, desserts: [] };
-                    next[day] = current;
-                    changed = true;
+                    const assignedForClear = scheduledFullCraftCategoryMealsForDay(
+                        scheduledFullCraftByWeekday,
+                        day,
+                    );
+                    const adminDessert = (assignedForClear?.desserts ?? []).some(
+                        (meal) => meal?.isRecommended || meal?.is_recommended,
+                    );
+
+                    if (!adminDessert) {
+                        current = { ...current, desserts: [] };
+                        next[day] = current;
+                        changed = true;
+                    }
                 }
 
                 const hasSides =
@@ -1238,6 +1275,10 @@ export default function CraftedForYouPage({
                     continue;
                 }
 
+                const adminRecommendedDessert = (assigned.desserts ?? []).some(
+                    (meal) => meal?.isRecommended || meal?.is_recommended,
+                );
+
                 /** @type {import('../../consultation/consultationDraft.js').DaySelections} */
                 const sideSeed = {
                     ...current,
@@ -1246,11 +1287,12 @@ export default function CraftedForYouPage({
                     soup: [],
                 };
 
-                let remaining = 2;
+                let remaining = FIXED_CHOICE_REQUIRED_COUNT;
 
-                const sideSeedKeys = includeDefaultDessert
-                    ? /** @type {const} */ (['sideSalads', 'desserts', 'soup'])
-                    : /** @type {const} */ (['sideSalads', 'soup']);
+                const sideSeedKeys =
+                    includeDefaultDessert || adminRecommendedDessert
+                        ? /** @type {const} */ (['sideSalads', 'desserts', 'soup'])
+                        : /** @type {const} */ (['sideSalads', 'soup']);
 
                 for (const key of sideSeedKeys) {
                     if (remaining <= 0) {
@@ -1258,7 +1300,7 @@ export default function CraftedForYouPage({
                     }
 
                     const recommended = (assigned[key] ?? [])
-                        .filter((meal) => meal?.isRecommended)
+                        .filter((meal) => meal?.isRecommended || meal?.is_recommended)
                         .map((meal) => normalizeConsultationMealId(meal?.id))
                         .filter((id) => id !== '');
 
@@ -1282,7 +1324,7 @@ export default function CraftedForYouPage({
 
             return changed ? next : prev;
         });
-    }, [craft, dietProtocol, basePlanTier, sortedSelectedDays, scheduledFullCraftByWeekday]);
+    }, [craft, basePlanTier, sortedSelectedDays, scheduledFullCraftByWeekday]);
 
     const assignedMealsForCalorieDay = useMemo(() => {
         if (!calorieDay) {
@@ -1309,8 +1351,8 @@ export default function CraftedForYouPage({
 
     const progressPercent = totalScreens <= 1 ? 0 : ((screen - 1) / (totalScreens - 1)) * 100;
 
-    const canGoNextFromCraftDuration =
-        craftKey !== null && (isLgViewport !== true ? true : weekDuration !== null);
+    const canGoNextFromCraft = craftKey !== null;
+    const canGoNextFromDuration = weekDuration !== null;
     const canGoNextFromManualDays = weekDuration !== null && sortedSelectedDays.length === weekDuration;
 
     /** Weekly crafts share the default + SEE OTHER OPTIONS day view (no carousel). */
@@ -1625,70 +1667,45 @@ export default function CraftedForYouPage({
                     </p>
                 ) : null}
 
-                {/* Screen 1 — Craft & Duration */}
+                {/* Screen 1 — What’s Your Craft */}
                 {screen === 1 ? (
                     <section className="rounded-[12px] border border-gray-200 bg-white p-6 shadow-sm">
                         <h2 className="font-montserrat text-[16px] font-bold tracking-tight text-[#262A22]">
-                            The Craft &amp; Duration
+                            What’s Your Craft
                         </h2>
                         <p className="mt-1 font-body text-sm text-[#555555]">
-                            Choose your craft and how many days you’re crafting for.
+                            Choose the craft that matches how you want to eat this week.
                         </p>
 
-                        <div className="mt-6 grid gap-6 lg:grid-cols-2">
-                            <div>
-                                <h3 className="font-montserrat text-sm font-bold text-[#262A22]">What’s Your Craft</h3>
-                                <div className="mt-4 flex w-full flex-col gap-2.5">
-                                    {CRAFTS.map((c) => {
-                                        const active = c.key === craftKey;
-                                        const descriptionId = `craft-desc-${c.key}`;
+                        <div className="mt-6 flex w-full flex-col gap-2.5">
+                            {CRAFTS.map((c) => {
+                                const active = c.key === craftKey;
+                                const descriptionId = `craft-desc-${c.key}`;
 
-                                        return (
-                                            <div key={c.key} className="flex w-full flex-col">
-                                                <OnboardingOptionButton
-                                                    label={c.title}
-                                                    selected={active}
-                                                    onSelect={() => setCraftKey(c.key)}
-                                                    describedBy={descriptionId}
-                                                />
-                                                <div
-                                                    className={[
-                                                        'grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none',
-                                                        active ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]',
-                                                    ].join(' ')}
-                                                    aria-hidden={!active}
-                                                >
-                                                    <div className="min-h-0 overflow-hidden">
-                                                        <OnboardingInlineDescription id={descriptionId}>
-                                                            {c.description}
-                                                        </OnboardingInlineDescription>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-
-                            {/* Large screens: week duration on plan setup. Small screens: week duration is on manual day selection instead. */}
-                            <div className="hidden rounded-[12px] border border-gray-200 bg-[#F8F9F6] p-5 lg:block">
-                                <p className="font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#555555]">
-                                    Week duration
-                                </p>
-                                <div className="mt-3 flex flex-wrap gap-2">
-                                    {[5, 6, 7].map((n) => (
-                                        <FoodFilterPill
-                                            key={n}
-                                            label={`${n} days`}
-                                            isActive={weekDuration === n}
-                                            onClick={() => setWeekDuration(n)}
+                                return (
+                                    <div key={c.key} className="flex w-full flex-col">
+                                        <OnboardingOptionButton
+                                            label={c.title}
+                                            selected={active}
+                                            onSelect={() => setCraftKey(c.key)}
+                                            describedBy={descriptionId}
                                         />
-                                    ))}
-                                </div>
-                                <p className="mt-3 font-body text-xs text-[#555555]">
-                                    You’ll pick exactly {weekDuration ?? '…'} active day(s) next.
-                                </p>
-                            </div>
+                                        <div
+                                            className={[
+                                                'grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none',
+                                                active ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]',
+                                            ].join(' ')}
+                                            aria-hidden={!active}
+                                        >
+                                            <div className="min-h-0 overflow-hidden">
+                                                <OnboardingInlineDescription id={descriptionId}>
+                                                    {c.description}
+                                                </OnboardingInlineDescription>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
                         </div>
 
                         <div className={mobileNavBarClass}>
@@ -1696,38 +1713,26 @@ export default function CraftedForYouPage({
                             <Button
                                 label="NEXT"
                                 variant="primary"
-                                disabled={!canGoNextFromCraftDuration}
-                                onClick={() => {
-                                    if (weekDuration === 7) {
-                                        setSelectedDays([1, 2, 3, 4, 5, 6, 7]);
-                                        setActiveDay(1);
-                                        setScreen(2);
-                                        return;
-                                    }
-
-                                    setScreen(2);
-                                }}
+                                disabled={!canGoNextFromCraft}
+                                onClick={() => setScreen(2)}
                                 className="px-10"
                             />
                         </div>
                     </section>
                 ) : null}
 
-                {/* Screen 2 — Manual Day Selection */}
-                {screen === 2 && usesManualDaySelection ? (
+                {/* Screen 2 — Week duration */}
+                {screen === 2 ? (
                     <section className="rounded-[12px] border border-gray-200 bg-white p-6 shadow-sm">
                         <h2 className="font-montserrat text-[16px] font-bold tracking-tight text-[#262A22]">
-                            Manual Day Selection
+                            Week duration
                         </h2>
                         <p className="mt-1 font-body text-sm text-[#555555]">
-                            Choose which days of the week are active.
+                            How many days are you crafting for this week?
                         </p>
 
-                        <div className="mt-5 rounded-[12px] border border-gray-200 bg-[#F8F9F6] p-4 lg:hidden">
-                            <p className="font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#555555]">
-                                Week duration
-                            </p>
-                            <div className="mt-3 flex flex-wrap gap-2">
+                        <div className="mt-6 rounded-[12px] border border-gray-200 bg-[#F8F9F6] p-5">
+                            <div className="flex flex-wrap gap-2">
                                 {[5, 6, 7].map((n) => (
                                     <FoodFilterPill
                                         key={n}
@@ -1737,10 +1742,44 @@ export default function CraftedForYouPage({
                                     />
                                 ))}
                             </div>
-                            <p className="mt-2 font-body text-xs text-[#555555]">
-                                Then choose exactly {weekDuration ?? '…'} active day(s) below.
+                            <p className="mt-3 font-body text-xs text-[#555555]">
+                                {weekDuration === 7
+                                    ? 'All seven days will be included automatically.'
+                                    : `You’ll pick exactly ${weekDuration ?? '…'} active day(s) next.`}
                             </p>
                         </div>
+
+                        <div className={mobileNavBarClass}>
+                            <Button label="BACK" variant="outline" onClick={() => setScreen(1)} className="px-10" />
+                            <Button
+                                label="NEXT"
+                                variant="primary"
+                                disabled={!canGoNextFromDuration}
+                                onClick={() => {
+                                    if (weekDuration === 7) {
+                                        setSelectedDays([1, 2, 3, 4, 5, 6, 7]);
+                                        setActiveDay(1);
+                                        setScreen(3);
+                                        return;
+                                    }
+
+                                    setScreen(3);
+                                }}
+                                className="px-10"
+                            />
+                        </div>
+                    </section>
+                ) : null}
+
+                {/* Screen 3 — Manual Day Selection (5/6-day plans) */}
+                {screen === 3 && usesManualDaySelection ? (
+                    <section className="rounded-[12px] border border-gray-200 bg-white p-6 shadow-sm">
+                        <h2 className="font-montserrat text-[16px] font-bold tracking-tight text-[#262A22]">
+                            Manual Day Selection
+                        </h2>
+                        <p className="mt-1 font-body text-sm text-[#555555]">
+                            Choose which days of the week are active.
+                        </p>
 
                         <div className="mt-5 rounded-[12px] border border-gray-200 bg-[#F8F9F6] p-5">
                             <p className="font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#555555]">
@@ -1766,7 +1805,7 @@ export default function CraftedForYouPage({
                         </div>
 
                         <div className={mobileNavBarClass}>
-                            <Button label="BACK" variant="outline" onClick={() => setScreen(1)} className="px-10" />
+                            <Button label="BACK" variant="outline" onClick={() => setScreen(2)} className="px-10" />
                             <Button
                                 label="NEXT"
                                 variant="primary"
@@ -1905,7 +1944,7 @@ export default function CraftedForYouPage({
                                         ? (categoryKey, meal) => {
                                               if (
                                                   categoryKey === 'breakfasts' &&
-                                                  dietProtocol !== 'nutrient_dense'
+                                                  !isBalancedAntiInflammatoryProtocol(dietProtocol)
                                               ) {
                                                   return;
                                               }
@@ -1929,7 +1968,7 @@ export default function CraftedForYouPage({
                                 deckScopePrefix={usesWeeklyCategoryLayout ? String(curationDay) : ''}
                                 onFooterBack={() => {
                                     if (screen === curationStartScreen) {
-                                        setScreen(usesManualDaySelection ? 2 : 1);
+                                        setScreen(usesManualDaySelection ? 3 : 2);
                                         return;
                                     }
                                     setScreen(screen - 1);
@@ -1971,7 +2010,10 @@ export default function CraftedForYouPage({
                                                     return consultationDessertDeckForDay(
                                                         catalogMeals,
                                                         assignedForDay?.desserts ?? [],
-                                                        { preferBakedDesserts: dietProtocol === 'nutrient_dense' },
+                                                        {
+                                                            preferBakedDesserts:
+                                                                isBalancedAntiInflammatoryProtocol(dietProtocol),
+                                                        },
                                                     );
                                                 }
 
@@ -2193,67 +2235,114 @@ export default function CraftedForYouPage({
             </div>
 
             {submitting ? (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
-                    <div className="absolute inset-0 bg-black/40" />
-                    <div className="relative w-full max-w-[640px] rounded-[12px] bg-white p-8 shadow-2xl">
-                        <div className="flex flex-col items-center text-center">
-                            <div className="h-[140px] w-[140px] animate-pulse">
-                                <MealCraftLogoAnimatedIdentity variant="minimal-animated" />
+                <PhoneFramePortal>
+                    {({ nested }) => (
+                        <div
+                            className={
+                                nested
+                                    ? 'absolute inset-0 z-[100] flex items-center justify-center p-4'
+                                    : 'fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6'
+                            }
+                        >
+                            <div className="absolute inset-0 bg-black/40" />
+                            <div className="relative w-full max-w-full rounded-[12px] bg-white p-6 shadow-2xl">
+                                <div className="flex flex-col items-center text-center">
+                                    <div className="h-[120px] w-[120px] animate-pulse">
+                                        <MealCraftLogoAnimatedIdentity variant="minimal-animated" />
+                                    </div>
+                                    <p className="mt-4 font-montserrat text-sm font-bold uppercase tracking-[0.18em] text-[#5A6B44]">
+                                        Your meal plan is being crafted…
+                                    </p>
+                                    <p className="mt-2 font-body text-sm text-[#555555]">
+                                        Please wait a moment.
+                                    </p>
+                                </div>
                             </div>
-                            <p className="mt-4 font-montserrat text-sm font-bold uppercase tracking-[0.18em] text-[#5A6B44]">
-                                Your meal plan is being crafted…
-                            </p>
-                            <p className="mt-2 font-body text-sm text-[#555555]">Please wait a moment.</p>
                         </div>
-                    </div>
-                </div>
+                    )}
+                </PhoneFramePortal>
             ) : null}
 
             {submitSuccess ? (
-                <div className="fixed bottom-6 left-1/2 z-[110] w-full max-w-[640px] -translate-x-1/2 px-4">
-                    <div className="rounded-[12px] border border-[#5A6B44]/30 bg-white px-4 py-3 shadow-lg">
-                        <p className="font-body text-sm font-semibold text-[#262A22]">
-                            Your craft plan was saved. The kitchen can now produce your selections.
-                        </p>
-                        {homeHref ? (
-                            <button
-                                type="button"
-                                className="mt-3 font-montserrat text-sm font-bold text-[#5A6B44] underline-offset-2 hover:underline"
-                                onClick={() =>
-                                    window.location.assign(summaryHref || homeHref)
-                                }
-                            >
-                                {summaryHref ? 'View your meal plan summary' : 'Back to your plan'}
-                            </button>
-                        ) : null}
-                    </div>
-                </div>
+                <PhoneFramePortal>
+                    {({ nested }) => (
+                        <div
+                            className={
+                                nested
+                                    ? 'absolute inset-x-0 bottom-0 z-[110] px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]'
+                                    : 'fixed bottom-6 left-1/2 z-[110] w-full max-w-[430px] -translate-x-1/2 px-4'
+                            }
+                        >
+                            <div className="rounded-[12px] border border-[#5A6B44]/30 bg-white px-4 py-3 shadow-lg">
+                                <p className="font-body text-sm font-semibold text-[#262A22]">
+                                    Your craft plan was saved. The kitchen can now produce your selections.
+                                </p>
+                                {homeHref ? (
+                                    <button
+                                        type="button"
+                                        className="mt-3 font-montserrat text-sm font-bold text-[#5A6B44] underline-offset-2 hover:underline"
+                                        onClick={() =>
+                                            window.location.assign(summaryHref || homeHref)
+                                        }
+                                    >
+                                        {summaryHref
+                                            ? 'View your meal plan summary'
+                                            : 'Back to your plan'}
+                                    </button>
+                                ) : null}
+                            </div>
+                        </div>
+                    )}
+                </PhoneFramePortal>
             ) : null}
 
             {submitError ? (
-                <div className="fixed bottom-6 left-1/2 z-[110] w-full max-w-[640px] -translate-x-1/2 px-4">
-                    <div className="rounded-[12px] border border-red-200 bg-red-50 px-4 py-3 shadow-lg">
-                        <p className="font-body text-sm text-red-800">
-                            {submitError}
-                            {loginUrl && /log in again/i.test(submitError) ? (
-                                <>
-                                    {' '}
-                                    <a href={loginUrl} className="font-semibold underline underline-offset-2">
-                                        Log in
-                                    </a>
-                                </>
-                            ) : null}
-                        </p>
-                    </div>
-                </div>
+                <PhoneFramePortal>
+                    {({ nested }) => (
+                        <div
+                            className={
+                                nested
+                                    ? 'absolute inset-x-0 bottom-0 z-[110] px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]'
+                                    : 'fixed bottom-6 left-1/2 z-[110] w-full max-w-[430px] -translate-x-1/2 px-4'
+                            }
+                        >
+                            <div className="rounded-[12px] border border-red-200 bg-red-50 px-4 py-3 shadow-lg">
+                                <p className="font-body text-sm text-red-800">
+                                    {submitError}
+                                    {loginUrl && /log in again/i.test(submitError) ? (
+                                        <>
+                                            {' '}
+                                            <a
+                                                href={loginUrl}
+                                                className="font-semibold underline underline-offset-2"
+                                            >
+                                                Log in
+                                            </a>
+                                        </>
+                                    ) : null}
+                                </p>
+                            </div>
+                        </div>
+                    )}
+                </PhoneFramePortal>
             ) : null}
 
             {toast.visible ? (
-                <div className="fixed bottom-6 left-1/2 z-[110] w-full max-w-[640px] -translate-x-1/2 px-4">
-                    <div className="rounded-[12px] border border-gray-200 bg-white px-4 py-3 shadow-lg">
-                        <p className="font-body text-sm text-[#555555]">{toast.message}</p>
-                    </div>
-                </div>
+                <PhoneFramePortal>
+                    {({ nested }) => (
+                        <div
+                            className={
+                                nested
+                                    ? 'absolute inset-x-0 bottom-0 z-[110] px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]'
+                                    : 'fixed bottom-6 left-1/2 z-[110] w-full max-w-[430px] -translate-x-1/2 px-4'
+                            }
+                        >
+                            <div className="rounded-[12px] border border-gray-200 bg-white px-4 py-3 shadow-lg">
+                                <p className="font-body text-sm text-[#555555]">{toast.message}</p>
+                            </div>
+                        </div>
+                    )}
+                </PhoneFramePortal>
             ) : null}
 
             <MealDetailModalPortal

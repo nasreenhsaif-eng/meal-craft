@@ -79,7 +79,7 @@ const TAB_ICONS = {
 };
 
 /**
- * Persistent customer app footer tabs: Home / Meals / Shop / Profile.
+ * Persistent customer app footer tabs: Home / Meal Plan / Shop / Profile.
  *
  * @param {object} props
  * @param {CustomerAppTab | null} [props.activeTab]
@@ -99,7 +99,7 @@ export default function CustomerAppBottomNav({
 }) {
     const items = [
         { id: /** @type {CustomerAppTab} */ ('home'), label: 'Home', href: homeUrl },
-        { id: /** @type {CustomerAppTab} */ ('meals'), label: 'Meals', href: mealsUrl },
+        { id: /** @type {CustomerAppTab} */ ('meals'), label: 'Meal Plan', href: mealsUrl },
         { id: /** @type {CustomerAppTab} */ ('shop'), label: 'Shop', href: shopUrl },
         { id: /** @type {CustomerAppTab} */ ('profile'), label: 'Profile', href: profileUrl },
     ];

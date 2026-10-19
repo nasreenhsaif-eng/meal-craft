@@ -21,6 +21,9 @@ class CheckoutController extends Controller
         return Inertia::render('Checkout/FulfillmentSelection', [
             'customerName' => $user?->name ?? '',
             'homeUrl' => route('app.home'),
+            'profileUrl' => route('app.profile'),
+            'shopUrl' => route('app.shop'),
+            'mealPlanSummaryUrl' => route('app.meal-plan'),
             'deliveryUrl' => route('checkout.delivery'),
             'recipesUrl' => route('meal-plan.recipes'),
         ]);
@@ -32,9 +35,11 @@ class CheckoutController extends Controller
 
         return Inertia::render('Checkout/Delivery', [
             'customerName' => $user?->name ?? '',
-            'fulfillmentUrl' => route('checkout.fulfillment'),
             'detailsUrl' => route('checkout.details'),
             'homeUrl' => route('app.home'),
+            'profileUrl' => route('app.profile'),
+            'shopUrl' => route('app.shop'),
+            'mealPlanSummaryUrl' => route('app.meal-plan'),
         ]);
     }
 
@@ -89,6 +94,9 @@ class CheckoutController extends Controller
             'basket' => CheckoutBasket::forProfile($profile, $presentation, $promoCode),
             'detailsUrl' => route('checkout.details'),
             'homeUrl' => route('app.home'),
+            'profileUrl' => route('app.profile'),
+            'shopUrl' => route('app.shop'),
+            'mealPlanSummaryUrl' => route('app.meal-plan'),
             'submitUrl' => route('checkout.payment.store'),
             'applyPromoUrl' => route('checkout.payment'),
         ]);

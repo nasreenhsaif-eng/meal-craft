@@ -95,6 +95,7 @@ export function listDayMealsWithHighlights(categories) {
                 id: String(meal.id ?? `${row.key}-${meal.title}`),
                 title: meal.title ?? 'Meal',
                 category: row.label,
+                imageUrl: typeof meal.imageUrl === 'string' ? meal.imageUrl : undefined,
                 macros: meal.macros,
                 safetyAlerts: mealAlerts,
                 sickleCellHighlights: mealSickle,
@@ -124,10 +125,11 @@ function SummarySection({ title, description, children, tone = 'white' }) {
 
 /**
  * @param {object} props
- * @param {Array<{ id: string; title: string; category: string; safetyAlerts: object[]; sickleCellHighlights: string[]; hasG6pdTrigger: boolean; detailView?: object }>} props.meals
+ * @param {Array<{ id: string; title: string; category: string; imageUrl?: string; macros?: object; safetyAlerts: object[]; sickleCellHighlights: string[]; hasG6pdTrigger: boolean; detailView?: object }>} props.meals
  * @param {(meal: object) => void} [props.onOpenMeal]
+ * @param {boolean} [props.fullDetails] Summary list with macros/highlights; Expand opens full meal modal.
  */
-export function DayMealsTabPanel({ meals, onOpenMeal }) {
+export function DayMealsTabPanel({ meals, onOpenMeal, fullDetails = false }) {
     if (meals.length === 0) {
         return <p className="font-body text-sm text-[#555555]">No meals assigned for this day.</p>;
     }
@@ -143,10 +145,43 @@ export function DayMealsTabPanel({ meals, onOpenMeal }) {
         return acc;
     }, {});
 
+    if (fullDetails) {
+        return (
+            <div className="space-y-3">
+                {meals.map((meal) => (
+                    <article
+                        key={meal.id}
+                        className="rounded-[12px] border border-gray-200 bg-white px-3 py-3"
+                    >
+                        <div className="flex items-center justify-between gap-3">
+                            <h2 className="min-w-0 font-montserrat text-xs font-bold uppercase tracking-[0.12em] text-[#5A6B44]">
+                                {meal.category}
+                            </h2>
+                            {onOpenMeal ? (
+                                <Button
+                                    type="button"
+                                    label="Expand"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => onOpenMeal(meal)}
+                                    className="shrink-0"
+                                />
+                            ) : null}
+                        </div>
+                        <p className="mt-1.5 font-montserrat text-sm font-bold text-[#262A22]">{meal.title}</p>
+                    </article>
+                ))}
+            </div>
+        );
+    }
+
     return (
         <div className="space-y-6">
             {Object.entries(byCategory).map(([category, categoryMeals]) => (
-                <section key={category} className="rounded-[12px] border border-gray-200 bg-white px-4 py-4 sm:px-5">
+                <section
+                    key={category}
+                    className="rounded-[12px] border border-gray-200 bg-white px-4 py-4 sm:px-5"
+                >
                     <h2 className="font-montserrat text-sm font-bold uppercase tracking-[0.12em] text-[#5A6B44]">
                         {category}
                     </h2>
@@ -158,21 +193,16 @@ export function DayMealsTabPanel({ meals, onOpenMeal }) {
                                 meal.sickleCellHighlights.length > 0;
 
                             return (
-                                <li key={meal.id} className="border-t border-gray-100 pt-4 first:border-t-0 first:pt-0">
-                                    {onOpenMeal ? (
-                                        <button
-                                            type="button"
-                                            onClick={() => onOpenMeal(meal)}
-                                            className="text-left font-montserrat text-sm font-bold text-[#262A22] hover:text-[#5A6B44] hover:underline"
-                                        >
-                                            {meal.title}
-                                        </button>
-                                    ) : (
-                                        <p className="font-montserrat text-sm font-bold text-[#262A22]">{meal.title}</p>
-                                    )}
+                                <li
+                                    key={meal.id}
+                                    className="border-t border-gray-100 pt-3 first:border-t-0 first:pt-0"
+                                >
+                                    <p className="font-montserrat text-sm font-bold text-[#262A22]">
+                                        {meal.title}
+                                    </p>
 
                                     {hasHighlights ? (
-                                        <div className="mt-3 space-y-2">
+                                        <div className="mt-2 space-y-2">
                                             <p className="font-montserrat text-[10px] font-bold uppercase tracking-[0.14em] text-[#5A6B44]">
                                                 Highlights
                                             </p>
@@ -187,14 +217,30 @@ export function DayMealsTabPanel({ meals, onOpenMeal }) {
                                             {meal.sickleCellHighlights.length > 0 ? (
                                                 <div className="flex flex-wrap gap-2">
                                                     {meal.sickleCellHighlights.map((badge) => (
-                                                        <NutrientBadge key={`${meal.id}-${badge}`} type={badge} />
+                                                        <NutrientBadge
+                                                            key={`${meal.id}-${badge}`}
+                                                            type={badge}
+                                                        />
                                                     ))}
                                                 </div>
                                             ) : null}
                                         </div>
                                     ) : (
-                                        <p className="mt-2 font-body text-xs text-[#6B7280]">No sickle-cell or safety highlights.</p>
+                                        <p className="mt-2 font-body text-xs text-[#6B7280]">
+                                            No sickle-cell or safety highlights.
+                                        </p>
                                     )}
+
+                                    {onOpenMeal ? (
+                                        <Button
+                                            type="button"
+                                            label="Expand"
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => onOpenMeal(meal)}
+                                            className="mt-2 shrink-0"
+                                        />
+                                    ) : null}
                                 </li>
                             );
                         })}
@@ -545,6 +591,7 @@ export function DayMacroMicroTabPanel({
  * @param {number | null} [props.dailyCalories]
  * @param {Record<string, unknown> | null | undefined} [props.nutritionPlan]
  * @param {(meal: object) => void} [props.onOpenMeal]
+ * @param {boolean} [props.fullMealDetails]
  */
 export default function DayNutritionalSummaryPanel({
     tab,
@@ -558,12 +605,15 @@ export default function DayNutritionalSummaryPanel({
     dailyCalories = null,
     nutritionPlan = null,
     onOpenMeal,
+    fullMealDetails = false,
 }) {
     const meals = useMemo(() => listDayMealsWithHighlights(categories), [categories]);
 
     switch (tab) {
         case 'meals':
-            return <DayMealsTabPanel meals={meals} onOpenMeal={onOpenMeal} />;
+            return (
+                <DayMealsTabPanel meals={meals} onOpenMeal={onOpenMeal} fullDetails={fullMealDetails} />
+            );
         case 'macronutrients':
             return (
                 <DayMacronutrientsTabPanel

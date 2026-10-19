@@ -113,6 +113,12 @@ function focusedPhysicalIndex(logicalIdx, itemCount, copies) {
 }
 
 /**
+ * Gap from gallery left so a start-aligned card sits to the right of the prev arrow
+ * (`RIBBON_ARROW_ZONE_CLASS` is w-10 / 2.5rem on mobile).
+ */
+const RIBBON_START_INSET_PX = 52;
+
+/**
  * Target track `x` to center a logical card.
  * Uses offsetLeft (same space as step slides) so a post-slide snap cannot hitch from getBoundingClientRect drift.
  *
@@ -151,6 +157,50 @@ function trackXForCenteredLogical(logicalIdx, container, track, cards, itemCount
 }
 
 /**
+ * Target track `x` so the active card sits fully on the left with the next card peeking on the right.
+ *
+ * @param {number} logicalIdx
+ * @param {HTMLDivElement} container
+ * @param {HTMLDivElement} track
+ * @param {(HTMLDivElement|null)[]} cards
+ * @param {number} itemCount
+ * @param {number} copies
+ * @param {number} [leftInsetPx]
+ */
+function trackXForStartAlignedLogical(
+    logicalIdx,
+    container,
+    track,
+    cards,
+    itemCount,
+    copies,
+    leftInsetPx = RIBBON_START_INSET_PX,
+) {
+    const physical = focusedPhysicalIndex(logicalIdx, itemCount, copies);
+    const card = cards[physical];
+    if (!card) {
+        return undefined;
+    }
+
+    const cw = container.clientWidth;
+    if (cw <= 0) {
+        return undefined;
+    }
+
+    let x = leftInsetPx - card.offsetLeft;
+
+    if (copies < RIBBON_COPIES) {
+        const tw = Math.max(track.scrollWidth, track.offsetWidth);
+        if (tw > cw) {
+            const minX = cw - tw;
+            x = Math.max(minX, Math.min(leftInsetPx, x));
+        }
+    }
+
+    return x;
+}
+
+/**
  * Horizontal ribbon carousel — mobile peek ribbon; desktop uses a static pair for two-option decks.
  *
  * Selection state is owned by the parent: pass `selected` / `onToggleSelected` from `renderCard`.
@@ -163,8 +213,17 @@ function trackXForCenteredLogical(logicalIdx, container, track, cards, itemCount
  * @param {string} [props.deckScopeKey] When this identity changes (e.g. day + slot), deck indices reset without breaking circular wrap logic.
  * @param {(item: T, index: number) => string} props.getKey
  * @param {(item: T, index: number, ctx: { isFront: boolean, stackPos: (1|2|3|null), deckLayout: 'ribbon'|'stack'|'staticPair' }) => import('react').ReactNode} props.renderCard
+ * @param {boolean} [props.forceRibbon] Always use the peek ribbon (blurry edges) — e.g. phone-frame options modal.
  */
-export default function StackedDeckCarousel({ title: _title, items: itemsProp, meals, getKey, renderCard, deckScopeKey }) {
+export default function StackedDeckCarousel({
+    title: _title,
+    items: itemsProp,
+    meals,
+    getKey,
+    renderCard,
+    deckScopeKey,
+    forceRibbon = false,
+}) {
     const items = meals ?? itemsProp ?? [];
     const itemCount = items.length;
 
@@ -177,8 +236,8 @@ export default function StackedDeckCarousel({ title: _title, items: itemsProp, m
 
     const copies = ribbonCopyCount(itemCount);
     const isDesktop = useMinWidth(DESKTOP_MIN_WIDTH_PX);
-    const useDesktopStaticPair = itemCount === 2 && isDesktop;
-    const useDesktopStaticTriple = itemCount === 3 && isDesktop;
+    const useDesktopStaticPair = !forceRibbon && itemCount === 2 && isDesktop;
+    const useDesktopStaticTriple = !forceRibbon && itemCount === 3 && isDesktop;
 
     const galleryRef = useRef(/** @type {HTMLDivElement|null} */ (null));
     const trackRef = useRef(/** @type {HTMLDivElement|null} */ (null));
@@ -246,7 +305,9 @@ export default function StackedDeckCarousel({ title: _title, items: itemsProp, m
     };
 
     /**
-     * Align the track so the active logical card is horizontally centered in the gallery viewport.
+     * Align the track so the active logical card is in view.
+     * `forceRibbon` (options modal): start-align so the left/active card is fully visible.
+     * Otherwise: center the active card with peeks on both sides.
      *
      * @param {number} logicalIdx
      */
@@ -258,6 +319,17 @@ export default function StackedDeckCarousel({ title: _title, items: itemsProp, m
                 return undefined;
             }
 
+            if (forceRibbon) {
+                return trackXForStartAlignedLogical(
+                    logicalIdx,
+                    container,
+                    track,
+                    cardRefs.current,
+                    itemCount,
+                    copies,
+                );
+            }
+
             return trackXForCenteredLogical(
                 logicalIdx,
                 container,
@@ -267,7 +339,7 @@ export default function StackedDeckCarousel({ title: _title, items: itemsProp, m
                 copies,
             );
         },
-        [copies, itemCount],
+        [copies, forceRibbon, itemCount],
     );
 
     const usesInfiniteRibbon = copies === RIBBON_COPIES;
@@ -585,10 +657,12 @@ export default function StackedDeckCarousel({ title: _title, items: itemsProp, m
     const ribbonArrowButtonClass =
         'pointer-events-auto flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-0 bg-white/90 text-[#262A22] shadow-sm shadow-[#262A22]/10 outline-none ring-0 backdrop-blur-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5A6B44]/35 focus-visible:ring-offset-0 disabled:pointer-events-none disabled:opacity-30';
 
-    const ribbonEdgeDimClass = [
-        'pointer-events-none absolute inset-y-4 z-[100]',
-        RIBBON_EDGE_DIM_WIDTH_CLASS,
-    ].join(' ');
+    const ribbonEdgeDimBaseClass = 'pointer-events-none absolute inset-y-4 z-[100]';
+    /** Start-aligned options: left fade only covers the arrow gutter so the card stays clear. */
+    const leftEdgeDimWidthClass = forceRibbon
+        ? 'w-[3.25rem]'
+        : RIBBON_EDGE_DIM_WIDTH_CLASS;
+    const rightEdgeDimWidthClass = RIBBON_EDGE_DIM_WIDTH_CLASS;
 
     return (
         <div className="group relative w-full">
@@ -636,11 +710,11 @@ export default function StackedDeckCarousel({ title: _title, items: itemsProp, m
                             ).flat()}
                         </motion.div>
                         <div
-                            className={`${ribbonEdgeDimClass} left-0 bg-gradient-to-r from-[#F8F9F6] from-[12%] via-[#F8F9F6]/55 via-[28%] to-transparent [mask-image:linear-gradient(to_right,black_0%,black_18%,transparent_62%)] [-webkit-mask-image:linear-gradient(to_right,black_0%,black_18%,transparent_62%)]`}
+                            className={`${ribbonEdgeDimBaseClass} ${leftEdgeDimWidthClass} left-0 bg-gradient-to-r from-[#F8F9F6] from-[12%] via-[#F8F9F6]/55 via-[28%] to-transparent [mask-image:linear-gradient(to_right,black_0%,black_18%,transparent_62%)] [-webkit-mask-image:linear-gradient(to_right,black_0%,black_18%,transparent_62%)]`}
                             aria-hidden="true"
                         />
                         <div
-                            className={`${ribbonEdgeDimClass} right-0 bg-gradient-to-l from-[#F8F9F6] from-[12%] via-[#F8F9F6]/55 via-[28%] to-transparent [mask-image:linear-gradient(to_left,black_0%,black_18%,transparent_62%)] [-webkit-mask-image:linear-gradient(to_left,black_0%,black_18%,transparent_62%)]`}
+                            className={`${ribbonEdgeDimBaseClass} ${rightEdgeDimWidthClass} right-0 bg-gradient-to-l from-[#F8F9F6] from-[12%] via-[#F8F9F6]/55 via-[28%] to-transparent [mask-image:linear-gradient(to_left,black_0%,black_18%,transparent_62%)] [-webkit-mask-image:linear-gradient(to_left,black_0%,black_18%,transparent_62%)]`}
                             aria-hidden="true"
                         />
                     </div>

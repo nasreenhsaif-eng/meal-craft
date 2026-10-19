@@ -8,7 +8,7 @@ export default {
         docs: {
             description: {
                 component:
-                    'Persistent footer tabs for completed-customer app pages (Home / Meals / Shop / Profile). Hidden on receive mode, onboarding, and checkout.',
+                    'Persistent footer tabs for completed-customer app pages and checkout (Home / Meal Plan / Shop / Profile). Hidden on receive mode and onboarding.',
             },
         },
     },
@@ -32,7 +32,7 @@ export const HomeActive = {
 };
 
 export const MealsActive = {
-    name: 'Meals active',
+    name: 'Meal Plan active',
     render: () => <NavPreview activeTab="meals" />,
 };
 

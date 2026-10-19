@@ -31,7 +31,7 @@ export default {
         docs: {
             description: {
                 component:
-                    'Read-only Your details screen with Body & plan then Contact frames; Edit on Body & plan opens onboarding; customer app bottom nav (Profile active).',
+                    'Read-only Your details screen with Body & plan then Contact frames; Edit on Body & plan opens onboarding; Sign out at the bottom; customer app bottom nav (Profile active).',
             },
         },
     },
@@ -41,6 +41,11 @@ export default {
 export const Default = {
     name: 'Your details',
     render: () => (
-        <ProfileInner customerName="Nasreen" details={NASREEN_DETAILS} profileEditUrl="/onboarding/gender" />
+        <ProfileInner
+            customerName="Nasreen"
+            details={NASREEN_DETAILS}
+            profileEditUrl="/onboarding/gender"
+            logoutUrl="/logout"
+        />
     ),
 };

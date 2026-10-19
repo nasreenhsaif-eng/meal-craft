@@ -1,5 +1,4 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
-import Button from '../Atoms/Button/Button.jsx';
 import SquareCheckbox from '../Atoms/Icons/SquareCheckbox.jsx';
 import DropdownTextInput from '../Atoms/TextInput/DropdownTextInput.jsx';
 import TextInput from '../Atoms/TextInput/TextInput.jsx';
@@ -433,7 +432,7 @@ function isDeliveryIncomplete(data) {
  *   uniqueCode?: string;
  *   intakeSubmissionId?: string;
  *   declarationAccepted?: boolean;
- *   onSubmit: () => void;
+ *   onSubmit: (payload?: Record<string, mixed>) => void;
  * }} props
  */
 export default function CustomerCheckoutDetailsReview({
@@ -473,6 +472,25 @@ export default function CustomerCheckoutDetailsReview({
     const contactInvalid = sectionHasErrors(fieldErrors, CONTACT_FIELDS);
     const deliveryInvalid = sectionHasErrors(fieldErrors, DELIVERY_FIELDS);
     const confirmInvalid = sectionHasErrors(fieldErrors, CONFIRM_FIELDS);
+
+    /**
+     * @param {Record<string, mixed>} payload
+     */
+    const trySubmit = (payload) => {
+        if (processing) {
+            return;
+        }
+
+        const nextErrors = buildClientFieldErrors(payload);
+        setShowValidation(true);
+
+        if (Object.keys(nextErrors).length > 0) {
+            focusFirstIncompleteSection(nextErrors);
+            return;
+        }
+
+        onSubmit(payload);
+    };
 
     /**
      * @param {Record<string, string>} nextErrors
@@ -567,21 +585,7 @@ export default function CustomerCheckoutDetailsReview({
             className="flex w-full min-w-0 flex-col gap-5"
             onSubmit={(event) => {
                 event.preventDefault();
-                if (processing) {
-                    return;
-                }
-
-                const nextErrors = buildClientFieldErrors(data);
-                const hasClientErrors = Object.keys(nextErrors).length > 0;
-
-                setShowValidation(true);
-
-                if (hasClientErrors) {
-                    focusFirstIncompleteSection(nextErrors);
-                    return;
-                }
-
-                onSubmit();
+                trySubmit(data);
             }}
             noValidate
         >
@@ -665,7 +669,7 @@ export default function CustomerCheckoutDetailsReview({
                             </div>
                             {fieldErrors.delivery_time ? (
                                 <p className="mt-1.5 text-sm text-status-error" role="alert">
-                                    {fieldErrors.delivery_time}
+                                    {String(fieldErrors.delivery_time)}
                                 </p>
                             ) : null}
                         </div>
@@ -739,7 +743,19 @@ export default function CustomerCheckoutDetailsReview({
                             id={declarationId}
                             type="checkbox"
                             checked={declarationChecked}
-                            onChange={(event) => setData('declaration_accepted', event.target.checked)}
+                            disabled={processing}
+                            onChange={(event) => {
+                                event.stopPropagation();
+                                const checked = event.target.checked;
+                                setData('declaration_accepted', checked);
+
+                                if (!checked) {
+                                    return;
+                                }
+
+                                // Checking the declaration confirms details and opens payment.
+                                trySubmit({ ...data, declaration_accepted: true });
+                            }}
                             className="peer sr-only"
                         />
                         <span
@@ -764,7 +780,7 @@ export default function CustomerCheckoutDetailsReview({
                     </label>
                     {fieldErrors.declaration_accepted ? (
                         <p className="text-sm text-status-error" role="alert">
-                            {fieldErrors.declaration_accepted}
+                            {String(fieldErrors.declaration_accepted)}
                         </p>
                     ) : null}
 
@@ -804,15 +820,6 @@ export default function CustomerCheckoutDetailsReview({
                     </div>
                 </div>
             </Section>
-
-            <div className="flex w-full justify-center pt-1">
-                <Button
-                    type="submit"
-                    label={processing ? 'Confirming…' : 'Confirm details'}
-                    disabled={processing}
-                    className="w-full min-w-[200px] max-w-sm uppercase tracking-[0.08em]"
-                />
-            </div>
         </form>
     );
 }

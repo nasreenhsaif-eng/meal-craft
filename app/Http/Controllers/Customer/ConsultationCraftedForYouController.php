@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Customer;
 
+use App\Enums\OnboardingStep;
 use App\Http\Controllers\Controller;
 use App\Models\Meal;
 use App\Services\Nutrition\UserPlanCalculator;
@@ -32,14 +33,21 @@ class ConsultationCraftedForYouController extends Controller
             $editDraft = $request->session()->pull('consultation_edit_draft');
         }
 
-        $backHref = $isCustomer
-            ? route('app.home', absolute: false)
-            : null;
+        // Without a submitted meal plan, /app redirects here again — send BACK to onboarding.
+        $customerAppHome = route('app.home', absolute: false);
+        $customerOnboardingBack = route('onboarding.show', [
+            'step' => OnboardingStep::FoodFilters->value,
+        ], absolute: false);
+        $customerLanding = $isCustomer && $user?->shouldLandOnWelcomeBack()
+            ? $customerAppHome
+            : $customerOnboardingBack;
+
+        $backHref = $isCustomer ? $customerLanding : null;
 
         $consultationConfig = [
             'backHref' => $backHref,
-            'closeHref' => $isCustomer ? route('app.home') : route('admin.dashboard'),
-            'homeHref' => $isCustomer ? route('app.home') : route('admin.dashboard'),
+            'closeHref' => $isCustomer ? $customerLanding : route('admin.dashboard'),
+            'homeHref' => $isCustomer ? $customerLanding : route('admin.dashboard'),
             'summaryHref' => route('app.meal-plan', absolute: false),
             'loginUrl' => route('login'),
             'signOutUrl' => route('sign-out'),
