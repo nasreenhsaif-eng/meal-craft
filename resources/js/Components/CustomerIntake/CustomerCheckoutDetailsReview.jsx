@@ -541,18 +541,42 @@ export default function CustomerCheckoutDetailsReview({
         },
     ];
 
+    const birthdayValue = (() => {
+        const dob = formatDisplayDate(data.date_of_birth);
+        const age = String(data.age ?? '').trim();
+        if (dob !== '—' && age !== '') {
+            return `${dob} (${age})`;
+        }
+        if (dob !== '—') {
+            return dob;
+        }
+        return age !== '' ? age : '—';
+    })();
+
+    const calorieRangeValue = (() => {
+        const min = Number(data.daily_calories_min);
+        const max = Number(data.daily_calories_max);
+        if (Number.isFinite(min) && Number.isFinite(max) && min > 0 && max > 0) {
+            return `${min.toLocaleString()} – ${max.toLocaleString()}`;
+        }
+        const target = Number(data.daily_calorie_target);
+        return Number.isFinite(target) && target > 0 ? target.toLocaleString() : '—';
+    })();
+
     const bodyPlanRows = [
-        { label: 'Date of birth', value: formatDisplayDate(data.date_of_birth) },
+        { label: 'Date of birth / age', value: birthdayValue },
         { label: 'Gender', value: labelFor(data.gender, options.genders) },
-        { label: 'Height (cm)', value: data.height_cm || '—' },
-        { label: 'Weight (kg)', value: data.weight_kg || '—' },
-        { label: 'Target weight (kg)', value: data.target_weight_kg || '—' },
+        { label: 'Height', value: data.height_cm ? `${data.height_cm} cm` : '—' },
+        { label: 'Weight', value: data.weight_kg ? `${data.weight_kg} kg` : '—' },
+        { label: 'Target weight', value: data.target_weight_kg ? `${data.target_weight_kg} kg` : '—' },
         { label: 'Activity level', value: labelFor(data.activity_level, options.activityLevels) },
+        { label: 'Daily calorie range', value: calorieRangeValue },
+        { label: 'Macro style', value: labelFor(data.macro_split_style, options.macroSplitStyles) },
         { label: 'Type of plan', value: labelFor(data.plan_type, options.planTypes) },
         { label: 'Days', value: labelFor(String(data.plan_days ?? ''), options.planDays) },
         { label: 'Diet protocol', value: labelFor(data.diet_protocol, options.dietProtocols) },
         {
-            label: 'Dislikes & allergies',
+            label: 'Food filters / allergies',
             value: data.dislikes_and_allergies || '—',
         },
     ];
@@ -588,6 +612,7 @@ export default function CustomerCheckoutDetailsReview({
                 trySubmit(data);
             }}
             noValidate
+            data-checkout-details-review=""
         >
             <Section
                 title="Contact"
@@ -738,10 +763,25 @@ export default function CustomerCheckoutDetailsReview({
                     <label
                         htmlFor={declarationId}
                         className="group/item flex cursor-pointer select-none items-start gap-3"
+                        onClick={(event) => {
+                            if (processing) {
+                                event.preventDefault();
+                                return;
+                            }
+
+                            // Already checked (e.g. prior visit): clicking continues to payment
+                            // without toggling off (label would otherwise uncheck first).
+                            if (declarationChecked) {
+                                event.preventDefault();
+                                trySubmit({ ...data, declaration_accepted: true });
+                            }
+                        }}
                     >
                         <input
                             id={declarationId}
                             type="checkbox"
+                            name="declaration_accepted"
+                            value="1"
                             checked={declarationChecked}
                             disabled={processing}
                             onChange={(event) => {

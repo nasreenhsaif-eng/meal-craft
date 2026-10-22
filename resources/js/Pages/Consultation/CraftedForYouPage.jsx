@@ -42,6 +42,7 @@ import {
 import { consultationMeals as MOCK_MEALS } from '../../consultation/consultationMockMeals.js';
 import { isBalancedAntiInflammatoryProtocol } from '../../Components/Molecules/Onboarding/dietProtocolUtils.js';
 import MealDetailModalPortal from '../../Components/Molecules/MealDetailModalPortal.jsx';
+import FulfillmentOptionCards from '../../Components/Molecules/Customer/FulfillmentOptionCards.jsx';
 import { useMealDetailModal } from '../../meal-library/useMealDetailModal.js';
 
 const PAGE_BG = 'bg-[#F8F9F6]';
@@ -140,6 +141,8 @@ function slotId(dayIdx, slotKey, index) {
  *   homeHref?: string;
  *   backHref?: string;
  *   summaryHref?: string;
+ *   deliveryUrl?: string;
+ *   resumeChooseMeals?: boolean;
  *   loginUrl?: string;
  *   signOutUrl?: string;
  *   isCustomerAccount?: boolean;
@@ -165,6 +168,10 @@ function slotId(dayIdx, slotKey, index) {
  *   sex?: string | null;
  *   activityLevel?: string | null;
  *   dailyCalorieTarget?: number | null;
+ *   initialScreen?: number | null;
+ *   initialCraftKey?: string | null;
+ *   initialWeekDuration?: number | null;
+ *   initialSelectedWeekdays?: number[] | null;
  * }} [props]
  */
 
@@ -194,6 +201,8 @@ export default function CraftedForYouPage({
     homeHref,
     backHref,
     summaryHref,
+    deliveryUrl = '/checkout/delivery',
+    resumeChooseMeals = false,
     loginUrl,
     signOutUrl,
     csrfToken = '',
@@ -210,24 +219,34 @@ export default function CraftedForYouPage({
     sex = null,
     activityLevel = null,
     dailyCalorieTarget = null,
+    initialScreen = null,
+    initialCraftKey = null,
+    initialWeekDuration = null,
+    initialSelectedWeekdays = null,
 } = {}) {
     const initialRestoreDraft = useMemo(
         () => readInitialConsultationRestoreDraft(initialEditDraft),
         [initialEditDraft],
     );
 
-    const [screen, setScreen] = useState(1);
+    const [screen, setScreen] = useState(() =>
+        typeof initialScreen === 'number' && initialScreen >= 1 ? initialScreen : 1,
+    );
     const [craftKey, setCraftKey] = useState(
-        () => initialRestoreDraft?.craftKey ?? null,
+        () => initialCraftKey ?? initialRestoreDraft?.craftKey ?? null,
     );
     const craft = useMemo(() => (craftKey ? craftByKey(craftKey) : null), [craftKey]);
 
     const [weekDuration, setWeekDuration] = useState(
-        () => initialRestoreDraft?.weekDuration ?? null,
+        () => initialWeekDuration ?? initialRestoreDraft?.weekDuration ?? null,
     );
-    const [selectedDays, setSelectedDays] = useState(
-        () => initialRestoreDraft?.selectedDays ?? [],
-    );
+    const [selectedDays, setSelectedDays] = useState(() => {
+        if (Array.isArray(initialSelectedWeekdays) && initialSelectedWeekdays.length > 0) {
+            return initialSelectedWeekdays;
+        }
+
+        return initialRestoreDraft?.selectedDays ?? [];
+    });
     const [activeDay, setActiveDay] = useState(() => {
         const restoredDays = initialRestoreDraft?.selectedDays ?? [];
         return restoredDays.length > 0 ? restoredDays[0] : null;
@@ -621,8 +640,9 @@ export default function CraftedForYouPage({
     const usesManualDaySelection = weekDuration !== 7;
 
     const totalCurationDays = sortedSelectedDays.length;
-    // Screens: 1 craft → 2 duration → (3 choose days when not 7-day) → curation…
-    const curationStartScreen = usesManualDaySelection ? 4 : 3;
+    // Screens: 1 craft → 2 duration → (3 choose days when not 7-day) → receive → curation…
+    const receiveScreen = usesManualDaySelection ? 4 : 3;
+    const curationStartScreen = receiveScreen + 1;
     const finalScreen = curationStartScreen + totalCurationDays;
     const totalScreens =
         weekDuration !== null ? curationStartScreen + weekDuration : Math.max(finalScreen, screen);
@@ -630,6 +650,31 @@ export default function CraftedForYouPage({
     const isCurationScreen = screen >= curationStartScreen && screen <= curationStartScreen + totalCurationDays - 1;
     const curationIndex = isCurationScreen ? screen - curationStartScreen : -1; // 0..N-1
     const curationDay = isCurationScreen ? sortedSelectedDays[curationIndex] ?? null : null;
+
+    // Partner Kitchen path: after payment, resume at Choose your meals (first curation day).
+    useEffect(() => {
+        if (!resumeChooseMeals) {
+            return;
+        }
+
+        if (craftKey === null || weekDuration === null || sortedSelectedDays.length === 0) {
+            return;
+        }
+
+        const first = sortedSelectedDays[0] ?? null;
+        setActiveDay(first);
+        setScreen(curationStartScreen);
+
+        try {
+            const url = new URL(window.location.href);
+            if (url.searchParams.has('choose_meals')) {
+                url.searchParams.delete('choose_meals');
+                window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`);
+            }
+        } catch {
+            // Ignore URL cleanup failures.
+        }
+    }, [resumeChooseMeals, craftKey, weekDuration, sortedSelectedDays, curationStartScreen]);
 
     const progressHeaderLabel = useMemo(() => {
         if (isCurationScreen && curationDay !== null) {
@@ -644,6 +689,9 @@ export default function CraftedForYouPage({
         if (screen === 3 && usesManualDaySelection) {
             return 'Choose your days';
         }
+        if (screen === receiveScreen) {
+            return 'Receive meal plan';
+        }
         if (screen === finalScreen) {
             return 'Submit';
         }
@@ -654,6 +702,7 @@ export default function CraftedForYouPage({
         curationDay,
         screen,
         usesManualDaySelection,
+        receiveScreen,
         finalScreen,
         totalScreens,
     ]);
@@ -1759,7 +1808,7 @@ export default function CraftedForYouPage({
                                     if (weekDuration === 7) {
                                         setSelectedDays([1, 2, 3, 4, 5, 6, 7]);
                                         setActiveDay(1);
-                                        setScreen(3);
+                                        setScreen(receiveScreen);
                                         return;
                                     }
 
@@ -1813,7 +1862,7 @@ export default function CraftedForYouPage({
                                 onClick={() => {
                                     const first = sortedSelectedDays[0] ?? null;
                                     setActiveDay(first);
-                                    setScreen(curationStartScreen);
+                                    setScreen(receiveScreen);
                                 }}
                                 className="px-10"
                             />
@@ -1821,7 +1870,43 @@ export default function CraftedForYouPage({
                     </section>
                 ) : null}
 
-                {/* Screens 3..X — Daily Curation (one day per screen) */}
+                {/* Receive meal plan — after days are chosen, before daily curation */}
+                {screen === receiveScreen ? (
+                    <section className="rounded-[12px] border border-gray-200 bg-white p-6 shadow-sm">
+                        <h2 className="font-montserrat text-[16px] font-bold tracking-tight text-[#262A22]">
+                            How would you like to receive your meal plan?
+                        </h2>
+                        <p className="mt-1 font-body text-sm text-[#555555]">
+                            Choose between fresh daily preparation delivered to your door or self-prepared recipes at
+                            home.
+                        </p>
+
+                        <FulfillmentOptionCards
+                            className="mt-6"
+                            deliveryUrl={deliveryUrl}
+                            onContinue={(choice) => {
+                                if (choice !== 'diy') {
+                                    return;
+                                }
+
+                                const first = sortedSelectedDays[0] ?? null;
+                                setActiveDay(first);
+                                setScreen(curationStartScreen);
+                            }}
+                        />
+
+                        <div className={mobileNavBarClass}>
+                            <Button
+                                label="BACK"
+                                variant="outline"
+                                onClick={() => setScreen(usesManualDaySelection ? 3 : 2)}
+                                className="px-10"
+                            />
+                        </div>
+                    </section>
+                ) : null}
+
+                {/* Daily curation (one day per screen) */}
                 {isCurationScreen ? (
                     <>
                         {curationDay ? (() => {
@@ -1968,7 +2053,7 @@ export default function CraftedForYouPage({
                                 deckScopePrefix={usesWeeklyCategoryLayout ? String(curationDay) : ''}
                                 onFooterBack={() => {
                                     if (screen === curationStartScreen) {
-                                        setScreen(usesManualDaySelection ? 3 : 2);
+                                        setScreen(receiveScreen);
                                         return;
                                     }
                                     setScreen(screen - 1);

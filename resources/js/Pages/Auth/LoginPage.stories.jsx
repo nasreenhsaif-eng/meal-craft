@@ -8,7 +8,7 @@ export default {
         docs: {
             description: {
                 component:
-                    'Sign-in form with static `seal-md` mark. After a successful login, the `marketing-animated` seal plays on the page, then the browser navigates to the server redirect (portal choice, onboarding, or Welcome Back).\n\n**Smart login redirect (server):** after submit, admins/staff → [`PortalChoicePage`](./PortalChoicePage.stories.jsx); customers with incomplete onboarding → `/onboarding/gender`; customers who already finished onboarding → Welcome Back (`/app`). Guests start at [`WelcomePage`](./WelcomePage.stories.jsx).',
+                    'Sign-in form in the same phone frame as landing and onboarding. Static `seal-md` mark; after success, `marketing-animated` seal plays then redirects.\n\n**Smart login redirect (server):** admins/staff → portal choice; incomplete onboarding → `/onboarding/gender`; finished onboarding → Welcome Back (`/app`).',
             },
         },
     },

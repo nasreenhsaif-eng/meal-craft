@@ -12,8 +12,10 @@ export default function CustomerOnboardingPhoneFrame({ children, className = '',
     return (
         <div
             className={[
-                'flex min-h-screen w-full flex-col items-center justify-start bg-white px-3 py-4 font-sans text-[#262A22]',
-                'md:bg-gray-50 md:px-8 md:py-10',
+                // Gray canvas whenever the rounded phone chrome is visible (≥430px).
+                'flex min-h-screen w-full flex-col items-center justify-start bg-gray-50 px-3 py-4 font-sans text-[#262A22]',
+                'min-[430px]:px-8 min-[430px]:py-10',
+                'max-[429px]:bg-white max-[429px]:px-0 max-[429px]:py-0',
                 className,
             ]
                 .join(' ')

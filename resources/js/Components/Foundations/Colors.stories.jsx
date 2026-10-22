@@ -1,4 +1,4 @@
-const FRAME = 'box-border min-h-screen w-full bg-white p-6 text-[#364153] sm:p-8';
+const FRAME = 'box-border min-h-screen w-full bg-white p-6 text-[#262A22] sm:p-8';
 
 /**
  * @param {{ name: string; token: string; hex: string; onDark?: boolean }} props

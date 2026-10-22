@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { router, usePage } from '@inertiajs/react';
 import Button from '../../Components/Atoms/Button/Button.jsx';
 import CustomerCheckoutDetailsReview from '../../Components/CustomerIntake/CustomerCheckoutDetailsReview.jsx';
-import CustomerAppBottomNav from '../../Components/Molecules/Customer/CustomerAppBottomNav.jsx';
 import CustomerInertiaShell from '../../Layouts/CustomerInertiaShell.jsx';
 import { submitCheckoutDetailsNative } from './submitCheckoutDetailsNative.js';
 
@@ -96,17 +95,7 @@ export default function CustomerDetails({
     };
 
     return (
-        <CustomerInertiaShell
-            customerName={customerName}
-            footerNav={
-                <CustomerAppBottomNav
-                    homeUrl={homeUrl}
-                    profileUrl={profileUrl}
-                    shopUrl={shopUrl}
-                    mealsUrl={mealPlanSummaryUrl}
-                />
-            }
-        >
+        <CustomerInertiaShell customerName={customerName} footerNav={null}>
             <div className="mx-auto w-full min-w-0">
                 <div className="flex items-start justify-between gap-3">
                     <h1 className="min-w-0 font-montserrat text-3xl font-semibold tracking-tight text-[#262A22]">
@@ -149,6 +138,7 @@ export default function CustomerDetails({
 
                             setSubmitting(true);
 
+                            // Classic form POST — full navigation to payment (no SPA blank).
                             void submitCheckoutDetailsNative(submitUrl, payload, '/checkout/payment').catch(
                                 (error) => {
                                     // eslint-disable-next-line no-console

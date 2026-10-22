@@ -49,6 +49,7 @@ class ConsultationCraftedForYouController extends Controller
             'closeHref' => $isCustomer ? $customerLanding : route('admin.dashboard'),
             'homeHref' => $isCustomer ? $customerLanding : route('admin.dashboard'),
             'summaryHref' => route('app.meal-plan', absolute: false),
+            'deliveryUrl' => route('checkout.delivery', absolute: false),
             'loginUrl' => route('login'),
             'signOutUrl' => route('sign-out'),
             'csrfToken' => csrf_token(),
@@ -69,6 +70,7 @@ class ConsultationCraftedForYouController extends Controller
             'dailyCalorieTarget' => $profile?->daily_calorie_target !== null
                 ? (int) $profile->daily_calorie_target
                 : null,
+            'resumeChooseMeals' => $request->boolean('choose_meals'),
         ];
 
         return view('pages.consultation.crafted-for-you', [

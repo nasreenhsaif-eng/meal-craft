@@ -9,7 +9,7 @@ export default {
         docs: {
             description: {
                 component:
-                    'Checkout fulfillment choice after the meal-plan dashboard — vertical Partner Kitchen / DIY options with expandable details and Next (same pattern as diet protocol).',
+                    'Receive meal plan choice (Partner Kitchen / DIY). In consultation this step follows manual day selection; `/checkout` keeps the same UI for post-summary delivery.',
             },
         },
     },

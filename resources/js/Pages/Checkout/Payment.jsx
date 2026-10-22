@@ -38,6 +38,7 @@ function formatMoney(amount, currency = 'BHD') {
  *   total?: number;
  *   benefitPayNumber?: string;
  *   refundPolicyUrl?: string;
+ *   freezePolicyUrl?: string;
  *   deliveryAddress?: {
  *     formatted?: string;
  *     area?: string;
@@ -79,6 +80,7 @@ export default function Payment({
 
     const { data, setData, post, processing, errors, transform } = useForm({
         cart_confirmed: false,
+        refund_policy_accepted: false,
         invoice_same_address: true,
         payment_method: 'benefit_pay',
         promo_code: basket.promoCode ?? '',
@@ -97,7 +99,11 @@ export default function Payment({
     }, [basket]);
 
     const address = basket.deliveryAddress ?? {};
-    const canPay = data.cart_confirmed && data.payment_method === 'benefit_pay' && !processing;
+    const canPay =
+        data.cart_confirmed &&
+        data.refund_policy_accepted &&
+        data.payment_method === 'benefit_pay' &&
+        !processing;
 
     return (
         <CustomerInertiaShell
@@ -212,32 +218,6 @@ export default function Payment({
                             }}
                         />
                     </div>
-
-                    <label className="mt-5 flex cursor-pointer select-none items-start gap-3">
-                        <input
-                            type="checkbox"
-                            checked={Boolean(data.cart_confirmed)}
-                            onChange={(event) => {
-                                setData('cart_confirmed', event.target.checked);
-                                setCartConfirmedLocal(event.target.checked);
-                            }}
-                            className="peer sr-only"
-                        />
-                        <span className="mt-0.5 inline-flex shrink-0 rounded-[4px] peer-focus-visible:ring-2 peer-focus-visible:ring-[#556C37] peer-focus-visible:ring-offset-2">
-                            <SquareCheckbox presentational checked={Boolean(data.cart_confirmed)} />
-                        </span>
-                        <span className="font-montserrat text-sm font-bold uppercase leading-snug tracking-wide text-[#262A22]">
-                            Confirm cart
-                        </span>
-                    </label>
-                    {errors.cart_confirmed ? (
-                        <p className="mt-2 text-sm text-status-error" role="alert">
-                            {errors.cart_confirmed}
-                        </p>
-                    ) : null}
-                    {cartConfirmedLocal ? (
-                        <p className="mt-2 font-body text-xs text-[#5A6B44]">Cart confirmed.</p>
-                    ) : null}
                 </section>
 
                 <section className="mt-5 rounded-[12px] border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
@@ -305,14 +285,91 @@ export default function Payment({
                         </p>
                     ) : null}
 
-                    <p className="mt-5 font-body text-sm text-[#555555]">
-                        <a
-                            href={basket.refundPolicyUrl || '/refund-policy'}
-                            className="font-semibold text-[#5A6B44] underline decoration-[#5A6B44]/40 underline-offset-2 hover:decoration-[#5A6B44]"
-                        >
-                            Refund policy
-                        </a>
-                    </p>
+                    <div className="mt-6 space-y-4 rounded-[12px] bg-[#F8F9F6] p-4">
+                        <div>
+                            <h3 className="m-0 font-montserrat text-sm font-bold tracking-tight text-[#262A22]">
+                                <a
+                                    href={basket.freezePolicyUrl || '/refund-policy#freeze'}
+                                    className="text-[#5A6B44] underline decoration-[#5A6B44]/40 underline-offset-2 hover:decoration-[#5A6B44]"
+                                >
+                                    Freeze policy
+                                </a>
+                            </h3>
+                            <p className="mt-2 font-body text-sm leading-relaxed text-[#555555]">
+                                If you wish to freeze your package, the packages are calculated as a 20 day package and
+                                a 24 day package. The maximum total number of days to be frozen are 14 days.
+                            </p>
+                        </div>
+                        <div>
+                            <h3 className="m-0 font-montserrat text-sm font-bold tracking-tight text-[#262A22]">
+                                <a
+                                    href={basket.refundPolicyUrl || '/refund-policy#refund'}
+                                    className="text-[#5A6B44] underline decoration-[#5A6B44]/40 underline-offset-2 hover:decoration-[#5A6B44]"
+                                >
+                                    Refund policy
+                                </a>
+                            </h3>
+                            <p className="mt-2 font-body text-sm leading-relaxed text-[#555555]">
+                                As we do not offer a refund policy, we suggest that you do a 5 day trial, if for any
+                                reason during the 20 day package you would like to stop please keep in mind that the
+                                credit is transferable to a loved one.
+                            </p>
+                        </div>
+                    </div>
+
+                    <label className="mt-5 flex cursor-pointer select-none items-start gap-3">
+                        <input
+                            type="checkbox"
+                            checked={Boolean(data.cart_confirmed)}
+                            onChange={(event) => {
+                                setData('cart_confirmed', event.target.checked);
+                                setCartConfirmedLocal(event.target.checked);
+                            }}
+                            className="peer sr-only"
+                        />
+                        <span className="mt-0.5 inline-flex shrink-0 rounded-[4px] peer-focus-visible:ring-2 peer-focus-visible:ring-[#556C37] peer-focus-visible:ring-offset-2">
+                            <SquareCheckbox presentational checked={Boolean(data.cart_confirmed)} />
+                        </span>
+                        <span className="font-montserrat text-sm font-bold uppercase leading-snug tracking-wide text-[#262A22]">
+                            Confirm cart
+                        </span>
+                    </label>
+                    {errors.cart_confirmed ? (
+                        <p className="mt-2 text-sm text-status-error" role="alert">
+                            {errors.cart_confirmed}
+                        </p>
+                    ) : null}
+                    {cartConfirmedLocal ? (
+                        <p className="mt-2 font-body text-xs text-[#5A6B44]">Cart confirmed.</p>
+                    ) : null}
+
+                    <label className="mt-4 flex cursor-pointer select-none items-start gap-3">
+                        <input
+                            type="checkbox"
+                            checked={Boolean(data.refund_policy_accepted)}
+                            onChange={(event) => setData('refund_policy_accepted', event.target.checked)}
+                            className="peer sr-only"
+                        />
+                        <span className="mt-0.5 inline-flex shrink-0 rounded-[4px] peer-focus-visible:ring-2 peer-focus-visible:ring-[#556C37] peer-focus-visible:ring-offset-2">
+                            <SquareCheckbox presentational checked={Boolean(data.refund_policy_accepted)} />
+                        </span>
+                        <span className="font-body text-sm leading-snug text-[#555555]">
+                            By making the payment, you agree to the{' '}
+                            <a
+                                href={basket.refundPolicyUrl || '/refund-policy#refund'}
+                                className="font-semibold text-[#5A6B44] underline decoration-[#5A6B44]/40 underline-offset-2 hover:decoration-[#5A6B44]"
+                                onClick={(event) => event.stopPropagation()}
+                            >
+                                Refund Policy
+                            </a>
+                            .
+                        </span>
+                    </label>
+                    {errors.refund_policy_accepted ? (
+                        <p className="mt-2 text-sm text-status-error" role="alert">
+                            {errors.refund_policy_accepted}
+                        </p>
+                    ) : null}
 
                     <div className="mt-6 flex w-full justify-center">
                         <Button

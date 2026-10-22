@@ -29,6 +29,7 @@ final class CheckoutBasket
      *     total: float,
      *     benefitPayNumber: string,
      *     refundPolicyUrl: string,
+     *     freezePolicyUrl: string,
      *     deliveryAddress: array{
      *         area: string,
      *         block: string,
@@ -113,7 +114,8 @@ final class CheckoutBasket
             'promoCode' => $normalizedPromo,
             'total' => $total,
             'benefitPayNumber' => (string) config('checkout.benefit_pay_number', '33177718'),
-            'refundPolicyUrl' => (string) config('checkout.refund_policy_url', '/refund-policy'),
+            'refundPolicyUrl' => (string) config('checkout.refund_policy_url', '/refund-policy#refund'),
+            'freezePolicyUrl' => (string) config('checkout.freeze_policy_url', '/refund-policy#freeze'),
             'deliveryAddress' => self::deliveryAddress($profile),
             'craftPlan' => $craftMeta,
         ];

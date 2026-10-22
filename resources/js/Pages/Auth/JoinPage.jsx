@@ -3,9 +3,10 @@ import MealCraftLogo from '../../Components/Atoms/Logo/MealCraftLogo.jsx';
 import TextInput from '../../Components/Atoms/TextInput/TextInput';
 import Button from '../../Components/Atoms/Button/Button';
 import TextLink from '../../Components/Atoms/TextLink.jsx';
+import CustomerOnboardingPhoneFrame from '../../Components/Molecules/Customer/CustomerOnboardingPhoneFrame.jsx';
 
-/** Join form width — matches `pages/auth/join.blade.php` `max-w-[492px]`. */
-const contentWidthLayout = 'mx-auto w-full max-w-[90%] md:max-w-[492px]';
+/** Content width inside the onboarding phone frame (≈430px) — matches LoginPage. */
+const contentWidthLayout = 'mx-auto w-full max-w-full';
 const contentWidthClass = `${contentWidthLayout} text-center`;
 const fieldStackClass = `${contentWidthLayout} space-y-8 text-left [&_input]:text-left`;
 
@@ -224,134 +225,136 @@ export default function JoinPage({
     };
 
     return (
-        <div className="relative min-h-screen w-screen bg-[#FFFFFF]">
-            <main className="relative z-0 flex min-h-screen w-screen flex-col items-center justify-center bg-[#FFFFFF] px-2 py-10 sm:px-4 md:px-6">
-                <div className="flex w-full max-w-full flex-col items-center gap-10 md:px-12">
-                    <div className="flex justify-center">
-                        <MealCraftLogo
-                            variant="vertical-smart"
-                            width={280}
-                            className="h-auto max-w-full shrink-0"
-                            alt="Meal Craft"
-                        />
-                    </div>
-
-                    <header className={`flex w-full flex-col items-center gap-[19px] ${contentWidthClass}`}>
-                        <h1 className="font-montserrat text-2xl font-semibold leading-tight text-black">
-                            Start your meal plan
-                        </h1>
-                        <p className="font-montserrat text-base font-normal leading-normal text-black">
-                            Create your customer account to personalize meals and track your nutrition goals.
-                        </p>
-                    </header>
-
-                    {errorMessage ? (
-                        <p className={`w-full text-sm text-red-600 ${contentWidthClass}`} role="alert">
-                            {errorMessage}
-                        </p>
-                    ) : null}
-
-                    {statusMessage ? (
-                        <p className={`w-full text-sm text-[#556C37] ${contentWidthClass}`} role="status">
-                            {statusMessage}
-                        </p>
-                    ) : null}
-
-                    <form
-                        onSubmit={handleSubmit}
-                        method={isServerForm ? 'post' : undefined}
-                        action={isServerForm ? formAction : undefined}
-                        className="w-full"
-                        noValidate={!isServerForm}
-                    >
-                        {isServerForm ? <input type="hidden" name="_token" value={csrfToken} /> : null}
-                        <div className={`${fieldStackClass} !space-y-8`}>
-                            <TextInput
-                                label="Name"
-                                type="text"
-                                name="name"
-                                placeholder="Full name"
-                                value={name}
-                                onChange={(e) => setName(e.target.value)}
-                                autoComplete="name"
-                                error={nameError || undefined}
-                                className="!max-w-none"
-                                required={isServerForm}
-                                disabled={isSubmitting}
+        <CustomerOnboardingPhoneFrame>
+            <div className="relative flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden bg-white">
+                <main className="relative z-0 flex min-h-0 flex-1 flex-col items-center overflow-y-auto overscroll-contain px-3 py-6">
+                    <div className="my-auto flex w-full max-w-full flex-col items-center gap-8">
+                        <div className="flex justify-center">
+                            <MealCraftLogo
+                                variant="vertical-smart"
+                                width={220}
+                                className="h-auto max-w-full shrink-0"
+                                alt="Meal Craft"
                             />
-                            <TextInput
-                                label="Email address"
-                                type="email"
-                                name="email"
-                                placeholder="email@example.com"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                autoComplete="email"
-                                error={emailError || undefined}
-                                className="!max-w-none"
-                                required={isServerForm}
-                                disabled={isSubmitting}
-                            />
-                            <TextInput
-                                label="Mobile number"
-                                type="tel"
-                                name="phone"
-                                placeholder="+973 XXXX XXXX"
-                                value={phone}
-                                onChange={(e) => setPhone(e.target.value)}
-                                autoComplete="tel"
-                                error={phoneError || undefined}
-                                className="!max-w-none"
-                                required={isServerForm}
-                                disabled={isSubmitting}
-                            />
-                            <TextInput
-                                label="Password"
-                                type="password"
-                                name="password"
-                                placeholder="Password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                autoComplete="new-password"
-                                error={passwordError || undefined}
-                                className="!max-w-none"
-                                required={isServerForm}
-                                disabled={isSubmitting}
-                            />
-                            <TextInput
-                                label="Confirm password"
-                                type="password"
-                                name="password_confirmation"
-                                placeholder="Confirm password"
-                                value={passwordConfirmation}
-                                onChange={(e) => setPasswordConfirmation(e.target.value)}
-                                autoComplete="new-password"
-                                className="!max-w-none"
-                                required={isServerForm}
-                                disabled={isSubmitting}
-                            />
-
-                            <div className="flex justify-center pt-2">
-                                <Button
-                                    label={isSubmitting ? 'Creating account…' : 'Create account'}
-                                    variant="primary"
-                                    type="submit"
-                                    className="min-w-[190px]"
-                                    disabled={isSubmitting}
-                                    data-test="register-user-button"
-                                />
-                            </div>
                         </div>
-                    </form>
 
-                    <p className={`font-montserrat text-base font-medium text-black ${contentWidthClass}`}>
-                        <span>Already have an account?</span>{' '}
-                        <TextLink href={loginHref} className="rounded-sm font-semibold">
-                            Log in
-                        </TextLink>
-                    </p>
-                </div>
-            </main>
-        </div>
+                        <header className={`flex w-full flex-col items-center gap-3 ${contentWidthClass}`}>
+                            <h1 className="font-montserrat text-2xl font-semibold leading-tight text-black">
+                                Start your meal plan
+                            </h1>
+                            <p className="font-montserrat text-base font-normal leading-normal text-black">
+                                Create your customer account to personalize meals and track your nutrition goals.
+                            </p>
+                        </header>
+
+                        {errorMessage ? (
+                            <p className={`w-full text-sm text-red-600 ${contentWidthClass}`} role="alert">
+                                {errorMessage}
+                            </p>
+                        ) : null}
+
+                        {statusMessage ? (
+                            <p className={`w-full text-sm text-[#556C37] ${contentWidthClass}`} role="status">
+                                {statusMessage}
+                            </p>
+                        ) : null}
+
+                        <form
+                            onSubmit={handleSubmit}
+                            method={isServerForm ? 'post' : undefined}
+                            action={isServerForm ? formAction : undefined}
+                            className="w-full"
+                            noValidate={!isServerForm}
+                        >
+                            {isServerForm ? <input type="hidden" name="_token" value={csrfToken} /> : null}
+                            <div className={`${fieldStackClass} !space-y-6`}>
+                                <TextInput
+                                    label="Name"
+                                    type="text"
+                                    name="name"
+                                    placeholder="Full name"
+                                    value={name}
+                                    onChange={(e) => setName(e.target.value)}
+                                    autoComplete="name"
+                                    error={nameError || undefined}
+                                    className="!max-w-none"
+                                    required={isServerForm}
+                                    disabled={isSubmitting}
+                                />
+                                <TextInput
+                                    label="Email address"
+                                    type="email"
+                                    name="email"
+                                    placeholder="email@example.com"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    autoComplete="email"
+                                    error={emailError || undefined}
+                                    className="!max-w-none"
+                                    required={isServerForm}
+                                    disabled={isSubmitting}
+                                />
+                                <TextInput
+                                    label="Mobile number"
+                                    type="tel"
+                                    name="phone"
+                                    placeholder="+973 XXXX XXXX"
+                                    value={phone}
+                                    onChange={(e) => setPhone(e.target.value)}
+                                    autoComplete="tel"
+                                    error={phoneError || undefined}
+                                    className="!max-w-none"
+                                    required={isServerForm}
+                                    disabled={isSubmitting}
+                                />
+                                <TextInput
+                                    label="Password"
+                                    type="password"
+                                    name="password"
+                                    placeholder="Password"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    autoComplete="new-password"
+                                    error={passwordError || undefined}
+                                    className="!max-w-none"
+                                    required={isServerForm}
+                                    disabled={isSubmitting}
+                                />
+                                <TextInput
+                                    label="Confirm password"
+                                    type="password"
+                                    name="password_confirmation"
+                                    placeholder="Confirm password"
+                                    value={passwordConfirmation}
+                                    onChange={(e) => setPasswordConfirmation(e.target.value)}
+                                    autoComplete="new-password"
+                                    className="!max-w-none"
+                                    required={isServerForm}
+                                    disabled={isSubmitting}
+                                />
+
+                                <div className="flex justify-center pt-2">
+                                    <Button
+                                        label={isSubmitting ? 'Creating account…' : 'Create account'}
+                                        variant="primary"
+                                        type="submit"
+                                        className="w-full"
+                                        disabled={isSubmitting}
+                                        data-test="register-user-button"
+                                    />
+                                </div>
+                            </div>
+                        </form>
+
+                        <p className={`font-montserrat text-base font-medium text-black ${contentWidthClass}`}>
+                            <span>Already have an account?</span>{' '}
+                            <TextLink href={loginHref} className="rounded-sm font-semibold">
+                                Log in
+                            </TextLink>
+                        </p>
+                    </div>
+                </main>
+            </div>
+        </CustomerOnboardingPhoneFrame>
     );
 }

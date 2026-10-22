@@ -8,7 +8,7 @@ export default {
         docs: {
             description: {
                 component:
-                    'Customer sign-up UI for `/join` — vertical lockup, name / email / mobile / password / confirm, **Create account** pill, and a **Log in** link. Live registration posts through Fortify (`register.store`).',
+                    'Customer sign-up for `/join` in the same phone frame as login. Vertical lockup, name / email / mobile / password / confirm, **Create account**, and a **Log in** link. Live registration posts through Fortify (`register.store`).',
             },
         },
     },

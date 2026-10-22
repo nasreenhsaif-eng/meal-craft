@@ -111,11 +111,13 @@ function HighlightList({ items }) {
  * @param {{
  *   deliveryUrl?: string;
  *   className?: string;
+ *   onContinue?: (choice: FulfillmentChoiceId) => void;
  * }} props
  */
 export default function FulfillmentOptionCards({
     deliveryUrl = '/checkout/delivery',
     className = '',
+    onContinue,
 }) {
     /** @type {[FulfillmentChoiceId | '', import('react').Dispatch<import('react').SetStateAction<FulfillmentChoiceId | ''>>]} */
     const [selected, setSelected] = useState(/** @type {FulfillmentChoiceId | ''} */ (''));
@@ -132,6 +134,26 @@ export default function FulfillmentOptionCards({
     }, [comingSoonVisible]);
 
     const handleNext = () => {
+        if (!selected) {
+            return;
+        }
+
+        // Consultation receive step:
+        // - DIY → continue into Choose your meals
+        // - Partner Kitchen → kitchen → checkout → payment → then Choose your meals
+        if (typeof onContinue === 'function') {
+            if (selected === 'diy') {
+                onContinue(selected);
+                return;
+            }
+
+            if (selected === 'partner_kitchen') {
+                const separator = deliveryUrl.includes('?') ? '&' : '?';
+                window.location.assign(`${deliveryUrl}${separator}resume=choose_meals`);
+                return;
+            }
+        }
+
         if (selected === 'partner_kitchen') {
             router.visit(deliveryUrl);
             return;

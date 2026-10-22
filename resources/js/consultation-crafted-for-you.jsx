@@ -5,7 +5,7 @@ import CraftedForYouPage from './Pages/Consultation/CraftedForYouPage.jsx';
 import { syncCsrfMetaTag } from './lib/csrfToken.js';
 
 // Bump when consultation curation shell changes so stale Fast Refresh clients reload.
-export const CONSULTATION_CURATION_BUNDLE_EPOCH = '2026-10-19-customer-phone-frame';
+export const CONSULTATION_CURATION_BUNDLE_EPOCH = '2026-10-22-fulfillment-paths';
 
 const rootEl = document.getElementById('mc-consultation-crafted-root');
 const configEl = document.getElementById('mc-consultation-crafted-config');
@@ -14,7 +14,7 @@ if (typeof window !== 'undefined') {
     window.__MC_CONSULTATION_CURATION_BUNDLE_EPOCH__ = CONSULTATION_CURATION_BUNDLE_EPOCH;
 }
 
-/** @type {{ closeHref?: string; homeHref?: string; backHref?: string; summaryHref?: string; loginUrl?: string; signOutUrl?: string; csrfToken?: string; isCustomerAccount?: boolean; isAdminPreview?: boolean; pageEyebrow?: string; adaptedMenuUrl?: string; mealLibraryRevision?: number; planTier?: number | null; planTiers?: number[]; editDraft?: object | null; dietProtocol?: string | null; sex?: string | null; activityLevel?: string | null; dailyCalorieTarget?: number | null }} */
+/** @type {{ closeHref?: string; homeHref?: string; backHref?: string; summaryHref?: string; deliveryUrl?: string; loginUrl?: string; signOutUrl?: string; csrfToken?: string; isCustomerAccount?: boolean; isAdminPreview?: boolean; pageEyebrow?: string; adaptedMenuUrl?: string; mealLibraryRevision?: number; planTier?: number | null; planTiers?: number[]; editDraft?: object | null; dietProtocol?: string | null; sex?: string | null; activityLevel?: string | null; dailyCalorieTarget?: number | null; resumeChooseMeals?: boolean }} */
 let config = {};
 
 if (configEl) {
@@ -85,6 +85,8 @@ if (rootEl) {
             closeHref={typeof config.closeHref === 'string' ? config.closeHref : undefined}
             homeHref={typeof config.homeHref === 'string' ? config.homeHref : undefined}
             summaryHref={typeof config.summaryHref === 'string' ? config.summaryHref : undefined}
+            deliveryUrl={typeof config.deliveryUrl === 'string' ? config.deliveryUrl : '/checkout/delivery'}
+            resumeChooseMeals={config.resumeChooseMeals === true}
             loginUrl={typeof config.loginUrl === 'string' ? config.loginUrl : undefined}
             signOutUrl={typeof config.signOutUrl === 'string' ? config.signOutUrl : undefined}
             csrfToken={typeof config.csrfToken === 'string' ? config.csrfToken : undefined}

@@ -53,6 +53,16 @@ test('completed customers can open the fresh delivery checkout step', function (
             ->where('mealPlanSummaryUrl', route('app.meal-plan')));
 });
 
+test('partner kitchen delivery from consultation flags resume choose meals', function () {
+    $customer = User::factory()->customer()->create();
+    CustomerProfile::factory()->for($customer)->create();
+
+    $this->actingAs($customer)
+        ->get(route('checkout.delivery', ['resume' => 'choose_meals']))
+        ->assertSuccessful()
+        ->assertSessionHas('checkout_resume_choose_meals', true);
+});
+
 test('digital recipes path opens the printable meal plan or sends the customer to consultation', function () {
     $customer = User::factory()->customer()->create();
     CustomerProfile::factory()->for($customer)->create();
@@ -100,5 +110,5 @@ test('customer home offers profile, meals plan, and summary destinations', funct
             ->where('mealPlanSummaryUrl', route('app.meal-plan'))
             ->where('fulfillmentUrl', route('checkout.fulfillment'))
             ->where('chooseByFridayLabel', MealPlanDateRange::dayLabel($chooseByFriday))
-            ->where('showPlanReady', false));
+            ->where('showPlanReady', true));
 });

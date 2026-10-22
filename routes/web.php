@@ -28,20 +28,13 @@ use App\Http\Controllers\Customer\OnboardingController;
 use App\Http\Controllers\MealLibraryCsvExportController;
 use App\Http\Controllers\MealLibraryCsvImportController as JsonMealLibraryCsvImportController;
 use App\Models\Meal;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function (Request $request) {
-    $user = $request->user();
+Route::get('/', [WelcomeController::class, 'show'])->name('home');
 
-    if ($user !== null) {
-        return redirect($user->homePath());
-    }
-
-    return redirect()->route('login');
-})->name('home');
-
-Route::get('/welcome', [WelcomeController::class, 'show'])->name('welcome');
+Route::get('/welcome', function () {
+    return redirect()->route('home');
+})->name('welcome');
 
 Route::middleware('guest')->group(function (): void {
     Route::view('/join', 'pages::auth.join')->name('join');
@@ -177,6 +170,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             Route::post('/checkout/details', [CheckoutController::class, 'storeDetails'])->name('checkout.details.store');
             Route::get('/checkout/payment', [CheckoutController::class, 'payment'])->name('checkout.payment');
             Route::post('/checkout/payment', [CheckoutController::class, 'storePayment'])->name('checkout.payment.store');
+            Route::get('/refund-policy', [CheckoutController::class, 'policies'])->name('policies.refund');
             Route::get('/meal-plan/recipes', [CustomerAppController::class, 'mealPlan'])->name('meal-plan.recipes');
         });
 

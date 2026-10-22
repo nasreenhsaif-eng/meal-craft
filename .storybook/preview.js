@@ -1,20 +1,28 @@
 import '../resources/css/app.css';
 import './preview.css';
 import React from 'react';
+import { mealCraftTheme } from './mealCraftTheme.js';
+
+/** Canvas modes — same tokens as `resources/css/app.css` / landing. */
+const CANVAS = {
+    page: { backgroundColor: '#F9FAFB', color: '#262A22' },
+    white: { backgroundColor: '#FFFFFF', color: '#262A22' },
+    ink: { backgroundColor: '#262A22', color: '#F6F6F4' },
+};
 
 /** @type { import('@storybook/react-vite').Preview } */
 const preview = {
     globalTypes: {
         canvasBackground: {
-            description: 'Preview canvas (helps white/low-contrast logos)',
-            defaultValue: 'grey',
+            description: 'Preview canvas (design-system page / white / ink)',
+            defaultValue: 'page',
             toolbar: {
                 title: 'Canvas',
                 icon: 'mirror',
                 items: [
-                    { value: 'grey', title: 'App grey (#F9FAFB)' },
+                    { value: 'page', title: 'Page (#F9FAFB)' },
                     { value: 'white', title: 'White' },
-                    { value: 'dark', title: 'Dark' },
+                    { value: 'ink', title: 'Ink (#262A22)' },
                 ],
                 dynamicTitle: true,
             },
@@ -22,10 +30,14 @@ const preview = {
     },
     decorators: [
         (Story, context) => {
-            const mode = context.parameters.canvasBackground ?? context.globals.canvasBackground ?? 'grey';
-            const backgroundColor =
-                mode === 'dark' ? '#111827' : mode === 'white' ? '#FFFFFF' : '#F9FAFB';
-            const color = mode === 'dark' ? '#e5e7eb' : '#374151';
+            const mode = context.parameters.canvasBackground ?? context.globals.canvasBackground ?? 'page';
+            const resolved =
+                mode === 'white'
+                    ? 'white'
+                    : mode === 'ink' || mode === 'dark'
+                      ? 'ink'
+                      : 'page';
+            const { backgroundColor, color } = CANVAS[resolved];
 
             // Avoid position:fixed + overflow:auto — it traps touch/wheel scroll inside
             // Storybook's mobile viewport iframe. Let the document scroll instead.
@@ -42,6 +54,7 @@ const preview = {
                         padding: 0,
                         backgroundColor,
                         color,
+                        fontFamily: 'var(--font-family-font-2), ui-sans-serif, system-ui, sans-serif',
                     },
                 },
                 React.createElement(Story),
@@ -51,6 +64,14 @@ const preview = {
     parameters: {
         /** Full-bleed preview (avoids default `centered` max-width column on every story). */
         layout: 'fullscreen',
+
+        docs: {
+            theme: mealCraftTheme,
+        },
+
+        backgrounds: {
+            disable: true,
+        },
 
         controls: {
             matchers: {
@@ -247,6 +268,7 @@ const preview = {
                     }
 
                     const pagesOrder = [
+                        `${pagesBase}Landing`,
                         `${pagesBase}DashboardLayout`,
                         `${pagesBase}SettingsView`,
                         `${pagesBase}Auth`,

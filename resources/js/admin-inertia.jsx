@@ -11,6 +11,35 @@ import customerOnboardingLayout from './Layouts/customerOnboardingLayout.jsx';
 configureLaravelAxios(axios);
 configureLaravelInertia(router);
 
+const ROOT_KEY = '__mcInertiaRoot';
+
+/**
+ * Mount (or remount) Inertia into #app without calling createRoot twice.
+ * Double createRoot blanks Chrome ("container already passed to createRoot").
+ *
+ * @param {HTMLElement} el
+ * @param {import('react').ReactNode} app
+ */
+function mountInertiaRoot(el, app) {
+    /** @type {import('react-dom/client').Root | undefined} */
+    let root = el[ROOT_KEY];
+
+    if (root && typeof root.render === 'function') {
+        root.render(app);
+        return;
+    }
+
+    try {
+        root = createRoot(el);
+    } catch {
+        el.replaceChildren();
+        root = createRoot(el);
+    }
+
+    el[ROOT_KEY] = root;
+    root.render(app);
+}
+
 class InertiaErrorBoundary extends Component {
     constructor(props) {
         super(props);
@@ -27,8 +56,7 @@ class InertiaErrorBoundary extends Component {
                 <div className="p-6 font-sans text-sm text-zinc-800">
                     <h1 className="text-lg font-semibold text-zinc-900">This page failed to render</h1>
                     <p className="mt-2 text-zinc-600">
-                        Hard refresh (<kbd>Cmd</kbd>+<kbd>Shift</kbd>+<kbd>R</kbd>), then try again. If it keeps
-                        happening, open DevTools → Console and share the red error.
+                        Hard refresh (<kbd>Cmd</kbd>+<kbd>Shift</kbd>+<kbd>R</kbd>), then try again.
                     </p>
                     <pre className="mt-4 max-h-48 overflow-auto rounded-md bg-zinc-100 p-3 text-xs">
                         {this.state.error.message}
@@ -60,53 +88,12 @@ createInertiaApp({
         return page;
     },
     setup({ el, App, props }) {
-        const rootEl = document.getElementById('app') ?? el;
-        if (!rootEl) {
-            // eslint-disable-next-line no-console
-            console.error('Inertia root element not found (expected #app from @inertia).');
-            document.body.insertAdjacentHTML(
-                'beforeend',
-                '<p class="p-6 font-sans text-sm text-zinc-800">Missing Inertia root <code>#app</code>. Check <code>resources/views/app.blade.php</code> includes <code>@inertia</code>.</p>',
-            );
-            return;
-        }
-
-        const app = (
+        mountInertiaRoot(
+            el,
             <InertiaErrorBoundary>
                 <App {...props} />
-            </InertiaErrorBoundary>
+            </InertiaErrorBoundary>,
         );
-
-        // Persist the React root across Vite HMR. Older builds stored
-        // `{ current: Root }` — migrate that so .render() always exists.
-        const existing = window.__MC_INERTIA_ROOT__;
-        if (existing && typeof existing.render === 'function') {
-            existing.render(app);
-            return;
-        }
-
-        if (
-            existing &&
-            typeof existing === 'object' &&
-            existing.current &&
-            typeof existing.current.render === 'function'
-        ) {
-            window.__MC_INERTIA_ROOT__ = existing.current;
-            window.__MC_INERTIA_ROOT__.render(app);
-            return;
-        }
-
-        try {
-            window.__MC_INERTIA_ROOT__ = createRoot(rootEl);
-            window.__MC_INERTIA_ROOT__.render(app);
-        } catch (error) {
-            // eslint-disable-next-line no-console
-            console.warn(error);
-            if (!window.__MC_INERTIA_RELOAD_ATTEMPTED__) {
-                window.__MC_INERTIA_RELOAD_ATTEMPTED__ = true;
-                window.location.reload();
-            }
-        }
     },
     progress: {
         color: '#6E8C47',

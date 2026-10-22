@@ -7,7 +7,6 @@ use App\Enums\OnboardingStep;
 use App\Http\Controllers\Controller;
 use App\Models\CustomerProfile;
 use App\Services\CustomerCraftPlanPresentationService;
-use App\Services\MealPlanPublishService;
 use App\Services\Nutrition\OnboardingDailyTargetsCalculator;
 use App\Services\Nutrition\ProductionWeeklyMenuSchedule;
 use App\Services\Nutrition\UserPlanCalculator;
@@ -43,7 +42,8 @@ class CustomerAppController extends Controller
         $planDateRange = MealPlanDateRange::forWeek(
             selectedWeekdays: array_values($latestCraftPlan?->selected_weekdays ?? []),
         );
-        $showPlanReady = false;
+        // Welcome-back plan ready always offers Choose your meals after a craft plan exists.
+        $showPlanReady = $latestCraftPlan !== null;
 
         if (
             $profile !== null
@@ -59,9 +59,6 @@ class CustomerAppController extends Controller
             if ($remainingRange !== null) {
                 $planDateRange = $remainingRange;
             }
-
-            $showPlanReady = $remainingWeekdays !== []
-                && ! MealPlanPublishService::customerAlreadyChoseForWeek($profile, $starts, $ends);
         }
 
         $chooseByFriday = Carbon::now()->startOfDay();

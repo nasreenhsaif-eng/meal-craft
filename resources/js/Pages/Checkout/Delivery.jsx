@@ -1,4 +1,3 @@
-import { router } from '@inertiajs/react';
 import PartnerKitchenCard from '../../Components/Checkout/PartnerKitchenCard.jsx';
 import CustomerAppBottomNav from '../../Components/Molecules/Customer/CustomerAppBottomNav.jsx';
 import CustomerInertiaShell from '../../Layouts/CustomerInertiaShell.jsx';
@@ -48,7 +47,11 @@ export default function Delivery({
                         reviewCount={128}
                         price="BHD 385"
                         billingCadence="week"
-                        onSelect={() => router.visit(detailsUrl)}
+                        onSelect={() => {
+                            // Details is a full Blade document — must hard-navigate.
+                            // Inertia router.visit() against HTML blanks / breaks the phone frame.
+                            window.location.assign(detailsUrl);
+                        }}
                     />
                 </div>
             </div>

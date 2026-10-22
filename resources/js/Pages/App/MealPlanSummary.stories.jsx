@@ -146,7 +146,7 @@ export default {
         docs: {
             description: {
                 component:
-                    'Customer meal-plan summary at `/app/meal-plan`. Pick a delivery day, then scroll full meal details (ingredients, nutrition, safety). Compact pills switch Meals / Macros / Micros / Allergy / Sickle. “Choose a delivery option” stays available.',
+                    'Customer meal-plan summary at `/app/meal-plan`. Pick a delivery day, then scroll full meal details (ingredients, nutrition, safety). Compact pills switch Meals / Macros / Micros / Allergy / Sickle. “Choose a delivery option” goes to `/checkout`.',
             },
         },
     },

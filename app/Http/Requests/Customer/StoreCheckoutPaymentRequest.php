@@ -19,6 +19,7 @@ class StoreCheckoutPaymentRequest extends FormRequest
     {
         return [
             'cart_confirmed' => ['accepted'],
+            'refund_policy_accepted' => ['accepted'],
             'invoice_same_address' => ['sometimes', 'boolean'],
             'payment_method' => ['required', 'string', 'in:benefit_pay'],
             'promo_code' => ['nullable', 'string', 'max:40'],
@@ -29,6 +30,7 @@ class StoreCheckoutPaymentRequest extends FormRequest
     {
         $this->merge([
             'cart_confirmed' => filter_var($this->input('cart_confirmed'), FILTER_VALIDATE_BOOLEAN),
+            'refund_policy_accepted' => filter_var($this->input('refund_policy_accepted'), FILTER_VALIDATE_BOOLEAN),
             'invoice_same_address' => filter_var($this->input('invoice_same_address', true), FILTER_VALIDATE_BOOLEAN),
         ]);
     }

@@ -1,4 +1,4 @@
-import { Link, usePage } from '@inertiajs/react';
+import { Link } from '@inertiajs/react';
 import Button from '../../Components/Atoms/Button/Button.jsx';
 import CustomerAppBottomNav from '../../Components/Molecules/Customer/CustomerAppBottomNav.jsx';
 import FulfillmentOptionCards from '../../Components/Molecules/Customer/FulfillmentOptionCards.jsx';
@@ -79,7 +79,7 @@ export function WelcomeBackInner({
     mealPlanSummaryUrl = '/app/meal-plan',
     onChooseMeals,
     chooseByFridayLabel = '',
-    showPlanReady = false,
+    showPlanReady = true,
 }) {
     const isReceive = mode === 'receive';
     const dailyCaloriesLabel = dailyCaloriesDisplay(profile);
@@ -223,11 +223,9 @@ export default function Home({
     consultationEditUrl = '/consultation/crafted-for-you/edit',
     craftPlan = null,
     chooseByFridayLabel = '',
-    showPlanReady = false,
+    showPlanReady = true,
 }) {
-    const page = usePage();
-    const fromSummary = String(page.url ?? '').includes('from=summary');
-    const mode = fromSummary ? 'receive' : 'welcome';
+    const mode = 'welcome';
     const mealsPlanUrl =
         craftPlan != null && typeof consultationEditUrl === 'string' && consultationEditUrl.trim() !== ''
             ? consultationEditUrl

@@ -1,6 +1,6 @@
-import { resolveCsrfToken, resolveXsrfHeaderToken } from '../../lib/csrfToken.js';
+import { resolveCsrfToken } from '../../lib/csrfToken.js';
 
-const CHECKOUT_FIELD_KEYS = [
+export const CHECKOUT_FIELD_KEYS = [
     'declaration_accepted',
     'phone',
     'contact_preference',
@@ -18,18 +18,14 @@ const CHECKOUT_FIELD_KEYS = [
 ];
 
 /**
- * Save checkout details then hard-navigate to payment (avoids blank SPA transitions).
+ * Native document POST to checkout details (full browser navigation).
  *
  * @param {string} submitUrl
  * @param {Record<string, mixed>} data
- * @param {string} [paymentUrl]
+ * @param {string} [_paymentUrl]
  * @returns {Promise<void>}
  */
-export async function submitCheckoutDetailsNative(
-    submitUrl,
-    data,
-    paymentUrl = '/checkout/payment',
-) {
+export async function submitCheckoutDetailsNative(submitUrl, data, _paymentUrl = '/checkout/payment') {
     if (typeof document === 'undefined') {
         throw new Error('Document is not available.');
     }
@@ -44,8 +40,26 @@ export async function submitCheckoutDetailsNative(
         throw new Error('Please accept the declaration to continue.');
     }
 
-    const body = new URLSearchParams();
-    body.set('_token', token);
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = submitUrl;
+    form.acceptCharset = 'UTF-8';
+    form.style.display = 'none';
+    form.setAttribute('data-checkout-details-native', '1');
+
+    /**
+     * @param {string} name
+     * @param {string} value
+     */
+    const appendField = (name, value) => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = name;
+        input.value = value;
+        form.appendChild(input);
+    };
+
+    appendField('_token', token);
 
     for (const key of CHECKOUT_FIELD_KEYS) {
         if (!Object.prototype.hasOwnProperty.call(data, key)) {
@@ -60,54 +74,16 @@ export async function submitCheckoutDetailsNative(
 
         if (typeof value === 'boolean') {
             if (value) {
-                body.set(key, '1');
+                appendField(key, '1');
             }
 
             continue;
         }
 
-        body.set(key, String(value));
+        appendField(key, String(value));
     }
 
-    const headers = {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        Accept: 'text/html,application/xhtml+xml',
-        'X-CSRF-TOKEN': token,
-    };
-
-    const xsrf = resolveXsrfHeaderToken();
-
-    if (xsrf) {
-        headers['X-XSRF-TOKEN'] = xsrf;
-    }
-
-    const response = await fetch(submitUrl, {
-        method: 'POST',
-        headers,
-        body,
-        credentials: 'same-origin',
-        redirect: 'follow',
-    });
-
-    // Always hard-navigate so payment mounts in a clean document (no stale React root).
-    if (response.ok || response.redirected) {
-        const next =
-            typeof response.url === 'string' && response.url.includes('/checkout/payment')
-                ? response.url
-                : paymentUrl;
-        window.location.assign(next);
-        return;
-    }
-
-    if (response.status === 419) {
-        throw new Error('Your session expired. Refresh the page and try again.');
-    }
-
-    if (response.status === 422) {
-        window.location.assign('/checkout/details');
-        return;
-    }
-
-    // Fall through: still try payment if details were saved; otherwise reload details.
-    window.location.assign(paymentUrl);
+    document.body.appendChild(form);
+    // Synchronous native submit — full document navigation to payment.
+    HTMLFormElement.prototype.submit.call(form);
 }

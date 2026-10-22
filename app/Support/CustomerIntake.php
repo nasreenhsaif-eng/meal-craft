@@ -8,7 +8,9 @@ use App\Enums\CustomerDeliveryTime;
 use App\Enums\CustomerPlanType;
 use App\Enums\CustomerSex;
 use App\Enums\DietProtocol;
+use App\Enums\MacroSplitStyle;
 use App\Models\CustomerProfile;
+use App\Services\Nutrition\OnboardingDailyTargetsCalculator;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -257,8 +259,20 @@ final class CustomerIntake
         [$splitFirst, $splitLast] = self::splitName($userName);
 
         $latestPlan = $profile->craftPlans
-            ->sortByDesc('id')
+            ->sortByDesc(static fn ($plan) => $plan->submitted_at?->getTimestampMs() ?? $plan->id)
             ->first();
+
+        $dateOfBirth = $profile->date_of_birth ?? $profile->birthdate;
+        $calorieTarget = $profile->daily_calorie_target !== null ? (int) $profile->daily_calorie_target : null;
+        $calorieMin = null;
+        $calorieMax = null;
+
+        if ($profile->weight_kg !== null && $profile->height_cm !== null) {
+            $targets = OnboardingDailyTargetsCalculator::calculate($profile);
+            $calorieMin = (int) $targets['daily_calories_min'];
+            $calorieMax = (int) $targets['daily_calories_max'];
+            $calorieTarget ??= (int) $targets['daily_calories'];
+        }
 
         return [
             'first_name' => $profile->first_name ?: $splitFirst,
@@ -266,12 +280,17 @@ final class CustomerIntake
             'email' => (string) ($profile->user?->email ?? ''),
             'phone' => (string) ($profile->phone ?? ''),
             'contact_preference' => $profile->contact_preference?->value ?? '',
-            'date_of_birth' => $profile->date_of_birth?->toDateString() ?? '',
+            'date_of_birth' => $dateOfBirth?->toDateString() ?? '',
+            'age' => $profile->age !== null ? (string) $profile->age : '',
             'gender' => $profile->sex?->value ?? (string) ($profile->gender ?? ''),
             'height_cm' => $profile->height_cm !== null ? (string) $profile->height_cm : '',
             'weight_kg' => $profile->weight_kg !== null ? (string) $profile->weight_kg : '',
             'target_weight_kg' => $profile->target_weight_kg !== null ? (string) $profile->target_weight_kg : '',
             'activity_level' => $profile->activity_level?->multiplierKey() ?? '',
+            'daily_calorie_target' => $calorieTarget !== null ? (string) $calorieTarget : '',
+            'daily_calories_min' => $calorieMin !== null ? (string) $calorieMin : '',
+            'daily_calories_max' => $calorieMax !== null ? (string) $calorieMax : '',
+            'macro_split_style' => $profile->macro_split_style?->value ?? '',
             'delivery_time' => $profile->delivery_time?->value ?? '',
             'dislikes_and_allergies' => self::formatDislikesAndAllergies($profile),
             'diet_protocol' => (string) ($profile->diet_protocol ?? ''),
@@ -306,6 +325,7 @@ final class CustomerIntake
             )),
             'deliveryTimes' => self::enumOptions(CustomerDeliveryTime::cases()),
             'dietProtocols' => self::enumOptions(DietProtocol::cases()),
+            'macroSplitStyles' => self::enumOptions(MacroSplitStyle::cases()),
             'planTypes' => self::enumOptions(CustomerPlanType::cases()),
             'planDays' => array_map(
                 static fn (int $days): array => [
@@ -476,7 +496,11 @@ final class CustomerIntake
     {
         $parts = [];
 
-        foreach (array_merge((array) $profile->allergies, (array) $profile->dislikes) as $item) {
+        foreach (array_merge(
+            (array) ($profile->food_filters ?? []),
+            (array) ($profile->allergies ?? []),
+            (array) ($profile->dislikes ?? []),
+        ) as $item) {
             if (! is_string($item)) {
                 continue;
             }

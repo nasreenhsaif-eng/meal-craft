@@ -84,7 +84,7 @@ export function MealPlanSummaryInner({
     profileUrl = '/app/profile',
     shopUrl = '/app/shop',
     mealPlanSummaryUrl = '/app/meal-plan',
-    fulfillmentUrl: _fulfillmentUrl = '/checkout',
+    fulfillmentUrl = '/checkout',
     sex = null,
     activityLevel = null,
     dailyCalorieTarget = null,
@@ -165,11 +165,14 @@ export function MealPlanSummaryInner({
     }, [consultationEditUrl, consultationUrl, craftPlan]);
 
     const handleNext = useCallback(() => {
-        const base = String(homeUrl || '/app').split('?')[0] || '/app';
+        const target =
+            typeof fulfillmentUrl === 'string' && fulfillmentUrl.trim() !== ''
+                ? fulfillmentUrl
+                : '/checkout';
         if (typeof router.visit === 'function') {
-            router.visit(`${base}?from=summary`);
+            router.visit(target);
         }
-    }, [homeUrl]);
+    }, [fulfillmentUrl]);
 
     const handleSelectDay = useCallback((dayNumber) => {
         setActiveDay(dayNumber);

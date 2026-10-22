@@ -18,7 +18,7 @@ export default {
         docs: {
             description: {
                 component:
-                    'Customer Crafted for YOU consultation: craft type, then week duration, then day selection (when needed), and meal decks with mock library data (no adapted-menu API).',
+                    'Customer Crafted for YOU consultation: craft → week duration → manual days (5/6) → **receive meal plan** → daily curation. Mock library data (no adapted-menu API).',
             },
         },
     },
@@ -35,6 +35,22 @@ export const CraftedForYour = {
             disableAdaptedMenuFetch
             embedInScrollParent
             pageEyebrow="Your plan"
+        />
+    ),
+};
+
+/** Opens on Partner Kitchen / DIY — after manual day selection in the live flow. */
+export const ReceiveMealPlan = {
+    name: 'Receive meal plan',
+    render: () => (
+        <CraftedForYouPage
+            disableAdaptedMenuFetch
+            embedInScrollParent
+            pageEyebrow="Your plan"
+            initialCraftKey="full"
+            initialWeekDuration={5}
+            initialSelectedWeekdays={[1, 2, 3, 4, 5]}
+            initialScreen={4}
         />
     ),
 };

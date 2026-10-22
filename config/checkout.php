@@ -39,6 +39,8 @@ return [
 
     'benefit_pay_number' => '33177718',
 
-    'refund_policy_url' => '/refund-policy',
+    'refund_policy_url' => '/refund-policy#refund',
+
+    'freeze_policy_url' => '/refund-policy#freeze',
 
 ];
