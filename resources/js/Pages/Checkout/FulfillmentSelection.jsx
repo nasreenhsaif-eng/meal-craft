@@ -48,7 +48,11 @@ export function FulfillmentSelectionInner({
                     Choose between fresh daily preparation delivered to your door or self-prepared recipes at home.
                 </p>
 
-                <FulfillmentOptionCards deliveryUrl={deliveryUrl} className="mt-8" />
+                <FulfillmentOptionCards
+                    deliveryUrl={deliveryUrl}
+                    recipesUrl={recipesUrl}
+                    className="mt-8"
+                />
             </div>
         </CustomerInertiaShell>
     );

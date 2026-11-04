@@ -1,9 +1,20 @@
 import { useEffect, useState } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
 import Button from '../../Components/Atoms/Button/Button.jsx';
 import MealCraftLogo from '../../Components/Atoms/Logo/MealCraftLogo.jsx';
+import LandingAppPreview from './LandingAppPreview.jsx';
 
 /** Show the floating control once the visitor has left the hero. */
-const BACK_TO_TOP_OFFSET_PX = 480;
+const BACK_TO_TOP_OFFSET_PX = 420;
+
+const EASE_OUT = [0.22, 1, 0.36, 1];
+
+/** Soft brand-green glow that breathes around Start now. */
+const CTA_GLOW = [
+    '0 0 0 0 color-mix(in srgb, var(--brand-primary-default) 0%, transparent)',
+    '0 0 22px 6px color-mix(in srgb, var(--brand-primary-default) 42%, transparent)',
+    '0 0 0 0 color-mix(in srgb, var(--brand-primary-default) 0%, transparent)',
+];
 
 const NAV = [
     { href: '#top', label: 'Home' },
@@ -165,6 +176,80 @@ function TechCard({ icon, title, children }) {
 }
 
 /**
+ * Primary CTA with entrance, breathing glow, and a nudging chevron.
+ * Hover and focus pause the loop so it does not fight a click.
+ *
+ * @param {{
+ *   loginHref: string;
+ *   onStartNow?: () => void;
+ *   reduceMotion: boolean;
+ * }} props
+ */
+function StartNowCta({ loginHref, onStartNow, reduceMotion }) {
+    const [paused, setPaused] = useState(false);
+    const shouldPulse = !reduceMotion && !paused;
+
+    return (
+        <motion.div
+            className="mt-8 inline-flex flex-col items-start gap-2"
+            initial={reduceMotion ? false : { opacity: 0, scale: 0.92 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={
+                reduceMotion
+                    ? { duration: 0 }
+                    : { delay: 0.95, duration: 0.5, ease: EASE_OUT }
+            }
+        >
+            <motion.div
+                className="rounded-full"
+                animate={shouldPulse ? { boxShadow: CTA_GLOW } : { boxShadow: CTA_GLOW[0] }}
+                transition={
+                    shouldPulse
+                        ? { duration: 2, repeat: Infinity, ease: 'easeInOut' }
+                        : { duration: 0.2 }
+                }
+                onMouseEnter={() => setPaused(true)}
+                onMouseLeave={() => setPaused(false)}
+                onFocusCapture={() => setPaused(true)}
+                onBlurCapture={() => setPaused(false)}
+            >
+                <PillButton
+                    className="bg-brand-primary text-white hover:bg-brand-primary-pressed"
+                    href={onStartNow ? undefined : loginHref}
+                    onClick={onStartNow}
+                >
+                    Start now
+                    <motion.span
+                        aria-hidden
+                        className="inline-block"
+                        animate={shouldPulse ? { x: [0, 5, 0] } : { x: 0 }}
+                        transition={
+                            shouldPulse
+                                ? { duration: 1.4, repeat: Infinity, ease: 'easeInOut' }
+                                : { duration: 0.15 }
+                        }
+                    >
+                        ›
+                    </motion.span>
+                </PillButton>
+            </motion.div>
+            <motion.p
+                className="font-montserrat text-sm text-grey-33"
+                initial={reduceMotion ? false : { opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={
+                    reduceMotion
+                        ? { duration: 0 }
+                        : { delay: 1.2, duration: 0.4, ease: EASE_OUT }
+                }
+            >
+                Your healing journey starts here.
+            </motion.p>
+        </motion.div>
+    );
+}
+
+/**
  * Floating control that returns the visitor to the hero after they scroll past it.
  */
 function BackToTopButton() {
@@ -224,6 +309,8 @@ function BackToTopButton() {
  * }} props
  */
 export default function LandingPage({ loginHref = '/login', onStartNow, onLearnMore }) {
+    const reduceMotion = Boolean(useReducedMotion());
+
     return (
         <div id="top" className="min-h-screen bg-white font-body text-[#262A22]">
             <header className="sticky top-0 z-20 border-b border-border-light bg-white/95 backdrop-blur-sm">
@@ -247,37 +334,68 @@ export default function LandingPage({ loginHref = '/login', onStartNow, onLearnM
                 </div>
             </header>
 
-            <img
-                src="/images/landing/kitchen.png"
-                alt="Sunlit kitchen with a wooden island, copper lights, and herbs"
-                className="aspect-[16/7] min-h-40 w-full object-cover"
-            />
-
-            <section className="mx-auto grid w-full max-w-6xl items-center gap-10 px-5 py-16 lg:grid-cols-[1.2fr_0.8fr]">
+            <section className="mx-auto grid w-full max-w-6xl items-center gap-10 px-5 py-12 lg:grid-cols-[1.15fr_0.85fr] lg:py-16">
                 <div>
                     <h1 className="font-montserrat text-4xl font-bold leading-[1.05] tracking-tight sm:text-5xl">
-                        Healing
-                        <br />
-                        Through
-                        <br />
-                        <span className="text-brand-primary">Whole Foods</span>
+                        {['Healing', 'Through'].map((line, index) => (
+                            <motion.span
+                                key={line}
+                                className="block"
+                                initial={reduceMotion ? false : { opacity: 0, y: 18 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={
+                                    reduceMotion
+                                        ? { duration: 0 }
+                                        : { delay: 0.12 + index * 0.14, duration: 0.55, ease: EASE_OUT }
+                                }
+                            >
+                                {line}
+                            </motion.span>
+                        ))}
+                        <motion.span
+                            className="block text-brand-primary"
+                            initial={reduceMotion ? false : { opacity: 0, y: 18 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={
+                                reduceMotion
+                                    ? { duration: 0 }
+                                    : { delay: 0.4, duration: 0.55, ease: EASE_OUT }
+                            }
+                        >
+                            Whole Foods
+                        </motion.span>
                     </h1>
-                    <p className="mt-5 max-w-prose text-base leading-relaxed text-grey-33">
+                    <motion.p
+                        className="mt-5 max-w-prose text-base leading-relaxed text-grey-33"
+                        initial={reduceMotion ? false : { opacity: 0, y: 12 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={
+                            reduceMotion
+                                ? { duration: 0 }
+                                : { delay: 0.58, duration: 0.5, ease: EASE_OUT }
+                        }
+                    >
                         Create personalized anti-inflammatory meal plans from whole foods with our clean food
                         philosophy and zero tolerance for harmful additives.
-                    </p>
-                    <PillButton
-                        className="mt-8 bg-brand-primary text-white hover:bg-brand-primary-pressed"
-                        href={onStartNow ? undefined : loginHref}
-                        onClick={onStartNow}
-                    >
-                        Start now
-                        <span aria-hidden>›</span>
-                    </PillButton>
+                    </motion.p>
+                    <StartNowCta
+                        loginHref={loginHref}
+                        onStartNow={onStartNow}
+                        reduceMotion={reduceMotion}
+                    />
                 </div>
-                <div className="flex justify-center">
-                    <MealCraftLogo variant="seal-lg" width={240} alt="Craft Seal" />
-                </div>
+                <motion.div
+                    className="flex justify-center"
+                    initial={reduceMotion ? false : { opacity: 0, scale: 0.94 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={
+                        reduceMotion
+                            ? { duration: 0 }
+                            : { delay: 0.35, duration: 0.6, ease: EASE_OUT }
+                    }
+                >
+                    <LandingAppPreview />
+                </motion.div>
             </section>
 
             <section className="border-y border-border-light bg-bg-page" aria-label="Standards">

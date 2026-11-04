@@ -166,7 +166,6 @@ class CustomerAppController extends Controller
             'profileUrl' => route('app.profile'),
             'shopUrl' => route('app.shop'),
             'mealPlanSummaryUrl' => route('app.meal-plan'),
-            'fulfillmentUrl' => route('checkout.fulfillment'),
             'sex' => $profile->sex?->value,
             'activityLevel' => $profile->activity_level?->value,
             'dailyCalorieTarget' => (int) $profile->daily_calorie_target,
@@ -177,11 +176,74 @@ class CustomerAppController extends Controller
     {
         return Inertia::render('App/Shop', [
             'customerName' => request()->user()?->name ?? '',
+            ...self::customerAppShellUrls(),
+        ]);
+    }
+
+    public function recipes(CustomerCraftPlanPresentationService $presentation): Response|RedirectResponse
+    {
+        $user = request()->user();
+        $profile = $user !== null ? AdminConsultationPreviewProfile::resolve($user) : null;
+
+        $plan = $profile?->craftPlans()
+            ->whereNotNull('submitted_at')
+            ->latest('submitted_at')
+            ->first();
+
+        if ($plan === null || $profile?->daily_calorie_target === null) {
+            return redirect()->route('consultation.crafted-for-you');
+        }
+
+        $planTierCalories = (int) UserPlanCalculator::snapToPlanTier((float) $profile->daily_calorie_target);
+
+        return Inertia::render('App/CookItYourself', [
+            'customerName' => $user?->name ?? '',
+            'craftPlan' => $presentation->presentSummary($plan, $planTierCalories),
+            ...self::customerAppShellUrls(),
+            'recipesUrl' => route('meal-plan.recipes'),
+            'sex' => $profile->sex?->value,
+            'activityLevel' => $profile->activity_level?->value,
+            'dailyCalorieTarget' => (int) $profile->daily_calorie_target,
+        ]);
+    }
+
+    public function favourites(): Response
+    {
+        return Inertia::render('App/Favourites', [
+            'customerName' => request()->user()?->name ?? '',
+            ...self::customerAppShellUrls(),
+            'recipesUrl' => route('meal-plan.recipes'),
+        ]);
+    }
+
+    public function tools(): Response
+    {
+        return Inertia::render('App/MyTools', [
+            'customerName' => request()->user()?->name ?? '',
+            ...self::customerAppShellUrls(),
+        ]);
+    }
+
+    /**
+     * @return array{
+     *     homeUrl: string,
+     *     profileUrl: string,
+     *     shopUrl: string,
+     *     mealPlanSummaryUrl: string,
+     *     favouritesUrl: string,
+     *     toolsUrl: string
+     * }
+     */
+    private static function customerAppShellUrls(): array
+    {
+        return [
             'homeUrl' => route('app.home'),
             'profileUrl' => route('app.profile'),
             'shopUrl' => route('app.shop'),
             'mealPlanSummaryUrl' => route('app.meal-plan'),
-        ]);
+            'favouritesUrl' => route('app.favourites'),
+            'toolsUrl' => route('app.tools'),
+        ];
     }
 
     /**

@@ -133,6 +133,7 @@ final class MealPlanPublishService
 
             CustomerCraftPlanService::storeSubmission($profile, [
                 'craft_key' => 'full',
+                'fulfillment_choice' => 'partner_kitchen',
                 'week_duration' => count($remainingWeekdays),
                 'selected_days' => array_values($remainingWeekdays),
                 'days' => $days,

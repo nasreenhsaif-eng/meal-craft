@@ -46,6 +46,7 @@ test('customer can submit a craft plan with per-day soup flag', function () {
 
     $response = $this->actingAs($user)->postJson('/api/customer/craft-plan', [
         'craft_key' => 'full',
+        'fulfillment_choice' => 'diy',
         'week_duration' => 7,
         'selected_days' => [1],
         'days' => [
@@ -71,6 +72,7 @@ test('customer can submit a craft plan with per-day soup flag', function () {
     $this->assertDatabaseHas('customer_craft_plans', [
         'customer_profile_id' => $profile->id,
         'craft_key' => 'full',
+        'fulfillment_choice' => 'diy',
     ]);
 
     $this->assertDatabaseHas('customer_craft_plan_day_meals', [
@@ -90,6 +92,7 @@ test('admin staff can submit a craft plan with an auto provisioned preview profi
 
     $response = $this->actingAs($admin)->postJson('/api/customer/craft-plan', [
         'craft_key' => 'day',
+        'fulfillment_choice' => 'diy',
         'week_duration' => 1,
         'selected_days' => [1],
         'days' => [
@@ -113,6 +116,7 @@ test('admin staff can submit a craft plan with an auto provisioned preview profi
     $this->assertDatabaseHas('customer_craft_plans', [
         'customer_profile_id' => $profile->id,
         'craft_key' => 'day',
+        'fulfillment_choice' => 'diy',
     ]);
 });
 
@@ -142,6 +146,7 @@ test('kitchen daily sheet returns adapted ingredient lines for scalable meals', 
 
     $this->actingAs($customer)->postJson('/api/customer/craft-plan', [
         'craft_key' => 'business',
+        'fulfillment_choice' => 'diy',
         'week_duration' => 1,
         'selected_days' => [2],
         'days' => [
@@ -213,6 +218,7 @@ test('customer can view meal plan summary after submitting selections', function
 
     $this->actingAs($user)->postJson('/api/customer/craft-plan', [
         'craft_key' => 'full',
+        'fulfillment_choice' => 'diy',
         'week_duration' => 7,
         'selected_days' => [1, 2],
         'days' => [
@@ -249,7 +255,8 @@ test('customer can view meal plan summary after submitting selections', function
             ->where('sex', 'female')
             ->where('activityLevel', 'moderate')
             ->where('dailyCalorieTarget', 2000)
-            ->where('fulfillmentUrl', route('checkout.fulfillment'))
+            ->where('craftPlan.fulfillmentChoice', 'diy')
+            ->missing('fulfillmentUrl')
             ->has('craftPlan.days', 2)
             ->where('craftPlan.days.0.label', 'Sunday')
             ->has('craftPlan.planDateRange.label')
@@ -297,6 +304,7 @@ test('customer can view meal plan summary before onboarding is marked complete',
 
     $this->actingAs($user)->postJson('/api/customer/craft-plan', [
         'craft_key' => 'full',
+        'fulfillment_choice' => 'diy',
         'week_duration' => 1,
         'selected_days' => [1],
         'days' => [
@@ -352,6 +360,7 @@ test('customer can open consultation edit with saved selections in session', fun
 
     $this->actingAs($user)->postJson('/api/customer/craft-plan', [
         'craft_key' => 'full',
+        'fulfillment_choice' => 'diy',
         'week_duration' => 5,
         'selected_days' => [1, 2],
         'days' => [
@@ -421,6 +430,7 @@ test('meal plan summary exposes consultation edit url', function () {
 
     $this->actingAs($user)->postJson('/api/customer/craft-plan', [
         'craft_key' => 'full',
+        'fulfillment_choice' => 'diy',
         'week_duration' => 1,
         'selected_days' => [1],
         'days' => [

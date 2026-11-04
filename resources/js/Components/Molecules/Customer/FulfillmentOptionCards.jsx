@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { router } from '@inertiajs/react';
 import OnboardingOptionButton from '../../Atoms/Button/OnboardingOptionButton.jsx';
 import OnboardingInlineDescription from '../Onboarding/OnboardingInlineDescription.jsx';
@@ -110,48 +110,29 @@ function HighlightList({ items }) {
  *
  * @param {{
  *   deliveryUrl?: string;
+ *   recipesUrl?: string;
  *   className?: string;
  *   onContinue?: (choice: FulfillmentChoiceId) => void;
  * }} props
  */
 export default function FulfillmentOptionCards({
     deliveryUrl = '/checkout/delivery',
+    recipesUrl = '/meal-plan/recipes',
     className = '',
     onContinue,
 }) {
     /** @type {[FulfillmentChoiceId | '', import('react').Dispatch<import('react').SetStateAction<FulfillmentChoiceId | ''>>]} */
     const [selected, setSelected] = useState(/** @type {FulfillmentChoiceId | ''} */ (''));
-    const [comingSoonVisible, setComingSoonVisible] = useState(false);
-
-    useEffect(() => {
-        if (!comingSoonVisible) {
-            return undefined;
-        }
-
-        const timer = window.setTimeout(() => setComingSoonVisible(false), 2200);
-
-        return () => window.clearTimeout(timer);
-    }, [comingSoonVisible]);
 
     const handleNext = () => {
         if (!selected) {
             return;
         }
 
-        // Consultation receive step:
-        // - DIY → continue into Choose your meals
-        // - Partner Kitchen → kitchen → checkout → payment → then Choose your meals
+        // Consultation receive step: parent owns routing for both choices.
         if (typeof onContinue === 'function') {
-            if (selected === 'diy') {
-                onContinue(selected);
-                return;
-            }
-
-            if (selected === 'partner_kitchen') {
-                const separator = deliveryUrl.includes('?') ? '&' : '?';
-                window.location.assign(`${deliveryUrl}${separator}resume=choose_meals`);
-                return;
-            }
+            onContinue(selected);
+            return;
         }
 
         if (selected === 'partner_kitchen') {
@@ -160,7 +141,7 @@ export default function FulfillmentOptionCards({
         }
 
         if (selected === 'diy') {
-            setComingSoonVisible(true);
+            router.visit(recipesUrl);
         }
     };
 
@@ -222,14 +203,6 @@ export default function FulfillmentOptionCards({
                     </div>
                 ) : null}
             </div>
-
-            {comingSoonVisible ? (
-                <div className="fixed bottom-6 left-1/2 z-[110] w-full max-w-[640px] -translate-x-1/2 px-4">
-                    <div className="rounded-[12px] border border-gray-200 bg-white px-4 py-3 shadow-lg">
-                        <p className="font-body text-sm text-[#555555]">Coming soon</p>
-                    </div>
-                </div>
-            ) : null}
         </>
     );
 }

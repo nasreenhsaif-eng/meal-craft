@@ -14,6 +14,7 @@ const CARD_PX = 240;
  * @param {string} props.title
  * @param {Array<object>} props.selectedMeals
  * @param {boolean} [props.multiSelect]
+ * @param {boolean} [props.isLoading] Animated seal while loading (hides meals until ready); quiet empty otherwise.
  * @param {() => void} [props.onSeeOtherOptions]
  * @param {(meal: object) => void} [props.onViewDetails]
  * @param {(meal: object) => void} [props.onEditMeal]
@@ -23,6 +24,7 @@ export default function ProtocolMealSlotCard({
     title,
     selectedMeals = [],
     multiSelect = false,
+    isLoading = false,
     onSeeOtherOptions,
     onViewDetails,
     onEditMeal,
@@ -54,16 +56,18 @@ export default function ProtocolMealSlotCard({
                 ) : null}
             </div>
 
-            <div className={meals.length > 0 ? 'px-3 pb-3' : 'pb-1'}>
-                {meals.length === 0 ? (
+            <div className={!isLoading && meals.length > 0 ? 'px-3 pb-3' : 'pb-1'}>
+                {isLoading ? (
                     <div
                         className="flex justify-center py-6"
                         role="status"
                         aria-live="polite"
                         aria-label="Loading meal options"
                     >
-                        <MealCraftLogo variant="minimal-animated" width={88} alt="" />
+                        <MealCraftLogo variant="minimal-animated" width={88} alt="" loop />
                     </div>
+                ) : meals.length === 0 ? (
+                    <div className="px-3 pb-3" aria-hidden />
                 ) : usePeekCarousel ? (
                     <div
                         className={[

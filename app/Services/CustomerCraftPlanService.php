@@ -17,6 +17,7 @@ final class CustomerCraftPlanService
     /**
      * @param  array{
      *     craft_key: string,
+     *     fulfillment_choice: string,
      *     week_duration: int,
      *     selected_days: list<int>,
      *     days: list<array{
@@ -38,6 +39,7 @@ final class CustomerCraftPlanService
             $plan = CustomerCraftPlan::query()->create([
                 'customer_profile_id' => $profile->id,
                 'craft_key' => $payload['craft_key'],
+                'fulfillment_choice' => $payload['fulfillment_choice'],
                 'week_duration' => (int) $payload['week_duration'],
                 'selected_weekdays' => array_values($payload['selected_days']),
                 'submitted_at' => now(),

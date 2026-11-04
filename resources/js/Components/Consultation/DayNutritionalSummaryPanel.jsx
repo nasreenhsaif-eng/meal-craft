@@ -15,6 +15,7 @@ import {
     PlanMacroSummaryPanel,
     sumActiveDayMacros,
 } from './ChooseYourMeals.jsx';
+import ProtocolMealSlotCard from './ProtocolMealSlotCard.jsx';
 
 export const DAY_SUMMARY_TABS = /** @type {const} */ ([
     { id: 'meals', label: 'Meals' },
@@ -124,128 +125,44 @@ function SummarySection({ title, description, children, tone = 'white' }) {
 }
 
 /**
+ * Same Crafted-for-you slot cards on Meal Plan Summary and Cook It Yourself.
+ *
  * @param {object} props
  * @param {Array<{ id: string; title: string; category: string; imageUrl?: string; macros?: object; safetyAlerts: object[]; sickleCellHighlights: string[]; hasG6pdTrigger: boolean; detailView?: object }>} props.meals
  * @param {(meal: object) => void} [props.onOpenMeal]
- * @param {boolean} [props.fullDetails] Summary list with macros/highlights; Expand opens full meal modal.
+ * @param {boolean} [props.fullDetails] Kept for callers; both paths use ProtocolMealSlotCard.
  */
-export function DayMealsTabPanel({ meals, onOpenMeal, fullDetails = false }) {
+export function DayMealsTabPanel({ meals, onOpenMeal, fullDetails: _fullDetails = false }) {
     if (meals.length === 0) {
         return <p className="font-body text-sm text-[#555555]">No meals assigned for this day.</p>;
     }
 
-    /** @type {Record<string, typeof meals>} */
-    const byCategory = meals.reduce((acc, meal) => {
-        if (!acc[meal.category]) {
-            acc[meal.category] = [];
+    /** @type {Array<{ title: string; meals: typeof meals }>} */
+    const slots = [];
+
+    for (const row of PLAN_MACRO_CATEGORY_ROWS) {
+        const categoryMeals = meals.filter((meal) => meal.category === row.label);
+        if (categoryMeals.length === 0) {
+            continue;
         }
 
-        acc[meal.category].push(meal);
+        slots.push({ title: row.label, meals: categoryMeals });
+    }
 
-        return acc;
-    }, {});
-
-    if (fullDetails) {
-        return (
-            <div className="space-y-3">
-                {meals.map((meal) => (
-                    <article
-                        key={meal.id}
-                        className="rounded-[12px] border border-gray-200 bg-white px-3 py-3"
-                    >
-                        <div className="flex items-center justify-between gap-3">
-                            <h2 className="min-w-0 font-montserrat text-xs font-bold uppercase tracking-[0.12em] text-[#5A6B44]">
-                                {meal.category}
-                            </h2>
-                            {onOpenMeal ? (
-                                <Button
-                                    type="button"
-                                    label="Expand"
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => onOpenMeal(meal)}
-                                    className="shrink-0"
-                                />
-                            ) : null}
-                        </div>
-                        <p className="mt-1.5 font-montserrat text-sm font-bold text-[#262A22]">{meal.title}</p>
-                    </article>
-                ))}
-            </div>
-        );
+    if (slots.length === 0) {
+        return <p className="font-body text-sm text-[#555555]">No meals assigned for this day.</p>;
     }
 
     return (
-        <div className="space-y-6">
-            {Object.entries(byCategory).map(([category, categoryMeals]) => (
-                <section
-                    key={category}
-                    className="rounded-[12px] border border-gray-200 bg-white px-4 py-4 sm:px-5"
-                >
-                    <h2 className="font-montserrat text-sm font-bold uppercase tracking-[0.12em] text-[#5A6B44]">
-                        {category}
-                    </h2>
-                    <ul className="mt-4 space-y-4">
-                        {categoryMeals.map((meal) => {
-                            const hasHighlights =
-                                meal.hasG6pdTrigger ||
-                                meal.safetyAlerts.length > 0 ||
-                                meal.sickleCellHighlights.length > 0;
-
-                            return (
-                                <li
-                                    key={meal.id}
-                                    className="border-t border-gray-100 pt-3 first:border-t-0 first:pt-0"
-                                >
-                                    <p className="font-montserrat text-sm font-bold text-[#262A22]">
-                                        {meal.title}
-                                    </p>
-
-                                    {hasHighlights ? (
-                                        <div className="mt-2 space-y-2">
-                                            <p className="font-montserrat text-[10px] font-bold uppercase tracking-[0.14em] text-[#5A6B44]">
-                                                Highlights
-                                            </p>
-                                            {meal.hasG6pdTrigger ? (
-                                                <div>
-                                                    <NutrientBadge type="G6PD Safety Alert" />
-                                                </div>
-                                            ) : null}
-                                            {meal.safetyAlerts.length > 0 ? (
-                                                <SafetyAlerts alerts={meal.safetyAlerts} />
-                                            ) : null}
-                                            {meal.sickleCellHighlights.length > 0 ? (
-                                                <div className="flex flex-wrap gap-2">
-                                                    {meal.sickleCellHighlights.map((badge) => (
-                                                        <NutrientBadge
-                                                            key={`${meal.id}-${badge}`}
-                                                            type={badge}
-                                                        />
-                                                    ))}
-                                                </div>
-                                            ) : null}
-                                        </div>
-                                    ) : (
-                                        <p className="mt-2 font-body text-xs text-[#6B7280]">
-                                            No sickle-cell or safety highlights.
-                                        </p>
-                                    )}
-
-                                    {onOpenMeal ? (
-                                        <Button
-                                            type="button"
-                                            label="Expand"
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={() => onOpenMeal(meal)}
-                                            className="mt-2 shrink-0"
-                                        />
-                                    ) : null}
-                                </li>
-                            );
-                        })}
-                    </ul>
-                </section>
+        <div className="flex flex-col gap-4">
+            {slots.map((slot) => (
+                <ProtocolMealSlotCard
+                    key={slot.title}
+                    title={slot.title}
+                    selectedMeals={slot.meals}
+                    multiSelect={slot.meals.length > 1}
+                    onViewDetails={onOpenMeal}
+                />
             ))}
         </div>
     );

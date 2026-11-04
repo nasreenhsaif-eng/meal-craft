@@ -14,6 +14,7 @@ use App\Http\Controllers\Admin\MealLibraryCsvImportController;
 use App\Http\Controllers\Admin\MealPlanLibraryController;
 use App\Http\Controllers\Admin\MealTiersLibraryController;
 use App\Http\Controllers\Api\AdaptedMenuController;
+use App\Http\Controllers\Api\ConsultationResumeDraftController;
 use App\Http\Controllers\Api\CustomerCraftPlanController;
 use App\Http\Controllers\Api\IngredientDetailViewController;
 use App\Http\Controllers\Api\MealDetailViewController;
@@ -160,6 +161,8 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
                     Route::get('/', [CustomerAppController::class, 'home'])->name('home');
                     Route::get('/profile', [CustomerAppController::class, 'profile'])->name('profile');
                     Route::get('/shop', [CustomerAppController::class, 'shop'])->name('shop');
+                    Route::get('/favourites', [CustomerAppController::class, 'favourites'])->name('favourites');
+                    Route::get('/tools', [CustomerAppController::class, 'tools'])->name('tools');
                 });
             });
 
@@ -171,7 +174,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             Route::get('/checkout/payment', [CheckoutController::class, 'payment'])->name('checkout.payment');
             Route::post('/checkout/payment', [CheckoutController::class, 'storePayment'])->name('checkout.payment.store');
             Route::get('/refund-policy', [CheckoutController::class, 'policies'])->name('policies.refund');
-            Route::get('/meal-plan/recipes', [CustomerAppController::class, 'mealPlan'])->name('meal-plan.recipes');
+            Route::get('/meal-plan/recipes', [CustomerAppController::class, 'recipes'])->name('meal-plan.recipes');
         });
 
         Route::prefix('api')->group(function (): void {
@@ -180,6 +183,8 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             Route::get('/ingredients/{ingredient}/detail-view', IngredientDetailViewController::class)->name('api.ingredients.detail-view');
             Route::post('/customer/craft-plan', [CustomerCraftPlanController::class, 'store'])
                 ->name('api.customer.craft-plan.store');
+            Route::post('/customer/consultation-resume-draft', [ConsultationResumeDraftController::class, 'store'])
+                ->name('api.customer.consultation-resume-draft.store');
         });
 
         Route::get('consultation/crafted-for-you', ConsultationCraftedForYouController::class)

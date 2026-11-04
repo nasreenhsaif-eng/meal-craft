@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers\Customer;
 
+use App\Http\Controllers\Api\ConsultationResumeDraftController;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Customer\StoreCheckoutDetailsRequest;
 use App\Http\Requests\Customer\StoreCheckoutPaymentRequest;
 use App\Services\CustomerCraftPlanPresentationService;
+use App\Support\AdminConsultationPreviewProfile;
 use App\Support\CheckoutBasket;
 use App\Support\CustomerIntake;
 use Illuminate\Contracts\View\View;
@@ -36,6 +38,7 @@ class CheckoutController extends Controller
 
         if (request()->query('resume') === 'choose_meals') {
             request()->session()->put('checkout_resume_choose_meals', true);
+            request()->session()->put(ConsultationResumeDraftController::SESSION_RESUME_KEY, true);
         }
 
         return Inertia::render('Checkout/Delivery', [
@@ -51,7 +54,7 @@ class CheckoutController extends Controller
     public function details(): View
     {
         $user = request()->user();
-        $profile = $user?->customerProfile;
+        $profile = $user !== null ? AdminConsultationPreviewProfile::resolve($user) : null;
 
         abort_if($profile === null, 404);
 
@@ -69,7 +72,8 @@ class CheckoutController extends Controller
 
     public function storeDetails(StoreCheckoutDetailsRequest $request): RedirectResponse
     {
-        $profile = $request->user()?->customerProfile;
+        $user = $request->user();
+        $profile = $user !== null ? AdminConsultationPreviewProfile::resolve($user) : null;
 
         abort_if($profile === null, 404);
 
@@ -84,7 +88,7 @@ class CheckoutController extends Controller
     public function payment(CustomerCraftPlanPresentationService $presentation): View|RedirectResponse
     {
         $user = request()->user();
-        $profile = $user?->customerProfile;
+        $profile = $user !== null ? AdminConsultationPreviewProfile::resolve($user) : null;
 
         abort_if($profile === null, 404);
 
@@ -110,7 +114,8 @@ class CheckoutController extends Controller
 
     public function storePayment(StoreCheckoutPaymentRequest $request): RedirectResponse
     {
-        $profile = $request->user()?->customerProfile;
+        $user = $request->user();
+        $profile = $user !== null ? AdminConsultationPreviewProfile::resolve($user) : null;
 
         abort_if($profile === null, 404);
 
@@ -118,9 +123,18 @@ class CheckoutController extends Controller
             return redirect()->route('checkout.details');
         }
 
-        if ($request->session()->pull('checkout_resume_choose_meals') === true) {
+        $isAdminPreview = $user?->isAdmin() === true && $user?->isCustomer() !== true;
+
+        $shouldResumeChooseMeals = $isAdminPreview
+            || $request->session()->pull('checkout_resume_choose_meals') === true
+            || $request->session()->get(ConsultationResumeDraftController::SESSION_RESUME_KEY) === true
+            || $request->session()->has(ConsultationResumeDraftController::SESSION_DRAFT_KEY);
+
+        if ($shouldResumeChooseMeals) {
+            $request->session()->put(ConsultationResumeDraftController::SESSION_RESUME_KEY, true);
+
             return redirect()
-                ->away(route('consultation.crafted-for-you', ['choose_meals' => 1]))
+                ->route('consultation.crafted-for-you', ['choose_meals' => 1])
                 ->with('success', 'Payment recorded. Choose your meals to finish your plan.');
         }
 

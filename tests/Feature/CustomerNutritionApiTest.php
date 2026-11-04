@@ -350,6 +350,8 @@ test('adapted menu exposes admin-scheduled soups per weekday from production mea
         'goal' => 'Customer production schedule',
         'schema_type' => MealPlanSchemaType::WeeklyStructured,
         'plan_category' => 'balanced',
+        'published_starts_on' => now()->toDateString(),
+        'published_ends_on' => now()->addDays(6)->toDateString(),
     ]);
 
     foreach ([1 => [$veganSoup, $boneBroth], 2 => [$tuesdayVeganSoup, $boneBroth]] as $dayNumber => $meals) {
@@ -430,6 +432,8 @@ test('adapted menu exposes full craft day options with one breakfast and four ma
         'goal' => 'Customer production schedule',
         'schema_type' => MealPlanSchemaType::WeeklyStructured,
         'plan_category' => 'balanced',
+        'published_starts_on' => now()->toDateString(),
+        'published_ends_on' => now()->addDays(6)->toDateString(),
     ]);
 
     $slots = [
@@ -494,6 +498,8 @@ test('adapted menu keeps sunday breakfast when production plan still references 
         'goal' => 'Customer production schedule',
         'schema_type' => MealPlanSchemaType::WeeklyStructured,
         'plan_category' => 'balanced',
+        'published_starts_on' => now()->toDateString(),
+        'published_ends_on' => now()->addDays(6)->toDateString(),
     ]);
 
     foreach ([
@@ -712,6 +718,8 @@ function seedProductionFullCraftDayWithChiaDessert(string $chiaDessertName): Mea
         'goal' => 'Customer production schedule',
         'schema_type' => MealPlanSchemaType::WeeklyStructured,
         'plan_category' => 'balanced',
+        'published_starts_on' => now()->toDateString(),
+        'published_ends_on' => now()->addDays(6)->toDateString(),
     ]);
 
     $slots = [

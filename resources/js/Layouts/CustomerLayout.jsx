@@ -7,12 +7,14 @@ import CustomerOnboardingPhoneFrame from '../Components/Molecules/Customer/Custo
  * @param {string} [props.customerName]
  * @param {import('react').ReactNode} [props.footerNav]
  * @param {'default' | 'onboarding'} [props.layoutVariant]
+ * @param {boolean} [props.embedded] Fill a parent phone slot (landing / marketing) instead of the full-page frame.
  */
 export default function CustomerLayout({
     children,
     customerName = '',
     footerNav = null,
     layoutVariant = 'default',
+    embedded = false,
 }) {
     const isOnboarding = layoutVariant === 'onboarding';
     const hasFooterNav = footerNav != null;
@@ -38,20 +40,21 @@ export default function CustomerLayout({
 
     if (isOnboarding) {
         return (
-            <CustomerOnboardingPhoneFrame>
+            <CustomerOnboardingPhoneFrame embedded={embedded}>
                 <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-4">{children}</div>
             </CustomerOnboardingPhoneFrame>
         );
     }
 
     return (
-        <CustomerOnboardingPhoneFrame>
+        <CustomerOnboardingPhoneFrame embedded={embedded}>
             <div className="relative flex h-full min-h-0 w-full flex-1 flex-col bg-[#F8F9F6] font-sans text-[#262A22]">
                 {header}
                 <main
                     className={[
                         'mx-auto min-h-0 w-full flex-1 overflow-y-auto overscroll-contain px-1 py-4',
-                        hasFooterNav ? 'pb-28' : 'pb-4',
+                        // Six-tab customer nav is taller; keep list rows clear of the overlay.
+                        hasFooterNav ? 'pb-32' : 'pb-4',
                     ]
                         .join(' ')
                         .trim()}

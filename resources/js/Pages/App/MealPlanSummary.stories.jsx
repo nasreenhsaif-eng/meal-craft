@@ -146,7 +146,7 @@ export default {
         docs: {
             description: {
                 component:
-                    'Customer meal-plan summary at `/app/meal-plan`. Pick a delivery day, then scroll full meal details (ingredients, nutrition, safety). Compact pills switch Meals / Macros / Micros / Allergy / Sickle. “Choose a delivery option” goes to `/checkout`.',
+                    'Customer meal-plan summary at `/app/meal-plan`. Pick a day, then scroll meal details. DIY shows Get recipe; Partner Kitchen shows ingredients only. Compact pills switch Meals / Macros / Micros / Allergy / Sickle.',
             },
         },
     },

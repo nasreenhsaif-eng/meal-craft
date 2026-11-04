@@ -8,14 +8,14 @@ export default {
         docs: {
             description: {
                 component:
-                    'Persistent footer tabs for completed-customer app pages and checkout (Home / Meal Plan / Shop / Profile). Hidden on receive mode and onboarding.',
+                    'Persistent footer tabs for completed-customer app pages and checkout (Home / Meals / Shop / Saved / Tools / Profile). Hidden on receive mode and onboarding.',
             },
         },
     },
 };
 
 /**
- * @param {'home' | 'meals' | 'shop' | 'profile'} activeTab
+ * @param {'home' | 'meals' | 'shop' | 'favourites' | 'tools' | 'profile'} activeTab
  */
 function NavPreview({ activeTab }) {
     return (
@@ -32,13 +32,23 @@ export const HomeActive = {
 };
 
 export const MealsActive = {
-    name: 'Meal Plan active',
+    name: 'Meals active',
     render: () => <NavPreview activeTab="meals" />,
 };
 
 export const ShopActive = {
     name: 'Shop active',
     render: () => <NavPreview activeTab="shop" />,
+};
+
+export const FavouritesActive = {
+    name: 'Saved active',
+    render: () => <NavPreview activeTab="favourites" />,
+};
+
+export const ToolsActive = {
+    name: 'Tools active',
+    render: () => <NavPreview activeTab="tools" />,
 };
 
 export const ProfileActive = {

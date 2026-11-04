@@ -6,6 +6,7 @@ import CustomerLayout from './CustomerLayout.jsx';
  *   customerName?: string;
  *   footerNav?: import('react').ReactNode;
  *   layoutVariant?: 'default' | 'onboarding';
+ *   embedded?: boolean;
  * }} props
  */
 export default function CustomerInertiaShell({
@@ -13,9 +14,15 @@ export default function CustomerInertiaShell({
     customerName = '',
     footerNav = null,
     layoutVariant = 'default',
+    embedded = false,
 }) {
     return (
-        <CustomerLayout customerName={customerName} footerNav={footerNav} layoutVariant={layoutVariant}>
+        <CustomerLayout
+            customerName={customerName}
+            footerNav={footerNav}
+            layoutVariant={layoutVariant}
+            embedded={embedded}
+        >
             {children}
         </CustomerLayout>
     );

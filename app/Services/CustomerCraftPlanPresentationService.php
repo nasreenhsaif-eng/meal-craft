@@ -120,6 +120,7 @@ final class CustomerCraftPlanPresentationService
         return [
             'craftKey' => $plan->craft_key,
             'craftTitle' => self::CRAFT_TITLES[$plan->craft_key] ?? ucfirst($plan->craft_key),
+            'fulfillmentChoice' => $plan->fulfillment_choice,
             'weekDuration' => (int) $plan->week_duration,
             'selectedWeekdays' => array_values($plan->selected_weekdays ?? []),
             'planTierCalories' => $planTierCalories,

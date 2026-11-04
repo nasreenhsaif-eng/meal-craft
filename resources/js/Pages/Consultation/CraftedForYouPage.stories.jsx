@@ -39,7 +39,7 @@ export const CraftedForYour = {
     ),
 };
 
-/** Opens on Partner Kitchen / DIY — after manual day selection in the live flow. */
+/** Opens on Partner Kitchen / DIY — first consultation screen in the live flow. */
 export const ReceiveMealPlan = {
     name: 'Receive meal plan',
     render: () => (
@@ -47,10 +47,7 @@ export const ReceiveMealPlan = {
             disableAdaptedMenuFetch
             embedInScrollParent
             pageEyebrow="Your plan"
-            initialCraftKey="full"
-            initialWeekDuration={5}
-            initialSelectedWeekdays={[1, 2, 3, 4, 5]}
-            initialScreen={4}
+            initialScreen={1}
         />
     ),
 };

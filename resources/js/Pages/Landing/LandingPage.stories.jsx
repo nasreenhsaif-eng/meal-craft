@@ -9,7 +9,7 @@ export default {
         docs: {
             description: {
                 component:
-                    'Public marketing landing at full desktop width. Start now opens the login page.',
+                    'Public marketing landing at full desktop width. The hero pairs Healing Through Whole Foods with a phone that scrolls Home, the week, and a day’s meals. Start now opens the login page.',
             },
         },
     },

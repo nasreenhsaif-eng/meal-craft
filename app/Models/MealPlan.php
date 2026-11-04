@@ -6,6 +6,7 @@ use App\Enums\DietProtocol;
 use App\Enums\MealCyclePhaseTag;
 use App\Enums\MealPlanLibraryCategory;
 use App\Enums\MealPlanSchemaType;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -75,6 +76,17 @@ class MealPlan extends Model
     public function isPublished(): bool
     {
         return $this->published_starts_on !== null && $this->published_ends_on !== null;
+    }
+
+    /**
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    public function scopePublished(Builder $query): Builder
+    {
+        return $query
+            ->whereNotNull('published_starts_on')
+            ->whereNotNull('published_ends_on');
     }
 
     public function dietProtocol(): DietProtocol

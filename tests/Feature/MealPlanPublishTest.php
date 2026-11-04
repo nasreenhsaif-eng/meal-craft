@@ -85,15 +85,15 @@ test('admin can publish a meal plan week and seed open customer slots', function
         ->put(route('admin.meal-plan-library.default-selections', $plan), [
             'selections' => $selections,
             'description' => 'Nutrient-dense meal plan with balanced macronutrients and anti-inflammatory whole foods.',
-            'published_starts_on' => '2026-09-27',
-            'published_ends_on' => '2026-10-03',
+            'published_starts_on' => now()->toDateString(),
+            'published_ends_on' => now()->addDays(6)->toDateString(),
         ])
         ->assertRedirect(route('admin.meal-plan-library.show', $plan));
 
     $plan->refresh();
 
-    expect($plan->published_starts_on?->toDateString())->toBe('2026-09-27')
-        ->and($plan->published_ends_on?->toDateString())->toBe('2026-10-03')
+    expect($plan->published_starts_on?->toDateString())->toBe(now()->toDateString())
+        ->and($plan->published_ends_on?->toDateString())->toBe(now()->addDays(6)->toDateString())
         ->and(MealPlanDefaultDaySelections::forDay($plan, 1)['meals'])->toBe([$main->id]);
 
     $draft = CustomerCraftPlan::query()
@@ -117,7 +117,7 @@ test('publish skips customers who already chose meals for the week', function ()
         'craft_key' => 'full',
         'week_duration' => 5,
         'selected_weekdays' => [1, 2, 3, 4, 5],
-        'submitted_at' => '2026-09-26 10:00:00',
+        'submitted_at' => now()->subDay(),
     ]);
 
     $breakfast = Meal::factory()->create([
@@ -152,8 +152,8 @@ test('publish skips customers who already chose meals for the week', function ()
                     'soup' => [],
                 ],
             ],
-            'published_starts_on' => '2026-09-27',
-            'published_ends_on' => '2026-10-03',
+            'published_starts_on' => now()->toDateString(),
+            'published_ends_on' => now()->addDays(6)->toDateString(),
         ])
         ->assertRedirect();
 

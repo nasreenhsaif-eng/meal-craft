@@ -4,6 +4,7 @@ use App\Enums\OnboardingStep;
 use App\Models\CustomerProfile;
 use App\Models\User;
 use App\Services\Nutrition\UserPlanCalculator;
+use App\Support\AdminConsultationPreviewProfile;
 
 test('guests cannot visit the consultation crafted for you page', function () {
     $this->get(route('consultation.crafted-for-you'))
@@ -50,7 +51,9 @@ test('admin users can preview the customer consultation page', function () {
     $response = $this->actingAs($user)
         ->get(route('consultation.crafted-for-you'))
         ->assertOk()
-        ->assertSee('mc-consultation-crafted-root', false);
+        ->assertSee('mc-consultation-crafted-root', false)
+        ->assertSee('Your plan', false)
+        ->assertDontSee(route('admin.dashboard', absolute: false), false);
 
     preg_match(
         '/id="mc-consultation-crafted-config" type="application\/json">(.*?)<\/script>/s',
@@ -59,10 +62,20 @@ test('admin users can preview the customer consultation page', function () {
     );
 
     $config = json_decode($matches[1] ?? '{}', true);
+    $onboardingBack = route('onboarding.show', [
+        'step' => OnboardingStep::FoodFilters->value,
+    ], absolute: false);
 
     expect($config['isAdminPreview'] ?? null)->toBeTrue()
+        ->and($config['pageEyebrow'] ?? null)->toBe('Your plan')
+        ->and($config['backHref'] ?? null)->toBe($onboardingBack)
+        ->and($config['homeHref'] ?? null)->toBe($onboardingBack)
+        ->and($config['closeHref'] ?? null)->toBe($onboardingBack)
         ->and($config['planTier'] ?? null)->toBe(2000)
-        ->and($config['planTiers'] ?? null)->toBe(UserPlanCalculator::planTiers());
+        ->and($config['planTiers'] ?? null)->toBe(UserPlanCalculator::planTiers())
+        ->and($config['sex'] ?? null)->toBe('female')
+        ->and($config['activityLevel'] ?? null)->toBe('moderate')
+        ->and($config['dietProtocol'] ?? null)->toBe('balanced');
 });
 
 test('customer consultation page does not enable admin tier preview', function () {
@@ -175,4 +188,33 @@ test('admin navigation does not include consultation', function () {
         ->get(route('meals.index'))
         ->assertOk()
         ->assertDontSee(route('consultation.crafted-for-you'), false);
+});
+
+test('admin consultation with submitted meals exits to welcome home', function () {
+    $admin = User::factory()->create();
+    $profile = AdminConsultationPreviewProfile::ensure($admin);
+    $profile->craftPlans()->create([
+        'craft_key' => 'full',
+        'week_duration' => 5,
+        'selected_weekdays' => [1, 2, 3, 4, 5],
+        'submitted_at' => now(),
+    ]);
+
+    $response = $this->actingAs($admin)
+        ->get(route('consultation.crafted-for-you'))
+        ->assertOk();
+
+    preg_match(
+        '/id="mc-consultation-crafted-config" type="application\/json">(.*?)<\/script>/s',
+        $response->getContent(),
+        $matches,
+    );
+
+    $config = json_decode($matches[1] ?? '{}', true);
+    $home = route('app.home', absolute: false);
+
+    expect($config['backHref'] ?? null)->toBe($home)
+        ->and($config['homeHref'] ?? null)->toBe($home)
+        ->and($config['closeHref'] ?? null)->toBe($home)
+        ->and($config['pageEyebrow'] ?? null)->toBe('Your plan');
 });

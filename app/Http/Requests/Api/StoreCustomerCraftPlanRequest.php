@@ -19,6 +19,7 @@ class StoreCustomerCraftPlanRequest extends FormRequest
     {
         return [
             'craft_key' => ['required', 'string', Rule::in(['full', 'day', 'afternoon', 'intermittent', 'business'])],
+            'fulfillment_choice' => ['required', 'string', Rule::in(['diy', 'partner_kitchen'])],
             'week_duration' => ['required', 'integer', 'min:1', 'max:7'],
             'selected_days' => ['required', 'array', 'min:1'],
             'selected_days.*' => ['integer', 'min:1', 'max:7'],

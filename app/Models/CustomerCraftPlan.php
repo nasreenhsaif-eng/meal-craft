@@ -11,6 +11,7 @@ class CustomerCraftPlan extends Model
     protected $fillable = [
         'customer_profile_id',
         'craft_key',
+        'fulfillment_choice',
         'week_duration',
         'selected_weekdays',
         'submitted_at',

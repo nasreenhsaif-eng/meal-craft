@@ -317,7 +317,7 @@ export default function Payment({
                         </div>
                     </div>
 
-                    <label className="mt-5 flex cursor-pointer select-none items-start gap-3">
+                    <label className="mt-5 flex cursor-pointer select-none items-start gap-2.5">
                         <input
                             type="checkbox"
                             checked={Boolean(data.cart_confirmed)}
@@ -343,7 +343,7 @@ export default function Payment({
                         <p className="mt-2 font-body text-xs text-[#5A6B44]">Cart confirmed.</p>
                     ) : null}
 
-                    <label className="mt-4 flex cursor-pointer select-none items-start gap-3">
+                    <label className="mt-4 flex cursor-pointer select-none items-start gap-2.5">
                         <input
                             type="checkbox"
                             checked={Boolean(data.refund_policy_accepted)}

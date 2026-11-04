@@ -57,6 +57,16 @@
             @if (session('success'))
                 <p class="mt-4 font-body text-sm font-medium text-[#5A6B44]">{{ session('success') }}</p>
             @endif
+            @if (session('consultation_resume_choose_meals') || session('consultation_resume_draft') || session('checkout_resume_choose_meals'))
+                <p class="mt-3 font-body text-sm text-[#555555]">
+                    <a
+                        href="{{ route('consultation.crafted-for-you', ['choose_meals' => 1]) }}"
+                        class="font-semibold text-[#5A6B44] underline underline-offset-2"
+                    >
+                        Continue to Choose your meals
+                    </a>
+                </p>
+            @endif
             @if (session('error'))
                 <p class="mt-4 font-body text-sm font-medium text-red-600" role="alert">{{ session('error') }}</p>
             @endif
@@ -105,7 +115,14 @@
                     Benefit Pay to {{ $benefitPay }}
                 </p>
 
-                <form method="POST" action="{{ $submitUrl }}" class="mt-6 space-y-4">
+                {{-- novalidate: keep required checks inline so browser tooltips cannot escape the phone frame --}}
+                <form
+                    id="mc-checkout-payment-form"
+                    method="POST"
+                    action="{{ $submitUrl }}"
+                    class="mt-6 space-y-4"
+                    novalidate
+                >
                     @csrf
                     <input type="hidden" name="payment_method" value="benefit_pay">
                     <input type="hidden" name="invoice_same_address" value="1">
@@ -142,44 +159,63 @@
                         </div>
                     </div>
 
-                    <label class="flex cursor-pointer select-none items-start gap-3">
-                        <input
-                            type="checkbox"
-                            name="cart_confirmed"
-                            value="1"
-                            required
-                            class="mt-1 h-4 w-4 accent-[#5A6B44]"
-                        >
-                        <span class="font-montserrat text-sm font-bold uppercase leading-snug tracking-wide">
-                            Confirm cart
-                        </span>
-                    </label>
-                    @error('cart_confirmed')
-                        <p class="text-sm text-red-600" role="alert">{{ $message }}</p>
-                    @enderror
-
-                    <label class="flex cursor-pointer select-none items-start gap-3">
-                        <input
-                            type="checkbox"
-                            name="refund_policy_accepted"
-                            value="1"
-                            required
-                            class="mt-1 h-4 w-4 accent-[#5A6B44]"
-                        >
-                        <span class="font-body text-sm leading-snug text-[#555555]">
-                            By making the payment, you agree to the
-                            <a
-                                href="{{ $refundPolicyUrl }}"
-                                class="font-semibold text-[#5A6B44] underline decoration-[#5A6B44]/40 underline-offset-2"
-                                onclick="event.stopPropagation()"
+                    {{-- Design-system checkbox: resources/css/app.css `.mc-auth-checkbox` (Storybook SquareCheckbox is React-only) --}}
+                    <div>
+                        <label for="mc-cart-confirmed" class="flex cursor-pointer select-none items-start gap-2.5">
+                            <input
+                                id="mc-cart-confirmed"
+                                type="checkbox"
+                                name="cart_confirmed"
+                                value="1"
+                                class="mc-auth-checkbox mt-0.5 shrink-0 outline-none focus:outline-none focus-visible:ring-2 focus-visible:ring-[#556C37] focus-visible:ring-offset-1"
                             >
-                                Refund Policy
-                            </a>.
-                        </span>
-                    </label>
-                    @error('refund_policy_accepted')
-                        <p class="text-sm text-red-600" role="alert">{{ $message }}</p>
-                    @enderror
+                            <span class="font-montserrat text-sm font-bold uppercase leading-snug tracking-wide text-[#262A22]">
+                                Confirm cart
+                            </span>
+                        </label>
+                        <p
+                            id="mc-cart-confirmed-error"
+                            class="mt-2 hidden rounded-md border border-amber-200 bg-amber-50 px-3 py-2 font-body text-sm leading-snug text-[#262A22]"
+                            role="alert"
+                        >
+                            Please check this box if you want to proceed.
+                        </p>
+                        @error('cart_confirmed')
+                            <p class="mt-2 text-sm text-red-600" role="alert">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div>
+                        <label for="mc-refund-policy-accepted" class="flex cursor-pointer select-none items-start gap-2.5">
+                            <input
+                                id="mc-refund-policy-accepted"
+                                type="checkbox"
+                                name="refund_policy_accepted"
+                                value="1"
+                                class="mc-auth-checkbox mt-0.5 shrink-0 outline-none focus:outline-none focus-visible:ring-2 focus-visible:ring-[#556C37] focus-visible:ring-offset-1"
+                            >
+                            <span class="font-body text-sm leading-snug text-[#555555]">
+                                By making the payment, you agree to the
+                                <a
+                                    href="{{ $refundPolicyUrl }}"
+                                    class="font-semibold text-[#5A6B44] underline decoration-[#5A6B44]/40 underline-offset-2"
+                                    onclick="event.stopPropagation()"
+                                >
+                                    Refund Policy
+                                </a>.
+                            </span>
+                        </label>
+                        <p
+                            id="mc-refund-policy-error"
+                            class="mt-2 hidden rounded-md border border-amber-200 bg-amber-50 px-3 py-2 font-body text-sm leading-snug text-[#262A22]"
+                            role="alert"
+                        >
+                            Please check this box if you want to proceed.
+                        </p>
+                        @error('refund_policy_accepted')
+                            <p class="mt-2 text-sm text-red-600" role="alert">{{ $message }}</p>
+                        @enderror
+                    </div>
 
                     <button
                         type="submit"
@@ -188,6 +224,47 @@
                         Make a payment
                     </button>
                 </form>
+                <script>
+                    (() => {
+                        const form = document.getElementById('mc-checkout-payment-form');
+                        if (!form) {
+                            return;
+                        }
+
+                        const cart = document.getElementById('mc-cart-confirmed');
+                        const refund = document.getElementById('mc-refund-policy-accepted');
+                        const cartError = document.getElementById('mc-cart-confirmed-error');
+                        const refundError = document.getElementById('mc-refund-policy-error');
+
+                        const setVisible = (el, visible) => {
+                            if (!el) {
+                                return;
+                            }
+                            el.classList.toggle('hidden', !visible);
+                        };
+
+                        const syncErrors = () => {
+                            setVisible(cartError, cart && !cart.checked);
+                            setVisible(refundError, refund && !refund.checked);
+                        };
+
+                        cart?.addEventListener('change', () => setVisible(cartError, false));
+                        refund?.addEventListener('change', () => setVisible(refundError, false));
+
+                        form.addEventListener('submit', (event) => {
+                            const cartOk = Boolean(cart?.checked);
+                            const refundOk = Boolean(refund?.checked);
+
+                            if (cartOk && refundOk) {
+                                return;
+                            }
+
+                            event.preventDefault();
+                            syncErrors();
+                            (cartOk ? refund : cart)?.focus();
+                        });
+                    })();
+                </script>
             </section>
         </x-checkout.customer-shell>
     </body>

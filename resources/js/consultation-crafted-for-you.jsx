@@ -14,7 +14,7 @@ if (typeof window !== 'undefined') {
     window.__MC_CONSULTATION_CURATION_BUNDLE_EPOCH__ = CONSULTATION_CURATION_BUNDLE_EPOCH;
 }
 
-/** @type {{ closeHref?: string; homeHref?: string; backHref?: string; summaryHref?: string; deliveryUrl?: string; loginUrl?: string; signOutUrl?: string; csrfToken?: string; isCustomerAccount?: boolean; isAdminPreview?: boolean; pageEyebrow?: string; adaptedMenuUrl?: string; mealLibraryRevision?: number; planTier?: number | null; planTiers?: number[]; editDraft?: object | null; dietProtocol?: string | null; sex?: string | null; activityLevel?: string | null; dailyCalorieTarget?: number | null; resumeChooseMeals?: boolean }} */
+/** @type {{ closeHref?: string; homeHref?: string; backHref?: string; summaryHref?: string; deliveryUrl?: string; loginUrl?: string; signOutUrl?: string; csrfToken?: string; isCustomerAccount?: boolean; isAdminPreview?: boolean; pageEyebrow?: string; adaptedMenuUrl?: string; mealLibraryRevision?: number; planTier?: number | null; planTiers?: number[]; editDraft?: object | null; resumeDraft?: object | null; dietProtocol?: string | null; sex?: string | null; activityLevel?: string | null; dailyCalorieTarget?: number | null; resumeChooseMeals?: boolean; forceReceive?: boolean; initialFulfillmentChoice?: 'diy' | 'partner_kitchen' | null }} */
 let config = {};
 
 if (configEl) {
@@ -87,6 +87,12 @@ if (rootEl) {
             summaryHref={typeof config.summaryHref === 'string' ? config.summaryHref : undefined}
             deliveryUrl={typeof config.deliveryUrl === 'string' ? config.deliveryUrl : '/checkout/delivery'}
             resumeChooseMeals={config.resumeChooseMeals === true}
+            forceReceive={config.forceReceive === true}
+            initialFulfillmentChoice={
+                config.initialFulfillmentChoice === 'diy' || config.initialFulfillmentChoice === 'partner_kitchen'
+                    ? config.initialFulfillmentChoice
+                    : null
+            }
             loginUrl={typeof config.loginUrl === 'string' ? config.loginUrl : undefined}
             signOutUrl={typeof config.signOutUrl === 'string' ? config.signOutUrl : undefined}
             csrfToken={typeof config.csrfToken === 'string' ? config.csrfToken : undefined}
@@ -99,11 +105,14 @@ if (rootEl) {
             mealLibraryRevision={typeof config.mealLibraryRevision === 'number' ? config.mealLibraryRevision : 0}
             initialPlanTier={typeof config.planTier === 'number' ? config.planTier : null}
             initialEditDraft={config.editDraft && typeof config.editDraft === 'object' ? config.editDraft : null}
+            initialResumeDraft={
+                config.resumeDraft && typeof config.resumeDraft === 'object' ? config.resumeDraft : null
+            }
             dietProtocol={typeof config.dietProtocol === 'string' ? config.dietProtocol : null}
             sex={typeof config.sex === 'string' ? config.sex : null}
             activityLevel={typeof config.activityLevel === 'string' ? config.activityLevel : null}
             dailyCalorieTarget={typeof config.dailyCalorieTarget === 'number' ? config.dailyCalorieTarget : null}
-            embedInScrollParent={isCustomerAccount}
+            embedInScrollParent
         />
     );
 
@@ -118,15 +127,11 @@ if (rootEl) {
         consultationRootRef.current.render(
             <StrictMode>
                 <ConsultationErrorBoundary>
-                    {isCustomerAccount ? (
-                        <CustomerOnboardingPhoneFrame>
-                            <div className="flex h-full min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain">
-                                {page}
-                            </div>
-                        </CustomerOnboardingPhoneFrame>
-                    ) : (
-                        page
-                    )}
+                    <CustomerOnboardingPhoneFrame>
+                        <div className="flex h-full min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain">
+                            {page}
+                        </div>
+                    </CustomerOnboardingPhoneFrame>
                 </ConsultationErrorBoundary>
             </StrictMode>,
         );

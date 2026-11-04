@@ -704,17 +704,31 @@ export function sumMealCardMacros(meals) {
 
 /**
  * Build per-category macro segments for a day's assigned meals.
+ * Main meals are listed individually as Meal 1 / Meal 2 (not one summed "Meals chosen" row).
  *
  * @param {Partial<Record<SelectionCategoryKey, ConsultationMeal[]>> | null | undefined} categories
- * @returns {Array<{ key: SelectionCategoryKey; label: string; optional: boolean; itemCount: number; totals: MacroTotals }>}
+ * @returns {Array<{ key: string; label: string; optional: boolean; itemCount: number; totals: MacroTotals }>}
  */
 export function buildCategoryMacroBreakdown(categories) {
-    /** @type {Array<{ key: SelectionCategoryKey; label: string; optional: boolean; itemCount: number; totals: MacroTotals }>} */
+    /** @type {Array<{ key: string; label: string; optional: boolean; itemCount: number; totals: MacroTotals }>} */
     const rows = [];
 
     for (const row of PLAN_MACRO_CATEGORY_ROWS) {
         const items = categories?.[row.key] ?? [];
         if (row.optional && items.length === 0) {
+            continue;
+        }
+
+        if (row.key === 'meals') {
+            items.forEach((meal, index) => {
+                rows.push({
+                    key: `meals:${index}`,
+                    label: `Meal ${index + 1}`,
+                    optional: row.optional,
+                    itemCount: 1,
+                    totals: sumMealCardMacros([meal]),
+                });
+            });
             continue;
         }
 
@@ -767,22 +781,21 @@ const PLAN_MACRO_CELL_META = Object.freeze([
 ]);
 
 const PLAN_MACRO_TABLE_GRID =
-    'grid w-full min-w-0 grid-cols-[4.5rem_repeat(4,minmax(0,1fr))] items-center gap-x-1 gap-y-2 sm:grid-cols-[6rem_repeat(4,minmax(0,1fr))] sm:gap-x-3';
+    'grid w-full min-w-0 grid-cols-[minmax(5.25rem,1.2fr)_repeat(4,minmax(2.75rem,1fr))] items-center gap-x-2 gap-y-2 sm:grid-cols-[minmax(6.5rem,1.15fr)_repeat(4,minmax(3.25rem,1fr))] sm:gap-x-3';
 
 /** @param {'calories' | 'protein' | 'carbs' | 'fat'} key @param {number | string | null | undefined} raw */
 function formatPlanMacroValue(key, raw) {
     const n = Number(raw ?? 0);
-    if (key === 'calories') {
-        return String(Math.round(n));
-    }
     if (!Number.isFinite(n)) {
         return '0';
     }
-    return Number.isInteger(n) ? String(n) : String(Number.parseFloat(n.toFixed(1)));
+
+    // Calories and gram macros: whole numbers only (no fractional display noise).
+    return String(Math.round(n));
 }
 
 /**
- * Column headers only — short labels on narrow screens so Cal/Pro/Carb/Fat do not collide.
+ * Column headers only — short labels so Cal/Pro/Carb/Fat stay readable in phone frames.
  */
 function PlanMacroTableHeader() {
     return (
@@ -791,12 +804,11 @@ function PlanMacroTableHeader() {
             {PLAN_MACRO_CELL_META.map((cell) => (
                 <p
                     key={cell.key}
-                    className="min-w-0 truncate text-center font-montserrat text-[9px] font-semibold uppercase tracking-[0.06em] sm:text-[10px] sm:tracking-[0.12em]"
+                    className="min-w-0 text-center font-montserrat text-[9px] font-semibold uppercase tracking-[0.08em] sm:text-[10px] sm:tracking-[0.12em]"
                     style={{ color: cell.color }}
                     title={cell.label}
                 >
-                    <span className="sm:hidden">{cell.shortLabel}</span>
-                    <span className="hidden sm:inline">{cell.label}</span>
+                    {cell.shortLabel}
                 </p>
             ))}
         </>
@@ -831,7 +843,7 @@ function PlanMacroValueCells({
                     <div
                         key={cell.key}
                         className={[
-                            'min-w-0 overflow-hidden px-0.5 text-center',
+                            'min-w-0 px-1 text-center sm:px-1.5',
                             cellClassName,
                             index === PLAN_MACRO_CELL_META.length - 1 ? lastCellClassName : '',
                         ]
@@ -840,7 +852,7 @@ function PlanMacroValueCells({
                     >
                         <p
                             className={[
-                                'truncate text-sm font-bold tabular-nums leading-tight sm:text-[15px] sm:leading-none',
+                                'whitespace-nowrap text-sm font-bold tabular-nums leading-tight sm:text-[15px] sm:leading-none',
                                 muted ? 'font-semibold text-[#9CA3AF]' : '',
                                 highlighted ? 'text-amber-800' : '',
                             ]
@@ -853,7 +865,7 @@ function PlanMacroValueCells({
                         {percent !== null && percent !== undefined ? (
                             <p
                                 className={[
-                                    'mt-0.5 truncate font-montserrat text-[10px] font-semibold tabular-nums leading-none tracking-tight',
+                                    'mt-0.5 whitespace-nowrap font-montserrat text-[10px] font-semibold tabular-nums leading-none tracking-tight',
                                     muted ? 'text-[#C4C9D1]' : 'text-[#9CA3AF]',
                                 ]
                                     .join(' ')
@@ -861,9 +873,9 @@ function PlanMacroValueCells({
                             >
                                 {percent}%
                             </p>
-                        ) : (
+                        ) : macroPercents ? (
                             <span className="mt-0.5 block h-[10px]" aria-hidden="true" />
-                        )}
+                        ) : null}
                     </div>
                 );
             })}
@@ -953,14 +965,25 @@ export function PlanDayMacroBreakdown({ categories, categoryTargets = null, dayL
 
     if (compact) {
         return (
-            <div className="mt-4 space-y-3 border-t border-gray-100 pt-3">
+            <div className="space-y-3">
                 <p className="font-montserrat text-[11px] font-bold uppercase tracking-[0.12em] text-[#5A6B44]">
                     {dayLabel ? `${dayLabel} breakdown` : 'Choice breakdown'}
                 </p>
+                <div className="grid w-full min-w-0 grid-cols-4 gap-x-2 px-1" aria-hidden="true">
+                    {PLAN_MACRO_CELL_META.map((cell) => (
+                        <p
+                            key={cell.key}
+                            className="min-w-0 text-center font-montserrat text-[9px] font-semibold uppercase tracking-[0.08em]"
+                            style={{ color: cell.color }}
+                        >
+                            {cell.shortLabel}
+                        </p>
+                    ))}
+                </div>
                 {rows.map((row) => (
                     <div
                         key={row.key}
-                        className="rounded-[10px] bg-[#F8F9F6] px-2 py-2"
+                        className="rounded-[10px] bg-[#F8F9F6] px-3 py-2.5"
                         role="rowgroup"
                         aria-label={`${row.label} macros`}
                     >
@@ -983,21 +1006,22 @@ export function PlanDayMacroBreakdown({ categories, categoryTargets = null, dayL
 
     return (
         <>
-            <p className="col-span-full mt-4 border-t border-gray-100 pt-3 font-montserrat text-[11px] font-bold uppercase tracking-[0.12em] text-[#5A6B44]">
+            <p className="col-span-full font-montserrat text-[11px] font-bold uppercase tracking-[0.12em] text-[#5A6B44]">
                 {dayLabel ? `${dayLabel} breakdown` : 'Choice breakdown'}
             </p>
+            <PlanMacroTableHeader />
             {rows.map((row) => (
                 <div key={row.key} className="contents" role="rowgroup" aria-label={`${row.label} macros`}>
                     <div className="contents" role="row">
                         <p
-                            className="min-w-0 break-words rounded-l-[10px] bg-[#F8F9F6] py-2 pl-1.5 font-montserrat text-[10px] font-bold leading-tight text-[#262A22] sm:pl-3 sm:text-xs"
+                            className="min-w-0 break-words rounded-l-[10px] bg-[#F8F9F6] py-2.5 pl-2 font-montserrat text-[10px] font-bold leading-tight text-[#262A22] sm:pl-3 sm:text-xs"
                             role="rowheader"
                         >
                             {row.label}
                         </p>
                         <PlanMacroValueCells
                             macros={row.totals}
-                            cellClassName="bg-[#F8F9F6] py-2"
+                            cellClassName="bg-[#F8F9F6] py-2.5"
                             lastCellClassName="rounded-r-[10px]"
                         />
                     </div>
@@ -1049,7 +1073,8 @@ export function SoupOfTheDayOptIn({ checked, onChange, header = 'Soups for this 
 }
 
 /**
- * Full-width macro panel for meal plan detail pages (day total + category breakdown).
+ * Full-width macro panel for meal plan detail pages (day totals + category breakdown).
+ * Day-total values stay; the "{day} total" title label is omitted.
  *
  * @param {object} props
  * @param {MacroTotals} props.activeDayTotals
@@ -1079,7 +1104,7 @@ export function PlanMacroSummaryPanel({
     );
 
     return (
-        <div className="w-full min-w-0 overflow-hidden rounded-[12px] border border-gray-200 bg-white px-2 py-4 sm:px-5">
+        <div className="w-full min-w-0 overflow-hidden rounded-[12px] border border-gray-200 bg-white px-3 py-4 sm:px-5">
             {planCategoryLabel ? (
                 <div className="mb-3">
                     <span className="inline-flex max-w-full truncate rounded-full bg-[#E8EFE0] px-2.5 py-1 font-montserrat text-[10px] font-semibold text-[#5A6B44] sm:px-3 sm:text-xs">
@@ -1088,13 +1113,13 @@ export function PlanMacroSummaryPanel({
                 </div>
             ) : null}
 
-            {/* Mobile: full-width 4-col grid — no Total label so numbers can spread. */}
-            <div className="sm:hidden" role="table" aria-label={`${dayLabel} macro summary`}>
-                <div className="grid w-full min-w-0 grid-cols-4 items-start gap-x-2 gap-y-2">
+            {/* Day totals: full-width 4-col grid (no empty label column after removing the title). */}
+            <div role="table" aria-label={`${dayLabel} macro summary`}>
+                <div className="grid w-full min-w-0 grid-cols-4 items-start gap-x-2 gap-y-2 sm:gap-x-3">
                     {PLAN_MACRO_CELL_META.map((cell) => (
                         <p
                             key={cell.key}
-                            className="min-w-0 truncate text-center font-montserrat text-[9px] font-semibold uppercase tracking-[0.06em]"
+                            className="min-w-0 text-center font-montserrat text-[9px] font-semibold uppercase tracking-[0.08em] sm:text-[10px]"
                             style={{ color: cell.color }}
                         >
                             {cell.shortLabel}
@@ -1109,51 +1134,32 @@ export function PlanMacroSummaryPanel({
                         />
                     ) : null}
                 </div>
-
-                {categories ? (
-                    <PlanDayMacroBreakdown
-                        categories={categories}
-                        categoryTargets={categoryMacroTargets}
-                        dayLabel={dayLabel}
-                        compact
-                    />
-                ) : null}
             </div>
 
-            {/* Desktop / tablet: labeled rows. */}
-            <div
-                className={`hidden sm:grid ${PLAN_MACRO_TABLE_GRID}`}
-                role="table"
-                aria-label={`${dayLabel} macro summary`}
-            >
-                <PlanMacroTableHeader />
-
-                <p className="min-w-0 break-words font-montserrat text-[11px] font-bold uppercase leading-tight tracking-[0.1em] text-[#5A6B44]">
-                    {dayLabel} total
-                </p>
-                <PlanMacroValueCells macros={activeDayTotals} macroPercents={selectedMacroPercents} />
-
-                {dayMacroTargets ? (
-                    <>
-                        <p className="min-w-0 font-montserrat text-[10px] font-semibold uppercase tracking-[0.08em] text-[#9CA3AF]">
-                            Target
-                        </p>
-                        <PlanMacroValueCells
-                            macros={dayMacroTargets}
-                            macroPercents={targetMacroPercents}
-                            muted
+            {categories ? (
+                <>
+                    <div className="mt-4 border-t border-gray-100 pt-3 sm:hidden">
+                        <PlanDayMacroBreakdown
+                            categories={categories}
+                            categoryTargets={categoryMacroTargets}
+                            dayLabel={dayLabel}
+                            compact
                         />
-                    </>
-                ) : null}
+                    </div>
 
-                {categories ? (
-                    <PlanDayMacroBreakdown
-                        categories={categories}
-                        categoryTargets={categoryMacroTargets}
-                        dayLabel={dayLabel}
-                    />
-                ) : null}
-            </div>
+                    <div
+                        className={`mt-4 hidden border-t border-gray-100 pt-3 sm:grid ${PLAN_MACRO_TABLE_GRID}`}
+                        role="table"
+                        aria-label={`${dayLabel} macro breakdown`}
+                    >
+                        <PlanDayMacroBreakdown
+                            categories={categories}
+                            categoryTargets={categoryMacroTargets}
+                            dayLabel={dayLabel}
+                        />
+                    </div>
+                </>
+            ) : null}
         </div>
     );
 }
@@ -1786,6 +1792,7 @@ export function FixedChoicePicker({
  * @param {string} [props.panelClassName] Height class for the viewport-locked panel shell.
  * @param {boolean} [props.documentScroll] Grow with content and scroll the parent (Storybook / embed).
  * @param {boolean} [props.isMenuPending] Adapted menu / weekly schedule still loading from the API.
+ * @param {boolean} [props.showSealLoading] Seal / skeleton only on first curation day while pending.
  * @param {boolean} [props.protocolSelectedLayout] Force the customer onboarding slot cards (SEE OTHER OPTIONS).
  */
 export default function ChooseYourMeals({
@@ -1829,6 +1836,7 @@ export default function ChooseYourMeals({
     panelClassName,
     documentScroll = false,
     isMenuPending = false,
+    showSealLoading = false,
     dietProtocol = null,
     protocolSelectedLayout = false,
 }) {
@@ -2099,6 +2107,7 @@ export default function ChooseYourMeals({
                         title={slotTitle}
                         selectedMeals={selectedMeals}
                         multiSelect={max > 1}
+                        isLoading={showSealLoading}
                         onSeeOtherOptions={
                             categoryPickEnabled ? () => setOptionsSlotKey(def.selectionKey) : undefined
                         }
@@ -2122,7 +2131,7 @@ export default function ChooseYourMeals({
                     maxSelected={max}
                     readOnly={isAutoAssigned || !categoryPickEnabled}
                     showSelectedState={isAutoAssigned}
-                    isLoading={isAutoAssigned && isMenuPending && cards.length === 0}
+                    isLoading={showSealLoading && isAutoAssigned && cards.length === 0}
                     onSelect={categoryPickEnabled && !isAutoAssigned ? (meal) => onToggleCategory?.(def.selectionKey, meal) : () => {}}
                     onViewDetails={onViewDetails}
                     onEditMeal={onEditMeal}
@@ -2143,6 +2152,7 @@ export default function ChooseYourMeals({
         onViewDetails,
         onEditMeal,
         isMenuPending,
+        showSealLoading,
         weeklyDisplayDecks,
         useProtocolSelectedLayout,
     ]);

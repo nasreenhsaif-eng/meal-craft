@@ -6,9 +6,33 @@
  *   children: import('react').ReactNode;
  *   className?: string;
  *   storybook?: boolean;
+ *   embedded?: boolean;
  * }} props
  */
-export default function CustomerOnboardingPhoneFrame({ children, className = '', storybook = false }) {
+export default function CustomerOnboardingPhoneFrame({
+    children,
+    className = '',
+    storybook = false,
+    embedded = false,
+}) {
+    if (embedded) {
+        return (
+            <div
+                className={[
+                    'relative flex h-full min-h-0 w-full flex-col overflow-hidden',
+                    'rounded-[28px] border border-gray-200 bg-white shadow-lg',
+                    'px-3 pt-3 font-sans text-[#262A22]',
+                    className,
+                ]
+                    .join(' ')
+                    .trim()}
+                data-customer-onboarding-frame="embedded"
+            >
+                {children}
+            </div>
+        );
+    }
+
     return (
         <div
             className={[

@@ -36,6 +36,7 @@ final class ProductionWeeklyMenuSchedule
             if (is_numeric($configuredId) && (int) $configuredId > 0) {
                 $plan = MealPlan::query()
                     ->where('schema_type', MealPlanSchemaType::WeeklyStructured)
+                    ->published()
                     ->find((int) $configuredId);
 
                 if ($plan !== null) {
@@ -45,6 +46,7 @@ final class ProductionWeeklyMenuSchedule
 
             $named = MealPlan::query()
                 ->where('schema_type', MealPlanSchemaType::WeeklyStructured)
+                ->published()
                 ->where('name', NutrientDenseWeeklyMealPlanBuilder::PLAN_NAME)
                 ->latest('id')
                 ->first();
@@ -55,6 +57,7 @@ final class ProductionWeeklyMenuSchedule
 
             $legacy = MealPlan::query()
                 ->where('schema_type', MealPlanSchemaType::WeeklyStructured)
+                ->published()
                 ->where('name', 'TBD Weekly Protocol')
                 ->latest('id')
                 ->first();
@@ -74,6 +77,7 @@ final class ProductionWeeklyMenuSchedule
         if (is_numeric($configuredId) && (int) $configuredId > 0) {
             $plan = MealPlan::query()
                 ->where('schema_type', MealPlanSchemaType::WeeklyStructured)
+                ->published()
                 ->find((int) $configuredId);
 
             if ($plan !== null) {
@@ -83,6 +87,7 @@ final class ProductionWeeklyMenuSchedule
 
         return MealPlan::query()
             ->where('schema_type', MealPlanSchemaType::WeeklyStructured)
+            ->published()
             ->latest('id')
             ->first();
     }

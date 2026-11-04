@@ -77,21 +77,23 @@ class User extends Authenticatable
     }
 
     /**
-     * Welcome back home is for customers who finished profile onboarding and submitted meals.
+     * Welcome back home after profile onboarding and at least one submitted meal plan.
+     * Applies to anyone using the customer portal (customers and staff preview).
      */
     public function shouldLandOnWelcomeBack(): bool
     {
-        return $this->isCustomer()
+        return $this->canAccessCustomerPortal()
             && $this->hasCompletedOnboarding()
             && $this->hasSubmittedMealPlan();
     }
 
     /**
      * Crafted for YOU is the next step after profile onboarding, before meals are submitted.
+     * Applies to anyone using the customer portal (customers and staff preview).
      */
     public function shouldLandOnCraftedForYou(): bool
     {
-        return $this->isCustomer()
+        return $this->canAccessCustomerPortal()
             && $this->hasCompletedOnboarding()
             && ! $this->hasSubmittedMealPlan();
     }

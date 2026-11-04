@@ -1,3 +1,5 @@
+import { CSRF_SESSION_EXPIRED_MESSAGE, resolveCsrfToken, resolveXsrfHeaderToken } from '../lib/csrfToken.js';
+
 export const CONSULTATION_DRAFT_STORAGE_KEY = 'mealcraft:consultation-draft';
 
 const DRAFT_VERSION = 1;
@@ -21,7 +23,9 @@ const DRAFT_VERSION = 1;
  * @property {Record<number, ConsultationDaySelections>} selectedByDay
  * @property {Record<number, 'soup'|'sidesalad'|'dessert'>} [businessSideChoiceByDay]
  * @property {Record<number, boolean>} [afternoonSoupOptInByDay]
+ * @property {Record<number, boolean>} [fullCraftSoupOptInByDay]
  * @property {boolean} [environmentYes]
+ * @property {'diy'|'partner_kitchen'|null} [fulfillmentChoice]
  */
 
 /**
@@ -76,12 +80,17 @@ function normalizeConsultationDraft(draft) {
     }
 
     /** @type {number[]} */
-    const selectedDays = Array.isArray(draft.selectedDays)
+    let selectedDays = Array.isArray(draft.selectedDays)
         ? draft.selectedDays
               .map((day) => Number(day))
               .filter((day) => Number.isFinite(day) && day >= 1 && day <= 7)
               .sort((a, b) => a - b)
         : [];
+
+    // Partner checkout can race ahead of React state; recover a full week from duration.
+    if (selectedDays.length === 0 && weekDuration === 7) {
+        selectedDays = [1, 2, 3, 4, 5, 6, 7];
+    }
 
     if (selectedDays.length === 0) {
         return null;
@@ -132,18 +141,33 @@ function normalizeConsultationDraft(draft) {
                 ? /** @type {Record<number, boolean>} */ (draft.afternoonSoupOptInByDay)
                 : {},
         environmentYes: Boolean(draft.environmentYes),
+        fullCraftSoupOptInByDay:
+            draft.fullCraftSoupOptInByDay && typeof draft.fullCraftSoupOptInByDay === 'object'
+                ? /** @type {Record<number, boolean>} */ (draft.fullCraftSoupOptInByDay)
+                : {},
+        fulfillmentChoice:
+            draft.fulfillmentChoice === 'diy' || draft.fulfillmentChoice === 'partner_kitchen'
+                ? draft.fulfillmentChoice
+                : null,
     };
 }
 
 /**
+ * @param {boolean} [forceResume]
  * @returns {boolean}
  */
-export function shouldRestoreConsultationDraft() {
+export function shouldRestoreConsultationDraft(forceResume = false) {
     if (typeof window === 'undefined') {
         return false;
     }
 
-    return new URLSearchParams(window.location.search).get('edit') === '1';
+    if (forceResume) {
+        return true;
+    }
+
+    const params = new URLSearchParams(window.location.search);
+
+    return params.get('edit') === '1' || params.get('choose_meals') === '1';
 }
 
 /**
@@ -206,7 +230,9 @@ export function clearConsultationDraft() {
  *
  * @param {{
  *   craftKey?: string;
+ *   fulfillmentChoice?: 'diy' | 'partner_kitchen' | null;
  *   weekDuration?: number;
+ *   selectedWeekdays?: number[];
  *   days?: Array<{
  *     dayNumber: number;
  *     includeSoup?: boolean;
@@ -277,11 +303,15 @@ export function buildConsultationDraftFromSummary(craftPlan) {
         businessSideChoiceByDay,
         afternoonSoupOptInByDay,
         environmentYes: false,
+        fulfillmentChoice:
+            craftPlan.fulfillmentChoice === 'diy' || craftPlan.fulfillmentChoice === 'partner_kitchen'
+                ? craftPlan.fulfillmentChoice
+                : null,
     });
 }
 
 /**
- * Resolve the draft to restore when opening consultation in edit mode.
+ * Resolve the draft to restore when opening consultation in edit / choose-meals resume mode.
  *
  * @param {{
  *   craftKey?: string;
@@ -293,18 +323,83 @@ export function buildConsultationDraftFromSummary(craftPlan) {
  *     categories?: Record<string, unknown[]>;
  *   }>;
  * } | null | undefined} [initialEditDraft]
+ * @param {Partial<ConsultationDraft> | null | undefined} [initialResumeDraft]
  * @returns {ConsultationDraft | null}
  */
-export function resolveInitialConsultationRestoreDraft(initialEditDraft) {
-    if (initialEditDraft) {
-        return buildConsultationDraftFromSummary(initialEditDraft);
+export function resolveInitialConsultationRestoreDraft(
+    initialEditDraft,
+    initialResumeDraft,
+    forceResume = false,
+) {
+    if (initialResumeDraft && typeof initialResumeDraft === 'object') {
+        const fromServer = normalizeConsultationDraft({
+            version: DRAFT_VERSION,
+            ...initialResumeDraft,
+        });
+
+        if (fromServer) {
+            return fromServer;
+        }
     }
 
-    if (!shouldRestoreConsultationDraft()) {
+    if (initialEditDraft) {
+        const fromEdit = buildConsultationDraftFromSummary(initialEditDraft);
+        if (fromEdit) {
+            return fromEdit;
+        }
+    }
+
+    if (!shouldRestoreConsultationDraft(forceResume)) {
         return null;
     }
 
     return loadConsultationDraft();
+}
+
+/**
+ * Persist setup draft on the server so Partner checkout → payment → refresh can resume Choose your meals.
+ *
+ * @param {Omit<ConsultationDraft, 'version' | 'savedAt'>} draft
+ * @param {string} [csrfFallback]
+ * @param {string} [url]
+ */
+export async function stashConsultationResumeDraft(
+    draft,
+    csrfFallback = '',
+    url = '/api/customer/consultation-resume-draft',
+) {
+    const plainToken = resolveCsrfToken(csrfFallback);
+    const xsrfToken = resolveXsrfHeaderToken();
+
+    /** @type {Record<string, string>} */
+    const headers = {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
+    };
+
+    if (plainToken !== '') {
+        headers['X-CSRF-TOKEN'] = plainToken;
+    }
+
+    if (xsrfToken !== '') {
+        headers['X-XSRF-TOKEN'] = xsrfToken;
+    }
+
+    const response = await fetch(url, {
+        method: 'POST',
+        headers,
+        credentials: 'same-origin',
+        body: JSON.stringify(draft),
+    });
+
+    if (!response.ok) {
+        if (response.status === 419) {
+            throw new Error(CSRF_SESSION_EXPIRED_MESSAGE);
+        }
+
+        throw new Error('Could not save your plan setup before checkout.');
+    }
 }
 
 /**

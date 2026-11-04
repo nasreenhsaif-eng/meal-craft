@@ -1,6 +1,7 @@
 /**
  * @param {{
  *   craftKey: string;
+ *   fulfillmentChoice: 'diy' | 'partner_kitchen';
  *   weekDuration: number;
  *   selectedDays: number[];
  *   selectedByDay: Record<number, {
@@ -37,6 +38,7 @@ export function buildCraftPlanSubmissionPayload(input) {
 
     return {
         craft_key: input.craftKey,
+        fulfillment_choice: input.fulfillmentChoice,
         week_duration: input.weekDuration,
         selected_days: input.selectedDays,
         days,

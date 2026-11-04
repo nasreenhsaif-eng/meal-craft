@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link } from '@inertiajs/react';
 import Button from '../../Components/Atoms/Button/Button.jsx';
 import CustomerAppBottomNav from '../../Components/Molecules/Customer/CustomerAppBottomNav.jsx';
@@ -64,8 +65,11 @@ function dailyCaloriesDisplay(profile) {
  * @param {string} [props.shopUrl]
  * @param {string} [props.mealPlanSummaryUrl]
  * @param {() => void} [props.onChooseMeals]
+ * @param {() => void} [props.onBackFromReceive]
+ * @param {(choice: 'partner_kitchen' | 'diy') => void} [props.onFulfillmentContinue]
  * @param {string} [props.chooseByFridayLabel]
  * @param {boolean} [props.showPlanReady]
+ * @param {boolean} [props.preview] Marketing embed — same UI, no navigation.
  */
 export function WelcomeBackInner({
     customerName = '',
@@ -78,8 +82,11 @@ export function WelcomeBackInner({
     shopUrl = '/app/shop',
     mealPlanSummaryUrl = '/app/meal-plan',
     onChooseMeals,
+    onBackFromReceive,
+    onFulfillmentContinue,
     chooseByFridayLabel = '',
     showPlanReady = true,
+    preview = false,
 }) {
     const isReceive = mode === 'receive';
     const dailyCaloriesLabel = dailyCaloriesDisplay(profile);
@@ -88,6 +95,7 @@ export function WelcomeBackInner({
     return (
         <CustomerInertiaShell
             customerName={customerName}
+            embedded={preview}
             footerNav={
                 isReceive ? null : (
                     <CustomerAppBottomNav
@@ -96,18 +104,29 @@ export function WelcomeBackInner({
                         profileUrl={profileUrl}
                         shopUrl={shopUrl}
                         mealsUrl={mealPlanSummaryUrl}
+                        navigationDisabled={preview}
                     />
                 )
             }
         >
             <div className="w-full min-w-0 rounded-[16px] border border-gray-200 bg-white px-4 py-6 shadow-sm sm:p-8">
                 {isReceive ? (
-                    <Link
-                        href={homeHref}
-                        className="mb-3 inline-flex items-center gap-1 font-montserrat text-sm font-semibold text-[#5A6B44] hover:underline"
-                    >
-                        ← Back to home
-                    </Link>
+                    typeof onBackFromReceive === 'function' ? (
+                        <button
+                            type="button"
+                            onClick={onBackFromReceive}
+                            className="mb-3 inline-flex items-center gap-1 font-montserrat text-sm font-semibold text-[#5A6B44] hover:underline"
+                        >
+                            ← Back to home
+                        </button>
+                    ) : (
+                        <Link
+                            href={homeHref}
+                            className="mb-3 inline-flex items-center gap-1 font-montserrat text-sm font-semibold text-[#5A6B44] hover:underline"
+                        >
+                            ← Back to home
+                        </Link>
+                    )
                 ) : null}
 
                 <h1 className="font-montserrat text-3xl font-semibold tracking-tight text-[#262A22]">
@@ -190,7 +209,15 @@ export function WelcomeBackInner({
                     </ul>
                 ) : null}
 
-                {isReceive ? <FulfillmentOptionCards deliveryUrl={deliveryUrl} className="mt-8" /> : null}
+                {isReceive ? (
+                    <FulfillmentOptionCards
+                        deliveryUrl={deliveryUrl}
+                        className="mt-8"
+                        onContinue={
+                            typeof onFulfillmentContinue === 'function' ? onFulfillmentContinue : undefined
+                        }
+                    />
+                ) : null}
             </div>
         </CustomerInertiaShell>
     );
@@ -225,11 +252,8 @@ export default function Home({
     chooseByFridayLabel = '',
     showPlanReady = true,
 }) {
-    const mode = 'welcome';
-    const mealsPlanUrl =
-        craftPlan != null && typeof consultationEditUrl === 'string' && consultationEditUrl.trim() !== ''
-            ? consultationEditUrl
-            : consultationUrl;
+    /** @type {['welcome' | 'receive', import('react').Dispatch<import('react').SetStateAction<'welcome' | 'receive'>>]} */
+    const [mode, setMode] = useState(/** @type {'welcome' | 'receive'} */ ('welcome'));
 
     return (
         <WelcomeBackInner
@@ -244,9 +268,13 @@ export default function Home({
             mealPlanSummaryUrl={mealPlanSummaryUrl}
             chooseByFridayLabel={chooseByFridayLabel}
             showPlanReady={showPlanReady}
-            onChooseMeals={() => {
-                // Consultation is a standalone Blade/Vite page, not Inertia.
-                window.location.assign(mealsPlanUrl);
+            onChooseMeals={() => setMode('receive')}
+            onBackFromReceive={() => setMode('welcome')}
+            onFulfillmentContinue={(choice) => {
+                const separator = consultationUrl.includes('?') ? '&' : '?';
+                window.location.assign(
+                    `${consultationUrl}${separator}receive=1&fulfillment=${encodeURIComponent(choice)}`,
+                );
             }}
         />
     );

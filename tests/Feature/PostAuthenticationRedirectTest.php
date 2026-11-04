@@ -3,6 +3,7 @@
 use App\Enums\OnboardingStep;
 use App\Models\CustomerProfile;
 use App\Models\User;
+use App\Support\AdminConsultationPreviewProfile;
 use App\Support\PostAuthenticationRedirect;
 
 test('post authentication redirect sends ready customers to welcome back', function () {
@@ -61,4 +62,26 @@ test('completed customers with meals opening onboarding index land on welcome ba
     $this->actingAs($customer)
         ->get(route('onboarding.index'))
         ->assertRedirect(route('app.home'));
+});
+
+test('staff with completed profile and submitted meals follow welcome back landing rules', function () {
+    $admin = User::factory()->create();
+    $profile = AdminConsultationPreviewProfile::ensure($admin);
+    $profile->craftPlans()->create([
+        'craft_key' => 'full',
+        'week_duration' => 5,
+        'selected_weekdays' => [1, 2, 3, 4, 5],
+        'submitted_at' => now(),
+    ]);
+
+    expect($admin->fresh()->shouldLandOnWelcomeBack())->toBeTrue()
+        ->and($admin->fresh()->shouldLandOnCraftedForYou())->toBeFalse();
+});
+
+test('staff with completed profile and no meals follow crafted for you landing rules', function () {
+    $admin = User::factory()->create();
+    AdminConsultationPreviewProfile::ensure($admin);
+
+    expect($admin->fresh()->shouldLandOnWelcomeBack())->toBeFalse()
+        ->and($admin->fresh()->shouldLandOnCraftedForYou())->toBeTrue();
 });

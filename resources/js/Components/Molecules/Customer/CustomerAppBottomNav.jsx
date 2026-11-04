@@ -1,7 +1,7 @@
 import { Link } from '@inertiajs/react';
 
 /**
- * @typedef {'home' | 'meals' | 'shop' | 'profile'} CustomerAppTab
+ * @typedef {'home' | 'meals' | 'shop' | 'favourites' | 'tools' | 'profile'} CustomerAppTab
  */
 
 /**
@@ -57,6 +57,39 @@ function IconShop({ className = '' }) {
 /**
  * @param {{ className?: string }} props
  */
+function IconFavourites({ className = '' }) {
+    return (
+        <svg className={className} width={22} height={22} viewBox="0 0 24 24" fill="none" aria-hidden>
+            <path
+                d="M19.5 12.572 12 20l-7.5-7.428A5 5 0 1 1 12 6.013a5 5 0 1 1 7.5 6.559Z"
+                stroke="currentColor"
+                strokeWidth="1.75"
+                strokeLinejoin="round"
+            />
+        </svg>
+    );
+}
+
+/**
+ * @param {{ className?: string }} props
+ */
+function IconTools({ className = '' }) {
+    return (
+        <svg className={className} width={22} height={22} viewBox="0 0 24 24" fill="none" aria-hidden>
+            <path
+                d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18v3h3l6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.1-2.1 2.6-2.4Z"
+                stroke="currentColor"
+                strokeWidth="1.75"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+            />
+        </svg>
+    );
+}
+
+/**
+ * @param {{ className?: string }} props
+ */
 function IconProfile({ className = '' }) {
     return (
         <svg className={className} width={22} height={22} viewBox="0 0 24 24" fill="none" aria-hidden>
@@ -75,32 +108,42 @@ const TAB_ICONS = {
     home: IconHome,
     meals: IconMeals,
     shop: IconShop,
+    favourites: IconFavourites,
+    tools: IconTools,
     profile: IconProfile,
 };
 
 /**
- * Persistent customer app footer tabs: Home / Meal Plan / Shop / Profile.
+ * Persistent customer app footer tabs: Home / Meals / Shop / Saved / Tools / Profile.
  *
  * @param {object} props
  * @param {CustomerAppTab | null} [props.activeTab]
  * @param {string} [props.homeUrl]
  * @param {string} [props.mealsUrl]
  * @param {string} [props.shopUrl]
+ * @param {string} [props.favouritesUrl]
+ * @param {string} [props.toolsUrl]
  * @param {string} [props.profileUrl]
  * @param {string} [props.className]
+ * @param {boolean} [props.navigationDisabled] Decorative tabs (landing preview) — no Inertia links.
  */
 export default function CustomerAppBottomNav({
     activeTab = null,
     homeUrl = '/app',
     mealsUrl = '/app/meal-plan',
     shopUrl = '/app/shop',
+    favouritesUrl = '/app/favourites',
+    toolsUrl = '/app/tools',
     profileUrl = '/app/profile',
     className = '',
+    navigationDisabled = false,
 }) {
     const items = [
         { id: /** @type {CustomerAppTab} */ ('home'), label: 'Home', href: homeUrl },
-        { id: /** @type {CustomerAppTab} */ ('meals'), label: 'Meal Plan', href: mealsUrl },
+        { id: /** @type {CustomerAppTab} */ ('meals'), label: 'Meals', href: mealsUrl },
         { id: /** @type {CustomerAppTab} */ ('shop'), label: 'Shop', href: shopUrl },
+        { id: /** @type {CustomerAppTab} */ ('favourites'), label: 'Saved', href: favouritesUrl },
+        { id: /** @type {CustomerAppTab} */ ('tools'), label: 'Tools', href: toolsUrl },
         { id: /** @type {CustomerAppTab} */ ('profile'), label: 'Profile', href: profileUrl },
     ];
 
@@ -115,30 +158,41 @@ export default function CustomerAppBottomNav({
                 .trim()}
             aria-label="Customer app"
         >
-            <ul className="mx-auto flex w-full items-stretch justify-between px-1 pt-1 sm:px-2">
+            <ul className="mx-auto flex w-full items-stretch justify-between px-0.5 pt-1 sm:px-1">
                 {items.map((item) => {
                     const isActive = item.id === activeTab;
                     const Icon = TAB_ICONS[item.id];
+                    const tabClassName = [
+                        'flex min-h-[3.5rem] flex-col items-center justify-center gap-0.5 rounded-[12px] px-0.5 py-1.5',
+                        'font-montserrat text-[9px] font-bold uppercase tracking-[0.04em] sm:text-[10px] sm:tracking-[0.06em]',
+                        'transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5A6B44]/35 focus-visible:ring-offset-2',
+                        isActive
+                            ? 'bg-[#5A6B44]/10 text-[#5A6B44]'
+                            : 'text-[#6B7280] hover:bg-[#F8F9F6] hover:text-[#374151]',
+                    ]
+                        .join(' ')
+                        .trim();
 
                     return (
                         <li key={item.id} className="min-w-0 flex-1">
-                            <Link
-                                href={item.href}
-                                aria-current={isActive ? 'page' : undefined}
-                                className={[
-                                    'flex min-h-[3.5rem] flex-col items-center justify-center gap-0.5 rounded-[12px] px-1 py-1.5',
-                                    'font-montserrat text-[10px] font-bold uppercase tracking-[0.06em] sm:text-[11px] sm:tracking-[0.08em]',
-                                    'transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5A6B44]/35 focus-visible:ring-offset-2',
-                                    isActive
-                                        ? 'bg-[#5A6B44]/10 text-[#5A6B44]'
-                                        : 'text-[#6B7280] hover:bg-[#F8F9F6] hover:text-[#374151]',
-                                ]
-                                    .join(' ')
-                                    .trim()}
-                            >
-                                <Icon className="shrink-0" />
-                                <span>{item.label}</span>
-                            </Link>
+                            {navigationDisabled ? (
+                                <span
+                                    aria-current={isActive ? 'page' : undefined}
+                                    className={tabClassName}
+                                >
+                                    <Icon className="shrink-0" />
+                                    <span>{item.label}</span>
+                                </span>
+                            ) : (
+                                <Link
+                                    href={item.href}
+                                    aria-current={isActive ? 'page' : undefined}
+                                    className={tabClassName}
+                                >
+                                    <Icon className="shrink-0" />
+                                    <span>{item.label}</span>
+                                </Link>
+                            )}
                         </li>
                     );
                 })}

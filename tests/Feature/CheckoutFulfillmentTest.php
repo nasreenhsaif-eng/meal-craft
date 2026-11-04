@@ -63,7 +63,7 @@ test('partner kitchen delivery from consultation flags resume choose meals', fun
         ->assertSessionHas('checkout_resume_choose_meals', true);
 });
 
-test('digital recipes path opens the printable meal plan or sends the customer to consultation', function () {
+test('digital recipes path sends the customer to consultation when no craft plan exists', function () {
     $customer = User::factory()->customer()->create();
     CustomerProfile::factory()->for($customer)->create();
 

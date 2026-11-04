@@ -371,6 +371,8 @@ test('meal detail view api uses reconciled weekday schedule when craft and day a
         'goal' => 'API detail view tests',
         'schema_type' => MealPlanSchemaType::WeeklyStructured,
         'plan_category' => 'balanced',
+        'published_starts_on' => now()->toDateString(),
+        'published_ends_on' => now()->addDays(6)->toDateString(),
     ]);
 
     foreach (

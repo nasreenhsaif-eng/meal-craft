@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import Button from '../Atoms/Button/Button.jsx';
 import MealDetailView from './MealDetailView/MealDetailView';
@@ -30,6 +30,8 @@ function resolveMealDetailPortalHost() {
  *   onClose: () => void;
  *   loading?: boolean;
  *   hideInstructions?: boolean;
+ *   enableGetRecipe?: boolean;
+ *   inlineIngredients?: boolean;
  * }} props
  */
 export default function MealDetailModalPortal({
@@ -37,11 +39,15 @@ export default function MealDetailModalPortal({
     onClose,
     loading = false,
     hideInstructions = false,
+    enableGetRecipe = false,
+    inlineIngredients = false,
 }) {
     const open = Boolean(mealDetailModal) || loading;
+    const [recipeOpen, setRecipeOpen] = useState(false);
 
     useEffect(() => {
         if (!open) {
+            setRecipeOpen(false);
             return undefined;
         }
 
@@ -127,12 +133,29 @@ export default function MealDetailModalPortal({
                             Loading meal details…
                         </p>
                     ) : mealDetailModal ? (
-                        <MealDetailView
-                            meal={mealDetailModal.detailView}
-                            hideImage={false}
-                            embedded
-                            hideInstructions={hideInstructions}
-                        />
+                        <>
+                            {enableGetRecipe ? (
+                                <div className="border-b border-gray-100 bg-white px-4 py-3 sm:px-5">
+                                    <Button
+                                        type="button"
+                                        label={recipeOpen ? 'Hide recipe' : 'Get recipe'}
+                                        variant={recipeOpen ? 'ghost' : 'primary'}
+                                        size="sm"
+                                        onClick={() => setRecipeOpen((openRecipe) => !openRecipe)}
+                                        className="min-w-[8.5rem]"
+                                    />
+                                </div>
+                            ) : null}
+                            <MealDetailView
+                                meal={mealDetailModal.detailView}
+                                hideImage={false}
+                                embedded
+                                hideInstructions={
+                                    enableGetRecipe ? !recipeOpen : hideInstructions
+                                }
+                                inlineIngredients={inlineIngredients}
+                            />
+                        </>
                     ) : null}
                 </div>
             </div>

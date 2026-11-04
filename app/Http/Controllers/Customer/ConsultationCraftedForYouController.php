@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Customer;
 
 use App\Enums\OnboardingStep;
+use App\Http\Controllers\Api\ConsultationResumeDraftController;
 use App\Http\Controllers\Controller;
 use App\Models\Meal;
 use App\Services\Nutrition\UserPlanCalculator;
@@ -27,27 +28,48 @@ class ConsultationCraftedForYouController extends Controller
         $isAdminPreview = $user?->isAdmin() === true && ! $isCustomer;
 
         $editDraft = null;
+        $resumeDraft = null;
 
         if ($request->query('edit') === '1' && $request->session()->has('consultation_edit_draft')) {
             /** @var array<string, mixed> $editDraft */
             $editDraft = $request->session()->pull('consultation_edit_draft');
         }
 
-        // Without a submitted meal plan, /app redirects here again — send BACK to onboarding.
+        // Home → Choose your meals → Receive: start a fresh Partner/DIY path (ignore payment resume).
+        $forceReceive = $request->boolean('receive');
+        $fulfillmentQuery = $request->query('fulfillment');
+        $initialFulfillmentChoice = in_array($fulfillmentQuery, ['diy', 'partner_kitchen'], true)
+            ? $fulfillmentQuery
+            : null;
+
+        if ($forceReceive) {
+            $request->session()->forget(ConsultationResumeDraftController::SESSION_RESUME_KEY);
+        }
+
+        $resumeChooseMeals = ! $forceReceive && (
+            $request->boolean('choose_meals')
+            || $request->session()->get(ConsultationResumeDraftController::SESSION_RESUME_KEY) === true
+        );
+
+        if ($resumeChooseMeals && $request->session()->has(ConsultationResumeDraftController::SESSION_DRAFT_KEY)) {
+            /** @var array<string, mixed> $resumeDraft */
+            $resumeDraft = $request->session()->get(ConsultationResumeDraftController::SESSION_DRAFT_KEY);
+            $request->session()->put(ConsultationResumeDraftController::SESSION_RESUME_KEY, true);
+        }
+
+        // Same customer-experience exits for staff and customers (profile state, not role).
         $customerAppHome = route('app.home', absolute: false);
         $customerOnboardingBack = route('onboarding.show', [
             'step' => OnboardingStep::FoodFilters->value,
         ], absolute: false);
-        $customerLanding = $isCustomer && $user?->shouldLandOnWelcomeBack()
+        $customerLanding = $user?->shouldLandOnWelcomeBack()
             ? $customerAppHome
             : $customerOnboardingBack;
 
-        $backHref = $isCustomer ? $customerLanding : null;
-
         $consultationConfig = [
-            'backHref' => $backHref,
-            'closeHref' => $isCustomer ? $customerLanding : route('admin.dashboard'),
-            'homeHref' => $isCustomer ? $customerLanding : route('admin.dashboard'),
+            'backHref' => $customerLanding,
+            'closeHref' => $customerLanding,
+            'homeHref' => $customerLanding,
             'summaryHref' => route('app.meal-plan', absolute: false),
             'deliveryUrl' => route('checkout.delivery', absolute: false),
             'loginUrl' => route('login'),
@@ -55,7 +77,7 @@ class ConsultationCraftedForYouController extends Controller
             'csrfToken' => csrf_token(),
             'isCustomerAccount' => $isCustomer,
             'isAdminPreview' => $isAdminPreview,
-            'pageEyebrow' => $isCustomer ? 'Your plan' : 'Consultation',
+            'pageEyebrow' => 'Your plan',
             'adaptedMenuUrl' => route('api.menu.adapted', absolute: false),
             'mealDetailViewUrlTemplate' => '/api/meals/{id}/detail-view',
             'mealLibraryRevision' => Meal::libraryRevisionTimestamp(),
@@ -64,13 +86,16 @@ class ConsultationCraftedForYouController extends Controller
                 ? (int) UserPlanCalculator::snapToPlanTier((float) $profile->daily_calorie_target)
                 : null,
             'editDraft' => $editDraft,
+            'resumeDraft' => $resumeDraft,
             'dietProtocol' => $profile?->diet_protocol ?? 'balanced',
             'sex' => $profile?->sex?->value,
             'activityLevel' => $profile?->activity_level?->value,
             'dailyCalorieTarget' => $profile?->daily_calorie_target !== null
                 ? (int) $profile->daily_calorie_target
                 : null,
-            'resumeChooseMeals' => $request->boolean('choose_meals'),
+            'resumeChooseMeals' => $resumeChooseMeals,
+            'initialFulfillmentChoice' => $initialFulfillmentChoice,
+            'forceReceive' => $forceReceive,
         ];
 
         return view('pages.consultation.crafted-for-you', [

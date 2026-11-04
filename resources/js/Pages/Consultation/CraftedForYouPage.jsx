@@ -19,6 +19,7 @@ import ChooseYourMeals, {
     consultationSideSaladDeckForDay,
     isFixedChoiceComplete,
     normalizeConsultationMealId,
+    selectedMealsForSlotFromDecks,
     soupOfTheDayMeals,
     sumSelectedMacrosFromDisplayDecks,
 } from '../../Components/Consultation/ChooseYourMeals.jsx';
@@ -38,6 +39,7 @@ import { craftDayCaloriesForKey, craftDefaultsDessert, dailyMacroTargetsFromPlan
 import {
     resolveInitialConsultationRestoreDraft,
     saveConsultationDraft,
+    stashConsultationResumeDraft,
 } from '../../consultation/consultationDraft.js';
 import { consultationMeals as MOCK_MEALS } from '../../consultation/consultationMockMeals.js';
 import { isBalancedAntiInflammatoryProtocol } from '../../Components/Molecules/Onboarding/dietProtocolUtils.js';
@@ -115,9 +117,13 @@ const CRAFTS = [
  * } | null | undefined} initialEditDraft
  * @returns {ConsultationDraft | null}
  */
-function readInitialConsultationRestoreDraft(initialEditDraft) {
+function readInitialConsultationRestoreDraft(initialEditDraft, initialResumeDraft, forceResume = false) {
     try {
-        return resolveInitialConsultationRestoreDraft(initialEditDraft);
+        return resolveInitialConsultationRestoreDraft(
+            initialEditDraft,
+            initialResumeDraft,
+            forceResume,
+        );
     } catch {
         return null;
     }
@@ -143,6 +149,8 @@ function slotId(dayIdx, slotKey, index) {
  *   summaryHref?: string;
  *   deliveryUrl?: string;
  *   resumeChooseMeals?: boolean;
+ *   forceReceive?: boolean;
+ *   initialFulfillmentChoice?: 'diy' | 'partner_kitchen' | null;
  *   loginUrl?: string;
  *   signOutUrl?: string;
  *   isCustomerAccount?: boolean;
@@ -164,6 +172,7 @@ function slotId(dayIdx, slotKey, index) {
  *       categories?: Record<string, unknown[]>;
  *     }>;
  *   } | null;
+ *   initialResumeDraft?: import('../../consultation/consultationDraft.js').ConsultationDraft | null;
  *   dietProtocol?: string | null;
  *   sex?: string | null;
  *   activityLevel?: string | null;
@@ -203,6 +212,8 @@ export default function CraftedForYouPage({
     summaryHref,
     deliveryUrl = '/checkout/delivery',
     resumeChooseMeals = false,
+    forceReceive = false,
+    initialFulfillmentChoice = null,
     loginUrl,
     signOutUrl,
     csrfToken = '',
@@ -215,6 +226,7 @@ export default function CraftedForYouPage({
     disableAdaptedMenuFetch = false,
     embedInScrollParent = false,
     initialEditDraft = null,
+    initialResumeDraft = null,
     dietProtocol = null,
     sex = null,
     activityLevel = null,
@@ -225,13 +237,41 @@ export default function CraftedForYouPage({
     initialSelectedWeekdays = null,
 } = {}) {
     const initialRestoreDraft = useMemo(
-        () => readInitialConsultationRestoreDraft(initialEditDraft),
-        [initialEditDraft],
+        () =>
+            forceReceive
+                ? null
+                : readInitialConsultationRestoreDraft(
+                      initialEditDraft,
+                      initialResumeDraft,
+                      resumeChooseMeals,
+                  ),
+        [forceReceive, initialEditDraft, initialResumeDraft, resumeChooseMeals],
     );
 
-    const [screen, setScreen] = useState(() =>
-        typeof initialScreen === 'number' && initialScreen >= 1 ? initialScreen : 1,
-    );
+    const [screen, setScreen] = useState(() => {
+        if (typeof initialScreen === 'number' && initialScreen >= 1) {
+            return initialScreen;
+        }
+
+        // Home Choose your meals → Receive: start at craft when fulfillment already picked.
+        if (forceReceive) {
+            return initialFulfillmentChoice === 'diy' || initialFulfillmentChoice === 'partner_kitchen'
+                ? 2
+                : 1;
+        }
+
+        // Partner payment resume: open on first Choose your meals day immediately.
+        if (resumeChooseMeals && initialRestoreDraft?.weekDuration) {
+            return initialRestoreDraft.weekDuration !== 7 ? 5 : 4;
+        }
+
+        // Returning from payment without a restorable draft: skip Receive (already paid).
+        if (resumeChooseMeals) {
+            return 2;
+        }
+
+        return 1;
+    });
     const [craftKey, setCraftKey] = useState(
         () => initialCraftKey ?? initialRestoreDraft?.craftKey ?? null,
     );
@@ -256,6 +296,18 @@ export default function CraftedForYouPage({
 
     const [environmentYes, setEnvironmentYes] = useState(
         () => initialRestoreDraft?.environmentYes ?? false,
+    );
+    /** @type {['diy'|'partner_kitchen'|null, import('react').Dispatch<import('react').SetStateAction<'diy'|'partner_kitchen'|null>>]} */
+    const [fulfillmentChoice, setFulfillmentChoice] = useState(
+        () =>
+            initialFulfillmentChoice === 'diy' || initialFulfillmentChoice === 'partner_kitchen'
+                ? initialFulfillmentChoice
+                : initialRestoreDraft?.fulfillmentChoice === 'diy' ||
+                    initialRestoreDraft?.fulfillmentChoice === 'partner_kitchen'
+                  ? initialRestoreDraft.fulfillmentChoice
+                  : resumeChooseMeals
+                    ? /** @type {'partner_kitchen'} */ ('partner_kitchen')
+                    : null,
     );
     const [submitting, setSubmitting] = useState(false);
     const [submitError, setSubmitError] = useState(/** @type {string | null} */ (null));
@@ -341,6 +393,12 @@ export default function CraftedForYouPage({
     const displayedScheduleCraftKeyRef = useRef(/** @type {string | null} */ (null));
     /** @type {React.MutableRefObject<Record<string, string>>} */
     const lastAdaptedMenuFetchKeyByDayRef = useRef({});
+    /**
+     * Weekdays filled by the initial full-week schedule fetch that have not yet been
+     * opened (or day-locally re-adapted). Lets Next read slots from cache without a request.
+     * @type {React.MutableRefObject<Set<number>>}
+     */
+    const weekSeededDaysRef = useRef(new Set());
     /** Snapshot of weekday schedules for skip-fetch checks without stale closures. */
     const scheduledFullCraftByWeekdayRef = useRef(scheduledFullCraftByWeekday);
     scheduledFullCraftByWeekdayRef.current = scheduledFullCraftByWeekday;
@@ -384,6 +442,7 @@ export default function CraftedForYouPage({
             afternoonSoupOptInByDay,
             fullCraftSoupOptInByDay,
             environmentYes,
+            fulfillmentChoice,
         });
     }, [
         craftKey,
@@ -394,6 +453,7 @@ export default function CraftedForYouPage({
         afternoonSoupOptInByDay,
         fullCraftSoupOptInByDay,
         environmentYes,
+        fulfillmentChoice,
     ]);
 
     const catalogMeals = useMemo(() => liveMeals ?? MOCK_MEALS, [liveMeals]);
@@ -610,8 +670,15 @@ export default function CraftedForYouPage({
         setSubmitSuccess(false);
 
         try {
+            if (fulfillmentChoice !== 'diy' && fulfillmentChoice !== 'partner_kitchen') {
+                setSubmitError('Choose how you want to receive your meal plan before submitting.');
+                setSubmitting(false);
+                return;
+            }
+
             const payload = buildCraftPlanSubmissionPayload({
                 craftKey,
+                fulfillmentChoice,
                 weekDuration,
                 selectedDays: sortedSelectedDays,
                 selectedByDay,
@@ -640,12 +707,16 @@ export default function CraftedForYouPage({
     const usesManualDaySelection = weekDuration !== 7;
 
     const totalCurationDays = sortedSelectedDays.length;
-    // Screens: 1 craft → 2 duration → (3 choose days when not 7-day) → receive → curation…
-    const receiveScreen = usesManualDaySelection ? 4 : 3;
-    const curationStartScreen = receiveScreen + 1;
+    // Screens: 1 receive → 2 craft → 3 duration → (4 choose days when not 7-day) → curation…
+    const receiveScreen = 1;
+    const craftScreen = 2;
+    const durationScreen = 3;
+    const manualDaysScreen = 4;
+    const curationStartScreen = usesManualDaySelection ? 5 : 4;
     const finalScreen = curationStartScreen + totalCurationDays;
     const totalScreens =
         weekDuration !== null ? curationStartScreen + weekDuration : Math.max(finalScreen, screen);
+    const isPartnerFulfillment = fulfillmentChoice === 'partner_kitchen';
 
     const isCurationScreen = screen >= curationStartScreen && screen <= curationStartScreen + totalCurationDays - 1;
     const curationIndex = isCurationScreen ? screen - curationStartScreen : -1; // 0..N-1
@@ -658,42 +729,36 @@ export default function CraftedForYouPage({
         }
 
         if (craftKey === null || weekDuration === null || sortedSelectedDays.length === 0) {
+            setToast({
+                message: 'Pick your craft and days again, then continue to Choose your meals.',
+                visible: true,
+            });
             return;
         }
 
         const first = sortedSelectedDays[0] ?? null;
         setActiveDay(first);
         setScreen(curationStartScreen);
-
-        try {
-            const url = new URL(window.location.href);
-            if (url.searchParams.has('choose_meals')) {
-                url.searchParams.delete('choose_meals');
-                window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`);
-            }
-        } catch {
-            // Ignore URL cleanup failures.
-        }
     }, [resumeChooseMeals, craftKey, weekDuration, sortedSelectedDays, curationStartScreen]);
 
     const progressHeaderLabel = useMemo(() => {
         if (isCurationScreen && curationDay !== null) {
             return WEEKDAY_LONG[curationDay - 1] ?? '';
         }
-        if (screen === 1) {
-            return 'What’s Your Craft';
-        }
-        if (screen === 2) {
-            return 'Week duration';
-        }
-        if (screen === 3 && usesManualDaySelection) {
-            return 'Choose your days';
-        }
         if (screen === receiveScreen) {
             return 'Receive meal plan';
         }
+        if (screen === craftScreen) {
+            return 'What’s Your Craft';
+        }
+        if (screen === durationScreen) {
+            return 'Week duration';
+        }
+        if (screen === manualDaysScreen && usesManualDaySelection) {
+            return 'Choose your days';
+        }
         if (screen === finalScreen) {
-            return 'Submit';
+            return isPartnerFulfillment ? 'Submit' : 'Submit';
         }
 
         return `Step ${screen} of ${totalScreens}`;
@@ -703,7 +768,11 @@ export default function CraftedForYouPage({
         screen,
         usesManualDaySelection,
         receiveScreen,
+        craftScreen,
+        durationScreen,
+        manualDaysScreen,
         finalScreen,
+        isPartnerFulfillment,
         totalScreens,
     ]);
 
@@ -717,7 +786,6 @@ export default function CraftedForYouPage({
 
     const calorieDay = curationDay ?? effectiveActiveDay;
 
-    /** Admin preview: keep adapted menu in sync when tier/craft change before day curation. */
     const adaptedMenuDay = useMemo(() => {
         if (calorieDay) {
             return calorieDay;
@@ -727,12 +795,8 @@ export default function CraftedForYouPage({
             return sortedSelectedDays[0] ?? 1;
         }
 
-        if (isAdminPreview && craftKey) {
-            return sortedSelectedDays[0] ?? 1;
-        }
-
         return null;
-    }, [calorieDay, craftKey, weekDuration, sortedSelectedDays, isAdminPreview]);
+    }, [calorieDay, craftKey, weekDuration, sortedSelectedDays]);
 
     const isMenuPending = !disableAdaptedMenuFetch && liveMeals === null;
 
@@ -993,33 +1057,52 @@ export default function CraftedForYouPage({
         if (scheduleCacheIdentityRef.current !== cacheIdentity) {
             scheduleCacheIdentityRef.current = cacheIdentity;
             lastAdaptedMenuFetchKeyByDayRef.current = {};
+            weekSeededDaysRef.current = new Set();
             hasLoadedAdaptedMenuRef.current = false;
             wipeScheduleCacheOnNextSuccessRef.current = true;
         }
 
-        const dayAlreadyCached =
+        const dayHasSchedule =
             dayKey !== '' &&
-            lastAdaptedMenuFetchKeyByDayRef.current[dayKey] === adaptedMenuFetchKey &&
             (scheduledFullCraftByWeekdayRef.current[adaptedMenuDay] != null ||
                 scheduledFullCraftByWeekdayRef.current[dayKey] != null);
+
+        const dayAlreadyCached =
+            dayHasSchedule && lastAdaptedMenuFetchKeyByDayRef.current[dayKey] === adaptedMenuFetchKey;
+
+        // Full-week seed already populated this weekday — open it from cache (no seal / no wait).
+        const dayReadyFromWeekSeed =
+            dayHasSchedule &&
+            adaptedMenuDay != null &&
+            weekSeededDaysRef.current.has(adaptedMenuDay);
 
         if (dayAlreadyCached) {
             return undefined;
         }
 
+        if (dayReadyFromWeekSeed) {
+            weekSeededDaysRef.current.delete(adaptedMenuDay);
+            lastAdaptedMenuFetchKeyByDayRef.current[dayKey] = adaptedMenuFetchKey;
+            return undefined;
+        }
+
         let cancelled = false;
         const fetchGeneration = ++adaptedMenuFetchGenerationRef.current;
-        const showInitialLoading = !hasLoadedAdaptedMenuRef.current;
+        // First load (and craft/tier wipe) builds the full week so Next days already have slots.
+        const isFullWeekFetch = !hasLoadedAdaptedMenuRef.current;
 
         const timeoutId = window.setTimeout(() => {
-            if (showInitialLoading || isAdminPreview) {
+            if (isFullWeekFetch) {
                 setMenuLoading(true);
             }
             setMenuError(null);
 
             (async () => {
                 try {
-                    const payload = await fetchAdaptedMenu(adaptedMenuUrl, adaptedMenuFetchParams);
+                    const fetchParams = isFullWeekFetch
+                        ? { ...adaptedMenuFetchParams, dayOfWeek: undefined }
+                        : adaptedMenuFetchParams;
+                    const payload = await fetchAdaptedMenu(adaptedMenuUrl, fetchParams);
                     if (cancelled || fetchGeneration !== adaptedMenuFetchGenerationRef.current) {
                         return;
                     }
@@ -1062,8 +1145,31 @@ export default function CraftedForYouPage({
                         typeof payload.production_meal_plan_id === 'number' ? payload.production_meal_plan_id : null,
                     );
                     hasLoadedAdaptedMenuRef.current = true;
-                    if (dayKey !== '') {
+
+                    if (isFullWeekFetch) {
+                        // Mark every selected / returned weekday against this base schedule identity
+                        // so day navigation can read slots from cache immediately.
+                        const daysToCache = new Set(sortedSelectedDays);
+                        for (const key of Object.keys(incomingFullCraft)) {
+                            const dayNumber = Number(key);
+                            if (dayNumber >= 1 && dayNumber <= 7) {
+                                daysToCache.add(dayNumber);
+                            }
+                        }
+                        const seededDays = new Set();
+                        for (const day of daysToCache) {
+                            lastAdaptedMenuFetchKeyByDayRef.current[String(day)] = adaptedMenuFetchKey;
+                            // Keep the active first day on the normal adapt path (selection seeding).
+                            if (day !== adaptedMenuDay) {
+                                seededDays.add(day);
+                            }
+                        }
+                        weekSeededDaysRef.current = seededDays;
+                    } else if (dayKey !== '') {
                         lastAdaptedMenuFetchKeyByDayRef.current[dayKey] = adaptedMenuFetchKey;
+                        if (adaptedMenuDay != null) {
+                            weekSeededDaysRef.current.delete(adaptedMenuDay);
+                        }
                     }
                 } catch (error) {
                     if (!cancelled && fetchGeneration === adaptedMenuFetchGenerationRef.current) {
@@ -1087,9 +1193,9 @@ export default function CraftedForYouPage({
         disableAdaptedMenuFetch,
         craftKey,
         adaptedMenuFetchParams,
-        isAdminPreview,
         adaptedMenuDay,
         mealLibraryRevision,
+        sortedSelectedDays,
     ]);
 
     useEffect(() => {
@@ -1404,6 +1510,60 @@ export default function CraftedForYouPage({
     const canGoNextFromDuration = weekDuration !== null;
     const canGoNextFromManualDays = weekDuration !== null && sortedSelectedDays.length === weekDuration;
 
+    /**
+     * @param {number[]} [daysOverride] Pass explicit days when React state may still be stale (e.g. just set 7-day week).
+     */
+    async function continueAfterPlanSetup(daysOverride) {
+        const daysForContinue =
+            Array.isArray(daysOverride) && daysOverride.length > 0 ? daysOverride : selectedDays;
+
+        // After payment, resume skips Partner checkout and opens Choose your meals.
+        if (fulfillmentChoice === 'partner_kitchen' && !resumeChooseMeals) {
+            if (!craftKey || weekDuration === null || daysForContinue.length === 0) {
+                setToast({
+                    message: 'Finish craft and week setup before continuing to checkout.',
+                    visible: true,
+                });
+                return;
+            }
+
+            const draftPayload = {
+                craftKey,
+                weekDuration,
+                selectedDays: daysForContinue,
+                selectedByDay,
+                businessSideChoiceByDay,
+                afternoonSoupOptInByDay,
+                fullCraftSoupOptInByDay,
+                environmentYes,
+                fulfillmentChoice: /** @type {'partner_kitchen'} */ ('partner_kitchen'),
+            };
+
+            saveConsultationDraft(draftPayload);
+
+            try {
+                await stashConsultationResumeDraft(draftPayload, csrfToken);
+            } catch (error) {
+                setToast({
+                    message:
+                        error instanceof Error
+                            ? error.message
+                            : 'Could not save your progress before checkout. Try again.',
+                    visible: true,
+                });
+                return;
+            }
+
+            const separator = deliveryUrl.includes('?') ? '&' : '?';
+            window.location.assign(`${deliveryUrl}${separator}resume=choose_meals`);
+            return;
+        }
+
+        const first = daysForContinue[0] ?? null;
+        setActiveDay(first);
+        setScreen(curationStartScreen);
+    }
+
     /** Weekly crafts share the default + SEE OTHER OPTIONS day view (no carousel). */
     const usesWeeklyCategoryLayout = useMemo(
         () => Boolean(craft && ['full', 'afternoon', 'day', 'intermittent', 'business'].includes(craft.key)),
@@ -1451,6 +1611,76 @@ export default function CraftedForYouPage({
         scheduledSoupForDay,
         dietProtocol,
         categoryMaxSelections.breakfasts,
+    ]);
+
+    /**
+     * First curation day keeps the looping seal until primary slots resolve on-screen —
+     * schedule fetched, selections seeded, and deck cards available.
+     */
+    const firstCurationDayMealsReady = useMemo(() => {
+        if (disableAdaptedMenuFetch || menuError) {
+            return true;
+        }
+
+        if (liveMeals === null || menuLoading) {
+            return false;
+        }
+
+        if (!curationDay) {
+            return false;
+        }
+
+        if (!usesWeeklyCategoryLayout) {
+            return true;
+        }
+
+        const assigned = scheduledFullCraftCategoryMealsForDay(scheduledFullCraftByWeekday, curationDay);
+
+        if (assigned == null || !weeklyDisplayDecks) {
+            return false;
+        }
+
+        const selections = selectedByDay[curationDay];
+        const needsBreakfast = (categoryMaxSelections.breakfasts ?? 0) > 0;
+        const scheduleHasBreakfast = (assigned.breakfasts?.length ?? 0) > 0;
+        const needsMains = (categoryMaxSelections.meals ?? 0) > 0;
+        const scheduleHasMains = (assigned.meals?.length ?? 0) > 0;
+
+        if (needsBreakfast && scheduleHasBreakfast) {
+            const resolvedBreakfasts = selectedMealsForSlotFromDecks(
+                selections?.breakfasts ?? [],
+                weeklyDisplayDecks.breakfasts,
+                weeklyDisplayDecks,
+            );
+            if (resolvedBreakfasts.length === 0) {
+                return false;
+            }
+        }
+
+        if (needsMains && scheduleHasMains) {
+            const resolvedMains = selectedMealsForSlotFromDecks(
+                selections?.meals ?? [],
+                weeklyDisplayDecks.meals,
+                weeklyDisplayDecks,
+            );
+            if (resolvedMains.length === 0) {
+                return false;
+            }
+        }
+
+        return true;
+    }, [
+        disableAdaptedMenuFetch,
+        menuError,
+        liveMeals,
+        menuLoading,
+        curationDay,
+        usesWeeklyCategoryLayout,
+        scheduledFullCraftByWeekday,
+        selectedByDay,
+        weeklyDisplayDecks,
+        categoryMaxSelections.breakfasts,
+        categoryMaxSelections.meals,
     ]);
 
     const daySelectionsForCalorieDay = useMemo(() => {
@@ -1716,8 +1946,39 @@ export default function CraftedForYouPage({
                     </p>
                 ) : null}
 
-                {/* Screen 1 — What’s Your Craft */}
-                {screen === 1 ? (
+                {/* Screen 1 — Receive meal plan (before craft) */}
+                {screen === receiveScreen ? (
+                    <section className="rounded-[12px] border border-gray-200 bg-white p-6 shadow-sm">
+                        <h2 className="font-montserrat text-[16px] font-bold tracking-tight text-[#262A22]">
+                            How would you like to receive your meal plan?
+                        </h2>
+                        <p className="mt-1 font-body text-sm text-[#555555]">
+                            Choose between fresh daily preparation delivered to your door or self-prepared recipes at
+                            home.
+                        </p>
+
+                        <FulfillmentOptionCards
+                            className="mt-6"
+                            deliveryUrl={deliveryUrl}
+                            onContinue={(choice) => {
+                                setFulfillmentChoice(choice);
+                                setScreen(craftScreen);
+                            }}
+                        />
+
+                        <div className={mobileNavBarClass}>
+                            <Button
+                                label="BACK"
+                                variant="outline"
+                                onClick={goBackFromPlanSetup}
+                                className="px-10"
+                            />
+                        </div>
+                    </section>
+                ) : null}
+
+                {/* Screen 2 — What’s Your Craft */}
+                {screen === craftScreen ? (
                     <section className="rounded-[12px] border border-gray-200 bg-white p-6 shadow-sm">
                         <h2 className="font-montserrat text-[16px] font-bold tracking-tight text-[#262A22]">
                             What’s Your Craft
@@ -1758,20 +2019,25 @@ export default function CraftedForYouPage({
                         </div>
 
                         <div className={mobileNavBarClass}>
-                            <Button label="BACK" variant="outline" onClick={goBackFromPlanSetup} className="px-10" />
+                            <Button
+                                label="BACK"
+                                variant="outline"
+                                onClick={() => setScreen(receiveScreen)}
+                                className="px-10"
+                            />
                             <Button
                                 label="NEXT"
                                 variant="primary"
                                 disabled={!canGoNextFromCraft}
-                                onClick={() => setScreen(2)}
+                                onClick={() => setScreen(durationScreen)}
                                 className="px-10"
                             />
                         </div>
                     </section>
                 ) : null}
 
-                {/* Screen 2 — Week duration */}
-                {screen === 2 ? (
+                {/* Screen 3 — Week duration */}
+                {screen === durationScreen ? (
                     <section className="rounded-[12px] border border-gray-200 bg-white p-6 shadow-sm">
                         <h2 className="font-montserrat text-[16px] font-bold tracking-tight text-[#262A22]">
                             Week duration
@@ -1799,20 +2065,26 @@ export default function CraftedForYouPage({
                         </div>
 
                         <div className={mobileNavBarClass}>
-                            <Button label="BACK" variant="outline" onClick={() => setScreen(1)} className="px-10" />
+                            <Button
+                                label="BACK"
+                                variant="outline"
+                                onClick={() => setScreen(craftScreen)}
+                                className="px-10"
+                            />
                             <Button
                                 label="NEXT"
                                 variant="primary"
                                 disabled={!canGoNextFromDuration}
                                 onClick={() => {
                                     if (weekDuration === 7) {
-                                        setSelectedDays([1, 2, 3, 4, 5, 6, 7]);
+                                        const allDays = [1, 2, 3, 4, 5, 6, 7];
+                                        setSelectedDays(allDays);
                                         setActiveDay(1);
-                                        setScreen(receiveScreen);
+                                        continueAfterPlanSetup(allDays);
                                         return;
                                     }
 
-                                    setScreen(3);
+                                    setScreen(manualDaysScreen);
                                 }}
                                 className="px-10"
                             />
@@ -1820,8 +2092,8 @@ export default function CraftedForYouPage({
                     </section>
                 ) : null}
 
-                {/* Screen 3 — Manual Day Selection (5/6-day plans) */}
-                {screen === 3 && usesManualDaySelection ? (
+                {/* Screen 4 — Manual Day Selection (5/6-day plans) */}
+                {screen === manualDaysScreen && usesManualDaySelection ? (
                     <section className="rounded-[12px] border border-gray-200 bg-white p-6 shadow-sm">
                         <h2 className="font-montserrat text-[16px] font-bold tracking-tight text-[#262A22]">
                             Manual Day Selection
@@ -1854,7 +2126,12 @@ export default function CraftedForYouPage({
                         </div>
 
                         <div className={mobileNavBarClass}>
-                            <Button label="BACK" variant="outline" onClick={() => setScreen(2)} className="px-10" />
+                            <Button
+                                label="BACK"
+                                variant="outline"
+                                onClick={() => setScreen(durationScreen)}
+                                className="px-10"
+                            />
                             <Button
                                 label="NEXT"
                                 variant="primary"
@@ -1862,44 +2139,8 @@ export default function CraftedForYouPage({
                                 onClick={() => {
                                     const first = sortedSelectedDays[0] ?? null;
                                     setActiveDay(first);
-                                    setScreen(receiveScreen);
+                                    continueAfterPlanSetup(sortedSelectedDays);
                                 }}
-                                className="px-10"
-                            />
-                        </div>
-                    </section>
-                ) : null}
-
-                {/* Receive meal plan — after days are chosen, before daily curation */}
-                {screen === receiveScreen ? (
-                    <section className="rounded-[12px] border border-gray-200 bg-white p-6 shadow-sm">
-                        <h2 className="font-montserrat text-[16px] font-bold tracking-tight text-[#262A22]">
-                            How would you like to receive your meal plan?
-                        </h2>
-                        <p className="mt-1 font-body text-sm text-[#555555]">
-                            Choose between fresh daily preparation delivered to your door or self-prepared recipes at
-                            home.
-                        </p>
-
-                        <FulfillmentOptionCards
-                            className="mt-6"
-                            deliveryUrl={deliveryUrl}
-                            onContinue={(choice) => {
-                                if (choice !== 'diy') {
-                                    return;
-                                }
-
-                                const first = sortedSelectedDays[0] ?? null;
-                                setActiveDay(first);
-                                setScreen(curationStartScreen);
-                            }}
-                        />
-
-                        <div className={mobileNavBarClass}>
-                            <Button
-                                label="BACK"
-                                variant="outline"
-                                onClick={() => setScreen(usesManualDaySelection ? 3 : 2)}
                                 className="px-10"
                             />
                         </div>
@@ -2053,7 +2294,9 @@ export default function CraftedForYouPage({
                                 deckScopePrefix={usesWeeklyCategoryLayout ? String(curationDay) : ''}
                                 onFooterBack={() => {
                                     if (screen === curationStartScreen) {
-                                        setScreen(receiveScreen);
+                                        setScreen(
+                                            usesManualDaySelection ? manualDaysScreen : durationScreen,
+                                        );
                                         return;
                                     }
                                     setScreen(screen - 1);
@@ -2068,6 +2311,7 @@ export default function CraftedForYouPage({
                                 dietProtocol={dietProtocol}
                                 protocolSelectedLayout
                                 isMenuPending={isMenuPending}
+                                showSealLoading={curationIndex === 0 && !firstCurationDayMealsReady}
                             >
                                 {usesWeeklyCategoryLayout ? null : (
                                 <AnimatePresence mode="wait" initial={false}>
@@ -2270,35 +2514,41 @@ export default function CraftedForYouPage({
                     </>
                 ) : null}
 
-                {/* Final Screen — Environmental Check & Submit */}
+                {/* Final Screen — Partner: Environmental Check & Submit; DIY: Submit only */}
                 {screen === finalScreen ? (
                     <section className="rounded-[12px] border border-gray-200 bg-white p-6 shadow-sm">
                         <h2 className="font-montserrat text-[16px] font-bold tracking-tight text-[#262A22]">
-                            Environmental Check &amp; Submit
+                            {isPartnerFulfillment ? 'Environmental Check & Submit' : 'Submit your meal plan'}
                         </h2>
                         <p className="mt-1 font-body text-sm text-[#555555]">
-                            One last meaningful choice before the big finish.
+                            {isPartnerFulfillment
+                                ? 'One last meaningful choice before the big finish.'
+                                : 'Save your selections to open your cook-it-yourself plan.'}
                         </p>
 
-                        <div className="mt-6 rounded-[12px] border border-gray-200 bg-[#F8F9F6] p-5">
-                            <p className="font-montserrat text-sm font-bold text-[#262A22]">
-                                Would You Like To Help Saving The Environment?
-                            </p>
-                            <div className="mt-3 flex flex-wrap items-center gap-3">
-                                <button
-                                    type="button"
-                                    className="inline-flex items-center gap-3"
-                                    onClick={() => setEnvironmentYes((v) => !v)}
-                                    aria-pressed={environmentYes}
-                                >
-                                    <SquareCheckbox checked={environmentYes} presentational />
-                                    <span className="font-montserrat text-sm font-bold text-[#262A22]">YES</span>
-                                </button>
-                                {environmentYes ? (
-                                    <span className="font-montserrat text-sm font-bold text-[#C44F5D]">NO CUTLERY FOR ME</span>
-                                ) : null}
+                        {isPartnerFulfillment ? (
+                            <div className="mt-6 rounded-[12px] border border-gray-200 bg-[#F8F9F6] p-5">
+                                <p className="font-montserrat text-sm font-bold text-[#262A22]">
+                                    Would You Like To Help Saving The Environment?
+                                </p>
+                                <div className="mt-3 flex flex-wrap items-center gap-3">
+                                    <button
+                                        type="button"
+                                        className="inline-flex items-center gap-3"
+                                        onClick={() => setEnvironmentYes((v) => !v)}
+                                        aria-pressed={environmentYes}
+                                    >
+                                        <SquareCheckbox checked={environmentYes} presentational />
+                                        <span className="font-montserrat text-sm font-bold text-[#262A22]">YES</span>
+                                    </button>
+                                    {environmentYes ? (
+                                        <span className="font-montserrat text-sm font-bold text-[#C44F5D]">
+                                            NO CUTLERY FOR ME
+                                        </span>
+                                    ) : null}
+                                </div>
                             </div>
-                        </div>
+                        ) : null}
 
                         <div className={mobileNavBarClass}>
                             <Button
@@ -2434,6 +2684,8 @@ export default function CraftedForYouPage({
                 mealDetailModal={mealDetailModal}
                 loading={detailLoading}
                 onClose={closeMealDetail}
+                hideInstructions={isPartnerFulfillment}
+                inlineIngredients={isPartnerFulfillment}
             />
         </div>
     );

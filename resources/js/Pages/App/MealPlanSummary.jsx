@@ -25,6 +25,7 @@ const slideTransition = { type: 'spring', stiffness: 260, damping: 30, mass: 0.8
  * @typedef {{
  *   craftKey?: string;
  *   craftTitle?: string;
+ *   fulfillmentChoice?: 'diy' | 'partner_kitchen' | null;
  *   weekDuration?: number;
  *   planTierCalories?: number;
  *   dietProtocol?: string | null;
@@ -66,7 +67,6 @@ function resolveStartingStep(raw, hasMultipleDays) {
  * @param {string} [props.consultationUrl]
  * @param {string} [props.consultationEditUrl]
  * @param {string} [props.homeUrl]
- * @param {string} [props.fulfillmentUrl]
  * @param {string | null} [props.sex]
  * @param {string | null} [props.activityLevel]
  * @param {number | null} [props.dailyCalorieTarget]
@@ -74,6 +74,7 @@ function resolveStartingStep(raw, hasMultipleDays) {
  * @param {DaySummaryTabId} [props.initialContentTab] Storybook / deep-link: starting topic tab.
  * @param {string} [props.initialMobileStep] Storybook / deep-link: starting screen (legacy prop name).
  * @param {string} [props.initialStep] Storybook / deep-link: starting screen.
+ * @param {boolean} [props.preview] Marketing embed — same UI, no navigation or page scroll.
  */
 export function MealPlanSummaryInner({
     customerName = '',
@@ -84,7 +85,6 @@ export function MealPlanSummaryInner({
     profileUrl = '/app/profile',
     shopUrl = '/app/shop',
     mealPlanSummaryUrl = '/app/meal-plan',
-    fulfillmentUrl = '/checkout',
     sex = null,
     activityLevel = null,
     dailyCalorieTarget = null,
@@ -92,9 +92,11 @@ export function MealPlanSummaryInner({
     initialContentTab = 'meals',
     initialMobileStep,
     initialStep,
+    preview = false,
 }) {
     const days = craftPlan.days ?? [];
     const hasMultipleDays = days.length > 1;
+    const isDiyFulfillment = craftPlan.fulfillmentChoice === 'diy';
     const startingStep = resolveStartingStep(initialStep ?? initialMobileStep, hasMultipleDays);
 
     const [activeDay, setActiveDay] = useState(() => days[0]?.dayNumber ?? 1);
@@ -103,10 +105,11 @@ export function MealPlanSummaryInner({
     /** @type {[SummaryStep, import('react').Dispatch<import('react').SetStateAction<SummaryStep>>]} */
     const [step, setStep] = useState(startingStep);
 
+    const mealModalEnabled = enableMealDetailModal && !preview;
     const { mealDetailModal, detailLoading, openMealDetail, closeMealDetail } = useMealDetailModal();
 
     useEffect(() => {
-        if (!enableMealDetailModal || typeof router.on !== 'function') {
+        if (!mealModalEnabled || typeof router.on !== 'function') {
             return undefined;
         }
 
@@ -118,7 +121,7 @@ export function MealPlanSummaryInner({
             removeListener?.();
             closeMealDetail();
         };
-    }, [closeMealDetail, enableMealDetailModal]);
+    }, [closeMealDetail, mealModalEnabled]);
 
     const activeDayData = useMemo(
         () => days.find((day) => day.dayNumber === activeDay) ?? days[0] ?? null,
@@ -151,6 +154,10 @@ export function MealPlanSummaryInner({
         : (activeDayData?.label ?? 'Day');
 
     const handleEditSelections = useCallback(() => {
+        if (preview) {
+            return;
+        }
+
         const editUrl =
             typeof consultationEditUrl === 'string' && consultationEditUrl.trim() !== ''
                 ? consultationEditUrl
@@ -162,17 +169,7 @@ export function MealPlanSummaryInner({
         }
 
         saveSummaryCraftPlanAndNavigateToEdit(consultationUrl, craftPlan);
-    }, [consultationEditUrl, consultationUrl, craftPlan]);
-
-    const handleNext = useCallback(() => {
-        const target =
-            typeof fulfillmentUrl === 'string' && fulfillmentUrl.trim() !== ''
-                ? fulfillmentUrl
-                : '/checkout';
-        if (typeof router.visit === 'function') {
-            router.visit(target);
-        }
-    }, [fulfillmentUrl]);
+    }, [consultationEditUrl, consultationUrl, craftPlan, preview]);
 
     const handleSelectDay = useCallback((dayNumber) => {
         setActiveDay(dayNumber);
@@ -181,8 +178,12 @@ export function MealPlanSummaryInner({
     }, []);
 
     useLayoutEffect(() => {
+        if (preview) {
+            return;
+        }
+
         window.scrollTo(0, 0);
-    }, [activeDay, contentTab, step]);
+    }, [activeDay, contentTab, step, preview]);
 
     const pageIntro = (
         <div className="mb-3 min-w-0">
@@ -212,22 +213,16 @@ export function MealPlanSummaryInner({
             activityLevel={activityLevel}
             dailyCalories={dailyCalorieTarget ?? craftPlan.planTierCalories ?? 0}
             dietProtocol={craftPlan.dietProtocol ?? null}
-            onOpenMeal={enableMealDetailModal ? openMealDetail : undefined}
-            onEditMeals={handleEditSelections}
+            onOpenMeal={mealModalEnabled ? openMealDetail : undefined}
+            onEditMeals={preview ? undefined : handleEditSelections}
             fullMealDetails
         />
-    );
-
-    const nextFooter = (
-        <div className="mt-3 flex flex-wrap justify-center gap-3 border-t border-gray-200 pt-4">
-            <Button label="Choose a delivery option" variant="primary" onClick={handleNext} className="px-10" />
-        </div>
     );
 
     const daysScreen = (
         <>
             {pageIntro}
-            <p className="mb-3 font-body text-sm text-[#555555]">Pick a delivery day to open your meals.</p>
+            <p className="mb-3 font-body text-sm text-[#555555]">Pick a day to open your meals.</p>
             <div className="mx-auto flex w-full max-w-xl flex-col gap-2" role="list" aria-label="Plan days">
                 {days.map((day) => {
                     const label = day.dateLabel ? `${day.label} ${day.dateLabel}` : day.label;
@@ -243,7 +238,6 @@ export function MealPlanSummaryInner({
                     );
                 })}
             </div>
-            {nextFooter}
         </>
     );
 
@@ -303,17 +297,6 @@ export function MealPlanSummaryInner({
             </div>
 
             <div className="pb-6">{summaryPanel}</div>
-            {!hasMultipleDays ? nextFooter : null}
-            {hasMultipleDays ? (
-                <div className="mt-1 flex flex-wrap justify-center gap-3 border-t border-gray-200 pt-4">
-                    <Button
-                        label="Choose a delivery option"
-                        variant="primary"
-                        onClick={handleNext}
-                        className="px-10"
-                    />
-                </div>
-            ) : null}
         </>
     );
 
@@ -322,6 +305,7 @@ export function MealPlanSummaryInner({
     return (
         <CustomerInertiaShell
             customerName={customerName}
+            embedded={preview}
             footerNav={
                 <CustomerAppBottomNav
                     activeTab="meals"
@@ -329,6 +313,7 @@ export function MealPlanSummaryInner({
                     profileUrl={profileUrl}
                     shopUrl={shopUrl}
                     mealsUrl={mealPlanSummaryUrl}
+                    navigationDisabled={preview}
                 />
             }
         >
@@ -348,12 +333,14 @@ export function MealPlanSummaryInner({
                 </div>
             </div>
 
-            {enableMealDetailModal ? (
+            {mealModalEnabled ? (
                 <MealDetailModalPortal
                     mealDetailModal={mealDetailModal}
                     loading={detailLoading}
                     onClose={closeMealDetail}
                     hideInstructions
+                    enableGetRecipe={isDiyFulfillment}
+                    inlineIngredients={!isDiyFulfillment}
                 />
             ) : null}
         </CustomerInertiaShell>
@@ -370,7 +357,6 @@ export function MealPlanSummaryInner({
  * @param {string} [props.profileUrl]
  * @param {string} [props.shopUrl]
  * @param {string} [props.mealPlanSummaryUrl]
- * @param {string} [props.fulfillmentUrl]
  * @param {string | null} [props.sex]
  * @param {string | null} [props.activityLevel]
  * @param {number | null} [props.dailyCalorieTarget]
@@ -384,7 +370,6 @@ export default function MealPlanSummary({
     profileUrl = '/app/profile',
     shopUrl = '/app/shop',
     mealPlanSummaryUrl = '/app/meal-plan',
-    fulfillmentUrl = '/checkout',
     sex = null,
     activityLevel = null,
     dailyCalorieTarget = null,
@@ -399,7 +384,6 @@ export default function MealPlanSummary({
             profileUrl={profileUrl}
             shopUrl={shopUrl}
             mealPlanSummaryUrl={mealPlanSummaryUrl}
-            fulfillmentUrl={fulfillmentUrl}
             sex={sex}
             activityLevel={activityLevel}
             dailyCalorieTarget={dailyCalorieTarget}

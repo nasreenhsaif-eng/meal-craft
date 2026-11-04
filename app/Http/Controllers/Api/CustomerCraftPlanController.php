@@ -23,12 +23,15 @@ class CustomerCraftPlanController extends Controller
 
         $plan = CustomerCraftPlanService::storeSubmission($profile, $request->validated());
 
+        ConsultationResumeDraftController::forget($request->session());
+
         return response()->json([
             'message' => 'Craft plan saved.',
             'summary_url' => route('app.meal-plan', absolute: false),
             'plan' => [
                 'id' => $plan->id,
                 'craft_key' => $plan->craft_key,
+                'fulfillment_choice' => $plan->fulfillment_choice,
                 'week_duration' => $plan->week_duration,
                 'selected_weekdays' => $plan->selected_weekdays,
                 'submitted_at' => $plan->submitted_at?->toIso8601String(),

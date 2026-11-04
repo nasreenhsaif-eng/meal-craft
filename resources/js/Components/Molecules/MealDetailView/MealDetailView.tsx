@@ -83,6 +83,8 @@ export type MealDetailViewProps = {
     embedded?: boolean;
     /** Hide cooking instructions (e.g. customer meal-plan summary — DIY covers steps later). */
     hideInstructions?: boolean;
+    /** Partner Kitchen: show all ingredients as one comma-separated line. */
+    inlineIngredients?: boolean;
     onBaseRecipeClick?: (item: MealIngredientItem) => void;
 };
 
@@ -191,6 +193,7 @@ export default function MealDetailView({
     hideImage = false,
     embedded = false,
     hideInstructions = false,
+    inlineIngredients = false,
     onBaseRecipeClick,
 }: MealDetailViewProps): ReactElement {
     const [mediaFailed, setMediaFailed] = useState(false);
@@ -340,6 +343,20 @@ export default function MealDetailView({
                                     <NutrientBadge key={badge} type={badge} />
                                 ))}
                             </div>
+                            <button
+                                type="button"
+                                className="font-montserrat text-sm font-semibold text-[#5A6B44] underline underline-offset-2 hover:text-[#4A5A38]"
+                                onClick={() => {
+                                    const target = document.getElementById(
+                                        embedded
+                                            ? 'meal-detail-nutrition-heading-mobile'
+                                            : 'meal-detail-nutrition-heading',
+                                    );
+                                    target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                }}
+                            >
+                                See full nutritional summary
+                            </button>
                         </div>
                     ) : null}
 
@@ -365,7 +382,19 @@ export default function MealDetailView({
                                 {String(ingredientsPrepNote).trim()}
                             </p>
                         ) : null}
-                        {hasIngredientSections ? (
+                        {inlineIngredients ? (
+                            <p className="font-montserrat text-sm font-medium leading-relaxed text-[#374151] md:text-[15px]">
+                                {(hasIngredientSections
+                                    ? ingredientSections.flatMap((section) =>
+                                          section.items.map((item) => normalizeIngredientItem(item).line),
+                                      )
+                                    : flatIngredientItems.map((item) => item.line)
+                                )
+                                    .map((line) => String(line ?? '').trim())
+                                    .filter((line) => line !== '')
+                                    .join(', ') || 'No ingredients listed.'}
+                            </p>
+                        ) : hasIngredientSections ? (
                             <div className="space-y-6">
                                 {ingredientSections.map((section) => (
                                     <div key={section.title} className="space-y-3">
