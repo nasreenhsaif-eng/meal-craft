@@ -6,6 +6,8 @@ import { CyclePhaseTag, type CyclePhase } from './CyclePhaseTag';
 import { resolveMealImageUrl } from '../../../meal-library/resolveMealImageUrl.ts';
 import { mealInstructionStepsForDisplay } from '../../../meal-library/mealInstructionsDisplay.ts';
 import { G6PD_HIGHLIGHT_BADGE } from '../../../meal-library/mealSafetyAndSickle.ts';
+import { ShoppingIngredientCheckboxRow } from '../Customer/ShoppingIngredientChecklist.jsx';
+import { shoppingRowFromDisplayLine } from '../../../customer/customerShoppingList.js';
 
 export type { CyclePhase };
 export { CyclePhaseTag };
@@ -85,6 +87,12 @@ export type MealDetailViewProps = {
     hideInstructions?: boolean;
     /** Partner Kitchen: show all ingredients as one comma-separated line. */
     inlineIngredients?: boolean;
+    /** DIY: each ingredient line is a checkbox that adds it to the shopping list. */
+    shoppingCheckedKeys?: ReadonlySet<string>;
+    onToggleShoppingIngredient?: (
+        row: { key: string; name: string; unit: string; amount: number; ingredientId: number },
+        shouldAdd: boolean,
+    ) => void;
     onBaseRecipeClick?: (item: MealIngredientItem) => void;
 };
 
@@ -194,6 +202,8 @@ export default function MealDetailView({
     embedded = false,
     hideInstructions = false,
     inlineIngredients = false,
+    shoppingCheckedKeys,
+    onToggleShoppingIngredient,
     onBaseRecipeClick,
 }: MealDetailViewProps): ReactElement {
     const [mediaFailed, setMediaFailed] = useState(false);
@@ -224,7 +234,31 @@ export default function MealDetailView({
     const instructionSteps = mealInstructionStepsForDisplay(instructions);
     const scBadges = sickleCellHighlights.filter((b) => b !== G6PD_HIGHLIGHT_BADGE);
 
+    const shoppingEnabled = typeof onToggleShoppingIngredient === 'function' && !inlineIngredients;
     const hasIngredientSections = Array.isArray(ingredientSections) && ingredientSections.length > 0;
+
+    const renderIngredientContent = (item: string | MealIngredientItem, idSuffix: string) => {
+        const normalized = normalizeIngredientItem(item);
+
+        if (!shoppingEnabled || !onToggleShoppingIngredient) {
+            return <MealIngredientLine item={item} onBaseRecipeClick={onBaseRecipeClick} />;
+        }
+
+        const row = shoppingRowFromDisplayLine(normalized.line, normalized.ingredientId);
+
+        if (!row) {
+            return <MealIngredientLine item={item} onBaseRecipeClick={onBaseRecipeClick} />;
+        }
+
+        return (
+            <ShoppingIngredientCheckboxRow
+                row={{ ...row, label: normalized.line }}
+                checked={shoppingCheckedKeys?.has(row.key) ?? false}
+                onToggle={onToggleShoppingIngredient}
+                checkboxId={`meal-shop-${idSuffix}-${row.key}`}
+            />
+        );
+    };
     const hasStructuredIngredientItems = Array.isArray(ingredientItems) && ingredientItems.length > 0;
     const flatIngredientItems = hasStructuredIngredientItems
         ? ingredientItems
@@ -401,19 +435,16 @@ export default function MealDetailView({
                                         <h3 className="font-montserrat text-sm font-bold uppercase tracking-[0.12em] text-[#5A6B44]">
                                             {section.title}
                                         </h3>
-                                        <ul className="space-y-3 font-montserrat text-sm font-medium leading-relaxed text-[#374151] md:text-[15px]">
+                                        <ul className="space-y-1 font-montserrat text-sm font-medium leading-relaxed text-[#374151] md:text-[15px]">
                                             {section.items.map((item, idx) => {
                                                 const normalized = normalizeIngredientItem(item);
 
                                                 return (
-                                                    <li
-                                                        key={`${section.title}-${idx}-${normalized.line}`}
-                                                        className="border-b border-gray-100 pb-3 last:border-b-0 last:pb-0"
-                                                    >
-                                                        <MealIngredientLine
-                                                            item={item}
-                                                            onBaseRecipeClick={onBaseRecipeClick}
-                                                        />
+                                                    <li key={`${section.title}-${idx}-${normalized.line}`}>
+                                                        {renderIngredientContent(
+                                                            item,
+                                                            `${section.title}-${idx}`,
+                                                        )}
                                                     </li>
                                                 );
                                             })}
@@ -422,17 +453,19 @@ export default function MealDetailView({
                                 ))}
                             </div>
                         ) : (
-                            <ul className="space-y-3 font-montserrat text-sm font-medium leading-relaxed text-[#374151] md:text-[15px]">
+                            <ul className="space-y-1 font-montserrat text-sm font-medium leading-relaxed text-[#374151] md:text-[15px]">
                                 {flatIngredientItems.map((item, idx) => (
-                                    <li
-                                        key={`${idx}-${item.line}`}
-                                        className="border-b border-gray-100 pb-3 last:border-b-0 last:pb-0"
-                                    >
-                                        <MealIngredientLine item={item} onBaseRecipeClick={onBaseRecipeClick} />
+                                    <li key={`${idx}-${item.line}`}>
+                                        {renderIngredientContent(item, String(idx))}
                                     </li>
                                 ))}
                             </ul>
                         )}
+                        {shoppingEnabled ? (
+                            <p className="font-body text-xs text-[#6B7280]">
+                                Check an ingredient to add it to your shopping list in My Tools.
+                            </p>
+                        ) : null}
                         {!hideInstructions && String(cookingYieldNote ?? '').trim() !== '' ? (
                             <p className="font-montserrat text-sm font-medium leading-relaxed text-[#5A6B44] md:text-[15px]">
                                 {String(cookingYieldNote).trim()}

@@ -146,7 +146,7 @@ export default {
         docs: {
             description: {
                 component:
-                    'Customer meal-plan summary at `/app/meal-plan`. Pick a day, then scroll meal details. DIY shows Get recipe; Partner Kitchen shows ingredients only. Compact pills switch Meals / Macros / Micros / Allergy / Sickle.',
+                    'Customer meal-plan summary at `/app/meal-plan`. Pick a day, then scroll meal details. DIY lists ingredients with shopping checkboxes and Show recipe; Partner Kitchen shows ingredients only. Compact pills switch Meals / Macros / Micros / Allergy / Sickle.',
             },
         },
     },

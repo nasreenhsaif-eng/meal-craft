@@ -2,8 +2,8 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'reac
 import { usePage } from '@inertiajs/react';
 import Button from '../../Components/Atoms/Button.jsx';
 import OnboardingOptionButton from '../../Components/Atoms/Button/OnboardingOptionButton.jsx';
-import SquareCheckbox from '../../Components/Atoms/Icons/SquareCheckbox.jsx';
 import { PLAN_MACRO_CATEGORY_ROWS } from '../../Components/Consultation/ChooseYourMeals.jsx';
+import ShoppingIngredientChecklist from '../../Components/Molecules/Customer/ShoppingIngredientChecklist.jsx';
 import {
     DAY_SUMMARY_TABS,
     DayAllergySafetyTabPanel,
@@ -26,11 +26,11 @@ import {
     writeCustomerFavourites,
 } from '../../customer/customerFavourites.js';
 import {
-    formatShoppingAmount,
     mergeShoppingListItems,
     readCustomerShoppingList,
     removeShoppingListKeys,
     shoppingIngredientsForMeal,
+    shoppingRowsFromDetailView,
     writeCustomerShoppingList,
 } from '../../customer/customerShoppingList.js';
 import { resolveInertiaLayoutChild } from '../../lib/resolveInertiaLayoutChild.js';
@@ -61,7 +61,7 @@ function HeartIcon({ className = '', filled = false }) {
 }
 
 /**
- * Full DIY recipe detail (description, Get recipe, favourites, nutrition).
+ * Full DIY recipe detail (description, Show recipe, favourites, nutrition).
  *
  * @param {object} props
  * @param {ReturnType<typeof listDayMealsWithHighlights>[number]} props.meal
@@ -75,7 +75,15 @@ function CookMealCard({ meal, shoppingList, onToggleIngredient, favourited, onTo
     const detailView = meal.detailView ?? {};
     const mealBlurb = String(detailView.shortDescription || detailView.description || '').trim();
     const scBadges = (meal.sickleCellHighlights ?? []).filter((badge) => badge !== G6PD_HIGHLIGHT_BADGE);
-    const shoppingRows = useMemo(() => shoppingIngredientsForMeal(meal), [meal]);
+    const shoppingRows = useMemo(() => {
+        const fromKitchen = shoppingIngredientsForMeal(meal);
+
+        if (fromKitchen.length > 0) {
+            return fromKitchen;
+        }
+
+        return shoppingRowsFromDetailView(detailView);
+    }, [meal, detailView]);
     const checkedKeys = useMemo(() => new Set(shoppingList.map((row) => row.key)), [shoppingList]);
 
     const instructionSections = Array.isArray(detailView.instructionSections)
@@ -149,7 +157,7 @@ function CookMealCard({ meal, shoppingList, onToggleIngredient, favourited, onTo
             <div className="mt-4 flex items-center gap-2">
                 <Button
                     type="button"
-                    label={recipeOpen ? 'Hide recipe' : 'Get recipe'}
+                    label={recipeOpen ? 'Hide recipe' : 'Show recipe'}
                     variant={recipeOpen ? 'ghost' : 'primary'}
                     size="sm"
                     onClick={() => setRecipeOpen((open) => !open)}
@@ -171,62 +179,33 @@ function CookMealCard({ meal, shoppingList, onToggleIngredient, favourited, onTo
                 </button>
             </div>
 
+            <section className="mt-4 border-t border-gray-100 pt-4" aria-labelledby={`cook-ingredients-${meal.id}`}>
+                <h3
+                    id={`cook-ingredients-${meal.id}`}
+                    className="font-montserrat text-sm font-bold tracking-tight text-[#262A22]"
+                >
+                    Ingredients
+                </h3>
+                {shoppingRows.length === 0 ? (
+                    <p className="mt-2 font-body text-sm text-[#555555]">
+                        No ingredient amounts available for this meal.
+                    </p>
+                ) : (
+                    <ShoppingIngredientChecklist
+                        className="mt-2"
+                        rows={shoppingRows}
+                        checkedKeys={checkedKeys}
+                        onToggle={(row, shouldAdd) => onToggleIngredient([row], shouldAdd)}
+                        idPrefix={`cook-shop-${meal.id}`}
+                    />
+                )}
+                <p className="mt-2 font-body text-xs text-[#6B7280]">
+                    Check an ingredient to add it to your shopping list in My Tools.
+                </p>
+            </section>
+
             {recipeOpen ? (
                 <div className="mt-4 space-y-5 border-t border-gray-100 pt-4">
-                    <section aria-labelledby={`cook-ingredients-${meal.id}`}>
-                        <h3
-                            id={`cook-ingredients-${meal.id}`}
-                            className="font-montserrat text-sm font-bold tracking-tight text-[#262A22]"
-                        >
-                            Ingredients
-                        </h3>
-                        {shoppingRows.length === 0 ? (
-                            <p className="mt-2 font-body text-sm text-[#555555]">
-                                No ingredient amounts available for this meal.
-                            </p>
-                        ) : (
-                            <ul className="mt-2 space-y-1" role="list">
-                                {shoppingRows.map((row) => {
-                                    const checked = checkedKeys.has(row.key);
-                                    const checkboxId = `cook-shop-${meal.id}-${row.key}`;
-
-                                    return (
-                                        <li key={row.key}>
-                                            <label
-                                                htmlFor={checkboxId}
-                                                className="group/item flex cursor-pointer items-center gap-3 rounded-[10px] px-1 py-2 hover:bg-[#F8F9F6]"
-                                                onMouseDown={(event) => {
-                                                    // Keep the phone scroll position — focusing the
-                                                    // sr-only checkbox scrolls the row under the footer.
-                                                    event.preventDefault();
-                                                }}
-                                            >
-                                                <input
-                                                    id={checkboxId}
-                                                    type="checkbox"
-                                                    className="sr-only"
-                                                    tabIndex={-1}
-                                                    checked={checked}
-                                                    onChange={() => onToggleIngredient([row], !checked)}
-                                                />
-                                                <SquareCheckbox checked={checked} presentational />
-                                                <span className="min-w-0 flex-1 font-body text-sm text-[#262A22]">
-                                                    {row.name}
-                                                </span>
-                                                <span className="shrink-0 font-montserrat text-sm font-semibold tabular-nums text-[#555555]">
-                                                    {formatShoppingAmount(row.amount, row.unit)}
-                                                </span>
-                                            </label>
-                                        </li>
-                                    );
-                                })}
-                            </ul>
-                        )}
-                        <p className="mt-2 font-body text-xs text-[#6B7280]">
-                            Check an ingredient to add it to your shopping list in My Tools.
-                        </p>
-                    </section>
-
                     <section aria-labelledby={`cook-instructions-${meal.id}`}>
                         <h3
                             id={`cook-instructions-${meal.id}`}

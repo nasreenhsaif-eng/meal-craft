@@ -5,7 +5,10 @@
 
 import {
     aggregateSelectedDayShoppingIngredients,
+    canonicalShoppingIngredientName,
     mergeShoppingListItems,
+    parseIngredientDisplayLine,
+    shoppingIngredientMergeKey,
 } from '../Pages/MealPlanLibrary/dayShoppingList.js';
 
 /**
@@ -89,7 +92,115 @@ export function shoppingIngredientsForMeal(meal) {
         return [];
     }
 
-    return aggregateSelectedDayShoppingIngredients({ meal: [meal] });
+    const fromKitchen = aggregateSelectedDayShoppingIngredients({ meal: [meal] });
+
+    if (fromKitchen.length > 0) {
+        return fromKitchen;
+    }
+
+    return shoppingRowsFromDetailView(meal.detailView);
+}
+
+/**
+ * One shopping row for a recipe line the customer can see.
+ * Quantity lines keep grams; lines like "2 eggs raw" stay as a single item.
+ *
+ * @param {string} line
+ * @param {number | null | undefined} [ingredientId]
+ * @returns {DayShoppingIngredient | null}
+ */
+export function shoppingRowFromDisplayLine(line, ingredientId = 0) {
+    const raw = String(line ?? '').trim();
+
+    if (raw === '' || /no ingredients/i.test(raw)) {
+        return null;
+    }
+
+    const parsed = parseIngredientDisplayLine(raw);
+    const id = Number(ingredientId ?? 0) || 0;
+
+    if (parsed && parsed.amount > 0) {
+        const name = canonicalShoppingIngredientName(parsed.name) || parsed.name;
+
+        return {
+            key: shoppingIngredientMergeKey({ name, unit: parsed.unit, ingredientId: id }),
+            ingredientId: id,
+            name,
+            unit: parsed.unit,
+            amount: parsed.amount,
+        };
+    }
+
+    return {
+        key: shoppingIngredientMergeKey({ name: raw, unit: 'item', ingredientId: id }),
+        ingredientId: id,
+        name: raw,
+        unit: 'item',
+        amount: 1,
+    };
+}
+
+/**
+ * @param {unknown} detailView
+ * @returns {DayShoppingIngredient[]}
+ */
+export function shoppingRowsFromDetailView(detailView) {
+    if (!detailView || typeof detailView !== 'object') {
+        return [];
+    }
+
+    /** @type {Array<{ line: string, ingredientId?: number }>} */
+    const items = [];
+    const sections = Array.isArray(detailView.ingredientSections) ? detailView.ingredientSections : [];
+
+    if (sections.length > 0) {
+        for (const section of sections) {
+            const sectionItems = Array.isArray(section?.items) ? section.items : [];
+
+            for (const item of sectionItems) {
+                if (typeof item === 'string') {
+                    items.push({ line: item });
+                } else if (item && typeof item === 'object') {
+                    items.push({
+                        line: String(item.line ?? ''),
+                        ingredientId: Number(item.ingredientId ?? 0) || 0,
+                    });
+                }
+            }
+        }
+    } else if (Array.isArray(detailView.ingredientItems) && detailView.ingredientItems.length > 0) {
+        for (const item of detailView.ingredientItems) {
+            if (typeof item === 'string') {
+                items.push({ line: item });
+            } else if (item && typeof item === 'object') {
+                items.push({
+                    line: String(item.line ?? ''),
+                    ingredientId: Number(item.ingredientId ?? 0) || 0,
+                });
+            }
+        }
+    } else if (Array.isArray(detailView.ingredients)) {
+        for (const line of detailView.ingredients) {
+            if (typeof line === 'string') {
+                items.push({ line });
+            }
+        }
+    }
+
+    /** @type {Map<string, DayShoppingIngredient>} */
+    const byKey = new Map();
+
+    for (const item of items) {
+        const row = shoppingRowFromDisplayLine(item.line, item.ingredientId);
+
+        if (!row || byKey.has(row.key)) {
+            continue;
+        }
+
+        byKey.set(row.key, row);
+    }
+
+    return [...byKey.values()];
 }
 
 export { mergeShoppingListItems, aggregateSelectedDayShoppingIngredients };
@@ -99,7 +210,13 @@ export { mergeShoppingListItems, aggregateSelectedDayShoppingIngredients };
  * @param {string} unit
  */
 export function formatShoppingAmount(amount, unit) {
+    const normalizedUnit = String(unit ?? '').trim();
+
+    if (normalizedUnit === '' || normalizedUnit === 'item') {
+        return '';
+    }
+
     const rounded = Number.isInteger(amount) ? String(amount) : amount.toFixed(1).replace(/\.0$/, '');
 
-    return `${rounded} ${unit}`;
+    return `${rounded} ${normalizedUnit}`;
 }

@@ -72,7 +72,7 @@ export function MyToolsInner({
                         Shopping list
                     </h2>
                     <p className="mt-1 font-body text-sm text-[#555555]">
-                        Ingredients you checked while opening recipes in Cook it yourself.
+                        Ingredients you checked on your DIY meals.
                     </p>
 
                     {shoppingList.length === 0 ? (
@@ -87,9 +87,11 @@ export function MyToolsInner({
                                     <span className="min-w-0 flex-1 font-body text-sm text-[#262A22]">
                                         {row.name}
                                     </span>
-                                    <span className="shrink-0 font-montserrat text-sm font-semibold tabular-nums text-[#555555]">
-                                        {formatShoppingAmount(row.amount, row.unit)}
-                                    </span>
+                                    {formatShoppingAmount(row.amount, row.unit) ? (
+                                        <span className="shrink-0 font-montserrat text-sm font-semibold tabular-nums text-[#555555]">
+                                            {formatShoppingAmount(row.amount, row.unit)}
+                                        </span>
+                                    ) : null}
                                 </li>
                             ))}
                         </ul>

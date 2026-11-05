@@ -1,7 +1,29 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { usePage } from '@inertiajs/react';
 import Button from '../Atoms/Button/Button.jsx';
+import {
+    mergeShoppingListItems,
+    readCustomerShoppingList,
+    removeShoppingListKeys,
+    writeCustomerShoppingList,
+} from '../../customer/customerShoppingList.js';
 import MealDetailView from './MealDetailView/MealDetailView';
+
+/**
+ * Meal plan runs inside Inertia. Crafted for YOU does not, and usePage throws there.
+ *
+ * @returns {number | string | null}
+ */
+function useOptionalInertiaUserId() {
+    try {
+        const page = usePage();
+
+        return page.props?.auth?.user?.id ?? null;
+    } catch {
+        return null;
+    }
+}
 
 /**
  * Resolve the customer phone chrome when present so details fill that screen
@@ -32,6 +54,7 @@ function resolveMealDetailPortalHost() {
  *   hideInstructions?: boolean;
  *   enableGetRecipe?: boolean;
  *   inlineIngredients?: boolean;
+ *   userId?: number | string | null;
  * }} props
  */
 export default function MealDetailModalPortal({
@@ -41,9 +64,27 @@ export default function MealDetailModalPortal({
     hideInstructions = false,
     enableGetRecipe = false,
     inlineIngredients = false,
+    userId = null,
 }) {
     const open = Boolean(mealDetailModal) || loading;
     const [recipeOpen, setRecipeOpen] = useState(false);
+    const inertiaUserId = useOptionalInertiaUserId();
+    const shoppingUserId = userId ?? inertiaUserId;
+    const [shoppingList, setShoppingList] = useState(() => readCustomerShoppingList(shoppingUserId));
+    const shoppingCheckedKeys = useMemo(() => new Set(shoppingList.map((row) => row.key)), [shoppingList]);
+
+    useEffect(() => {
+        setShoppingList(readCustomerShoppingList(shoppingUserId));
+    }, [shoppingUserId]);
+
+    const toggleShoppingIngredient = (row, shouldAdd) => {
+        setShoppingList((current) => {
+            const next = shouldAdd ? mergeShoppingListItems(current, [row]) : removeShoppingListKeys(current, [row.key]);
+            writeCustomerShoppingList(shoppingUserId, next);
+
+            return next;
+        });
+    };
 
     useEffect(() => {
         if (!open) {
@@ -138,7 +179,7 @@ export default function MealDetailModalPortal({
                                 <div className="border-b border-gray-100 bg-white px-4 py-3 sm:px-5">
                                     <Button
                                         type="button"
-                                        label={recipeOpen ? 'Hide recipe' : 'Get recipe'}
+                                        label={recipeOpen ? 'Hide recipe' : 'Show recipe'}
                                         variant={recipeOpen ? 'ghost' : 'primary'}
                                         size="sm"
                                         onClick={() => setRecipeOpen((openRecipe) => !openRecipe)}
@@ -154,6 +195,8 @@ export default function MealDetailModalPortal({
                                     enableGetRecipe ? !recipeOpen : hideInstructions
                                 }
                                 inlineIngredients={inlineIngredients}
+                                shoppingCheckedKeys={enableGetRecipe ? shoppingCheckedKeys : undefined}
+                                onToggleShoppingIngredient={enableGetRecipe ? toggleShoppingIngredient : undefined}
                             />
                         </>
                     ) : null}
