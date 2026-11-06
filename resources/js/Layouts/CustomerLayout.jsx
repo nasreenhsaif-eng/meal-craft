@@ -1,23 +1,47 @@
+import { Link, usePage } from '@inertiajs/react';
 import MealCraftLogo from '../Components/Atoms/Logo/MealCraftLogo.jsx';
 import CustomerOnboardingPhoneFrame from '../Components/Molecules/Customer/CustomerOnboardingPhoneFrame.jsx';
+
+/**
+ * @param {{ className?: string }} props
+ */
+function CartIcon({ className = '' }) {
+    return (
+        <svg className={className} width={18} height={18} viewBox="0 0 24 24" fill="none" aria-hidden>
+            <path
+                d="M6 6h15l-1.5 9h-12L6 6Zm0 0L5 3H2"
+                stroke="currentColor"
+                strokeWidth="1.75"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+            />
+            <circle cx="9" cy="20" r="1.25" fill="currentColor" />
+            <circle cx="18" cy="20" r="1.25" fill="currentColor" />
+        </svg>
+    );
+}
 
 /**
  * @param {object} props
  * @param {import('react').ReactNode} props.children
  * @param {string} [props.customerName]
+ * @param {string} [props.cartUrl]
  * @param {import('react').ReactNode} [props.footerNav]
  * @param {'default' | 'onboarding'} [props.layoutVariant]
  * @param {boolean} [props.embedded] Fill a parent phone slot (landing / marketing) instead of the full-page frame.
  */
 export default function CustomerLayout({
     children,
-    customerName = '',
+    customerName: _customerName = '',
+    cartUrl = '/app/cart',
     footerNav = null,
     layoutVariant = 'default',
     embedded = false,
 }) {
     const isOnboarding = layoutVariant === 'onboarding';
     const hasFooterNav = footerNav != null;
+    const pageUrl = String(usePage().url ?? '');
+    const cartActive = pageUrl === cartUrl || pageUrl.startsWith(`${cartUrl}?`) || pageUrl.startsWith(`${cartUrl}/`);
 
     const header = (
         <header className="flex w-full shrink-0 items-center justify-between gap-3 border-b border-gray-100 bg-white px-1 py-3">
@@ -30,11 +54,17 @@ export default function CustomerLayout({
                     </p>
                 </div>
             </div>
-            {customerName ? (
-                <p className="max-w-[45%] shrink-0 truncate text-right text-sm font-medium text-[#555555]">
-                    {customerName}
-                </p>
-            ) : null}
+            <Link
+                href={cartUrl}
+                className={[
+                    'inline-flex shrink-0 items-center gap-1.5 font-montserrat text-sm font-semibold transition-colors',
+                    cartActive ? 'text-[#5A6B44]' : 'text-[#555555] hover:text-[#262A22]',
+                ].join(' ')}
+                aria-current={cartActive ? 'page' : undefined}
+            >
+                <CartIcon className="shrink-0" />
+                Cart
+            </Link>
         </header>
     );
 

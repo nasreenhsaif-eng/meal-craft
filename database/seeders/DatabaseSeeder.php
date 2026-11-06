@@ -27,5 +27,6 @@ class DatabaseSeeder extends Seeder
         ]);
 
         $this->call(MenuDevelopmentSeeder::class);
+        $this->call(PartnerKitchenPriceSeeder::class);
     }
 }

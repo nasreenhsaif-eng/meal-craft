@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Enums\DietProtocol;
+use App\Http\Controllers\Api\ConsultationResumeDraftController;
 use App\Models\CustomerCraftPlan;
 use App\Models\CustomerProfile;
 use App\Services\CustomerCraftPlanPresentationService;
@@ -41,13 +42,14 @@ final class CheckoutBasket
      *         plannedStartDate: string|null,
      *         formatted: string
      *     },
-     *     craftPlan: array{craftKey: string, craftTitle: string, weekDuration: int}|null
+     *     craftPlan: array{craftKey: string, craftTitle: string, weekDuration: int, planWeeks: int}|null
      * }
      */
     public static function forProfile(
         CustomerProfile $profile,
         CustomerCraftPlanPresentationService $presentation,
         ?string $promoCode = null,
+        ?int $planWeeksOverride = null,
     ): array {
         $plan = $profile->craftPlans()
             ->whereNotNull('submitted_at')
@@ -56,18 +58,26 @@ final class CheckoutBasket
 
         $planTierCalories = $profile->daily_calorie_target !== null
             ? (int) UserPlanCalculator::snapToPlanTier((float) $profile->daily_calorie_target)
-            : 0;
+            : 1200;
 
         $averageDayCalories = $planTierCalories;
         $craftMeta = null;
+        $subtotal = 0.0;
+        $pricing = self::resolvePricingContext($plan, $presentation, $planTierCalories, $planWeeksOverride);
 
-        if ($plan instanceof CustomerCraftPlan) {
-            $summary = $presentation->presentSummary($plan, $planTierCalories);
-            $averageDayCalories = self::averageDayCaloriesFromSummary($summary);
+        if ($pricing !== null) {
+            $averageDayCalories = $pricing['averageDayCalories'];
+            $subtotal = PartnerKitchenPrice::packageAmount(
+                $pricing['craftKey'],
+                $pricing['priceCalories'],
+                $pricing['weekDuration'],
+                $pricing['planWeeks'],
+            );
             $craftMeta = [
-                'craftKey' => $summary['craftKey'],
-                'craftTitle' => $summary['craftTitle'],
-                'weekDuration' => $summary['weekDuration'],
+                'craftKey' => $pricing['craftKey'],
+                'craftTitle' => $pricing['craftTitle'],
+                'weekDuration' => $pricing['weekDuration'],
+                'planWeeks' => $pricing['planWeeks'],
             ];
         }
 
@@ -82,10 +92,11 @@ final class CheckoutBasket
         };
 
         $currency = (string) config('checkout.currency', 'BHD');
-        $subtotal = (float) config('checkout.subtotal', 385);
         $deliveryCost = (float) config('checkout.delivery_cost', 5);
-        $limitedTimeDiscount = (float) config('checkout.limited_time_discount', 20);
-        $limitedTimeDiscountLabel = (string) config('checkout.limited_time_discount_label', 'Limited time offer');
+        $limitedTime = PartnerKitchenPrice::activeLimitedTimeDiscount();
+        $limitedTimeDiscount = $limitedTime['amount'];
+        $limitedTimeDiscountLabel = $limitedTime['label'];
+        $adminExtraDiscount = PartnerKitchenPrice::additionalDiscountTotal();
 
         $normalizedPromo = $promoCode !== null ? strtoupper(trim($promoCode)) : null;
         $promoCodes = config('checkout.promo_codes', []);
@@ -100,7 +111,10 @@ final class CheckoutBasket
             $normalizedPromo = null;
         }
 
-        $total = max(0, round($subtotal + $deliveryCost - $limitedTimeDiscount - $promoDiscount, 3));
+        $total = max(0, round(
+            $subtotal + $deliveryCost - $limitedTimeDiscount - $adminExtraDiscount - $promoDiscount,
+            3,
+        ));
 
         return [
             'planLabel' => sprintf('%s Meal plan %d calories', $dietShort, $averageDayCalories),
@@ -108,8 +122,10 @@ final class CheckoutBasket
             'currency' => $currency,
             'subtotal' => round($subtotal, 3),
             'deliveryCost' => round($deliveryCost, 3),
-            'limitedTimeDiscount' => round($limitedTimeDiscount, 3),
-            'limitedTimeDiscountLabel' => $limitedTimeDiscountLabel,
+            'limitedTimeDiscount' => round($limitedTimeDiscount + $adminExtraDiscount, 3),
+            'limitedTimeDiscountLabel' => $adminExtraDiscount > 0
+                ? $limitedTimeDiscountLabel.' + admin discount'
+                : $limitedTimeDiscountLabel,
             'promoDiscount' => round($promoDiscount, 3),
             'promoCode' => $normalizedPromo,
             'total' => $total,
@@ -164,6 +180,79 @@ final class CheckoutBasket
         }
 
         return (int) round($total / $count);
+    }
+
+    /**
+     * @return array{
+     *     craftKey: string,
+     *     craftTitle: string,
+     *     weekDuration: int,
+     *     planWeeks: int,
+     *     priceCalories: int,
+     *     averageDayCalories: int
+     * }|null
+     */
+    private static function resolvePricingContext(
+        ?CustomerCraftPlan $plan,
+        CustomerCraftPlanPresentationService $presentation,
+        int $planTierCalories,
+        ?int $planWeeksOverride,
+    ): ?array {
+        if ($plan instanceof CustomerCraftPlan) {
+            $summary = $presentation->presentSummary($plan, $planTierCalories);
+            $planWeeks = $planWeeksOverride ?? (int) ($plan->plan_weeks ?: 4);
+            $planWeeks = $planWeeks === 1 ? 1 : 4;
+            $weekDuration = (int) ($summary['weekDuration'] ?? $plan->week_duration ?? 7);
+            $craftKey = (string) ($summary['craftKey'] ?? $plan->craft_key);
+            $priceCalories = (int) ($summary['planTierCalories'] ?? $planTierCalories);
+
+            if ($craftKey !== 'business') {
+                $priceCalories = CraftLibraryTierMap::snapToCraftTotal($priceCalories, $craftKey);
+            }
+
+            return [
+                'craftKey' => $craftKey,
+                'craftTitle' => (string) ($summary['craftTitle'] ?? $craftKey),
+                'weekDuration' => $weekDuration,
+                'planWeeks' => $planWeeks,
+                'priceCalories' => $priceCalories,
+                'averageDayCalories' => self::averageDayCaloriesFromSummary($summary),
+            ];
+        }
+
+        /** @var array<string, mixed>|null $draft */
+        $draft = session(ConsultationResumeDraftController::SESSION_DRAFT_KEY);
+
+        if (! is_array($draft) || ! isset($draft['craftKey'], $draft['weekDuration'])) {
+            return null;
+        }
+
+        $craftKey = (string) $draft['craftKey'];
+        $weekDuration = (int) $draft['weekDuration'];
+        $planWeeks = $planWeeksOverride ?? (int) ($draft['planWeeks'] ?? 4);
+        $planWeeks = $planWeeks === 1 ? 1 : 4;
+        $priceCalories = $planTierCalories;
+
+        if ($craftKey !== 'business') {
+            $priceCalories = CraftLibraryTierMap::snapToCraftTotal($priceCalories, $craftKey);
+        }
+
+        $titles = [
+            'full' => 'Full Craft',
+            'day' => 'Day Craft',
+            'afternoon' => 'Afternoon Craft',
+            'intermittent' => 'Intermittent Craft',
+            'business' => 'Business Craft',
+        ];
+
+        return [
+            'craftKey' => $craftKey,
+            'craftTitle' => $titles[$craftKey] ?? $craftKey,
+            'weekDuration' => $weekDuration,
+            'planWeeks' => $planWeeks,
+            'priceCalories' => $priceCalories,
+            'averageDayCalories' => $planTierCalories,
+        ];
     }
 
     /**

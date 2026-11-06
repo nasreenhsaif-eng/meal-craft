@@ -8,19 +8,6 @@ const NASREEN_DETAILS = {
     address: 'Adliya, Bahrain',
     deliveryAddress: 'House 12, Gate/Flat 4, Road 1801, Block 318, Adliya, Bahrain',
     cards: [],
-    sexLabel: 'Female',
-    dietProtocolLabel: 'Balanced Anti-inflammatory',
-    dateOfBirth: '1990-05-12',
-    age: 34,
-    heightCm: 165,
-    weightKg: 68,
-    targetWeightKg: 64,
-    activityLevelLabel: 'Somewhat active',
-    dailyCaloriesMin: 1575,
-    dailyCaloriesMax: 1825,
-    macroSplitStyle: 'balanced',
-    foodFilters: ['peanuts', 'shellfish'],
-    allergies: ['peanuts', 'shellfish'],
 };
 
 export default {
@@ -31,7 +18,7 @@ export default {
         docs: {
             description: {
                 component:
-                    'Read-only Your details screen with Body & plan then Contact frames; Edit on Body & plan opens onboarding; Sign out at the bottom; customer app bottom nav (Profile active).',
+                    'Contact-only profile with Edit to checkout details; Sign out at the bottom; customer app bottom nav (Profile active). Body & plan lives under My Tools.',
             },
         },
     },
@@ -44,7 +31,7 @@ export const Default = {
         <ProfileInner
             customerName="Nasreen"
             details={NASREEN_DETAILS}
-            profileEditUrl="/onboarding/gender"
+            contactEditUrl="/checkout/details"
             logoutUrl="/logout"
         />
     ),

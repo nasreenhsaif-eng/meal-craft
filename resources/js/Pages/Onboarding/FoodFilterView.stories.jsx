@@ -45,8 +45,21 @@ export const WithOtherSelected = {
     name: 'Other selected',
     render: () => (
         <OnboardingFoodFilterInner
-            selectedFilters={[FOOD_FILTER_OTHER_ID, 'dairy']}
+            selectedFilters={[FOOD_FILTER_OTHER_ID]}
             otherText="Cilantro, raw onion"
+            steps={ONBOARDING_STEPS}
+            currentStep="food_filters"
+            customerName="Amina Saif"
+        />
+    ),
+};
+
+export const DairySelected = {
+    name: 'Dairy selected (modal)',
+    render: () => (
+        <OnboardingFoodFilterInner
+            selectedFilters={['dairy']}
+            otherText=""
             steps={ONBOARDING_STEPS}
             currentStep="food_filters"
             customerName="Amina Saif"

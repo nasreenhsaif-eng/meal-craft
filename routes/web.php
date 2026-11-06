@@ -13,6 +13,7 @@ use App\Http\Controllers\Admin\MealLibraryController;
 use App\Http\Controllers\Admin\MealLibraryCsvImportController;
 use App\Http\Controllers\Admin\MealPlanLibraryController;
 use App\Http\Controllers\Admin\MealTiersLibraryController;
+use App\Http\Controllers\Admin\PartnerKitchenPricingController;
 use App\Http\Controllers\Api\AdaptedMenuController;
 use App\Http\Controllers\Api\ConsultationResumeDraftController;
 use App\Http\Controllers\Api\CustomerCraftPlanController;
@@ -98,6 +99,10 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
                 Route::get('/customers/{customer}', [CustomerProfileController::class, 'show'])->name('customers.show');
                 Route::put('/customers/{customer}', [CustomerProfileController::class, 'update'])->name('customers.update');
                 Route::get('/kitchen-logistics', [KitchenLogisticsController::class, 'index'])->name('kitchen-logistics');
+                Route::get('/partner-kitchen-pricing', [PartnerKitchenPricingController::class, 'index'])->name('partner-kitchen-pricing');
+                Route::put('/partner-kitchen-pricing', [PartnerKitchenPricingController::class, 'update'])->name('partner-kitchen-pricing.update');
+                Route::post('/partner-kitchen-pricing/discounts', [PartnerKitchenPricingController::class, 'storeDiscount'])->name('partner-kitchen-pricing.discounts.store');
+                Route::delete('/partner-kitchen-pricing/discounts/{discount}', [PartnerKitchenPricingController::class, 'destroyDiscount'])->name('partner-kitchen-pricing.discounts.destroy');
 
                 Route::prefix('settings')->name('settings.')->group(function (): void {
                     Route::redirect('/', '/admin/settings/profile')->name('index');
@@ -163,12 +168,14 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
                     Route::get('/shop', [CustomerAppController::class, 'shop'])->name('shop');
                     Route::get('/favourites', [CustomerAppController::class, 'favourites'])->name('favourites');
                     Route::get('/tools', [CustomerAppController::class, 'tools'])->name('tools');
+                    Route::get('/cart', [CustomerAppController::class, 'cart'])->name('cart');
                 });
             });
 
         Route::middleware('onboarding.complete')->group(function (): void {
             Route::get('/checkout', [CheckoutController::class, 'fulfillment'])->name('checkout.fulfillment');
             Route::get('/checkout/delivery', [CheckoutController::class, 'delivery'])->name('checkout.delivery');
+            Route::post('/checkout/delivery/plan-weeks', [CheckoutController::class, 'storePlanWeeks'])->name('checkout.delivery.plan-weeks');
             Route::get('/checkout/details', [CheckoutController::class, 'details'])->name('checkout.details');
             Route::post('/checkout/details', [CheckoutController::class, 'storeDetails'])->name('checkout.details.store');
             Route::get('/checkout/payment', [CheckoutController::class, 'payment'])->name('checkout.payment');

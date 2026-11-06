@@ -3,9 +3,11 @@
 use App\Enums\CustomerDeliveryTime;
 use App\Enums\DietProtocol;
 use App\Enums\OnboardingStep;
+use App\Models\CustomerCraftPlan;
 use App\Models\CustomerProfile;
 use App\Models\User;
 use App\Support\CheckoutBasket;
+use Database\Seeders\PartnerKitchenPriceSeeder;
 
 /**
  * @return array<string, mixed>
@@ -58,10 +60,12 @@ test('confirming details redirects to payment checkout', function () {
 });
 
 test('completed customers see basket summary on payment checkout', function () {
+    $this->seed(PartnerKitchenPriceSeeder::class);
+
     $customer = User::factory()->customer()->create();
     $profile = CustomerProfile::factory()->for($customer)->create([
         'diet_protocol' => DietProtocol::Balanced->value,
-        'daily_calorie_target' => 1500,
+        'daily_calorie_target' => 2000,
         'area' => 'Adliya',
         'block' => '338',
         'road' => '1234',
@@ -72,12 +76,22 @@ test('completed customers see basket summary on payment checkout', function () {
         'intake_declaration_accepted_at' => now(),
     ]);
 
+    CustomerCraftPlan::query()->create([
+        'customer_profile_id' => $profile->id,
+        'craft_key' => 'full',
+        'fulfillment_choice' => 'partner_kitchen',
+        'week_duration' => 7,
+        'plan_weeks' => 4,
+        'selected_weekdays' => [1, 2, 3, 4, 5, 6, 7],
+        'submitted_at' => now(),
+    ]);
+
     $this->actingAs($customer)
         ->get(route('checkout.payment'))
         ->assertSuccessful()
         ->assertSee('Payment checkout', false)
         ->assertSee('Basket summary', false)
-        ->assertSee('BHD 385.000', false)
+        ->assertSee('BHD 350.000', false)
         ->assertSee('BHD 5.000', false)
         ->assertSee('33177718', false)
         ->assertSee('Adliya', false)

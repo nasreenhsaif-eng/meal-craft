@@ -6,9 +6,9 @@ import MealCardClientViewNano from '../MealCardClientViewNano.jsx';
 const CARD_PX = 240;
 
 /**
- * Day-overview slot: olive border frame, title + SEE OTHER OPTIONS, selected meal cards.
+ * Day-overview slot: soft gray border frame, title + SEE OTHER OPTIONS, selected meal cards.
  * Multi-select uses a horizontal peek carousel — one full 240px card, next card peeks
- * through to the olive border (full width of the framed content area).
+ * through to the frame edge (full width of the framed content area).
  *
  * @param {object} props
  * @param {string} props.title
@@ -35,7 +35,7 @@ export default function ProtocolMealSlotCard({
 
     return (
         <section
-            className={['relative w-full min-w-0 rounded-[12px] border border-[#5A6B44] bg-white', className]
+            className={['relative w-full min-w-0 rounded-[12px] border border-gray-200 bg-white', className]
                 .join(' ')
                 .trim()}
             aria-label={title}

@@ -12,6 +12,7 @@ export const ADMIN_NAV_PATHS = {
     mealPlans: 'meal-plans',
     mealTiers: 'meal-tiers',
     kitchenLogistics: 'kitchen-logistics',
+    pricing: 'pricing',
     customerProfiles: 'customer-profiles',
     discoveryInsights: 'discovery-insights',
 };
@@ -24,6 +25,7 @@ export const ADMIN_NAV_HREFS = {
     [ADMIN_NAV_PATHS.mealTiers]: '/admin/meal-tiers-library',
     [ADMIN_NAV_PATHS.mealPlans]: '/admin/meal-plan-library',
     [ADMIN_NAV_PATHS.kitchenLogistics]: '/admin/kitchen-logistics',
+    [ADMIN_NAV_PATHS.pricing]: '/admin/partner-kitchen-pricing',
     [ADMIN_NAV_PATHS.customerProfiles]: '/admin/customers',
 };
 
@@ -64,6 +66,12 @@ const GROUPS = [
                 label: 'Kitchen Production',
                 Icon: IconKitchen,
                 href: ADMIN_NAV_HREFS[ADMIN_NAV_PATHS.kitchenLogistics],
+            },
+            {
+                path: ADMIN_NAV_PATHS.pricing,
+                label: 'Partner Pricing',
+                Icon: IconChart,
+                href: ADMIN_NAV_HREFS[ADMIN_NAV_PATHS.pricing],
             },
         ],
     },

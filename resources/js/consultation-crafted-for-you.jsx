@@ -112,6 +112,11 @@ if (rootEl) {
             sex={typeof config.sex === 'string' ? config.sex : null}
             activityLevel={typeof config.activityLevel === 'string' ? config.activityLevel : null}
             dailyCalorieTarget={typeof config.dailyCalorieTarget === 'number' ? config.dailyCalorieTarget : null}
+            partnerKitchenPricing={
+                config.partnerKitchenPricing && typeof config.partnerKitchenPricing === 'object'
+                    ? config.partnerKitchenPricing
+                    : null
+            }
             embedInScrollParent
         />
     );

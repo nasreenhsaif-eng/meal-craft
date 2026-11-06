@@ -14,10 +14,10 @@ export function ShoppingIngredientCheckboxRow({ row, checked, onToggle, checkbox
     return (
         <label
             htmlFor={checkboxId}
-            className="group/item flex cursor-pointer items-center gap-3 rounded-[10px] px-1 py-2 hover:bg-[#F8F9F6]"
+            className="group/item relative flex cursor-pointer items-center gap-3 rounded-[10px] px-1 py-2 hover:bg-[#F8F9F6]"
             onMouseDown={(event) => {
-                // Keep the phone scroll position — focusing the
-                // sr-only checkbox scrolls the row under the footer.
+                // Focusing the hidden checkbox makes the phone frame scroll,
+                // which lifts the footer and leaves a blank gap under it.
                 event.preventDefault();
             }}
         >
@@ -28,6 +28,9 @@ export function ShoppingIngredientCheckboxRow({ row, checked, onToggle, checkbox
                 tabIndex={-1}
                 checked={checked}
                 onChange={() => onToggle(row, !checked)}
+                onFocus={(event) => {
+                    event.currentTarget.blur();
+                }}
             />
             <SquareCheckbox checked={checked} presentational />
             <span className="min-w-0 flex-1 font-body text-sm text-[#262A22]">{row.label || row.name}</span>

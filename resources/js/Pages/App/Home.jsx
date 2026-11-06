@@ -64,6 +64,7 @@ function dailyCaloriesDisplay(profile) {
  * @param {string} [props.profileUrl]
  * @param {string} [props.shopUrl]
  * @param {string} [props.mealPlanSummaryUrl]
+ * @param {string} [props.cartUrl]
  * @param {() => void} [props.onChooseMeals]
  * @param {() => void} [props.onBackFromReceive]
  * @param {(choice: 'partner_kitchen' | 'diy') => void} [props.onFulfillmentContinue]
@@ -81,6 +82,7 @@ export function WelcomeBackInner({
     profileUrl = '/app/profile',
     shopUrl = '/app/shop',
     mealPlanSummaryUrl = '/app/meal-plan',
+    cartUrl = '/app/cart',
     onChooseMeals,
     onBackFromReceive,
     onFulfillmentContinue,
@@ -95,6 +97,7 @@ export function WelcomeBackInner({
     return (
         <CustomerInertiaShell
             customerName={customerName}
+            cartUrl={cartUrl}
             embedded={preview}
             footerNav={
                 isReceive ? null : (
@@ -229,6 +232,7 @@ export function WelcomeBackInner({
  * @param {string} [props.profileUrl]
  * @param {string} [props.shopUrl]
  * @param {string} [props.mealPlanSummaryUrl]
+ * @param {string} [props.cartUrl]
  * @param {string} [props.deliveryUrl]
  * @param {string} [props.fulfillmentUrl]
  * @param {string} [props.consultationUrl]
@@ -244,6 +248,7 @@ export default function Home({
     profileUrl = '/app/profile',
     shopUrl = '/app/shop',
     mealPlanSummaryUrl = '/app/meal-plan',
+    cartUrl = '/app/cart',
     deliveryUrl = '/checkout/delivery',
     fulfillmentUrl = '/checkout/fulfillment',
     consultationUrl = '/consultation/crafted-for-you',
@@ -266,6 +271,7 @@ export default function Home({
             profileUrl={profileUrl}
             shopUrl={shopUrl}
             mealPlanSummaryUrl={mealPlanSummaryUrl}
+            cartUrl={cartUrl}
             chooseByFridayLabel={chooseByFridayLabel}
             showPlanReady={showPlanReady}
             onChooseMeals={() => setMode('receive')}

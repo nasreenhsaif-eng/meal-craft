@@ -1,6 +1,7 @@
 /**
  * Large-phone chrome for desktop customer / onboarding screens (≈430×844).
  * Fixed height with overflow clipped so children can own internal scrolling.
+ * `overflow-clip` (not `hidden`) so a focused control cannot scroll this frame.
  *
  * @param {{
  *   children: import('react').ReactNode;
@@ -19,7 +20,7 @@ export default function CustomerOnboardingPhoneFrame({
         return (
             <div
                 className={[
-                    'relative flex h-full min-h-0 w-full flex-col overflow-hidden',
+                    'relative flex h-full min-h-0 w-full flex-col overflow-clip',
                     'rounded-[28px] border border-gray-200 bg-white shadow-lg',
                     'px-3 pt-3 font-sans text-[#262A22]',
                     className,
@@ -49,7 +50,7 @@ export default function CustomerOnboardingPhoneFrame({
         >
             <div
                 className={[
-                    'relative mx-auto flex h-[min(844px,100dvh-5rem)] w-full max-w-[430px] flex-col overflow-hidden',
+                    'relative mx-auto flex h-[min(844px,100dvh-5rem)] w-full max-w-[430px] flex-col overflow-clip',
                     'rounded-[28px] border border-gray-200 bg-white shadow-lg',
                     // On real small phones, fill the viewport without device chrome.
                     'max-[429px]:h-dvh max-[429px]:max-h-dvh max-[429px]:rounded-none max-[429px]:border-0 max-[429px]:shadow-none',

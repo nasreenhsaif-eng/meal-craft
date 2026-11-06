@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\MealType;
+use App\Enums\OnboardingStep;
 use App\Enums\RecipeCategory;
 use App\Enums\UserRole;
 use App\Models\CustomerProfile;
@@ -92,23 +93,31 @@ test('digital recipes path renders cook it yourself after a craft plan is submit
             ->has('craftPlan.days', 2)
             ->where('craftPlan.days.0.categories.breakfasts.0.title', 'Sunday Oats')
             ->where('recipesUrl', route('meal-plan.recipes'))
-            ->where('favouritesUrl', route('app.favourites'))
+            ->missing('favouritesUrl')
             ->where('toolsUrl', route('app.tools')));
+
+    $this->actingAs($user)
+        ->get(route('app.tools'))
+        ->assertSuccessful()
+        ->assertInertia(fn ($page) => $page
+            ->component('App/MyTools')
+            ->where('craftPlan.days.0.categories.breakfasts.0.title', 'Sunday Oats')
+            ->where('recipesUrl', route('meal-plan.recipes'))
+            ->has('dailyTargets.dailyCaloriesMin')
+            ->has('dailyTargets.proteinGrams')
+            ->has('bodyPlan.heightCm')
+            ->has('bodyPlan.weightKg')
+            ->where('profileEditUrl', route('onboarding.show', ['step' => OnboardingStep::Gender->value]))
+            ->missing('favouritesUrl'));
 });
 
-test('completed customers can open favourites and tools pages', function () {
+test('completed customers open tools for saved recipes and favourites redirects there', function () {
     $customer = User::factory()->customer()->create();
     CustomerProfile::factory()->for($customer)->create();
 
     $this->actingAs($customer)
         ->get(route('app.favourites'))
-        ->assertSuccessful()
-        ->assertInertia(fn ($page) => $page
-            ->component('App/Favourites')
-            ->where('homeUrl', route('app.home'))
-            ->where('recipesUrl', route('meal-plan.recipes'))
-            ->where('favouritesUrl', route('app.favourites'))
-            ->where('toolsUrl', route('app.tools')));
+        ->assertRedirect(route('app.tools'));
 
     $this->actingAs($customer)
         ->get(route('app.tools'))
@@ -116,6 +125,29 @@ test('completed customers can open favourites and tools pages', function () {
         ->assertInertia(fn ($page) => $page
             ->component('App/MyTools')
             ->where('homeUrl', route('app.home'))
-            ->where('favouritesUrl', route('app.favourites'))
-            ->where('toolsUrl', route('app.tools')));
+            ->where('recipesUrl', route('meal-plan.recipes'))
+            ->where('craftPlan', null)
+            ->has('dailyTargets.dailyCaloriesMin')
+            ->has('dailyTargets.proteinGrams')
+            ->has('bodyPlan.dietProtocolLabel')
+            ->where('profileEditUrl', route('onboarding.show', ['step' => OnboardingStep::Gender->value]))
+            ->missing('favouritesUrl')
+            ->where('toolsUrl', route('app.tools'))
+            ->where('cartUrl', route('app.cart')));
+});
+
+test('completed customers can open the cart page from the header', function () {
+    $customer = User::factory()->customer()->create();
+    CustomerProfile::factory()->for($customer)->create();
+
+    $this->actingAs($customer)
+        ->get(route('app.cart'))
+        ->assertSuccessful()
+        ->assertInertia(fn ($page) => $page
+            ->component('App/Cart')
+            ->where('homeUrl', route('app.home'))
+            ->where('shopUrl', route('app.shop'))
+            ->where('toolsUrl', route('app.tools'))
+            ->where('cartUrl', route('app.cart'))
+            ->where('profileUrl', route('app.profile')));
 });

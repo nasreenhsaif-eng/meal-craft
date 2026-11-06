@@ -1,7 +1,7 @@
 import { Link } from '@inertiajs/react';
 
 /**
- * @typedef {'home' | 'meals' | 'shop' | 'favourites' | 'tools' | 'profile'} CustomerAppTab
+ * @typedef {'home' | 'meals' | 'shop' | 'tools' | 'profile'} CustomerAppTab
  */
 
 /**
@@ -57,22 +57,6 @@ function IconShop({ className = '' }) {
 /**
  * @param {{ className?: string }} props
  */
-function IconFavourites({ className = '' }) {
-    return (
-        <svg className={className} width={22} height={22} viewBox="0 0 24 24" fill="none" aria-hidden>
-            <path
-                d="M19.5 12.572 12 20l-7.5-7.428A5 5 0 1 1 12 6.013a5 5 0 1 1 7.5 6.559Z"
-                stroke="currentColor"
-                strokeWidth="1.75"
-                strokeLinejoin="round"
-            />
-        </svg>
-    );
-}
-
-/**
- * @param {{ className?: string }} props
- */
 function IconTools({ className = '' }) {
     return (
         <svg className={className} width={22} height={22} viewBox="0 0 24 24" fill="none" aria-hidden>
@@ -108,20 +92,18 @@ const TAB_ICONS = {
     home: IconHome,
     meals: IconMeals,
     shop: IconShop,
-    favourites: IconFavourites,
     tools: IconTools,
     profile: IconProfile,
 };
 
 /**
- * Persistent customer app footer tabs: Home / Meals / Shop / Saved / Tools / Profile.
+ * Persistent customer app footer tabs: Home / Meal plan / Shop / Tools / Profile.
  *
  * @param {object} props
  * @param {CustomerAppTab | null} [props.activeTab]
  * @param {string} [props.homeUrl]
  * @param {string} [props.mealsUrl]
  * @param {string} [props.shopUrl]
- * @param {string} [props.favouritesUrl]
  * @param {string} [props.toolsUrl]
  * @param {string} [props.profileUrl]
  * @param {string} [props.className]
@@ -132,7 +114,6 @@ export default function CustomerAppBottomNav({
     homeUrl = '/app',
     mealsUrl = '/app/meal-plan',
     shopUrl = '/app/shop',
-    favouritesUrl = '/app/favourites',
     toolsUrl = '/app/tools',
     profileUrl = '/app/profile',
     className = '',
@@ -140,9 +121,8 @@ export default function CustomerAppBottomNav({
 }) {
     const items = [
         { id: /** @type {CustomerAppTab} */ ('home'), label: 'Home', href: homeUrl },
-        { id: /** @type {CustomerAppTab} */ ('meals'), label: 'Meals', href: mealsUrl },
+        { id: /** @type {CustomerAppTab} */ ('meals'), label: 'Meal plan', href: mealsUrl },
         { id: /** @type {CustomerAppTab} */ ('shop'), label: 'Shop', href: shopUrl },
-        { id: /** @type {CustomerAppTab} */ ('favourites'), label: 'Saved', href: favouritesUrl },
         { id: /** @type {CustomerAppTab} */ ('tools'), label: 'Tools', href: toolsUrl },
         { id: /** @type {CustomerAppTab} */ ('profile'), label: 'Profile', href: profileUrl },
     ];

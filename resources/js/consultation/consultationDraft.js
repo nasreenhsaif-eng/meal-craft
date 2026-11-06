@@ -19,6 +19,7 @@ const DRAFT_VERSION = 1;
  * @property {number} [savedAt]
  * @property {string} craftKey
  * @property {number} weekDuration
+ * @property {1|4} [planWeeks]
  * @property {number[]} selectedDays
  * @property {Record<number, ConsultationDaySelections>} selectedByDay
  * @property {Record<number, 'soup'|'sidesalad'|'dessert'>} [businessSideChoiceByDay]
@@ -130,6 +131,7 @@ function normalizeConsultationDraft(draft) {
         version: DRAFT_VERSION,
         craftKey,
         weekDuration,
+        planWeeks: draft.planWeeks === 1 || draft.planWeeks === 4 ? draft.planWeeks : undefined,
         selectedDays,
         selectedByDay,
         businessSideChoiceByDay:

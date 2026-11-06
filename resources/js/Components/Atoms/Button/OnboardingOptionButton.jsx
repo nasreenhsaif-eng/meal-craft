@@ -4,6 +4,7 @@
  *
  * @param {{
  *   label: string;
+ *   detail?: string | null;
  *   icon?: import('react').ReactNode;
  *   selected?: boolean;
  *   disabled?: boolean;
@@ -17,6 +18,7 @@
  */
 export function OnboardingOptionButton({
     label,
+    detail = null,
     icon,
     selected = false,
     disabled = false,
@@ -29,6 +31,7 @@ export function OnboardingOptionButton({
 }) {
     const sizeClass = size === 'sm' ? 'h-[52px]' : 'h-[68px]';
     const isCentered = align === 'center';
+    const detailLabel = typeof detail === 'string' && detail.trim() !== '' ? detail.trim() : null;
 
     return (
         <button
@@ -59,6 +62,11 @@ export function OnboardingOptionButton({
                 </span>
             ) : null}
             <span className={isCentered ? 'min-w-0' : 'min-w-0 flex-1'}>{label}</span>
+            {detailLabel ? (
+                <span className="ms-3 shrink-0 font-montserrat text-[12px] font-semibold normal-case tracking-normal tabular-nums text-[#364153]">
+                    {detailLabel}
+                </span>
+            ) : null}
             {busy ? (
                 <span
                     className="inline-flex h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-current border-t-transparent"

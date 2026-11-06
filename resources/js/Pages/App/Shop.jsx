@@ -9,6 +9,8 @@ import { resolveInertiaLayoutChild } from '../../lib/resolveInertiaLayoutChild.j
  * @param {string} [props.profileUrl]
  * @param {string} [props.mealPlanSummaryUrl]
  * @param {string} [props.shopUrl]
+ * @param {string} [props.cartUrl]
+ * @param {string} [props.toolsUrl]
  */
 export function ShopInner({
     customerName = '',
@@ -16,10 +18,13 @@ export function ShopInner({
     profileUrl = '/app/profile',
     mealPlanSummaryUrl = '/app/meal-plan',
     shopUrl = '/app/shop',
+    cartUrl = '/app/cart',
+    toolsUrl = '/app/tools',
 }) {
     return (
         <CustomerInertiaShell
             customerName={customerName}
+            cartUrl={cartUrl}
             footerNav={
                 <CustomerAppBottomNav
                     activeTab="shop"
@@ -27,6 +32,7 @@ export function ShopInner({
                     profileUrl={profileUrl}
                     mealsUrl={mealPlanSummaryUrl}
                     shopUrl={shopUrl}
+                    toolsUrl={toolsUrl}
                 />
             }
         >
@@ -47,6 +53,8 @@ export function ShopInner({
  * @param {string} [props.profileUrl]
  * @param {string} [props.mealPlanSummaryUrl]
  * @param {string} [props.shopUrl]
+ * @param {string} [props.cartUrl]
+ * @param {string} [props.toolsUrl]
  */
 export default function Shop({
     customerName = '',
@@ -54,6 +62,8 @@ export default function Shop({
     profileUrl = '/app/profile',
     mealPlanSummaryUrl = '/app/meal-plan',
     shopUrl = '/app/shop',
+    cartUrl = '/app/cart',
+    toolsUrl = '/app/tools',
 }) {
     return (
         <ShopInner
@@ -62,6 +72,8 @@ export default function Shop({
             profileUrl={profileUrl}
             mealPlanSummaryUrl={mealPlanSummaryUrl}
             shopUrl={shopUrl}
+            cartUrl={cartUrl}
+            toolsUrl={toolsUrl}
         />
     );
 }

@@ -70,6 +70,13 @@ const SHELL_BY_COMPONENT = {
         hidePageTitle: true,
         contentWrapperClassName: WIDE,
     },
+    'Admin/PartnerKitchenPricing': {
+        pageTitle: 'Partner Kitchen pricing',
+        activePath: ADMIN_NAV_PATHS.pricing,
+        showSearch: false,
+        hidePageTitle: true,
+        contentWrapperClassName: WIDE,
+    },
     'Admin/Settings/Profile': {
         pageTitle: 'Settings',
         activePath: '',

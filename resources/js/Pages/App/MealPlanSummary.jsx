@@ -85,6 +85,7 @@ export function MealPlanSummaryInner({
     profileUrl = '/app/profile',
     shopUrl = '/app/shop',
     mealPlanSummaryUrl = '/app/meal-plan',
+    cartUrl = '/app/cart',
     sex = null,
     activityLevel = null,
     dailyCalorieTarget = null,
@@ -305,6 +306,7 @@ export function MealPlanSummaryInner({
     return (
         <CustomerInertiaShell
             customerName={customerName}
+            cartUrl={cartUrl}
             embedded={preview}
             footerNav={
                 <CustomerAppBottomNav
@@ -318,7 +320,7 @@ export function MealPlanSummaryInner({
             }
         >
             <div className={`min-h-full font-body ${PAGE_BG}`}>
-                <div className="mx-auto w-full max-w-5xl px-2 py-3 sm:px-3 sm:py-4">
+                <div className="mx-auto w-full max-w-5xl py-3 sm:py-4">
                     <AnimatePresence mode="wait" initial={false}>
                         <motion.div
                             key={`${step}-${activeDay}-${contentTab}`}
@@ -357,6 +359,7 @@ export function MealPlanSummaryInner({
  * @param {string} [props.profileUrl]
  * @param {string} [props.shopUrl]
  * @param {string} [props.mealPlanSummaryUrl]
+ * @param {string} [props.cartUrl]
  * @param {string | null} [props.sex]
  * @param {string | null} [props.activityLevel]
  * @param {number | null} [props.dailyCalorieTarget]
@@ -370,6 +373,7 @@ export default function MealPlanSummary({
     profileUrl = '/app/profile',
     shopUrl = '/app/shop',
     mealPlanSummaryUrl = '/app/meal-plan',
+    cartUrl = '/app/cart',
     sex = null,
     activityLevel = null,
     dailyCalorieTarget = null,
@@ -384,6 +388,7 @@ export default function MealPlanSummary({
             profileUrl={profileUrl}
             shopUrl={shopUrl}
             mealPlanSummaryUrl={mealPlanSummaryUrl}
+            cartUrl={cartUrl}
             sex={sex}
             activityLevel={activityLevel}
             dailyCalorieTarget={dailyCalorieTarget}

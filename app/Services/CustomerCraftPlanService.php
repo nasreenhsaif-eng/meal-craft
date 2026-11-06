@@ -19,6 +19,7 @@ final class CustomerCraftPlanService
      *     craft_key: string,
      *     fulfillment_choice: string,
      *     week_duration: int,
+     *     plan_weeks?: int,
      *     selected_days: list<int>,
      *     days: list<array{
      *         day_of_week: int,
@@ -36,11 +37,15 @@ final class CustomerCraftPlanService
     public static function storeSubmission(CustomerProfile $profile, array $payload): CustomerCraftPlan
     {
         return DB::transaction(function () use ($profile, $payload): CustomerCraftPlan {
+            $planWeeks = (int) ($payload['plan_weeks'] ?? 4);
+            $planWeeks = $planWeeks === 1 ? 1 : 4;
+
             $plan = CustomerCraftPlan::query()->create([
                 'customer_profile_id' => $profile->id,
                 'craft_key' => $payload['craft_key'],
                 'fulfillment_choice' => $payload['fulfillment_choice'],
                 'week_duration' => (int) $payload['week_duration'],
+                'plan_weeks' => $planWeeks,
                 'selected_weekdays' => array_values($payload['selected_days']),
                 'submitted_at' => now(),
             ]);

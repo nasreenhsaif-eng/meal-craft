@@ -3,6 +3,7 @@
  *   craftKey: string;
  *   fulfillmentChoice: 'diy' | 'partner_kitchen';
  *   weekDuration: number;
+ *   planWeeks?: number;
  *   selectedDays: number[];
  *   selectedByDay: Record<number, {
  *     breakfasts: string[];
@@ -40,6 +41,7 @@ export function buildCraftPlanSubmissionPayload(input) {
         craft_key: input.craftKey,
         fulfillment_choice: input.fulfillmentChoice,
         week_duration: input.weekDuration,
+        plan_weeks: input.planWeeks === 1 ? 1 : 4,
         selected_days: input.selectedDays,
         days,
     };

@@ -142,6 +142,9 @@ class IngredientLibraryController extends Controller
             'iron' => 0,
             'magnesium' => 0,
             'density' => (float) ($data['density'] ?? 1),
+            'unit_cost_bhd' => array_key_exists('unit_cost_bhd', $data) && $data['unit_cost_bhd'] !== null
+                ? round((float) $data['unit_cost_bhd'], 3)
+                : null,
             'is_verified' => true,
             'micronutrients' => [],
         ]);
@@ -184,6 +187,9 @@ class IngredientLibraryController extends Controller
             'carbs' => (float) ($data['carbs'] ?? $ingredient->carbs),
             'fat' => (float) ($data['fat'] ?? $ingredient->fat),
             'density' => (float) ($data['density'] ?? $ingredient->density ?? 1),
+            'unit_cost_bhd' => array_key_exists('unit_cost_bhd', $data)
+                ? ($data['unit_cost_bhd'] !== null ? round((float) $data['unit_cost_bhd'], 3) : null)
+                : $ingredient->unit_cost_bhd,
             'is_verified' => true,
             'library_edited_at' => now(),
         ]);
@@ -275,6 +281,9 @@ class IngredientLibraryController extends Controller
             'fdc' => $ingredient->fdc_id !== null ? (string) $ingredient->fdc_id : '—',
             'highlights' => $badgeLabels,
             'calories' => (float) $ingredient->calories,
+            'unitCostBhd' => $ingredient->unit_cost_bhd !== null
+                ? round((float) $ingredient->unit_cost_bhd, 3)
+                : null,
             'protein' => (float) $ingredient->protein,
             'carbs' => (float) $ingredient->carbs,
             'fat' => (float) $ingredient->fat,

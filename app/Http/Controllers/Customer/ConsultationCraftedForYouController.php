@@ -8,6 +8,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Meal;
 use App\Services\Nutrition\UserPlanCalculator;
 use App\Support\AdminConsultationPreviewProfile;
+use App\Support\CraftLibraryTierMap;
+use App\Support\PartnerKitchenPrice;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -98,8 +100,46 @@ class ConsultationCraftedForYouController extends Controller
             'forceReceive' => $forceReceive,
         ];
 
+        $baseCalories = (int) (
+            $consultationConfig['dailyCalorieTarget']
+            ?? $consultationConfig['planTier']
+            ?? 1200
+        );
+        $consultationConfig['partnerKitchenPricing'] = $this->partnerKitchenPricingPayload($baseCalories);
+
         return view('pages.consultation.crafted-for-you', [
             'consultationConfig' => $consultationConfig,
         ]);
+    }
+
+    /**
+     * @return array{
+     *     dailyRates: array<string, float>,
+     *     dailyRateLabels: array<string, string>,
+     *     planLengthOptions: array<string, list<array{billedDays: int, planWeeks: int, weekDuration: int, amount: float, label: string}>>
+     * }
+     */
+    private function partnerKitchenPricingPayload(int $baseCalories): array
+    {
+        $dailyRates = [];
+        $dailyRateLabels = [];
+        $planLengthOptions = [];
+
+        foreach (['full', 'afternoon', 'day', 'intermittent', 'business'] as $craftKey) {
+            $craftCalories = $craftKey === 'business'
+                ? $baseCalories
+                : CraftLibraryTierMap::snapToCraftTotal($baseCalories, $craftKey);
+
+            $dailyRate = PartnerKitchenPrice::dailyRateForCraft($craftKey, $craftCalories);
+            $dailyRates[$craftKey] = $dailyRate;
+            $dailyRateLabels[$craftKey] = PartnerKitchenPrice::formatMoney($dailyRate).' / day';
+            $planLengthOptions[$craftKey] = PartnerKitchenPrice::planLengthOptions($craftKey, $craftCalories);
+        }
+
+        return [
+            'dailyRates' => $dailyRates,
+            'dailyRateLabels' => $dailyRateLabels,
+            'planLengthOptions' => $planLengthOptions,
+        ];
     }
 }

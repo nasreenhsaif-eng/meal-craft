@@ -71,6 +71,10 @@ function normalizeLibraryRow(raw) {
         fdc: String(raw.fdc ?? '—'),
         highlights: Array.isArray(raw.highlights) ? raw.highlights : [],
         calories: coerceNumber(raw.calories),
+        unitCostBhd:
+            raw.unitCostBhd == null && raw.unit_cost_bhd == null
+                ? null
+                : coerceNumber(raw.unitCostBhd ?? raw.unit_cost_bhd),
         protein: coerceNumber(raw.protein),
         carbs: coerceNumber(raw.carbs),
         fat: coerceNumber(raw.fat),
@@ -258,6 +262,7 @@ export function IngredientsLibraryPageView({
     const [createCategory, setCreateCategory] = useState('');
     const [createName, setCreateName] = useState('');
     const [createCalories, setCreateCalories] = useState('');
+    const [createUnitCost, setCreateUnitCost] = useState('');
     const [createProtein, setCreateProtein] = useState('');
     const [createCarbs, setCreateCarbs] = useState('');
     const [createFat, setCreateFat] = useState('');
@@ -309,6 +314,7 @@ export function IngredientsLibraryPageView({
         setCreateCategory('');
         setCreateName('');
         setCreateCalories('');
+        setCreateUnitCost('');
         setCreateProtein('');
         setCreateCarbs('');
         setCreateFat('');
@@ -390,6 +396,7 @@ export function IngredientsLibraryPageView({
                 protein: createProtein.trim() === '' ? 0 : Number(createProtein.trim()),
                 carbs: createCarbs.trim() === '' ? 0 : Number(createCarbs.trim()),
                 fat: createFat.trim() === '' ? 0 : Number(createFat.trim()),
+                unit_cost_bhd: createUnitCost.trim() === '' ? null : Number(createUnitCost.trim()),
             },
             csrfToken,
             {
@@ -855,6 +862,11 @@ export function IngredientsLibraryPageView({
                                         Calories
                                     </span>
                                 </th>
+                                <th className="w-[120px] px-4 py-3 text-right">
+                                    <span className="font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#374151]">
+                                        Cost (BHD)
+                                    </span>
+                                </th>
                                 <th className="w-[110px] px-4 py-3 text-right">
                                     <span className="font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#374151]">
                                         Protein
@@ -947,6 +959,49 @@ export function IngredientsLibraryPageView({
                                         </td>
                                         <td className="px-4 py-3 text-right font-body text-sm text-[#1F2937]">
                                             {formatNumber(r.calories)}
+                                        </td>
+                                        <td className="px-4 py-3 text-right font-body text-sm text-[#1F2937]">
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                step="0.001"
+                                                className="w-24 rounded-[8px] border border-gray-200 px-2 py-1 text-right"
+                                                defaultValue={r.unitCostBhd == null ? '' : String(r.unitCostBhd)}
+                                                aria-label={`Unit cost for ${r.name}`}
+                                                onBlur={(event) => {
+                                                    const next =
+                                                        event.target.value.trim() === ''
+                                                            ? null
+                                                            : Number(event.target.value);
+                                                    const current = r.unitCostBhd;
+
+                                                    if (next === current || (next == null && current == null)) {
+                                                        return;
+                                                    }
+
+                                                    if (next != null && !Number.isFinite(next)) {
+                                                        return;
+                                                    }
+
+                                                    postIngredientLibraryForm(
+                                                        `/admin/ingredient-library/${r.id}`,
+                                                        {
+                                                            name: r.name,
+                                                            category: r.category || null,
+                                                            calories: r.calories,
+                                                            protein: r.protein,
+                                                            carbs: r.carbs,
+                                                            fat: r.fat,
+                                                            unit_cost_bhd: next,
+                                                        },
+                                                        csrfToken,
+                                                        {
+                                                            onSuccess: () => {},
+                                                            onError: () => {},
+                                                        },
+                                                    );
+                                                }}
+                                            />
                                         </td>
                                         <td className="px-4 py-3 text-right font-body text-sm text-[#1F2937]">
                                             {formatNumber(r.protein)}
@@ -1159,6 +1214,13 @@ export function IngredientsLibraryPageView({
                                                 placeholder="0"
                                                 value={createCalories}
                                                 onChange={(e) => setCreateCalories(e.target.value)}
+                                                className="!max-w-none"
+                                            />
+                                            <TextInput
+                                                label="Cost (BHD)"
+                                                placeholder="0.000"
+                                                value={createUnitCost}
+                                                onChange={(e) => setCreateUnitCost(e.target.value)}
                                                 className="!max-w-none"
                                             />
                                             <TextInput

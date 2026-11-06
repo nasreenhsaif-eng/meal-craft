@@ -70,10 +70,7 @@ class CustomerAppController extends Controller
             'customerName' => $user?->name ?? '',
             'consultationUrl' => route('consultation.crafted-for-you'),
             'consultationEditUrl' => route('consultation.crafted-for-you.edit'),
-            'homeUrl' => route('app.home'),
-            'profileUrl' => route('app.profile'),
-            'shopUrl' => route('app.shop'),
-            'mealPlanSummaryUrl' => route('app.meal-plan'),
+            ...self::customerAppShellUrls(),
             'fulfillmentUrl' => route('checkout.fulfillment'),
             'chooseByFridayLabel' => MealPlanDateRange::dayLabel($chooseByFriday),
             'profileEditUrl' => route('onboarding.show', [
@@ -100,19 +97,12 @@ class CustomerAppController extends Controller
     {
         $user = request()->user();
         $profile = $user?->customerProfile;
-        $calorieRange = $profile !== null ? self::calorieTargetRange($profile) : null;
-        $dietProtocol = DietProtocol::tryFromStored($profile?->diet_protocol);
 
         return Inertia::render('App/Profile', [
             'customerName' => $user?->name ?? '',
-            'homeUrl' => route('app.home'),
-            'profileUrl' => route('app.profile'),
-            'shopUrl' => route('app.shop'),
-            'mealPlanSummaryUrl' => route('app.meal-plan'),
+            ...self::customerAppShellUrls(),
             'logoutUrl' => route('logout'),
-            'profileEditUrl' => route('onboarding.show', [
-                'step' => OnboardingStep::entry()->value,
-            ]),
+            'contactEditUrl' => route('checkout.details'),
             'details' => $profile ? [
                 'name' => $user?->name ?? '',
                 'email' => $user?->email ?? '',
@@ -120,23 +110,6 @@ class CustomerAppController extends Controller
                 'address' => self::profileAddress($profile),
                 'deliveryAddress' => self::profileDeliveryAddress($profile),
                 'cards' => [],
-                'sex' => $profile->sex?->value,
-                'sexLabel' => $profile->sex?->label() ?? null,
-                'dietProtocol' => $dietProtocol->value,
-                'dietProtocolLabel' => $dietProtocol->label(),
-                'dateOfBirth' => ($profile->birthdate ?? $profile->date_of_birth)?->toDateString(),
-                'age' => $profile->age,
-                'heightCm' => $profile->height_cm,
-                'weightKg' => $profile->weight_kg,
-                'targetWeightKg' => $profile->target_weight_kg,
-                'activityLevel' => $profile->activity_level?->value,
-                'activityLevelLabel' => $profile->activity_level?->label(),
-                'dailyCalorieTarget' => $profile->daily_calorie_target,
-                'dailyCaloriesMin' => $calorieRange['min'] ?? null,
-                'dailyCaloriesMax' => $calorieRange['max'] ?? null,
-                'macroSplitStyle' => $profile->macro_split_style?->value,
-                'foodFilters' => array_values($profile->food_filters ?? $profile->allergies ?? []),
-                'allergies' => array_values($profile->allergies ?? []),
             ] : null,
         ]);
     }
@@ -162,10 +135,7 @@ class CustomerAppController extends Controller
             'craftPlan' => $presentation->presentSummary($plan, $planTierCalories),
             'consultationUrl' => route('consultation.crafted-for-you'),
             'consultationEditUrl' => route('consultation.crafted-for-you.edit'),
-            'homeUrl' => route('app.home'),
-            'profileUrl' => route('app.profile'),
-            'shopUrl' => route('app.shop'),
-            'mealPlanSummaryUrl' => route('app.meal-plan'),
+            ...self::customerAppShellUrls(),
             'sex' => $profile->sex?->value,
             'activityLevel' => $profile->activity_level?->value,
             'dailyCalorieTarget' => (int) $profile->daily_calorie_target,
@@ -180,25 +150,27 @@ class CustomerAppController extends Controller
         ]);
     }
 
+    public function cart(): Response
+    {
+        return Inertia::render('App/Cart', [
+            'customerName' => request()->user()?->name ?? '',
+            ...self::customerAppShellUrls(),
+        ]);
+    }
+
     public function recipes(CustomerCraftPlanPresentationService $presentation): Response|RedirectResponse
     {
         $user = request()->user();
         $profile = $user !== null ? AdminConsultationPreviewProfile::resolve($user) : null;
+        $craftPlan = $this->submittedCraftPlanSummary($presentation);
 
-        $plan = $profile?->craftPlans()
-            ->whereNotNull('submitted_at')
-            ->latest('submitted_at')
-            ->first();
-
-        if ($plan === null || $profile?->daily_calorie_target === null) {
+        if ($craftPlan === null || $profile === null) {
             return redirect()->route('consultation.crafted-for-you');
         }
 
-        $planTierCalories = (int) UserPlanCalculator::snapToPlanTier((float) $profile->daily_calorie_target);
-
         return Inertia::render('App/CookItYourself', [
             'customerName' => $user?->name ?? '',
-            'craftPlan' => $presentation->presentSummary($plan, $planTierCalories),
+            'craftPlan' => $craftPlan,
             ...self::customerAppShellUrls(),
             'recipesUrl' => route('meal-plan.recipes'),
             'sex' => $profile->sex?->value,
@@ -207,21 +179,144 @@ class CustomerAppController extends Controller
         ]);
     }
 
-    public function favourites(): Response
+    public function favourites(): RedirectResponse
     {
-        return Inertia::render('App/Favourites', [
-            'customerName' => request()->user()?->name ?? '',
-            ...self::customerAppShellUrls(),
-            'recipesUrl' => route('meal-plan.recipes'),
-        ]);
+        return redirect()->route('app.tools');
     }
 
-    public function tools(): Response
+    public function tools(CustomerCraftPlanPresentationService $presentation): Response
     {
         return Inertia::render('App/MyTools', [
             'customerName' => request()->user()?->name ?? '',
+            'craftPlan' => $this->submittedCraftPlanSummary($presentation),
+            'dailyTargets' => $this->dailyTargetsSummary(),
+            'bodyPlan' => $this->bodyPlanDetails(),
+            'profileEditUrl' => route('onboarding.show', [
+                'step' => OnboardingStep::entry()->value,
+            ]),
+            'recipesUrl' => route('meal-plan.recipes'),
             ...self::customerAppShellUrls(),
         ]);
+    }
+
+    /**
+     * CamelCase daily targets for the Tools tab. Tools is behind completed onboarding.
+     *
+     * @return array{
+     *     bmr: int,
+     *     tdee: int,
+     *     dailyCalories: int,
+     *     dailyCaloriesMin: int,
+     *     dailyCaloriesMax: int,
+     *     dailyKjMin: int,
+     *     dailyKjMax: int,
+     *     proteinGrams: int,
+     *     carbGrams: int,
+     *     fatGrams: int,
+     *     proteinPercentage: float,
+     *     carbPercentage: float,
+     *     fatPercentage: float,
+     *     goal: string,
+     *     weightGoal: string
+     * }
+     */
+    private function dailyTargetsSummary(): array
+    {
+        /** @var CustomerProfile $profile */
+        $profile = request()->user()->customerProfile;
+
+        $targets = OnboardingDailyTargetsCalculator::calculate($profile);
+
+        return [
+            'bmr' => $targets['bmr'],
+            'tdee' => $targets['tdee'],
+            'dailyCalories' => $targets['daily_calories'],
+            'dailyCaloriesMin' => $targets['daily_calories_min'],
+            'dailyCaloriesMax' => $targets['daily_calories_max'],
+            'dailyKjMin' => $targets['daily_kj_min'],
+            'dailyKjMax' => $targets['daily_kj_max'],
+            'proteinGrams' => $targets['protein_grams'],
+            'carbGrams' => $targets['carb_grams'],
+            'fatGrams' => $targets['fat_grams'],
+            'proteinPercentage' => $targets['protein_percentage'],
+            'carbPercentage' => $targets['carb_percentage'],
+            'fatPercentage' => $targets['fat_percentage'],
+            'goal' => $targets['goal'],
+            'weightGoal' => $targets['weight_goal'],
+        ];
+    }
+
+    /**
+     * Body & plan rows for the Tools tab.
+     *
+     * @return array{
+     *     sexLabel: string|null,
+     *     dietProtocolLabel: string,
+     *     dateOfBirth: string|null,
+     *     age: int|null,
+     *     heightCm: float|null,
+     *     weightKg: float|null,
+     *     targetWeightKg: float|null,
+     *     activityLevelLabel: string|null,
+     *     dailyCalorieTarget: int|null,
+     *     dailyCaloriesMin: int|null,
+     *     dailyCaloriesMax: int|null,
+     *     macroSplitStyle: string|null,
+     *     foodFilters: list<string>,
+     *     allergies: list<string>
+     * }
+     */
+    private function bodyPlanDetails(): array
+    {
+        /** @var CustomerProfile $profile */
+        $profile = request()->user()->customerProfile;
+        $calorieRange = self::calorieTargetRange($profile);
+        $dietProtocol = DietProtocol::tryFromStored($profile->diet_protocol);
+
+        return [
+            'sexLabel' => $profile->sex?->label() ?? null,
+            'dietProtocolLabel' => $dietProtocol->label(),
+            'dateOfBirth' => ($profile->birthdate ?? $profile->date_of_birth)?->toDateString(),
+            'age' => $profile->age,
+            'heightCm' => $profile->height_cm,
+            'weightKg' => $profile->weight_kg,
+            'targetWeightKg' => $profile->target_weight_kg,
+            'activityLevelLabel' => $profile->activity_level?->label(),
+            'dailyCalorieTarget' => $profile->daily_calorie_target,
+            'dailyCaloriesMin' => $calorieRange['min'] ?? null,
+            'dailyCaloriesMax' => $calorieRange['max'] ?? null,
+            'macroSplitStyle' => $profile->macro_split_style?->value,
+            'foodFilters' => array_values($profile->food_filters ?? $profile->allergies ?? []),
+            'allergies' => array_values($profile->allergies ?? []),
+        ];
+    }
+
+    /**
+     * Latest submitted craft plan for Saved cards, or null when the customer has not crafted yet.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function submittedCraftPlanSummary(CustomerCraftPlanPresentationService $presentation): ?array
+    {
+        $user = request()->user();
+        $profile = $user !== null ? AdminConsultationPreviewProfile::resolve($user) : null;
+
+        if ($profile?->daily_calorie_target === null) {
+            return null;
+        }
+
+        $plan = $profile->craftPlans()
+            ->whereNotNull('submitted_at')
+            ->latest('submitted_at')
+            ->first();
+
+        if ($plan === null) {
+            return null;
+        }
+
+        $planTierCalories = (int) UserPlanCalculator::snapToPlanTier((float) $profile->daily_calorie_target);
+
+        return $presentation->presentSummary($plan, $planTierCalories);
     }
 
     /**
@@ -230,7 +325,6 @@ class CustomerAppController extends Controller
      *     profileUrl: string,
      *     shopUrl: string,
      *     mealPlanSummaryUrl: string,
-     *     favouritesUrl: string,
      *     toolsUrl: string
      * }
      */
@@ -241,8 +335,8 @@ class CustomerAppController extends Controller
             'profileUrl' => route('app.profile'),
             'shopUrl' => route('app.shop'),
             'mealPlanSummaryUrl' => route('app.meal-plan'),
-            'favouritesUrl' => route('app.favourites'),
             'toolsUrl' => route('app.tools'),
+            'cartUrl' => route('app.cart'),
         ];
     }
 

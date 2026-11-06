@@ -86,7 +86,7 @@ export default function ProtocolFixedChoiceSides({
     return (
         <section
             className={[
-                'rounded-[12px] border border-[#5A6B44] bg-white',
+                'rounded-[12px] border border-gray-200 bg-white',
                 validationFlash ? 'ring-2 ring-[#C44F5D] ring-offset-2' : '',
                 className,
             ]

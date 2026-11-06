@@ -13,6 +13,7 @@ class CustomerCraftPlan extends Model
         'craft_key',
         'fulfillment_choice',
         'week_duration',
+        'plan_weeks',
         'selected_weekdays',
         'submitted_at',
     ];
@@ -21,6 +22,7 @@ class CustomerCraftPlan extends Model
     {
         return [
             'week_duration' => 'integer',
+            'plan_weeks' => 'integer',
             'selected_weekdays' => 'array',
             'submitted_at' => 'datetime',
         ];

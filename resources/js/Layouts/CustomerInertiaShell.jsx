@@ -4,6 +4,7 @@ import CustomerLayout from './CustomerLayout.jsx';
  * @param {{
  *   children: import('react').ReactNode;
  *   customerName?: string;
+ *   cartUrl?: string;
  *   footerNav?: import('react').ReactNode;
  *   layoutVariant?: 'default' | 'onboarding';
  *   embedded?: boolean;
@@ -12,6 +13,7 @@ import CustomerLayout from './CustomerLayout.jsx';
 export default function CustomerInertiaShell({
     children,
     customerName = '',
+    cartUrl = '/app/cart',
     footerNav = null,
     layoutVariant = 'default',
     embedded = false,
@@ -19,6 +21,7 @@ export default function CustomerInertiaShell({
     return (
         <CustomerLayout
             customerName={customerName}
+            cartUrl={cartUrl}
             footerNav={footerNav}
             layoutVariant={layoutVariant}
             embedded={embedded}

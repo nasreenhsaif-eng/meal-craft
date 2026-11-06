@@ -64,21 +64,21 @@ const CRAFTS = [
         ],
     },
     {
+        key: 'afternoon',
+        title: 'Afternoon Craft',
+        description: '2 Meals, pick 1–2 of side salad / dessert / soup',
+        slots: [
+            { id: 'meal', label: 'Meals', count: 2 },
+            { id: 'fixedChoice', label: 'Pick 1–2 of 3 sides', count: 2 },
+        ],
+    },
+    {
         key: 'day',
         title: 'Day Craft',
         description: 'Breakfast, 1 Meal, pick 1–2 of side salad / dessert / soup',
         slots: [
             { id: 'breakfast', label: 'Breakfast', count: 1 },
             { id: 'meal', label: 'Meal', count: 1 },
-            { id: 'fixedChoice', label: 'Pick 1–2 of 3 sides', count: 2 },
-        ],
-    },
-    {
-        key: 'afternoon',
-        title: 'Afternoon Craft',
-        description: '2 Meals, pick 1–2 of side salad / dessert / soup',
-        slots: [
-            { id: 'meal', label: 'Meals', count: 2 },
             { id: 'fixedChoice', label: 'Pick 1–2 of 3 sides', count: 2 },
         ],
     },
@@ -235,6 +235,7 @@ export default function CraftedForYouPage({
     initialCraftKey = null,
     initialWeekDuration = null,
     initialSelectedWeekdays = null,
+    partnerKitchenPricing = null,
 } = {}) {
     const initialRestoreDraft = useMemo(
         () =>
@@ -279,6 +280,32 @@ export default function CraftedForYouPage({
 
     const [weekDuration, setWeekDuration] = useState(
         () => initialWeekDuration ?? initialRestoreDraft?.weekDuration ?? null,
+    );
+    const [planWeeks, setPlanWeeks] = useState(
+        () => {
+            const restored = initialRestoreDraft?.planWeeks;
+
+            if (restored === 1 || restored === 4) {
+                return restored;
+            }
+
+            return null;
+        },
+    );
+    const [selectedBilledDays, setSelectedBilledDays] = useState(
+        () => {
+            const restoredWeeks = initialRestoreDraft?.planWeeks;
+            const restoredDuration = initialWeekDuration ?? initialRestoreDraft?.weekDuration ?? null;
+
+            if ((restoredWeeks === 1 || restoredWeeks === 4) && typeof restoredDuration === 'number') {
+                return restoredWeeks === 1 ? restoredDuration : restoredDuration * 4;
+            }
+
+            return null;
+        },
+    );
+    const [partnerTrialOpen, setPartnerTrialOpen] = useState(
+        () => initialRestoreDraft?.planWeeks === 1,
     );
     const [selectedDays, setSelectedDays] = useState(() => {
         if (Array.isArray(initialSelectedWeekdays) && initialSelectedWeekdays.length > 0) {
@@ -436,6 +463,7 @@ export default function CraftedForYouPage({
         saveConsultationDraft({
             craftKey,
             weekDuration,
+            planWeeks: planWeeks === 1 || planWeeks === 4 ? planWeeks : 4,
             selectedDays,
             selectedByDay,
             businessSideChoiceByDay,
@@ -447,6 +475,7 @@ export default function CraftedForYouPage({
     }, [
         craftKey,
         weekDuration,
+        planWeeks,
         selectedDays,
         selectedByDay,
         businessSideChoiceByDay,
@@ -680,6 +709,9 @@ export default function CraftedForYouPage({
                 craftKey,
                 fulfillmentChoice,
                 weekDuration,
+                planWeeks: fulfillmentChoice === 'partner_kitchen' && (planWeeks === 1 || planWeeks === 4)
+                    ? planWeeks
+                    : 4,
                 selectedDays: sortedSelectedDays,
                 selectedByDay,
             });
@@ -1507,8 +1539,86 @@ export default function CraftedForYouPage({
     const progressPercent = totalScreens <= 1 ? 0 : ((screen - 1) / (totalScreens - 1)) * 100;
 
     const canGoNextFromCraft = craftKey !== null;
-    const canGoNextFromDuration = weekDuration !== null;
+    const canGoNextFromDuration = isPartnerFulfillment
+        ? weekDuration !== null && (planWeeks === 1 || planWeeks === 4) && selectedBilledDays !== null
+        : weekDuration !== null;
     const canGoNextFromManualDays = weekDuration !== null && sortedSelectedDays.length === weekDuration;
+
+    const partnerPlanLengthOptions = useMemo(() => {
+        if (!craftKey || !partnerKitchenPricing || typeof partnerKitchenPricing !== 'object') {
+            return [];
+        }
+
+        const options = partnerKitchenPricing.planLengthOptions?.[craftKey];
+
+        return Array.isArray(options) ? options : [];
+    }, [craftKey, partnerKitchenPricing]);
+
+    function partnerDailyRateLabelFor(craftOptionKey) {
+        if (!isPartnerFulfillment || !partnerKitchenPricing) {
+            return null;
+        }
+
+        const label = partnerKitchenPricing.dailyRateLabels?.[craftOptionKey];
+
+        return typeof label === 'string' ? label : null;
+    }
+
+    /**
+     * @param {{ billedDays: number, planWeeks: number, weekDuration: number }} option
+     */
+    function selectPartnerPlanLength(option) {
+        setSelectedBilledDays(option.billedDays);
+        setPlanWeeks(option.planWeeks);
+        setWeekDuration(option.weekDuration);
+    }
+
+    /**
+     * @param {{ billedDays: number, amount: number }} option
+     */
+    function partnerPlanLengthPerDayLabel(option) {
+        const billedDays = Number(option.billedDays);
+        const amount = Number(option.amount);
+        const perDay = billedDays > 0 && Number.isFinite(amount) ? amount / billedDays : 0;
+
+        return `BHD ${perDay.toFixed(3)} / day`;
+    }
+
+    /**
+     * @param {{ billedDays: number, amount: number, planWeeks: number }} option
+     */
+    function renderPartnerPlanLengthOption(option) {
+        const active = selectedBilledDays === option.billedDays;
+        const descriptionId = `plan-length-desc-${option.billedDays}`;
+
+        return (
+            <div key={`${option.planWeeks}-${option.billedDays}`} className="flex w-full flex-col">
+                <OnboardingOptionButton
+                    label={`${option.billedDays} days`}
+                    detail={`BHD ${Number(option.amount).toFixed(0)}`}
+                    selected={active}
+                    onSelect={() => selectPartnerPlanLength(option)}
+                    describedBy={descriptionId}
+                />
+                <div
+                    className={[
+                        'grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none',
+                        active ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]',
+                    ].join(' ')}
+                    aria-hidden={!active}
+                >
+                    <div className="min-h-0 overflow-hidden">
+                        <OnboardingInlineDescription id={descriptionId}>
+                            {partnerPlanLengthPerDayLabel(option)}
+                            {option.planWeeks === 1
+                                ? ' — trial pricing is higher per day than the 4 week plan.'
+                                : ' for this plan length.'}
+                        </OnboardingInlineDescription>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     /**
      * @param {number[]} [daysOverride] Pass explicit days when React state may still be stale (e.g. just set 7-day week).
@@ -1530,6 +1640,7 @@ export default function CraftedForYouPage({
             const draftPayload = {
                 craftKey,
                 weekDuration,
+                planWeeks: planWeeks === 1 || planWeeks === 4 ? planWeeks : 4,
                 selectedDays: daysForContinue,
                 selectedByDay,
                 businessSideChoiceByDay,
@@ -1991,11 +2102,13 @@ export default function CraftedForYouPage({
                             {CRAFTS.map((c) => {
                                 const active = c.key === craftKey;
                                 const descriptionId = `craft-desc-${c.key}`;
+                                const dailyPriceLabel = partnerDailyRateLabelFor(c.key);
 
                                 return (
                                     <div key={c.key} className="flex w-full flex-col">
                                         <OnboardingOptionButton
                                             label={c.title}
+                                            detail={dailyPriceLabel}
                                             selected={active}
                                             onSelect={() => setCraftKey(c.key)}
                                             describedBy={descriptionId}
@@ -2036,33 +2149,74 @@ export default function CraftedForYouPage({
                     </section>
                 ) : null}
 
-                {/* Screen 3 — Week duration */}
+                {/* Screen 3 — Week duration / Partner plan length */}
                 {screen === durationScreen ? (
                     <section className="rounded-[12px] border border-gray-200 bg-white p-6 shadow-sm">
                         <h2 className="font-montserrat text-[16px] font-bold tracking-tight text-[#262A22]">
-                            Week duration
+                            {isPartnerFulfillment ? 'Plan length' : 'Week duration'}
                         </h2>
                         <p className="mt-1 font-body text-sm text-[#555555]">
-                            How many days are you crafting for this week?
+                            {isPartnerFulfillment
+                                ? 'Choose how many days you want for this craft.'
+                                : 'How many days are you crafting for this week?'}
                         </p>
 
-                        <div className="mt-6 rounded-[12px] border border-gray-200 bg-[#F8F9F6] p-5">
-                            <div className="flex flex-wrap gap-2">
-                                {[5, 6, 7].map((n) => (
-                                    <FoodFilterPill
-                                        key={n}
-                                        label={`${n} days`}
-                                        isActive={weekDuration === n}
-                                        onClick={() => setWeekDuration(n)}
-                                    />
-                                ))}
+                        {isPartnerFulfillment ? (
+                            <div className="mt-6 flex w-full flex-col gap-5">
+                                <div className="flex w-full flex-col gap-2.5">
+                                    {partnerPlanLengthOptions
+                                        .filter((option) => option.planWeeks === 4)
+                                        .map((option) => renderPartnerPlanLengthOption(option))}
+                                </div>
+                                <div>
+                                    <button
+                                        type="button"
+                                        className="font-montserrat text-sm font-semibold text-[#6E8C47] underline underline-offset-2 outline-none hover:text-[#556C37] focus-visible:ring-2 focus-visible:ring-[#6E8C47] focus-visible:ring-offset-2"
+                                        aria-expanded={partnerTrialOpen}
+                                        onClick={() => setPartnerTrialOpen((open) => !open)}
+                                    >
+                                        1 week trial
+                                    </button>
+                                    <div
+                                        className={[
+                                            'grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none',
+                                            partnerTrialOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]',
+                                        ].join(' ')}
+                                        aria-hidden={!partnerTrialOpen}
+                                    >
+                                        <div className="min-h-0 overflow-hidden">
+                                            <div className="mt-3 flex w-full flex-col gap-2.5">
+                                                {partnerPlanLengthOptions
+                                                    .filter((option) => option.planWeeks === 1)
+                                                    .map((option) => renderPartnerPlanLengthOption(option))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            <p className="mt-3 font-body text-xs text-[#555555]">
-                                {weekDuration === 7
-                                    ? 'All seven days will be included automatically.'
-                                    : `You’ll pick exactly ${weekDuration ?? '…'} active day(s) next.`}
-                            </p>
-                        </div>
+                        ) : (
+                            <div className="mt-6 rounded-[12px] border border-gray-200 bg-[#F8F9F6] p-5">
+                                <div className="flex flex-wrap gap-2">
+                                    {[5, 6, 7].map((n) => (
+                                        <FoodFilterPill
+                                            key={n}
+                                            label={`${n} days`}
+                                            isActive={weekDuration === n}
+                                            onClick={() => {
+                                                setWeekDuration(n);
+                                                setPlanWeeks(null);
+                                                setSelectedBilledDays(null);
+                                            }}
+                                        />
+                                    ))}
+                                </div>
+                                <p className="mt-3 font-body text-xs text-[#555555]">
+                                    {weekDuration === 7
+                                        ? 'All seven days will be included automatically.'
+                                        : `You’ll pick exactly ${weekDuration ?? '…'} active day(s) next.`}
+                                </p>
+                            </div>
+                        )}
 
                         <div className={mobileNavBarClass}>
                             <Button

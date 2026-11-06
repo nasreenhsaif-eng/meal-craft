@@ -20,6 +20,7 @@ class StoreConsultationResumeDraftRequest extends FormRequest
         return [
             'craftKey' => ['required', 'string', Rule::in(['full', 'day', 'afternoon', 'intermittent', 'business'])],
             'weekDuration' => ['required', 'integer', 'min:1', 'max:7'],
+            'planWeeks' => ['sometimes', 'integer', Rule::in([1, 4])],
             'selectedDays' => ['required', 'array', 'min:1'],
             'selectedDays.*' => ['integer', 'min:1', 'max:7'],
             'fulfillmentChoice' => ['required', 'string', Rule::in(['diy', 'partner_kitchen'])],
