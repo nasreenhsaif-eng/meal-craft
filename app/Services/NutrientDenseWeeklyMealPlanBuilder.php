@@ -9,6 +9,7 @@ use App\Models\Meal;
 use App\Models\MealPlan;
 use App\Models\User;
 use App\Services\Nutrition\DayMicronutrientCoverageAnalyzer;
+use App\Support\MealTiersLibraryExclusions;
 use App\Support\NutrientDailyRdi;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -18,9 +19,9 @@ use InvalidArgumentException;
  */
 final class NutrientDenseWeeklyMealPlanBuilder
 {
-    public const PLAN_NAME = 'TBD Weekly Protocol';
+    public const PLAN_NAME = 'Balanced Anti-inflammatory';
 
-    public const PLAN_GOAL = 'TBD — micronutrient-optimized whole foods within your calorie tier.';
+    public const PLAN_GOAL = 'Nutrient-dense meal plan with balanced macronutrients and anti-inflammatory whole foods.';
 
     public const PROTOCOL_SLUG = 'nutrient_dense';
 
@@ -241,10 +242,7 @@ final class NutrientDenseWeeklyMealPlanBuilder
     private function ensureMissingScheduledMealsExist(): void
     {
         $scheduled = NutrientDenseWeeklyRotationSchedule::allScheduledMealNames();
-        $existing = Meal::queryForMealLibrary()
-            ->whereIn('name', $scheduled)
-            ->pluck('name')
-            ->all();
+        $existing = $this->existingScheduledMealNames($scheduled);
 
         $missing = array_values(array_diff($scheduled, $existing));
 
@@ -267,12 +265,7 @@ final class NutrientDenseWeeklyMealPlanBuilder
             }
         }
 
-        $existing = Meal::queryForMealLibrary()
-            ->whereIn('name', $scheduled)
-            ->pluck('name')
-            ->all();
-
-        $stillMissing = array_values(array_diff($scheduled, $existing));
+        $stillMissing = array_values(array_diff($scheduled, $this->existingScheduledMealNames($scheduled)));
 
         if ($stillMissing !== []) {
             throw new InvalidArgumentException(
@@ -282,17 +275,54 @@ final class NutrientDenseWeeklyMealPlanBuilder
     }
 
     /**
+     * @param  list<string>  $names
+     * @return list<string>
+     */
+    private function existingScheduledMealNames(array $names): array
+    {
+        $tiers = Meal::queryScheduledTiersMeals()
+            ->whereIn('name', $names)
+            ->pluck('name')
+            ->all();
+
+        $classic = Meal::queryForMealLibrary()
+            ->whereIn('name', $names)
+            ->get(['name']);
+
+        $classicNames = $classic
+            ->reject(fn (Meal $meal): bool => MealTiersLibraryExclusions::isExcluded($meal))
+            ->pluck('name')
+            ->all();
+
+        return array_values(array_unique(array_merge($tiers, $classicNames)));
+    }
+
+    /**
      * @return array<string, int>
      */
     private function resolveScheduledMealIds(): array
     {
         $names = NutrientDenseWeeklyRotationSchedule::allScheduledMealNames();
 
-        $meals = Meal::queryForMealLibrary()->whereIn('name', $names)->get(['id', 'name']);
+        $meals = Meal::queryScheduledTiersMeals()->whereIn('name', $names)->get(['id', 'name']);
 
         $map = [];
         foreach ($meals as $meal) {
             $map[$meal->name] = (int) $meal->id;
+        }
+
+        $missing = array_values(array_diff($names, array_keys($map)));
+
+        if ($missing !== []) {
+            $classic = Meal::queryForMealLibrary()->whereIn('name', $missing)->get(['id', 'name']);
+
+            foreach ($classic as $meal) {
+                if (MealTiersLibraryExclusions::isExcluded($meal)) {
+                    continue;
+                }
+
+                $map[$meal->name] = (int) $meal->id;
+            }
         }
 
         return $map;

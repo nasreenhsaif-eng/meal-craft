@@ -22,6 +22,8 @@ test('whole food policy allows ghee olives house almond flour and vetted pantry 
         ->and(WholeFoodDietPolicy::isBannedIngredientName('Almond Butter'))->toBeFalse()
         ->and(WholeFoodDietPolicy::isBannedIngredientName('Date Syrup'))->toBeFalse()
         ->and(WholeFoodDietPolicy::isBannedIngredientName('Coconut Cream'))->toBeFalse()
+        ->and(WholeFoodDietPolicy::isBannedIngredientName('Dark Chocolate'))->toBeFalse()
+        ->and(WholeFoodDietPolicy::isBannedIngredientName('Dark Chocolate Chips'))->toBeTrue()
         ->and(WholeFoodDietPolicy::isBannedIngredient(new Ingredient([
             'name' => 'Almond Flour',
             'usda_food_category' => 'Grains/Nuts',

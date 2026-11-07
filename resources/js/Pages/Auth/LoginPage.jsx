@@ -4,9 +4,10 @@ import TextInput from '../../Components/Atoms/TextInput/TextInput';
 import Button from '../../Components/Atoms/Button/Button';
 import TextLink from '../../Components/Atoms/TextLink.jsx';
 import SquareCheckbox from '../../Components/Atoms/Icons/SquareCheckbox.jsx';
+import CustomerOnboardingPhoneFrame from '../../Components/Molecules/Customer/CustomerOnboardingPhoneFrame.jsx';
 
-/** Shared width; pair with `text-center` (hero / footer) or `text-left` (field stack). */
-const contentWidthLayout = 'mx-auto w-full max-w-[90%] md:max-w-[440px]';
+/** Shared width inside the onboarding phone frame (≈430px). */
+const contentWidthLayout = 'mx-auto w-full max-w-full';
 
 const contentWidthClass = `${contentWidthLayout} text-center`;
 
@@ -171,132 +172,134 @@ export default function LoginPage({
     );
 
     return (
-        <div className="relative min-h-screen w-screen bg-[#FFFFFF]">
-            <main className="relative z-0 flex min-h-screen w-screen flex-col items-center justify-center bg-[#FFFFFF] px-2 sm:px-4 md:px-6">
-                <div className="flex w-full max-w-full flex-col items-center md:px-12">
-                    <div className="flex justify-center">
-                        <MealCraftLogo variant="seal-md" width={168} className="h-auto shrink-0" alt="Meal Craft" />
-                    </div>
-
-                    <header className={`mt-8 w-full ${contentWidthClass}`}>
-                        <h1 className="font-sans text-2xl font-bold tracking-tight text-[#6E8C47] sm:text-3xl lg:text-4xl">
-                            Welcome to Meal Craft
-                        </h1>
-                    </header>
-
-                    {errorMessage ? (
-                        <div className={`mt-6 w-full ${contentWidthClass}`}>
-                            <p
-                                className="rounded-[12px] border border-red-200 bg-red-50 px-4 py-3 text-center text-sm font-medium text-red-800"
-                                role="alert"
-                            >
-                                {errorMessage}
-                            </p>
+        <CustomerOnboardingPhoneFrame>
+            <div className="relative flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden bg-white">
+                <main className="relative z-0 flex min-h-0 flex-1 flex-col items-center justify-center overflow-y-auto overscroll-contain px-3 py-6">
+                    <div className="flex w-full max-w-full flex-col items-center">
+                        <div className="flex justify-center">
+                            <MealCraftLogo variant="seal-md" width={168} className="h-auto shrink-0" alt="Meal Craft" />
                         </div>
-                    ) : null}
 
-                    {statusMessage ? (
-                        <div className={`mt-6 w-full ${contentWidthClass}`}>
-                            <p className="text-center text-sm font-medium text-green-600" role="status">
-                                {statusMessage}
-                            </p>
-                        </div>
-                    ) : null}
+                        <header className={`mt-8 w-full ${contentWidthClass}`}>
+                            <h1 className="font-sans text-2xl font-bold tracking-tight text-[#6E8C47] sm:text-3xl">
+                                Welcome to Meal Craft
+                            </h1>
+                        </header>
 
-                    <form
-                        onSubmit={handleSubmit}
-                        method={isServerForm ? 'post' : undefined}
-                        action={isServerForm ? formAction : undefined}
-                        className="mt-6 w-full"
-                        noValidate={!isServerForm}
-                    >
-                        {isServerForm ? <input type="hidden" name="_token" value={csrfToken} /> : null}
+                        {errorMessage ? (
+                            <div className={`mt-6 w-full ${contentWidthClass}`}>
+                                <p
+                                    className="rounded-[12px] border border-red-200 bg-red-50 px-4 py-3 text-center text-sm font-medium text-red-800"
+                                    role="alert"
+                                >
+                                    {errorMessage}
+                                </p>
+                            </div>
+                        ) : null}
 
-                        <div className={`${fieldStackClass} space-y-4`}>
-                            <TextInput
-                                label="Email"
-                                type="email"
-                                name="email"
-                                placeholder="you@example.com"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                autoComplete="email"
-                                error={emailError || undefined}
-                                className="!max-w-none"
-                                required={isServerForm}
-                                disabled={isSubmitting || successSealVisible}
-                            />
-                            <TextInput
-                                label="Password"
-                                type="password"
-                                name="password"
-                                placeholder="••••••••"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                autoComplete="current-password"
-                                error={passwordError || undefined}
-                                className="!max-w-none"
-                                required={isServerForm}
-                                disabled={isSubmitting || successSealVisible}
-                            />
+                        {statusMessage ? (
+                            <div className={`mt-6 w-full ${contentWidthClass}`}>
+                                <p className="text-center text-sm font-medium text-green-600" role="status">
+                                    {statusMessage}
+                                </p>
+                            </div>
+                        ) : null}
 
-                            <div className="flex w-full flex-wrap items-center justify-between gap-x-4 gap-y-3 text-left">
-                                <div className="flex min-w-0 items-center">{rememberControl}</div>
-                                {showForgotPassword ? (
-                                    <TextLink href={forgotPasswordHref} className="shrink-0 text-sm font-medium">
-                                        Forgot Password?
-                                    </TextLink>
-                                ) : null}
+                        <form
+                            onSubmit={handleSubmit}
+                            method={isServerForm ? 'post' : undefined}
+                            action={isServerForm ? formAction : undefined}
+                            className="mt-6 w-full"
+                            noValidate={!isServerForm}
+                        >
+                            {isServerForm ? <input type="hidden" name="_token" value={csrfToken} /> : null}
+
+                            <div className={`${fieldStackClass} space-y-4`}>
+                                <TextInput
+                                    label="Email"
+                                    type="email"
+                                    name="email"
+                                    placeholder="you@example.com"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    autoComplete="email"
+                                    error={emailError || undefined}
+                                    className="!max-w-none"
+                                    required={isServerForm}
+                                    disabled={isSubmitting || successSealVisible}
+                                />
+                                <TextInput
+                                    label="Password"
+                                    type="password"
+                                    name="password"
+                                    placeholder="••••••••"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    autoComplete="current-password"
+                                    error={passwordError || undefined}
+                                    className="!max-w-none"
+                                    required={isServerForm}
+                                    disabled={isSubmitting || successSealVisible}
+                                />
+
+                                <div className="flex w-full flex-wrap items-center justify-between gap-x-4 gap-y-3 text-left">
+                                    <div className="flex min-w-0 items-center">{rememberControl}</div>
+                                    {showForgotPassword ? (
+                                        <TextLink href={forgotPasswordHref} className="shrink-0 text-sm font-medium">
+                                            Forgot Password?
+                                        </TextLink>
+                                    ) : null}
+                                </div>
+
+                                <Button
+                                    label={isSubmitting ? 'Signing in…' : 'Sign In'}
+                                    variant="primary"
+                                    type="submit"
+                                    className="w-full"
+                                    disabled={isSubmitting || successSealVisible}
+                                />
                             </div>
 
-                            <Button
-                                label={isSubmitting ? 'Signing in…' : 'Sign In'}
-                                variant="primary"
-                                type="submit"
+                            {showSignUp ? (
+                                <p className="mx-auto mt-8 w-full text-center font-sans text-[13px] leading-relaxed text-grey-94 sm:text-sm">
+                                    <span className="font-medium">New here?</span>{' '}
+                                    <TextLink href={signUpHref} className="rounded-sm font-bold">
+                                        Sign up
+                                    </TextLink>
+                                </p>
+                            ) : null}
+                        </form>
+                    </div>
+                </main>
+
+                {successSealVisible ? (
+                    <div
+                        className="absolute inset-0 z-50 flex items-center justify-center bg-[#FFFFFF] px-4 motion-reduce:transition-none"
+                        style={{
+                            animation: `loginSuccessSealFadeIn ${SUCCESS_SEAL_FADE_MS}ms cubic-bezier(0.4, 0, 0.2, 1) forwards`,
+                        }}
+                        aria-busy="true"
+                        aria-label="Signing you in"
+                    >
+                        <div className="flex w-full max-w-full flex-col items-center justify-center">
+                            <MealCraftLogo
+                                variant="marketing-animated"
+                                width={280}
                                 className="w-full"
-                                disabled={isSubmitting || successSealVisible}
+                                alt="Meal Craft"
+                                onAnimationComplete={handleSealAnimationComplete}
                             />
                         </div>
-
-                        {showSignUp ? (
-                            <p className="mx-auto mt-8 w-full text-center font-sans text-[13px] leading-relaxed text-grey-94 sm:text-sm">
-                                <span className="font-medium">New here?</span>{' '}
-                                <TextLink href={signUpHref} className="rounded-sm font-bold">
-                                    Sign up
-                                </TextLink>
-                            </p>
-                        ) : null}
-                    </form>
-                </div>
-            </main>
-
-            {successSealVisible ? (
-                <div
-                    className="fixed inset-0 z-50 flex items-center justify-center bg-[#FFFFFF] px-4 motion-reduce:transition-none"
-                    style={{
-                        animation: `loginSuccessSealFadeIn ${SUCCESS_SEAL_FADE_MS}ms cubic-bezier(0.4, 0, 0.2, 1) forwards`,
-                    }}
-                    aria-busy="true"
-                    aria-label="Signing you in"
-                >
-                    <div className="flex w-full max-w-[min(430px,100%)] flex-col items-center justify-center">
-                        <MealCraftLogo
-                            variant="marketing-animated"
-                            width={320}
-                            className="w-full"
-                            alt="Meal Craft"
-                            onAnimationComplete={handleSealAnimationComplete}
-                        />
                     </div>
-                </div>
-            ) : null}
+                ) : null}
 
-            <style>{`
-                @keyframes loginSuccessSealFadeIn {
-                    from { opacity: 0; }
-                    to { opacity: 1; }
-                }
-            `}</style>
-        </div>
+                <style>{`
+                    @keyframes loginSuccessSealFadeIn {
+                        from { opacity: 0; }
+                        to { opacity: 1; }
+                    }
+                `}</style>
+            </div>
+        </CustomerOnboardingPhoneFrame>
     );
 }

@@ -182,20 +182,20 @@ test('savory egg hash adaptation keeps cookable sides at 1000 tier', function ()
     ]);
 
     $profile = CustomerProfile::factory()->create([
-        'daily_calorie_target' => 1000,
+        'daily_calorie_target' => 1250,
         'protein_percentage' => 40,
         'carb_percentage' => 30,
         'fat_percentage' => 30,
     ]);
 
     $adapted = AdaptedMenuBuilder::adaptMealForProfile($profile, $meal->fresh(['ingredients']), [
-        'plan_tier' => 1000,
+        'plan_tier' => 1250,
         'craft_key' => 'full',
     ]);
 
     $byName = collect($adapted['ingredients'])->keyBy('name');
 
-    expect($adapted['savory_egg_count'])->toBe(2)
+    expect($adapted['savory_egg_count'])->toBe(3)
         ->and((float) $byName['Sweet Potato']['adapted_amount_grams'])->toBeGreaterThanOrEqual(120.0)
         ->and((float) $byName['White Onion']['adapted_amount_grams'])->toBeGreaterThanOrEqual(50.0)
         ->and((float) $byName['Bell Pepper (Red)']['adapted_amount_grams'])->toBeGreaterThanOrEqual(50.0)

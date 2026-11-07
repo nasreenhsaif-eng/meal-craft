@@ -1,43 +1,161 @@
+import { useState } from 'react';
+import { Link } from '@inertiajs/react';
 import Button from '../../Components/Atoms/Button/Button.jsx';
-import CustomerAppHeaderActions from '../../Components/Molecules/Customer/CustomerAppHeaderActions.jsx';
+import CustomerAppBottomNav from '../../Components/Molecules/Customer/CustomerAppBottomNav.jsx';
+import FulfillmentOptionCards from '../../Components/Molecules/Customer/FulfillmentOptionCards.jsx';
 import CustomerInertiaShell from '../../Layouts/CustomerInertiaShell.jsx';
-import { resolveInertiaLayoutChild } from '../../lib/resolveInertiaLayoutChild.js';
+import { formatCalorieRange } from '../../meal-craft/dailyTargetsCalculator.js';
+
+/** @type {Array<{ title: string; description: string; ctaHint?: string }>} */
+const HOME_FEATURE_TEASERS = [
+    {
+        title: 'Ingredient Scanner',
+        description:
+            'Instantly identify harmful additives and verify food quality with our smart scanner.',
+        ctaHint: 'Coming soon',
+    },
+    {
+        title: 'Non-Toxic Kitchen Guide',
+        description:
+            'Audit your kitchen tools and discover which items may be leaching harmful chemicals into your food.',
+        ctaHint: 'Take the Quiz — Coming soon',
+    },
+    {
+        title: 'Health Tracking',
+        description:
+            'Monitor inflammation markers and track your wellness journey with detailed insights.',
+        ctaHint: 'Coming soon',
+    },
+];
+
+/**
+ * @param {{
+ *   dailyCalorieTarget?: number | null;
+ *   dailyCaloriesMin?: number | null;
+ *   dailyCaloriesMax?: number | null;
+ * } | null | undefined} profile
+ */
+function dailyCaloriesDisplay(profile) {
+    const min = Number(profile?.dailyCaloriesMin);
+    const max = Number(profile?.dailyCaloriesMax);
+
+    if (Number.isFinite(min) && Number.isFinite(max) && min > 0 && max > 0) {
+        return formatCalorieRange(min, max);
+    }
+
+    const snapped = Number(profile?.dailyCalorieTarget);
+
+    return Number.isFinite(snapped) && snapped > 0 ? snapped : null;
+}
 
 /**
  * @param {object} props
- * @param {string} [props.consultationUrl]
+ * @param {string} [props.customerName]
+ * @param {{
+ *   dailyCalorieTarget?: number | null;
+ *   dailyCaloriesMin?: number | null;
+ *   dailyCaloriesMax?: number | null;
+ *   macroSplitStyle?: string | null;
+ * } | null} [props.profile]
+ * @param {'welcome' | 'receive'} [props.mode]
+ * @param {string} [props.deliveryUrl]
+ * @param {string} [props.fulfillmentUrl]
+ * @param {string} [props.homeUrl]
+ * @param {string} [props.profileUrl]
+ * @param {string} [props.shopUrl]
  * @param {string} [props.mealPlanSummaryUrl]
- * @param {{ craftKey?: string; weekDuration?: number; submittedAt?: string } | null} [props.craftPlan]
+ * @param {string} [props.cartUrl]
+ * @param {() => void} [props.onChooseMeals]
+ * @param {() => void} [props.onBackFromReceive]
+ * @param {(choice: 'partner_kitchen' | 'diy') => void} [props.onFulfillmentContinue]
+ * @param {string} [props.chooseByFridayLabel]
+ * @param {boolean} [props.showPlanReady]
+ * @param {boolean} [props.preview] Marketing embed — same UI, no navigation.
  */
-export default function Home({
-    customerName,
-    profile,
-    consultationUrl = '/consultation/crafted-for-you',
+export function WelcomeBackInner({
+    customerName = '',
+    profile = null,
+    mode = 'welcome',
+    deliveryUrl = '/checkout/delivery',
+    fulfillmentUrl = '/checkout/fulfillment',
+    homeUrl = '/app',
+    profileUrl = '/app/profile',
+    shopUrl = '/app/shop',
     mealPlanSummaryUrl = '/app/meal-plan',
-    craftPlan = null,
+    cartUrl = '/app/cart',
+    onChooseMeals,
+    onBackFromReceive,
+    onFulfillmentContinue,
+    chooseByFridayLabel = '',
+    showPlanReady = true,
+    preview = false,
 }) {
-    const hasSubmittedPlan = Boolean(craftPlan?.submittedAt);
+    const isReceive = mode === 'receive';
+    const dailyCaloriesLabel = dailyCaloriesDisplay(profile);
+    const homeHref = String(homeUrl || '/app').split('?')[0] || '/app';
 
     return (
         <CustomerInertiaShell
             customerName={customerName}
-            headerActions={<CustomerAppHeaderActions />}
+            cartUrl={cartUrl}
+            embedded={preview}
+            footerNav={
+                isReceive ? null : (
+                    <CustomerAppBottomNav
+                        activeTab="home"
+                        homeUrl={homeHref}
+                        profileUrl={profileUrl}
+                        shopUrl={shopUrl}
+                        mealsUrl={mealPlanSummaryUrl}
+                        navigationDisabled={preview}
+                    />
+                )
+            }
         >
-            <div className="rounded-[16px] border border-gray-200 bg-white p-8 shadow-sm">
-                <h1 className="font-montserrat text-3xl font-semibold text-[#262A22]">Welcome back{customerName ? `, ${customerName}` : ''}</h1>
-                <p className="mt-3 text-sm text-[#555555]">
-                    {hasSubmittedPlan
-                        ? 'Your meal selections are saved. You can update them anytime before the kitchen starts production.'
-                        : 'Your targets are set. Next, choose the meals you want for your week.'}
-                </p>
+            <div className="w-full min-w-0 rounded-[16px] border border-gray-200 bg-white px-4 py-6 shadow-sm sm:p-8">
+                {isReceive ? (
+                    typeof onBackFromReceive === 'function' ? (
+                        <button
+                            type="button"
+                            onClick={onBackFromReceive}
+                            className="mb-3 inline-flex items-center gap-1 font-montserrat text-sm font-semibold text-[#5A6B44] hover:underline"
+                        >
+                            ← Back to home
+                        </button>
+                    ) : (
+                        <Link
+                            href={homeHref}
+                            className="mb-3 inline-flex items-center gap-1 font-montserrat text-sm font-semibold text-[#5A6B44] hover:underline"
+                        >
+                            ← Back to home
+                        </Link>
+                    )
+                ) : null}
 
-                {profile ? (
-                    <dl className="mt-8 grid gap-4 rounded-[12px] bg-[#F8F9F6] p-5 text-sm sm:grid-cols-2">
-                        <div>
+                <h1 className="font-montserrat text-3xl font-semibold tracking-tight text-[#262A22]">
+                    {isReceive
+                        ? 'How would you like to receive your meal plan?'
+                        : `Welcome back${customerName ? `, ${customerName}` : ''}`}
+                </h1>
+
+                {isReceive ? (
+                    <p className="mt-3 max-w-2xl font-body text-sm leading-relaxed text-[#555555] sm:text-base">
+                        Choose between fresh daily preparation delivered to your door or self-prepared recipes at
+                        home.
+                    </p>
+                ) : (
+                    <p className="mt-3 max-w-2xl font-body text-sm leading-relaxed text-[#555555] sm:text-base">
+                        Looking forward to crafting your meals!
+                    </p>
+                )}
+
+                {!isReceive && profile ? (
+                    <dl className="mt-8 grid w-full gap-4 rounded-[12px] bg-[#F8F9F6] p-4 text-sm sm:grid-cols-2 sm:p-5">
+                        <div className="min-w-0">
                             <dt className="text-[#555555]">Daily calories</dt>
-                            <dd className="mt-1 text-lg font-semibold text-[#262A22]">{profile.dailyCalorieTarget}</dd>
+                            <dd className="mt-1 text-lg font-semibold text-[#262A22]">{dailyCaloriesLabel ?? '—'}</dd>
                         </div>
-                        <div>
+                        <div className="min-w-0">
                             <dt className="text-[#555555]">Macro style</dt>
                             <dd className="mt-1 text-lg font-semibold capitalize text-[#262A22]">
                                 {profile.macroSplitStyle?.replace('_', ' ')}
@@ -46,34 +164,125 @@ export default function Home({
                     </dl>
                 ) : null}
 
-                <div className="mt-8 rounded-[12px] border border-[#6E8C47]/20 bg-[#6E8C47]/5 p-6">
-                    <h2 className="font-montserrat text-xl font-semibold text-[#262A22]">
-                        {hasSubmittedPlan ? 'Update your meals' : 'Choose your meals'}
-                    </h2>
-                    <p className="mt-2 text-sm text-[#555555]">
-                        Browse breakfasts, mains, salads, desserts, and optional soup — portioned to your {profile?.dailyCalorieTarget ?? 'plan'} kcal target.
-                    </p>
-                    <div className="mt-5 flex flex-wrap gap-3">
-                        {hasSubmittedPlan ? (
+                {!isReceive && profile && showPlanReady ? (
+                    <div className="mt-6">
+                        <p className="max-w-2xl font-body text-sm leading-relaxed text-[#555555] sm:text-base">
+                            Your meal plan is ready.
+                        </p>
+                        <p className="mt-2 max-w-2xl font-body text-[11px] leading-snug tracking-wide text-[#777777] uppercase sm:text-xs">
+                            Please submit your choices prior to end of day Friday
+                            {chooseByFridayLabel ? (
+                                <>
+                                    ,{' '}
+                                    <span className="font-semibold text-[#555555]">{chooseByFridayLabel}</span>
+                                </>
+                            ) : null}
+                            , or our system will automatically choose the meals for your kind self!
+                        </p>
+                        <div className="mt-6 flex w-full justify-center">
                             <Button
                                 type="button"
-                                variant="secondary"
-                                label="View meal plan summary"
-                                onClick={() => window.location.assign(mealPlanSummaryUrl)}
-                                className="min-w-[200px]"
+                                label="Choose your meals"
+                                variant="primary"
+                                onClick={onChooseMeals}
+                                className="min-w-[200px] uppercase tracking-[0.08em]"
                             />
-                        ) : null}
-                        <Button
-                            type="button"
-                            label={hasSubmittedPlan ? 'Edit meal plan' : 'Start meal selection'}
-                            onClick={() => window.location.assign(consultationUrl)}
-                            className="min-w-[200px]"
-                        />
+                        </div>
                     </div>
-                </div>
+                ) : null}
+
+                {!isReceive ? (
+                    <ul className="mt-8 flex w-full min-w-0 flex-col gap-3">
+                        {HOME_FEATURE_TEASERS.map((feature) => (
+                            <li
+                                key={feature.title}
+                                className="rounded-[12px] border border-gray-200 bg-[#F8F9F6] px-4 py-4 sm:px-5"
+                            >
+                                <h2 className="font-montserrat text-base font-semibold tracking-tight text-[#262A22]">
+                                    {feature.title}
+                                </h2>
+                                <p className="mt-2 font-body text-sm leading-relaxed text-[#555555]">
+                                    {feature.description}
+                                </p>
+                                <p className="mt-3 font-montserrat text-xs font-bold uppercase tracking-[0.08em] text-[#5A6B44]">
+                                    {feature.ctaHint}
+                                </p>
+                            </li>
+                        ))}
+                    </ul>
+                ) : null}
+
+                {isReceive ? (
+                    <FulfillmentOptionCards
+                        deliveryUrl={deliveryUrl}
+                        className="mt-8"
+                        onContinue={
+                            typeof onFulfillmentContinue === 'function' ? onFulfillmentContinue : undefined
+                        }
+                    />
+                ) : null}
             </div>
         </CustomerInertiaShell>
     );
 }
 
-Home.layout = (pageOrProps) => resolveInertiaLayoutChild(pageOrProps);
+/**
+ * @param {object} props
+ * @param {string} [props.homeUrl]
+ * @param {string} [props.profileUrl]
+ * @param {string} [props.shopUrl]
+ * @param {string} [props.mealPlanSummaryUrl]
+ * @param {string} [props.cartUrl]
+ * @param {string} [props.deliveryUrl]
+ * @param {string} [props.fulfillmentUrl]
+ * @param {string} [props.consultationUrl]
+ * @param {string} [props.consultationEditUrl]
+ * @param {string} [props.chooseByFridayLabel]
+ * @param {{ craftKey?: string; weekDuration?: number; submittedAt?: string } | null} [props.craftPlan]
+ * @param {boolean} [props.showPlanReady]
+ */
+export default function Home({
+    customerName,
+    profile,
+    homeUrl = '/app',
+    profileUrl = '/app/profile',
+    shopUrl = '/app/shop',
+    mealPlanSummaryUrl = '/app/meal-plan',
+    cartUrl = '/app/cart',
+    deliveryUrl = '/checkout/delivery',
+    fulfillmentUrl = '/checkout/fulfillment',
+    consultationUrl = '/consultation/crafted-for-you',
+    consultationEditUrl = '/consultation/crafted-for-you/edit',
+    craftPlan = null,
+    chooseByFridayLabel = '',
+    showPlanReady = true,
+}) {
+    /** @type {['welcome' | 'receive', import('react').Dispatch<import('react').SetStateAction<'welcome' | 'receive'>>]} */
+    const [mode, setMode] = useState(/** @type {'welcome' | 'receive'} */ ('welcome'));
+
+    return (
+        <WelcomeBackInner
+            customerName={customerName}
+            profile={profile}
+            mode={mode}
+            deliveryUrl={deliveryUrl}
+            fulfillmentUrl={fulfillmentUrl}
+            homeUrl={homeUrl}
+            profileUrl={profileUrl}
+            shopUrl={shopUrl}
+            mealPlanSummaryUrl={mealPlanSummaryUrl}
+            cartUrl={cartUrl}
+            chooseByFridayLabel={chooseByFridayLabel}
+            showPlanReady={showPlanReady}
+            onChooseMeals={() => setMode('receive')}
+            onBackFromReceive={() => setMode('welcome')}
+            onFulfillmentContinue={(choice) => {
+                const separator = consultationUrl.includes('?') ? '&' : '?';
+                window.location.assign(
+                    `${consultationUrl}${separator}receive=1&fulfillment=${encodeURIComponent(choice)}`,
+                );
+            }}
+        />
+    );
+}
+

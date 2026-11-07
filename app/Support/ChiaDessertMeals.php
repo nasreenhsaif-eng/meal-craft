@@ -98,10 +98,17 @@ final class ChiaDessertMeals
             return $meal;
         }
 
-        $resolved = Meal::queryForMealLibrary()
+        $resolved = Meal::queryScheduledTiersMeals()
             ->where('name', $resolvedName)
             ->with('ingredients')
             ->first();
+
+        if (! $resolved instanceof Meal) {
+            $resolved = Meal::queryForMealLibrary()
+                ->where('name', $resolvedName)
+                ->with('ingredients')
+                ->first();
+        }
 
         return $resolved instanceof Meal ? $resolved : $meal;
     }

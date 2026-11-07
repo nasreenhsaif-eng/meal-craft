@@ -1,9 +1,8 @@
 import {
     CALORIC_THRESHOLD_NOTICE,
+    CALORIC_THRESHOLD_NOTICE_MAX_CALORIES,
     isBelowMicronutrientEnforcedCalories,
-    MICRONUTRIENT_ENFORCED_MIN_CALORIES,
 } from '../../meal-library/caloricThresholdNotice.ts';
-import { ENFORCED_MICRONUTRIENT_TIERS } from '../../meal-library/nutrientDailyRdi.ts';
 
 /**
  * @param {object} props
@@ -27,9 +26,9 @@ export default function CaloricThresholdNotice({ planTierCalories = 0 }) {
                 {CALORIC_THRESHOLD_NOTICE.title}
             </h3>
             <p className="mt-2 font-body text-xs font-medium text-[#5A6B44]">
-                Your plan is {planTierCalories} kcal per delivery day — below the{' '}
-                {MICRONUTRIENT_ENFORCED_MIN_CALORIES} kcal threshold where Meal Craft optimizes recipes for{' '}
-                {ENFORCED_MICRONUTRIENT_TIERS.join(' / ')} kcal micronutrient coverage.
+                Your plan is {planTierCalories} kcal per delivery day — at or below the{' '}
+                {CALORIC_THRESHOLD_NOTICE_MAX_CALORIES} kcal threshold where micronutrient coverage from whole foods
+                becomes difficult to sustain.
             </p>
             <div className="mt-3 space-y-3">
                 {CALORIC_THRESHOLD_NOTICE.paragraphs.map((paragraph) => (

@@ -1,6 +1,7 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { IconChevronDown } from '../SvgIcons.jsx';
+import { portalMenuRectFromTrigger, TEXT_INPUT_ROOT } from './fieldLayout.js';
 
 /**
  * Minimalist dropdown styled like TextInput (but without native select blue highlights).
@@ -67,12 +68,7 @@ export default function DropdownTextInput({
             if (!el) {
                 return;
             }
-            const r = el.getBoundingClientRect();
-            setMenuRect({
-                left: r.left,
-                top: r.bottom,
-                width: r.width,
-            });
+            setMenuRect(portalMenuRectFromTrigger(el.getBoundingClientRect()));
         };
 
         updateRect();
@@ -87,7 +83,7 @@ export default function DropdownTextInput({
     }, [open]);
 
     return (
-        <div ref={rootRef} className={`block w-full max-w-[492px] text-left ${className}`.trim()}>
+        <div ref={rootRef} className={`${TEXT_INPUT_ROOT} ${className}`.trim()}>
             <label
                 htmlFor={id}
                 className={
@@ -109,7 +105,7 @@ export default function DropdownTextInput({
                     aria-controls={open ? menuId : undefined}
                     aria-label={hideLabel ? `${label}: open category menu` : 'Open dropdown'}
                     onClick={() => setOpen((o) => !o)}
-                    className="relative flex h-[49px] w-full appearance-none items-center justify-between gap-3 overflow-hidden rounded-[12px] border border-[#E5E7EB] bg-[#FFFFFF] px-[20px] text-left font-montserrat text-[16px] font-medium tracking-tight text-[#364153] shadow-sm outline-none transition-[border-color,box-shadow,background-color] duration-200 hover:bg-[#F8F9F6] focus-visible:border-[#5A6B44] focus-visible:ring-2 focus-visible:ring-[#5A6B44] focus-visible:ring-offset-2"
+                    className="relative box-border flex h-[49px] w-full min-w-0 max-w-full appearance-none items-center justify-between gap-3 overflow-hidden rounded-[12px] border border-[#E5E7EB] bg-[#FFFFFF] px-4 text-left font-montserrat text-[16px] font-medium tracking-tight text-[#364153] shadow-sm outline-none transition-[border-color,box-shadow,background-color] duration-200 hover:bg-[#F8F9F6] focus-visible:border-[#5A6B44] focus-visible:ring-2 focus-visible:ring-[#5A6B44] focus-visible:ring-offset-2 sm:px-5"
                 >
                     <span className="min-w-0 truncate">{value || 'Select…'}</span>
                     <div
@@ -125,10 +121,10 @@ export default function DropdownTextInput({
                 ? createPortal(
                       <div
                           data-dropdown-text-input-portal
-                          className="fixed z-[9999]"
+                          className="fixed z-[9999] max-w-[calc(100vw-16px)]"
                           style={{
                               left: `${menuRect.left}px`,
-                              top: `${menuRect.top + 8}px`,
+                              top: `${menuRect.top}px`,
                               width: `${menuRect.width}px`,
                           }}
                       >

@@ -36,6 +36,7 @@ function findSelectedIndex(items, value) {
  *   ariaLabel: string;
  *   unitLabel?: string;
  *   columnClassName?: string;
+ *   compact?: boolean;
  *   visible?: boolean;
  * }} props
  */
@@ -47,6 +48,7 @@ export function WheelColumn({
     ariaLabel,
     unitLabel,
     columnClassName = '',
+    compact = false,
     visible = true,
 }) {
     const listRef = useRef(null);
@@ -55,6 +57,7 @@ export function WheelColumn({
     const [scrollTop, setScrollTop] = useState(0);
 
     const selectedIndex = findSelectedIndex(items, value);
+    const isProgrammaticScrollRef = useRef(false);
 
     const syncScrollPosition = useCallback(() => {
         if (!listRef.current || selectedIndex < 0) {
@@ -62,8 +65,22 @@ export function WheelColumn({
         }
 
         const nextScrollTop = selectedIndex * WHEEL_ITEM_HEIGHT;
-        listRef.current.scrollTop = nextScrollTop;
+        const node = listRef.current;
+        isProgrammaticScrollRef.current = true;
+        window.clearTimeout(scrollTimeoutRef.current);
+        const previousBehavior = node.style.scrollBehavior;
+        node.style.scrollBehavior = 'auto';
+        node.scrollTop = nextScrollTop;
+        node.style.scrollBehavior = previousBehavior;
         setScrollTop(nextScrollTop);
+        window.requestAnimationFrame(() => {
+            if (listRef.current && Math.abs(listRef.current.scrollTop - nextScrollTop) > 1) {
+                listRef.current.style.scrollBehavior = 'auto';
+                listRef.current.scrollTop = nextScrollTop;
+                listRef.current.style.scrollBehavior = previousBehavior;
+            }
+            isProgrammaticScrollRef.current = false;
+        });
     }, [selectedIndex]);
 
     useLayoutEffect(() => {
@@ -112,7 +129,11 @@ export function WheelColumn({
     }, [visible, syncScrollPosition]);
 
     const syncFromScroll = useCallback(() => {
-        if (!listRef.current || items.length === 0) {
+        if (!visible || !listRef.current || items.length === 0) {
+            return;
+        }
+
+        if (isProgrammaticScrollRef.current || listRef.current.clientHeight === 0) {
             return;
         }
 
@@ -128,9 +149,13 @@ export function WheelColumn({
         if (nextValue !== value && Number(nextValue) !== Number(value)) {
             onChange(nextValue);
         }
-    }, [items, onChange, value]);
+    }, [items, onChange, value, visible]);
 
     const handleScroll = () => {
+        if (isProgrammaticScrollRef.current) {
+            return;
+        }
+
         if (rafRef.current) {
             window.cancelAnimationFrame(rafRef.current);
         }
@@ -159,7 +184,7 @@ export function WheelColumn({
                     WebkitMaskImage: WHEEL_MASK_IMAGE,
                     maskImage: WHEEL_MASK_IMAGE,
                 }}
-                className="snap-y snap-mandatory overflow-x-hidden overflow-y-auto overscroll-y-contain scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                className="snap-y snap-mandatory overflow-x-hidden overflow-y-auto overscroll-y-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
             >
                 {Array.from({ length: WHEEL_PAD_COUNT }).map((_, index) => (
                     <li
@@ -184,7 +209,10 @@ export function WheelColumn({
                                 backfaceVisibility: 'hidden',
                             }}
                             className={[
-                                'mx-1 flex shrink-0 snap-center items-center justify-center rounded-[10px] px-1 font-montserrat text-base leading-none will-change-transform sm:mx-2 sm:px-2',
+                                'flex shrink-0 snap-center items-center justify-center rounded-[10px] font-montserrat text-base leading-none will-change-transform',
+                                compact
+                                    ? 'mx-0.5 px-0.5'
+                                    : 'mx-1 px-1 sm:mx-2 sm:px-2',
                                 visual.tier === 'selected'
                                     ? 'font-bold text-[#364153]'
                                     : 'font-medium text-[#6B7280]',
@@ -193,7 +221,14 @@ export function WheelColumn({
                         >
                             <span>{formatItem(item)}</span>
                             {visual.tier === 'selected' && unitLabel ? (
-                                <span className="ml-1.5 shrink-0 text-sm font-semibold text-[#364153]">{unitLabel}</span>
+                                <span
+                                    className={[
+                                        'shrink-0 font-semibold text-[#364153]',
+                                        compact ? 'ml-1 text-xs' : 'ml-1.5 text-sm',
+                                    ].join(' ')}
+                                >
+                                    {unitLabel}
+                                </span>
                             ) : null}
                         </li>
                     );

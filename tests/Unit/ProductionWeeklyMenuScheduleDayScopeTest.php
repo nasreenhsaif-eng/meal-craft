@@ -103,3 +103,41 @@ test('scheduledFullCraftByWeekday only builds the requested weekday', function (
 
     expect($fullWeek)->toHaveKeys([1, 2]);
 });
+
+test('resolveProductionMealPlan ignores unpublished weekly plans', function () {
+    $draft = MealPlan::query()->create([
+        'name' => 'Unpublished draft weekly',
+        'goal' => 'Draft only',
+        'schema_type' => MealPlanSchemaType::WeeklyStructured,
+        'plan_category' => 'balanced',
+    ]);
+
+    config(['customer_nutrition.production_meal_plan_id' => $draft->id]);
+
+    expect(ProductionWeeklyMenuSchedule::resolveBalancedProductionMealPlan())->toBeNull()
+        ->and(ProductionWeeklyMenuSchedule::resolveProductionMealPlan())->toBeNull();
+});
+
+test('resolveProductionMealPlan returns the published production plan', function () {
+    $draft = MealPlan::query()->create([
+        'name' => 'Newer unpublished draft',
+        'goal' => 'Should not win',
+        'schema_type' => MealPlanSchemaType::WeeklyStructured,
+        'plan_category' => 'balanced',
+    ]);
+
+    $published = MealPlan::query()->create([
+        'name' => 'Published production weekly',
+        'goal' => 'Customer experience',
+        'schema_type' => MealPlanSchemaType::WeeklyStructured,
+        'plan_category' => 'balanced',
+        'published_starts_on' => now()->toDateString(),
+        'published_ends_on' => now()->addDays(6)->toDateString(),
+    ]);
+
+    config(['customer_nutrition.production_meal_plan_id' => $published->id]);
+
+    expect(ProductionWeeklyMenuSchedule::resolveBalancedProductionMealPlan()?->id)->toBe($published->id)
+        ->and(ProductionWeeklyMenuSchedule::resolveProductionMealPlan()?->id)->toBe($published->id)
+        ->and($draft->isPublished())->toBeFalse();
+});

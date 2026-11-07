@@ -4,6 +4,7 @@ use App\Http\Middleware\CustomerOnboardingMiddleware;
 use App\Http\Middleware\EnsureOnboardingComplete;
 use App\Http\Middleware\EnsureOnboardingIncomplete;
 use App\Http\Middleware\EnsurePortalChoiceAccess;
+use App\Http\Middleware\EnsureSignupVerified;
 use App\Http\Middleware\EnsureUserIsAdmin;
 use App\Http\Middleware\EnsureUserIsCustomer;
 use App\Http\Middleware\HandleInertiaRequests;
@@ -44,6 +45,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'onboarding.incomplete' => EnsureOnboardingIncomplete::class,
             'onboarding.step' => CustomerOnboardingMiddleware::class,
             'portal.choice' => EnsurePortalChoiceAccess::class,
+            'signup.verified' => EnsureSignupVerified::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

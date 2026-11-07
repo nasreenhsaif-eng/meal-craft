@@ -52,6 +52,24 @@ final class MealInstructionsText
         return array_values($steps);
     }
 
+    /**
+     * True when stored instructions are empty or a single short placeholder line.
+     */
+    public static function needsBackfill(?string $instructions, ?string $description): bool
+    {
+        $raw = trim((string) ($instructions ?: $description ?: ''));
+        if ($raw === '') {
+            return true;
+        }
+
+        $lines = self::linesFromRaw($raw);
+        if ($lines === []) {
+            return true;
+        }
+
+        return count($lines) === 1 && strlen($lines[0]) < 40;
+    }
+
     private static function normalizeLineEndings(string $text): string
     {
         $text = str_replace(["\r\n", "\r"], "\n", $text);

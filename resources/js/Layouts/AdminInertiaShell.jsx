@@ -28,6 +28,13 @@ const SHELL_BY_COMPONENT = {
         hidePageTitle: false,
         contentWrapperClassName: WIDE,
     },
+    'Admin/MealTiersLibrary': {
+        pageTitle: 'Meal Tiers Library',
+        activePath: ADMIN_NAV_PATHS.mealTiers,
+        showSearch: false,
+        hidePageTitle: false,
+        contentWrapperClassName: WIDE,
+    },
     'Admin/MealPlanLibrary': {
         pageTitle: 'Meal Plan Library',
         activePath: ADMIN_NAV_PATHS.mealPlans,
@@ -49,9 +56,23 @@ const SHELL_BY_COMPONENT = {
         hidePageTitle: true,
         contentWrapperClassName: WIDE,
     },
+    'Admin/CustomerProfileShow': {
+        pageTitle: 'Customer Profile',
+        activePath: ADMIN_NAV_PATHS.customerProfiles,
+        showSearch: false,
+        hidePageTitle: true,
+        contentWrapperClassName: WIDE,
+    },
     'Admin/KitchenLogistics': {
         pageTitle: 'Kitchen Production',
         activePath: ADMIN_NAV_PATHS.kitchenLogistics,
+        showSearch: false,
+        hidePageTitle: true,
+        contentWrapperClassName: WIDE,
+    },
+    'Admin/PartnerKitchenPricing': {
+        pageTitle: 'Partner Kitchen pricing',
+        activePath: ADMIN_NAV_PATHS.pricing,
         showSearch: false,
         hidePageTitle: true,
         contentWrapperClassName: WIDE,

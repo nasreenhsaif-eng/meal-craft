@@ -41,3 +41,13 @@ export function dietProtocolLabel(value) {
 export function dietProtocolDescription(value) {
     return DIET_PROTOCOL_OPTIONS.find((option) => option.id === value)?.description ?? '';
 }
+
+/**
+ * Customer-facing "Balanced Anti-inflammatory" (stored as `balanced`) plus legacy `nutrient_dense`.
+ *
+ * @param {string | null | undefined} value
+ * @returns {boolean}
+ */
+export function isBalancedAntiInflammatoryProtocol(value) {
+    return value === 'balanced' || value === 'nutrient_dense';
+}

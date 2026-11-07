@@ -79,6 +79,7 @@ export function buildKitchenDailySheetCsv(rows, productionDate, opts = {}) {
         'Name',
         ...MEAL_PLAN_HEADERS,
         'Cutlery',
+        'Kitchen instructions',
         'Special Requests',
         'Allergies',
     ];
@@ -97,6 +98,7 @@ export function buildKitchenDailySheetCsv(rows, productionDate, opts = {}) {
                 csvEscape(r.name),
                 ...mealCells,
                 csvEscape(r.cutlery),
+                csvEscape(r.kitchenInstructions ?? ''),
                 csvEscape(dislikeCol),
                 csvEscape(allergyCol),
             ].join(','),

@@ -1,28 +1,50 @@
+import { Link, usePage } from '@inertiajs/react';
 import MealCraftLogo from '../Components/Atoms/Logo/MealCraftLogo.jsx';
+import CustomerOnboardingPhoneFrame from '../Components/Molecules/Customer/CustomerOnboardingPhoneFrame.jsx';
+
+/**
+ * @param {{ className?: string }} props
+ */
+function CartIcon({ className = '' }) {
+    return (
+        <svg className={className} width={18} height={18} viewBox="0 0 24 24" fill="none" aria-hidden>
+            <path
+                d="M6 6h15l-1.5 9h-12L6 6Zm0 0L5 3H2"
+                stroke="currentColor"
+                strokeWidth="1.75"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+            />
+            <circle cx="9" cy="20" r="1.25" fill="currentColor" />
+            <circle cx="18" cy="20" r="1.25" fill="currentColor" />
+        </svg>
+    );
+}
 
 /**
  * @param {object} props
  * @param {import('react').ReactNode} props.children
  * @param {string} [props.customerName]
- * @param {import('react').ReactNode} [props.headerActions]
+ * @param {string} [props.cartUrl]
+ * @param {import('react').ReactNode} [props.footerNav]
  * @param {'default' | 'onboarding'} [props.layoutVariant]
+ * @param {boolean} [props.embedded] Fill a parent phone slot (landing / marketing) instead of the full-page frame.
  */
 export default function CustomerLayout({
     children,
-    customerName = '',
-    headerActions = null,
+    customerName: _customerName = '',
+    cartUrl = '/app/cart',
+    footerNav = null,
     layoutVariant = 'default',
+    embedded = false,
 }) {
     const isOnboarding = layoutVariant === 'onboarding';
+    const hasFooterNav = footerNav != null;
+    const pageUrl = String(usePage().url ?? '');
+    const cartActive = pageUrl === cartUrl || pageUrl.startsWith(`${cartUrl}?`) || pageUrl.startsWith(`${cartUrl}/`);
 
     const header = (
-        <header
-            className={
-                isOnboarding
-                    ? 'flex w-full items-center justify-between py-3 md:rounded-xl md:border md:border-gray-100 md:bg-white md:px-5 md:py-4 md:shadow-sm'
-                    : 'flex w-full items-center justify-between border-b border-gray-100 bg-white px-6 py-4'
-            }
-        >
+        <header className="flex w-full shrink-0 items-center justify-between gap-3 border-b border-gray-100 bg-white px-1 py-3">
             <div className="flex min-w-0 items-center gap-3">
                 <MealCraftLogo variant="seal-xs" width={40} alt="" />
                 <div className="min-w-0">
@@ -32,29 +54,45 @@ export default function CustomerLayout({
                     </p>
                 </div>
             </div>
-            <div className="flex shrink-0 flex-wrap items-center justify-end gap-3 sm:gap-4 md:gap-5">
-                {customerName ? (
-                    <p className="max-w-[9rem] truncate text-sm font-medium text-[#555555] sm:max-w-none">
-                        {customerName}
-                    </p>
-                ) : null}
-                {headerActions}
-            </div>
+            <Link
+                href={cartUrl}
+                className={[
+                    'inline-flex shrink-0 items-center gap-1.5 font-montserrat text-sm font-semibold transition-colors',
+                    cartActive ? 'text-[#5A6B44]' : 'text-[#555555] hover:text-[#262A22]',
+                ].join(' ')}
+                aria-current={cartActive ? 'page' : undefined}
+            >
+                <CartIcon className="shrink-0" />
+                Cart
+            </Link>
         </header>
     );
 
     if (isOnboarding) {
         return (
-            <div className="flex min-h-screen w-full flex-col items-center justify-start bg-white px-3 py-4 font-sans text-[#262A22] md:justify-center md:bg-gray-50 md:px-8 md:py-8">
-                <div className="flex w-full flex-col space-y-6 md:max-w-2xl md:space-y-8">{children}</div>
-            </div>
+            <CustomerOnboardingPhoneFrame embedded={embedded}>
+                <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-4">{children}</div>
+            </CustomerOnboardingPhoneFrame>
         );
     }
 
     return (
-        <div className="min-h-screen bg-[#F8F9F6] font-sans text-[#262A22]">
-            {header}
-            <main className="mx-auto max-w-4xl px-6 py-10">{children}</main>
-        </div>
+        <CustomerOnboardingPhoneFrame embedded={embedded}>
+            <div className="relative flex h-full min-h-0 w-full flex-1 flex-col bg-[#F8F9F6] font-sans text-[#262A22]">
+                {header}
+                <main
+                    className={[
+                        'mx-auto min-h-0 w-full flex-1 overflow-y-auto overscroll-contain px-1 py-4',
+                        // Six-tab customer nav is taller; keep list rows clear of the overlay.
+                        hasFooterNav ? 'pb-32' : 'pb-4',
+                    ]
+                        .join(' ')
+                        .trim()}
+                >
+                    {children}
+                </main>
+                {footerNav}
+            </div>
+        </CustomerOnboardingPhoneFrame>
     );
 }

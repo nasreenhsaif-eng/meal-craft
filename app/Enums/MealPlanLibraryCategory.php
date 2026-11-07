@@ -13,7 +13,7 @@ enum MealPlanLibraryCategory: string
     {
         return match ($this) {
             self::Balanced => __('Balanced'),
-            self::NutrientDense => __('Nutrient Density Protocol'),
+            self::NutrientDense => __('Balanced Anti-inflammatory'),
             self::SickleCellWarrior => __('Sickle Cell Warrior Plan'),
             self::CycleSync => __('Cycle Sync Meal Plan'),
         };

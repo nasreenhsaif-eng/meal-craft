@@ -61,7 +61,7 @@ test('savory egg breakfast scales to tier egg count and breakfast calorie target
     expect((float) $eggLine['adapted_amount_grams'])->toBe(200.0);
 });
 
-test('savory egg breakfast at 1000 tier keeps two whole eggs in ingredient grams', function () {
+test('savory egg breakfast at 1250 tier keeps three whole eggs in ingredient grams', function () {
     $egg = Ingredient::factory()->create([
         'name' => 'Egg',
         'calories' => 155,
@@ -85,22 +85,22 @@ test('savory egg breakfast at 1000 tier keeps two whole eggs in ingredient grams
     ]);
 
     $profile = CustomerProfile::factory()->create([
-        'daily_calorie_target' => 1000,
+        'daily_calorie_target' => 1250,
         'protein_percentage' => 40,
         'carb_percentage' => 30,
         'fat_percentage' => 30,
     ]);
 
     $adapted = AdaptedMenuBuilder::adaptMealForProfile($profile, $meal->fresh(['ingredients']), [
-        'plan_tier' => 1000,
+        'plan_tier' => 1250,
         'craft_key' => 'full',
     ]);
 
-    expect($adapted['savory_egg_count'])->toBe(2)
-        ->and((float) collect($adapted['ingredients'])->firstWhere('name', 'Egg')['adapted_amount_grams'])->toBe(100.0);
+    expect($adapted['savory_egg_count'])->toBe(3)
+        ->and((float) collect($adapted['ingredients'])->firstWhere('name', 'Egg')['adapted_amount_grams'])->toBe(150.0);
 });
 
-test('savory egg breakfast at 1000 tier hits breakfast target with sides present', function () {
+test('savory egg breakfast at 1250 tier keeps egg count with sides present', function () {
     $egg = Ingredient::factory()->create([
         'name' => 'Egg',
         'calories' => 155,
@@ -133,14 +133,14 @@ test('savory egg breakfast at 1000 tier hits breakfast target with sides present
     ]);
 
     $profile = CustomerProfile::factory()->create([
-        'daily_calorie_target' => 1000,
+        'daily_calorie_target' => 1250,
         'protein_percentage' => 40,
         'carb_percentage' => 30,
         'fat_percentage' => 30,
     ]);
 
     $adapted = AdaptedMenuBuilder::adaptMealForProfile($profile, $meal->fresh(['ingredients']), [
-        'plan_tier' => 1000,
+        'plan_tier' => 1250,
         'craft_key' => 'full',
         'side_salad_calories' => 150.0,
         'dessert_calories' => 150.0,
@@ -148,9 +148,9 @@ test('savory egg breakfast at 1000 tier hits breakfast target with sides present
 
     $tomatoLine = collect($adapted['ingredients'])->firstWhere('name', 'Tomato (Raw)');
 
-    expect($adapted['savory_egg_count'])->toBe(2)
+    expect($adapted['savory_egg_count'])->toBe(3)
         ->and($tomatoLine)->not->toBeNull()
-        ->and((float) collect($adapted['ingredients'])->firstWhere('name', 'Egg')['adapted_amount_grams'])->toBe(100.0);
+        ->and((float) collect($adapted['ingredients'])->firstWhere('name', 'Egg')['adapted_amount_grams'])->toBe(150.0);
 });
 
 test('savory egg breakfast at 2000 tier hits breakfast target', function () {
@@ -245,14 +245,14 @@ test('savory egg breakfast keeps realistic avocado minimum at small tiers and sc
     ]);
 
     $profile = CustomerProfile::factory()->create([
-        'daily_calorie_target' => 1000,
+        'daily_calorie_target' => 1250,
         'protein_percentage' => 40,
         'carb_percentage' => 30,
         'fat_percentage' => 30,
     ]);
 
     $adapted = AdaptedMenuBuilder::adaptMealForProfile($profile, $meal->fresh(['ingredients']), [
-        'plan_tier' => 1000,
+        'plan_tier' => 1250,
         'craft_key' => 'full',
     ]);
 
@@ -269,5 +269,5 @@ test('savory egg breakfast keeps realistic avocado minimum at small tiers and sc
     $avocadoHigh = collect($adaptedHigh['ingredients'])->firstWhere('name', 'Avocado');
 
     expect((float) $avocadoHigh['adapted_amount_grams'])->toBeGreaterThan(25.0)
-        ->and((float) $avocadoHigh['adapted_amount_grams'])->toEqualWithDelta(56.25, 2.0);
+        ->and((float) $avocadoHigh['adapted_amount_grams'])->toEqualWithDelta(41.67, 2.0);
 });
