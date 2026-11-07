@@ -2181,9 +2181,6 @@ export default function CraftedForYouPage({
                         {isPartnerFulfillment ? (
                             partnerLengthView === 'trial' ? (
                                 <div className="mt-6 flex w-full flex-col gap-2.5">
-                                    <p className="font-body text-sm text-[#555555]">
-                                        Trial pricing is higher per day than the 4 week plan. Pick 5, 6, or 7 days.
-                                    </p>
                                     {partnerPlanLengthOptions
                                         .filter((option) => option.planWeeks === 1)
                                         .map((option) => renderPartnerPlanLengthOption(option))}
