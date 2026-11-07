@@ -4,25 +4,31 @@ namespace Database\Seeders;
 
 use App\Models\PartnerKitchenDiscount;
 use App\Models\PartnerKitchenPriceCard;
+use App\Support\PartnerKitchenPrice;
 use Illuminate\Database\Seeder;
 
 class PartnerKitchenPriceSeeder extends Seeder
 {
     public function run(): void
     {
-        /** @var array<int, array<int, int|float>> $calorieMatrix */
-        $calorieMatrix = config('checkout.calorie_matrix', []);
+        PartnerKitchenPriceCard::query()
+            ->where('scope', 'shared')
+            ->delete();
 
-        foreach ($calorieMatrix as $calorieRow => $days) {
-            foreach ($days as $billedDays => $amount) {
-                PartnerKitchenPriceCard::query()->updateOrCreate(
-                    [
-                        'scope' => 'shared',
-                        'calorie_row' => (int) $calorieRow,
-                        'billed_days' => (int) $billedDays,
-                    ],
-                    ['amount_bhd' => round((float) $amount, 3)],
-                );
+        foreach (PartnerKitchenPrice::CALORIE_CRAFTS as $craftKey) {
+            $matrix = PartnerKitchenPrice::matrixForCraft($craftKey);
+
+            foreach ($matrix as $calorieRow => $days) {
+                foreach ($days as $billedDays => $amount) {
+                    PartnerKitchenPriceCard::query()->updateOrCreate(
+                        [
+                            'scope' => $craftKey,
+                            'calorie_row' => (int) $calorieRow,
+                            'billed_days' => (int) $billedDays,
+                        ],
+                        ['amount_bhd' => round((float) $amount, 3)],
+                    );
+                }
             }
         }
 

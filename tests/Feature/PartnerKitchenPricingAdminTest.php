@@ -24,7 +24,7 @@ test('admins can update a price card amount', function () {
     $this->seed(PartnerKitchenPriceSeeder::class);
     $admin = User::factory()->create(['role' => UserRole::Admin]);
     $card = PartnerKitchenPriceCard::query()
-        ->where('scope', 'shared')
+        ->where('scope', 'full')
         ->where('calorie_row', 2000)
         ->where('billed_days', 28)
         ->firstOrFail();

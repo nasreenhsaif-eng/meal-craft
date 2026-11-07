@@ -206,9 +206,7 @@ final class CheckoutBasket
             $craftKey = (string) ($summary['craftKey'] ?? $plan->craft_key);
             $priceCalories = (int) ($summary['planTierCalories'] ?? $planTierCalories);
 
-            if ($craftKey !== 'business') {
-                $priceCalories = CraftLibraryTierMap::snapToCraftTotal($priceCalories, $craftKey);
-            }
+            $priceCalories = PartnerKitchenPrice::priceCaloriesForCraft($priceCalories, $craftKey);
 
             return [
                 'craftKey' => $craftKey,
@@ -231,11 +229,7 @@ final class CheckoutBasket
         $weekDuration = (int) $draft['weekDuration'];
         $planWeeks = $planWeeksOverride ?? (int) ($draft['planWeeks'] ?? 4);
         $planWeeks = $planWeeks === 1 ? 1 : 4;
-        $priceCalories = $planTierCalories;
-
-        if ($craftKey !== 'business') {
-            $priceCalories = CraftLibraryTierMap::snapToCraftTotal($priceCalories, $craftKey);
-        }
+        $priceCalories = PartnerKitchenPrice::priceCaloriesForCraft($planTierCalories, $craftKey);
 
         $titles = [
             'full' => 'Full Craft',

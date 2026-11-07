@@ -33,8 +33,8 @@ export default function PartnerKitchenPricing({
     const [discountAmount, setDiscountAmount] = useState('');
     const [saving, setSaving] = useState(false);
 
-    const sharedCards = useMemo(
-        () => cards.filter((card) => card.scope === 'shared'),
+    const craftCards = useMemo(
+        () => cards.filter((card) => card.scope !== 'business'),
         [cards],
     );
     const businessCards = useMemo(
@@ -131,14 +131,16 @@ export default function PartnerKitchenPricing({
                     <table className="min-w-full text-left text-sm">
                         <thead>
                             <tr className="border-b border-gray-200 text-[#555555]">
+                                <th className="px-2 py-2 font-montserrat text-xs uppercase">Craft</th>
                                 <th className="px-2 py-2 font-montserrat text-xs uppercase">kcal</th>
                                 <th className="px-2 py-2 font-montserrat text-xs uppercase">Days</th>
                                 <th className="px-2 py-2 font-montserrat text-xs uppercase">Amount</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {sharedCards.map((card) => (
+                            {craftCards.map((card) => (
                                 <tr key={card.id} className="border-b border-gray-100">
+                                    <td className="px-2 py-2 capitalize">{card.scope}</td>
                                     <td className="px-2 py-2">{card.calorieRow}</td>
                                     <td className="px-2 py-2">{card.billedDays}</td>
                                     <td className="px-2 py-2">

@@ -91,7 +91,7 @@ test('completed customers see basket summary on payment checkout', function () {
         ->assertSuccessful()
         ->assertSee('Payment checkout', false)
         ->assertSee('Basket summary', false)
-        ->assertSee('BHD 350.000', false)
+        ->assertSee('BHD 315.000', false)
         ->assertSee('BHD 5.000', false)
         ->assertSee('33177718', false)
         ->assertSee('Adliya', false)

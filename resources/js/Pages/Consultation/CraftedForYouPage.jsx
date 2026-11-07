@@ -56,7 +56,7 @@ const CRAFTS = [
     {
         key: 'full',
         title: 'Full Craft',
-        description: '1 Breakfast, 2 Main Meals, pick 1–2 of side salad / dessert / soup (~150 kcal each)',
+        description: '1 Breakfast, 2 Main Meals, pick 1–2 of side salad / dessert / soup total about 1200 full need',
         slots: [
             { id: 'breakfast', label: 'Breakfast', count: 1 },
             { id: 'meal', label: 'Meals', count: 2 },
@@ -66,7 +66,7 @@ const CRAFTS = [
     {
         key: 'afternoon',
         title: 'Afternoon Craft',
-        description: '2 Meals, pick 1–2 of side salad / dessert / soup',
+        description: '2 Main Meals, pick 1–2 of side salad / dessert / soup total about 950 afternoon need',
         slots: [
             { id: 'meal', label: 'Meals', count: 2 },
             { id: 'fixedChoice', label: 'Pick 1–2 of 3 sides', count: 2 },
@@ -75,7 +75,7 @@ const CRAFTS = [
     {
         key: 'day',
         title: 'Day Craft',
-        description: 'Breakfast, 1 Meal, pick 1–2 of side salad / dessert / soup',
+        description: '1 Breakfast, 1 Main Meal, pick 1–2 of side salad / dessert / soup total about 850 day need',
         slots: [
             { id: 'breakfast', label: 'Breakfast', count: 1 },
             { id: 'meal', label: 'Meal', count: 1 },
@@ -85,7 +85,7 @@ const CRAFTS = [
     {
         key: 'intermittent',
         title: 'Intermittent Craft',
-        description: '1 Meal, pick 1–2 of side salad / dessert / soup',
+        description: '1 Main Meal, pick 1–2 of side salad / dessert / soup total about 850 intermittent need',
         slots: [
             { id: 'meal', label: 'Meal', count: 1 },
             { id: 'fixedChoice', label: 'Pick 1–2 of 3 sides', count: 2 },
@@ -94,7 +94,7 @@ const CRAFTS = [
     {
         key: 'business',
         title: 'Business Craft',
-        description: '1 Main (350–400 kcal) + pick 1 of soup, side salad, or dessert (~150 kcal)',
+        description: '1 Main Meal, pick 1 of soup / side salad / dessert total about 550 business need',
         slots: [
             { id: 'meal', label: 'Meal', count: 1 },
             { id: 'choice', label: 'Business choice', count: 1, choice: ['soup', 'sidesalad', 'dessert'] },
@@ -304,8 +304,9 @@ export default function CraftedForYouPage({
             return null;
         },
     );
-    const [partnerTrialOpen, setPartnerTrialOpen] = useState(
-        () => initialRestoreDraft?.planWeeks === 1,
+    const [partnerLengthView, setPartnerLengthView] = useState(
+        /** @type {'fourWeeks' | 'trial'} */
+        () => (initialRestoreDraft?.planWeeks === 1 ? 'trial' : 'fourWeeks'),
     );
     const [selectedDays, setSelectedDays] = useState(() => {
         if (Array.isArray(initialSelectedWeekdays) && initialSelectedWeekdays.length > 0) {
@@ -784,7 +785,11 @@ export default function CraftedForYouPage({
             return 'What’s Your Craft';
         }
         if (screen === durationScreen) {
-            return 'Week duration';
+            if (isPartnerFulfillment && partnerLengthView === 'trial') {
+                return '1 week trial';
+            }
+
+            return isPartnerFulfillment ? 'Plan length' : 'Week duration';
         }
         if (screen === manualDaysScreen && usesManualDaySelection) {
             return 'Choose your days';
@@ -805,6 +810,7 @@ export default function CraftedForYouPage({
         manualDaysScreen,
         finalScreen,
         isPartnerFulfillment,
+        partnerLengthView,
         totalScreens,
     ]);
 
@@ -1581,7 +1587,7 @@ export default function CraftedForYouPage({
         const amount = Number(option.amount);
         const perDay = billedDays > 0 && Number.isFinite(amount) ? amount / billedDays : 0;
 
-        return `BHD ${perDay.toFixed(3)} / day`;
+        return `BHD ${perDay.toFixed(1)} / day`;
     }
 
     /**
@@ -1595,7 +1601,7 @@ export default function CraftedForYouPage({
             <div key={`${option.planWeeks}-${option.billedDays}`} className="flex w-full flex-col">
                 <OnboardingOptionButton
                     label={`${option.billedDays} days`}
-                    detail={`BHD ${Number(option.amount).toFixed(0)}`}
+                    detail={`BHD ${Number(option.amount).toFixed(1)}`}
                     selected={active}
                     onSelect={() => selectPartnerPlanLength(option)}
                     describedBy={descriptionId}
@@ -2142,7 +2148,12 @@ export default function CraftedForYouPage({
                                 label="NEXT"
                                 variant="primary"
                                 disabled={!canGoNextFromCraft}
-                                onClick={() => setScreen(durationScreen)}
+                                onClick={() => {
+                                    if (isPartnerFulfillment && planWeeks !== 1) {
+                                        setPartnerLengthView('fourWeeks');
+                                    }
+                                    setScreen(durationScreen);
+                                }}
                                 className="px-10"
                             />
                         </div>
@@ -2153,47 +2164,53 @@ export default function CraftedForYouPage({
                 {screen === durationScreen ? (
                     <section className="rounded-[12px] border border-gray-200 bg-white p-6 shadow-sm">
                         <h2 className="font-montserrat text-[16px] font-bold tracking-tight text-[#262A22]">
-                            {isPartnerFulfillment ? 'Plan length' : 'Week duration'}
+                            {isPartnerFulfillment
+                                ? partnerLengthView === 'trial'
+                                    ? '1 week trial'
+                                    : 'Plan length'
+                                : 'Week duration'}
                         </h2>
                         <p className="mt-1 font-body text-sm text-[#555555]">
                             {isPartnerFulfillment
-                                ? 'Choose how many days you want for this craft.'
+                                ? partnerLengthView === 'trial'
+                                    ? 'Choose how many days you want for your trial week.'
+                                    : 'Choose how many days you want for this craft.'
                                 : 'How many days are you crafting for this week?'}
                         </p>
 
                         {isPartnerFulfillment ? (
-                            <div className="mt-6 flex w-full flex-col gap-5">
-                                <div className="flex w-full flex-col gap-2.5">
+                            partnerLengthView === 'trial' ? (
+                                <div className="mt-6 flex w-full flex-col gap-2.5">
+                                    <p className="font-body text-sm text-[#555555]">
+                                        Trial pricing is higher per day than the 4 week plan. Pick 5, 6, or 7 days.
+                                    </p>
                                     {partnerPlanLengthOptions
-                                        .filter((option) => option.planWeeks === 4)
+                                        .filter((option) => option.planWeeks === 1)
                                         .map((option) => renderPartnerPlanLengthOption(option))}
                                 </div>
-                                <div>
+                            ) : (
+                                <div className="mt-6 flex w-full flex-col gap-5">
+                                    <div className="flex w-full flex-col gap-2.5">
+                                        {partnerPlanLengthOptions
+                                            .filter((option) => option.planWeeks === 4)
+                                            .map((option) => renderPartnerPlanLengthOption(option))}
+                                    </div>
                                     <button
                                         type="button"
-                                        className="font-montserrat text-sm font-semibold text-[#6E8C47] underline underline-offset-2 outline-none hover:text-[#556C37] focus-visible:ring-2 focus-visible:ring-[#6E8C47] focus-visible:ring-offset-2"
-                                        aria-expanded={partnerTrialOpen}
-                                        onClick={() => setPartnerTrialOpen((open) => !open)}
+                                        className="self-start font-montserrat text-sm font-semibold text-[#6E8C47] underline underline-offset-2 outline-none hover:text-[#556C37] focus-visible:ring-2 focus-visible:ring-[#6E8C47] focus-visible:ring-offset-2"
+                                        onClick={() => {
+                                            setPartnerLengthView('trial');
+                                            if (planWeeks === 4) {
+                                                setPlanWeeks(null);
+                                                setSelectedBilledDays(null);
+                                                setWeekDuration(null);
+                                            }
+                                        }}
                                     >
                                         1 week trial
                                     </button>
-                                    <div
-                                        className={[
-                                            'grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none',
-                                            partnerTrialOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]',
-                                        ].join(' ')}
-                                        aria-hidden={!partnerTrialOpen}
-                                    >
-                                        <div className="min-h-0 overflow-hidden">
-                                            <div className="mt-3 flex w-full flex-col gap-2.5">
-                                                {partnerPlanLengthOptions
-                                                    .filter((option) => option.planWeeks === 1)
-                                                    .map((option) => renderPartnerPlanLengthOption(option))}
-                                            </div>
-                                        </div>
-                                    </div>
                                 </div>
-                            </div>
+                            )
                         ) : (
                             <div className="mt-6 rounded-[12px] border border-gray-200 bg-[#F8F9F6] p-5">
                                 <div className="flex flex-wrap gap-2">
@@ -2222,7 +2239,19 @@ export default function CraftedForYouPage({
                             <Button
                                 label="BACK"
                                 variant="outline"
-                                onClick={() => setScreen(craftScreen)}
+                                onClick={() => {
+                                    if (isPartnerFulfillment && partnerLengthView === 'trial') {
+                                        setPartnerLengthView('fourWeeks');
+                                        if (planWeeks === 1) {
+                                            setPlanWeeks(null);
+                                            setSelectedBilledDays(null);
+                                            setWeekDuration(null);
+                                        }
+                                        return;
+                                    }
+
+                                    setScreen(craftScreen);
+                                }}
                                 className="px-10"
                             />
                             <Button

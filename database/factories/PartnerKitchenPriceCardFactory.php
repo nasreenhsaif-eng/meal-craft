@@ -18,7 +18,7 @@ class PartnerKitchenPriceCardFactory extends Factory
     public function definition(): array
     {
         return [
-            'scope' => 'shared',
+            'scope' => 'full',
             'calorie_row' => 1200,
             'billed_days' => 20,
             'amount_bhd' => 190,

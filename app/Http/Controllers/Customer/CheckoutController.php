@@ -13,7 +13,6 @@ use App\Services\CustomerCraftPlanPresentationService;
 use App\Services\Nutrition\UserPlanCalculator;
 use App\Support\AdminConsultationPreviewProfile;
 use App\Support\CheckoutBasket;
-use App\Support\CraftLibraryTierMap;
 use App\Support\CustomerIntake;
 use App\Support\PartnerKitchenPrice;
 use Illuminate\Contracts\View\View;
@@ -51,6 +50,10 @@ class CheckoutController extends Controller
         $quotes = $this->deliveryQuotes($profile, $presentation);
         $selectedPlanWeeks = (int) request()->session()->get('checkout_plan_weeks', $quotes['selectedPlanWeeks']);
         $selectedPlanWeeks = $selectedPlanWeeks === 1 ? 1 : 4;
+        $selectedQuote = $selectedPlanWeeks === 1 ? $quotes['oneWeek'] : $quotes['fourWeeks'];
+        $billedDays = $selectedPlanWeeks === 1
+            ? $quotes['billedDaysOneWeek']
+            : $quotes['billedDaysFourWeeks'];
 
         return Inertia::render('Checkout/Delivery', [
             'customerName' => $user?->name ?? '',
@@ -62,10 +65,8 @@ class CheckoutController extends Controller
             'mealPlanSummaryUrl' => route('app.meal-plan'),
             'currency' => (string) config('checkout.currency', 'BHD'),
             'selectedPlanWeeks' => $selectedPlanWeeks,
-            'quoteOneWeek' => $quotes['oneWeek'],
-            'quoteFourWeeks' => $quotes['fourWeeks'],
-            'billedDaysOneWeek' => $quotes['billedDaysOneWeek'],
-            'billedDaysFourWeeks' => $quotes['billedDaysFourWeeks'],
+            'selectedQuote' => $selectedQuote,
+            'billedDays' => $billedDays,
             'craftTitle' => $quotes['craftTitle'],
         ]);
     }
@@ -206,9 +207,7 @@ class CheckoutController extends Controller
             }
         }
 
-        if ($craftKey !== 'business') {
-            $priceCalories = CraftLibraryTierMap::snapToCraftTotal($priceCalories, $craftKey);
-        }
+        $priceCalories = PartnerKitchenPrice::priceCaloriesForCraft($priceCalories, $craftKey);
 
         return [
             'selectedPlanWeeks' => $selectedPlanWeeks,

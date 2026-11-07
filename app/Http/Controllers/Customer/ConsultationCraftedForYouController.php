@@ -8,7 +8,6 @@ use App\Http\Controllers\Controller;
 use App\Models\Meal;
 use App\Services\Nutrition\UserPlanCalculator;
 use App\Support\AdminConsultationPreviewProfile;
-use App\Support\CraftLibraryTierMap;
 use App\Support\PartnerKitchenPrice;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
@@ -126,13 +125,11 @@ class ConsultationCraftedForYouController extends Controller
         $planLengthOptions = [];
 
         foreach (['full', 'afternoon', 'day', 'intermittent', 'business'] as $craftKey) {
-            $craftCalories = $craftKey === 'business'
-                ? $baseCalories
-                : CraftLibraryTierMap::snapToCraftTotal($baseCalories, $craftKey);
+            $craftCalories = PartnerKitchenPrice::priceCaloriesForCraft($baseCalories, $craftKey);
 
             $dailyRate = PartnerKitchenPrice::dailyRateForCraft($craftKey, $craftCalories);
             $dailyRates[$craftKey] = $dailyRate;
-            $dailyRateLabels[$craftKey] = PartnerKitchenPrice::formatMoney($dailyRate).' / day';
+            $dailyRateLabels[$craftKey] = PartnerKitchenPrice::formatMoney($dailyRate, 1).' / day';
             $planLengthOptions[$craftKey] = PartnerKitchenPrice::planLengthOptions($craftKey, $craftCalories);
         }
 

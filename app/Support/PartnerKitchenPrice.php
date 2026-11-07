@@ -7,21 +7,30 @@ use App\Models\PartnerKitchenPriceCard;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Resolves Partner Kitchen meal package prices in whole BHD.
+ * Resolves Partner Kitchen meal package prices by craft and calorie row.
  */
 final class PartnerKitchenPrice
 {
-    public const SHARED_CRAFTS = ['full', 'afternoon', 'day', 'intermittent'];
+    public const CALORIE_CRAFTS = ['full', 'afternoon', 'day', 'intermittent'];
+
+    /** @deprecated Use CALORIE_CRAFTS */
+    public const SHARED_CRAFTS = self::CALORIE_CRAFTS;
 
     /**
      * @return list<int>
      */
-    public static function calorieRows(): array
+    public static function calorieRows(string $craftKey = 'full'): array
     {
-        /** @var list<int> $rows */
-        $rows = array_values(array_map('intval', config('checkout.price_calorie_rows', [1200, 1500, 1800, 2000])));
+        $matrix = self::matrixForCraft($craftKey);
 
-        return $rows;
+        if ($matrix === []) {
+            return [1200, 1500, 1800, 2000];
+        }
+
+        $rows = array_map('intval', array_keys($matrix));
+        sort($rows);
+
+        return array_values($rows);
     }
 
     /**
@@ -55,9 +64,9 @@ final class PartnerKitchenPrice
         return in_array($billedDays, [5, 6, 7], true) ? 1 : 4;
     }
 
-    public static function nearestCalorieRow(int $calories): int
+    public static function nearestCalorieRow(int $calories, string $craftKey = 'full'): int
     {
-        $rows = self::calorieRows();
+        $rows = self::calorieRows($craftKey);
         $nearest = $rows[0] ?? 1200;
         $smallest = abs($calories - $nearest);
 
@@ -71,6 +80,32 @@ final class PartnerKitchenPrice
         }
 
         return $nearest;
+    }
+
+    /**
+     * Derive Partner Kitchen price calories from the customer's Full daily need.
+     *
+     * Afternoon = Full total − breakfast. Day / Intermittent = Full total − one main.
+     * Full keeps the Full library total (1250 prices on the 1200 package row).
+     */
+    public static function priceCaloriesForCraft(int $dailyNeed, string $craftKey): int
+    {
+        $craftKey = self::normalizeCraftKey($craftKey);
+
+        if ($craftKey === 'business') {
+            return $dailyNeed;
+        }
+
+        $fullTotal = CraftLibraryTierMap::snapToCraftTotal($dailyNeed, 'full');
+        $fullRow = CraftLibraryTierMap::row('full', $fullTotal);
+
+        $derived = match ($craftKey) {
+            'afternoon' => max(0, $fullTotal - (int) $fullRow['breakfast']),
+            'day', 'intermittent' => max(0, $fullTotal - (int) $fullRow['main_each']),
+            default => $fullTotal,
+        };
+
+        return self::nearestCalorieRow($derived, $craftKey);
     }
 
     /**
@@ -89,13 +124,15 @@ final class PartnerKitchenPrice
 
     public static function amountForBilledDays(string $craftKey, int $calories, int $billedDays): float
     {
+        $craftKey = self::normalizeCraftKey($craftKey);
+
         if ($craftKey === 'business') {
             return self::lookupAmount('business', null, $billedDays);
         }
 
-        $row = self::nearestCalorieRow($calories);
+        $row = self::nearestCalorieRow($calories, $craftKey);
 
-        return self::lookupAmount('shared', $row, $billedDays);
+        return self::lookupAmount($craftKey, $row, $billedDays);
     }
 
     /**
@@ -105,7 +142,7 @@ final class PartnerKitchenPrice
     {
         $amount = self::packageAmount($craftKey, $calories, 5, 4);
 
-        return round($amount / 20, 3);
+        return round($amount / 20, 1);
     }
 
     /**
@@ -169,9 +206,61 @@ final class PartnerKitchenPrice
             ->sum('amount_bhd'), 3);
     }
 
-    public static function formatMoney(float $amount): string
+    public static function formatMoney(float $amount, int $decimals = 3): string
     {
-        return sprintf('BHD %.3f', round($amount, 3));
+        $decimals = max(0, min(3, $decimals));
+
+        return sprintf('BHD %.'.$decimals.'f', round($amount, $decimals));
+    }
+
+    /**
+     * @return array<int, array<int, int|float>>
+     */
+    public static function matrixForCraft(string $craftKey): array
+    {
+        $craftKey = self::normalizeCraftKey($craftKey);
+
+        if ($craftKey === 'business') {
+            return [];
+        }
+
+        /** @var array<string, array<int|string, array<int|string, int|float>>> $matrices */
+        $matrices = config('checkout.craft_calorie_matrices', []);
+
+        $matrix = $matrices[$craftKey] ?? $matrices['full'] ?? [];
+
+        if (! is_array($matrix)) {
+            return [];
+        }
+
+        $normalized = [];
+
+        foreach ($matrix as $calorieRow => $days) {
+            if (! is_array($days)) {
+                continue;
+            }
+
+            $dayAmounts = [];
+
+            foreach ($days as $billedDays => $amount) {
+                $dayAmounts[(int) $billedDays] = $amount;
+            }
+
+            $normalized[(int) $calorieRow] = $dayAmounts;
+        }
+
+        return $normalized;
+    }
+
+    private static function normalizeCraftKey(string $craftKey): string
+    {
+        $craftKey = strtolower(trim($craftKey));
+
+        if ($craftKey === 'business' || in_array($craftKey, self::CALORIE_CRAFTS, true)) {
+            return $craftKey;
+        }
+
+        return 'full';
     }
 
     private static function lookupAmount(string $scope, ?int $calorieRow, int $billedDays): float
@@ -195,8 +284,7 @@ final class PartnerKitchenPrice
             return round((float) ($matrix[$billedDays] ?? 0), 3);
         }
 
-        /** @var array<int, array<int, int|float>> $matrix */
-        $matrix = config('checkout.calorie_matrix', []);
+        $matrix = self::matrixForCraft($scope);
 
         return round((float) ($matrix[$calorieRow][$billedDays] ?? 0), 3);
     }

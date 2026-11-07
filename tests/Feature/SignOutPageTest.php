@@ -49,5 +49,5 @@ test('failed login shows error message on login page', function () {
 
     $this->get(route('login'))
         ->assertOk()
-        ->assertSee('These credentials do not match our records.', false);
+        ->assertSee('Email or password is incorrect.', false);
 });
