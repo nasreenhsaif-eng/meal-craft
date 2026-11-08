@@ -3,7 +3,7 @@
 use App\Models\CustomerProfile;
 use App\Models\User;
 
-test('checkout pages load built assets even when vite hot file exists', function () {
+test('checkout pages load as inertia when vite hot file exists', function () {
     $hot = public_path('hot');
     $hadHot = file_exists($hot);
     $backup = public_path('hot.checkout-built-assets-test.bak');
@@ -20,29 +20,19 @@ test('checkout pages load built assets even when vite hot file exists', function
             'intake_declaration_accepted_at' => now(),
         ]);
 
-        $paymentHtml = $this->actingAs($customer)
+        $this->actingAs($customer)
             ->get(route('checkout.payment'))
             ->assertSuccessful()
-            ->getContent();
+            ->assertInertia(fn ($page) => $page
+                ->component('Checkout/Payment')
+                ->etc());
 
-        expect($paymentHtml)
-            ->toContain('Payment checkout')
-            ->and($paymentHtml)->toContain('data-customer-onboarding-frame')
-            ->and($paymentHtml)->toContain('/build/')
-            ->and($paymentHtml)->not->toContain(':5173')
-            ->and($paymentHtml)->not->toContain('@vite/client');
-
-        $detailsHtml = $this->actingAs($customer)
+        $this->actingAs($customer)
             ->get(route('checkout.details'))
             ->assertSuccessful()
-            ->getContent();
-
-        expect($detailsHtml)
-            ->toContain('data-customer-onboarding-frame')
-            ->and($detailsHtml)->toContain('/build/')
-            ->and($detailsHtml)->not->toContain(':5173')
-            ->and($detailsHtml)->not->toContain('@vite/client')
-            ->and($detailsHtml)->not->toContain('admin-inertia');
+            ->assertInertia(fn ($page) => $page
+                ->component('Checkout/CustomerDetails')
+                ->etc());
     } finally {
         if (file_exists($hot)) {
             unlink($hot);

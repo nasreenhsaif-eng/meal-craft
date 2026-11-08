@@ -1,4 +1,5 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import Button from '../Atoms/Button/Button.jsx';
 import SquareCheckbox from '../Atoms/Icons/SquareCheckbox.jsx';
 import DropdownTextInput from '../Atoms/TextInput/DropdownTextInput.jsx';
 import TextInput from '../Atoms/TextInput/TextInput.jsx';
@@ -255,7 +256,7 @@ function Section({ title, children, action = null, invalid = false, errorMessage
 }
 
 /**
- * Scroll the first incomplete section into view (with a little top offset for the header).
+ * Scroll the first incomplete section into view inside the phone-frame scroller.
  *
  * @param {HTMLElement | null | undefined} element
  */
@@ -264,8 +265,7 @@ function scrollToSection(element) {
         return;
     }
 
-    const top = element.getBoundingClientRect().top + window.scrollY - 24;
-    window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+    element.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 /**
@@ -461,6 +461,7 @@ export default function CustomerCheckoutDetailsReview({
     const [showValidation, setShowValidation] = useState(false);
 
     const clientErrors = useMemo(() => buildClientFieldErrors(data), [data]);
+    const canContinue = Object.keys(clientErrors).length === 0;
     const fieldErrors = useMemo(() => {
         if (!showValidation && Object.keys(errors).length === 0) {
             return {};
@@ -763,19 +764,6 @@ export default function CustomerCheckoutDetailsReview({
                     <label
                         htmlFor={declarationId}
                         className="group/item flex cursor-pointer select-none items-start gap-3"
-                        onClick={(event) => {
-                            if (processing) {
-                                event.preventDefault();
-                                return;
-                            }
-
-                            // Already checked (e.g. prior visit): clicking continues to payment
-                            // without toggling off (label would otherwise uncheck first).
-                            if (declarationChecked) {
-                                event.preventDefault();
-                                trySubmit({ ...data, declaration_accepted: true });
-                            }
-                        }}
                     >
                         <input
                             id={declarationId}
@@ -785,16 +773,7 @@ export default function CustomerCheckoutDetailsReview({
                             checked={declarationChecked}
                             disabled={processing}
                             onChange={(event) => {
-                                event.stopPropagation();
-                                const checked = event.target.checked;
-                                setData('declaration_accepted', checked);
-
-                                if (!checked) {
-                                    return;
-                                }
-
-                                // Checking the declaration confirms details and opens payment.
-                                trySubmit({ ...data, declaration_accepted: true });
+                                setData('declaration_accepted', event.target.checked);
                             }}
                             className="peer sr-only"
                         />
@@ -858,6 +837,17 @@ export default function CustomerCheckoutDetailsReview({
                             className={fieldClass}
                         />
                     </div>
+
+                    <Button
+                        type="submit"
+                        label={processing ? 'Continuing…' : 'Confirm & continue to payment'}
+                        variant="primary"
+                        disabled={processing}
+                        aria-disabled={!canContinue || processing}
+                        className={['w-full', !canContinue && !processing ? 'opacity-60' : '']
+                            .filter(Boolean)
+                            .join(' ')}
+                    />
                 </div>
             </Section>
         </form>

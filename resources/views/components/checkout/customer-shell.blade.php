@@ -7,13 +7,13 @@
     'activeTab' => 'meals',
     'showFooter' => true,
 ])
-{{-- Matches React CustomerLayout + CustomerOnboardingPhoneFrame (delivery page). --}}
+{{-- Matches React CustomerLayout + CustomerOnboardingPhoneFrame. --}}
 <div
-    class="flex min-h-screen w-full flex-col items-center justify-start bg-white px-3 py-4 font-sans text-[#262A22] md:bg-gray-50 md:px-8 md:py-10"
+    class="flex min-h-dvh w-full flex-col items-center justify-start bg-gray-50 px-3 py-4 font-sans text-[#262A22] min-[430px]:px-8 min-[430px]:py-10 max-[429px]:bg-white max-[429px]:px-0 max-[429px]:py-0"
     data-customer-onboarding-root
 >
     <div
-        class="relative mx-auto flex h-[min(844px,100dvh-5rem)] w-full max-w-[430px] flex-col overflow-hidden rounded-[28px] border border-gray-200 bg-white shadow-lg max-[429px]:h-dvh max-[429px]:max-h-dvh max-[429px]:rounded-none max-[429px]:border-0 max-[429px]:shadow-none px-3 pt-3"
+        class="relative mx-auto flex h-[min(844px,100dvh-5rem)] w-full max-w-[430px] flex-col overflow-clip rounded-[28px] border border-gray-200 bg-white shadow-lg max-[429px]:h-dvh max-[429px]:max-h-dvh max-[429px]:rounded-none max-[429px]:border-0 max-[429px]:shadow-none px-3 pt-3"
         data-customer-onboarding-frame
     >
         <div class="relative flex h-full min-h-0 w-full flex-1 flex-col bg-[#F8F9F6] font-sans text-[#262A22]">

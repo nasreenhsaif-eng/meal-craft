@@ -145,6 +145,7 @@ test('completed customers can open the cart page from the header', function () {
         ->assertSuccessful()
         ->assertInertia(fn ($page) => $page
             ->component('App/Cart')
+            // Close control on Cart links to homeUrl (client-rendered Inertia Link).
             ->where('homeUrl', route('app.home'))
             ->where('shopUrl', route('app.shop'))
             ->where('toolsUrl', route('app.tools'))

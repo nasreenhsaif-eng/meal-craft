@@ -39,7 +39,7 @@
             <link rel="stylesheet" href="/build/{{ $cssFile }}">
         @endforeach
     </head>
-    <body class="m-0 antialiased text-[#262A22]">
+    <body class="m-0 min-h-dvh w-full bg-gray-50 antialiased text-[#262A22] max-[429px]:bg-white">
         <x-checkout.customer-shell
             :customer-name="$customerName"
             :home-url="$homeUrl"
@@ -51,7 +51,7 @@
             <div class="flex items-start justify-between gap-3">
                 <h1 class="min-w-0 font-montserrat text-3xl font-semibold tracking-tight text-brand-primary-pressed">Your details</h1>
                 <a
-                    href="{{ $homeUrl }}"
+                    href="{{ $profileUrl }}"
                     class="shrink-0 font-montserrat text-sm font-semibold uppercase tracking-wide text-[#5A6B44] underline"
                 >
                     Close

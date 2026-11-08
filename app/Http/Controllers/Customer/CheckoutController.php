@@ -15,7 +15,6 @@ use App\Support\AdminConsultationPreviewProfile;
 use App\Support\CheckoutBasket;
 use App\Support\CustomerIntake;
 use App\Support\PartnerKitchenPrice;
-use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -90,18 +89,20 @@ class CheckoutController extends Controller
         return redirect()->route('checkout.details');
     }
 
-    public function details(): View
+    public function details(): Response
     {
         $user = request()->user();
         $profile = $user !== null ? AdminConsultationPreviewProfile::resolve($user) : null;
 
         abort_if($profile === null, 404);
 
-        // Server-rendered HTML — no React/Inertia mount (Chrome blank-page workaround).
-        return view('pages.checkout.details', [
+        // Same CustomerInertiaShell / phone frame as Profile, Delivery, etc.
+        return Inertia::render('Checkout/CustomerDetails', [
             ...CustomerIntake::pageProps($profile),
             'customerName' => $user?->name ?? '',
             'submitUrl' => route('checkout.details.store'),
+            'deliveryUrl' => route('checkout.delivery'),
+            'closeUrl' => route('app.profile'),
             'homeUrl' => route('app.home'),
             'profileUrl' => route('app.profile'),
             'shopUrl' => route('app.shop'),
@@ -124,7 +125,7 @@ class CheckoutController extends Controller
             ->with('success', 'Your details were confirmed.');
     }
 
-    public function payment(CustomerCraftPlanPresentationService $presentation): View|RedirectResponse
+    public function payment(CustomerCraftPlanPresentationService $presentation): Response|RedirectResponse
     {
         $user = request()->user();
         $profile = $user !== null ? AdminConsultationPreviewProfile::resolve($user) : null;
@@ -140,8 +141,7 @@ class CheckoutController extends Controller
         $sessionWeeks = request()->session()->get('checkout_plan_weeks');
         $planWeeksOverride = is_numeric($sessionWeeks) ? ((int) $sessionWeeks === 1 ? 1 : 4) : null;
 
-        // Server-rendered HTML — no React/Inertia mount (Chrome blank-page workaround).
-        return view('pages.checkout.payment', [
+        return Inertia::render('Checkout/Payment', [
             'customerName' => $user?->name ?? '',
             'basket' => CheckoutBasket::forProfile($profile, $presentation, $promoCode, $planWeeksOverride),
             'detailsUrl' => route('checkout.details'),
@@ -150,6 +150,7 @@ class CheckoutController extends Controller
             'shopUrl' => route('app.shop'),
             'mealPlanSummaryUrl' => route('app.meal-plan'),
             'submitUrl' => route('checkout.payment.store'),
+            'applyPromoUrl' => route('checkout.payment'),
         ]);
     }
 
@@ -250,19 +251,18 @@ class CheckoutController extends Controller
             ->with('success', 'Payment instructions recorded. Complete Benefit Pay to finish your order.');
     }
 
-    public function policies(): View
+    public function policies(): Response
     {
         $user = request()->user();
 
-        return view('pages.checkout.policies', [
+        return Inertia::render('Checkout/Policies', [
             'customerName' => $user?->name ?? '',
             'homeUrl' => route('app.home'),
             'profileUrl' => route('app.profile'),
             'shopUrl' => route('app.shop'),
             'mealPlanSummaryUrl' => route('app.meal-plan'),
             'paymentUrl' => route('checkout.payment'),
-            'refundPolicyUrl' => route('policies.refund').'#refund',
-            'freezePolicyUrl' => route('policies.refund').'#freeze',
+            'cartUrl' => route('app.cart'),
         ]);
     }
 }

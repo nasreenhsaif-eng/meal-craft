@@ -14,7 +14,7 @@
             <link rel="stylesheet" href="/build/{{ $cssFile }}">
         @endforeach
     </head>
-    <body class="m-0 antialiased text-[#262A22]">
+    <body class="m-0 min-h-dvh w-full bg-gray-50 antialiased text-[#262A22] max-[429px]:bg-white">
         <x-checkout.customer-shell
             :customer-name="$customerName"
             :home-url="$homeUrl"

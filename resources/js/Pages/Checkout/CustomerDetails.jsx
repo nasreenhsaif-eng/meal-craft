@@ -40,6 +40,7 @@ function flattenErrors(errors) {
  * @param {string} [props.customerName]
  * @param {string} [props.submitUrl]
  * @param {string} [props.deliveryUrl]
+ * @param {string} [props.closeUrl]
  * @param {string} [props.homeUrl]
  * @param {string} [props.profileUrl]
  * @param {string} [props.shopUrl]
@@ -54,6 +55,7 @@ export default function CustomerDetails({
     customerName = '',
     submitUrl = '/checkout/details',
     deliveryUrl = '/checkout/delivery',
+    closeUrl = '/app/profile',
     homeUrl = '/app',
     profileUrl = '/app/profile',
     shopUrl = '/app/shop',
@@ -106,7 +108,7 @@ export default function CustomerDetails({
                         label="Close"
                         variant="ghost"
                         size="sm"
-                        onClick={() => router.visit(deliveryUrl)}
+                        onClick={() => router.visit(closeUrl || profileUrl || deliveryUrl)}
                         className="shrink-0"
                     />
                 </div>

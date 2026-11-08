@@ -331,8 +331,10 @@ export function DayMicronutrientsTabPanel({
             title="Micronutrients"
             description={`Full-day totals and % of daily reference intake for ${dayLabel.toLowerCase()}. Vitamin D is shown as best effort — it is difficult to reach 100% from food alone.`}
         >
-            <CaloricThresholdNotice planTierCalories={planTierCalories} />
-            <MicronutrientRdiTable rows={micronutrientRows} />
+            <div className="space-y-4">
+                <MicronutrientRdiTable rows={micronutrientRows} />
+                <CaloricThresholdNotice planTierCalories={planTierCalories} />
+            </div>
         </SummarySection>
     );
 }

@@ -25,6 +25,13 @@ import { resolveInertiaLayoutChild } from '../../lib/resolveInertiaLayoutChild.j
  *   deliveryAddress?: string | null;
  *   cards?: string[] | null;
  * } | null} [props.details]
+ * @param {{
+ *   mealPlanName?: string | null;
+ *   days?: number | null;
+ *   startDate?: string | null;
+ *   expiryDate?: string | null;
+ *   deliveries?: number | null;
+ * } | null} [props.subscription]
  */
 export function ProfileInner({
     customerName = '',
@@ -37,6 +44,7 @@ export function ProfileInner({
     contactEditUrl = '/checkout/details',
     logoutUrl = '/logout',
     details = null,
+    subscription = null,
 }) {
     const cardsDisplay =
         Array.isArray(details?.cards) && details.cards.length > 0
@@ -55,6 +63,23 @@ export function ProfileInner({
             preserveCase: true,
         },
         { label: 'Cards', value: cardsDisplay, preserveCase: true },
+    ];
+
+    /** @type {{ label: string; value: string; preserveCase?: boolean }[]} */
+    const subscriptionRows = [
+        { label: 'Meal plan', value: displayValue(subscription?.mealPlanName) },
+        { label: 'Days', value: displayValue(subscription?.days) },
+        {
+            label: 'Start date',
+            value: displayValue(subscription?.startDate),
+            preserveCase: true,
+        },
+        {
+            label: 'Expiry date',
+            value: displayValue(subscription?.expiryDate),
+            preserveCase: true,
+        },
+        { label: 'Deliveries', value: displayValue(subscription?.deliveries) },
     ];
 
     return (
@@ -89,6 +114,8 @@ export function ProfileInner({
                         </Link>
                     }
                 />
+
+                <CustomerDetailSection title="Subscriptions" rows={subscriptionRows} />
 
                 <div className="mt-2 flex justify-center pb-2">
                     <button

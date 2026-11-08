@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Customer;
 use App\Enums\DietProtocol;
 use App\Enums\OnboardingStep;
 use App\Http\Controllers\Controller;
+use App\Models\CustomerCraftPlan;
 use App\Models\CustomerProfile;
 use App\Services\CustomerCraftPlanPresentationService;
 use App\Services\Nutrition\OnboardingDailyTargetsCalculator;
@@ -12,6 +13,7 @@ use App\Services\Nutrition\ProductionWeeklyMenuSchedule;
 use App\Services\Nutrition\UserPlanCalculator;
 use App\Support\AdminConsultationPreviewProfile;
 use App\Support\MealPlanDateRange;
+use App\Support\PartnerKitchenPrice;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Carbon;
 use Inertia\Inertia;
@@ -111,6 +113,7 @@ class CustomerAppController extends Controller
                 'deliveryAddress' => self::profileDeliveryAddress($profile),
                 'cards' => [],
             ] : null,
+            'subscription' => self::subscriptionDetails($profile),
         ]);
     }
 
@@ -354,6 +357,64 @@ class CustomerAppController extends Controller
         return [
             'min' => $targets['daily_calories_min'],
             'max' => $targets['daily_calories_max'],
+        ];
+    }
+
+    /**
+     * Active subscription summary from the latest submitted craft plan, or null when none.
+     *
+     * @return array{
+     *     mealPlanName: string,
+     *     days: int,
+     *     startDate: string,
+     *     expiryDate: string,
+     *     deliveries: int
+     * }|null
+     */
+    private static function subscriptionDetails(?CustomerProfile $profile): ?array
+    {
+        if ($profile === null) {
+            return null;
+        }
+
+        $plan = $profile->craftPlans()
+            ->whereNotNull('submitted_at')
+            ->latest('submitted_at')
+            ->first();
+
+        if (! $plan instanceof CustomerCraftPlan) {
+            return null;
+        }
+
+        $weekDuration = max(5, min(7, (int) ($plan->week_duration ?: 7)));
+        $planWeeks = (int) ($plan->plan_weeks ?: 4) === 1 ? 1 : 4;
+        $days = PartnerKitchenPrice::billedDays($weekDuration, $planWeeks);
+
+        $titles = [
+            'full' => 'Full Craft',
+            'day' => 'Day Craft',
+            'afternoon' => 'Afternoon Craft',
+            'intermittent' => 'Intermittent Craft',
+            'business' => 'Business Craft',
+        ];
+
+        $start = $profile->planned_start_date !== null
+            ? Carbon::parse($profile->planned_start_date)->startOfDay()
+            : Carbon::parse(
+                MealPlanDateRange::forWeek(
+                    selectedWeekdays: array_values($plan->selected_weekdays ?? []),
+                )['startsOn'],
+            )->startOfDay();
+
+        $expiry = $start->copy()->addWeeks($planWeeks)->subDay();
+        $deliveries = $plan->fulfillment_choice === 'diy' ? 0 : $days;
+
+        return [
+            'mealPlanName' => $titles[$plan->craft_key] ?? ucfirst((string) $plan->craft_key),
+            'days' => $days,
+            'startDate' => $start->toDateString(),
+            'expiryDate' => $expiry->toDateString(),
+            'deliveries' => $deliveries,
         ];
     }
 

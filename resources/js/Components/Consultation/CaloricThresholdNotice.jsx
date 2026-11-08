@@ -1,3 +1,5 @@
+import { useState } from 'react';
+import Button from '../Atoms/Button/Button.jsx';
 import {
     CALORIC_THRESHOLD_NOTICE,
     CALORIC_THRESHOLD_NOTICE_MAX_CALORIES,
@@ -9,7 +11,9 @@ import {
  * @param {number} [props.planTierCalories]
  */
 export default function CaloricThresholdNotice({ planTierCalories = 0 }) {
-    if (!isBelowMicronutrientEnforcedCalories(planTierCalories)) {
+    const [dismissed, setDismissed] = useState(false);
+
+    if (dismissed || !isBelowMicronutrientEnforcedCalories(planTierCalories)) {
         return null;
     }
 
@@ -36,6 +40,15 @@ export default function CaloricThresholdNotice({ planTierCalories = 0 }) {
                         {paragraph}
                     </p>
                 ))}
+            </div>
+            <div className="mt-4">
+                <Button
+                    type="button"
+                    label="Got it"
+                    size="sm"
+                    className="w-full uppercase tracking-[0.08em] sm:w-auto sm:min-w-[140px]"
+                    onClick={() => setDismissed(true)}
+                />
             </div>
         </div>
     );

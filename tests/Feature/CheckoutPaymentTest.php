@@ -89,22 +89,17 @@ test('completed customers see basket summary on payment checkout', function () {
     $this->actingAs($customer)
         ->get(route('checkout.payment'))
         ->assertSuccessful()
-        ->assertSee('Payment checkout', false)
-        ->assertSee('Basket summary', false)
-        ->assertSee('BHD 315.000', false)
-        ->assertSee('BHD 5.000', false)
-        ->assertSee('33177718', false)
-        ->assertSee('Adliya', false)
-        ->assertSee('Freeze policy', false)
-        ->assertSee('Refund policy', false)
-        ->assertSee('Confirm cart', false)
-        ->assertSee('name="refund_policy_accepted"', false)
-        ->assertSee('By making the payment, you agree to the', false)
-        ->assertSee('/refund-policy#freeze', false)
-        ->assertSee('/refund-policy#refund', false)
-        ->assertSee('Customer app', false)
-        ->assertSee('data-customer-onboarding-frame', false)
-        ->assertDontSee(':5173', false);
+        ->assertInertia(fn ($page) => $page
+            ->component('Checkout/Payment')
+            ->where('customerName', $customer->name)
+            ->where('basket.deliveryAddress.area', 'Adliya')
+            ->where('basket.benefitPayNumber', '33177718')
+            ->where('basket.currency', 'BHD')
+            ->where('basket.subtotal', 315)
+            ->where('basket.deliveryCost', 5)
+            ->where('detailsUrl', route('checkout.details'))
+            ->where('submitUrl', route('checkout.payment.store'))
+            ->etc());
 
     expect($profile->fresh()->intake_declaration_accepted_at)->not->toBeNull();
 });
@@ -118,12 +113,11 @@ test('completed customers can view freeze and refund policies', function () {
     $this->actingAs($customer)
         ->get(route('policies.refund'))
         ->assertSuccessful()
-        ->assertSee('Policies', false)
-        ->assertSee('id="freeze"', false)
-        ->assertSee('id="refund"', false)
-        ->assertSee('maximum total number of days to be frozen are 14 days', false)
-        ->assertSee('credit is transferable', false)
-        ->assertSee('/checkout/payment', false);
+        ->assertInertia(fn ($page) => $page
+            ->component('Checkout/Policies')
+            ->where('paymentUrl', route('checkout.payment'))
+            ->where('homeUrl', route('app.home'))
+            ->etc());
 });
 
 test('payment requires cart confirmation', function () {
