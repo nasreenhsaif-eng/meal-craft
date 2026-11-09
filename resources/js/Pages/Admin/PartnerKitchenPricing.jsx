@@ -1,89 +1,259 @@
 import { useMemo, useState } from 'react';
-import { router, usePage } from '@inertiajs/react';
+import { router } from '@inertiajs/react';
 import Button from '../../Components/Atoms/Button/Button.jsx';
+import CSVUploader from '../../Components/CSVUploader.jsx';
+import DropdownTextInput from '../../Components/Atoms/TextInput/DropdownTextInput.jsx';
 import TextInput from '../../Components/Atoms/TextInput/TextInput.jsx';
 import adminInertiaLayout from '../../lib/adminInertiaLayout.jsx';
 
+/** @type {Array<{ value: string, label: string }>} */
+const CRAFT_FILTERS = [
+    { value: 'all', label: 'All crafts' },
+    { value: 'full', label: 'Full' },
+    { value: 'afternoon', label: 'Afternoon' },
+    { value: 'day', label: 'Day' },
+    { value: 'intermittent', label: 'Intermittent' },
+    { value: 'business', label: 'Business' },
+];
+
+/** @type {Array<{ value: string, label: string }>} */
+const DAY_FILTERS = [
+    { value: 'all', label: 'All days' },
+    { value: '5', label: '5' },
+    { value: '6', label: '6' },
+    { value: '7', label: '7' },
+    { value: '20', label: '20' },
+    { value: '24', label: '24' },
+    { value: '28', label: '28' },
+];
+
+/**
+ * @param {Array<{ value: string, label: string }>} options
+ * @param {string} value
+ */
+function labelForOption(options, value) {
+    return options.find((option) => option.value === value)?.label ?? options[0]?.label ?? '';
+}
+
+/**
+ * @param {Array<{ value: string, label: string }>} options
+ * @param {string} label
+ */
+function valueForLabel(options, label) {
+    return options.find((option) => option.label === label)?.value ?? options[0]?.value ?? '';
+}
+
+/**
+ * @param {number} amount
+ * @param {number} discount
+ * @param {'amount' | 'percent'} type
+ */
+function computeNet(amount, discount, type) {
+    const safeAmount = Number.isFinite(amount) ? amount : 0;
+    const safeDiscount = Number.isFinite(discount) ? Math.max(0, discount) : 0;
+
+    if (type === 'percent') {
+        const percent = Math.min(100, safeDiscount);
+
+        return Math.max(0, safeAmount * (1 - percent / 100));
+    }
+
+    return Math.max(0, safeAmount - safeDiscount);
+}
+
 /**
  * @param {{
- *   cards?: Array<{ id: number, scope: string, calorieRow: number, billedDays: number, amountBhd: number }>,
- *   discounts?: Array<{ id: number, label: string, kind: string, amountBhd: number, isActive: boolean }>,
+ *   cards?: Array<{
+ *     id: number,
+ *     scope: string,
+ *     calorieRow: number,
+ *     billedDays: number,
+ *     amountBhd: number,
+ *     discountType?: 'amount' | 'percent',
+ *     discountBhd?: number
+ *   }>,
  *   limitedTimeDiscount?: number,
  *   limitedTimeDiscountLabel?: string,
  *   deliveryCost?: number,
  *   currency?: string,
+ *   csvExportUrl?: string,
+ *   csvImportUrl?: string,
  * }} props
  */
 export default function PartnerKitchenPricing({
     cards = [],
-    discounts = [],
     limitedTimeDiscount = 20,
     limitedTimeDiscountLabel = 'Limited time offer',
     deliveryCost = 5,
     currency = 'BHD',
+    csvExportUrl = '',
+    csvImportUrl = '',
 }) {
-    const page = usePage();
-    const flash = page.props?.flash ?? {};
     const [cardAmounts, setCardAmounts] = useState(() =>
         Object.fromEntries(cards.map((card) => [card.id, String(card.amountBhd)])),
     );
-    const [limitedAmount, setLimitedAmount] = useState(String(limitedTimeDiscount));
+    const [cardDiscountTypes, setCardDiscountTypes] = useState(() =>
+        Object.fromEntries(
+            cards.map((card) => [card.id, card.discountType === 'percent' ? 'percent' : 'amount']),
+        ),
+    );
+    const [cardDiscounts, setCardDiscounts] = useState(() =>
+        Object.fromEntries(cards.map((card) => [card.id, String(card.discountBhd ?? 0)])),
+    );
     const [limitedLabel, setLimitedLabel] = useState(limitedTimeDiscountLabel);
-    const [discountLabel, setDiscountLabel] = useState('');
-    const [discountAmount, setDiscountAmount] = useState('');
+    const [offerType, setOfferType] = useState(
+        /** @type {'amount' | 'percent'} */ ('amount'),
+    );
+    const [offerValue, setOfferValue] = useState(String(limitedTimeDiscount));
+    const [offerCraft, setOfferCraft] = useState('all');
+    const [offerDays, setOfferDays] = useState('all');
     const [saving, setSaving] = useState(false);
+    const [craftFilter, setCraftFilter] = useState('full');
+    const [daysFilter, setDaysFilter] = useState('all');
+    const [kcalFilter, setKcalFilter] = useState('all');
+    const [applyNotice, setApplyNotice] = useState('');
 
-    const craftCards = useMemo(
-        () => cards.filter((card) => card.scope !== 'business'),
-        [cards],
-    );
-    const businessCards = useMemo(
-        () => cards.filter((card) => card.scope === 'business'),
-        [cards],
-    );
-    const extraDiscounts = useMemo(
-        () => discounts.filter((discount) => discount.kind === 'fixed'),
-        [discounts],
-    );
+    const discountTypeOptions = [currency, '%'];
+
+    const kcalFilters = useMemo(() => {
+        const rows = cards
+            .filter((card) => {
+                if (card.scope === 'business') {
+                    return false;
+                }
+
+                if (craftFilter !== 'all' && card.scope !== craftFilter) {
+                    return false;
+                }
+
+                return Number(card.calorieRow) > 0;
+            })
+            .map((card) => Number(card.calorieRow));
+
+        const unique = [...new Set(rows)].sort((a, b) => a - b);
+
+        return [
+            { value: 'all', label: 'All kcal' },
+            ...unique.map((row) => ({ value: String(row), label: String(row) })),
+        ];
+    }, [cards, craftFilter]);
+
+    const filteredCards = useMemo(() => {
+        return cards.filter((card) => {
+            if (craftFilter !== 'all' && card.scope !== craftFilter) {
+                return false;
+            }
+
+            if (daysFilter !== 'all' && String(card.billedDays) !== daysFilter) {
+                return false;
+            }
+
+            if (kcalFilter !== 'all' && String(card.calorieRow) !== kcalFilter) {
+                return false;
+            }
+
+            return true;
+        });
+    }, [cards, craftFilter, daysFilter, kcalFilter]);
+
+    const showCalorieColumn = craftFilter !== 'business';
+    const emptyColSpan = showCalorieColumn ? 6 : 5;
+    const activeKcalFilter = kcalFilters.some((filter) => filter.value === kcalFilter)
+        ? kcalFilter
+        : 'all';
+
+    /**
+     * @param {number} cardId
+     * @param {number} fallbackAmount
+     * @param {number} [fallbackDiscount]
+     * @param {'amount' | 'percent'} [fallbackType]
+     */
+    function netAmountValue(cardId, fallbackAmount, fallbackDiscount = 0, fallbackType = 'amount') {
+        const amount = Number(cardAmounts[cardId] ?? fallbackAmount);
+        const discount = Number(cardDiscounts[cardId] ?? fallbackDiscount);
+        const type = cardDiscountTypes[cardId] === 'percent' ? 'percent' : fallbackType;
+
+        return computeNet(amount, discount, type === 'percent' ? 'percent' : 'amount');
+    }
+
+    /**
+     * @param {number} cardId
+     * @param {number} fallbackAmount
+     * @param {number} billedDays
+     * @param {number} [fallbackDiscount]
+     * @param {'amount' | 'percent'} [fallbackType]
+     */
+    function pricePerDay(cardId, fallbackAmount, billedDays, fallbackDiscount = 0, fallbackType = 'amount') {
+        const net = netAmountValue(cardId, fallbackAmount, fallbackDiscount, fallbackType);
+        const days = Number(billedDays);
+
+        if (!Number.isFinite(days) || days <= 0) {
+            return '—';
+        }
+
+        return (net / days).toFixed(3);
+    }
+
+    function applyOfferDiscount() {
+        const type = offerType === 'percent' ? 'percent' : 'amount';
+        const value = offerValue.trim() === '' ? '0' : offerValue;
+        const targets = cards.filter((card) => {
+            if (offerCraft !== 'all' && card.scope !== offerCraft) {
+                return false;
+            }
+
+            if (offerDays !== 'all' && String(card.billedDays) !== offerDays) {
+                return false;
+            }
+
+            return true;
+        });
+
+        if (targets.length === 0) {
+            setApplyNotice('No price cards match that craft and days selection.');
+
+            return;
+        }
+
+        const nextTypes = { ...cardDiscountTypes };
+        const nextDiscounts = { ...cardDiscounts };
+
+        targets.forEach((card) => {
+            nextTypes[card.id] = type;
+            nextDiscounts[card.id] = value;
+        });
+
+        setCardDiscountTypes(nextTypes);
+        setCardDiscounts(nextDiscounts);
+
+        const craftLabel = labelForOption(CRAFT_FILTERS, offerCraft);
+        const daysLabel = offerDays === 'all' ? 'all days' : `${offerDays} days`;
+
+        setApplyNotice(
+            `Discount applied to ${targets.length} cards (${craftLabel}, ${daysLabel}). Save prices to keep.`,
+        );
+    }
 
     function savePrices() {
         setSaving(true);
+        setApplyNotice('');
         router.put(
             '/admin/partner-kitchen-pricing',
             {
                 cards: cards.map((card) => ({
                     id: card.id,
                     amount_bhd: Number(cardAmounts[card.id] ?? card.amountBhd),
+                    discount_type: cardDiscountTypes[card.id] === 'percent' ? 'percent' : 'amount',
+                    discount_bhd: Number(cardDiscounts[card.id] ?? card.discountBhd ?? 0),
                 })),
-                limited_time_discount: Number(limitedAmount),
+                limited_time_discount:
+                    offerType === 'amount' ? Number(offerValue) : Number(limitedTimeDiscount),
                 limited_time_discount_label: limitedLabel,
                 delivery_cost: Number(deliveryCost),
             },
             {
                 preserveScroll: true,
                 onFinish: () => setSaving(false),
-            },
-        );
-    }
-
-    function addDiscount() {
-        if (discountLabel.trim() === '' || discountAmount.trim() === '') {
-            return;
-        }
-
-        router.post(
-            '/admin/partner-kitchen-pricing/discounts',
-            {
-                label: discountLabel.trim(),
-                amount_bhd: Number(discountAmount),
-                is_active: true,
-            },
-            {
-                preserveScroll: true,
-                onSuccess: () => {
-                    setDiscountLabel('');
-                    setDiscountAmount('');
-                },
             },
         );
     }
@@ -98,100 +268,210 @@ export default function PartnerKitchenPricing({
                     Edit the seeded {currency} price cards customers see at consultation and checkout.
                     Delivery stays at {currency} {Number(deliveryCost).toFixed(3)}.
                 </p>
-                {typeof flash.success === 'string' && flash.success !== '' ? (
-                    <p className="mt-3 rounded-[10px] bg-[#E8EDE3] px-3 py-2 font-body text-sm text-[#5A6B44]">
-                        {flash.success}
-                    </p>
-                ) : null}
             </header>
 
             <section className="rounded-[12px] border border-gray-200 bg-white p-5 shadow-sm">
                 <h2 className="font-montserrat text-sm font-bold uppercase tracking-[0.14em] text-[#555555]">
                     Limited time offer
                 </h2>
+                <p className="mt-2 font-body text-sm text-[#6B7280]">
+                    Set the offer label and discount, then apply it to the crafts and plan lengths you
+                    choose. The price chart stays for editing amounts only.
+                </p>
+
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
                     <TextInput
                         label="Label"
                         value={limitedLabel}
                         onChange={(event) => setLimitedLabel(event.target.value)}
+                        className="!max-w-none"
                     />
-                    <TextInput
-                        label={`Amount (${currency})`}
-                        value={limitedAmount}
-                        onChange={(event) => setLimitedAmount(event.target.value)}
+                    <div className="grid grid-cols-[7.5rem_minmax(0,1fr)] gap-3">
+                        <DropdownTextInput
+                            label="Type"
+                            value={offerType === 'percent' ? '%' : currency}
+                            options={discountTypeOptions}
+                            onChange={(label) =>
+                                setOfferType(label === '%' ? 'percent' : 'amount')
+                            }
+                            listboxAriaLabel="Discount type"
+                            className="!max-w-none"
+                        />
+                        <TextInput
+                            label="Discount"
+                            value={offerValue}
+                            onChange={(event) => setOfferValue(event.target.value)}
+                            className="!max-w-none"
+                        />
+                    </div>
+                    <DropdownTextInput
+                        label="Apply to craft"
+                        value={labelForOption(CRAFT_FILTERS, offerCraft)}
+                        options={CRAFT_FILTERS.map((filter) => filter.label)}
+                        onChange={(label) => setOfferCraft(valueForLabel(CRAFT_FILTERS, label))}
+                        listboxAriaLabel="Apply discount to craft"
+                        className="!max-w-none"
                     />
+                    <DropdownTextInput
+                        label="Apply to days"
+                        value={labelForOption(DAY_FILTERS, offerDays)}
+                        options={DAY_FILTERS.map((filter) => filter.label)}
+                        onChange={(label) => setOfferDays(valueForLabel(DAY_FILTERS, label))}
+                        listboxAriaLabel="Apply discount to days"
+                        className="!max-w-none"
+                    />
+                </div>
+
+                <div className="mt-4 flex flex-wrap items-center gap-3">
+                    <Button label="Apply discount" onClick={applyOfferDiscount} />
+                    {applyNotice !== '' ? (
+                        <p className="rounded-[10px] bg-[#E8EDE3] px-3 py-2 font-body text-sm text-[#5A6B44]">
+                            {applyNotice}
+                        </p>
+                    ) : null}
                 </div>
             </section>
 
             <section className="rounded-[12px] border border-gray-200 bg-white p-5 shadow-sm">
                 <h2 className="font-montserrat text-sm font-bold uppercase tracking-[0.14em] text-[#555555]">
-                    Calorie crafts (Full, Afternoon, Day, Intermittent)
+                    Price chart
                 </h2>
-                <div className="mt-4 overflow-x-auto">
-                    <table className="min-w-full text-left text-sm">
-                        <thead>
-                            <tr className="border-b border-gray-200 text-[#555555]">
-                                <th className="px-2 py-2 font-montserrat text-xs uppercase">Craft</th>
-                                <th className="px-2 py-2 font-montserrat text-xs uppercase">kcal</th>
-                                <th className="px-2 py-2 font-montserrat text-xs uppercase">Days</th>
-                                <th className="px-2 py-2 font-montserrat text-xs uppercase">Amount</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {craftCards.map((card) => (
-                                <tr key={card.id} className="border-b border-gray-100">
-                                    <td className="px-2 py-2 capitalize">{card.scope}</td>
-                                    <td className="px-2 py-2">{card.calorieRow}</td>
-                                    <td className="px-2 py-2">{card.billedDays}</td>
-                                    <td className="px-2 py-2">
-                                        <input
-                                            className="w-28 rounded-[8px] border border-gray-200 px-2 py-1"
-                                            value={cardAmounts[card.id] ?? ''}
-                                            onChange={(event) =>
-                                                setCardAmounts((prev) => ({
-                                                    ...prev,
-                                                    [card.id]: event.target.value,
-                                                }))
-                                            }
-                                        />
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            </section>
+                {csvExportUrl !== '' || csvImportUrl !== '' ? (
+                    <div className="mt-4">
+                        <CSVUploader
+                            exportUrl={csvExportUrl !== '' ? csvExportUrl : undefined}
+                            onUpload={(file) => {
+                                if (csvImportUrl === '') {
+                                    return;
+                                }
 
-            <section className="rounded-[12px] border border-gray-200 bg-white p-5 shadow-sm">
-                <h2 className="font-montserrat text-sm font-bold uppercase tracking-[0.14em] text-[#555555]">
-                    Business Craft
-                </h2>
+                                router.post(
+                                    csvImportUrl,
+                                    { file },
+                                    { forceFormData: true, preserveScroll: true },
+                                );
+                            }}
+                        />
+                    </div>
+                ) : null}
+
+                <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    <DropdownTextInput
+                        label="Craft"
+                        value={labelForOption(CRAFT_FILTERS, craftFilter)}
+                        options={CRAFT_FILTERS.map((filter) => filter.label)}
+                        onChange={(label) => {
+                            setCraftFilter(valueForLabel(CRAFT_FILTERS, label));
+                            setKcalFilter('all');
+                        }}
+                        listboxAriaLabel="Filter by craft"
+                        className="!max-w-none"
+                    />
+                    {showCalorieColumn ? (
+                        <DropdownTextInput
+                            label="kcal"
+                            value={labelForOption(kcalFilters, activeKcalFilter)}
+                            options={kcalFilters.map((filter) => filter.label)}
+                            onChange={(label) =>
+                                setKcalFilter(valueForLabel(kcalFilters, label))
+                            }
+                            listboxAriaLabel="Filter by kcal"
+                            className="!max-w-none"
+                        />
+                    ) : null}
+                    <DropdownTextInput
+                        label="Days"
+                        value={labelForOption(DAY_FILTERS, daysFilter)}
+                        options={DAY_FILTERS.map((filter) => filter.label)}
+                        onChange={(label) => setDaysFilter(valueForLabel(DAY_FILTERS, label))}
+                        listboxAriaLabel="Filter by days"
+                        className="!max-w-none"
+                    />
+                </div>
+
                 <div className="mt-4 overflow-x-auto">
                     <table className="min-w-full text-left text-sm">
                         <thead>
-                            <tr className="border-b border-gray-200 text-[#555555]">
-                                <th className="px-2 py-2 font-montserrat text-xs uppercase">Days</th>
-                                <th className="px-2 py-2 font-montserrat text-xs uppercase">Amount</th>
+                            <tr className="border-b border-gray-200 bg-[#F8F9F6] text-[#555555]">
+                                <th className="px-4 py-3 font-montserrat text-[11px] font-semibold uppercase tracking-[0.14em]">
+                                    Craft
+                                </th>
+                                {showCalorieColumn ? (
+                                    <th className="px-4 py-3 font-montserrat text-[11px] font-semibold uppercase tracking-[0.14em]">
+                                        kcal
+                                    </th>
+                                ) : null}
+                                <th className="px-4 py-3 font-montserrat text-[11px] font-semibold uppercase tracking-[0.14em]">
+                                    Days
+                                </th>
+                                <th className="px-4 py-3 font-montserrat text-[11px] font-semibold uppercase tracking-[0.14em]">
+                                    Amount
+                                </th>
+                                <th className="px-4 py-3 font-montserrat text-[11px] font-semibold uppercase tracking-[0.14em]">
+                                    Net
+                                </th>
+                                <th className="px-4 py-3 font-montserrat text-[11px] font-semibold uppercase tracking-[0.14em]">
+                                    Per day
+                                </th>
                             </tr>
                         </thead>
                         <tbody>
-                            {businessCards.map((card) => (
-                                <tr key={card.id} className="border-b border-gray-100">
-                                    <td className="px-2 py-2">{card.billedDays}</td>
-                                    <td className="px-2 py-2">
-                                        <input
-                                            className="w-28 rounded-[8px] border border-gray-200 px-2 py-1"
-                                            value={cardAmounts[card.id] ?? ''}
-                                            onChange={(event) =>
-                                                setCardAmounts((prev) => ({
-                                                    ...prev,
-                                                    [card.id]: event.target.value,
-                                                }))
-                                            }
-                                        />
+                            {filteredCards.map((card) => {
+                                const fallbackType =
+                                    card.discountType === 'percent' ? 'percent' : 'amount';
+
+                                return (
+                                    <tr key={card.id} className="border-b border-gray-100">
+                                        <td className="px-4 py-3 capitalize">{card.scope}</td>
+                                        {showCalorieColumn ? (
+                                            <td className="px-4 py-3">
+                                                {card.scope === 'business' ? '—' : card.calorieRow}
+                                            </td>
+                                        ) : null}
+                                        <td className="px-4 py-3">{card.billedDays}</td>
+                                        <td className="px-4 py-3">
+                                            <TextInput
+                                                label={`Amount for ${card.scope} ${card.billedDays} days`}
+                                                value={cardAmounts[card.id] ?? ''}
+                                                onChange={(event) =>
+                                                    setCardAmounts((prev) => ({
+                                                        ...prev,
+                                                        [card.id]: event.target.value,
+                                                    }))
+                                                }
+                                                className="!max-w-none [&_label]:sr-only"
+                                            />
+                                        </td>
+                                        <td className="px-4 py-3 font-body text-[#262A22]">
+                                            {netAmountValue(
+                                                card.id,
+                                                card.amountBhd,
+                                                card.discountBhd ?? 0,
+                                                fallbackType,
+                                            ).toFixed(3)}
+                                        </td>
+                                        <td className="px-4 py-3 font-body text-[#262A22]">
+                                            {pricePerDay(
+                                                card.id,
+                                                card.amountBhd,
+                                                card.billedDays,
+                                                card.discountBhd ?? 0,
+                                                fallbackType,
+                                            )}
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                            {filteredCards.length === 0 ? (
+                                <tr>
+                                    <td
+                                        colSpan={emptyColSpan}
+                                        className="px-4 py-6 font-body text-sm text-[#6B7280]"
+                                    >
+                                        No price cards for these filters.
                                     </td>
                                 </tr>
-                            ))}
+                            ) : null}
                         </tbody>
                     </table>
                 </div>
@@ -200,53 +480,6 @@ export default function PartnerKitchenPricing({
             <div>
                 <Button label={saving ? 'Saving…' : 'Save prices'} onClick={savePrices} disabled={saving} />
             </div>
-
-            <section className="rounded-[12px] border border-gray-200 bg-white p-5 shadow-sm">
-                <h2 className="font-montserrat text-sm font-bold uppercase tracking-[0.14em] text-[#555555]">
-                    Extra cart discounts
-                </h2>
-                <p className="mt-1 font-body text-xs text-[#555555]">
-                    Fixed {currency} amounts applied on the Partner Kitchen basket.
-                </p>
-                <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_140px_auto]">
-                    <TextInput
-                        label="Label"
-                        value={discountLabel}
-                        onChange={(event) => setDiscountLabel(event.target.value)}
-                    />
-                    <TextInput
-                        label="Amount"
-                        value={discountAmount}
-                        onChange={(event) => setDiscountAmount(event.target.value)}
-                    />
-                    <div className="flex items-end">
-                        <Button label="Add discount" onClick={addDiscount} />
-                    </div>
-                </div>
-                <ul className="mt-4 space-y-2">
-                    {extraDiscounts.map((discount) => (
-                        <li
-                            key={discount.id}
-                            className="flex items-center justify-between rounded-[10px] border border-gray-100 px-3 py-2"
-                        >
-                            <span className="font-body text-sm text-[#262A22]">
-                                {discount.label} · {currency} {Number(discount.amountBhd).toFixed(3)}
-                                {discount.isActive ? '' : ' (off)'}
-                            </span>
-                            <Button
-                                label="Remove"
-                                variant="outline"
-                                size="sm"
-                                onClick={() =>
-                                    router.delete(`/admin/partner-kitchen-pricing/discounts/${discount.id}`, {
-                                        preserveScroll: true,
-                                    })
-                                }
-                            />
-                        </li>
-                    ))}
-                </ul>
-            </section>
         </div>
     );
 }

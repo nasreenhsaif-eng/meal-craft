@@ -14,6 +14,8 @@ use App\Http\Controllers\Admin\MealLibraryCsvImportController;
 use App\Http\Controllers\Admin\MealPlanLibraryController;
 use App\Http\Controllers\Admin\MealTiersLibraryController;
 use App\Http\Controllers\Admin\PartnerKitchenPricingController;
+use App\Http\Controllers\Admin\PartnerKitchenPricingCsvExportController;
+use App\Http\Controllers\Admin\PartnerKitchenPricingCsvImportController;
 use App\Http\Controllers\Api\AdaptedMenuController;
 use App\Http\Controllers\Api\ConsultationResumeDraftController;
 use App\Http\Controllers\Api\CustomerCraftPlanController;
@@ -101,6 +103,8 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
                 Route::get('/kitchen-logistics', [KitchenLogisticsController::class, 'index'])->name('kitchen-logistics');
                 Route::get('/partner-kitchen-pricing', [PartnerKitchenPricingController::class, 'index'])->name('partner-kitchen-pricing');
                 Route::put('/partner-kitchen-pricing', [PartnerKitchenPricingController::class, 'update'])->name('partner-kitchen-pricing.update');
+                Route::get('/partner-kitchen-pricing/export-csv', PartnerKitchenPricingCsvExportController::class)->name('partner-kitchen-pricing.export-csv');
+                Route::post('/partner-kitchen-pricing/import-csv', PartnerKitchenPricingCsvImportController::class)->name('partner-kitchen-pricing.import-csv');
                 Route::post('/partner-kitchen-pricing/discounts', [PartnerKitchenPricingController::class, 'storeDiscount'])->name('partner-kitchen-pricing.discounts.store');
                 Route::delete('/partner-kitchen-pricing/discounts/{discount}', [PartnerKitchenPricingController::class, 'destroyDiscount'])->name('partner-kitchen-pricing.discounts.destroy');
 

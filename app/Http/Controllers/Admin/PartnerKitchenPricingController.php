@@ -21,19 +21,28 @@ class PartnerKitchenPricingController extends Controller
             (new PartnerKitchenPriceSeeder)->run();
         }
 
+        $scopeOrder = array_flip(PartnerKitchenPrice::CRAFT_DISPLAY_ORDER);
+
         $cards = PartnerKitchenPriceCard::query()
-            ->orderBy('scope')
-            ->orderBy('calorie_row')
-            ->orderBy('billed_days')
             ->get()
+            ->sortBy(fn (PartnerKitchenPriceCard $card): string => sprintf(
+                '%02d-%05d-%03d',
+                $scopeOrder[$card->scope] ?? 99,
+                (int) $card->calorie_row,
+                (int) $card->billed_days,
+            ))
+            ->values()
             ->map(fn (PartnerKitchenPriceCard $card): array => [
                 'id' => $card->id,
                 'scope' => $card->scope,
                 'calorieRow' => (int) $card->calorie_row,
                 'billedDays' => (int) $card->billed_days,
                 'amountBhd' => round((float) $card->amount_bhd, 3),
+                'discountType' => $card->discount_type === PartnerKitchenPriceCard::DISCOUNT_TYPE_PERCENT
+                    ? PartnerKitchenPriceCard::DISCOUNT_TYPE_PERCENT
+                    : PartnerKitchenPriceCard::DISCOUNT_TYPE_AMOUNT,
+                'discountBhd' => round((float) $card->discount_bhd, 3),
             ])
-            ->values()
             ->all();
 
         $discounts = PartnerKitchenDiscount::query()
@@ -58,6 +67,8 @@ class PartnerKitchenPricingController extends Controller
             'limitedTimeDiscountLabel' => $limitedTime['label'],
             'deliveryCost' => round((float) config('checkout.delivery_cost', 5), 3),
             'currency' => (string) config('checkout.currency', 'BHD'),
+            'csvExportUrl' => route('admin.partner-kitchen-pricing.export-csv'),
+            'csvImportUrl' => route('admin.partner-kitchen-pricing.import-csv'),
         ]);
     }
 
@@ -66,9 +77,23 @@ class PartnerKitchenPricingController extends Controller
         $validated = $request->validated();
 
         foreach ($validated['cards'] as $row) {
+            $discountType = ($row['discount_type'] ?? PartnerKitchenPriceCard::DISCOUNT_TYPE_AMOUNT)
+                === PartnerKitchenPriceCard::DISCOUNT_TYPE_PERCENT
+                ? PartnerKitchenPriceCard::DISCOUNT_TYPE_PERCENT
+                : PartnerKitchenPriceCard::DISCOUNT_TYPE_AMOUNT;
+            $discountValue = round((float) ($row['discount_bhd'] ?? 0), 3);
+
+            if ($discountType === PartnerKitchenPriceCard::DISCOUNT_TYPE_PERCENT) {
+                $discountValue = min(100, max(0, $discountValue));
+            }
+
             PartnerKitchenPriceCard::query()
                 ->whereKey($row['id'])
-                ->update(['amount_bhd' => round((float) $row['amount_bhd'], 3)]);
+                ->update([
+                    'amount_bhd' => round((float) $row['amount_bhd'], 3),
+                    'discount_type' => $discountType,
+                    'discount_bhd' => $discountValue,
+                ]);
         }
 
         if (array_key_exists('limited_time_discount', $validated) || array_key_exists('limited_time_discount_label', $validated)) {

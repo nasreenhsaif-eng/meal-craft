@@ -22,6 +22,8 @@ class PartnerKitchenPriceCardFactory extends Factory
             'calorie_row' => 1200,
             'billed_days' => 20,
             'amount_bhd' => 190,
+            'discount_type' => 'amount',
+            'discount_bhd' => 0,
         ];
     }
 }

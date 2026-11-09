@@ -13,6 +13,9 @@ final class PartnerKitchenPrice
 {
     public const CALORIE_CRAFTS = ['full', 'afternoon', 'day', 'intermittent'];
 
+    /** Admin / checkout display order: calorie crafts then business. */
+    public const CRAFT_DISPLAY_ORDER = ['full', 'afternoon', 'day', 'intermittent', 'business'];
+
     /** @deprecated Use CALORIE_CRAFTS */
     public const SHARED_CRAFTS = self::CALORIE_CRAFTS;
 
@@ -21,6 +24,24 @@ final class PartnerKitchenPrice
      */
     public static function calorieRows(string $craftKey = 'full'): array
     {
+        $craftKey = self::normalizeCraftKey($craftKey);
+
+        if ($craftKey !== 'business' && self::priceCardsTableReady()) {
+            $rows = PartnerKitchenPriceCard::query()
+                ->where('scope', $craftKey)
+                ->where('calorie_row', '>', 0)
+                ->distinct()
+                ->orderBy('calorie_row')
+                ->pluck('calorie_row')
+                ->map(fn ($row): int => (int) $row)
+                ->values()
+                ->all();
+
+            if ($rows !== []) {
+                return $rows;
+            }
+        }
+
         $matrix = self::matrixForCraft($craftKey);
 
         if ($matrix === []) {
@@ -273,7 +294,7 @@ final class PartnerKitchenPrice
                 ->first();
 
             if ($card instanceof PartnerKitchenPriceCard) {
-                return round((float) $card->amount_bhd, 3);
+                return $card->netAmountBhd();
             }
         }
 
