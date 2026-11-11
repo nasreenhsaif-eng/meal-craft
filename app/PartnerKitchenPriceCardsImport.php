@@ -2,8 +2,9 @@
 
 namespace App;
 
-use App\Models\PartnerKitchenPriceCard;
-use App\Support\PartnerKitchenPrice;
+use App\Models\PlanCaloriePrice;
+use App\Models\SubscriptionPlan;
+use App\Support\SubscriptionPlanCatalog;
 use Illuminate\Http\UploadedFile;
 use InvalidArgumentException;
 
@@ -11,16 +12,15 @@ final class PartnerKitchenPriceCardsImport
 {
     /** @var list<string> */
     public const HEADERS = [
-        'scope',
-        'calorie_row',
-        'billed_days',
-        'amount_bhd',
-        'discount_type',
-        'discount_bhd',
+        'plan_key',
+        'calorie_tier',
+        'days_count',
+        'base_total_price',
+        'discounted_total_price',
     ];
 
     /**
-     * Upsert price cards from CSV by scope + calorie_row + billed_days.
+     * Upsert plan calorie prices from CSV by plan key + calorie tier + days.
      *
      * @return array{updated: int, created: int}
      */
@@ -64,7 +64,8 @@ final class PartnerKitchenPriceCardsImport
             }
 
             $index = array_flip($headers);
-            $allowedScopes = PartnerKitchenPrice::CRAFT_DISPLAY_ORDER;
+            $allowedKeys = array_column(SubscriptionPlanCatalog::plans(), 'key');
+            $allowedDays = SubscriptionPlanCatalog::DAYS;
             $updated = 0;
             $created = 0;
             $rowNumber = 1;
@@ -76,60 +77,68 @@ final class PartnerKitchenPriceCardsImport
                     continue;
                 }
 
-                $scope = strtolower(trim((string) ($row[$index['scope']] ?? '')));
-                $calorieRow = (int) ($row[$index['calorie_row']] ?? 0);
-                $billedDays = (int) ($row[$index['billed_days']] ?? 0);
-                $amount = round((float) ($row[$index['amount_bhd']] ?? 0), 3);
-                $discountType = strtolower(trim((string) ($row[$index['discount_type']] ?? PartnerKitchenPriceCard::DISCOUNT_TYPE_AMOUNT)));
-                $discount = round((float) ($row[$index['discount_bhd']] ?? 0), 3);
+                $planKey = strtolower(trim((string) ($row[$index['plan_key']] ?? '')));
+                $calorieTier = (int) ($row[$index['calorie_tier']] ?? 0);
+                $daysCount = (int) ($row[$index['days_count']] ?? 0);
+                $base = (int) ($row[$index['base_total_price']] ?? 0);
+                $discountRaw = trim((string) ($row[$index['discounted_total_price']] ?? ''));
+                $discounted = $discountRaw === '' ? null : (int) $discountRaw;
 
-                if (! in_array($scope, $allowedScopes, true)) {
+                if (! in_array($planKey, $allowedKeys, true)) {
                     throw new InvalidArgumentException(__(
-                        'Row :row has an invalid scope ":scope".',
-                        ['row' => $rowNumber, 'scope' => $scope],
+                        'Row :row has an invalid plan_key ":plan".',
+                        ['row' => $rowNumber, 'plan' => $planKey],
                     ));
                 }
 
-                if ($billedDays <= 0) {
+                $plan = SubscriptionPlan::query()->where('key', $planKey)->first();
+
+                if (! $plan instanceof SubscriptionPlan) {
                     throw new InvalidArgumentException(__(
-                        'Row :row has an invalid billed_days value.',
+                        'Row :row references a plan that is not seeded.',
                         ['row' => $rowNumber],
                     ));
                 }
 
-                if ($amount < 0 || $discount < 0) {
+                if (! in_array($calorieTier, SubscriptionPlanCatalog::tiersFor($planKey), true)) {
                     throw new InvalidArgumentException(__(
-                        'Row :row has a negative amount or discount.',
+                        'Row :row has a calorie tier that is not eligible for :plan.',
+                        ['row' => $rowNumber, 'plan' => $planKey],
+                    ));
+                }
+
+                if (! in_array($daysCount, $allowedDays, true)) {
+                    throw new InvalidArgumentException(__(
+                        'Row :row has an invalid days_count value.',
                         ['row' => $rowNumber],
                     ));
                 }
 
-                if ($discountType === 'percent' || $discountType === '%') {
-                    $discountType = PartnerKitchenPriceCard::DISCOUNT_TYPE_PERCENT;
-                    $discount = min(100, max(0, $discount));
-                } else {
-                    $discountType = PartnerKitchenPriceCard::DISCOUNT_TYPE_AMOUNT;
-                    $discount = max(0, $discount);
+                if ($base < 0 || ($discounted !== null && $discounted < 0)) {
+                    throw new InvalidArgumentException(__(
+                        'Row :row has a negative price.',
+                        ['row' => $rowNumber],
+                    ));
                 }
 
-                if ($scope === 'business') {
-                    $calorieRow = 0;
+                if ($discounted !== null && $discounted >= $base) {
+                    $discounted = null;
                 }
 
-                $card = PartnerKitchenPriceCard::query()->updateOrCreate(
-                    [
-                        'scope' => $scope,
-                        'calorie_row' => $calorieRow,
-                        'billed_days' => $billedDays,
-                    ],
-                    [
-                        'amount_bhd' => $amount,
-                        'discount_type' => $discountType,
-                        'discount_bhd' => $discount,
-                    ],
-                );
+                $price = PlanCaloriePrice::query()->firstOrNew([
+                    'plan_id' => $plan->id,
+                    'calorie_tier' => $calorieTier,
+                    'days_count' => $daysCount,
+                ]);
 
-                if ($card->wasRecentlyCreated) {
+                $wasNew = ! $price->exists;
+                $price->base_total_price = $base;
+                $price->discounted_total_price = $discounted;
+                $price->is_featured = $daysCount === 24;
+                $price->syncDailyRate();
+                $price->save();
+
+                if ($wasNew) {
                     $created++;
                 } else {
                     $updated++;

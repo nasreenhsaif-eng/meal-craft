@@ -1,44 +1,40 @@
 <?php
 
-use App\Models\PartnerKitchenPriceCard;
+use App\Models\PlanCaloriePrice;
 use App\Support\PartnerKitchenPrice;
 use Database\Seeders\PartnerKitchenPriceSeeder;
 
-test('package amount uses the net price after card amount discount', function () {
+test('a flat package discount lowers the checkout amount', function () {
     $this->seed(PartnerKitchenPriceSeeder::class);
 
-    $card = PartnerKitchenPriceCard::query()
-        ->where('scope', 'full')
-        ->where('calorie_row', 1200)
-        ->where('billed_days', 20)
+    $price = PlanCaloriePrice::query()
+        ->where('calorie_tier', 1200)
+        ->where('days_count', 20)
+        ->whereHas('plan', fn ($query) => $query->where('key', 'full'))
         ->firstOrFail();
 
     $before = PartnerKitchenPrice::packageAmount('full', 1200, 5, 4);
+    $price->applyDiscount('amount', 10);
 
-    $card->update([
-        'discount_type' => PartnerKitchenPriceCard::DISCOUNT_TYPE_AMOUNT,
-        'discount_bhd' => 10,
-    ]);
-
-    expect(PartnerKitchenPrice::packageAmount('full', 1200, 5, 4))->toBe(round(max(0, $before - 10), 3))
-        ->and($card->fresh()->netAmountBhd())->toBe(round(max(0, (float) $card->amount_bhd - 10), 3));
+    expect(PartnerKitchenPrice::packageAmount('full', 1200, 5, 4))->toBe((float) max(0, $before - 10))
+        ->and($price->fresh()->effectiveTotalPrice())->toBe((int) max(0, $before - 10));
 });
 
-test('package amount uses the net price after card percent discount', function () {
+test('a percent package discount stores the rounded sale total', function () {
     $this->seed(PartnerKitchenPriceSeeder::class);
 
-    $card = PartnerKitchenPriceCard::query()
-        ->where('scope', 'full')
-        ->where('calorie_row', 1200)
-        ->where('billed_days', 20)
+    $price = PlanCaloriePrice::query()
+        ->where('calorie_tier', 1200)
+        ->where('days_count', 20)
+        ->whereHas('plan', fn ($query) => $query->where('key', 'full'))
         ->firstOrFail();
 
-    $card->update([
-        'amount_bhd' => 200,
-        'discount_type' => PartnerKitchenPriceCard::DISCOUNT_TYPE_PERCENT,
-        'discount_bhd' => 10,
-    ]);
+    $price->base_total_price = 200;
+    $price->discounted_total_price = null;
+    $price->syncDailyRate();
+    $price->save();
+    $price->applyDiscount('percent', 10);
 
     expect(PartnerKitchenPrice::packageAmount('full', 1200, 5, 4))->toBe(180.0)
-        ->and($card->fresh()->netAmountBhd())->toBe(180.0);
+        ->and($price->fresh()->daily_rate)->toBe(9);
 });

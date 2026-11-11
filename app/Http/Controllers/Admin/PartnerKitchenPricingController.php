@@ -3,12 +3,16 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\ApplyPlanCalorieDiscountRequest;
+use App\Http\Requests\Admin\ResetPlanCalorieDiscountRequest;
 use App\Http\Requests\Admin\StorePartnerKitchenDiscountRequest;
 use App\Http\Requests\Admin\UpdatePartnerKitchenPricingRequest;
 use App\Models\PartnerKitchenDiscount;
-use App\Models\PartnerKitchenPriceCard;
+use App\Models\PlanCaloriePrice;
+use App\Models\SubscriptionPlan;
 use App\Support\PartnerKitchenPrice;
-use Database\Seeders\PartnerKitchenPriceSeeder;
+use App\Support\SubscriptionPlanCatalog;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -17,55 +21,54 @@ class PartnerKitchenPricingController extends Controller
 {
     public function index(): Response
     {
-        if (PartnerKitchenPriceCard::query()->count() === 0) {
-            (new PartnerKitchenPriceSeeder)->run();
-        }
+        PartnerKitchenPrice::ensureSeeded();
 
         $scopeOrder = array_flip(PartnerKitchenPrice::CRAFT_DISPLAY_ORDER);
 
-        $cards = PartnerKitchenPriceCard::query()
+        $plans = SubscriptionPlan::query()
+            ->where('is_active', true)
             ->get()
-            ->sortBy(fn (PartnerKitchenPriceCard $card): string => sprintf(
+            ->sortBy(fn (SubscriptionPlan $plan): int => $scopeOrder[$plan->key] ?? 99)
+            ->values()
+            ->map(fn (SubscriptionPlan $plan): array => [
+                'key' => $plan->key,
+                'slug' => $plan->slug,
+                'name' => $plan->name,
+                'minCalories' => (int) $plan->min_calories,
+                'calorieTiers' => SubscriptionPlanCatalog::tiersFor($plan->key),
+                'mealStructure' => $plan->meal_structure,
+            ])
+            ->all();
+
+        $prices = PlanCaloriePrice::query()
+            ->with('plan')
+            ->get()
+            ->sortBy(fn (PlanCaloriePrice $price): string => sprintf(
                 '%02d-%05d-%03d',
-                $scopeOrder[$card->scope] ?? 99,
-                (int) $card->calorie_row,
-                (int) $card->billed_days,
+                $scopeOrder[$price->plan?->key] ?? 99,
+                (int) $price->calorie_tier,
+                (int) $price->days_count,
             ))
             ->values()
-            ->map(fn (PartnerKitchenPriceCard $card): array => [
-                'id' => $card->id,
-                'scope' => $card->scope,
-                'calorieRow' => (int) $card->calorie_row,
-                'billedDays' => (int) $card->billed_days,
-                'amountBhd' => round((float) $card->amount_bhd, 3),
-                'discountType' => $card->discount_type === PartnerKitchenPriceCard::DISCOUNT_TYPE_PERCENT
-                    ? PartnerKitchenPriceCard::DISCOUNT_TYPE_PERCENT
-                    : PartnerKitchenPriceCard::DISCOUNT_TYPE_AMOUNT,
-                'discountBhd' => round((float) $card->discount_bhd, 3),
+            ->map(fn (PlanCaloriePrice $price): array => [
+                'id' => $price->id,
+                'planKey' => (string) $price->plan?->key,
+                'planName' => (string) $price->plan?->name,
+                'calorieTier' => (int) $price->calorie_tier,
+                'daysCount' => (int) $price->days_count,
+                'baseTotalPrice' => (int) $price->base_total_price,
+                'discountedTotalPrice' => $price->discounted_total_price !== null
+                    ? (int) $price->discounted_total_price
+                    : null,
+                'dailyRate' => (int) $price->daily_rate,
+                'isFeatured' => (bool) $price->is_featured,
             ])
             ->all();
-
-        $discounts = PartnerKitchenDiscount::query()
-            ->orderByDesc('id')
-            ->get()
-            ->map(fn (PartnerKitchenDiscount $discount): array => [
-                'id' => $discount->id,
-                'label' => $discount->label,
-                'kind' => $discount->kind,
-                'amountBhd' => round((float) $discount->amount_bhd, 3),
-                'isActive' => (bool) $discount->is_active,
-            ])
-            ->values()
-            ->all();
-
-        $limitedTime = PartnerKitchenPrice::activeLimitedTimeDiscount();
 
         return Inertia::render('Admin/PartnerKitchenPricing', [
-            'cards' => $cards,
-            'discounts' => $discounts,
-            'limitedTimeDiscount' => $limitedTime['amount'],
-            'limitedTimeDiscountLabel' => $limitedTime['label'],
-            'deliveryCost' => round((float) config('checkout.delivery_cost', 5), 3),
+            'plans' => $plans,
+            'prices' => $prices,
+            'durations' => SubscriptionPlanCatalog::DAYS,
             'currency' => (string) config('checkout.currency', 'BHD'),
             'csvExportUrl' => route('admin.partner-kitchen-pricing.export-csv'),
             'csvImportUrl' => route('admin.partner-kitchen-pricing.import-csv'),
@@ -74,55 +77,68 @@ class PartnerKitchenPricingController extends Controller
 
     public function update(UpdatePartnerKitchenPricingRequest $request): RedirectResponse
     {
-        $validated = $request->validated();
+        foreach ($request->validated('prices') as $row) {
+            $price = PlanCaloriePrice::query()->find($row['id']);
 
-        foreach ($validated['cards'] as $row) {
-            $discountType = ($row['discount_type'] ?? PartnerKitchenPriceCard::DISCOUNT_TYPE_AMOUNT)
-                === PartnerKitchenPriceCard::DISCOUNT_TYPE_PERCENT
-                ? PartnerKitchenPriceCard::DISCOUNT_TYPE_PERCENT
-                : PartnerKitchenPriceCard::DISCOUNT_TYPE_AMOUNT;
-            $discountValue = round((float) ($row['discount_bhd'] ?? 0), 3);
-
-            if ($discountType === PartnerKitchenPriceCard::DISCOUNT_TYPE_PERCENT) {
-                $discountValue = min(100, max(0, $discountValue));
+            if (! $price instanceof PlanCaloriePrice) {
+                continue;
             }
 
-            PartnerKitchenPriceCard::query()
-                ->whereKey($row['id'])
-                ->update([
-                    'amount_bhd' => round((float) $row['amount_bhd'], 3),
-                    'discount_type' => $discountType,
-                    'discount_bhd' => $discountValue,
-                ]);
-        }
+            $base = (int) $row['base_total_price'];
+            $discounted = array_key_exists('discounted_total_price', $row)
+                ? $row['discounted_total_price']
+                : $price->discounted_total_price;
 
-        if (array_key_exists('limited_time_discount', $validated) || array_key_exists('limited_time_discount_label', $validated)) {
-            $existing = PartnerKitchenDiscount::query()
-                ->where('kind', 'limited_time')
-                ->orderByDesc('id')
-                ->first();
-
-            $payload = [
-                'kind' => 'limited_time',
-                'label' => (string) ($validated['limited_time_discount_label']
-                    ?? $existing?->label
-                    ?? config('checkout.limited_time_discount_label', 'Limited time offer')),
-                'amount_bhd' => round((float) ($validated['limited_time_discount']
-                    ?? $existing?->amount_bhd
-                    ?? config('checkout.limited_time_discount', 20)), 3),
-                'is_active' => true,
-            ];
-
-            if ($existing instanceof PartnerKitchenDiscount) {
-                $existing->update($payload);
-            } else {
-                PartnerKitchenDiscount::query()->create($payload);
+            if ($discounted !== null && (int) $discounted >= $base) {
+                $discounted = null;
             }
+
+            $price->base_total_price = $base;
+            $price->discounted_total_price = $discounted !== null ? (int) $discounted : null;
+            $price->is_featured = (int) $price->days_count === 24;
+            $price->syncDailyRate();
+            $price->save();
         }
 
         return redirect()
             ->route('admin.partner-kitchen-pricing')
             ->with('success', __('Partner Kitchen prices were updated.'));
+    }
+
+    public function applyDiscount(ApplyPlanCalorieDiscountRequest $request): RedirectResponse
+    {
+        $validated = $request->validated();
+        $type = (string) $validated['discount_type'];
+        $value = (int) $validated['discount_value'];
+
+        if ($type === 'percent') {
+            $value = min(100, $value);
+        }
+
+        $updated = 0;
+
+        $this->matchingPrices($validated)->each(function (PlanCaloriePrice $price) use ($type, $value, &$updated): void {
+            $price->applyDiscount($type, $value);
+            $updated++;
+        });
+
+        return redirect()
+            ->route('admin.partner-kitchen-pricing')
+            ->with('success', __('Discount applied to :count packages.', ['count' => $updated]));
+    }
+
+    public function resetDiscounts(ResetPlanCalorieDiscountRequest $request): RedirectResponse
+    {
+        $updated = 0;
+
+        $this->matchingPrices($request->validated())->each(function (PlanCaloriePrice $price) use (&$updated): void {
+            $price->clearDiscount();
+            $updated++;
+        });
+
+        return redirect()
+            ->route('admin.partner-kitchen-pricing')
+            ->with('success', __('Discounts cleared on :count packages.', ['count' => $updated]));
     }
 
     public function storeDiscount(StorePartnerKitchenDiscountRequest $request): RedirectResponse
@@ -152,5 +168,40 @@ class PartnerKitchenPricingController extends Controller
         return redirect()
             ->route('admin.partner-kitchen-pricing')
             ->with('success', __('Discount removed.'));
+    }
+
+    /**
+     * @param  array<string, mixed>  $filters
+     * @return Builder<PlanCaloriePrice>
+     */
+    private function matchingPrices(array $filters): Builder
+    {
+        $query = PlanCaloriePrice::query();
+
+        if (($filters['apply_all'] ?? false) === true) {
+            return $query;
+        }
+
+        $planKeys = $filters['plan_keys'] ?? [];
+        $tiers = $filters['calorie_tiers'] ?? [];
+        $days = $filters['days_counts'] ?? [];
+
+        if ($planKeys === [] && $tiers === [] && $days === []) {
+            return $query->whereRaw('0 = 1');
+        }
+
+        if ($planKeys !== []) {
+            $query->whereHas('plan', fn (Builder $plan) => $plan->whereIn('key', $planKeys));
+        }
+
+        if ($tiers !== []) {
+            $query->whereIn('calorie_tier', $tiers);
+        }
+
+        if ($days !== []) {
+            $query->whereIn('days_count', $days);
+        }
+
+        return $query;
     }
 }

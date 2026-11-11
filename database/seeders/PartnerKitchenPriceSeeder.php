@@ -3,47 +3,45 @@
 namespace Database\Seeders;
 
 use App\Models\PartnerKitchenDiscount;
-use App\Models\PartnerKitchenPriceCard;
-use App\Support\PartnerKitchenPrice;
+use App\Models\PlanCaloriePrice;
+use App\Models\SubscriptionPlan;
+use App\Support\SubscriptionPlanCatalog;
 use Illuminate\Database\Seeder;
 
 class PartnerKitchenPriceSeeder extends Seeder
 {
     public function run(): void
     {
-        PartnerKitchenPriceCard::query()
-            ->where('scope', 'shared')
-            ->delete();
+        foreach (SubscriptionPlanCatalog::plans() as $definition) {
+            $plan = SubscriptionPlan::query()->updateOrCreate(
+                ['key' => $definition['key']],
+                [
+                    'slug' => $definition['slug'],
+                    'name' => $definition['name'],
+                    'meal_structure' => $definition['meal_structure'],
+                    'min_calories' => $definition['min_calories'],
+                    'is_active' => true,
+                ],
+            );
 
-        foreach (PartnerKitchenPrice::CALORIE_CRAFTS as $craftKey) {
-            $matrix = PartnerKitchenPrice::matrixForCraft($craftKey);
+            foreach ($definition['calorie_tiers'] as $calorieTier) {
+                foreach (SubscriptionPlanCatalog::DAYS as $daysCount) {
+                    $base = SubscriptionPlanCatalog::basePrice($calorieTier, $daysCount);
+                    $price = PlanCaloriePrice::query()->firstOrNew([
+                        'plan_id' => $plan->id,
+                        'calorie_tier' => $calorieTier,
+                        'days_count' => $daysCount,
+                    ]);
 
-            foreach ($matrix as $calorieRow => $days) {
-                foreach ($days as $billedDays => $amount) {
-                    PartnerKitchenPriceCard::query()->updateOrCreate(
-                        [
-                            'scope' => $craftKey,
-                            'calorie_row' => (int) $calorieRow,
-                            'billed_days' => (int) $billedDays,
-                        ],
-                        ['amount_bhd' => round((float) $amount, 3)],
-                    );
+                    if (! $price->exists) {
+                        $price->base_total_price = $base;
+                        $price->discounted_total_price = null;
+                        $price->is_featured = $daysCount === 24;
+                        $price->syncDailyRate();
+                        $price->save();
+                    }
                 }
             }
-        }
-
-        /** @var array<int, int|float> $businessMatrix */
-        $businessMatrix = config('checkout.business_matrix', []);
-
-        foreach ($businessMatrix as $billedDays => $amount) {
-            PartnerKitchenPriceCard::query()->updateOrCreate(
-                [
-                    'scope' => 'business',
-                    'calorie_row' => 0,
-                    'billed_days' => (int) $billedDays,
-                ],
-                ['amount_bhd' => round((float) $amount, 3)],
-            );
         }
 
         PartnerKitchenDiscount::query()->updateOrCreate(

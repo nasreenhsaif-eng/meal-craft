@@ -103,6 +103,8 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
                 Route::get('/kitchen-logistics', [KitchenLogisticsController::class, 'index'])->name('kitchen-logistics');
                 Route::get('/partner-kitchen-pricing', [PartnerKitchenPricingController::class, 'index'])->name('partner-kitchen-pricing');
                 Route::put('/partner-kitchen-pricing', [PartnerKitchenPricingController::class, 'update'])->name('partner-kitchen-pricing.update');
+                Route::post('/partner-kitchen-pricing/discounts/apply', [PartnerKitchenPricingController::class, 'applyDiscount'])->name('partner-kitchen-pricing.discounts.apply');
+                Route::post('/partner-kitchen-pricing/discounts/reset', [PartnerKitchenPricingController::class, 'resetDiscounts'])->name('partner-kitchen-pricing.discounts.reset');
                 Route::get('/partner-kitchen-pricing/export-csv', PartnerKitchenPricingCsvExportController::class)->name('partner-kitchen-pricing.export-csv');
                 Route::post('/partner-kitchen-pricing/import-csv', PartnerKitchenPricingCsvImportController::class)->name('partner-kitchen-pricing.import-csv');
                 Route::post('/partner-kitchen-pricing/discounts', [PartnerKitchenPricingController::class, 'storeDiscount'])->name('partner-kitchen-pricing.discounts.store');

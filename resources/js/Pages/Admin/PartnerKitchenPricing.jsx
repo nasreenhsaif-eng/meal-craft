@@ -1,255 +1,395 @@
 import { useMemo, useState } from 'react';
 import { router } from '@inertiajs/react';
 import Button from '../../Components/Atoms/Button/Button.jsx';
+import SquareCheckbox from '../../Components/Atoms/Icons/SquareCheckbox.jsx';
 import CSVUploader from '../../Components/CSVUploader.jsx';
 import DropdownTextInput from '../../Components/Atoms/TextInput/DropdownTextInput.jsx';
 import TextInput from '../../Components/Atoms/TextInput/TextInput.jsx';
 import adminInertiaLayout from '../../lib/adminInertiaLayout.jsx';
 
-/** @type {Array<{ value: string, label: string }>} */
-const CRAFT_FILTERS = [
-    { value: 'all', label: 'All crafts' },
-    { value: 'full', label: 'Full' },
-    { value: 'afternoon', label: 'Afternoon' },
-    { value: 'day', label: 'Day' },
-    { value: 'intermittent', label: 'Intermittent' },
-    { value: 'business', label: 'Business' },
-];
+const DURATIONS = [5, 6, 7, 20, 24, 28];
 
-/** @type {Array<{ value: string, label: string }>} */
-const DAY_FILTERS = [
-    { value: 'all', label: 'All days' },
-    { value: '5', label: '5' },
-    { value: '6', label: '6' },
-    { value: '7', label: '7' },
-    { value: '20', label: '20' },
-    { value: '24', label: '24' },
-    { value: '28', label: '28' },
-];
+/** Calorie curves — brand hues + light tints so each tier is chart-distinct. */
+const TIER_COLORS = {
+    650: '#6E8C47', // brand primary
+    850: '#2F4C9B', // magnesium
+    950: '#8F55A8', // accent
+    1200: '#D8A933', // secondary
+    1300: '#C44F5D', // error
+    1400: '#9BB56E', // light primary
+    1500: '#6B86C4', // light magnesium
+    1800: '#B888C9', // light accent
+    2000: '#E8C56A', // light secondary
+};
 
 /**
- * @param {Array<{ value: string, label: string }>} options
- * @param {string} value
+ * @param {number} base
+ * @param {number | null} discounted
  */
-function labelForOption(options, value) {
-    return options.find((option) => option.value === value)?.label ?? options[0]?.label ?? '';
-}
-
-/**
- * @param {Array<{ value: string, label: string }>} options
- * @param {string} label
- */
-function valueForLabel(options, label) {
-    return options.find((option) => option.label === label)?.value ?? options[0]?.value ?? '';
-}
-
-/**
- * @param {number} amount
- * @param {number} discount
- * @param {'amount' | 'percent'} type
- */
-function computeNet(amount, discount, type) {
-    const safeAmount = Number.isFinite(amount) ? amount : 0;
-    const safeDiscount = Number.isFinite(discount) ? Math.max(0, discount) : 0;
-
-    if (type === 'percent') {
-        const percent = Math.min(100, safeDiscount);
-
-        return Math.max(0, safeAmount * (1 - percent / 100));
+function effectiveTotal(base, discounted) {
+    if (discounted !== null && discounted < base) {
+        return discounted;
     }
 
-    return Math.max(0, safeAmount - safeDiscount);
+    return base;
+}
+
+/**
+ * Brand checkbox from Storybook SquareCheckbox (`#556C37`).
+ *
+ * @param {{
+ *   checked: boolean,
+ *   onChange: () => void,
+ *   children: import('react').ReactNode,
+ * }} props
+ */
+function BrandCheckbox({ checked, onChange, children }) {
+    return (
+        <label className="group/item flex cursor-pointer items-center gap-2 font-body text-sm text-[#262A22]">
+            <input
+                type="checkbox"
+                className="sr-only"
+                checked={checked}
+                onChange={onChange}
+            />
+            <SquareCheckbox checked={checked} presentational />
+            {children}
+        </label>
+    );
+}
+
+/**
+ * @param {number} base
+ * @param {'amount' | 'percent'} type
+ * @param {number} value
+ */
+function salePrice(base, type, value) {
+    if (type === 'percent') {
+        const percent = Math.min(100, Math.max(0, value));
+
+        return Math.round(base * (1 - percent / 100));
+    }
+
+    return Math.max(0, base - Math.max(0, value));
 }
 
 /**
  * @param {{
- *   cards?: Array<{
+ *   series: Array<{ tier: number, points: Array<{ days: number, total: number }> }>
+ * }} props
+ */
+function PriceTrendChart({ series }) {
+    const width = 720;
+    const height = 240;
+    const pad = { top: 16, right: 16, bottom: 32, left: 40 };
+    const maxY = Math.max(
+        1,
+        ...series.flatMap((line) => line.points.map((point) => point.total)),
+    );
+    const innerW = width - pad.left - pad.right;
+    const innerH = height - pad.top - pad.bottom;
+
+    /**
+     * @param {number} days
+     */
+    function xFor(days) {
+        const index = DURATIONS.indexOf(days);
+
+        return pad.left + (index / (DURATIONS.length - 1)) * innerW;
+    }
+
+    /**
+     * @param {number} total
+     */
+    function yFor(total) {
+        return pad.top + innerH - (total / maxY) * innerH;
+    }
+
+    return (
+        <svg viewBox={`0 0 ${width} ${height}`} className="h-60 w-full" role="img" aria-label="Price trend comparison">
+            {[0, 0.5, 1].map((step) => {
+                const y = yFor(maxY * step);
+
+                return (
+                    <g key={step}>
+                        <line x1={pad.left} x2={width - pad.right} y1={y} y2={y} stroke="#E5E7EB" />
+                        <text x={4} y={y + 4} className="fill-[#888888] text-[10px]">
+                            {Math.round(maxY * step)}
+                        </text>
+                    </g>
+                );
+            })}
+            {DURATIONS.map((days) => (
+                <text key={days} x={xFor(days)} y={height - 8} textAnchor="middle" className="fill-[#555555] text-[11px]">
+                    {days}d
+                </text>
+            ))}
+            {series.map((line) => {
+                const color = TIER_COLORS[line.tier] ?? '#6E8C47';
+                const d = line.points
+                    .map((point, index) => `${index === 0 ? 'M' : 'L'} ${xFor(point.days)} ${yFor(point.total)}`)
+                    .join(' ');
+
+                return (
+                    <g key={line.tier}>
+                        <path d={d} fill="none" stroke={color} strokeWidth="2.5" />
+                        {line.points.map((point) => (
+                            <circle key={point.days} cx={xFor(point.days)} cy={yFor(point.total)} r="3.5" fill={color} />
+                        ))}
+                    </g>
+                );
+            })}
+        </svg>
+    );
+}
+
+/**
+ * @param {{
+ *   plans?: Array<{ key: string, name: string, calorieTiers: number[], minCalories: number }>,
+ *   prices?: Array<{
  *     id: number,
- *     scope: string,
- *     calorieRow: number,
- *     billedDays: number,
- *     amountBhd: number,
- *     discountType?: 'amount' | 'percent',
- *     discountBhd?: number
+ *     planKey: string,
+ *     planName: string,
+ *     calorieTier: number,
+ *     daysCount: number,
+ *     baseTotalPrice: number,
+ *     discountedTotalPrice: number | null,
+ *     dailyRate: number,
+ *     isFeatured: boolean
  *   }>,
- *   limitedTimeDiscount?: number,
- *   limitedTimeDiscountLabel?: string,
- *   deliveryCost?: number,
  *   currency?: string,
  *   csvExportUrl?: string,
  *   csvImportUrl?: string,
  * }} props
  */
 export default function PartnerKitchenPricing({
-    cards = [],
-    limitedTimeDiscount = 20,
-    limitedTimeDiscountLabel = 'Limited time offer',
-    deliveryCost = 5,
+    plans = [],
+    prices = [],
     currency = 'BHD',
     csvExportUrl = '',
     csvImportUrl = '',
 }) {
-    const [cardAmounts, setCardAmounts] = useState(() =>
-        Object.fromEntries(cards.map((card) => [card.id, String(card.amountBhd)])),
-    );
-    const [cardDiscountTypes, setCardDiscountTypes] = useState(() =>
+    const [drafts, setDrafts] = useState(() =>
         Object.fromEntries(
-            cards.map((card) => [card.id, card.discountType === 'percent' ? 'percent' : 'amount']),
+            prices.map((price) => [
+                price.id,
+                {
+                    base: price.baseTotalPrice,
+                    discounted: price.discountedTotalPrice,
+                },
+            ]),
         ),
     );
-    const [cardDiscounts, setCardDiscounts] = useState(() =>
-        Object.fromEntries(cards.map((card) => [card.id, String(card.discountBhd ?? 0)])),
+    const [planView, setPlanView] = useState('all');
+    const [discountType, setDiscountType] = useState(/** @type {'amount' | 'percent'} */ ('percent'));
+    const [discountValue, setDiscountValue] = useState('10');
+    const [selectedPlans, setSelectedPlans] = useState(() => plans.map((plan) => plan.key));
+    const [selectedTiers, setSelectedTiers] = useState(() =>
+        [...new Set(plans.flatMap((plan) => plan.calorieTiers))].sort((a, b) => a - b),
     );
-    const [limitedLabel, setLimitedLabel] = useState(limitedTimeDiscountLabel);
-    const [offerType, setOfferType] = useState(
-        /** @type {'amount' | 'percent'} */ ('amount'),
-    );
-    const [offerValue, setOfferValue] = useState(String(limitedTimeDiscount));
-    const [offerCraft, setOfferCraft] = useState('all');
-    const [offerDays, setOfferDays] = useState('all');
+    const [selectedDays, setSelectedDays] = useState([...DURATIONS]);
     const [saving, setSaving] = useState(false);
-    const [craftFilter, setCraftFilter] = useState('full');
-    const [daysFilter, setDaysFilter] = useState('all');
-    const [kcalFilter, setKcalFilter] = useState('all');
-    const [applyNotice, setApplyNotice] = useState('');
 
-    const discountTypeOptions = [currency, '%'];
+    const viewOptions = useMemo(
+        () => [
+            { value: 'all', label: 'All Plans / Master Calorie Matrix' },
+            ...plans.map((plan) => ({ value: plan.key, label: plan.name })),
+        ],
+        [plans],
+    );
 
-    const kcalFilters = useMemo(() => {
-        const rows = cards
-            .filter((card) => {
-                if (card.scope === 'business') {
-                    return false;
-                }
+    const eligibleTiers = useMemo(() => {
+        const keys = selectedPlans.length > 0 ? selectedPlans : plans.map((plan) => plan.key);
+        const tiers = plans
+            .filter((plan) => keys.includes(plan.key))
+            .flatMap((plan) => plan.calorieTiers);
 
-                if (craftFilter !== 'all' && card.scope !== craftFilter) {
-                    return false;
-                }
+        return [...new Set(tiers)].sort((a, b) => a - b);
+    }, [plans, selectedPlans]);
 
-                return Number(card.calorieRow) > 0;
-            })
-            .map((card) => Number(card.calorieRow));
+    const scopedPrices = useMemo(() => {
+        if (planView === 'all') {
+            return prices;
+        }
 
-        const unique = [...new Set(rows)].sort((a, b) => a - b);
+        return prices.filter((price) => price.planKey === planView);
+    }, [prices, planView]);
 
-        return [
-            { value: 'all', label: 'All kcal' },
-            ...unique.map((row) => ({ value: String(row), label: String(row) })),
-        ];
-    }, [cards, craftFilter]);
-
-    const filteredCards = useMemo(() => {
-        return cards.filter((card) => {
-            if (craftFilter !== 'all' && card.scope !== craftFilter) {
-                return false;
-            }
-
-            if (daysFilter !== 'all' && String(card.billedDays) !== daysFilter) {
-                return false;
-            }
-
-            if (kcalFilter !== 'all' && String(card.calorieRow) !== kcalFilter) {
-                return false;
-            }
-
-            return true;
-        });
-    }, [cards, craftFilter, daysFilter, kcalFilter]);
-
-    const showCalorieColumn = craftFilter !== 'business';
-    const emptyColSpan = showCalorieColumn ? 6 : 5;
-    const activeKcalFilter = kcalFilters.some((filter) => filter.value === kcalFilter)
-        ? kcalFilter
-        : 'all';
+    const matrixTiers = useMemo(() => {
+        return [...new Set(scopedPrices.map((price) => price.calorieTier))].sort((a, b) => a - b);
+    }, [scopedPrices]);
 
     /**
-     * @param {number} cardId
-     * @param {number} fallbackAmount
-     * @param {number} [fallbackDiscount]
-     * @param {'amount' | 'percent'} [fallbackType]
+     * @param {number} tier
+     * @param {number} days
      */
-    function netAmountValue(cardId, fallbackAmount, fallbackDiscount = 0, fallbackType = 'amount') {
-        const amount = Number(cardAmounts[cardId] ?? fallbackAmount);
-        const discount = Number(cardDiscounts[cardId] ?? fallbackDiscount);
-        const type = cardDiscountTypes[cardId] === 'percent' ? 'percent' : fallbackType;
-
-        return computeNet(amount, discount, type === 'percent' ? 'percent' : 'amount');
+    function cellPrices(tier, days) {
+        return scopedPrices.filter((price) => price.calorieTier === tier && price.daysCount === days);
     }
 
     /**
-     * @param {number} cardId
-     * @param {number} fallbackAmount
-     * @param {number} billedDays
-     * @param {number} [fallbackDiscount]
-     * @param {'amount' | 'percent'} [fallbackType]
+     * @param {number} id
      */
-    function pricePerDay(cardId, fallbackAmount, billedDays, fallbackDiscount = 0, fallbackType = 'amount') {
-        const net = netAmountValue(cardId, fallbackAmount, fallbackDiscount, fallbackType);
-        const days = Number(billedDays);
-
-        if (!Number.isFinite(days) || days <= 0) {
-            return '—';
-        }
-
-        return (net / days).toFixed(3);
+    function draftFor(id) {
+        return drafts[id] ?? { base: 0, discounted: null };
     }
 
-    function applyOfferDiscount() {
-        const type = offerType === 'percent' ? 'percent' : 'amount';
-        const value = offerValue.trim() === '' ? '0' : offerValue;
-        const targets = cards.filter((card) => {
-            if (offerCraft !== 'all' && card.scope !== offerCraft) {
-                return false;
-            }
-
-            if (offerDays !== 'all' && String(card.billedDays) !== offerDays) {
-                return false;
-            }
-
-            return true;
-        });
-
-        if (targets.length === 0) {
-            setApplyNotice('No price cards match that craft and days selection.');
-
-            return;
+    /**
+     * @param {Array<{ id: number }>} matches
+     */
+    function cellDisplay(matches) {
+        if (matches.length === 0) {
+            return null;
         }
 
-        const nextTypes = { ...cardDiscountTypes };
-        const nextDiscounts = { ...cardDiscounts };
+        const bases = matches.map((price) => Number(draftFor(price.id).base));
+        const sales = matches.map((price) => {
+            const draft = draftFor(price.id);
 
-        targets.forEach((card) => {
-            nextTypes[card.id] = type;
-            nextDiscounts[card.id] = value;
+            return effectiveTotal(Number(draft.base), draft.discounted);
+        });
+        const basesMatch = bases.every((value) => value === bases[0]);
+        const salesMatch = sales.every((value) => value === sales[0]);
+        const discounted = matches.some((price) => {
+            const draft = draftFor(price.id);
+
+            return draft.discounted !== null && draft.discounted < Number(draft.base);
         });
 
-        setCardDiscountTypes(nextTypes);
-        setCardDiscounts(nextDiscounts);
+        return {
+            base: basesMatch ? bases[0] : null,
+            sale: salesMatch ? sales[0] : null,
+            discounted,
+            days: matches[0].daysCount,
+            ids: matches.map((price) => price.id),
+        };
+    }
 
-        const craftLabel = labelForOption(CRAFT_FILTERS, offerCraft);
-        const daysLabel = offerDays === 'all' ? 'all days' : `${offerDays} days`;
+    const chartSeries = useMemo(() => {
+        return matrixTiers.map((tier) => ({
+            tier,
+            points: DURATIONS.map((days) => {
+                const display = cellDisplay(cellPrices(tier, days));
 
-        setApplyNotice(
-            `Discount applied to ${targets.length} cards (${craftLabel}, ${daysLabel}). Save prices to keep.`,
+                return {
+                    days,
+                    total: display?.sale ?? 0,
+                };
+            }),
+        }));
+    }, [matrixTiers, scopedPrices, drafts]);
+
+    /**
+     * @param {string} key
+     */
+    function togglePlan(key) {
+        setSelectedPlans((current) =>
+            current.includes(key) ? current.filter((item) => item !== key) : [...current, key],
+        );
+    }
+
+    /**
+     * @param {number} tier
+     */
+    function toggleTier(tier) {
+        setSelectedTiers((current) =>
+            current.includes(tier) ? current.filter((item) => item !== tier) : [...current, tier],
+        );
+    }
+
+    /**
+     * @param {number} days
+     */
+    function toggleDays(days) {
+        setSelectedDays((current) =>
+            current.includes(days) ? current.filter((item) => item !== days) : [...current, days],
+        );
+    }
+
+    function campaignTargets() {
+        return prices.filter((price) => {
+            if (selectedPlans.length > 0 && !selectedPlans.includes(price.planKey)) {
+                return false;
+            }
+
+            if (!selectedTiers.includes(price.calorieTier)) {
+                return false;
+            }
+
+            return selectedDays.includes(price.daysCount);
+        });
+    }
+
+    function applyCampaign() {
+        const value = Number.parseInt(discountValue, 10) || 0;
+        const targets = campaignTargets();
+        const next = { ...drafts };
+
+        targets.forEach((price) => {
+            const base = Number(next[price.id]?.base ?? price.baseTotalPrice);
+            const sale = salePrice(base, discountType, value);
+            next[price.id] = {
+                base,
+                discounted: sale < base ? sale : null,
+            };
+        });
+
+        setDrafts(next);
+
+        router.post(
+            '/admin/partner-kitchen-pricing/discounts/apply',
+            {
+                discount_type: discountType,
+                discount_value: value,
+                plan_keys: selectedPlans,
+                calorie_tiers: selectedTiers,
+                days_counts: selectedDays,
+            },
+            { preserveScroll: true, preserveState: true },
+        );
+    }
+
+    function resetCampaign() {
+        const targets = campaignTargets();
+        const next = { ...drafts };
+
+        targets.forEach((price) => {
+            next[price.id] = {
+                base: Number(next[price.id]?.base ?? price.baseTotalPrice),
+                discounted: null,
+            };
+        });
+
+        setDrafts(next);
+
+        router.post(
+            '/admin/partner-kitchen-pricing/discounts/reset',
+            {
+                apply_all: selectedPlans.length === plans.length
+                    && selectedTiers.length === eligibleTiers.length
+                    && selectedDays.length === DURATIONS.length,
+                plan_keys: selectedPlans,
+                calorie_tiers: selectedTiers,
+                days_counts: selectedDays,
+            },
+            { preserveScroll: true, preserveState: true },
         );
     }
 
     function savePrices() {
         setSaving(true);
-        setApplyNotice('');
         router.put(
             '/admin/partner-kitchen-pricing',
             {
-                cards: cards.map((card) => ({
-                    id: card.id,
-                    amount_bhd: Number(cardAmounts[card.id] ?? card.amountBhd),
-                    discount_type: cardDiscountTypes[card.id] === 'percent' ? 'percent' : 'amount',
-                    discount_bhd: Number(cardDiscounts[card.id] ?? card.discountBhd ?? 0),
-                })),
-                limited_time_discount:
-                    offerType === 'amount' ? Number(offerValue) : Number(limitedTimeDiscount),
-                limited_time_discount_label: limitedLabel,
-                delivery_cost: Number(deliveryCost),
+                prices: prices.map((price) => {
+                    const draft = draftFor(price.id);
+
+                    return {
+                        id: price.id,
+                        base_total_price: Number.parseInt(String(draft.base), 10) || 0,
+                        discounted_total_price: draft.discounted,
+                    };
+                }),
             },
             {
                 preserveScroll: true,
@@ -258,84 +398,195 @@ export default function PartnerKitchenPricing({
         );
     }
 
+    /**
+     * @param {number[]} ids
+     * @param {string} value
+     */
+    function setBases(ids, value) {
+        const parsed = value === '' ? 0 : Number.parseInt(value, 10) || 0;
+
+        setDrafts((current) => {
+            const next = { ...current };
+
+            ids.forEach((id) => {
+                const previous = next[id] ?? { base: 0, discounted: null };
+                next[id] = {
+                    base: parsed,
+                    discounted:
+                        previous.discounted !== null && previous.discounted < parsed
+                            ? previous.discounted
+                            : null,
+                };
+            });
+
+            return next;
+        });
+    }
+
     return (
-        <div className="mx-auto w-full max-w-5xl space-y-8">
+        <div className="mx-auto w-full max-w-6xl space-y-8">
             <header>
                 <h1 className="font-montserrat text-2xl font-bold tracking-tight text-[#262A22]">
-                    Partner Kitchen pricing
+                    Subscription pricing matrix
                 </h1>
                 <p className="mt-2 font-body text-sm text-[#555555]">
-                    Edit the seeded {currency} price cards customers see at consultation and checkout.
-                    Delivery stays at {currency} {Number(deliveryCost).toFixed(3)}.
+                    Integer {currency} package prices feed consultation and checkout. Longer plans should
+                    show a lower daily rate inside the same calorie tier.
                 </p>
             </header>
 
-            <section className="rounded-[12px] border border-gray-200 bg-white p-5 shadow-sm">
-                <h2 className="font-montserrat text-sm font-bold uppercase tracking-[0.14em] text-[#555555]">
-                    Limited time offer
+            <section className="rounded-[12px] border border-[#E5E7EB] bg-white p-5 shadow-sm">
+                <h2 className="font-montserrat text-sm font-bold uppercase tracking-[0.14em] text-[#6E8C47]">
+                    Discount campaign
                 </h2>
-                <p className="mt-2 font-body text-sm text-[#6B7280]">
-                    Set the offer label and discount, then apply it to the crafts and plan lengths you
-                    choose. The price chart stays for editing amounts only.
-                </p>
-
-                <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                    <TextInput
-                        label="Label"
-                        value={limitedLabel}
-                        onChange={(event) => setLimitedLabel(event.target.value)}
-                        className="!max-w-none"
-                    />
-                    <div className="grid grid-cols-[7.5rem_minmax(0,1fr)] gap-3">
+                <div className="mt-4 grid gap-4 lg:grid-cols-[12rem_minmax(0,1fr)]">
+                    <div className="grid gap-3">
                         <DropdownTextInput
                             label="Type"
-                            value={offerType === 'percent' ? '%' : currency}
-                            options={discountTypeOptions}
-                            onChange={(label) =>
-                                setOfferType(label === '%' ? 'percent' : 'amount')
-                            }
+                            value={discountType === 'percent' ? '% off' : `Flat ${currency}`}
+                            options={['% off', `Flat ${currency}`]}
+                            onChange={(label) => setDiscountType(label.startsWith('%') ? 'percent' : 'amount')}
                             listboxAriaLabel="Discount type"
                             className="!max-w-none"
                         />
                         <TextInput
-                            label="Discount"
-                            value={offerValue}
-                            onChange={(event) => setOfferValue(event.target.value)}
+                            label="Discount value"
+                            value={discountValue}
+                            onChange={(event) => setDiscountValue(event.target.value.replace(/[^\d]/g, ''))}
                             className="!max-w-none"
                         />
                     </div>
-                    <DropdownTextInput
-                        label="Apply to craft"
-                        value={labelForOption(CRAFT_FILTERS, offerCraft)}
-                        options={CRAFT_FILTERS.map((filter) => filter.label)}
-                        onChange={(label) => setOfferCraft(valueForLabel(CRAFT_FILTERS, label))}
-                        listboxAriaLabel="Apply discount to craft"
-                        className="!max-w-none"
-                    />
-                    <DropdownTextInput
-                        label="Apply to days"
-                        value={labelForOption(DAY_FILTERS, offerDays)}
-                        options={DAY_FILTERS.map((filter) => filter.label)}
-                        onChange={(label) => setOfferDays(valueForLabel(DAY_FILTERS, label))}
-                        listboxAriaLabel="Apply discount to days"
-                        className="!max-w-none"
-                    />
+                    <div className="space-y-4">
+                        <fieldset>
+                            <legend className="font-montserrat text-[11px] font-semibold uppercase tracking-[0.14em] text-[#555555]">
+                                Plans
+                            </legend>
+                            <div className="mt-2 flex flex-wrap gap-3">
+                                <BrandCheckbox
+                                    checked={selectedPlans.length === plans.length}
+                                    onChange={() =>
+                                        setSelectedPlans(
+                                            selectedPlans.length === plans.length
+                                                ? []
+                                                : plans.map((plan) => plan.key),
+                                        )
+                                    }
+                                >
+                                    Select all
+                                </BrandCheckbox>
+                                {plans.map((plan) => (
+                                    <BrandCheckbox
+                                        key={plan.key}
+                                        checked={selectedPlans.includes(plan.key)}
+                                        onChange={() => togglePlan(plan.key)}
+                                    >
+                                        {plan.name}
+                                    </BrandCheckbox>
+                                ))}
+                            </div>
+                        </fieldset>
+                        <fieldset>
+                            <legend className="font-montserrat text-[11px] font-semibold uppercase tracking-[0.14em] text-[#555555]">
+                                Calorie tiers
+                            </legend>
+                            <div className="mt-2 flex flex-wrap gap-3">
+                                <BrandCheckbox
+                                    checked={
+                                        eligibleTiers.length > 0
+                                        && selectedTiers.length === eligibleTiers.length
+                                    }
+                                    onChange={() =>
+                                        setSelectedTiers(
+                                            selectedTiers.length === eligibleTiers.length
+                                                ? []
+                                                : [...eligibleTiers],
+                                        )
+                                    }
+                                >
+                                    Select all
+                                </BrandCheckbox>
+                                {eligibleTiers.map((tier) => (
+                                    <BrandCheckbox
+                                        key={tier}
+                                        checked={selectedTiers.includes(tier)}
+                                        onChange={() => toggleTier(tier)}
+                                    >
+                                        <span className="inline-block size-2 rounded-full" style={{ backgroundColor: TIER_COLORS[tier] }} />
+                                        {tier}
+                                    </BrandCheckbox>
+                                ))}
+                            </div>
+                        </fieldset>
+                        <fieldset>
+                            <legend className="font-montserrat text-[11px] font-semibold uppercase tracking-[0.14em] text-[#555555]">
+                                Durations
+                            </legend>
+                            <div className="mt-2 flex flex-wrap items-center gap-3">
+                                <BrandCheckbox
+                                    checked={selectedDays.length === DURATIONS.length}
+                                    onChange={() =>
+                                        setSelectedDays(
+                                            selectedDays.length === DURATIONS.length
+                                                ? []
+                                                : [...DURATIONS],
+                                        )
+                                    }
+                                >
+                                    Select all
+                                </BrandCheckbox>
+                                {DURATIONS.map((days) => (
+                                    <BrandCheckbox
+                                        key={days}
+                                        checked={selectedDays.includes(days)}
+                                        onChange={() => toggleDays(days)}
+                                    >
+                                        {days}d
+                                    </BrandCheckbox>
+                                ))}
+                            </div>
+                        </fieldset>
+                    </div>
                 </div>
-
-                <div className="mt-4 flex flex-wrap items-center gap-3">
-                    <Button label="Apply discount" onClick={applyOfferDiscount} />
-                    {applyNotice !== '' ? (
-                        <p className="rounded-[10px] bg-[#E8EDE3] px-3 py-2 font-body text-sm text-[#5A6B44]">
-                            {applyNotice}
-                        </p>
-                    ) : null}
+                <div className="mt-4 flex flex-wrap gap-3">
+                    <Button label="Apply to selected packages" size="sm" onClick={applyCampaign} />
+                    <Button label="Reset discounts" size="sm" variant="outline" onClick={resetCampaign} />
                 </div>
             </section>
 
-            <section className="rounded-[12px] border border-gray-200 bg-white p-5 shadow-sm">
+            <section className="rounded-[12px] border border-[#E5E7EB] bg-white p-5 shadow-sm">
                 <h2 className="font-montserrat text-sm font-bold uppercase tracking-[0.14em] text-[#555555]">
-                    Price chart
+                    Price trend
                 </h2>
+                <div className="mt-3 flex flex-wrap gap-3">
+                    {chartSeries.map((line) => (
+                        <span key={line.tier} className="inline-flex items-center gap-2 font-body text-xs text-[#262A22]">
+                            <span className="inline-block size-2.5 rounded-full" style={{ backgroundColor: TIER_COLORS[line.tier] }} />
+                            {line.tier} kcal
+                        </span>
+                    ))}
+                </div>
+                <div className="mt-2">
+                    <PriceTrendChart series={chartSeries} />
+                </div>
+            </section>
+
+            <section className="rounded-[12px] border border-[#E5E7EB] bg-white p-5 shadow-sm">
+                <div className="flex flex-wrap items-end justify-between gap-4">
+                    <h2 className="font-montserrat text-sm font-bold uppercase tracking-[0.14em] text-[#555555]">
+                        Pricing matrix
+                    </h2>
+                    <DropdownTextInput
+                        label="View"
+                        value={viewOptions.find((option) => option.value === planView)?.label ?? viewOptions[0].label}
+                        options={viewOptions.map((option) => option.label)}
+                        onChange={(label) => {
+                            const next = viewOptions.find((option) => option.label === label);
+                            setPlanView(next?.value ?? 'all');
+                        }}
+                        listboxAriaLabel="Pricing matrix view"
+                        className="!max-w-none sm:w-80"
+                    />
+                </div>
                 {csvExportUrl !== '' || csvImportUrl !== '' ? (
                     <div className="mt-4">
                         <CSVUploader
@@ -345,133 +596,81 @@ export default function PartnerKitchenPricing({
                                     return;
                                 }
 
-                                router.post(
-                                    csvImportUrl,
-                                    { file },
-                                    { forceFormData: true, preserveScroll: true },
-                                );
+                                router.post(csvImportUrl, { file }, { forceFormData: true, preserveScroll: true });
                             }}
                         />
                     </div>
                 ) : null}
-
-                <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                    <DropdownTextInput
-                        label="Craft"
-                        value={labelForOption(CRAFT_FILTERS, craftFilter)}
-                        options={CRAFT_FILTERS.map((filter) => filter.label)}
-                        onChange={(label) => {
-                            setCraftFilter(valueForLabel(CRAFT_FILTERS, label));
-                            setKcalFilter('all');
-                        }}
-                        listboxAriaLabel="Filter by craft"
-                        className="!max-w-none"
-                    />
-                    {showCalorieColumn ? (
-                        <DropdownTextInput
-                            label="kcal"
-                            value={labelForOption(kcalFilters, activeKcalFilter)}
-                            options={kcalFilters.map((filter) => filter.label)}
-                            onChange={(label) =>
-                                setKcalFilter(valueForLabel(kcalFilters, label))
-                            }
-                            listboxAriaLabel="Filter by kcal"
-                            className="!max-w-none"
-                        />
-                    ) : null}
-                    <DropdownTextInput
-                        label="Days"
-                        value={labelForOption(DAY_FILTERS, daysFilter)}
-                        options={DAY_FILTERS.map((filter) => filter.label)}
-                        onChange={(label) => setDaysFilter(valueForLabel(DAY_FILTERS, label))}
-                        listboxAriaLabel="Filter by days"
-                        className="!max-w-none"
-                    />
-                </div>
-
                 <div className="mt-4 overflow-x-auto">
                     <table className="min-w-full text-left text-sm">
                         <thead>
-                            <tr className="border-b border-gray-200 bg-[#F8F9F6] text-[#555555]">
-                                <th className="px-4 py-3 font-montserrat text-[11px] font-semibold uppercase tracking-[0.14em]">
-                                    Craft
+                            <tr className="border-b border-[#E5E7EB] bg-[#F6F6F4] text-[#555555]">
+                                <th className="px-3 py-3 font-montserrat text-[11px] font-semibold uppercase tracking-[0.14em]">
+                                    Calorie tier
                                 </th>
-                                {showCalorieColumn ? (
-                                    <th className="px-4 py-3 font-montserrat text-[11px] font-semibold uppercase tracking-[0.14em]">
-                                        kcal
+                                {DURATIONS.map((days) => (
+                                    <th key={days} className="px-3 py-3 font-montserrat text-[11px] font-semibold uppercase tracking-[0.14em]">
+                                        {days}d
+                                        {days === 24 ? (
+                                            <span className="ml-1 text-[#D8A933]" title="Best value">
+                                                ★
+                                            </span>
+                                        ) : null}
                                     </th>
-                                ) : null}
-                                <th className="px-4 py-3 font-montserrat text-[11px] font-semibold uppercase tracking-[0.14em]">
-                                    Days
-                                </th>
-                                <th className="px-4 py-3 font-montserrat text-[11px] font-semibold uppercase tracking-[0.14em]">
-                                    Amount
-                                </th>
-                                <th className="px-4 py-3 font-montserrat text-[11px] font-semibold uppercase tracking-[0.14em]">
-                                    Net
-                                </th>
-                                <th className="px-4 py-3 font-montserrat text-[11px] font-semibold uppercase tracking-[0.14em]">
-                                    Per day
-                                </th>
+                                ))}
                             </tr>
                         </thead>
                         <tbody>
-                            {filteredCards.map((card) => {
-                                const fallbackType =
-                                    card.discountType === 'percent' ? 'percent' : 'amount';
-
-                                return (
-                                    <tr key={card.id} className="border-b border-gray-100">
-                                        <td className="px-4 py-3 capitalize">{card.scope}</td>
-                                        {showCalorieColumn ? (
-                                            <td className="px-4 py-3">
-                                                {card.scope === 'business' ? '—' : card.calorieRow}
-                                            </td>
-                                        ) : null}
-                                        <td className="px-4 py-3">{card.billedDays}</td>
-                                        <td className="px-4 py-3">
-                                            <TextInput
-                                                label={`Amount for ${card.scope} ${card.billedDays} days`}
-                                                value={cardAmounts[card.id] ?? ''}
-                                                onChange={(event) =>
-                                                    setCardAmounts((prev) => ({
-                                                        ...prev,
-                                                        [card.id]: event.target.value,
-                                                    }))
-                                                }
-                                                className="!max-w-none [&_label]:sr-only"
-                                            />
-                                        </td>
-                                        <td className="px-4 py-3 font-body text-[#262A22]">
-                                            {netAmountValue(
-                                                card.id,
-                                                card.amountBhd,
-                                                card.discountBhd ?? 0,
-                                                fallbackType,
-                                            ).toFixed(3)}
-                                        </td>
-                                        <td className="px-4 py-3 font-body text-[#262A22]">
-                                            {pricePerDay(
-                                                card.id,
-                                                card.amountBhd,
-                                                card.billedDays,
-                                                card.discountBhd ?? 0,
-                                                fallbackType,
-                                            )}
-                                        </td>
-                                    </tr>
-                                );
-                            })}
-                            {filteredCards.length === 0 ? (
-                                <tr>
-                                    <td
-                                        colSpan={emptyColSpan}
-                                        className="px-4 py-6 font-body text-sm text-[#6B7280]"
-                                    >
-                                        No price cards for these filters.
+                            {matrixTiers.map((tier) => (
+                                <tr key={tier} className="border-b border-[#F2F2F2] align-top">
+                                    <td className="px-3 py-3 font-montserrat font-semibold text-[#262A22]">
+                                        <span className="mr-2 inline-block size-2 rounded-full" style={{ backgroundColor: TIER_COLORS[tier] }} />
+                                        {tier}
                                     </td>
+                                    {DURATIONS.map((days) => {
+                                        const display = cellDisplay(cellPrices(tier, days));
+
+                                        if (display === null) {
+                                            return (
+                                                <td key={days} className="px-3 py-3 text-[#888888]">
+                                                    —
+                                                </td>
+                                            );
+                                        }
+
+                                        const sale = display.sale;
+                                        const showStrike = display.discounted && display.base !== null && sale !== null && sale < display.base;
+
+                                        return (
+                                            <td key={days} className="relative px-3 py-3">
+                                                {display.base === null ? (
+                                                    <p className="font-body text-xs text-[#D8A933]">Varies by plan</p>
+                                                ) : (
+                                                    <TextInput
+                                                        label={`${tier} kcal ${days} days`}
+                                                        value={String(display.base)}
+                                                        onChange={(event) =>
+                                                            setBases(
+                                                                display.ids,
+                                                                event.target.value.replace(/[^\d]/g, ''),
+                                                            )
+                                                        }
+                                                        className={[
+                                                            '!max-w-none [&_label]:sr-only',
+                                                            showStrike ? '[&_input]:text-[#888888] [&_input]:line-through' : '',
+                                                        ].filter(Boolean).join(' ')}
+                                                    />
+                                                )}
+                                                {showStrike && sale !== null ? (
+                                                    <span className="mt-1 inline-flex rounded-full bg-[#C44F5D] px-2 py-0.5 font-montserrat text-[11px] font-bold text-white">
+                                                        {sale}
+                                                    </span>
+                                                ) : null}
+                                            </td>
+                                        );
+                                    })}
                                 </tr>
-                            ) : null}
+                            ))}
                         </tbody>
                     </table>
                 </div>

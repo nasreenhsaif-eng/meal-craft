@@ -71,7 +71,7 @@ const SHELL_BY_COMPONENT = {
         contentWrapperClassName: WIDE,
     },
     'Admin/PartnerKitchenPricing': {
-        pageTitle: 'Partner Kitchen pricing',
+        pageTitle: 'Subscription Pricing Matrix',
         activePath: ADMIN_NAV_PATHS.pricing,
         showSearch: false,
         hidePageTitle: true,

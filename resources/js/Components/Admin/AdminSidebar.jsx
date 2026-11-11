@@ -69,7 +69,7 @@ const GROUPS = [
             },
             {
                 path: ADMIN_NAV_PATHS.pricing,
-                label: 'Partner Pricing',
+                label: 'Subscription Pricing Matrix',
                 Icon: IconChart,
                 href: ADMIN_NAV_HREFS[ADMIN_NAV_PATHS.pricing],
             },

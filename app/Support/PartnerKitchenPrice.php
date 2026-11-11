@@ -3,7 +3,9 @@
 namespace App\Support;
 
 use App\Models\PartnerKitchenDiscount;
-use App\Models\PartnerKitchenPriceCard;
+use App\Models\PlanCaloriePrice;
+use App\Models\SubscriptionPlan;
+use Database\Seeders\PartnerKitchenPriceSeeder;
 use Illuminate\Support\Facades\Schema;
 
 /**
@@ -22,36 +24,37 @@ final class PartnerKitchenPrice
     /**
      * @return list<int>
      */
+    public static function ensureSeeded(): void
+    {
+        if (! self::pricesTableReady()) {
+            return;
+        }
+
+        if (SubscriptionPlan::query()->doesntExist()) {
+            (new PartnerKitchenPriceSeeder)->run();
+        }
+    }
+
+    /**
+     * @return list<int>
+     */
     public static function calorieRows(string $craftKey = 'full'): array
     {
         $craftKey = self::normalizeCraftKey($craftKey);
 
-        if ($craftKey !== 'business' && self::priceCardsTableReady()) {
-            $rows = PartnerKitchenPriceCard::query()
-                ->where('scope', $craftKey)
-                ->where('calorie_row', '>', 0)
-                ->distinct()
-                ->orderBy('calorie_row')
-                ->pluck('calorie_row')
-                ->map(fn ($row): int => (int) $row)
-                ->values()
-                ->all();
+        if (self::pricesTableReady()) {
+            $plan = SubscriptionPlan::query()->where('key', $craftKey)->first();
 
-            if ($rows !== []) {
-                return $rows;
+            if ($plan instanceof SubscriptionPlan) {
+                $rows = $plan->calorieTiers();
+
+                if ($rows !== []) {
+                    return $rows;
+                }
             }
         }
 
-        $matrix = self::matrixForCraft($craftKey);
-
-        if ($matrix === []) {
-            return [1200, 1500, 1800, 2000];
-        }
-
-        $rows = array_map('intval', array_keys($matrix));
-        sort($rows);
-
-        return array_values($rows);
+        return SubscriptionPlanCatalog::tiersFor($craftKey);
     }
 
     /**
@@ -114,7 +117,7 @@ final class PartnerKitchenPrice
         $craftKey = self::normalizeCraftKey($craftKey);
 
         if ($craftKey === 'business') {
-            return $dailyNeed;
+            return 650;
         }
 
         $fullTotal = CraftLibraryTierMap::snapToCraftTotal($dailyNeed, 'full');
@@ -126,7 +129,10 @@ final class PartnerKitchenPrice
             default => $fullTotal,
         };
 
-        return self::nearestCalorieRow($derived, $craftKey);
+        $snapped = self::nearestCalorieRow($derived, $craftKey);
+        $minimum = SubscriptionPlanCatalog::plan($craftKey)['min_calories'] ?? $snapped;
+
+        return max($minimum, $snapped);
     }
 
     /**
@@ -148,7 +154,7 @@ final class PartnerKitchenPrice
         $craftKey = self::normalizeCraftKey($craftKey);
 
         if ($craftKey === 'business') {
-            return self::lookupAmount('business', null, $billedDays);
+            return self::lookupAmount('business', 650, $billedDays);
         }
 
         $row = self::nearestCalorieRow($calories, $craftKey);
@@ -161,9 +167,27 @@ final class PartnerKitchenPrice
      */
     public static function dailyRateForCraft(string $craftKey, int $calories): float
     {
-        $amount = self::packageAmount($craftKey, $calories, 5, 4);
+        $craftKey = self::normalizeCraftKey($craftKey);
+        $tier = $craftKey === 'business'
+            ? 650
+            : self::nearestCalorieRow($calories, $craftKey);
 
-        return round($amount / 20, 1);
+        if (self::pricesTableReady()) {
+            $plan = SubscriptionPlan::query()->where('key', $craftKey)->first();
+            $price = $plan?->prices()
+                ->where('calorie_tier', $tier)
+                ->where('days_count', 20)
+                ->first();
+
+            if ($price instanceof PlanCaloriePrice) {
+                return (float) $price->daily_rate;
+            }
+        }
+
+        return (float) SubscriptionPlanCatalog::dailyRate(
+            SubscriptionPlanCatalog::basePrice($tier, 20),
+            20,
+        );
     }
 
     /**
@@ -286,34 +310,30 @@ final class PartnerKitchenPrice
 
     private static function lookupAmount(string $scope, ?int $calorieRow, int $billedDays): float
     {
-        if (self::priceCardsTableReady()) {
-            $card = PartnerKitchenPriceCard::query()
-                ->where('scope', $scope)
-                ->where('billed_days', $billedDays)
-                ->where('calorie_row', $scope === 'business' ? 0 : $calorieRow)
-                ->first();
+        $tier = $scope === 'business' ? 650 : (int) $calorieRow;
 
-            if ($card instanceof PartnerKitchenPriceCard) {
-                return $card->netAmountBhd();
+        if (self::pricesTableReady()) {
+            $plan = SubscriptionPlan::query()->where('key', $scope)->first();
+
+            if ($plan instanceof SubscriptionPlan) {
+                $price = $plan->prices()
+                    ->where('calorie_tier', $tier)
+                    ->where('days_count', $billedDays)
+                    ->first();
+
+                if ($price instanceof PlanCaloriePrice) {
+                    return (float) $price->effectiveTotalPrice();
+                }
             }
         }
 
-        if ($scope === 'business') {
-            /** @var array<int, int|float> $matrix */
-            $matrix = config('checkout.business_matrix', []);
-
-            return round((float) ($matrix[$billedDays] ?? 0), 3);
-        }
-
-        $matrix = self::matrixForCraft($scope);
-
-        return round((float) ($matrix[$calorieRow][$billedDays] ?? 0), 3);
+        return (float) SubscriptionPlanCatalog::basePrice($tier, $billedDays);
     }
 
-    private static function priceCardsTableReady(): bool
+    private static function pricesTableReady(): bool
     {
         try {
-            return Schema::hasTable('partner_kitchen_price_cards');
+            return Schema::hasTable('plan_calorie_prices') && Schema::hasTable('subscription_plans');
         } catch (\Throwable) {
             return false;
         }

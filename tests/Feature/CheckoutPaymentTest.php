@@ -95,7 +95,7 @@ test('completed customers see basket summary on payment checkout', function () {
             ->where('basket.deliveryAddress.area', 'Adliya')
             ->where('basket.benefitPayNumber', '33177718')
             ->where('basket.currency', 'BHD')
-            ->where('basket.subtotal', 315)
+            ->where('basket.subtotal', 353)
             ->where('basket.deliveryCost', 5)
             ->where('detailsUrl', route('checkout.details'))
             ->where('submitUrl', route('checkout.payment.store'))

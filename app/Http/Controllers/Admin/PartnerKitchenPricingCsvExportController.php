@@ -3,22 +3,19 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\PartnerKitchenPriceCard;
+use App\Models\PlanCaloriePrice;
 use App\PartnerKitchenPriceCardsImport;
 use App\Support\PartnerKitchenPrice;
-use Database\Seeders\PartnerKitchenPriceSeeder;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class PartnerKitchenPricingCsvExportController extends Controller
 {
     /**
-     * Stream Partner Kitchen price cards as CSV (same columns as import).
+     * Stream subscription plan calorie prices as CSV (same columns as import).
      */
     public function __invoke(): StreamedResponse
     {
-        if (PartnerKitchenPriceCard::query()->count() === 0) {
-            (new PartnerKitchenPriceSeeder)->run();
-        }
+        PartnerKitchenPrice::ensureSeeded();
 
         $filename = 'partner-kitchen-pricing-'.now()->format('Ymd_His').'.csv';
         $headers = PartnerKitchenPriceCardsImport::HEADERS;
@@ -35,24 +32,22 @@ class PartnerKitchenPricingCsvExportController extends Controller
 
             fputcsv($handle, $headers, ',', '"', '\\', "\r\n");
 
-            PartnerKitchenPriceCard::query()
+            PlanCaloriePrice::query()
+                ->with('plan')
                 ->get()
-                ->sortBy(fn (PartnerKitchenPriceCard $card): string => sprintf(
+                ->sortBy(fn (PlanCaloriePrice $price): string => sprintf(
                     '%02d-%05d-%03d',
-                    $scopeOrder[$card->scope] ?? 99,
-                    (int) $card->calorie_row,
-                    (int) $card->billed_days,
+                    $scopeOrder[$price->plan?->key] ?? 99,
+                    (int) $price->calorie_tier,
+                    (int) $price->days_count,
                 ))
-                ->each(function (PartnerKitchenPriceCard $card) use ($handle): void {
+                ->each(function (PlanCaloriePrice $price) use ($handle): void {
                     fputcsv($handle, [
-                        $card->scope,
-                        (int) $card->calorie_row,
-                        (int) $card->billed_days,
-                        round((float) $card->amount_bhd, 3),
-                        $card->discount_type === PartnerKitchenPriceCard::DISCOUNT_TYPE_PERCENT
-                            ? PartnerKitchenPriceCard::DISCOUNT_TYPE_PERCENT
-                            : PartnerKitchenPriceCard::DISCOUNT_TYPE_AMOUNT,
-                        round((float) $card->discount_bhd, 3),
+                        (string) $price->plan?->key,
+                        (int) $price->calorie_tier,
+                        (int) $price->days_count,
+                        (int) $price->base_total_price,
+                        $price->discounted_total_price === null ? '' : (int) $price->discounted_total_price,
                     ], ',', '"', '\\', "\r\n");
                 });
 

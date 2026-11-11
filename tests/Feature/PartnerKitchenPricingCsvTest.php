@@ -1,7 +1,7 @@
 <?php
 
 use App\Enums\UserRole;
-use App\Models\PartnerKitchenPriceCard;
+use App\Models\PlanCaloriePrice;
 use App\Models\User;
 use Database\Seeders\PartnerKitchenPriceSeeder;
 use Illuminate\Http\UploadedFile;
@@ -25,7 +25,7 @@ test('admins can export partner kitchen pricing as csv', function (): void {
 
     expect($csv)->not->toBe('')
         ->and($csv)->toStartWith("\xEF\xBB\xBF")
-        ->and($csv)->toContain('scope,calorie_row,billed_days,amount_bhd,discount_type,discount_bhd')
+        ->and($csv)->toContain('plan_key,calorie_tier,days_count,base_total_price,discounted_total_price')
         ->and($csv)->toContain('full,')
         ->and($csv)->toContain('business,');
 });
@@ -34,15 +34,15 @@ test('admins can import partner kitchen pricing csv to update amounts', function
     $this->seed(PartnerKitchenPriceSeeder::class);
     $admin = User::factory()->create(['role' => UserRole::Admin]);
 
-    $card = PartnerKitchenPriceCard::query()
-        ->where('scope', 'full')
-        ->where('calorie_row', 1200)
-        ->where('billed_days', 20)
+    $price = PlanCaloriePrice::query()
+        ->where('calorie_tier', 1200)
+        ->where('days_count', 20)
+        ->whereHas('plan', fn ($query) => $query->where('key', 'full'))
         ->firstOrFail();
 
     $csv = implode("\r\n", [
-        'scope,calorie_row,billed_days,amount_bhd,discount_type,discount_bhd',
-        'full,1200,20,333.5,percent,10',
+        'plan_key,calorie_tier,days_count,base_total_price,discounted_total_price',
+        'full,1200,20,333,300',
         '',
     ]);
 
@@ -55,21 +55,21 @@ test('admins can import partner kitchen pricing csv to update amounts', function
         ->assertRedirect(route('admin.partner-kitchen-pricing'))
         ->assertSessionHas('success');
 
-    $fresh = $card->fresh();
+    $fresh = $price->fresh();
 
-    expect((float) $fresh->amount_bhd)->toBe(333.5)
-        ->and($fresh->discount_type)->toBe('percent')
-        ->and((float) $fresh->discount_bhd)->toBe(10.0)
-        ->and($fresh->netAmountBhd())->toBe(300.15);
+    expect($fresh->base_total_price)->toBe(333)
+        ->and($fresh->discounted_total_price)->toBe(300)
+        ->and($fresh->effectiveTotalPrice())->toBe(300)
+        ->and($fresh->daily_rate)->toBe(15);
 });
 
-test('partner kitchen pricing csv import rejects invalid scope', function (): void {
+test('partner kitchen pricing csv import rejects invalid plan key', function (): void {
     $this->seed(PartnerKitchenPriceSeeder::class);
     $admin = User::factory()->create(['role' => UserRole::Admin]);
 
     $csv = implode("\r\n", [
-        'scope,calorie_row,billed_days,amount_bhd,discount_type,discount_bhd',
-        'unknown,1200,20,100,amount,0',
+        'plan_key,calorie_tier,days_count,base_total_price,discounted_total_price',
+        'unknown,1200,20,100,',
         '',
     ]);
 
