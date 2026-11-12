@@ -5,6 +5,7 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Enums\OnboardingStep;
 use App\Enums\UserRole;
+use App\Support\AdminPortalPermission;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -15,7 +16,7 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 
-#[Fillable(['name', 'email', 'password', 'is_active', 'role'])]
+#[Fillable(['name', 'email', 'password', 'is_active', 'role', 'admin_permissions'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -32,6 +33,7 @@ class User extends Authenticatable
             'password' => 'hashed',
             'is_active' => 'boolean',
             'role' => UserRole::class,
+            'admin_permissions' => 'array',
         ];
     }
 
@@ -42,7 +44,17 @@ class User extends Authenticatable
 
     public function isAdmin(): bool
     {
-        return $this->role->isStaff();
+        return $this->canAccessAdminPortal();
+    }
+
+    public function isCraftMasterGeneral(): bool
+    {
+        return $this->role === UserRole::CraftMasterGeneral;
+    }
+
+    public function canAccessAdminPortal(): bool
+    {
+        return $this->role->canAccessAdminPortal();
     }
 
     public function isCustomer(): bool
@@ -50,9 +62,34 @@ class User extends Authenticatable
         return $this->role->isCustomer();
     }
 
+    /**
+     * @return list<string>
+     */
+    public function adminPermissionKeys(): array
+    {
+        if ($this->isCraftMasterGeneral()) {
+            return AdminPortalPermission::keys();
+        }
+
+        return AdminPortalPermission::sanitize($this->admin_permissions);
+    }
+
+    public function hasAdminPermission(string $key): bool
+    {
+        if ($this->isCraftMasterGeneral()) {
+            return in_array($key, AdminPortalPermission::keys(), true);
+        }
+
+        if (! $this->canAccessAdminPortal()) {
+            return false;
+        }
+
+        return in_array($key, $this->adminPermissionKeys(), true);
+    }
+
     public function canAccessCustomerPortal(): bool
     {
-        return $this->isCustomer() || $this->isAdmin();
+        return $this->isCustomer() || $this->role->isStaff();
     }
 
     public function hasCompletedOnboarding(): bool
@@ -130,7 +167,7 @@ class User extends Authenticatable
             return route('join.verify', absolute: false);
         }
 
-        if ($this->isAdmin()) {
+        if ($this->canAccessAdminPortal()) {
             return route('admin.dashboard', absolute: false);
         }
 

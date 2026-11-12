@@ -43,10 +43,12 @@ class CustomerProfileController extends Controller
     public function show(CustomerProfile $customer): Response
     {
         $customer->load(['user:id,name,email,is_active', 'craftPlans']);
+        $canEdit = request()->user()?->isCraftMasterGeneral() ?? false;
 
         return Inertia::render('Admin/CustomerProfileShow', [
             ...CustomerIntake::pageProps($customer),
-            'submitUrl' => route('admin.customers.update', $customer),
+            'canEdit' => $canEdit,
+            'submitUrl' => $canEdit ? route('admin.customers.update', $customer) : null,
             'listUrl' => route('admin.customers'),
             'customerName' => $customer->user?->name ?? '',
         ]);

@@ -178,6 +178,7 @@ function Section({ title, children }) {
  *   uniqueCode?: string;
  *   intakeSubmissionId?: string;
  *   submitLabel?: string;
+ *   readOnly?: boolean;
  *   onSubmit: () => void;
  * }} props
  */
@@ -190,6 +191,7 @@ export default function CustomerIntakeForm({
     uniqueCode = '',
     intakeSubmissionId = '',
     submitLabel = 'Save details',
+    readOnly = false,
     onSubmit,
 }) {
     const fieldClass = 'w-full !max-w-full';
@@ -206,9 +208,13 @@ export default function CustomerIntakeForm({
             className="flex w-full min-w-0 flex-col gap-5"
             onSubmit={(event) => {
                 event.preventDefault();
+                if (readOnly) {
+                    return;
+                }
                 onSubmit();
             }}
         >
+            <fieldset disabled={readOnly} className="m-0 min-w-0 border-0 p-0">
             <Section title="Contact">
                 <TextInput
                     label="First name"
@@ -444,15 +450,18 @@ export default function CustomerIntakeForm({
                     className={fieldClass}
                 />
             </Section>
+            </fieldset>
 
-            <div className="flex w-full justify-center pt-1">
-                <Button
-                    type="submit"
-                    label={processing ? 'Saving…' : submitLabel}
-                    disabled={processing}
-                    className="w-full min-w-[200px] max-w-sm uppercase tracking-[0.08em]"
-                />
-            </div>
+            {!readOnly ? (
+                <div className="flex w-full justify-center pt-1">
+                    <Button
+                        type="submit"
+                        label={processing ? 'Saving…' : submitLabel}
+                        disabled={processing}
+                        className="w-full min-w-[200px] max-w-sm uppercase tracking-[0.08em]"
+                    />
+                </div>
+            ) : null}
         </form>
     );
 }

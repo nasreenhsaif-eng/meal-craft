@@ -31,6 +31,7 @@ test('admin can open a customer profile and see intake fields', function () {
             ->where('form.email', 'ada@example.com')
             ->where('form.phone', '+973 1111 2222')
             ->where('uniqueCode', $profile->unique_code)
+            ->where('canEdit', false)
             ->where('listUrl', route('admin.customers')));
 });
 
@@ -55,8 +56,37 @@ test('admin customer list includes phone unique id and a show url', function () 
             ->where('customers.0.showUrl', route('admin.customers.show', $profile)));
 });
 
-test('admin can update a customer profile including name and email', function () {
-    $admin = User::factory()->create();
+test('admin with customer-profiles permission can view but cannot update a customer profile', function () {
+    $admin = User::factory()->withAdminPermissions(['customer-profiles'])->create();
+    $customer = User::factory()->customer()->create([
+        'name' => 'Old Name',
+        'email' => 'old@example.com',
+    ]);
+    $profile = CustomerProfile::factory()->for($customer)->create([
+        'first_name' => 'Old',
+    ]);
+
+    $this->actingAs($admin)
+        ->get(route('admin.customers.show', $profile))
+        ->assertSuccessful()
+        ->assertInertia(fn ($page) => $page
+            ->component('Admin/CustomerProfileShow')
+            ->where('canEdit', false));
+
+    $this->actingAs($admin)
+        ->put(route('admin.customers.update', $profile), [
+            'first_name' => 'Nope',
+            'last_name' => 'Nope',
+            'email' => 'nope@example.com',
+        ])
+        ->assertForbidden();
+
+    expect($profile->fresh()->first_name)->toBe('Old')
+        ->and($customer->fresh()->name)->toBe('Old Name');
+});
+
+test('craft master general can update a customer profile including name and email', function () {
+    $admin = User::factory()->craftMasterGeneral()->create();
     $customer = User::factory()->customer()->create([
         'name' => 'Old Name',
         'email' => 'old@example.com',

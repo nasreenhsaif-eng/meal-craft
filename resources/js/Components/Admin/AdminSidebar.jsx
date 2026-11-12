@@ -1,3 +1,4 @@
+import { usePage } from '@inertiajs/react';
 import MealCraftLogo from '../Atoms/Logo/MealCraftLogo.jsx';
 import NavButton from '../Atoms/Button/NavButton.jsx';
 
@@ -159,7 +160,38 @@ function IconChart({ className }) {
  * @param {string} [props.activePath]
  * @param {(path: string) => void} [props.onNavigate]
  */
+function useAdminAuthUser() {
+    try {
+        return usePage().props?.auth?.user ?? null;
+    } catch {
+        return null;
+    }
+}
+
 export function AdminSidebar({ activePath = '', onNavigate }) {
+    const authUser = useAdminAuthUser();
+    const isCraftMaster = Boolean(authUser?.isCraftMasterGeneral);
+    const allowed = Array.isArray(authUser?.adminPermissions) ? authUser.adminPermissions : null;
+
+    const visibleGroups = GROUPS.map((group) => ({
+        ...group,
+        items: group.items.filter((item) => {
+            if (item.path === ADMIN_NAV_PATHS.dashboard) {
+                return true;
+            }
+
+            if (item.path === ADMIN_NAV_PATHS.discoveryInsights) {
+                return false;
+            }
+
+            if (isCraftMaster || allowed === null) {
+                return true;
+            }
+
+            return allowed.includes(item.path);
+        }),
+    })).filter((group) => group.items.length > 0);
+
     return (
         <div className="relative flex h-full flex-col bg-white font-sans">
             <div className="relative z-0 flex shrink-0 items-center border-b border-gray-200 bg-white px-5 py-4">
@@ -179,7 +211,7 @@ export function AdminSidebar({ activePath = '', onNavigate }) {
             </div>
 
             <nav className="relative z-0 flex-1 overflow-y-auto bg-white px-3 py-4" aria-label="Admin primary">
-                {GROUPS.map((group) => (
+                {visibleGroups.map((group) => (
                     <div key={group.label} className="mb-6 last:mb-0">
                         <p className="relative z-10 mb-2 px-3 font-montserrat text-[11px] font-bold uppercase tracking-[0.14em] text-[#555555]">
                             {group.label}

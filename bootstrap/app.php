@@ -1,12 +1,15 @@
 <?php
 
 use App\Http\Middleware\CustomerOnboardingMiddleware;
+use App\Http\Middleware\EnsureAdminPortalPermission;
+use App\Http\Middleware\EnsureCraftMasterGeneral;
 use App\Http\Middleware\EnsureOnboardingComplete;
 use App\Http\Middleware\EnsureOnboardingIncomplete;
 use App\Http\Middleware\EnsurePortalChoiceAccess;
 use App\Http\Middleware\EnsureSignupVerified;
 use App\Http\Middleware\EnsureUserIsAdmin;
 use App\Http\Middleware\EnsureUserIsCustomer;
+use App\Http\Middleware\EnsureUserIsKitchenStaff;
 use App\Http\Middleware\HandleInertiaRequests;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Application;
@@ -40,6 +43,9 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'admin' => EnsureUserIsAdmin::class,
+            'admin.permission' => EnsureAdminPortalPermission::class,
+            'admin.craft-master' => EnsureCraftMasterGeneral::class,
+            'kitchen' => EnsureUserIsKitchenStaff::class,
             'customer' => EnsureUserIsCustomer::class,
             'onboarding.complete' => EnsureOnboardingComplete::class,
             'onboarding.incomplete' => EnsureOnboardingIncomplete::class,

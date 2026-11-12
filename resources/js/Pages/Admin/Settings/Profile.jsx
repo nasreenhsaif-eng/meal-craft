@@ -12,6 +12,7 @@ import adminInertiaLayout from '../../../lib/adminInertiaLayout.jsx';
  *   name?: string;
  *   email?: string;
  *   emailVerified?: boolean;
+ *   canEditProfile?: boolean;
  *   errors?: Record<string, string>;
  *   processing?: boolean;
  *   onNameChange?: (value: string) => void;
@@ -24,6 +25,7 @@ export function AdminSettingsProfileInner({
     name: nameProp,
     email: emailProp,
     emailVerified = false,
+    canEditProfile = true,
     errors = {},
     processing = false,
     onNameChange,
@@ -43,13 +45,20 @@ export function AdminSettingsProfileInner({
         <AdminSettingsLayout
             active="profile"
             heading="Profile"
-            subheading="Update your name and email address"
+            subheading={
+                canEditProfile
+                    ? 'Update your name and email address'
+                    : 'Name and email can only be changed by the Craft Master General'
+            }
             onNavigate={onNavigate}
         >
             <form
                 className="grid w-full max-w-xl gap-5"
                 onSubmit={(event) => {
                     event.preventDefault();
+                    if (!canEditProfile) {
+                        return;
+                    }
                     onSubmit?.();
                 }}
             >
@@ -60,6 +69,8 @@ export function AdminSettingsProfileInner({
                     error={errors.name}
                     autoComplete="name"
                     className="w-full max-w-full"
+                    disabled={!canEditProfile}
+                    readOnly={!canEditProfile}
                 />
                 <TextInput
                     label="Email"
@@ -69,24 +80,35 @@ export function AdminSettingsProfileInner({
                     error={errors.email}
                     autoComplete="email"
                     className="w-full max-w-full"
+                    disabled={!canEditProfile}
+                    readOnly={!canEditProfile}
                 />
                 {!emailVerified ? (
                     <p className="font-montserrat text-sm text-[#555555]">
                         Your email address is unverified. Saving a new email will require verification.
                     </p>
                 ) : null}
-                <div>
-                    <Button type="submit" label={processing ? 'Saving…' : 'Save'} disabled={processing} />
-                </div>
+                {canEditProfile ? (
+                    <div>
+                        <Button type="submit" label={processing ? 'Saving…' : 'Save'} disabled={processing} />
+                    </div>
+                ) : (
+                    <p className="font-montserrat text-sm text-[#555555]">
+                        Use Security to change your password. Ask the Craft Master General to update your name or email.
+                    </p>
+                )}
             </form>
         </AdminSettingsLayout>
     );
 }
 
 /**
- * @param {{ profile: { name: string; email: string; emailVerified: boolean } }} props
+ * @param {{
+ *   profile: { name: string; email: string; emailVerified: boolean };
+ *   canEditProfile?: boolean;
+ * }} props
  */
-export default function Profile({ profile }) {
+export default function Profile({ profile, canEditProfile = false }) {
     const { data, setData, patch, processing, errors } = useForm({
         name: profile.name ?? '',
         email: profile.email ?? '',
@@ -97,6 +119,7 @@ export default function Profile({ profile }) {
             name={data.name}
             email={data.email}
             emailVerified={profile.emailVerified}
+            canEditProfile={canEditProfile}
             errors={errors}
             processing={processing}
             onNameChange={(value) => setData('name', value)}

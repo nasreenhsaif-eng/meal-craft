@@ -1,11 +1,29 @@
 import TextInput from '../../Components/Atoms/TextInput/TextInput.jsx';
 import Button from '../../Components/Atoms/Button/Button.jsx';
-import { useEffect, useState } from 'react';
-import { router, usePage } from '@inertiajs/react';
+import SquareCheckbox from '../../Components/Atoms/Icons/SquareCheckbox.jsx';
+import { useMemo, useState } from 'react';
+import { Head, router, useForm, usePage } from '@inertiajs/react';
 import UserManagementTable from '../../Components/Admin/UserManagementTable.jsx';
-import DropdownTextInput from '../../Components/Atoms/TextInput/DropdownTextInput.jsx';
-import AdminInertiaShell from '../../Layouts/AdminInertiaShell.jsx';
 import adminInertiaLayout from '../../lib/adminInertiaLayout.jsx';
+
+/**
+ * Brand checkbox from Storybook SquareCheckbox (`#556C37`).
+ *
+ * @param {{
+ *   checked: boolean;
+ *   onChange: (event: import('react').ChangeEvent<HTMLInputElement>) => void;
+ *   children: import('react').ReactNode;
+ * }} props
+ */
+function BrandCheckbox({ checked, onChange, children }) {
+    return (
+        <label className="group/item flex cursor-pointer items-center gap-2 font-montserrat text-sm text-[#262A22]">
+            <input type="checkbox" className="sr-only" checked={checked} onChange={onChange} />
+            <SquareCheckbox checked={checked} presentational />
+            {children}
+        </label>
+    );
+}
 
 function formatCurrency(value) {
     try {
@@ -44,30 +62,8 @@ function MetricMini({ label, value, valueClassName = 'text-[#5A6B44]' }) {
     );
 }
 
-/** @type {{ id: string; name: string; email: string; accessRight: 'View' | 'View and Edit'; isDeactivated?: boolean }[]} */
-const STORYBOOK_LATEST_USERS = [
-    {
-        id: 'u-1',
-        name: 'Amina Saif',
-        email: 'amina@mealcrafthq.test',
-        accessRight: 'View and Edit',
-        isDeactivated: false,
-    },
-    {
-        id: 'u-2',
-        name: 'Dina Nour',
-        email: 'dina@mealcrafthq.test',
-        accessRight: 'View',
-        isDeactivated: false,
-    },
-    {
-        id: 'u-3',
-        name: 'Omar Khaled',
-        email: 'omar@mealcrafthq.test',
-        accessRight: 'View',
-        isDeactivated: true,
-    },
-];
+/** New admins start with no portal sections selected — CMG must opt in. */
+const DEFAULT_PERMISSIONS = [];
 
 const EMPTY_STATS = {
     totalSubmissions: 0,
@@ -82,8 +78,54 @@ const EMPTY_STATS = {
 };
 
 /**
- * Inner dashboard markup (Storybook / tests). Matches the original DashboardView layout and Tailwind classes.
- *
+ * @param {{
+ *   value: string[];
+ *   onChange: (next: string[]) => void;
+ *   checklist?: Array<{ group: string; items: Array<{ key: string; label: string }> }>;
+ * }} props
+ */
+function PermissionChecklist({ value, onChange, checklist = [] }) {
+    const groups = Array.isArray(checklist) ? checklist : [];
+    const selected = Array.isArray(value) ? value : [];
+
+    return (
+        <div className="space-y-4 rounded-[12px] border border-gray-200 bg-[#F8F9F6] px-4 py-4">
+            {groups.map((group) => (
+                <div key={group.group}>
+                    <p className="m-0 mb-2 font-montserrat text-[11px] font-bold uppercase tracking-[0.14em] text-[#555555]">
+                        {group.group}
+                    </p>
+                    <div className="space-y-2">
+                        {(group.items ?? []).map((item) => {
+                            const checked = selected.includes(item.key);
+                            return (
+                                <BrandCheckbox
+                                    key={item.key}
+                                    checked={checked}
+                                    onChange={(e) => {
+                                        if (e.target.checked) {
+                                            onChange([...selected, item.key]);
+                                        } else {
+                                            onChange(selected.filter((key) => key !== item.key));
+                                        }
+                                    }}
+                                >
+                                    {item.label}
+                                </BrandCheckbox>
+                            );
+                        })}
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
+}
+
+function asUserList(value) {
+    return Array.isArray(value) ? value : [];
+}
+
+/**
  * @param {{
  *   adminName?: string;
  *   adminEmail?: string;
@@ -95,9 +137,11 @@ const EMPTY_STATS = {
  *   totalRevenues?: number;
  *   totalCost?: number;
  *   grossProfit?: number;
- *   latestRegisteredUsers?: { id: string; name: string; email: string; accessRight: 'View' | 'View and Edit'; isDeactivated?: boolean }[];
+ *   latestRegisteredUsers?: object[];
+ *   permissionChecklist?: Array<{ group: string; items: Array<{ key: string; label: string }> }>;
+ *   isCraftMasterGeneral?: boolean;
  *   onToggleUserActive?: (userId: string) => void;
- *   onRequestPasswordReset?: (userId: string) => void;
+ *   onChangePassword?: (userId: string) => void;
  * }} props
  */
 export function AdminDashboardInner({
@@ -111,52 +155,54 @@ export function AdminDashboardInner({
     totalRevenues = 184_200,
     totalCost = 121_900,
     grossProfit = 62_300,
-    latestRegisteredUsers = STORYBOOK_LATEST_USERS,
+    latestRegisteredUsers = [],
+    permissionChecklist = [],
+    isCraftMasterGeneral = false,
     onToggleUserActive,
-    onRequestPasswordReset,
+    onChangePassword,
 }) {
-    const [adminNameValue, setAdminNameValue] = useState(adminName);
-    const [adminEmailValue, setAdminEmailValue] = useState(adminEmail);
-    const [adminPasswordValue, setAdminPasswordValue] = useState('');
-    const [adminAccess, setAdminAccess] = useState('View');
+    const [showCreate, setShowCreate] = useState(false);
+    const [passwordUserId, setPasswordUserId] = useState(null);
 
-    const [demoUsers, setDemoUsers] = useState(() => latestRegisteredUsers);
+    const createForm = useForm({
+        name: '',
+        email: '',
+        password: '',
+        password_confirmation: '',
+        admin_permissions: [...DEFAULT_PERMISSIONS],
+        is_active: true,
+    });
 
-    useEffect(() => {
-        if (!onToggleUserActive) {
-            setDemoUsers(latestRegisteredUsers);
-        }
-    }, [latestRegisteredUsers, onToggleUserActive]);
+    const passwordForm = useForm({
+        password: '',
+        password_confirmation: '',
+    });
 
-    const tableUsers = onToggleUserActive ? latestRegisteredUsers : demoUsers;
-
-    const handleToggleActive = (userId) => {
-        if (onToggleUserActive) {
-            onToggleUserActive(userId);
-            return;
-        }
-        setDemoUsers((prev) =>
-            prev.map((u) => (u.id === userId ? { ...u, isDeactivated: !Boolean(u.isDeactivated) } : u)),
-        );
-    };
-
-    const handleChangePassword = (userId) => {
-        if (onRequestPasswordReset) {
-            onRequestPasswordReset(userId);
-        }
-    };
-
-    const handleSaveAdmin = () => {
-        setAdminPasswordValue('');
-    };
+    const tableUsers = asUserList(latestRegisteredUsers);
+    const passwordUser = useMemo(
+        () => tableUsers.find((user) => String(user.id) === String(passwordUserId)) ?? null,
+        [passwordUserId, tableUsers],
+    );
 
     return (
         <div className="space-y-6 font-montserrat">
             <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                     <h2 className="m-0 text-lg font-bold tracking-tight text-[#262A22]">Dashboard</h2>
-                    <p className="mt-1 text-sm font-medium text-[#555555]">High-level command center for kitchen operations.</p>
+                    <p className="mt-1 text-sm font-medium text-[#555555]">
+                        {isCraftMasterGeneral
+                            ? 'Manage admin portal users and assign Kitchen engine + User intelligence access.'
+                            : 'High-level command center for kitchen operations.'}
+                    </p>
                 </div>
+                {isCraftMasterGeneral ? (
+                    <Button
+                        type="button"
+                        size="sm"
+                        label={showCreate ? 'Close' : 'Create Admin'}
+                        onClick={() => setShowCreate((open) => !open)}
+                    />
+                ) : null}
             </header>
 
             <section className="flex w-full flex-col gap-4">
@@ -175,94 +221,218 @@ export function AdminDashboardInner({
                 <SummaryCard label="Gross Profit" value={formatCurrency(grossProfit)} valueClassName="text-[#5A6B44]" />
             </section>
 
-            <UserManagementTable
-                users={tableUsers}
-                onToggleActive={handleToggleActive}
-                onChangePassword={handleChangePassword}
-            />
+            {isCraftMasterGeneral && showCreate ? (
+                <section className="rounded-[12px] border border-gray-200 bg-white p-6 shadow-sm">
+                    <h3 className="m-0 text-base font-bold tracking-tight text-[#262A22]">Create admin user</h3>
+                    <p className="mt-1 text-sm font-medium text-[#555555]">
+                        Assign a temporary password and checklist of portal sections.
+                    </p>
 
-            <section className="grid gap-4 md:grid-cols-1">
-                <article className="rounded-[12px] border border-gray-200 bg-white p-6 shadow-sm">
-                    <div className="flex items-start justify-between gap-3">
-                        <div>
-                            <h3 className="m-0 text-base font-bold tracking-tight text-[#262A22]">Create New User</h3>
-                            <p className="mt-1 text-sm font-medium text-[#555555]">Provision a new user with access rights (demo).</p>
-                        </div>
-                    </div>
-
-                    <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                    <form
+                        className="mt-4 grid gap-4 sm:grid-cols-2"
+                        onSubmit={(e) => {
+                            e.preventDefault();
+                            createForm.post('/admin/users', {
+                                preserveScroll: true,
+                                onSuccess: () => {
+                                    createForm.reset();
+                                    createForm.setData('admin_permissions', [...DEFAULT_PERMISSIONS]);
+                                    createForm.setData('is_active', true);
+                                    setShowCreate(false);
+                                },
+                            });
+                        }}
+                    >
                         <TextInput
                             label="Name"
                             placeholder="Full name"
-                            value={adminNameValue}
-                            onChange={(e) => setAdminNameValue(e.target.value)}
+                            value={createForm.data.name}
+                            onChange={(e) => createForm.setData('name', e.target.value)}
+                            error={createForm.errors.name}
                             className="!max-w-none"
+                            required
                         />
                         <TextInput
                             label="Email"
+                            type="email"
                             placeholder="name@mealcrafthq.test"
-                            value={adminEmailValue}
-                            onChange={(e) => setAdminEmailValue(e.target.value)}
+                            value={createForm.data.email}
+                            onChange={(e) => createForm.setData('email', e.target.value)}
+                            error={createForm.errors.email}
                             className="!max-w-none"
+                            required
                         />
                         <TextInput
-                            label="Password"
+                            label="Temporary password"
                             type="password"
                             revealPassword
-                            placeholder="••••••••"
-                            value={adminPasswordValue}
-                            onChange={(e) => setAdminPasswordValue(e.target.value)}
+                            value={createForm.data.password}
+                            onChange={(e) => createForm.setData('password', e.target.value)}
+                            error={createForm.errors.password}
                             className="!max-w-none"
+                            required
                         />
-                        <DropdownTextInput
-                            label="Access Rights"
-                            value={adminAccess}
-                            options={['View', 'View and Edit']}
-                            onChange={setAdminAccess}
+                        <TextInput
+                            label="Confirm password"
+                            type="password"
+                            revealPassword
+                            value={createForm.data.password_confirmation}
+                            onChange={(e) => createForm.setData('password_confirmation', e.target.value)}
+                            error={createForm.errors.password_confirmation}
                             className="!max-w-none"
+                            required
                         />
 
                         <div className="sm:col-span-2">
-                            <div className="flex justify-start">
-                                <Button label="Save" variant="primary" size="sm" type="button" onClick={handleSaveAdmin} />
-                            </div>
+                            <p className="mb-2 text-sm font-semibold text-[#262A22]">Access rights</p>
+                            <PermissionChecklist
+                                value={createForm.data.admin_permissions}
+                                checklist={permissionChecklist}
+                                onChange={(next) => createForm.setData('admin_permissions', next)}
+                            />
+                            {createForm.errors.admin_permissions ? (
+                                <p className="mt-2 text-sm text-[#D12A1C]">{createForm.errors.admin_permissions}</p>
+                            ) : null}
                         </div>
-                    </div>
-                </article>
-            </section>
+
+                        <div className="sm:col-span-2">
+                            <BrandCheckbox
+                                checked={Boolean(createForm.data.is_active)}
+                                onChange={(e) => createForm.setData('is_active', e.target.checked)}
+                            >
+                                Active on create
+                            </BrandCheckbox>
+                        </div>
+
+                        <div className="sm:col-span-2">
+                            <Button
+                                type="submit"
+                                size="sm"
+                                label={createForm.processing ? 'Creating…' : 'Create admin'}
+                                disabled={createForm.processing}
+                            />
+                        </div>
+                    </form>
+                </section>
+            ) : null}
+
+            {isCraftMasterGeneral && passwordUser ? (
+                <section className="rounded-[12px] border border-gray-200 bg-white p-6 shadow-sm">
+                    <h3 className="m-0 text-base font-bold tracking-tight text-[#262A22]">
+                        Change password — {passwordUser.name}
+                    </h3>
+                    <form
+                        className="mt-4 grid gap-4 sm:grid-cols-2"
+                        onSubmit={(e) => {
+                            e.preventDefault();
+                            passwordForm.put(`/admin/users/${passwordUser.id}/password`, {
+                                preserveScroll: true,
+                                onSuccess: () => {
+                                    passwordForm.reset();
+                                    setPasswordUserId(null);
+                                },
+                            });
+                        }}
+                    >
+                        <TextInput
+                            label="New password"
+                            type="password"
+                            revealPassword
+                            value={passwordForm.data.password}
+                            onChange={(e) => passwordForm.setData('password', e.target.value)}
+                            error={passwordForm.errors.password}
+                            className="!max-w-none"
+                            required
+                        />
+                        <TextInput
+                            label="Confirm password"
+                            type="password"
+                            revealPassword
+                            value={passwordForm.data.password_confirmation}
+                            onChange={(e) => passwordForm.setData('password_confirmation', e.target.value)}
+                            error={passwordForm.errors.password_confirmation}
+                            className="!max-w-none"
+                            required
+                        />
+                        <div className="flex flex-wrap gap-3 sm:col-span-2">
+                            <Button
+                                type="submit"
+                                size="sm"
+                                label={passwordForm.processing ? 'Saving…' : 'Update password'}
+                                disabled={passwordForm.processing}
+                            />
+                            <Button
+                                type="button"
+                                size="sm"
+                                variant="secondary"
+                                label="Cancel"
+                                onClick={() => setPasswordUserId(null)}
+                            />
+                        </div>
+                    </form>
+                </section>
+            ) : null}
+
+            <UserManagementTable
+                users={tableUsers}
+                canManage={isCraftMasterGeneral}
+                onToggleActive={(userId) => onToggleUserActive?.(userId)}
+                onChangePassword={(userId) => {
+                    if (!isCraftMasterGeneral) {
+                        return;
+                    }
+                    setPasswordUserId(userId);
+                    passwordForm.reset();
+                    onChangePassword?.(userId);
+                }}
+            />
+
+            {/* Keep Storybook-friendly unused demo fields referenced so props stay stable */}
+            <span className="sr-only">
+                {adminName} {adminEmail}
+            </span>
         </div>
     );
 }
 
-/** Inertia page: authenticated admin shell + dashboard content (same markup as Storybook `DashboardView`). */
-export default function Dashboard() {
-    const { props } = usePage();
-    const stats = { ...EMPTY_STATS, ...(props.stats ?? {}) };
-
-    const handleToggleUserActive = (userId) => {
-        router.post(`/admin/users/${userId}/toggle-active`, {}, { preserveScroll: true });
-    };
-
-    const handleRequestPasswordReset = (userId) => {
-        router.post(`/admin/users/${userId}/password-reset`, {}, { preserveScroll: true });
-    };
+/** Inertia page: authenticated admin shell + dashboard content. */
+export default function Dashboard({
+    users = [],
+    permissionChecklist = [],
+    isCraftMasterGeneral = false,
+    adminName,
+    adminEmail,
+    stats: statsProp,
+}) {
+    const page = usePage();
+    const authUser = page.props?.auth?.user;
+    const isCraftMaster = Boolean(isCraftMasterGeneral || authUser?.isCraftMasterGeneral);
+    const stats = { ...EMPTY_STATS, ...(statsProp ?? page.props?.stats ?? {}) };
+    const portalUsers = asUserList(users.length ? users : stats.activeUsers);
 
     return (
-        <AdminDashboardInner
-            adminName={props.adminName}
-            adminEmail={props.adminEmail}
-            userSubmissionsCount={stats.totalSubmissions}
-            customersCount={stats.customersCount}
-            ingredientCount={stats.ingredientCount}
-            mealCount={stats.mealCount}
-            mealPlanCount={stats.mealPlanCount}
-            totalRevenues={stats.totalRevenue}
-            totalCost={stats.totalCost}
-            grossProfit={stats.grossProfit}
-            latestRegisteredUsers={stats.activeUsers}
-            onToggleUserActive={handleToggleUserActive}
-            onRequestPasswordReset={handleRequestPasswordReset}
-        />
+        <>
+            <Head title="Admin Dashboard" />
+            <AdminDashboardInner
+                adminName={adminName ?? page.props?.adminName}
+                adminEmail={adminEmail ?? page.props?.adminEmail}
+                userSubmissionsCount={stats.totalSubmissions}
+                customersCount={stats.customersCount}
+                ingredientCount={stats.ingredientCount}
+                mealCount={stats.mealCount}
+                mealPlanCount={stats.mealPlanCount}
+                totalRevenues={stats.totalRevenue}
+                totalCost={stats.totalCost}
+                grossProfit={stats.grossProfit}
+                latestRegisteredUsers={portalUsers}
+                permissionChecklist={permissionChecklist}
+                isCraftMasterGeneral={isCraftMaster}
+                onToggleUserActive={(userId) => {
+                    router.post(`/admin/users/${userId}/toggle-active`, {}, { preserveScroll: true });
+                }}
+                onChangePassword={() => {}}
+            />
+        </>
     );
 }
 

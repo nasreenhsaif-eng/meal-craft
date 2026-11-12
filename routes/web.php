@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AdminSettingsController;
 use App\Http\Controllers\Admin\AdminUserActionController;
+use App\Http\Controllers\Admin\AdminUserController;
 use App\Http\Controllers\Admin\CustomerProfileController;
 use App\Http\Controllers\Admin\IngredientLibraryController;
 use App\Http\Controllers\Admin\IngredientLibraryCsvExportController;
@@ -70,45 +71,66 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             ->name('admin.')
             ->group(function (): void {
                 Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
-                Route::get('/ingredient-library', [IngredientLibraryController::class, 'index'])->name('ingredient-library');
-                Route::get('/ingredient-library/export-csv', IngredientLibraryCsvExportController::class)->name('ingredient-library.export-csv');
-                Route::post('/ingredient-library/import-csv', IngredientLibraryCsvImportController::class)->name('ingredient-library.import-csv');
-                Route::post('/ingredient-library/base-ingredient', [IngredientLibraryController::class, 'store'])->name('ingredient-library.base-ingredient.store');
-                Route::post('/ingredient-library/base-ingredient/{ingredient}', [IngredientLibraryController::class, 'update'])->name('ingredient-library.base-ingredient.update');
-                Route::post('/ingredient-library', [IngredientLibraryController::class, 'store'])->name('ingredient-library.store');
-                Route::post('/ingredient-library/bulk-destroy', [IngredientLibraryController::class, 'bulkDestroy'])->name('ingredient-library.bulk-destroy');
-                Route::post('/ingredient-library/{ingredient}', [IngredientLibraryController::class, 'update'])->name('ingredient-library.update');
-                Route::get('/meal-library', [MealLibraryController::class, 'index'])->name('meal-library');
-                Route::get('/meal-library/csv-template', [MealLibraryController::class, 'downloadMealCraftCsvTemplate'])->name('meal-library.csv-template');
-                Route::post('/meal-library/import-csv', MealLibraryCsvImportController::class)->name('meal-library.import-csv');
-                Route::post('/meal-library', [MealController::class, 'store'])->name('meal-library.store');
-                Route::post('/meal-library/bulk-destroy', [MealLibraryController::class, 'bulkDestroy'])->name('meal-library.bulk-destroy');
-                Route::post('/meal-library/reorder', [MealLibraryController::class, 'reorder'])->name('meal-library.reorder');
-                Route::post('/meal-library/{meal}', [MealController::class, 'update'])->name('meal-library.update');
-                Route::get('/meal-tiers-library', [MealTiersLibraryController::class, 'index'])->name('meal-tiers-library');
-                Route::post('/meal-tiers-library', [MealTiersLibraryController::class, 'store'])->name('meal-tiers-library.store');
-                Route::post('/meal-tiers-library/copy', [MealTiersLibraryController::class, 'copy'])->name('meal-tiers-library.copy');
-                Route::post('/meal-tiers-library/copy-all', [MealTiersLibraryController::class, 'copyAll'])->name('meal-tiers-library.copy-all');
-                Route::post('/meal-tiers-library/{meal}', [MealTiersLibraryController::class, 'update'])->name('meal-tiers-library.update');
-                Route::delete('/meal-tiers-library/{meal}', [MealTiersLibraryController::class, 'destroy'])->name('meal-tiers-library.destroy');
-                Route::get('/meal-plan-library', [MealPlanLibraryController::class, 'index'])->name('meal-plan-library');
-                Route::post('/meal-plan-library', [MealPlanLibraryController::class, 'store'])->name('meal-plan-library.store');
-                Route::get('/meal-plan-library/meals/search', [MealPlanLibraryController::class, 'searchMeals'])->name('meal-plan-library.meals.search');
-                Route::get('/meal-plan-library/{mealPlan}', [MealPlanLibraryController::class, 'show'])->name('meal-plan-library.show');
-                Route::put('/meal-plan-library/{mealPlan}/default-selections', [MealPlanLibraryController::class, 'storeDefaultSelections'])->name('meal-plan-library.default-selections');
-                Route::get('/meal-plan-library/{mealPlan}/tier-preview', [MealPlanLibraryController::class, 'tierPreview'])->name('meal-plan-library.tier-preview');
-                Route::get('/customers', [CustomerProfileController::class, 'index'])->name('customers');
-                Route::get('/customers/{customer}', [CustomerProfileController::class, 'show'])->name('customers.show');
-                Route::put('/customers/{customer}', [CustomerProfileController::class, 'update'])->name('customers.update');
-                Route::get('/kitchen-logistics', [KitchenLogisticsController::class, 'index'])->name('kitchen-logistics');
-                Route::get('/partner-kitchen-pricing', [PartnerKitchenPricingController::class, 'index'])->name('partner-kitchen-pricing');
-                Route::put('/partner-kitchen-pricing', [PartnerKitchenPricingController::class, 'update'])->name('partner-kitchen-pricing.update');
-                Route::post('/partner-kitchen-pricing/discounts/apply', [PartnerKitchenPricingController::class, 'applyDiscount'])->name('partner-kitchen-pricing.discounts.apply');
-                Route::post('/partner-kitchen-pricing/discounts/reset', [PartnerKitchenPricingController::class, 'resetDiscounts'])->name('partner-kitchen-pricing.discounts.reset');
-                Route::get('/partner-kitchen-pricing/export-csv', PartnerKitchenPricingCsvExportController::class)->name('partner-kitchen-pricing.export-csv');
-                Route::post('/partner-kitchen-pricing/import-csv', PartnerKitchenPricingCsvImportController::class)->name('partner-kitchen-pricing.import-csv');
-                Route::post('/partner-kitchen-pricing/discounts', [PartnerKitchenPricingController::class, 'storeDiscount'])->name('partner-kitchen-pricing.discounts.store');
-                Route::delete('/partner-kitchen-pricing/discounts/{discount}', [PartnerKitchenPricingController::class, 'destroyDiscount'])->name('partner-kitchen-pricing.discounts.destroy');
+
+                Route::middleware('admin.permission:ingredient-db')->group(function (): void {
+                    Route::get('/ingredient-library', [IngredientLibraryController::class, 'index'])->name('ingredient-library');
+                    Route::get('/ingredient-library/export-csv', IngredientLibraryCsvExportController::class)->name('ingredient-library.export-csv');
+                    Route::post('/ingredient-library/import-csv', IngredientLibraryCsvImportController::class)->name('ingredient-library.import-csv');
+                    Route::post('/ingredient-library/base-ingredient', [IngredientLibraryController::class, 'store'])->name('ingredient-library.base-ingredient.store');
+                    Route::post('/ingredient-library/base-ingredient/{ingredient}', [IngredientLibraryController::class, 'update'])->name('ingredient-library.base-ingredient.update');
+                    Route::post('/ingredient-library', [IngredientLibraryController::class, 'store'])->name('ingredient-library.store');
+                    Route::post('/ingredient-library/bulk-destroy', [IngredientLibraryController::class, 'bulkDestroy'])->name('ingredient-library.bulk-destroy');
+                    Route::post('/ingredient-library/{ingredient}', [IngredientLibraryController::class, 'update'])->name('ingredient-library.update');
+                });
+
+                Route::middleware('admin.permission:meal-hub')->group(function (): void {
+                    Route::get('/meal-library', [MealLibraryController::class, 'index'])->name('meal-library');
+                    Route::get('/meal-library/csv-template', [MealLibraryController::class, 'downloadMealCraftCsvTemplate'])->name('meal-library.csv-template');
+                    Route::post('/meal-library/import-csv', MealLibraryCsvImportController::class)->name('meal-library.import-csv');
+                    Route::post('/meal-library', [MealController::class, 'store'])->name('meal-library.store');
+                    Route::post('/meal-library/bulk-destroy', [MealLibraryController::class, 'bulkDestroy'])->name('meal-library.bulk-destroy');
+                    Route::post('/meal-library/reorder', [MealLibraryController::class, 'reorder'])->name('meal-library.reorder');
+                    Route::post('/meal-library/{meal}', [MealController::class, 'update'])->name('meal-library.update');
+                });
+
+                Route::middleware('admin.permission:meal-tiers')->group(function (): void {
+                    Route::get('/meal-tiers-library', [MealTiersLibraryController::class, 'index'])->name('meal-tiers-library');
+                    Route::post('/meal-tiers-library', [MealTiersLibraryController::class, 'store'])->name('meal-tiers-library.store');
+                    Route::post('/meal-tiers-library/copy', [MealTiersLibraryController::class, 'copy'])->name('meal-tiers-library.copy');
+                    Route::post('/meal-tiers-library/copy-all', [MealTiersLibraryController::class, 'copyAll'])->name('meal-tiers-library.copy-all');
+                    Route::post('/meal-tiers-library/{meal}', [MealTiersLibraryController::class, 'update'])->name('meal-tiers-library.update');
+                    Route::delete('/meal-tiers-library/{meal}', [MealTiersLibraryController::class, 'destroy'])->name('meal-tiers-library.destroy');
+                });
+
+                Route::middleware('admin.permission:meal-plans')->group(function (): void {
+                    Route::get('/meal-plan-library', [MealPlanLibraryController::class, 'index'])->name('meal-plan-library');
+                    Route::post('/meal-plan-library', [MealPlanLibraryController::class, 'store'])->name('meal-plan-library.store');
+                    Route::get('/meal-plan-library/meals/search', [MealPlanLibraryController::class, 'searchMeals'])->name('meal-plan-library.meals.search');
+                    Route::get('/meal-plan-library/{mealPlan}', [MealPlanLibraryController::class, 'show'])->name('meal-plan-library.show');
+                    Route::put('/meal-plan-library/{mealPlan}/default-selections', [MealPlanLibraryController::class, 'storeDefaultSelections'])->name('meal-plan-library.default-selections');
+                    Route::get('/meal-plan-library/{mealPlan}/tier-preview', [MealPlanLibraryController::class, 'tierPreview'])->name('meal-plan-library.tier-preview');
+                });
+
+                Route::middleware('admin.permission:customer-profiles')->group(function (): void {
+                    Route::get('/customers', [CustomerProfileController::class, 'index'])->name('customers');
+                    Route::get('/customers/{customer}', [CustomerProfileController::class, 'show'])->name('customers.show');
+                    Route::put('/customers/{customer}', [CustomerProfileController::class, 'update'])->name('customers.update');
+                });
+
+                Route::middleware('admin.permission:kitchen-logistics')->group(function (): void {
+                    Route::get('/kitchen-logistics', [KitchenLogisticsController::class, 'index'])->name('kitchen-logistics');
+                });
+
+                Route::middleware('admin.permission:pricing')->group(function (): void {
+                    Route::get('/partner-kitchen-pricing', [PartnerKitchenPricingController::class, 'index'])->name('partner-kitchen-pricing');
+                    Route::put('/partner-kitchen-pricing', [PartnerKitchenPricingController::class, 'update'])->name('partner-kitchen-pricing.update');
+                    Route::post('/partner-kitchen-pricing/discounts/apply', [PartnerKitchenPricingController::class, 'applyDiscount'])->name('partner-kitchen-pricing.discounts.apply');
+                    Route::post('/partner-kitchen-pricing/discounts/reset', [PartnerKitchenPricingController::class, 'resetDiscounts'])->name('partner-kitchen-pricing.discounts.reset');
+                    Route::get('/partner-kitchen-pricing/export-csv', PartnerKitchenPricingCsvExportController::class)->name('partner-kitchen-pricing.export-csv');
+                    Route::post('/partner-kitchen-pricing/import-csv', PartnerKitchenPricingCsvImportController::class)->name('partner-kitchen-pricing.import-csv');
+                    Route::post('/partner-kitchen-pricing/discounts', [PartnerKitchenPricingController::class, 'storeDiscount'])->name('partner-kitchen-pricing.discounts.store');
+                    Route::delete('/partner-kitchen-pricing/discounts/{discount}', [PartnerKitchenPricingController::class, 'destroyDiscount'])->name('partner-kitchen-pricing.discounts.destroy');
+                });
 
                 Route::prefix('settings')->name('settings.')->group(function (): void {
                     Route::redirect('/', '/admin/settings/profile')->name('index');
@@ -119,10 +141,17 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
                     Route::get('/appearance', [AdminSettingsController::class, 'editAppearance'])->name('appearance');
                 });
 
-                Route::post('/users/{user}/toggle-active', [AdminUserActionController::class, 'toggleActive'])->name('users.toggle-active');
-                Route::post('/users/{user}/password-reset', [AdminUserActionController::class, 'sendPasswordReset'])->name('users.password-reset');
+                Route::middleware('admin.craft-master')->group(function (): void {
+                    Route::post('/users', [AdminUserController::class, 'store'])->name('users.store');
+                    Route::put('/users/{user}', [AdminUserController::class, 'update'])->name('users.update');
+                    Route::post('/users/{user}/toggle-active', [AdminUserActionController::class, 'toggleActive'])->name('users.toggle-active');
+                    Route::put('/users/{user}/password', [AdminUserActionController::class, 'updatePassword'])->name('users.password');
+                    Route::post('/users/{user}/password-reset', [AdminUserActionController::class, 'sendPasswordReset'])->name('users.password-reset');
+                });
             });
+    });
 
+    Route::middleware('kitchen')->group(function (): void {
         Route::livewire('ingredients', 'pages::ingredients')->name('ingredients.index');
         Route::livewire('meals', 'pages::meals')->name('meals.index');
         Route::livewire('meals/{meal}/edit', 'pages::meals')->name('meals.edit');

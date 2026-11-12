@@ -61,6 +61,10 @@ class HandleInertiaRequests extends Middleware
                     'email' => $request->user()->email,
                     'role' => $request->user()->role->value,
                     'initials' => $request->user()->initials(),
+                    'isCraftMasterGeneral' => $request->user()->isCraftMasterGeneral(),
+                    'adminPermissions' => $request->user()->canAccessAdminPortal()
+                        ? $request->user()->adminPermissionKeys()
+                        : [],
                 ] : null,
             ],
             'flash' => [
