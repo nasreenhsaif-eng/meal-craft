@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { router } from '@inertiajs/react';
 import Button from '../../Components/Atoms/Button/Button.jsx';
 import SquareCheckbox from '../../Components/Atoms/Icons/SquareCheckbox.jsx';
+import TextLink from '../../Components/Atoms/TextLink.jsx';
 import CSVUploader from '../../Components/CSVUploader.jsx';
 import DropdownTextInput from '../../Components/Atoms/TextInput/DropdownTextInput.jsx';
 import TextInput from '../../Components/Atoms/TextInput/TextInput.jsx';
@@ -181,13 +182,12 @@ export default function PartnerKitchenPricing({
         ),
     );
     const [planView, setPlanView] = useState('all');
+    const [campaignOpen, setCampaignOpen] = useState(false);
     const [discountType, setDiscountType] = useState(/** @type {'amount' | 'percent'} */ ('percent'));
     const [discountValue, setDiscountValue] = useState('10');
-    const [selectedPlans, setSelectedPlans] = useState(() => plans.map((plan) => plan.key));
-    const [selectedTiers, setSelectedTiers] = useState(() =>
-        [...new Set(plans.flatMap((plan) => plan.calorieTiers))].sort((a, b) => a - b),
-    );
-    const [selectedDays, setSelectedDays] = useState([...DURATIONS]);
+    const [selectedPlans, setSelectedPlans] = useState(/** @type {string[]} */ ([]));
+    const [selectedTiers, setSelectedTiers] = useState(/** @type {number[]} */ ([]));
+    const [selectedDays, setSelectedDays] = useState(/** @type {number[]} */ ([]));
     const [saving, setSaving] = useState(false);
 
     const viewOptions = useMemo(
@@ -436,124 +436,6 @@ export default function PartnerKitchenPricing({
             </header>
 
             <section className="rounded-[12px] border border-[#E5E7EB] bg-white p-5 shadow-sm">
-                <h2 className="font-montserrat text-sm font-bold uppercase tracking-[0.14em] text-[#6E8C47]">
-                    Discount campaign
-                </h2>
-                <div className="mt-4 grid gap-4 lg:grid-cols-[12rem_minmax(0,1fr)]">
-                    <div className="grid gap-3">
-                        <DropdownTextInput
-                            label="Type"
-                            value={discountType === 'percent' ? '% off' : `Flat ${currency}`}
-                            options={['% off', `Flat ${currency}`]}
-                            onChange={(label) => setDiscountType(label.startsWith('%') ? 'percent' : 'amount')}
-                            listboxAriaLabel="Discount type"
-                            className="!max-w-none"
-                        />
-                        <TextInput
-                            label="Discount value"
-                            value={discountValue}
-                            onChange={(event) => setDiscountValue(event.target.value.replace(/[^\d]/g, ''))}
-                            className="!max-w-none"
-                        />
-                    </div>
-                    <div className="space-y-4">
-                        <fieldset>
-                            <legend className="font-montserrat text-[11px] font-semibold uppercase tracking-[0.14em] text-[#555555]">
-                                Plans
-                            </legend>
-                            <div className="mt-2 flex flex-wrap gap-3">
-                                <BrandCheckbox
-                                    checked={selectedPlans.length === plans.length}
-                                    onChange={() =>
-                                        setSelectedPlans(
-                                            selectedPlans.length === plans.length
-                                                ? []
-                                                : plans.map((plan) => plan.key),
-                                        )
-                                    }
-                                >
-                                    Select all
-                                </BrandCheckbox>
-                                {plans.map((plan) => (
-                                    <BrandCheckbox
-                                        key={plan.key}
-                                        checked={selectedPlans.includes(plan.key)}
-                                        onChange={() => togglePlan(plan.key)}
-                                    >
-                                        {plan.name}
-                                    </BrandCheckbox>
-                                ))}
-                            </div>
-                        </fieldset>
-                        <fieldset>
-                            <legend className="font-montserrat text-[11px] font-semibold uppercase tracking-[0.14em] text-[#555555]">
-                                Calorie tiers
-                            </legend>
-                            <div className="mt-2 flex flex-wrap gap-3">
-                                <BrandCheckbox
-                                    checked={
-                                        eligibleTiers.length > 0
-                                        && selectedTiers.length === eligibleTiers.length
-                                    }
-                                    onChange={() =>
-                                        setSelectedTiers(
-                                            selectedTiers.length === eligibleTiers.length
-                                                ? []
-                                                : [...eligibleTiers],
-                                        )
-                                    }
-                                >
-                                    Select all
-                                </BrandCheckbox>
-                                {eligibleTiers.map((tier) => (
-                                    <BrandCheckbox
-                                        key={tier}
-                                        checked={selectedTiers.includes(tier)}
-                                        onChange={() => toggleTier(tier)}
-                                    >
-                                        <span className="inline-block size-2 rounded-full" style={{ backgroundColor: TIER_COLORS[tier] }} />
-                                        {tier}
-                                    </BrandCheckbox>
-                                ))}
-                            </div>
-                        </fieldset>
-                        <fieldset>
-                            <legend className="font-montserrat text-[11px] font-semibold uppercase tracking-[0.14em] text-[#555555]">
-                                Durations
-                            </legend>
-                            <div className="mt-2 flex flex-wrap items-center gap-3">
-                                <BrandCheckbox
-                                    checked={selectedDays.length === DURATIONS.length}
-                                    onChange={() =>
-                                        setSelectedDays(
-                                            selectedDays.length === DURATIONS.length
-                                                ? []
-                                                : [...DURATIONS],
-                                        )
-                                    }
-                                >
-                                    Select all
-                                </BrandCheckbox>
-                                {DURATIONS.map((days) => (
-                                    <BrandCheckbox
-                                        key={days}
-                                        checked={selectedDays.includes(days)}
-                                        onChange={() => toggleDays(days)}
-                                    >
-                                        {days}d
-                                    </BrandCheckbox>
-                                ))}
-                            </div>
-                        </fieldset>
-                    </div>
-                </div>
-                <div className="mt-4 flex flex-wrap gap-3">
-                    <Button label="Apply to selected packages" size="sm" onClick={applyCampaign} />
-                    <Button label="Reset discounts" size="sm" variant="outline" onClick={resetCampaign} />
-                </div>
-            </section>
-
-            <section className="rounded-[12px] border border-[#E5E7EB] bg-white p-5 shadow-sm">
                 <h2 className="font-montserrat text-sm font-bold uppercase tracking-[0.14em] text-[#555555]">
                     Price trend
                 </h2>
@@ -569,6 +451,139 @@ export default function PartnerKitchenPricing({
                     <PriceTrendChart series={chartSeries} />
                 </div>
             </section>
+
+            <div>
+                <TextLink
+                    href="#"
+                    className="font-montserrat text-sm underline"
+                    aria-expanded={campaignOpen}
+                    onClick={(event) => {
+                        event.preventDefault();
+                        setCampaignOpen((open) => !open);
+                    }}
+                >
+                    {campaignOpen ? 'Hide discount campaign' : 'Discount campaign'}
+                </TextLink>
+                {campaignOpen ? (
+                    <section className="mt-3 rounded-[12px] border border-[#E5E7EB] bg-white p-5 shadow-sm">
+                        <h2 className="font-montserrat text-sm font-bold uppercase tracking-[0.14em] text-[#6E8C47]">
+                            Discount campaign
+                        </h2>
+                        <div className="mt-4 grid gap-4 lg:grid-cols-[12rem_minmax(0,1fr)]">
+                            <div className="grid gap-3">
+                                <DropdownTextInput
+                                    label="Type"
+                                    value={discountType === 'percent' ? '% off' : `Flat ${currency}`}
+                                    options={['% off', `Flat ${currency}`]}
+                                    onChange={(label) => setDiscountType(label.startsWith('%') ? 'percent' : 'amount')}
+                                    listboxAriaLabel="Discount type"
+                                    className="!max-w-none"
+                                />
+                                <TextInput
+                                    label="Discount value"
+                                    value={discountValue}
+                                    onChange={(event) => setDiscountValue(event.target.value.replace(/[^\d]/g, ''))}
+                                    className="!max-w-none"
+                                />
+                            </div>
+                            <div className="space-y-4">
+                                <fieldset>
+                                    <legend className="font-montserrat text-[11px] font-semibold uppercase tracking-[0.14em] text-[#555555]">
+                                        Plans
+                                    </legend>
+                                    <div className="mt-2 flex flex-wrap gap-3">
+                                        <BrandCheckbox
+                                            checked={selectedPlans.length === plans.length}
+                                            onChange={() =>
+                                                setSelectedPlans(
+                                                    selectedPlans.length === plans.length
+                                                        ? []
+                                                        : plans.map((plan) => plan.key),
+                                                )
+                                            }
+                                        >
+                                            Select all
+                                        </BrandCheckbox>
+                                        {plans.map((plan) => (
+                                            <BrandCheckbox
+                                                key={plan.key}
+                                                checked={selectedPlans.includes(plan.key)}
+                                                onChange={() => togglePlan(plan.key)}
+                                            >
+                                                {plan.name}
+                                            </BrandCheckbox>
+                                        ))}
+                                    </div>
+                                </fieldset>
+                                <fieldset>
+                                    <legend className="font-montserrat text-[11px] font-semibold uppercase tracking-[0.14em] text-[#555555]">
+                                        Calorie tiers
+                                    </legend>
+                                    <div className="mt-2 flex flex-wrap gap-3">
+                                        <BrandCheckbox
+                                            checked={
+                                                eligibleTiers.length > 0
+                                                && selectedTiers.length === eligibleTiers.length
+                                            }
+                                            onChange={() =>
+                                                setSelectedTiers(
+                                                    selectedTiers.length === eligibleTiers.length
+                                                        ? []
+                                                        : [...eligibleTiers],
+                                                )
+                                            }
+                                        >
+                                            Select all
+                                        </BrandCheckbox>
+                                        {eligibleTiers.map((tier) => (
+                                            <BrandCheckbox
+                                                key={tier}
+                                                checked={selectedTiers.includes(tier)}
+                                                onChange={() => toggleTier(tier)}
+                                            >
+                                                <span className="inline-block size-2 rounded-full" style={{ backgroundColor: TIER_COLORS[tier] }} />
+                                                {tier}
+                                            </BrandCheckbox>
+                                        ))}
+                                    </div>
+                                </fieldset>
+                                <fieldset>
+                                    <legend className="font-montserrat text-[11px] font-semibold uppercase tracking-[0.14em] text-[#555555]">
+                                        Durations
+                                    </legend>
+                                    <div className="mt-2 flex flex-wrap items-center gap-3">
+                                        <BrandCheckbox
+                                            checked={selectedDays.length === DURATIONS.length}
+                                            onChange={() =>
+                                                setSelectedDays(
+                                                    selectedDays.length === DURATIONS.length
+                                                        ? []
+                                                        : [...DURATIONS],
+                                                )
+                                            }
+                                        >
+                                            Select all
+                                        </BrandCheckbox>
+                                        {DURATIONS.map((days) => (
+                                            <BrandCheckbox
+                                                key={days}
+                                                checked={selectedDays.includes(days)}
+                                                onChange={() => toggleDays(days)}
+                                            >
+                                                {days}d
+                                            </BrandCheckbox>
+                                        ))}
+                                    </div>
+                                </fieldset>
+                            </div>
+                        </div>
+                        <div className="mt-4 flex flex-wrap gap-3">
+                            <Button label="Apply to selected packages" size="sm" onClick={applyCampaign} />
+                            <Button label="Reset discounts" size="sm" variant="outline" onClick={resetCampaign} />
+                        </div>
+                    </section>
+                ) : null}
+            </div>
 
             <section className="rounded-[12px] border border-[#E5E7EB] bg-white p-5 shadow-sm">
                 <div className="flex flex-wrap items-end justify-between gap-4">
@@ -640,6 +655,12 @@ export default function PartnerKitchenPricing({
 
                                         const sale = display.sale;
                                         const showStrike = display.discounted && display.base !== null && sale !== null && sale < display.base;
+                                        const effective = showStrike && sale !== null
+                                            ? sale
+                                            : display.base;
+                                        const dailyRate = effective !== null && days > 0
+                                            ? (Number(effective) / days).toFixed(1)
+                                            : null;
 
                                         return (
                                             <td key={days} className="relative px-3 py-3">
@@ -665,6 +686,11 @@ export default function PartnerKitchenPricing({
                                                     <span className="mt-1 inline-flex rounded-full bg-[#C44F5D] px-2 py-0.5 font-montserrat text-[11px] font-bold text-white">
                                                         {sale}
                                                     </span>
+                                                ) : null}
+                                                {dailyRate !== null ? (
+                                                    <p className="mt-1 font-body text-xs text-[#888888]">
+                                                        {dailyRate} / day
+                                                    </p>
                                                 ) : null}
                                             </td>
                                         );
