@@ -1,5 +1,4 @@
-import { Link } from '@inertiajs/react';
-import CustomerAppBottomNav from '../../Components/Molecules/Customer/CustomerAppBottomNav.jsx';
+import SimpleFlowNavHeader from '../../Components/Molecules/Onboarding/SimpleFlowNavHeader.jsx';
 import FulfillmentOptionCards from '../../Components/Molecules/Customer/FulfillmentOptionCards.jsx';
 import CustomerInertiaShell from '../../Layouts/CustomerInertiaShell.jsx';
 
@@ -23,37 +22,30 @@ export function FulfillmentSelectionInner({
     recipesUrl = '/meal-plan/recipes',
 }) {
     return (
-        <CustomerInertiaShell
-            customerName={customerName}
-            footerNav={
-                <CustomerAppBottomNav
-                    homeUrl={homeUrl}
-                    profileUrl={profileUrl}
-                    shopUrl={shopUrl}
-                    mealsUrl={mealPlanSummaryUrl}
+        <CustomerInertiaShell customerName={customerName} layoutVariant="onboarding" footerNav={null}>
+            <section className="mx-auto flex w-full max-w-xl flex-col gap-3 px-1 sm:px-0">
+                <SimpleFlowNavHeader
+                    onBack={() => {
+                        window.location.assign(homeUrl);
+                    }}
                 />
-            }
-        >
-            <div className="mx-auto w-full max-w-5xl">
-                <Link
-                    href={homeUrl}
-                    className="inline-flex items-center gap-1 font-montserrat text-sm font-semibold text-[#5A6B44] hover:underline"
-                >
-                    ← Back to dashboard
-                </Link>
-                <h1 className="mt-3 font-montserrat text-3xl font-semibold tracking-tight text-[#262A22]">
-                    How would you like to receive your meal plan?
-                </h1>
-                <p className="mt-3 max-w-2xl font-body text-sm leading-relaxed text-[#555555] sm:text-base">
-                    Choose between fresh daily preparation delivered to your door or self-prepared recipes at home.
-                </p>
 
-                <FulfillmentOptionCards
-                    deliveryUrl={deliveryUrl}
-                    recipesUrl={recipesUrl}
-                    className="mt-8"
-                />
-            </div>
+                <div className="w-full">
+                    <h1 className="text-center font-montserrat text-2xl font-semibold leading-tight text-[#262A22]">
+                        How would you like to receive your meal plan?
+                    </h1>
+                    <p className="mt-1.5 text-center text-sm leading-snug text-[#555555]">
+                        Choose between fresh daily preparation delivered to your door or self-prepared recipes at
+                        home.
+                    </p>
+
+                    <FulfillmentOptionCards
+                        deliveryUrl={deliveryUrl}
+                        recipesUrl={recipesUrl}
+                        className="mt-3"
+                    />
+                </div>
+            </section>
         </CustomerInertiaShell>
     );
 }
@@ -89,4 +81,3 @@ export default function FulfillmentSelection({
         />
     );
 }
-

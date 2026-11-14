@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { router } from '@inertiajs/react';
 import { AnimatePresence, motion } from 'framer-motion';
-import Button from '../../Components/Atoms/Button.jsx';
 import OnboardingOptionButton from '../../Components/Atoms/Button/OnboardingOptionButton.jsx';
 import DayNutritionalSummaryPanel, {
     DAY_SUMMARY_TABS,
@@ -14,7 +13,7 @@ import { saveSummaryCraftPlanAndNavigateToEdit } from '../../consultation/consul
 import { resolveInertiaLayoutChild } from '../../lib/resolveInertiaLayoutChild.js';
 import { useMealDetailModal } from '../../meal-library/useMealDetailModal.js';
 
-const PAGE_BG = 'bg-[#F8F9F6]';
+const PAGE_BG = 'bg-white';
 
 /** @typedef {'days' | 'day'} SummaryStep */
 /** @typedef {'meals' | 'macronutrients' | 'micronutrients' | 'allergies' | 'sickle'} DaySummaryTabId */
@@ -188,13 +187,13 @@ export function MealPlanSummaryInner({
 
     const pageIntro = (
         <div className="mb-3 min-w-0">
-            <h1 className="font-montserrat text-2xl font-bold tracking-tight text-[#262A22] sm:text-3xl">
+            <h1 className="text-center font-montserrat text-2xl font-semibold leading-tight text-[#262A22] sm:text-3xl">
                 Your week, crafted.
             </h1>
-            <p className="mt-1 font-body text-sm leading-snug text-[#374151] sm:text-base">
+            <p className="mt-1.5 text-center text-sm leading-snug text-[#555555] sm:text-base">
                 Open a day. Every meal, every ingredient, every detail.
             </p>
-            <p className="mt-1 font-body text-xs text-[#6B7280] sm:text-sm">
+            <p className="mt-1 text-center font-body text-xs text-[#6B7280] sm:text-sm">
                 {planCategoryLabel}
                 {craftPlan.planDateRange?.label ? ` · ${craftPlan.planDateRange.label}` : null}
                 {days.length > 0 ? ` · ${days.length} delivery ${days.length === 1 ? 'day' : 'days'}` : null}
@@ -207,7 +206,7 @@ export function MealPlanSummaryInner({
             tab={contentTab}
             categories={activeDayCategories}
             dayLabel={activeDayData?.label ?? 'Day'}
-            planCategoryLabel={planCategoryLabel}
+            planCategoryLabel=""
             planTierCalories={craftPlan.planTierCalories ?? 0}
             craftKey={craftPlan.craftKey ?? 'full'}
             sex={sex}
@@ -223,7 +222,7 @@ export function MealPlanSummaryInner({
     const daysScreen = (
         <>
             {pageIntro}
-            <p className="mb-3 font-body text-sm text-[#555555]">Pick a day to open your meals.</p>
+            <p className="mb-3 text-center font-body text-sm text-[#555555]">Pick a day to open your meals.</p>
             <div className="mx-auto flex w-full max-w-xl flex-col gap-2" role="list" aria-label="Plan days">
                 {days.map((day) => {
                     const label = day.dateLabel ? `${day.label} ${day.dateLabel}` : day.label;
@@ -247,20 +246,10 @@ export function MealPlanSummaryInner({
             <div className="mb-2 min-w-0">
                 {hasMultipleDays ? (
                     <>
-                        <div className="flex items-start justify-between gap-3">
-                            <h1 className="min-w-0 font-montserrat text-2xl font-bold tracking-tight text-[#262A22] sm:text-3xl">
-                                {activeDayLabel}
-                            </h1>
-                            <Button
-                                type="button"
-                                label="Close"
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setStep('days')}
-                                className="shrink-0"
-                            />
-                        </div>
-                        <p className="mt-0.5 font-body text-sm text-[#555555]">
+                        <h1 className="text-center font-montserrat text-2xl font-semibold leading-tight text-[#262A22] sm:text-3xl">
+                            {activeDayLabel}
+                        </h1>
+                        <p className="mt-1.5 text-center text-sm leading-snug text-[#555555]">
                             Every meal, every ingredient, every detail.
                         </p>
                     </>
@@ -308,6 +297,12 @@ export function MealPlanSummaryInner({
             customerName={customerName}
             cartUrl={cartUrl}
             embedded={preview}
+            onBack={
+                step === 'day' && hasMultipleDays
+                    ? () => setStep('days')
+                    : null
+            }
+            backAriaLabel="Back to days"
             footerNav={
                 <CustomerAppBottomNav
                     activeTab="meals"

@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import Button from '../Atoms/Button.jsx';
+import SimpleFlowNavHeader from '../Molecules/Onboarding/SimpleFlowNavHeader.jsx';
 
 /**
  * Resolve the customer phone chrome when present so options fill that screen
@@ -42,7 +43,6 @@ export default function ProtocolMealOptionsScreen({
 }) {
     const handleConfirm = typeof onConfirm === 'function' ? onConfirm : onBack;
     const handleClose = typeof onBack === 'function' ? onBack : handleConfirm;
-    const day = String(dayLabel).trim().toUpperCase();
 
     useEffect(() => {
         const onKeyDown = (event) => {
@@ -72,6 +72,8 @@ export default function ProtocolMealOptionsScreen({
     }
 
     const nestedInPhoneFrame = host !== document.body;
+    const day = String(dayLabel).trim();
+    const subtitle = day !== '' ? `For ${day.charAt(0).toUpperCase()}${day.slice(1).toLowerCase()}` : '';
 
     return createPortal(
         <div
@@ -94,7 +96,7 @@ export default function ProtocolMealOptionsScreen({
                 aria-modal="true"
                 aria-labelledby="mc-options-modal-title"
                 className={[
-                    'flex w-full flex-col overflow-hidden bg-[#F8F9F6]',
+                    'flex w-full flex-col overflow-hidden bg-white',
                     nestedInPhoneFrame
                         ? 'absolute inset-0 rounded-none'
                         : [
@@ -106,51 +108,34 @@ export default function ProtocolMealOptionsScreen({
                     .join(' ')
                     .trim()}
             >
-                <div className="flex shrink-0 items-center justify-between gap-3 border-b border-gray-200 bg-white px-4 py-2 sm:px-5 sm:py-2.5">
-                    <div className="min-w-0 flex-1">
-                        {day ? (
-                            <p className="font-montserrat text-[12px] font-bold uppercase tracking-wide text-[#555555]">
-                                CRAFTING YOUR {day}
-                            </p>
-                        ) : null}
+                <div className="flex shrink-0 flex-col gap-3 px-3 pb-2 pt-3 sm:px-4">
+                    <SimpleFlowNavHeader onBack={handleClose} ariaLabel="Close other options" />
+                    <div className="w-full">
                         <h2
                             id="mc-options-modal-title"
-                            className="font-montserrat text-lg font-bold tracking-tight text-[#262A22] sm:text-xl"
+                            className="text-center font-montserrat text-2xl font-semibold leading-tight text-[#262A22]"
                         >
                             {sectionTitle}
                         </h2>
+                        {subtitle ? (
+                            <p className="mt-1.5 text-center text-sm leading-snug text-[#555555]">{subtitle}</p>
+                        ) : null}
                     </div>
-                    <Button
-                        type="button"
-                        label="Close"
-                        variant="ghost"
-                        size="sm"
-                        onClick={handleClose}
-                        className="shrink-0"
-                    />
                 </div>
 
                 <div className="min-h-0 flex-1 overflow-x-clip overflow-y-auto overscroll-y-contain px-0 py-0 [-webkit-overflow-scrolling:touch] sm:py-1">
                     {children}
                 </div>
 
-                <div className="shrink-0 border-t border-gray-200 bg-white p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:p-4 sm:pb-[max(1rem,env(safe-area-inset-bottom))]">
-                    <div className="flex items-center justify-between gap-3">
-                        <Button
-                            type="button"
-                            label="BACK"
-                            variant="outline"
-                            size="md"
-                            onClick={handleClose}
-                            className="shrink-0"
-                        />
+                <div className="shrink-0 bg-white p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:p-4 sm:pb-[max(1rem,env(safe-area-inset-bottom))]">
+                    <div className="flex justify-center">
                         <Button
                             type="button"
                             label="CONFIRM"
                             variant="primary"
                             size="md"
                             onClick={handleConfirm}
-                            className="shrink-0"
+                            className="min-w-[200px] uppercase tracking-[0.08em]"
                         />
                     </div>
                 </div>

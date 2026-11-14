@@ -198,6 +198,42 @@ final class CheckoutBasket
         int $planTierCalories,
         ?int $planWeeksOverride,
     ): ?array {
+        /** @var array<string, mixed>|null $draft */
+        $draft = session(ConsultationResumeDraftController::SESSION_DRAFT_KEY);
+
+        // Prefer the in-progress consultation choice over an older submitted plan.
+        if (is_array($draft) && isset($draft['craftKey'], $draft['weekDuration'])) {
+            $craftKey = (string) $draft['craftKey'];
+            $weekDuration = (int) $draft['weekDuration'];
+            $planWeeks = $planWeeksOverride ?? (int) ($draft['planWeeks'] ?? 4);
+            $planWeeks = $planWeeks === 1 ? 1 : 4;
+
+            if (isset($draft['selectedBilledDays']) && is_numeric($draft['selectedBilledDays'])) {
+                $billedDays = (int) $draft['selectedBilledDays'];
+                $weekDuration = PartnerKitchenPrice::weekDurationFromBilledDays($billedDays);
+                $planWeeks = $planWeeksOverride ?? PartnerKitchenPrice::planWeeksFromBilledDays($billedDays);
+            }
+
+            $priceCalories = PartnerKitchenPrice::priceCaloriesForCraft($planTierCalories, $craftKey);
+
+            $titles = [
+                'full' => 'Full Craft',
+                'day' => 'Day Craft',
+                'afternoon' => 'Afternoon Craft',
+                'intermittent' => 'Intermittent Craft',
+                'business' => 'Business Craft',
+            ];
+
+            return [
+                'craftKey' => $craftKey,
+                'craftTitle' => $titles[$craftKey] ?? $craftKey,
+                'weekDuration' => $weekDuration,
+                'planWeeks' => $planWeeks,
+                'priceCalories' => $priceCalories,
+                'averageDayCalories' => $planTierCalories,
+            ];
+        }
+
         if ($plan instanceof CustomerCraftPlan) {
             $summary = $presentation->presentSummary($plan, $planTierCalories);
             $planWeeks = $planWeeksOverride ?? (int) ($plan->plan_weeks ?: 4);
@@ -218,35 +254,7 @@ final class CheckoutBasket
             ];
         }
 
-        /** @var array<string, mixed>|null $draft */
-        $draft = session(ConsultationResumeDraftController::SESSION_DRAFT_KEY);
-
-        if (! is_array($draft) || ! isset($draft['craftKey'], $draft['weekDuration'])) {
-            return null;
-        }
-
-        $craftKey = (string) $draft['craftKey'];
-        $weekDuration = (int) $draft['weekDuration'];
-        $planWeeks = $planWeeksOverride ?? (int) ($draft['planWeeks'] ?? 4);
-        $planWeeks = $planWeeks === 1 ? 1 : 4;
-        $priceCalories = PartnerKitchenPrice::priceCaloriesForCraft($planTierCalories, $craftKey);
-
-        $titles = [
-            'full' => 'Full Craft',
-            'day' => 'Day Craft',
-            'afternoon' => 'Afternoon Craft',
-            'intermittent' => 'Intermittent Craft',
-            'business' => 'Business Craft',
-        ];
-
-        return [
-            'craftKey' => $craftKey,
-            'craftTitle' => $titles[$craftKey] ?? $craftKey,
-            'weekDuration' => $weekDuration,
-            'planWeeks' => $planWeeks,
-            'priceCalories' => $priceCalories,
-            'averageDayCalories' => $planTierCalories,
-        ];
+        return null;
     }
 
     /**

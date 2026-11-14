@@ -1932,6 +1932,40 @@ export default function ChooseYourMeals({
         }
 
         window.scrollTo(0, 0);
+
+        // Consultation embeds scroll the phone-frame parent, not this panel.
+        let node = scroller?.parentElement ?? null;
+        while (node && node !== document.body) {
+            const style = window.getComputedStyle(node);
+            const overflowY = style.overflowY;
+            const canScroll =
+                (overflowY === 'auto' || overflowY === 'scroll' || overflowY === 'overlay') &&
+                node.scrollHeight > node.clientHeight;
+
+            if (canScroll || node.scrollTop > 0) {
+                node.scrollTop = 0;
+            }
+
+            node = node.parentElement;
+        }
+
+        const frame =
+            document.querySelector('[data-customer-onboarding-frame]') ||
+            document.querySelector('[data-storybook-onboarding-frame]');
+
+        if (frame instanceof HTMLElement) {
+            frame.scrollTop = 0;
+            frame.querySelectorAll('*').forEach((el) => {
+                if (!(el instanceof HTMLElement) || el.scrollTop <= 0) {
+                    return;
+                }
+
+                const style = window.getComputedStyle(el);
+                if (style.overflowY === 'auto' || style.overflowY === 'scroll' || style.overflowY === 'overlay') {
+                    el.scrollTop = 0;
+                }
+            });
+        }
     }, [dayName, dayProgressLabel, deckScopePrefix]);
 
     const wheelDeltaY = useCallback((event, element) => {
@@ -2271,11 +2305,17 @@ export default function ChooseYourMeals({
 
     const mainScrollable =
         layout === 'categories' ? (
-            <div className={`flex flex-col ${useProtocolSelectedLayout ? 'gap-5 px-0' : 'gap-1.5 md:gap-2'}`}>
-                {categorySections}
-                {protocolFixedChoiceBlock}
-                {fixedChoiceBlock}
-            </div>
+            useProtocolSelectedLayout ? (
+                <div className="flex flex-col gap-3" role="list" aria-label="Meal sections">
+                    {categorySections}
+                    {protocolFixedChoiceBlock}
+                </div>
+            ) : (
+                <div className="flex flex-col gap-1.5 md:gap-2">
+                    {categorySections}
+                    {fixedChoiceBlock}
+                </div>
+            )
         ) : children ? (
             children
         ) : legacySingleDeck ? (
@@ -2359,9 +2399,17 @@ export default function ChooseYourMeals({
 
     const footerNav = showFooterNav ? (
         <div
-            className={`mt-6 flex flex-wrap items-center gap-3 border-t border-gray-200 pt-4 ${typeof onFooterBack === 'function' ? 'justify-between' : 'justify-center'}`}
+            className={[
+                'flex flex-wrap items-center gap-3',
+                useProtocolSelectedLayout
+                    ? 'mt-2 justify-center'
+                    : [
+                          'mt-6 border-t border-gray-200 pt-4',
+                          typeof onFooterBack === 'function' ? 'justify-between' : 'justify-center',
+                      ].join(' '),
+            ].join(' ')}
         >
-            {typeof onFooterBack === 'function' ? (
+            {useProtocolSelectedLayout ? null : typeof onFooterBack === 'function' ? (
                 <Button
                     type="button"
                     label="BACK"
@@ -2385,15 +2433,32 @@ export default function ChooseYourMeals({
         </div>
     ) : null;
 
+    const protocolOuterClassName = [
+        'box-border flex w-full flex-col overflow-x-clip bg-white',
+        resolvedPanelClassName,
+    ]
+        .join(' ')
+        .trim();
+
+    const legacyOuterClassName = [
+        'box-border flex w-full flex-col overflow-x-clip overflow-hidden border border-gray-200 bg-white shadow-sm',
+        'max-md:rounded-t-[12px] max-md:border-x-0 max-md:shadow-none md:rounded-[12px]',
+        resolvedPanelClassName,
+    ]
+        .join(' ')
+        .trim();
+
     return (
         <section
-            className={`box-border flex w-full flex-col overflow-x-clip overflow-hidden border border-gray-200 bg-white shadow-sm max-md:rounded-t-[12px] max-md:border-x-0 max-md:shadow-none md:rounded-[12px] ${resolvedPanelClassName}`.trim()}
+            className={useProtocolSelectedLayout ? protocolOuterClassName : legacyOuterClassName}
             aria-label={dayName ? `Crafting your ${String(dayName).trim()}` : 'Crafting your day'}
         >
             {optionsScreen}
-            <div className="shrink-0 rounded-t-[12px] border-b border-gray-200 bg-white px-4 py-3 max-md:px-4 sm:px-5 sm:py-4 md:px-6 md:py-4">
-                {dayMacroSummary}
-            </div>
+            {useProtocolSelectedLayout ? null : (
+                <div className="shrink-0 rounded-t-[12px] border-b border-gray-200 bg-white px-4 py-3 max-md:px-4 sm:px-5 sm:py-4 md:px-6 md:py-4">
+                    {dayMacroSummary}
+                </div>
+            )}
 
             <div
                 className={
@@ -2405,17 +2470,41 @@ export default function ChooseYourMeals({
                 <div
                     ref={scrollContainerRef}
                     className={
-                        documentScroll
-                            ? 'mc-choose-meals-scroll w-full overflow-x-clip pt-2 max-md:px-0 max-md:pb-8 md:px-5 md:pb-10 md:pt-4'
-                            : 'mc-choose-meals-scroll min-h-0 flex-1 overflow-y-auto overscroll-y-contain [scrollbar-gutter:stable] pt-2 max-md:px-0 max-md:pb-8 md:px-5 md:pb-10 md:pt-4 [-webkit-overflow-scrolling:touch]'
+                        useProtocolSelectedLayout
+                            ? documentScroll
+                                ? 'mc-choose-meals-scroll w-full overflow-x-clip pb-28'
+                                : 'mc-choose-meals-scroll min-h-0 flex-1 overflow-y-auto overscroll-y-contain [scrollbar-gutter:stable] pb-28 [-webkit-overflow-scrolling:touch]'
+                            : documentScroll
+                              ? 'mc-choose-meals-scroll w-full overflow-x-clip pt-2 max-md:px-0 max-md:pb-8 md:px-5 md:pb-10 md:pt-4'
+                              : 'mc-choose-meals-scroll min-h-0 flex-1 overflow-y-auto overscroll-y-contain [scrollbar-gutter:stable] pt-2 max-md:px-0 max-md:pb-8 md:px-5 md:pb-10 md:pt-4 [-webkit-overflow-scrolling:touch]'
                     }
                 >
-                    <div className="relative z-0 min-w-0 space-y-0">{mainScrollable}</div>
-                    {footerNav ? <div className="px-4 md:px-0">{footerNav}</div> : null}
+                    {useProtocolSelectedLayout ? (
+                        <div className="relative z-0 min-w-0">
+                            {mainScrollable}
+                            {footerNav}
+                        </div>
+                    ) : (
+                        <div className="relative z-0 min-w-0 space-y-0">{mainScrollable}</div>
+                    )}
+                    {useProtocolSelectedLayout ? null : footerNav ? (
+                        <div className="px-4 md:px-0">{footerNav}</div>
+                    ) : null}
                     {showLegacyNavigation ? (
                         <div className="relative z-[70] mt-4 border-t border-gray-200/80 bg-white">{navigation}</div>
                     ) : null}
                 </div>
+
+                {useProtocolSelectedLayout ? (
+                    <div className="sticky bottom-0 z-40 shrink-0 bg-white/95 px-0 pb-2 pt-1 backdrop-blur">
+                        <section
+                            className="rounded-[12px] border border-gray-200 bg-white px-4 py-3 sm:px-5 sm:py-3"
+                            aria-label="Day macros"
+                        >
+                            {dayMacroSummary}
+                        </section>
+                    </div>
+                ) : null}
             </div>
         </section>
     );

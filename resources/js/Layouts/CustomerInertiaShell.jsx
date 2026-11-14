@@ -8,6 +8,8 @@ import CustomerLayout from './CustomerLayout.jsx';
  *   footerNav?: import('react').ReactNode;
  *   layoutVariant?: 'default' | 'onboarding';
  *   embedded?: boolean;
+ *   onBack?: (() => void) | null;
+ *   backAriaLabel?: string;
  * }} props
  */
 export default function CustomerInertiaShell({
@@ -17,6 +19,8 @@ export default function CustomerInertiaShell({
     footerNav = null,
     layoutVariant = 'default',
     embedded = false,
+    onBack = null,
+    backAriaLabel = 'Go back',
 }) {
     return (
         <CustomerLayout
@@ -25,6 +29,8 @@ export default function CustomerInertiaShell({
             footerNav={footerNav}
             layoutVariant={layoutVariant}
             embedded={embedded}
+            onBack={onBack}
+            backAriaLabel={backAriaLabel}
         >
             {children}
         </CustomerLayout>

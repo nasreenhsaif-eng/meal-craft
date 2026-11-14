@@ -55,6 +55,13 @@ class CheckoutController extends Controller
             ? $quotes['billedDaysOneWeek']
             : $quotes['billedDaysFourWeeks'];
 
+        if (isset($quotes['selectedBilledDays'], $quotes['selectedAmount'])) {
+            $billedDays = (int) $quotes['selectedBilledDays'];
+            $selectedQuote = (float) $quotes['selectedAmount'];
+            $selectedPlanWeeks = PartnerKitchenPrice::planWeeksFromBilledDays($billedDays);
+            request()->session()->put('checkout_plan_weeks', $selectedPlanWeeks);
+        }
+
         return Inertia::render('Checkout/Delivery', [
             'customerName' => $user?->name ?? '',
             'detailsUrl' => route('checkout.details'),
@@ -162,7 +169,9 @@ class CheckoutController extends Controller
      *     fourWeeks: float,
      *     billedDaysOneWeek: int,
      *     billedDaysFourWeeks: int,
-     *     craftTitle: string|null
+     *     craftTitle: string|null,
+     *     selectedBilledDays?: int,
+     *     selectedAmount?: float
      * }
      */
     private function deliveryQuotes(
@@ -183,35 +192,41 @@ class CheckoutController extends Controller
         $selectedPlanWeeks = 4;
         $craftTitle = null;
         $priceCalories = $planTierCalories;
+        $selectedBilledDays = null;
 
-        if ($plan instanceof CustomerCraftPlan) {
+        /** @var array<string, mixed>|null $draft */
+        $draft = request()->session()->get(ConsultationResumeDraftController::SESSION_DRAFT_KEY);
+
+        // Prefer the in-progress consultation choice over an older submitted plan.
+        if (is_array($draft) && isset($draft['craftKey'], $draft['weekDuration'])) {
+            $craftKey = (string) $draft['craftKey'];
+            $weekDuration = (int) $draft['weekDuration'];
+            $selectedPlanWeeks = (int) ($draft['planWeeks'] ?? 4) === 1 ? 1 : 4;
+            $craftTitle = match ($craftKey) {
+                'afternoon' => 'Afternoon Craft',
+                'day' => 'Day Craft',
+                'intermittent' => 'Intermittent Craft',
+                'business' => 'Business Craft',
+                default => 'Full Craft',
+            };
+
+            if (isset($draft['selectedBilledDays']) && is_numeric($draft['selectedBilledDays'])) {
+                $selectedBilledDays = (int) $draft['selectedBilledDays'];
+                $weekDuration = PartnerKitchenPrice::weekDurationFromBilledDays($selectedBilledDays);
+                $selectedPlanWeeks = PartnerKitchenPrice::planWeeksFromBilledDays($selectedBilledDays);
+            }
+        } elseif ($plan instanceof CustomerCraftPlan) {
             $summary = $presentation->presentSummary($plan, $planTierCalories);
             $craftKey = (string) ($summary['craftKey'] ?? $plan->craft_key);
             $weekDuration = (int) ($summary['weekDuration'] ?? $plan->week_duration ?? 7);
             $selectedPlanWeeks = (int) ($plan->plan_weeks ?: 4) === 1 ? 1 : 4;
             $craftTitle = (string) ($summary['craftTitle'] ?? $craftKey);
             $priceCalories = (int) ($summary['planTierCalories'] ?? $planTierCalories);
-        } else {
-            /** @var array<string, mixed>|null $draft */
-            $draft = request()->session()->get(ConsultationResumeDraftController::SESSION_DRAFT_KEY);
-
-            if (is_array($draft) && isset($draft['craftKey'], $draft['weekDuration'])) {
-                $craftKey = (string) $draft['craftKey'];
-                $weekDuration = (int) $draft['weekDuration'];
-                $selectedPlanWeeks = (int) ($draft['planWeeks'] ?? 4) === 1 ? 1 : 4;
-                $craftTitle = match ($craftKey) {
-                    'afternoon' => 'Afternoon Craft',
-                    'day' => 'Day Craft',
-                    'intermittent' => 'Intermittent Craft',
-                    'business' => 'Business Craft',
-                    default => 'Full Craft',
-                };
-            }
         }
 
         $priceCalories = PartnerKitchenPrice::priceCaloriesForCraft($priceCalories, $craftKey);
 
-        return [
+        $quotes = [
             'selectedPlanWeeks' => $selectedPlanWeeks,
             'oneWeek' => PartnerKitchenPrice::packageAmount($craftKey, $priceCalories, $weekDuration, 1),
             'fourWeeks' => PartnerKitchenPrice::packageAmount($craftKey, $priceCalories, $weekDuration, 4),
@@ -219,6 +234,17 @@ class CheckoutController extends Controller
             'billedDaysFourWeeks' => PartnerKitchenPrice::billedDays($weekDuration, 4),
             'craftTitle' => $craftTitle,
         ];
+
+        if ($selectedBilledDays !== null) {
+            $quotes['selectedBilledDays'] = $selectedBilledDays;
+            $quotes['selectedAmount'] = PartnerKitchenPrice::amountForBilledDays(
+                $craftKey,
+                $priceCalories,
+                $selectedBilledDays,
+            );
+        }
+
+        return $quotes;
     }
 
     public function storePayment(StoreCheckoutPaymentRequest $request): RedirectResponse

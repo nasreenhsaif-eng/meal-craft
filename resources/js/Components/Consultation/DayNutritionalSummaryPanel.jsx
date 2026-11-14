@@ -114,12 +114,17 @@ const SICKLE_RDI_FOOTNOTE = 'High Source: ≥20% of daily RDI per serving';
 function SummarySection({ title, description, children, tone = 'white' }) {
     const toneClass =
         tone === 'muted' ? 'border-gray-200 bg-[#F8F9F6]' : 'border-gray-200 bg-white';
+    const hasHeading = Boolean(title) || Boolean(description);
 
     return (
         <div className={`rounded-[12px] border px-2 py-4 sm:px-5 ${toneClass}`}>
-            <p className="font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#374151]">{title}</p>
-            {description ? <p className="mt-1 font-body text-xs text-[#6B7280]">{description}</p> : null}
-            <div className="mt-4 min-w-0">{children}</div>
+            {title ? (
+                <p className="font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#374151]">{title}</p>
+            ) : null}
+            {description ? (
+                <p className={`font-body text-xs text-[#6B7280] ${title ? 'mt-1' : ''}`.trim()}>{description}</p>
+            ) : null}
+            <div className={`min-w-0 ${hasHeading ? 'mt-4' : ''}`.trim()}>{children}</div>
         </div>
     );
 }
@@ -228,22 +233,21 @@ function MicronutrientRdiTable({ rows }) {
     sections.sort((a, b) => a.order - b.order);
 
     return (
-        <div className="space-y-3">
-            <div
+        <div
             role="region"
             aria-label="Micronutrients with percent RDI"
-            className="overflow-x-auto rounded-[12px] border border-gray-200 bg-white"
+            className="w-full overflow-x-auto rounded-[12px] border border-gray-200 bg-white"
         >
             <table className="w-full min-w-0 border-collapse text-left text-sm">
                 <thead>
                     <tr className="border-b border-gray-200 bg-[#F8F9F6]">
-                        <th className="px-2 py-2 font-montserrat text-[10px] font-bold uppercase tracking-[0.1em] text-[#374151] sm:px-3 sm:py-2.5 sm:text-xs sm:tracking-[0.14em]">
+                        <th className="px-3 py-2.5 font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#374151]">
                             Nutrient
                         </th>
-                        <th className="px-2 py-2 text-right font-montserrat text-[10px] font-bold uppercase tracking-[0.1em] text-[#374151] sm:px-3 sm:py-2.5 sm:text-xs sm:tracking-[0.14em]">
+                        <th className="px-3 py-2.5 text-right font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#374151]">
                             Full day
                         </th>
-                        <th className="px-2 py-2 text-right font-montserrat text-[10px] font-bold uppercase tracking-[0.1em] text-[#374151] sm:px-3 sm:py-2.5 sm:text-xs sm:tracking-[0.14em]">
+                        <th className="px-3 py-2.5 text-right font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#374151]">
                             % RDI
                         </th>
                     </tr>
@@ -254,27 +258,27 @@ function MicronutrientRdiTable({ rows }) {
                             <tr className="bg-[#F8F9F6]">
                                 <td
                                     colSpan={3}
-                                    className="px-2 py-2 font-montserrat text-[10px] font-bold uppercase tracking-[0.1em] text-[#5A6B44] sm:px-3 sm:text-xs sm:tracking-[0.12em]"
+                                    className="px-3 py-2 font-montserrat text-xs font-bold uppercase tracking-[0.12em] text-[#5A6B44]"
                                 >
                                     {section.title}
                                 </td>
                             </tr>
                             {section.rows.map((row) => (
                                 <tr key={`${section.title}-${row.label}`} className="border-b border-gray-100 last:border-b-0">
-                                    <td className="max-w-[10.5rem] px-2 py-2 font-montserrat text-xs font-medium leading-snug text-[#374151] sm:max-w-none sm:px-3 sm:py-2.5 sm:text-sm">
+                                    <td className="px-3 py-2.5 font-montserrat text-sm font-medium leading-snug text-[#374151]">
                                         {row.label}
                                         {BEST_EFFORT_NUTRIENT_LABELS.has(row.label) ? (
-                                            <span className="ml-1 font-body text-[10px] font-normal text-[#555555] sm:ml-1.5 sm:text-xs">
+                                            <span className="ml-1.5 font-body text-xs font-normal text-[#555555]">
                                                 (best effort)
                                             </span>
                                         ) : null}
                                     </td>
-                                    <td className="whitespace-nowrap px-2 py-2 text-right font-montserrat text-xs font-bold tabular-nums text-[#1F2937] sm:px-3 sm:py-2.5 sm:text-sm">
+                                    <td className="whitespace-nowrap px-3 py-2.5 text-right font-montserrat text-sm font-bold tabular-nums text-[#1F2937]">
                                         {row.formattedTotal}
                                     </td>
                                     <td
                                         className={[
-                                            'whitespace-nowrap px-2 py-2 text-right font-montserrat text-xs font-bold tabular-nums sm:px-3 sm:py-2.5 sm:text-sm',
+                                            'whitespace-nowrap px-3 py-2.5 text-right font-montserrat text-sm font-bold tabular-nums',
                                             row.rdiPercent != null
                                               && row.rdiPercent < FLOOR_RDI_TARGET_PERCENT
                                               && !row.label.includes('Sugar')
@@ -293,7 +297,6 @@ function MicronutrientRdiTable({ rows }) {
                     ))}
                 </tbody>
             </table>
-        </div>
         </div>
     );
 }
@@ -327,15 +330,25 @@ export function DayMicronutrientsTabPanel({
     }, [activityLevel, categories, dailyCalories, planTierCalories, sex]);
 
     return (
-        <SummarySection
-            title="Micronutrients"
-            description={`Full-day totals and % of daily reference intake for ${dayLabel.toLowerCase()}. Vitamin D is shown as best effort — it is difficult to reach 100% from food alone.`}
-        >
-            <div className="space-y-4">
-                <MicronutrientRdiTable rows={micronutrientRows} />
-                <CaloricThresholdNotice planTierCalories={planTierCalories} />
-            </div>
-        </SummarySection>
+        <div className="space-y-4">
+            <p className="font-body text-xs text-[#6B7280]">
+                {`Full-day totals and % of daily reference intake for ${dayLabel}.`}
+            </p>
+            <MicronutrientRdiTable rows={micronutrientRows} />
+            <CaloricThresholdNotice planTierCalories={planTierCalories} />
+            <button
+                type="button"
+                className="w-full rounded-[12px] border border-[#6E8C47]/25 bg-[#6E8C47]/10 px-3 py-3 text-left outline-none transition hover:bg-[#6E8C47]/15 focus-visible:ring-2 focus-visible:ring-[#6E8C47] focus-visible:ring-offset-2"
+            >
+                <span className="font-montserrat text-xs font-bold uppercase tracking-[0.12em] text-[#5A6B44]">
+                    Vitamin D
+                </span>
+                <span className="mt-1 block font-body text-sm leading-snug text-[#374151]">
+                    Vitamin D is shown as a best-effort estimate — it is difficult to reach 100% from food alone.
+                    The best source is sun exposure.
+                </span>
+            </button>
+        </div>
     );
 }
 

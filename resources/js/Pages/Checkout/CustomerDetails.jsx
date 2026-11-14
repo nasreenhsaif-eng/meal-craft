@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { router, usePage } from '@inertiajs/react';
-import Button from '../../Components/Atoms/Button/Button.jsx';
 import CustomerCheckoutDetailsReview from '../../Components/CustomerIntake/CustomerCheckoutDetailsReview.jsx';
+import SimpleFlowNavHeader from '../../Components/Molecules/Onboarding/SimpleFlowNavHeader.jsx';
 import CustomerInertiaShell from '../../Layouts/CustomerInertiaShell.jsx';
 import { submitCheckoutDetailsNative } from './submitCheckoutDetailsNative.js';
 
@@ -96,67 +96,65 @@ export default function CustomerDetails({
         });
     };
 
+    function goBack() {
+        router.visit(deliveryUrl || closeUrl || profileUrl || homeUrl || shopUrl || mealPlanSummaryUrl);
+    }
+
     return (
-        <CustomerInertiaShell customerName={customerName} footerNav={null}>
-            <div className="mx-auto w-full min-w-0">
-                <div className="flex items-start justify-between gap-3">
-                    <h1 className="min-w-0 font-montserrat text-3xl font-semibold tracking-tight text-[#262A22]">
+        <CustomerInertiaShell customerName={customerName} layoutVariant="onboarding" footerNav={null}>
+            <section className="mx-auto flex w-full max-w-xl flex-col gap-3 px-1 sm:px-0">
+                <SimpleFlowNavHeader onBack={goBack} />
+
+                <div className="w-full min-w-0">
+                    <h1 className="text-center font-montserrat text-2xl font-semibold leading-tight text-[#262A22]">
                         Your details
                     </h1>
-                    <Button
-                        type="button"
-                        label="Close"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => router.visit(closeUrl || profileUrl || deliveryUrl)}
-                        className="shrink-0"
-                    />
-                </div>
-                <p className="mt-3 font-body text-sm leading-relaxed text-[#555555] sm:text-base">
-                    Review your onboarding details, complete delivery information, and confirm everything is
-                    correct.
-                </p>
-                {flashSuccess ? (
-                    <p className="mt-4 font-body text-sm font-medium text-[#5A6B44]">{flashSuccess}</p>
-                ) : null}
-                {flashError ? (
-                    <p className="mt-4 font-body text-sm font-medium text-status-error" role="alert">
-                        {flashError}
+                    <p className="mt-1.5 text-center text-sm leading-snug text-[#555555]">
+                        Review your onboarding details, complete delivery information, and confirm everything is
+                        correct.
                     </p>
-                ) : null}
-                <div className="mt-6 w-full min-w-0">
-                    <CustomerCheckoutDetailsReview
-                        data={data}
-                        setData={setData}
-                        errors={serverErrors}
-                        processing={submitting}
-                        options={options}
-                        uniqueCode={uniqueCode}
-                        intakeSubmissionId={intakeSubmissionId}
-                        onSubmit={(payload = data) => {
-                            if (submitting) {
-                                return;
-                            }
+                    {flashSuccess ? (
+                        <p className="mt-3 text-center font-body text-sm font-medium text-[#5A6B44]">{flashSuccess}</p>
+                    ) : null}
+                    {flashError ? (
+                        <p className="mt-3 text-center font-body text-sm font-medium text-status-error" role="alert">
+                            {flashError}
+                        </p>
+                    ) : null}
+                    <div className="mt-3 w-full min-w-0">
+                        <CustomerCheckoutDetailsReview
+                            data={data}
+                            setData={setData}
+                            errors={serverErrors}
+                            processing={submitting}
+                            options={options}
+                            uniqueCode={uniqueCode}
+                            intakeSubmissionId={intakeSubmissionId}
+                            onSubmit={(payload = data) => {
+                                if (submitting) {
+                                    return;
+                                }
 
-                            setSubmitting(true);
+                                setSubmitting(true);
 
-                            // Classic form POST — full navigation to payment (no SPA blank).
-                            void submitCheckoutDetailsNative(submitUrl, payload, '/checkout/payment').catch(
-                                (error) => {
-                                    // eslint-disable-next-line no-console
-                                    console.error(error);
-                                    setSubmitting(false);
-                                    window.alert(
-                                        error instanceof Error
-                                            ? error.message
-                                            : 'Could not continue to payment. Refresh and try again.',
-                                    );
-                                },
-                            );
-                        }}
-                    />
+                                // Classic form POST — full navigation to payment (no SPA blank).
+                                void submitCheckoutDetailsNative(submitUrl, payload, '/checkout/payment').catch(
+                                    (error) => {
+                                        // eslint-disable-next-line no-console
+                                        console.error(error);
+                                        setSubmitting(false);
+                                        window.alert(
+                                            error instanceof Error
+                                                ? error.message
+                                                : 'Could not continue to payment. Refresh and try again.',
+                                        );
+                                    },
+                                );
+                            }}
+                        />
+                    </div>
                 </div>
-            </div>
+            </section>
         </CustomerInertiaShell>
     );
 }

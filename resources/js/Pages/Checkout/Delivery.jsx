@@ -1,5 +1,6 @@
+import { router } from '@inertiajs/react';
 import PartnerKitchenCard from '../../Components/Checkout/PartnerKitchenCard.jsx';
-import CustomerAppBottomNav from '../../Components/Molecules/Customer/CustomerAppBottomNav.jsx';
+import SimpleFlowNavHeader from '../../Components/Molecules/Onboarding/SimpleFlowNavHeader.jsx';
 import CustomerInertiaShell from '../../Layouts/CustomerInertiaShell.jsx';
 import { resolveCsrfToken } from '../../lib/csrfToken.js';
 
@@ -71,39 +72,43 @@ export default function Delivery({
         form.submit();
     }
 
-    return (
-        <CustomerInertiaShell
-            customerName={customerName}
-            footerNav={
-                <CustomerAppBottomNav
-                    homeUrl={homeUrl}
-                    profileUrl={profileUrl}
-                    shopUrl={shopUrl}
-                    mealsUrl={mealPlanSummaryUrl}
-                />
-            }
-        >
-            <div className="mx-auto w-full max-w-3xl">
-                <h1 className="font-montserrat text-3xl font-semibold tracking-tight text-brand-primary-pressed">
-                    Select a partner kitchen
-                </h1>
-                <p className="mt-3 font-body text-sm leading-relaxed text-grey-33 sm:text-base">
-                    Choose a kitchen for fresh daily preparation delivered to your door.
-                    {craftTitle ? ` Pricing is for your ${craftTitle}.` : null}
-                </p>
+    function goBack() {
+        if (typeof window !== 'undefined' && window.history.length > 1) {
+            window.history.back();
 
-                <div className="mt-8">
-                    <PartnerKitchenCard
-                        name="Picniq"
-                        logoUrl="/images/partners/picniq-gourmet.png"
-                        rating={4.5}
-                        reviewCount={128}
-                        price={formatBhd(selectedQuote)}
-                        billingCadence={billingCadence}
-                        onSelect={selectKitchen}
-                    />
+            return;
+        }
+
+        router.visit(homeUrl || profileUrl || detailsUrl || mealPlanSummaryUrl || shopUrl);
+    }
+
+    return (
+        <CustomerInertiaShell customerName={customerName} layoutVariant="onboarding" footerNav={null}>
+            <section className="mx-auto flex w-full max-w-xl flex-col gap-3 px-1 sm:px-0">
+                <SimpleFlowNavHeader onBack={goBack} />
+
+                <div className="w-full">
+                    <h1 className="text-center font-montserrat text-2xl font-semibold leading-tight text-[#262A22]">
+                        Select a partner kitchen
+                    </h1>
+                    <p className="mt-1.5 text-center text-sm leading-snug text-[#555555]">
+                        Choose a kitchen for fresh daily preparation delivered to your door.
+                        {craftTitle ? ` Pricing is for your ${craftTitle}.` : null}
+                    </p>
+
+                    <div className="mt-3 w-full">
+                        <PartnerKitchenCard
+                            name="Picniq"
+                            logoUrl="/images/partners/picniq-gourmet.png"
+                            rating={4.5}
+                            reviewCount={128}
+                            price={formatBhd(selectedQuote)}
+                            billingCadence={billingCadence}
+                            onSelect={selectKitchen}
+                        />
+                    </div>
                 </div>
-            </div>
+            </section>
         </CustomerInertiaShell>
     );
 }

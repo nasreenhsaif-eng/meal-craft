@@ -23,8 +23,9 @@ import ChooseYourMeals, {
     soupOfTheDayMeals,
     sumSelectedMacrosFromDisplayDecks,
 } from '../../Components/Consultation/ChooseYourMeals.jsx';
-import SquareCheckbox from '../../Components/Atoms/Icons/SquareCheckbox.jsx';
 import { MealCraftLogoAnimatedIdentity } from '../../Components/Atoms/Logo/MealCraftLogoAnimated.jsx';
+import OnboardingNavHeader from '../../Components/Molecules/Onboarding/OnboardingNavHeader.jsx';
+import SimpleFlowNavHeader from '../../Components/Molecules/Onboarding/SimpleFlowNavHeader.jsx';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
     fetchAdaptedMenu,
@@ -294,6 +295,12 @@ export default function CraftedForYouPage({
     );
     const [selectedBilledDays, setSelectedBilledDays] = useState(
         () => {
+            const restoredBilled = initialRestoreDraft?.selectedBilledDays;
+
+            if (typeof restoredBilled === 'number' && restoredBilled > 0) {
+                return restoredBilled;
+            }
+
             const restoredWeeks = initialRestoreDraft?.planWeeks;
             const restoredDuration = initialWeekDuration ?? initialRestoreDraft?.weekDuration ?? null;
 
@@ -323,7 +330,14 @@ export default function CraftedForYouPage({
     const [shakeOn, setShakeOn] = useState(false);
 
     const [environmentYes, setEnvironmentYes] = useState(
-        () => initialRestoreDraft?.environmentYes ?? false,
+        /** @type {boolean | null} */
+        () => {
+            if (initialRestoreDraft && typeof initialRestoreDraft.environmentYes === 'boolean') {
+                return initialRestoreDraft.environmentYes;
+            }
+
+            return null;
+        },
     );
     /** @type {['diy'|'partner_kitchen'|null, import('react').Dispatch<import('react').SetStateAction<'diy'|'partner_kitchen'|null>>]} */
     const [fulfillmentChoice, setFulfillmentChoice] = useState(
@@ -470,7 +484,7 @@ export default function CraftedForYouPage({
             businessSideChoiceByDay,
             afternoonSoupOptInByDay,
             fullCraftSoupOptInByDay,
-            environmentYes,
+            environmentYes: Boolean(environmentYes),
             fulfillmentChoice,
         });
     }, [
@@ -821,6 +835,25 @@ export default function CraftedForYouPage({
 
         return `${curationIndex + 1} of ${totalCurationDays}`;
     }, [isCurationScreen, totalCurationDays, curationIndex]);
+
+    const curationDaySteps = useMemo(
+        () =>
+            sortedSelectedDays.map((day) => ({
+                value: String(day),
+                label: WEEKDAY_LONG[day - 1] ?? `Day ${day}`,
+            })),
+        [sortedSelectedDays],
+    );
+
+    function goBackFromCuration() {
+        if (screen === curationStartScreen) {
+            setScreen(usesManualDaySelection ? manualDaysScreen : durationScreen);
+
+            return;
+        }
+
+        setScreen(screen - 1);
+    }
 
     const calorieDay = curationDay ?? effectiveActiveDay;
 
@@ -1643,16 +1676,25 @@ export default function CraftedForYouPage({
                 return;
             }
 
+            const resolvedPlanWeeks = planWeeks === 1 || planWeeks === 4 ? planWeeks : 4;
+            const resolvedBilledDays =
+                typeof selectedBilledDays === 'number' && selectedBilledDays > 0
+                    ? selectedBilledDays
+                    : resolvedPlanWeeks === 1
+                      ? weekDuration
+                      : weekDuration * 4;
+
             const draftPayload = {
                 craftKey,
                 weekDuration,
-                planWeeks: planWeeks === 1 || planWeeks === 4 ? planWeeks : 4,
+                planWeeks: resolvedPlanWeeks,
+                selectedBilledDays: resolvedBilledDays,
                 selectedDays: daysForContinue,
                 selectedByDay,
                 businessSideChoiceByDay,
                 afternoonSoupOptInByDay,
                 fullCraftSoupOptInByDay,
-                environmentYes,
+                environmentYes: Boolean(environmentYes),
                 fulfillmentChoice: /** @type {'partner_kitchen'} */ ('partner_kitchen'),
             };
 
@@ -1974,12 +2016,25 @@ export default function CraftedForYouPage({
         ? 'mt-8 flex items-center justify-between gap-3 border-t border-gray-200/70 bg-[#F8F9F6] p-3 sm:mt-6 sm:border-t-0 sm:bg-transparent sm:p-0'
         : 'mt-8 flex items-center justify-between gap-3 fixed bottom-0 left-0 right-0 z-40 border-t border-gray-200/70 bg-[#F8F9F6]/95 p-3 backdrop-blur sm:static sm:mt-6 sm:border-t-0 sm:bg-transparent sm:p-0';
 
+    const simpleSetupNextClass = embedInScrollParent
+        ? 'mt-8 flex w-full justify-center'
+        : 'mt-8 flex w-full justify-center fixed bottom-0 left-0 right-0 z-40 border-t border-gray-200/70 bg-white/95 p-3 backdrop-blur sm:static sm:border-t-0 sm:bg-transparent sm:p-0';
+
+    const isSimplePlanSetupScreen =
+        screen === receiveScreen ||
+        screen === craftScreen ||
+        screen === durationScreen ||
+        (screen === manualDaysScreen && usesManualDaySelection);
+
+    const usesOnboardingChrome =
+        isSimplePlanSetupScreen || isCurationScreen || screen === finalScreen;
+
     const useDocumentScroll = embedInScrollParent || isCurationScreen;
 
     return (
         <div
             className={[
-                PAGE_BG,
+                usesOnboardingChrome ? 'bg-white' : PAGE_BG,
                 'font-sans',
                 useDocumentScroll
                     ? isCurationScreen && !embedInScrollParent
@@ -1999,18 +2054,39 @@ export default function CraftedForYouPage({
               .mc-shake { animation: mcShake 260ms ease-in-out; }
             `}</style>
             <div className="mx-auto w-full max-w-[1100px] space-y-4">
-                <div
-                    className={[
-                        'z-50 border-b border-gray-200/70 bg-[#F8F9F6]/95 px-4 pb-3 pt-2 backdrop-blur sm:pb-4',
-                        embedInScrollParent
-                            ? '-mx-4'
-                            : isCurationScreen
-                              ? 'sticky top-0'
-                              : 'sticky top-0 -mx-4 md:-mx-8 md:px-8',
-                    ].join(' ')}
-                >
-                    <div className="mx-auto max-w-[1100px]">
-                        <div className="flex items-center justify-between gap-3">
+                {isCurationScreen && curationDay !== null ? (
+                    <div
+                        className={[
+                            'z-50 bg-white px-1 pb-2 pt-1 sm:px-0',
+                            embedInScrollParent ? '' : 'sticky top-0',
+                        ].join(' ')}
+                    >
+                        <OnboardingNavHeader
+                            steps={curationDaySteps}
+                            activeStep={String(curationDay)}
+                            onBack={goBackFromCuration}
+                            canGoBack
+                            progressNoun="Day"
+                        />
+                        <div className="mt-3 w-full">
+                            <h1 className="text-center font-montserrat text-2xl font-semibold leading-tight text-[#262A22]">
+                                {WEEKDAY_LONG[curationDay - 1] ?? progressHeaderLabel}
+                            </h1>
+                            <p className="mt-1.5 text-center text-sm leading-snug text-[#555555]">
+                                Choose your meals for this day.
+                            </p>
+                        </div>
+                    </div>
+                ) : usesOnboardingChrome ? null : (
+                    <div
+                        className={[
+                            'z-50 border-b border-gray-200/70 bg-[#F8F9F6]/95 px-4 pb-3 pt-2 backdrop-blur sm:pb-4',
+                            embedInScrollParent
+                                ? '-mx-4'
+                                : 'sticky top-0 -mx-4 md:-mx-8 md:px-8',
+                        ].join(' ')}
+                    >
+                        <div className="mx-auto max-w-[1100px]">
                             <div>
                                 <p className="mb-1 font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#555555]">
                                     {pageEyebrow}
@@ -2019,37 +2095,54 @@ export default function CraftedForYouPage({
                                     Crafted for YOU
                                 </h1>
                             </div>
-                            <Button
-                                label="Close"
-                                variant="ghost"
-                                onClick={exitConsultation}
-                            />
-                        </div>
 
-                        <div className="mt-3 sm:mt-4">
-                            <div className="flex items-center justify-between gap-3 text-xs font-semibold tracking-tight text-[#555555]">
-                                <span className={isCurationScreen ? 'font-montserrat text-sm font-bold text-[#262A22]' : ''}>
-                                    {progressHeaderLabel}
-                                </span>
-                                {progressSubLabel ? <span>{progressSubLabel}</span> : null}
+                            <div className="mt-3 sm:mt-4">
+                                <div className="flex items-center justify-between gap-3 text-xs font-semibold tracking-tight text-[#555555]">
+                                    <span>{progressHeaderLabel}</span>
+                                    {progressSubLabel ? <span>{progressSubLabel}</span> : null}
+                                </div>
+                                <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-gray-200 sm:h-1.5">
+                                    <div
+                                        className="h-full rounded-full bg-[#5A6B44] transition-[width] duration-300 ease-out"
+                                        style={{ width: `${progressPercent}%` }}
+                                    />
+                                </div>
                             </div>
-                            <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-gray-200 sm:h-1.5">
-                                <div
-                                    className="h-full rounded-full bg-[#5A6B44] transition-[width] duration-300 ease-out"
-                                    style={{ width: `${progressPercent}%` }}
+                        </div>
+                    </div>
+                )}
+
+                {screen === receiveScreen ? (
+                    <section className="mx-auto flex w-full max-w-xl flex-col gap-3 px-1 sm:px-0">
+                        <SimpleFlowNavHeader onBack={goBackFromPlanSetup} />
+
+                        <div className="w-full">
+                            <h1 className="text-center font-montserrat text-2xl font-semibold leading-tight text-[#262A22]">
+                                How would you like to receive your meal plan?
+                            </h1>
+                            <p className="mt-1.5 text-center text-sm leading-snug text-[#555555]">
+                                Choose between fresh daily preparation delivered to your door or self-prepared recipes
+                                at home.
+                            </p>
+                            <div className="mt-3 w-full">
+                                <FulfillmentOptionCards
+                                    deliveryUrl={deliveryUrl}
+                                    onContinue={(choice) => {
+                                        setFulfillmentChoice(choice);
+                                        setScreen(craftScreen);
+                                    }}
                                 />
                             </div>
                         </div>
+                    </section>
+                ) : null}
 
-                    </div>
-                </div>
-
-                {!disableAdaptedMenuFetch && menuLoading && liveMeals === null ? (
+                {isCurationScreen && !disableAdaptedMenuFetch && menuLoading && liveMeals === null ? (
                     <p className="mb-4 shrink-0 rounded-[12px] border border-gray-200 bg-white px-4 py-3 font-body text-sm text-[#555555]">
                         Loading your meal library with adapted portions…
                     </p>
                 ) : null}
-                {!disableAdaptedMenuFetch && menuError ? (
+                {isCurationScreen && !disableAdaptedMenuFetch && menuError ? (
                     <p className="mb-4 shrink-0 rounded-[12px] border border-amber-200 bg-amber-50 px-4 py-3 font-body text-sm text-amber-900">
                         {menuError} Showing sample meals until your plan is available.
                         {loginUrl && /log in again/i.test(menuError) ? (
@@ -2063,266 +2156,233 @@ export default function CraftedForYouPage({
                     </p>
                 ) : null}
 
-                {/* Screen 1 — Receive meal plan (before craft) */}
-                {screen === receiveScreen ? (
-                    <section className="rounded-[12px] border border-gray-200 bg-white p-6 shadow-sm">
-                        <h2 className="font-montserrat text-[16px] font-bold tracking-tight text-[#262A22]">
-                            How would you like to receive your meal plan?
-                        </h2>
-                        <p className="mt-1 font-body text-sm text-[#555555]">
-                            Choose between fresh daily preparation delivered to your door or self-prepared recipes at
-                            home.
-                        </p>
-
-                        <FulfillmentOptionCards
-                            className="mt-6"
-                            deliveryUrl={deliveryUrl}
-                            onContinue={(choice) => {
-                                setFulfillmentChoice(choice);
-                                setScreen(craftScreen);
-                            }}
-                        />
-
-                        <div className={mobileNavBarClass}>
-                            <Button
-                                label="BACK"
-                                variant="outline"
-                                onClick={goBackFromPlanSetup}
-                                className="px-10"
-                            />
-                        </div>
-                    </section>
-                ) : null}
-
                 {/* Screen 2 — What’s Your Craft */}
                 {screen === craftScreen ? (
-                    <section className="rounded-[12px] border border-gray-200 bg-white p-6 shadow-sm">
-                        <h2 className="font-montserrat text-[16px] font-bold tracking-tight text-[#262A22]">
-                            What’s Your Craft
-                        </h2>
-                        <p className="mt-1 font-body text-sm text-[#555555]">
-                            Choose the craft that matches how you want to eat this week.
-                        </p>
+                    <section className="mx-auto flex w-full max-w-xl flex-col gap-3 px-1 pb-24 sm:px-0 sm:pb-0">
+                        <SimpleFlowNavHeader onBack={() => setScreen(receiveScreen)} />
 
-                        <div className="mt-6 flex w-full flex-col gap-2.5">
-                            {CRAFTS.map((c) => {
-                                const active = c.key === craftKey;
-                                const descriptionId = `craft-desc-${c.key}`;
-                                const dailyPriceLabel = partnerDailyRateLabelFor(c.key);
+                        <div className="w-full">
+                            <h1 className="text-center font-montserrat text-2xl font-semibold leading-tight text-[#262A22]">
+                                What’s Your Craft
+                            </h1>
+                            <p className="mt-1.5 text-center text-sm leading-snug text-[#555555]">
+                                Choose the craft that matches how you want to eat this week.
+                            </p>
 
-                                return (
-                                    <div key={c.key} className="flex w-full flex-col">
-                                        <OnboardingOptionButton
-                                            label={c.title}
-                                            detail={dailyPriceLabel}
-                                            selected={active}
-                                            onSelect={() => setCraftKey(c.key)}
-                                            describedBy={descriptionId}
-                                        />
-                                        <div
-                                            className={[
-                                                'grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none',
-                                                active ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]',
-                                            ].join(' ')}
-                                            aria-hidden={!active}
-                                        >
-                                            <div className="min-h-0 overflow-hidden">
-                                                <OnboardingInlineDescription id={descriptionId}>
-                                                    {c.description}
-                                                </OnboardingInlineDescription>
+                            <div className="mt-3 flex w-full flex-col gap-2.5">
+                                {CRAFTS.map((c) => {
+                                    const active = c.key === craftKey;
+                                    const descriptionId = `craft-desc-${c.key}`;
+                                    const dailyPriceLabel = partnerDailyRateLabelFor(c.key);
+
+                                    return (
+                                        <div key={c.key} className="flex w-full flex-col">
+                                            <OnboardingOptionButton
+                                                label={c.title}
+                                                detail={dailyPriceLabel}
+                                                selected={active}
+                                                onSelect={() => setCraftKey(c.key)}
+                                                describedBy={descriptionId}
+                                            />
+                                            <div
+                                                className={[
+                                                    'grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none',
+                                                    active ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]',
+                                                ].join(' ')}
+                                                aria-hidden={!active}
+                                            >
+                                                <div className="min-h-0 overflow-hidden">
+                                                    <OnboardingInlineDescription id={descriptionId}>
+                                                        {c.description}
+                                                    </OnboardingInlineDescription>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
+                                    );
+                                })}
+                            </div>
 
-                        <div className={mobileNavBarClass}>
-                            <Button
-                                label="BACK"
-                                variant="outline"
-                                onClick={() => setScreen(receiveScreen)}
-                                className="px-10"
-                            />
-                            <Button
-                                label="NEXT"
-                                variant="primary"
-                                disabled={!canGoNextFromCraft}
-                                onClick={() => {
-                                    if (isPartnerFulfillment && planWeeks !== 1) {
-                                        setPartnerLengthView('fourWeeks');
-                                    }
-                                    setScreen(durationScreen);
-                                }}
-                                className="px-10"
-                            />
+                            <div className={simpleSetupNextClass}>
+                                <Button
+                                    label="NEXT"
+                                    variant="primary"
+                                    disabled={!canGoNextFromCraft}
+                                    onClick={() => {
+                                        if (isPartnerFulfillment && planWeeks !== 1) {
+                                            setPartnerLengthView('fourWeeks');
+                                        }
+                                        setScreen(durationScreen);
+                                    }}
+                                    className="min-w-[200px] uppercase tracking-[0.08em]"
+                                />
+                            </div>
                         </div>
                     </section>
                 ) : null}
 
                 {/* Screen 3 — Week duration / Partner plan length */}
                 {screen === durationScreen ? (
-                    <section className="rounded-[12px] border border-gray-200 bg-white p-6 shadow-sm">
-                        <h2 className="font-montserrat text-[16px] font-bold tracking-tight text-[#262A22]">
-                            {isPartnerFulfillment
-                                ? partnerLengthView === 'trial'
-                                    ? '1 week trial'
-                                    : 'Plan length'
-                                : 'Week duration'}
-                        </h2>
-                        <p className="mt-1 font-body text-sm text-[#555555]">
-                            {isPartnerFulfillment
-                                ? partnerLengthView === 'trial'
-                                    ? 'Choose how many days you want for your trial week.'
-                                    : 'Choose how many days you want for this craft.'
-                                : 'How many days are you crafting for this week?'}
-                        </p>
+                    <section className="mx-auto flex w-full max-w-xl flex-col gap-3 px-1 pb-24 sm:px-0 sm:pb-0">
+                        <SimpleFlowNavHeader
+                            onBack={() => {
+                                if (isPartnerFulfillment && partnerLengthView === 'trial') {
+                                    setPartnerLengthView('fourWeeks');
+                                    if (planWeeks === 1) {
+                                        setPlanWeeks(null);
+                                        setSelectedBilledDays(null);
+                                        setWeekDuration(null);
+                                    }
+                                    return;
+                                }
 
-                        {isPartnerFulfillment ? (
-                            partnerLengthView === 'trial' ? (
-                                <div className="mt-6 flex w-full flex-col gap-2.5">
-                                    {partnerPlanLengthOptions
-                                        .filter((option) => option.planWeeks === 1)
-                                        .map((option) => renderPartnerPlanLengthOption(option))}
-                                </div>
-                            ) : (
-                                <div className="mt-6 flex w-full flex-col gap-5">
-                                    <div className="flex w-full flex-col gap-2.5">
+                                setScreen(craftScreen);
+                            }}
+                        />
+
+                        <div className="w-full">
+                            <h1 className="text-center font-montserrat text-2xl font-semibold leading-tight text-[#262A22]">
+                                {isPartnerFulfillment
+                                    ? partnerLengthView === 'trial'
+                                        ? '1 week trial'
+                                        : 'Plan length'
+                                    : 'Week duration'}
+                            </h1>
+                            <p className="mt-1.5 text-center text-sm leading-snug text-[#555555]">
+                                {isPartnerFulfillment
+                                    ? partnerLengthView === 'trial'
+                                        ? 'Choose how many days you want for your trial week.'
+                                        : 'Choose how many days you want for this craft.'
+                                    : 'How many days are you crafting for this week?'}
+                            </p>
+
+                            {isPartnerFulfillment ? (
+                                partnerLengthView === 'trial' ? (
+                                    <div className="mt-3 flex w-full flex-col gap-2.5">
                                         {partnerPlanLengthOptions
-                                            .filter((option) => option.planWeeks === 4)
+                                            .filter((option) => option.planWeeks === 1)
                                             .map((option) => renderPartnerPlanLengthOption(option))}
                                     </div>
-                                    <button
-                                        type="button"
-                                        className="self-start font-montserrat text-sm font-semibold text-[#6E8C47] underline underline-offset-2 outline-none hover:text-[#556C37] focus-visible:ring-2 focus-visible:ring-[#6E8C47] focus-visible:ring-offset-2"
-                                        onClick={() => {
-                                            setPartnerLengthView('trial');
-                                            if (planWeeks === 4) {
-                                                setPlanWeeks(null);
-                                                setSelectedBilledDays(null);
-                                                setWeekDuration(null);
-                                            }
-                                        }}
-                                    >
-                                        1 week trial
-                                    </button>
-                                </div>
-                            )
-                        ) : (
-                            <div className="mt-6 rounded-[12px] border border-gray-200 bg-[#F8F9F6] p-5">
-                                <div className="flex flex-wrap gap-2">
-                                    {[5, 6, 7].map((n) => (
-                                        <FoodFilterPill
-                                            key={n}
-                                            label={`${n} days`}
-                                            isActive={weekDuration === n}
+                                ) : (
+                                    <div className="mt-3 flex w-full flex-col gap-5">
+                                        <div className="flex w-full flex-col gap-2.5">
+                                            {partnerPlanLengthOptions
+                                                .filter((option) => option.planWeeks === 4)
+                                                .map((option) => renderPartnerPlanLengthOption(option))}
+                                        </div>
+                                        <button
+                                            type="button"
+                                            className="self-center font-montserrat text-sm font-semibold text-[#6E8C47] underline underline-offset-2 outline-none hover:text-[#556C37] focus-visible:ring-2 focus-visible:ring-[#6E8C47] focus-visible:ring-offset-2"
                                             onClick={() => {
-                                                setWeekDuration(n);
-                                                setPlanWeeks(null);
-                                                setSelectedBilledDays(null);
+                                                setPartnerLengthView('trial');
+                                                if (planWeeks === 4) {
+                                                    setPlanWeeks(null);
+                                                    setSelectedBilledDays(null);
+                                                    setWeekDuration(null);
+                                                }
                                             }}
-                                        />
-                                    ))}
+                                        >
+                                            1 week trial
+                                        </button>
+                                    </div>
+                                )
+                            ) : (
+                                <div className="mt-3 w-full">
+                                    <div className="flex flex-wrap justify-center gap-2">
+                                        {[5, 6, 7].map((n) => (
+                                            <FoodFilterPill
+                                                key={n}
+                                                label={`${n} days`}
+                                                isActive={weekDuration === n}
+                                                onClick={() => {
+                                                    setWeekDuration(n);
+                                                    setPlanWeeks(null);
+                                                    setSelectedBilledDays(null);
+                                                }}
+                                            />
+                                        ))}
+                                    </div>
+                                    <p className="mt-3 text-center font-body text-xs text-[#555555]">
+                                        {weekDuration === 7
+                                            ? 'All seven days will be included automatically.'
+                                            : `You’ll pick exactly ${weekDuration ?? '…'} active day(s) next.`}
+                                    </p>
                                 </div>
-                                <p className="mt-3 font-body text-xs text-[#555555]">
-                                    {weekDuration === 7
-                                        ? 'All seven days will be included automatically.'
-                                        : `You’ll pick exactly ${weekDuration ?? '…'} active day(s) next.`}
-                                </p>
-                            </div>
-                        )}
+                            )}
 
-                        <div className={mobileNavBarClass}>
-                            <Button
-                                label="BACK"
-                                variant="outline"
-                                onClick={() => {
-                                    if (isPartnerFulfillment && partnerLengthView === 'trial') {
-                                        setPartnerLengthView('fourWeeks');
-                                        if (planWeeks === 1) {
-                                            setPlanWeeks(null);
-                                            setSelectedBilledDays(null);
-                                            setWeekDuration(null);
+                            <div className={simpleSetupNextClass}>
+                                <Button
+                                    label="NEXT"
+                                    variant="primary"
+                                    disabled={!canGoNextFromDuration}
+                                    onClick={() => {
+                                        if (weekDuration === 7) {
+                                            const allDays = [1, 2, 3, 4, 5, 6, 7];
+                                            setSelectedDays(allDays);
+                                            setActiveDay(1);
+                                            continueAfterPlanSetup(allDays);
+                                            return;
                                         }
-                                        return;
-                                    }
 
-                                    setScreen(craftScreen);
-                                }}
-                                className="px-10"
-                            />
-                            <Button
-                                label="NEXT"
-                                variant="primary"
-                                disabled={!canGoNextFromDuration}
-                                onClick={() => {
-                                    if (weekDuration === 7) {
-                                        const allDays = [1, 2, 3, 4, 5, 6, 7];
-                                        setSelectedDays(allDays);
-                                        setActiveDay(1);
-                                        continueAfterPlanSetup(allDays);
-                                        return;
-                                    }
-
-                                    setScreen(manualDaysScreen);
-                                }}
-                                className="px-10"
-                            />
+                                        setScreen(manualDaysScreen);
+                                    }}
+                                    className="min-w-[200px] uppercase tracking-[0.08em]"
+                                />
+                            </div>
                         </div>
                     </section>
                 ) : null}
 
                 {/* Screen 4 — Manual Day Selection (5/6-day plans) */}
                 {screen === manualDaysScreen && usesManualDaySelection ? (
-                    <section className="rounded-[12px] border border-gray-200 bg-white p-6 shadow-sm">
-                        <h2 className="font-montserrat text-[16px] font-bold tracking-tight text-[#262A22]">
-                            Manual Day Selection
-                        </h2>
-                        <p className="mt-1 font-body text-sm text-[#555555]">
-                            Choose which days of the week are active.
-                        </p>
+                    <section className="mx-auto flex w-full max-w-xl flex-col gap-3 px-1 pb-24 sm:px-0 sm:pb-0">
+                        <SimpleFlowNavHeader onBack={() => setScreen(durationScreen)} />
 
-                        <div className="mt-5 rounded-[12px] border border-gray-200 bg-[#F8F9F6] p-5">
-                            <p className="font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#555555]">
-                                CHOOSE YOUR DAYS ({sortedSelectedDays.length}/{weekDuration ?? '…'} SELECTED)
+                        <div className="w-full">
+                            <h1 className="text-center font-montserrat text-2xl font-semibold leading-tight text-[#262A22]">
+                                Choose your days
+                            </h1>
+                            <p className="mt-1.5 text-center text-sm leading-snug text-[#555555]">
+                                {sortedSelectedDays.length} of {weekDuration ?? '…'} selected
                             </p>
-                            <div className={['mt-3 flex flex-wrap gap-2', shakeOn ? 'mc-shake' : ''].join(' ')}>
-                                {WEEKDAY_LABELS.map((label, i) => {
-                                    const dayIdx = i + 1;
-                                    const isOn = sortedSelectedDays.includes(dayIdx);
-                                    return (
-                                        <FoodFilterPill
-                                            key={label}
-                                            label={label}
-                                            isActive={isOn}
-                                            onClick={() => toggleDay(dayIdx)}
-                                        />
-                                    );
-                                })}
+
+                            <div className="mt-3 w-full">
+                                <div
+                                    className={[
+                                        'flex flex-wrap justify-center gap-2',
+                                        shakeOn ? 'mc-shake' : '',
+                                    ].join(' ')}
+                                >
+                                    {WEEKDAY_LABELS.map((label, i) => {
+                                        const dayIdx = i + 1;
+                                        const isOn = sortedSelectedDays.includes(dayIdx);
+                                        return (
+                                            <FoodFilterPill
+                                                key={label}
+                                                label={label}
+                                                isActive={isOn}
+                                                onClick={() => toggleDay(dayIdx)}
+                                            />
+                                        );
+                                    })}
+                                </div>
+                                <p className="mt-3 text-center font-body text-xs text-[#555555]">
+                                    Selection must not exceed your Week Duration.
+                                </p>
                             </div>
-                            <p className="mt-3 font-body text-xs text-[#555555]">
-                                Selection must not exceed your Week Duration.
-                            </p>
-                        </div>
 
-                        <div className={mobileNavBarClass}>
-                            <Button
-                                label="BACK"
-                                variant="outline"
-                                onClick={() => setScreen(durationScreen)}
-                                className="px-10"
-                            />
-                            <Button
-                                label="NEXT"
-                                variant="primary"
-                                disabled={!canGoNextFromManualDays}
-                                onClick={() => {
-                                    const first = sortedSelectedDays[0] ?? null;
-                                    setActiveDay(first);
-                                    continueAfterPlanSetup(sortedSelectedDays);
-                                }}
-                                className="px-10"
-                            />
+                            <div className={simpleSetupNextClass}>
+                                <Button
+                                    label="NEXT"
+                                    variant="primary"
+                                    disabled={!canGoNextFromManualDays}
+                                    onClick={() => {
+                                        const first = sortedSelectedDays[0] ?? null;
+                                        setActiveDay(first);
+                                        continueAfterPlanSetup(sortedSelectedDays);
+                                    }}
+                                    className="min-w-[200px] uppercase tracking-[0.08em]"
+                                />
+                            </div>
                         </div>
                     </section>
                 ) : null}
@@ -2472,15 +2532,6 @@ export default function CraftedForYouPage({
                                     usesWeeklyCategoryLayout ? clearFixedChoiceCategory : undefined
                                 }
                                 deckScopePrefix={usesWeeklyCategoryLayout ? String(curationDay) : ''}
-                                onFooterBack={() => {
-                                    if (screen === curationStartScreen) {
-                                        setScreen(
-                                            usesManualDaySelection ? manualDaysScreen : durationScreen,
-                                        );
-                                        return;
-                                    }
-                                    setScreen(screen - 1);
-                                }}
                                 onFooterNext={() => {
                                     setScreen(screen + 1);
                                 }}
@@ -2694,56 +2745,81 @@ export default function CraftedForYouPage({
                     </>
                 ) : null}
 
-                {/* Final Screen — Partner: Environmental Check & Submit; DIY: Submit only */}
+                {/* Final Screen — Partner: cutlery choice; DIY: Submit only */}
                 {screen === finalScreen ? (
-                    <section className="rounded-[12px] border border-gray-200 bg-white p-6 shadow-sm">
-                        <h2 className="font-montserrat text-[16px] font-bold tracking-tight text-[#262A22]">
-                            {isPartnerFulfillment ? 'Environmental Check & Submit' : 'Submit your meal plan'}
-                        </h2>
-                        <p className="mt-1 font-body text-sm text-[#555555]">
-                            {isPartnerFulfillment
-                                ? 'One last meaningful choice before the big finish.'
-                                : 'Save your selections to open your cook-it-yourself plan.'}
-                        </p>
+                    <section className="mx-auto flex w-full max-w-xl flex-col gap-3 px-1 pb-24 sm:px-0 sm:pb-0">
+                        <SimpleFlowNavHeader onBack={() => setScreen(screen - 1)} />
 
-                        {isPartnerFulfillment ? (
-                            <div className="mt-6 rounded-[12px] border border-gray-200 bg-[#F8F9F6] p-5">
-                                <p className="font-montserrat text-sm font-bold text-[#262A22]">
-                                    Would You Like To Help Saving The Environment?
+                        <div className="w-full">
+                            <h1 className="text-center font-montserrat text-2xl font-semibold leading-tight text-[#262A22]">
+                                {isPartnerFulfillment ? 'Do you need cutlery?' : 'Submit your meal plan'}
+                            </h1>
+                            {isPartnerFulfillment ? null : (
+                                <p className="mt-1.5 text-center text-sm leading-snug text-[#555555]">
+                                    Save your selections to open your cook-it-yourself plan.
                                 </p>
-                                <div className="mt-3 flex flex-wrap items-center gap-3">
-                                    <button
-                                        type="button"
-                                        className="inline-flex items-center gap-3"
-                                        onClick={() => setEnvironmentYes((v) => !v)}
-                                        aria-pressed={environmentYes}
-                                    >
-                                        <SquareCheckbox checked={environmentYes} presentational />
-                                        <span className="font-montserrat text-sm font-bold text-[#262A22]">YES</span>
-                                    </button>
-                                    {environmentYes ? (
-                                        <span className="font-montserrat text-sm font-bold text-[#C44F5D]">
-                                            NO CUTLERY FOR ME
-                                        </span>
-                                    ) : null}
-                                </div>
-                            </div>
-                        ) : null}
+                            )}
 
-                        <div className={mobileNavBarClass}>
-                            <Button
-                                label="BACK"
-                                variant="outline"
-                                onClick={() => setScreen(screen - 1)}
-                                className="px-10"
-                            />
-                            <Button
-                                label="SUBMIT"
-                                variant="primary"
-                                onClick={submit}
-                                disabled={submitting}
-                                className="px-12 py-3 text-base"
-                            />
+                            {isPartnerFulfillment ? (
+                                <div className="mt-3 flex w-full flex-col gap-2.5" role="group" aria-label="Cutlery options">
+                                    <OnboardingOptionButton
+                                        label="YES"
+                                        selected={environmentYes === false}
+                                        onSelect={() => setEnvironmentYes(false)}
+                                    />
+                                    <div className="flex w-full flex-col">
+                                        <OnboardingOptionButton
+                                            label="NO"
+                                            selected={environmentYes === true}
+                                            onSelect={() => setEnvironmentYes(true)}
+                                            describedBy="cutlery-no-thanks"
+                                        />
+                                        <div
+                                            className={[
+                                                'grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none',
+                                                environmentYes === true ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]',
+                                            ].join(' ')}
+                                            aria-hidden={environmentYes !== true}
+                                        >
+                                            <div className="min-h-0 overflow-hidden">
+                                                {environmentYes === true ? (
+                                                    <motion.p
+                                                        id="cutlery-no-thanks"
+                                                        role="status"
+                                                        initial={{ opacity: 0, scale: 0.82, y: 12 }}
+                                                        animate={{ opacity: 1, scale: 1.04, y: 0 }}
+                                                        transition={{
+                                                            type: 'spring',
+                                                            stiffness: 380,
+                                                            damping: 16,
+                                                            mass: 0.7,
+                                                        }}
+                                                        className="relative z-10 mt-3 origin-center rounded-[14px] border border-[#6E8C47]/30 bg-white px-4 py-3.5 text-center font-montserrat text-lg font-bold leading-snug text-[#5A6B44] shadow-[0_10px_28px_rgba(90,107,68,0.22)] sm:text-xl"
+                                                    >
+                                                        <span className="me-2 inline-block text-[1.35em] leading-none" aria-hidden>
+                                                            👏
+                                                        </span>
+                                                        Thank you for helping us save the environment.
+                                                    </motion.p>
+                                                ) : null}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ) : null}
+
+                            <div className={simpleSetupNextClass}>
+                                <Button
+                                    label="SUBMIT"
+                                    variant="primary"
+                                    onClick={submit}
+                                    disabled={
+                                        submitting ||
+                                        (isPartnerFulfillment && environmentYes === null)
+                                    }
+                                    className="min-w-[200px] uppercase tracking-[0.08em]"
+                                />
+                            </div>
                         </div>
                     </section>
                 ) : null}

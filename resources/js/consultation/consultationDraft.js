@@ -20,6 +20,7 @@ const DRAFT_VERSION = 1;
  * @property {string} craftKey
  * @property {number} weekDuration
  * @property {1|4} [planWeeks]
+ * @property {number} [selectedBilledDays]
  * @property {number[]} selectedDays
  * @property {Record<number, ConsultationDaySelections>} selectedByDay
  * @property {Record<number, 'soup'|'sidesalad'|'dessert'>} [businessSideChoiceByDay]
@@ -127,11 +128,17 @@ function normalizeConsultationDraft(draft) {
         }
     }
 
+    const selectedBilledDays = Number(draft.selectedBilledDays);
+
     return {
         version: DRAFT_VERSION,
         craftKey,
         weekDuration,
         planWeeks: draft.planWeeks === 1 || draft.planWeeks === 4 ? draft.planWeeks : undefined,
+        selectedBilledDays:
+            Number.isFinite(selectedBilledDays) && [5, 6, 7, 20, 24, 28].includes(selectedBilledDays)
+                ? selectedBilledDays
+                : undefined,
         selectedDays,
         selectedByDay,
         businessSideChoiceByDay:

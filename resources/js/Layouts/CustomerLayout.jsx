@@ -3,6 +3,23 @@ import MealCraftLogo from '../Components/Atoms/Logo/MealCraftLogo.jsx';
 import CustomerOnboardingPhoneFrame from '../Components/Molecules/Customer/CustomerOnboardingPhoneFrame.jsx';
 
 /**
+ * Cart highlight follows the Inertia URL. The marketing landing mounts this
+ * layout outside Inertia, where usePage throws and blanks the page.
+ *
+ * @param {string} cartUrl
+ * @returns {boolean}
+ */
+function useCartActive(cartUrl) {
+    try {
+        const pageUrl = String(usePage().url ?? '');
+
+        return pageUrl === cartUrl || pageUrl.startsWith(`${cartUrl}?`) || pageUrl.startsWith(`${cartUrl}/`);
+    } catch {
+        return false;
+    }
+}
+
+/**
  * @param {{ className?: string }} props
  */
 function CartIcon({ className = '' }) {
@@ -29,6 +46,8 @@ function CartIcon({ className = '' }) {
  * @param {import('react').ReactNode} [props.footerNav]
  * @param {'default' | 'onboarding'} [props.layoutVariant]
  * @param {boolean} [props.embedded] Fill a parent phone slot (landing / marketing) instead of the full-page frame.
+ * @param {(() => void) | null} [props.onBack]
+ * @param {string} [props.backAriaLabel]
  */
 export default function CustomerLayout({
     children,
@@ -37,52 +56,74 @@ export default function CustomerLayout({
     footerNav = null,
     layoutVariant = 'default',
     embedded = false,
+    onBack = null,
+    backAriaLabel = 'Go back',
 }) {
     const isOnboarding = layoutVariant === 'onboarding';
     const hasFooterNav = footerNav != null;
-    const pageUrl = String(usePage().url ?? '');
-    const cartActive = pageUrl === cartUrl || pageUrl.startsWith(`${cartUrl}?`) || pageUrl.startsWith(`${cartUrl}/`);
+    const cartActive = useCartActive(cartUrl);
+    const cartClassName = [
+        'inline-flex h-10 shrink-0 items-center justify-end gap-1.5 font-montserrat text-sm font-semibold transition-colors',
+        cartActive ? 'text-[#5A6B44]' : 'text-[#555555] hover:text-[#262A22]',
+    ].join(' ');
+    const cartContents = (
+        <>
+            <CartIcon className="shrink-0" />
+            Cart
+        </>
+    );
 
     const header = (
-        <header className="flex w-full shrink-0 items-center justify-between gap-3 border-b border-gray-100 bg-white px-1 py-3">
-            <div className="flex min-w-0 items-center gap-3">
-                <MealCraftLogo variant="seal-xs" width={40} alt="" />
-                <div className="min-w-0">
-                    <p className="font-montserrat text-base font-bold tracking-tight">Meal Craft</p>
-                    <p className="font-montserrat text-[11px] font-bold uppercase tracking-[0.14em] text-[#555555]">
-                        Your plan
-                    </p>
+        <header className="w-full shrink-0 bg-white px-1 py-2" aria-label="Meal Craft">
+            <div className="grid w-full grid-cols-[2.5rem_1fr_minmax(4.5rem,auto)] items-center gap-x-2">
+                {typeof onBack === 'function' ? (
+                    <button
+                        type="button"
+                        onClick={onBack}
+                        aria-label={backAriaLabel}
+                        className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-50 text-base leading-none text-[#262A22] outline-none transition [-webkit-tap-highlight-color:transparent] hover:bg-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#6E8C47] focus-visible:ring-offset-2"
+                    >
+                        ←
+                    </button>
+                ) : (
+                    <span className="block h-10 w-10" aria-hidden="true" />
+                )}
+                <div className="flex min-w-0 justify-center">
+                    <MealCraftLogo
+                        variant="minimal"
+                        width={108}
+                        alt="Meal Craft"
+                        className="h-auto max-w-full"
+                    />
                 </div>
+                {embedded ? (
+                    <span className={cartClassName} aria-current={cartActive ? 'page' : undefined}>
+                        {cartContents}
+                    </span>
+                ) : (
+                    <Link href={cartUrl} className={cartClassName} aria-current={cartActive ? 'page' : undefined}>
+                        {cartContents}
+                    </Link>
+                )}
             </div>
-            <Link
-                href={cartUrl}
-                className={[
-                    'inline-flex shrink-0 items-center gap-1.5 font-montserrat text-sm font-semibold transition-colors',
-                    cartActive ? 'text-[#5A6B44]' : 'text-[#555555] hover:text-[#262A22]',
-                ].join(' ')}
-                aria-current={cartActive ? 'page' : undefined}
-            >
-                <CartIcon className="shrink-0" />
-                Cart
-            </Link>
         </header>
     );
 
     if (isOnboarding) {
         return (
             <CustomerOnboardingPhoneFrame embedded={embedded}>
-                <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-4">{children}</div>
+                <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-white pb-4">{children}</div>
             </CustomerOnboardingPhoneFrame>
         );
     }
 
     return (
         <CustomerOnboardingPhoneFrame embedded={embedded}>
-            <div className="relative flex h-full min-h-0 w-full flex-1 flex-col bg-[#F8F9F6] font-sans text-[#262A22]">
+            <div className="relative flex h-full min-h-0 w-full flex-1 flex-col bg-white font-sans text-[#262A22]">
                 {header}
                 <main
                     className={[
-                        'mx-auto min-h-0 w-full flex-1 overflow-y-auto overscroll-contain px-1 py-4',
+                        'mx-auto min-h-0 w-full flex-1 overflow-y-auto overscroll-contain bg-white px-1 py-4',
                         // Six-tab customer nav is taller; keep list rows clear of the overlay.
                         hasFooterNav ? 'pb-32' : 'pb-4',
                     ]

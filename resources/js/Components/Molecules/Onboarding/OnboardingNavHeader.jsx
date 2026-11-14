@@ -12,12 +12,20 @@ import {
  *   activeStep: string;
  *   onBack?: () => void;
  *   canGoBack?: boolean;
+ *   progressNoun?: string;
  * }} props
  */
-export default function OnboardingNavHeader({ steps, activeStep, onBack, canGoBack = false }) {
+export default function OnboardingNavHeader({
+    steps,
+    activeStep,
+    onBack,
+    canGoBack = false,
+    progressNoun = 'Step',
+}) {
     const totalSteps = steps.length;
     const activeIndex = getOnboardingStepIndex(activeStep, steps);
     const displayIndex = activeIndex >= 0 ? activeIndex + 1 : 1;
+    const noun = typeof progressNoun === 'string' && progressNoun.trim() !== '' ? progressNoun.trim() : 'Step';
 
     return (
         <header className="w-full" aria-label="Onboarding navigation">
@@ -37,7 +45,7 @@ export default function OnboardingNavHeader({ steps, activeStep, onBack, canGoBa
                 </div>
 
                 <p className="shrink-0 text-right text-xs font-semibold uppercase tracking-wider text-gray-400">
-                    Step {displayIndex} of {totalSteps}
+                    {noun} {displayIndex} of {totalSteps}
                 </p>
             </div>
 
@@ -48,7 +56,7 @@ export default function OnboardingNavHeader({ steps, activeStep, onBack, canGoBa
                 aria-valuemin={1}
                 aria-valuemax={totalSteps}
                 aria-valuenow={displayIndex}
-                aria-label={`Onboarding step ${displayIndex} of ${totalSteps}`}
+                aria-label={`${noun} ${displayIndex} of ${totalSteps}`}
             >
                 {steps.map((step) => {
                     const status = resolveOnboardingTabStatus(activeStep, step.value, steps);

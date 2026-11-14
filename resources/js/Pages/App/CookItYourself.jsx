@@ -32,7 +32,7 @@ import {
 import { resolveInertiaLayoutChild } from '../../lib/resolveInertiaLayoutChild.js';
 import { resolveMealImageUrl } from '../../meal-library/resolveMealImageUrl.ts';
 
-const PAGE_BG = 'bg-[#F8F9F6]';
+const PAGE_BG = 'bg-white';
 
 /** @typedef {'days' | 'day' | 'meal'} CookStep */
 /** @typedef {'meals' | 'macronutrients' | 'micronutrients' | 'allergies' | 'sickle'} DaySummaryTabId */

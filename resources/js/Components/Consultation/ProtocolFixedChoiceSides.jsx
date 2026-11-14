@@ -46,9 +46,13 @@ export default function ProtocolFixedChoiceSides({
     onEditMeal,
     className = '',
 }) {
-    const [limitWarning, setLimitWarning] = useState(/** @type {string | null} */ (null));
+    const [limitWarningKey, setLimitWarningKey] = useState(
+        /** @type {'sideSalads'|'desserts'|'soup'|null} */ (null),
+    );
     const pickEnabled = typeof onSelectMeal === 'function' && !readOnly;
     const fixedChoiceCount = countFixedChoiceSelections(categorySelections);
+    const limitWarningMessage =
+        'You can pick a maximum of 2 sides. Deselect one to choose a different option.';
 
     /**
      * @param {'sideSalads'|'desserts'|'soup'} categoryKey
@@ -60,7 +64,7 @@ export default function ProtocolFixedChoiceSides({
             return;
         }
 
-        setLimitWarning(null);
+        setLimitWarningKey(null);
 
         if (isChecked) {
             onClearCategory?.(categoryKey);
@@ -69,7 +73,7 @@ export default function ProtocolFixedChoiceSides({
         }
 
         if (fixedChoiceCount >= FIXED_CHOICE_MAX_COUNT) {
-            setLimitWarning('You can pick a maximum of 2 sides. Deselect one to choose a different option.');
+            setLimitWarningKey(categoryKey);
 
             return;
         }
@@ -104,12 +108,6 @@ export default function ProtocolFixedChoiceSides({
                 </p>
             </div>
 
-            {limitWarning ? (
-                <div className="border-b border-red-100 bg-red-50 px-4 py-2" role="alert" aria-live="polite">
-                    <p className="font-body text-xs font-semibold text-red-800 sm:text-sm">{limitWarning}</p>
-                </div>
-            ) : null}
-
             <ul className="m-0 list-none divide-y divide-gray-100 p-0">
                 {FIXED_CHOICE_TOGGLE_OPTIONS.map((option) => {
                     const assignedCards = displayDecks?.[option.selectionKey] ?? [];
@@ -134,9 +132,21 @@ export default function ProtocolFixedChoiceSides({
                     );
                     const isChecked = selectedMeals.length > 0 || selectedIds.length > 0;
                     const hasOptions = cards.length > 0;
+                    const showLimitWarning = limitWarningKey === option.selectionKey;
 
                     return (
                         <li key={option.selectionKey} className="px-3 py-3 sm:px-4">
+                            {showLimitWarning ? (
+                                <div
+                                    className="mb-2 rounded-[8px] border border-red-100 bg-red-50 px-3 py-2"
+                                    role="alert"
+                                    aria-live="polite"
+                                >
+                                    <p className="font-body text-xs font-semibold text-red-800 sm:text-sm">
+                                        {limitWarningMessage}
+                                    </p>
+                                </div>
+                            ) : null}
                             <div className="flex items-center gap-3">
                                 <button
                                     type="button"
