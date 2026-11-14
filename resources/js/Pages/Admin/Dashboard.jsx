@@ -163,6 +163,8 @@ export function AdminDashboardInner({
 }) {
     const [showCreate, setShowCreate] = useState(false);
     const [passwordUserId, setPasswordUserId] = useState(null);
+    const [rightsUserId, setRightsUserId] = useState(null);
+    const [rightsSaving, setRightsSaving] = useState(false);
 
     const createForm = useForm({
         name: '',
@@ -183,6 +185,30 @@ export function AdminDashboardInner({
         () => tableUsers.find((user) => String(user.id) === String(passwordUserId)) ?? null,
         [passwordUserId, tableUsers],
     );
+    const rightsUser = useMemo(
+        () => tableUsers.find((user) => String(user.id) === String(rightsUserId)) ?? null,
+        [rightsUserId, tableUsers],
+    );
+
+    const saveAdminRights = (user, nextPermissions) => {
+        if (!user?.id) {
+            return;
+        }
+
+        setRightsSaving(true);
+        router.put(
+            `/admin/users/${user.id}`,
+            {
+                name: user.name,
+                email: user.email,
+                admin_permissions: nextPermissions,
+            },
+            {
+                preserveScroll: true,
+                onFinish: () => setRightsSaving(false),
+            },
+        );
+    };
 
     return (
         <div className="space-y-6 font-montserrat">
@@ -316,6 +342,36 @@ export function AdminDashboardInner({
                 </section>
             ) : null}
 
+            {isCraftMasterGeneral && rightsUser ? (
+                <section className="rounded-[12px] border border-gray-200 bg-white p-6 shadow-sm">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div>
+                            <h3 className="m-0 text-base font-bold tracking-tight text-[#262A22]">
+                                Access rights — {rightsUser.name}
+                            </h3>
+                            <p className="mt-1 text-sm font-medium text-[#555555]">
+                                Click a checkbox to add or remove a portal section. Changes save immediately.
+                                {rightsSaving ? ' Saving…' : null}
+                            </p>
+                        </div>
+                        <Button
+                            type="button"
+                            size="sm"
+                            variant="secondary"
+                            label="Close"
+                            onClick={() => setRightsUserId(null)}
+                        />
+                    </div>
+                    <div className="mt-4">
+                        <PermissionChecklist
+                            value={Array.isArray(rightsUser.permissions) ? rightsUser.permissions : []}
+                            checklist={permissionChecklist}
+                            onChange={(next) => saveAdminRights(rightsUser, next)}
+                        />
+                    </div>
+                </section>
+            ) : null}
+
             {isCraftMasterGeneral && passwordUser ? (
                 <section className="rounded-[12px] border border-gray-200 bg-white p-6 shadow-sm">
                     <h3 className="m-0 text-base font-bold tracking-tight text-[#262A22]">
@@ -376,11 +432,22 @@ export function AdminDashboardInner({
             <UserManagementTable
                 users={tableUsers}
                 canManage={isCraftMasterGeneral}
+                selectedRightsUserId={rightsUserId}
                 onToggleActive={(userId) => onToggleUserActive?.(userId)}
+                onEditRights={(userId) => {
+                    if (!isCraftMasterGeneral) {
+                        return;
+                    }
+                    setPasswordUserId(null);
+                    setRightsUserId((current) =>
+                        String(current) === String(userId) ? null : userId,
+                    );
+                }}
                 onChangePassword={(userId) => {
                     if (!isCraftMasterGeneral) {
                         return;
                     }
+                    setRightsUserId(null);
                     setPasswordUserId(userId);
                     passwordForm.reset();
                     onChangePassword?.(userId);

@@ -21,6 +21,8 @@ import { useMemo } from 'react';
  *   users: UserRow[];
  *   onToggleActive?: (userId: string) => void;
  *   onChangePassword?: (userId: string) => void;
+ *   onEditRights?: (userId: string) => void;
+ *   selectedRightsUserId?: string | null;
  *   canManage?: boolean;
  *   className?: string;
  * }} props
@@ -29,6 +31,8 @@ export default function UserManagementTable({
     users,
     onToggleActive,
     onChangePassword,
+    onEditRights,
+    selectedRightsUserId = null,
     canManage = true,
     className = '',
 }) {
@@ -104,7 +108,25 @@ export default function UserManagementTable({
                                             deactivated ? 'text-[#71717a] line-through' : 'text-[#262A22]'
                                         }`.trim()}
                                     >
-                                        {u.name}
+                                        {canManage && !u.isCraftMasterGeneral ? (
+                                            <button
+                                                type="button"
+                                                className={[
+                                                    'text-left font-semibold underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5A6B44] focus-visible:ring-offset-2',
+                                                    deactivated ? 'text-[#71717a] line-through' : 'text-[#5A6B44]',
+                                                    String(selectedRightsUserId) === String(u.id)
+                                                        ? 'underline'
+                                                        : '',
+                                                ]
+                                                    .filter(Boolean)
+                                                    .join(' ')}
+                                                onClick={() => onEditRights?.(u.id)}
+                                            >
+                                                {u.name}
+                                            </button>
+                                        ) : (
+                                            u.name
+                                        )}
                                     </td>
                                     <td className={`px-5 py-3 ${deactivated ? 'text-[#71717a] line-through' : 'text-[#364153]'}`.trim()}>
                                         {u.email}

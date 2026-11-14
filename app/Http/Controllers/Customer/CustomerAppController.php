@@ -12,8 +12,8 @@ use App\Services\Nutrition\OnboardingDailyTargetsCalculator;
 use App\Services\Nutrition\ProductionWeeklyMenuSchedule;
 use App\Services\Nutrition\UserPlanCalculator;
 use App\Support\AdminConsultationPreviewProfile;
+use App\Support\CustomerSubscriptionRecorder;
 use App\Support\MealPlanDateRange;
-use App\Support\PartnerKitchenPrice;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Carbon;
 use Inertia\Inertia;
@@ -377,6 +377,20 @@ class CustomerAppController extends Controller
             return null;
         }
 
+        $paid = $profile->latestPaidSubscription();
+
+        if ($paid !== null) {
+            return [
+                'mealPlanName' => (string) ($paid->meal_plan_name ?? 'Meal Craft'),
+                'days' => (int) $paid->delivery_days_count,
+                'startDate' => $paid->starts_on?->toDateString() ?? '',
+                'expiryDate' => $paid->expires_on?->toDateString() ?? '',
+                'deliveries' => (int) $paid->delivery_days_count,
+                'status' => $paid->status->value,
+                'paidAt' => $paid->paid_at?->toIso8601String(),
+            ];
+        }
+
         $plan = $profile->craftPlans()
             ->whereNotNull('submitted_at')
             ->latest('submitted_at')
@@ -386,35 +400,20 @@ class CustomerAppController extends Controller
             return null;
         }
 
-        $weekDuration = max(5, min(7, (int) ($plan->week_duration ?: 7)));
-        $planWeeks = (int) ($plan->plan_weeks ?: 4) === 1 ? 1 : 4;
-        $days = PartnerKitchenPrice::billedDays($weekDuration, $planWeeks);
+        $details = CustomerSubscriptionRecorder::detailsFromCraftPlan($profile, $plan);
 
-        $titles = [
-            'full' => 'Full Craft',
-            'day' => 'Day Craft',
-            'afternoon' => 'Afternoon Craft',
-            'intermittent' => 'Intermittent Craft',
-            'business' => 'Business Craft',
-        ];
-
-        $start = $profile->planned_start_date !== null
-            ? Carbon::parse($profile->planned_start_date)->startOfDay()
-            : Carbon::parse(
-                MealPlanDateRange::forWeek(
-                    selectedWeekdays: array_values($plan->selected_weekdays ?? []),
-                )['startsOn'],
-            )->startOfDay();
-
-        $expiry = $start->copy()->addWeeks($planWeeks)->subDay();
-        $deliveries = $plan->fulfillment_choice === 'diy' ? 0 : $days;
+        if ($details === null) {
+            return null;
+        }
 
         return [
-            'mealPlanName' => $titles[$plan->craft_key] ?? ucfirst((string) $plan->craft_key),
-            'days' => $days,
-            'startDate' => $start->toDateString(),
-            'expiryDate' => $expiry->toDateString(),
-            'deliveries' => $deliveries,
+            'mealPlanName' => $details['mealPlanName'],
+            'days' => $details['days'],
+            'startDate' => $details['startDate'],
+            'expiryDate' => $details['expiryDate'],
+            'deliveries' => $details['deliveries'],
+            'status' => null,
+            'paidAt' => null,
         ];
     }
 

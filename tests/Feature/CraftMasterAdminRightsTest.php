@@ -5,6 +5,29 @@ use App\Models\User;
 use App\Support\AdminPortalPermission;
 use Illuminate\Support\Facades\Hash;
 
+test('craft master general can update an admin portal permissions checklist', function () {
+    $cmg = User::factory()->craftMasterGeneral()->create();
+    $admin = User::factory()->withAdminPermissions(['ingredient-db'])->create([
+        'name' => 'Limited Admin',
+        'email' => 'limited-admin@example.com',
+    ]);
+
+    $this->actingAs($cmg)
+        ->put(route('admin.users.update', $admin), [
+            'name' => $admin->name,
+            'email' => $admin->email,
+            'admin_permissions' => ['ingredient-db', 'customer-profiles', 'pricing'],
+        ])
+        ->assertRedirect(route('admin.dashboard'))
+        ->assertSessionHas('success');
+
+    expect($admin->fresh()->admin_permissions)->toBe([
+        'ingredient-db',
+        'customer-profiles',
+        'pricing',
+    ]);
+});
+
 test('craft master general can create an admin and assign portal permissions', function () {
     $cmg = User::factory()->craftMasterGeneral()->create();
 

@@ -3,6 +3,7 @@ import MealCraftLogo from '../../Components/Atoms/Logo/MealCraftLogo.jsx';
 import TextInput from '../../Components/Atoms/TextInput/TextInput';
 import Button from '../../Components/Atoms/Button/Button';
 import TextLink from '../../Components/Atoms/TextLink.jsx';
+import PhoneNumberFields from '../../Components/CustomerIntake/PhoneNumberFields.jsx';
 import CustomerOnboardingPhoneFrame from '../../Components/Molecules/Customer/CustomerOnboardingPhoneFrame.jsx';
 
 /** Content width inside the onboarding phone frame (≈430px) — matches LoginPage. */
@@ -294,16 +295,12 @@ export default function JoinPage({
                                     required={isServerForm}
                                     disabled={isSubmitting}
                                 />
-                                <TextInput
+                                <PhoneNumberFields
                                     label="Mobile number"
-                                    type="tel"
-                                    name="phone"
-                                    placeholder="+973 XXXX XXXX"
-                                    value={phone}
-                                    onChange={(e) => setPhone(e.target.value)}
-                                    autoComplete="tel"
+                                    phone={phone}
+                                    onPhoneChange={setPhone}
+                                    name={isServerForm ? 'phone' : undefined}
                                     error={phoneError || undefined}
-                                    className="!max-w-none"
                                     required={isServerForm}
                                     disabled={isSubmitting}
                                 />

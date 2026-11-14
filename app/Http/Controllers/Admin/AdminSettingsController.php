@@ -21,7 +21,6 @@ class AdminSettingsController extends Controller
             'profile' => [
                 'name' => $user?->name ?? '',
                 'email' => $user?->email ?? '',
-                'emailVerified' => $user?->hasVerifiedEmail() ?? true,
             ],
         ]);
     }
@@ -30,11 +29,6 @@ class AdminSettingsController extends Controller
     {
         $user = $request->user();
         $user->fill($request->validated());
-
-        if ($user->isDirty('email')) {
-            $user->email_verified_at = null;
-        }
-
         $user->save();
 
         return redirect()

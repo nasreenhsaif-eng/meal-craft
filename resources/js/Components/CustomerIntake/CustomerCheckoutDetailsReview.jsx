@@ -5,6 +5,7 @@ import DropdownTextInput from '../Atoms/TextInput/DropdownTextInput.jsx';
 import TextInput from '../Atoms/TextInput/TextInput.jsx';
 import CalendarDateField from '../Molecules/Calendar/CalendarDateField.jsx';
 import FoodFilterPill from '../MealSystem/FoodFilterPill.jsx';
+import PhoneNumberFields, { splitPhone } from './PhoneNumberFields.jsx';
 
 /**
  * @typedef {{ value: string; label: string }} IntakeOption
@@ -21,9 +22,6 @@ const DELIVERY_FIELDS = /** @type {const} */ ([
     'country',
 ]);
 const CONFIRM_FIELDS = /** @type {const} */ (['declaration_accepted']);
-
-/** Common dial codes — Bahrain first (signup default). */
-const PHONE_COUNTRY_CODES = ['+973', '+966', '+971', '+965', '+974', '+968', '+961', '+20', '+44', '+1'];
 
 /**
  * @param {string | null | undefined} iso
@@ -67,56 +65,6 @@ function isMissing(value) {
     }
 
     return value == null || String(value).trim() === '';
-}
-
-/**
- * @param {string | null | undefined} phone
- * @returns {{ countryCode: string; nationalNumber: string }}
- */
-function splitPhone(phone) {
-    const trimmed = String(phone ?? '').trim();
-
-    if (trimmed === '') {
-        return { countryCode: '+973', nationalNumber: '' };
-    }
-
-    const digitsWithPlus = trimmed.startsWith('+')
-        ? `+${trimmed.slice(1).replace(/\D/g, '')}`
-        : `+${trimmed.replace(/\D/g, '')}`;
-
-    const codes = [...PHONE_COUNTRY_CODES].sort((a, b) => b.length - a.length);
-
-    for (const code of codes) {
-        if (digitsWithPlus.startsWith(code)) {
-            return {
-                countryCode: code,
-                nationalNumber: digitsWithPlus.slice(code.length),
-            };
-        }
-    }
-
-    return {
-        countryCode: '+973',
-        nationalNumber: digitsWithPlus.replace(/^\+/, ''),
-    };
-}
-
-/**
- * @param {string} countryCode
- * @param {string} nationalNumber
- * @returns {string}
- */
-function combinePhone(countryCode, nationalNumber) {
-    const code = String(countryCode || '+973').startsWith('+')
-        ? String(countryCode || '+973')
-        : `+${String(countryCode || '973').replace(/\D/g, '')}`;
-    const national = String(nationalNumber ?? '').replace(/\D/g, '');
-
-    if (national === '') {
-        return '';
-    }
-
-    return `${code}${national}`;
 }
 
 /**
@@ -333,75 +281,6 @@ function OptionPillGroup({ label, value, options = [], onChange, error }) {
                         onClick={() => onChange(option.value)}
                     />
                 ))}
-            </div>
-            {error ? (
-                <p className="mt-1.5 text-sm text-status-error" role="alert">
-                    {error}
-                </p>
-            ) : null}
-        </div>
-    );
-}
-
-/**
- * Country code + national number fields that write a combined E.164 `phone` value.
- *
- * @param {{
- *   phone: string;
- *   onPhoneChange: (phone: string) => void;
- *   error?: string;
- * }} props
- */
-function PhoneNumberFields({ phone, onPhoneChange, error }) {
-    const split = useMemo(() => splitPhone(phone), [phone]);
-    const [countryCode, setCountryCode] = useState(split.countryCode);
-    const [nationalNumber, setNationalNumber] = useState(split.nationalNumber);
-
-    useEffect(() => {
-        setCountryCode(split.countryCode);
-        setNationalNumber(split.nationalNumber);
-    }, [split.countryCode, split.nationalNumber]);
-
-    /**
-     * @param {string} nextCode
-     * @param {string} nextNational
-     */
-    const commit = (nextCode, nextNational) => {
-        setCountryCode(nextCode);
-        setNationalNumber(nextNational);
-        onPhoneChange(combinePhone(nextCode, nextNational));
-    };
-
-    return (
-        <div className="w-full min-w-0">
-            <p
-                className={[
-                    'mb-2 font-montserrat text-sm font-bold leading-snug tracking-tight',
-                    error ? 'text-status-error' : 'text-grey-94',
-                ].join(' ')}
-            >
-                Phone number
-            </p>
-            <div className="grid grid-cols-[7.5rem_minmax(0,1fr)] gap-2 sm:grid-cols-[8.5rem_minmax(0,1fr)] sm:gap-3">
-                <DropdownTextInput
-                    label="Country code"
-                    hideLabel
-                    listboxAriaLabel="Country code"
-                    value={countryCode}
-                    options={PHONE_COUNTRY_CODES}
-                    onChange={(nextCode) => commit(nextCode, nationalNumber)}
-                    className="!max-w-none"
-                />
-                <TextInput
-                    label="Mobile number"
-                    className="!max-w-none [&_label]:sr-only"
-                    type="tel"
-                    inputMode="tel"
-                    placeholder="XXXX XXXX"
-                    value={nationalNumber}
-                    onChange={(event) => commit(countryCode, event.target.value)}
-                    autoComplete="tel-national"
-                />
             </div>
             {error ? (
                 <p className="mt-1.5 text-sm text-status-error" role="alert">
@@ -640,6 +519,7 @@ export default function CustomerCheckoutDetailsReview({
                             ]}
                         />
                         <PhoneNumberFields
+                            label="Phone number"
                             phone={String(data.phone ?? '')}
                             onPhoneChange={(nextPhone) => setData('phone', nextPhone)}
                             error={fieldErrors.phone}

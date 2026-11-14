@@ -14,6 +14,7 @@ use App\Services\Nutrition\UserPlanCalculator;
 use App\Support\AdminConsultationPreviewProfile;
 use App\Support\CheckoutBasket;
 use App\Support\CustomerIntake;
+use App\Support\CustomerSubscriptionRecorder;
 use App\Support\PartnerKitchenPrice;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
@@ -231,6 +232,9 @@ class CheckoutController extends Controller
             return redirect()->route('checkout.details');
         }
 
+        // Simulator: treat Make payment as paid so admin/customer can test start/expiry.
+        CustomerSubscriptionRecorder::recordPaidFromLatestPlan($profile);
+
         $isAdminPreview = $user?->isAdmin() === true && $user?->isCustomer() !== true;
 
         $shouldResumeChooseMeals = $isAdminPreview
@@ -248,7 +252,7 @@ class CheckoutController extends Controller
 
         return redirect()
             ->route('checkout.payment')
-            ->with('success', 'Payment instructions recorded. Complete Benefit Pay to finish your order.');
+            ->with('success', 'Payment recorded. Your subscription is marked as paid.');
     }
 
     public function policies(): Response

@@ -11,7 +11,6 @@ import adminInertiaLayout from '../../../lib/adminInertiaLayout.jsx';
  * @param {{
  *   name?: string;
  *   email?: string;
- *   emailVerified?: boolean;
  *   canEditProfile?: boolean;
  *   errors?: Record<string, string>;
  *   processing?: boolean;
@@ -24,7 +23,6 @@ import adminInertiaLayout from '../../../lib/adminInertiaLayout.jsx';
 export function AdminSettingsProfileInner({
     name: nameProp,
     email: emailProp,
-    emailVerified = false,
     canEditProfile = true,
     errors = {},
     processing = false,
@@ -83,11 +81,6 @@ export function AdminSettingsProfileInner({
                     disabled={!canEditProfile}
                     readOnly={!canEditProfile}
                 />
-                {!emailVerified ? (
-                    <p className="font-montserrat text-sm text-[#555555]">
-                        Your email address is unverified. Saving a new email will require verification.
-                    </p>
-                ) : null}
                 {canEditProfile ? (
                     <div>
                         <Button type="submit" label={processing ? 'Saving…' : 'Save'} disabled={processing} />
@@ -104,7 +97,7 @@ export function AdminSettingsProfileInner({
 
 /**
  * @param {{
- *   profile: { name: string; email: string; emailVerified: boolean };
+ *   profile: { name: string; email: string };
  *   canEditProfile?: boolean;
  * }} props
  */
@@ -118,7 +111,6 @@ export default function Profile({ profile, canEditProfile = false }) {
         <AdminSettingsProfileInner
             name={data.name}
             email={data.email}
-            emailVerified={profile.emailVerified}
             canEditProfile={canEditProfile}
             errors={errors}
             processing={processing}

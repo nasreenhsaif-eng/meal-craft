@@ -179,6 +179,8 @@ function Section({ title, children }) {
  *   intakeSubmissionId?: string;
  *   submitLabel?: string;
  *   readOnly?: boolean;
+ *   sections?: Array<'contact' | 'body' | 'delivery' | 'other'>;
+ *   showSubmit?: boolean;
  *   onSubmit: () => void;
  * }} props
  */
@@ -192,10 +194,13 @@ export default function CustomerIntakeForm({
     intakeSubmissionId = '',
     submitLabel = 'Save details',
     readOnly = false,
+    sections = ['contact', 'body', 'delivery', 'other'],
+    showSubmit = true,
     onSubmit,
 }) {
     const fieldClass = 'w-full !max-w-full';
     const genderOptions = options.genders ?? [];
+    const show = (key) => sections.includes(key);
     const maxDob = (() => {
         const d = new Date();
         d.setFullYear(d.getFullYear() - 13);
@@ -215,6 +220,7 @@ export default function CustomerIntakeForm({
             }}
         >
             <fieldset disabled={readOnly} className="m-0 min-w-0 border-0 p-0">
+            {show('contact') ? (
             <Section title="Contact">
                 <TextInput
                     label="First name"
@@ -258,7 +264,9 @@ export default function CustomerIntakeForm({
                     error={errors.contact_preference}
                 />
             </Section>
+            ) : null}
 
+            {show('body') ? (
             <Section title="Body & plan">
                 <CalendarDateField
                     label="Date of birth"
@@ -350,7 +358,9 @@ export default function CustomerIntakeForm({
                     />
                 </div>
             </Section>
+            ) : null}
 
+            {show('delivery') ? (
             <Section title="Delivery address">
                 <OptionPillGroup
                     label="Delivery time"
@@ -409,7 +419,9 @@ export default function CustomerIntakeForm({
                     className={fieldClass}
                 />
             </Section>
+            ) : null}
 
+            {show('other') ? (
             <Section title="Other">
                 <div className="md:col-span-2">
                     <CheckboxField
@@ -450,9 +462,10 @@ export default function CustomerIntakeForm({
                     className={fieldClass}
                 />
             </Section>
+            ) : null}
             </fieldset>
 
-            {!readOnly ? (
+            {!readOnly && showSubmit ? (
                 <div className="flex w-full justify-center pt-1">
                     <Button
                         type="submit"

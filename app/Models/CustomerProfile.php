@@ -8,6 +8,7 @@ use App\Enums\CustomerDeliveryTime;
 use App\Enums\CustomerGoal;
 use App\Enums\CustomerPlanType;
 use App\Enums\CustomerSex;
+use App\Enums\CustomerSubscriptionStatus;
 use App\Enums\DietType;
 use App\Enums\MacroSplitStyle;
 use App\Enums\OnboardingStep;
@@ -143,6 +144,19 @@ class CustomerProfile extends Model
     public function craftPlans(): HasMany
     {
         return $this->hasMany(CustomerCraftPlan::class);
+    }
+
+    public function subscriptions(): HasMany
+    {
+        return $this->hasMany(CustomerSubscription::class);
+    }
+
+    public function latestPaidSubscription(): ?CustomerSubscription
+    {
+        return $this->subscriptions()
+            ->where('status', CustomerSubscriptionStatus::Paid)
+            ->latest('paid_at')
+            ->first();
     }
 
     /**

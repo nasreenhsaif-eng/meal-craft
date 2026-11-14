@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Admin;
 
 use App\Models\CustomerProfile;
+use App\Support\AdminPortalPermission;
 use App\Support\CustomerIntake;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -11,7 +12,7 @@ class UpdateCustomerProfileRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->isCraftMasterGeneral() ?? false;
+        return $this->user()?->hasAdminPermission(AdminPortalPermission::CustomerProfiles) ?? false;
     }
 
     protected function prepareForValidation(): void
