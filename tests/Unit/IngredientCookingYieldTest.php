@@ -41,6 +41,39 @@ test('dry basmati with dry macros keeps nutrition mass and expands plated yield'
         ->and(IngredientCookingYield::amountStateLabel($rice))->toBe('dry weight');
 });
 
+test('canned sardines use drained weight without raw cooking yield', function (): void {
+    $sardines = new Ingredient([
+        'name' => 'Sardines (Canned)',
+        'calories' => 208,
+        'usda_food_category' => 'Proteins',
+    ]);
+
+    expect(IngredientCookingYield::isCannedIngredient($sardines))->toBeTrue()
+        ->and(IngredientCookingYield::nutritionMassGrams($sardines, 100))->toBe(100.0)
+        ->and(IngredientCookingYield::estimatedCookedGrams($sardines, 100))->toBe(100.0)
+        ->and(IngredientCookingYield::amountStateLabel($sardines))->toBe('drained canned');
+});
+
+test('hamour and shrimp share the salmon raw fish yield curve', function (): void {
+    $hamour = new Ingredient([
+        'name' => 'Hamour Fillet',
+        'calories' => 92,
+        'usda_food_category' => 'Proteins',
+    ]);
+    $shrimp = new Ingredient([
+        'name' => 'Shrimp (Raw)',
+        'calories' => 85,
+        'usda_food_category' => 'Proteins',
+    ]);
+
+    expect(IngredientCookingYield::isRawFishProtein($hamour))->toBeTrue()
+        ->and(IngredientCookingYield::isRawFishProtein($shrimp))->toBeTrue()
+        ->and(IngredientCookingYield::estimatedCookedGrams($hamour, 100))->toBe(78.0)
+        ->and(IngredientCookingYield::estimatedCookedGrams($shrimp, 100))->toBe(78.0)
+        ->and(IngredientCookingYield::amountStateLabel($hamour))->toBe('raw, before cooking')
+        ->and(IngredientCookingYield::amountStateLabel($shrimp))->toBe('raw, before cooking');
+});
+
 test('prepared base ingredients use finished grams without further yield conversion', function (): void {
     $base = new Ingredient([
         'name' => 'Steamed Basmati Rice (Base)',
@@ -51,7 +84,18 @@ test('prepared base ingredients use finished grams without further yield convers
     expect(IngredientCookingYield::isFinishedBaseComponent($base))->toBeTrue()
         ->and(IngredientCookingYield::nutritionMassGrams($base, 90))->toBe(90.0)
         ->and(IngredientCookingYield::estimatedCookedGrams($base, 90))->toBe(90.0)
-        ->and(IngredientCookingYield::amountStateLabel($base))->toBe('pre-cooked base');
+        ->and(IngredientCookingYield::amountStateLabel($base))->toBe('cooked plated portion');
+});
+
+test('dressing bases are labeled prepared dressing not cooked plated', function (): void {
+    $dressing = new Ingredient([
+        'name' => 'Cilantro Lime Dressing (Base)',
+        'calories' => 180,
+        'usda_food_category' => IngredientLibraryCategory::BaseIngredient,
+        'is_base_recipe' => true,
+    ]);
+
+    expect(IngredientCookingYield::amountStateLabel($dressing))->toBe('prepared dressing');
 });
 
 test('meal yield summary combines raw shrink and base finished grams', function (): void {

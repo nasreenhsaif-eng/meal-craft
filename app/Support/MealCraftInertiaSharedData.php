@@ -106,6 +106,11 @@ final class MealCraftInertiaSharedData
                 'importCsv' => route('admin.meal-library.import-csv'),
                 'exportCsv' => route('meals.library.export-csv'),
             ],
+            'mealTiersLibrary' => [
+                'index' => route('admin.meal-tiers-library'),
+                'store' => route('admin.meal-tiers-library.store'),
+                'copy' => route('admin.meal-tiers-library.copy'),
+            ],
             'mealPlanLibrary' => [
                 'index' => route('admin.meal-plan-library'),
                 'store' => route('admin.meal-plan-library.store'),

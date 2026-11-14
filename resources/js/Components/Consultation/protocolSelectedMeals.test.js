@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
     applyDeckSelectionToggle,
+    selectedMealsForSlotFromDecks,
     selectedMealsFromDisplayDecks,
     sumSelectedMacrosFromDisplayDecks,
 } from './ChooseYourMeals.jsx';
@@ -77,5 +78,27 @@ describe('protocol selected-meal layout selection', () => {
         const totals = sumSelectedMacrosFromDisplayDecks(selections, decks);
         expect(totals.calories).toBe(300 + 520 + 480);
         expect(Math.round(totals.protein)).toBe(24 + 48 + 42);
+    });
+
+    it('shows a breakfast selection even when the card currently lives on another deck', () => {
+        const omelette = { id: 'b1', title: 'Mediterranean Omelet' };
+        const chia = { id: 'b2', title: 'Blueberry Walnut Greek Yogurt Chia Pudding' };
+        const salad = { id: 's1', title: 'Garden Side Salad' };
+
+        const decks = {
+            breakfasts: [omelette],
+            meals: [],
+            sideSalads: [],
+            desserts: [chia],
+            soup: [],
+        };
+
+        expect(
+            selectedMealsForSlotFromDecks(['b2'], decks.breakfasts, decks).map((meal) => meal.title),
+        ).toEqual(['Blueberry Walnut Greek Yogurt Chia Pudding']);
+
+        expect(
+            selectedMealsForSlotFromDecks(['s1'], [], { ...decks, sideSalads: [salad] }).map((meal) => meal.id),
+        ).toEqual(['s1']);
     });
 });

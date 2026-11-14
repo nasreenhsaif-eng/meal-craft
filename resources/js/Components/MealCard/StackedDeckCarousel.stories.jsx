@@ -77,7 +77,7 @@ function DeckCard({ meal, ctx, selectedId, onToggle }) {
 }
 
 export default {
-    title: 'MealCraft/Components/MealCard/StackedDeckCarousel',
+    title: 'Design System/04. Organisms/DataCard/StackedDeckCarousel',
     component: StackedDeckCarousel,
     parameters: {
         layout: 'padded',

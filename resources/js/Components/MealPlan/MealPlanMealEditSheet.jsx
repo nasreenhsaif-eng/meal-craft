@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import Button from '../Atoms/Button.jsx';
-import PillButton from '../Atoms/Button/Button.jsx';
 import TextInput from '../Atoms/TextInput/TextInput.jsx';
 import SquareCheckbox from '../Atoms/Icons/SquareCheckbox.jsx';
 import MacroGrid from '../MacroGrid.jsx';
@@ -253,9 +252,9 @@ export default function MealPlanMealEditSheet({
             </div>
 
             <div className="flex flex-wrap items-center justify-end gap-2 border-t border-gray-100 px-5 py-4">
-                <PillButton label={showKitchenPortions ? 'Close' : 'Cancel'} variant="outline" onClick={onClose} />
+                <Button label={showKitchenPortions ? 'Close' : 'Cancel'} variant="outline" onClick={onClose} />
                 {!showKitchenPortions ? (
-                    <PillButton label="Apply changes" variant="primary" onClick={handleApply} />
+                    <Button label="Apply changes" variant="primary" onClick={handleApply} />
                 ) : null}
             </div>
         </>

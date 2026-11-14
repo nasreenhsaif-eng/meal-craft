@@ -25,8 +25,8 @@ final class BalancedWeeklyRotationSchedule
         'Tomato Basil Soup',
         'Red Lentil Turmeric Soup',
         'Cauliflower Ginger Soup',
-        'Carrot Cumin Soup',
-        'Sweet Potato Fennel Soup',
+        'Lentil Carrot Soup',
+        'Miso Mushroom Soup',
     ];
 
     /** @deprecated Use {@see ROTATING_SOUPS} */
@@ -74,7 +74,7 @@ final class BalancedWeeklyRotationSchedule
         'Hummus Egg Stack',
         'Kuku Sabzi Egg Muffins',
         'Sweet Potato Egg Hash',
-        'Butternut Squash & Eggs',
+        'Butternut Squash Frittata',
         'Smashed Beans & Eggs',
     ];
 
@@ -156,7 +156,7 @@ final class BalancedWeeklyRotationSchedule
         'Marinated Pineapple, Peppers, Red Onion & Cilantro Side Salad',
         'Tomato Parsely Salad w Sumac Za’ater Dressing',
         'Citrus Beet Arugula Salad',
-        'Shaved Fennel Rocca Salad',
+        'Coconut Grapefruit Salad',
         'Roasted Eggplant Rocca Salad',
         'Marinated Strawberry Beet Salad',
         'Thai Rainbow Peanut Salad',
@@ -168,7 +168,7 @@ final class BalancedWeeklyRotationSchedule
         'Vegan Smoky Cauliflower & Lentil Stew w Quinoa Bread & Tahini',
         'Vegan Sri Lankan Red Lentil Dal w Quinoa Bread',
         'Vegan Harissa Roasted Cauliflower & Chickpea Salad w Tahini Dressing',
-        'Vegan Curry Lentil Salad',
+        'Baked Eggplant Lentils Hummus',
         'Spiced Cauliflower Chickpea Salad',
         'Vegan Mushroom Bowl',
     ];

@@ -38,24 +38,27 @@ final class EggIngredientPresentation
     public static function formatLine(float $grams, string $formattedGrams): string
     {
         if ($grams <= 0) {
-            return __('Egg');
+            return __('Egg').' '.__('raw');
         }
 
         $rawCount = $grams / self::LARGE_EGG_GRAMS;
 
         if ($rawCount >= 0.75) {
             $count = (int) round($rawCount);
-            $label = $count === 1
-                ? __('1 large egg')
-                : __(':count large eggs', ['count' => $count]);
 
-            return sprintf('%s (%sg)', $label, $formattedGrams);
+            return $count === 1
+                ? __('1 egg raw')
+                : __(':count eggs raw', ['count' => $count]);
         }
 
         if ($rawCount >= 0.35) {
-            return sprintf('%s (%sg)', __('1/2 large egg'), $formattedGrams);
+            return __('1/2 egg raw');
         }
 
-        return sprintf('%sg %s', $formattedGrams, __('Egg'));
+        if ($rawCount >= 0.15) {
+            return __('1/4 egg raw');
+        }
+
+        return sprintf('%sg %s %s', $formattedGrams, __('Egg'), __('raw'));
     }
 }

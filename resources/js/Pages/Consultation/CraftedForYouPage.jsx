@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import Button from '../../Components/Atoms/Button.jsx';
-import PillButton from '../../Components/Atoms/Button/Button.jsx';
-import AdminPreviewTierPicker from '../../Components/Admin/AdminPreviewTierPicker.jsx';
+import { resolveCustomerPhoneFrameHost } from '../../Components/Molecules/Customer/resolveCustomerPhoneFrameHost.js';
+import OnboardingOptionButton from '../../Components/Atoms/Button/OnboardingOptionButton.jsx';
+import FoodFilterPill from '../../Components/MealSystem/FoodFilterPill.jsx';
+import OnboardingInlineDescription from '../../Components/Molecules/Onboarding/OnboardingInlineDescription.jsx';
 import ChooseYourMeals, {
     applyDeckSelectionToggle,
     applyFixedChoiceToggle,
@@ -16,11 +19,13 @@ import ChooseYourMeals, {
     consultationSideSaladDeckForDay,
     isFixedChoiceComplete,
     normalizeConsultationMealId,
+    selectedMealsForSlotFromDecks,
     soupOfTheDayMeals,
     sumSelectedMacrosFromDisplayDecks,
 } from '../../Components/Consultation/ChooseYourMeals.jsx';
-import SquareCheckbox from '../../Components/Atoms/Icons/SquareCheckbox.jsx';
 import { MealCraftLogoAnimatedIdentity } from '../../Components/Atoms/Logo/MealCraftLogoAnimated.jsx';
+import OnboardingNavHeader from '../../Components/Molecules/Onboarding/OnboardingNavHeader.jsx';
+import SimpleFlowNavHeader from '../../Components/Molecules/Onboarding/SimpleFlowNavHeader.jsx';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
     fetchAdaptedMenu,
@@ -29,57 +34,41 @@ import {
     scheduledFullCraftCategoryMealsForDay,
     scheduledSoupConsultationMealsForDay,
 } from '../../consultation/mapAdaptedMenuMeals.js';
+import { resolveProtocolBreakfastSeedId } from '../../consultation/seedProtocolBreakfast.js';
 import { buildCraftPlanSubmissionPayload, submitCraftPlan } from '../../consultation/submitCraftPlan.js';
-import { craftDayCaloriesForKey, dailyMacroTargetsFromPlan, dayMacroToleranceFromPlan, fixedPortionCaloriesForAdapt, nutritionPlanMatchesTier, selectedFixedSlotsFromSelections } from '../../consultation/craftCalorieTargets.js';
+import { craftDayCaloriesForKey, craftDefaultsDessert, dailyMacroTargetsFromPlan, dayMacroToleranceFromPlan, fixedPortionCaloriesForAdapt, nutritionPlanMatchesTier, selectedFixedSlotsFromSelections } from '../../consultation/craftCalorieTargets.js';
 import {
     resolveInitialConsultationRestoreDraft,
     saveConsultationDraft,
+    stashConsultationResumeDraft,
 } from '../../consultation/consultationDraft.js';
 import { consultationMeals as MOCK_MEALS } from '../../consultation/consultationMockMeals.js';
+import { isBalancedAntiInflammatoryProtocol } from '../../Components/Molecules/Onboarding/dietProtocolUtils.js';
 import MealDetailModalPortal from '../../Components/Molecules/MealDetailModalPortal.jsx';
+import FulfillmentOptionCards from '../../Components/Molecules/Customer/FulfillmentOptionCards.jsx';
 import { useMealDetailModal } from '../../meal-library/useMealDetailModal.js';
 
 const PAGE_BG = 'bg-[#F8F9F6]';
 const WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const WEEKDAY_LONG = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-const DEFAULT_PLAN_TIERS = [1000, 1200, 1500, 1800, 2000];
-const PREVIEW_PLAN_TIER_STORAGE_KEY = 'mc-admin-preview-plan-tier';
 const CONSULTATION_BACK_HREF_STORAGE_KEY = 'mc-consultation-back-href';
 
-/**
- * @param {number[]} planTiers
- * @param {number} fallback
- */
-function readStoredPreviewPlanTier(planTiers, fallback) {
-    try {
-        const raw = sessionStorage.getItem(PREVIEW_PLAN_TIER_STORAGE_KEY);
-        const value = Number(raw);
-
-        if (Number.isFinite(value) && planTiers.includes(value)) {
-            return value;
-        }
-    } catch {
-        // sessionStorage may be unavailable
-    }
-
-    return fallback;
-}
-
-/**
- * @param {{
- *   tiers: number[];
- *   selectedTier: number;
- *   onSelectTier: (tier: number) => void;
- *   compact?: boolean;
- * }} props
- */
 const CRAFTS = [
     {
         key: 'full',
         title: 'Full Craft',
-        description: '1 Breakfast, 2 Main Meals, pick 1–2 of side salad / dessert / soup (~150 kcal each)',
+        description: '1 Breakfast, 2 Main Meals, pick 1–2 of side salad / dessert / soup total about 1200 full need',
         slots: [
             { id: 'breakfast', label: 'Breakfast', count: 1 },
+            { id: 'meal', label: 'Meals', count: 2 },
+            { id: 'fixedChoice', label: 'Pick 1–2 of 3 sides', count: 2 },
+        ],
+    },
+    {
+        key: 'afternoon',
+        title: 'Afternoon Craft',
+        description: '2 Main Meals, pick 1–2 of side salad / dessert / soup total about 950 afternoon need',
+        slots: [
             { id: 'meal', label: 'Meals', count: 2 },
             { id: 'fixedChoice', label: 'Pick 1–2 of 3 sides', count: 2 },
         ],
@@ -87,7 +76,7 @@ const CRAFTS = [
     {
         key: 'day',
         title: 'Day Craft',
-        description: 'Breakfast, 1 Meal, pick 1–2 of side salad / dessert / soup',
+        description: '1 Breakfast, 1 Main Meal, pick 1–2 of side salad / dessert / soup total about 850 day need',
         slots: [
             { id: 'breakfast', label: 'Breakfast', count: 1 },
             { id: 'meal', label: 'Meal', count: 1 },
@@ -95,18 +84,9 @@ const CRAFTS = [
         ],
     },
     {
-        key: 'afternoon',
-        title: 'Afternoon Craft',
-        description: '2 Meals, pick 1–2 of side salad / dessert / soup',
-        slots: [
-            { id: 'meal', label: 'Meals', count: 2 },
-            { id: 'fixedChoice', label: 'Pick 1–2 of 3 sides', count: 2 },
-        ],
-    },
-    {
         key: 'intermittent',
         title: 'Intermittent Craft',
-        description: '1 Meal, pick 1–2 of side salad / dessert / soup',
+        description: '1 Main Meal, pick 1–2 of side salad / dessert / soup total about 850 intermittent need',
         slots: [
             { id: 'meal', label: 'Meal', count: 1 },
             { id: 'fixedChoice', label: 'Pick 1–2 of 3 sides', count: 2 },
@@ -115,7 +95,7 @@ const CRAFTS = [
     {
         key: 'business',
         title: 'Business Craft',
-        description: '1 Main (350–400 kcal) + pick 1 of soup, side salad, or dessert (~150 kcal)',
+        description: '1 Main Meal, pick 1 of soup / side salad / dessert total about 550 business need',
         slots: [
             { id: 'meal', label: 'Meal', count: 1 },
             { id: 'choice', label: 'Business choice', count: 1, choice: ['soup', 'sidesalad', 'dessert'] },
@@ -138,9 +118,13 @@ const CRAFTS = [
  * } | null | undefined} initialEditDraft
  * @returns {ConsultationDraft | null}
  */
-function readInitialConsultationRestoreDraft(initialEditDraft) {
+function readInitialConsultationRestoreDraft(initialEditDraft, initialResumeDraft, forceResume = false) {
     try {
-        return resolveInitialConsultationRestoreDraft(initialEditDraft);
+        return resolveInitialConsultationRestoreDraft(
+            initialEditDraft,
+            initialResumeDraft,
+            forceResume,
+        );
     } catch {
         return null;
     }
@@ -164,6 +148,10 @@ function slotId(dayIdx, slotKey, index) {
  *   homeHref?: string;
  *   backHref?: string;
  *   summaryHref?: string;
+ *   deliveryUrl?: string;
+ *   resumeChooseMeals?: boolean;
+ *   forceReceive?: boolean;
+ *   initialFulfillmentChoice?: 'diy' | 'partner_kitchen' | null;
  *   loginUrl?: string;
  *   signOutUrl?: string;
  *   isCustomerAccount?: boolean;
@@ -173,8 +161,8 @@ function slotId(dayIdx, slotKey, index) {
  *   mealDetailViewUrlTemplate?: string;
  *   mealLibraryRevision?: number;
  *   initialPlanTier?: number | null;
- *   initialPlanTiers?: number[];
  *   disableAdaptedMenuFetch?: boolean;
+ *   embedInScrollParent?: boolean;
  *   initialEditDraft?: {
  *     craftKey?: string;
  *     weekDuration?: number;
@@ -185,44 +173,155 @@ function slotId(dayIdx, slotKey, index) {
  *       categories?: Record<string, unknown[]>;
  *     }>;
  *   } | null;
+ *   initialResumeDraft?: import('../../consultation/consultationDraft.js').ConsultationDraft | null;
+ *   dietProtocol?: string | null;
+ *   sex?: string | null;
+ *   activityLevel?: string | null;
+ *   dailyCalorieTarget?: number | null;
+ *   initialScreen?: number | null;
+ *   initialCraftKey?: string | null;
+ *   initialWeekDuration?: number | null;
+ *   initialSelectedWeekdays?: number[] | null;
  * }} [props]
  */
+
+/**
+ * Render overlays inside the customer phone frame when present.
+ *
+ * @param {{ children: import('react').ReactNode | ((ctx: { nested: boolean }) => import('react').ReactNode) }} props
+ */
+function PhoneFramePortal({ children }) {
+    if (typeof document === 'undefined') {
+        return null;
+    }
+
+    const host = resolveCustomerPhoneFrameHost();
+    if (!host) {
+        return null;
+    }
+
+    const nested = host !== document.body;
+    const content = typeof children === 'function' ? children({ nested }) : children;
+
+    return createPortal(content, host);
+}
+
 export default function CraftedForYouPage({
     closeHref,
     homeHref,
     backHref,
     summaryHref,
+    deliveryUrl = '/checkout/delivery',
+    resumeChooseMeals = false,
+    forceReceive = false,
+    initialFulfillmentChoice = null,
     loginUrl,
     signOutUrl,
     csrfToken = '',
     isAdminPreview = false,
-    pageEyebrow = 'Admin / Consultation',
+    pageEyebrow = 'Your plan',
     adaptedMenuUrl = '/api/menu/adapted',
     mealDetailViewUrlTemplate = '/api/meals/{id}/detail-view',
     mealLibraryRevision = 0,
     initialPlanTier = null,
-    initialPlanTiers = DEFAULT_PLAN_TIERS,
     disableAdaptedMenuFetch = false,
+    embedInScrollParent = false,
     initialEditDraft = null,
+    initialResumeDraft = null,
     dietProtocol = null,
+    sex = null,
+    activityLevel = null,
+    dailyCalorieTarget = null,
+    initialScreen = null,
+    initialCraftKey = null,
+    initialWeekDuration = null,
+    initialSelectedWeekdays = null,
+    partnerKitchenPricing = null,
 } = {}) {
     const initialRestoreDraft = useMemo(
-        () => readInitialConsultationRestoreDraft(initialEditDraft),
-        [initialEditDraft],
+        () =>
+            forceReceive
+                ? null
+                : readInitialConsultationRestoreDraft(
+                      initialEditDraft,
+                      initialResumeDraft,
+                      resumeChooseMeals,
+                  ),
+        [forceReceive, initialEditDraft, initialResumeDraft, resumeChooseMeals],
     );
 
-    const [screen, setScreen] = useState(1);
+    const [screen, setScreen] = useState(() => {
+        if (typeof initialScreen === 'number' && initialScreen >= 1) {
+            return initialScreen;
+        }
+
+        // Home Choose your meals → Receive: start at craft when fulfillment already picked.
+        if (forceReceive) {
+            return initialFulfillmentChoice === 'diy' || initialFulfillmentChoice === 'partner_kitchen'
+                ? 2
+                : 1;
+        }
+
+        // Partner payment resume: open on first Choose your meals day immediately.
+        if (resumeChooseMeals && initialRestoreDraft?.weekDuration) {
+            return initialRestoreDraft.weekDuration !== 7 ? 5 : 4;
+        }
+
+        // Returning from payment without a restorable draft: skip Receive (already paid).
+        if (resumeChooseMeals) {
+            return 2;
+        }
+
+        return 1;
+    });
     const [craftKey, setCraftKey] = useState(
-        () => initialRestoreDraft?.craftKey ?? null,
+        () => initialCraftKey ?? initialRestoreDraft?.craftKey ?? null,
     );
     const craft = useMemo(() => (craftKey ? craftByKey(craftKey) : null), [craftKey]);
 
     const [weekDuration, setWeekDuration] = useState(
-        () => initialRestoreDraft?.weekDuration ?? null,
+        () => initialWeekDuration ?? initialRestoreDraft?.weekDuration ?? null,
     );
-    const [selectedDays, setSelectedDays] = useState(
-        () => initialRestoreDraft?.selectedDays ?? [],
+    const [planWeeks, setPlanWeeks] = useState(
+        () => {
+            const restored = initialRestoreDraft?.planWeeks;
+
+            if (restored === 1 || restored === 4) {
+                return restored;
+            }
+
+            return null;
+        },
     );
+    const [selectedBilledDays, setSelectedBilledDays] = useState(
+        () => {
+            const restoredBilled = initialRestoreDraft?.selectedBilledDays;
+
+            if (typeof restoredBilled === 'number' && restoredBilled > 0) {
+                return restoredBilled;
+            }
+
+            const restoredWeeks = initialRestoreDraft?.planWeeks;
+            const restoredDuration = initialWeekDuration ?? initialRestoreDraft?.weekDuration ?? null;
+
+            if ((restoredWeeks === 1 || restoredWeeks === 4) && typeof restoredDuration === 'number') {
+                return restoredWeeks === 1 ? restoredDuration : restoredDuration * 4;
+            }
+
+            return null;
+        },
+    );
+    const [partnerLengthView, setPartnerLengthView] = useState(
+        /** @type {'fourWeeks' | 'trial'} */
+        () => (initialRestoreDraft?.planWeeks === 1 ? 'trial' : 'fourWeeks'),
+    );
+    const [selectedDays, setSelectedDays] = useState(() => {
+        if (Array.isArray(initialSelectedWeekdays) && initialSelectedWeekdays.length > 0) {
+            return initialSelectedWeekdays;
+        }
+
+        return initialRestoreDraft?.selectedDays ?? [];
+    });
     const [activeDay, setActiveDay] = useState(() => {
         const restoredDays = initialRestoreDraft?.selectedDays ?? [];
         return restoredDays.length > 0 ? restoredDays[0] : null;
@@ -231,7 +330,26 @@ export default function CraftedForYouPage({
     const [shakeOn, setShakeOn] = useState(false);
 
     const [environmentYes, setEnvironmentYes] = useState(
-        () => initialRestoreDraft?.environmentYes ?? false,
+        /** @type {boolean | null} */
+        () => {
+            if (initialRestoreDraft && typeof initialRestoreDraft.environmentYes === 'boolean') {
+                return initialRestoreDraft.environmentYes;
+            }
+
+            return null;
+        },
+    );
+    /** @type {['diy'|'partner_kitchen'|null, import('react').Dispatch<import('react').SetStateAction<'diy'|'partner_kitchen'|null>>]} */
+    const [fulfillmentChoice, setFulfillmentChoice] = useState(
+        () =>
+            initialFulfillmentChoice === 'diy' || initialFulfillmentChoice === 'partner_kitchen'
+                ? initialFulfillmentChoice
+                : initialRestoreDraft?.fulfillmentChoice === 'diy' ||
+                    initialRestoreDraft?.fulfillmentChoice === 'partner_kitchen'
+                  ? initialRestoreDraft.fulfillmentChoice
+                  : resumeChooseMeals
+                    ? /** @type {'partner_kitchen'} */ ('partner_kitchen')
+                    : null,
     );
     const [submitting, setSubmitting] = useState(false);
     const [submitError, setSubmitError] = useState(/** @type {string | null} */ (null));
@@ -254,6 +372,14 @@ export default function CraftedForYouPage({
             return backHref;
         }
 
+        if (typeof homeHref === 'string' && homeHref.trim() !== '') {
+            return homeHref;
+        }
+
+        if (typeof closeHref === 'string' && closeHref.trim() !== '') {
+            return closeHref;
+        }
+
         try {
             const stored = sessionStorage.getItem(CONSULTATION_BACK_HREF_STORAGE_KEY);
 
@@ -265,32 +391,23 @@ export default function CraftedForYouPage({
         }
 
         return null;
-    }, [backHref]);
+    }, [backHref, closeHref, homeHref]);
 
     useEffect(() => {
-        if (typeof backHref !== 'string' || backHref.trim() === '') {
+        const hrefToStore =
+            (typeof backHref === 'string' && backHref.trim() !== '' ? backHref : null) ??
+            (typeof homeHref === 'string' && homeHref.trim() !== '' ? homeHref : null);
+
+        if (hrefToStore === null) {
             return;
         }
 
         try {
-            sessionStorage.setItem(CONSULTATION_BACK_HREF_STORAGE_KEY, backHref);
+            sessionStorage.setItem(CONSULTATION_BACK_HREF_STORAGE_KEY, hrefToStore);
         } catch {
             // sessionStorage may be unavailable
         }
-    }, [backHref]);
-
-    const availablePlanTiers = useMemo(
-        () => (initialPlanTiers.length > 0 ? initialPlanTiers : DEFAULT_PLAN_TIERS),
-        [initialPlanTiers],
-    );
-    const [previewPlanTier, setPreviewPlanTier] = useState(() => {
-        const fallback =
-            typeof initialPlanTier === 'number' && initialPlanTier > 0
-                ? initialPlanTier
-                : availablePlanTiers[availablePlanTiers.length - 1] ?? 2000;
-
-        return isAdminPreview ? readStoredPreviewPlanTier(availablePlanTiers, fallback) : fallback;
-    });
+    }, [backHref, homeHref]);
 
     // Slot selection state (chosen meal ids per category, per day)
     const [selectedByDay, setSelectedByDay] = useState(
@@ -318,11 +435,15 @@ export default function CraftedForYouPage({
     const displayedScheduleCraftKeyRef = useRef(/** @type {string | null} */ (null));
     /** @type {React.MutableRefObject<Record<string, string>>} */
     const lastAdaptedMenuFetchKeyByDayRef = useRef({});
+    /**
+     * Weekdays filled by the initial full-week schedule fetch that have not yet been
+     * opened (or day-locally re-adapted). Lets Next read slots from cache without a request.
+     * @type {React.MutableRefObject<Set<number>>}
+     */
+    const weekSeededDaysRef = useRef(new Set());
     /** Snapshot of weekday schedules for skip-fetch checks without stale closures. */
     const scheduledFullCraftByWeekdayRef = useRef(scheduledFullCraftByWeekday);
     scheduledFullCraftByWeekdayRef.current = scheduledFullCraftByWeekday;
-    const [isLgViewport, setIsLgViewport] = useState(/** @type {boolean | null} */ (null));
-
     useLayoutEffect(() => {
         if (!initialRestoreDraft) {
             return;
@@ -357,22 +478,26 @@ export default function CraftedForYouPage({
         saveConsultationDraft({
             craftKey,
             weekDuration,
+            planWeeks: planWeeks === 1 || planWeeks === 4 ? planWeeks : 4,
             selectedDays,
             selectedByDay,
             businessSideChoiceByDay,
             afternoonSoupOptInByDay,
             fullCraftSoupOptInByDay,
-            environmentYes,
+            environmentYes: Boolean(environmentYes),
+            fulfillmentChoice,
         });
     }, [
         craftKey,
         weekDuration,
+        planWeeks,
         selectedDays,
         selectedByDay,
         businessSideChoiceByDay,
         afternoonSoupOptInByDay,
         fullCraftSoupOptInByDay,
         environmentYes,
+        fulfillmentChoice,
     ]);
 
     const catalogMeals = useMemo(() => liveMeals ?? MOCK_MEALS, [liveMeals]);
@@ -390,10 +515,6 @@ export default function CraftedForYouPage({
     );
 
     const basePlanTier = useMemo(() => {
-        if (isAdminPreview && typeof previewPlanTier === 'number' && previewPlanTier > 0) {
-            return previewPlanTier;
-        }
-
         const fromPlan = nutritionPlan?.plan_tier ?? nutritionPlan?.core_day_calories;
         if (typeof fromPlan === 'number' && fromPlan > 0) {
             return Math.round(fromPlan);
@@ -401,21 +522,12 @@ export default function CraftedForYouPage({
         if (typeof initialPlanTier === 'number' && initialPlanTier > 0) {
             return initialPlanTier;
         }
+        if (typeof dailyCalorieTarget === 'number' && dailyCalorieTarget > 0) {
+            return dailyCalorieTarget;
+        }
 
         return 1200;
-    }, [nutritionPlan, initialPlanTier, isAdminPreview, previewPlanTier]);
-
-    useEffect(() => {
-        if (!isAdminPreview) {
-            return;
-        }
-
-        try {
-            sessionStorage.setItem(PREVIEW_PLAN_TIER_STORAGE_KEY, String(previewPlanTier));
-        } catch {
-            // sessionStorage may be unavailable
-        }
-    }, [isAdminPreview, previewPlanTier]);
+    }, [nutritionPlan, initialPlanTier, dailyCalorieTarget]);
 
     const planTierCalories = useMemo(() => {
         const planSynced = nutritionPlan && nutritionPlanMatchesTier(nutritionPlan, basePlanTier);
@@ -448,19 +560,10 @@ export default function CraftedForYouPage({
             return;
         }
         // Poka‑Yoke: a 7-day plan always includes all days; manual selection is redundant.
-        // If the user is currently on the manual day selection screen, leap into Day 1 (Sunday).
-        if (screen === 2) {
-            const all = [1, 2, 3, 4, 5, 6, 7];
-            setSelectedDays((prev) => {
-                if (prev.length > 0) {
-                    return prev;
-                }
-
-                return all;
-            });
-            setActiveDay((prev) => prev ?? 1);
-        }
-    }, [weekDuration, screen]);
+        const all = [1, 2, 3, 4, 5, 6, 7];
+        setSelectedDays(all);
+        setActiveDay((prev) => prev ?? 1);
+    }, [weekDuration]);
 
     useEffect(() => {
         // Keep active day valid.
@@ -479,14 +582,6 @@ export default function CraftedForYouPage({
         const t = window.setTimeout(() => setToast({ message: '', visible: false }), 1800);
         return () => window.clearTimeout(t);
     }, [toast.visible]);
-
-    useEffect(() => {
-        const mq = window.matchMedia('(min-width: 1024px)');
-        const fn = () => setIsLgViewport(mq.matches);
-        fn();
-        mq.addEventListener('change', fn);
-        return () => mq.removeEventListener('change', fn);
-    }, []);
 
     const sortedSelectedDays = useMemo(
         () => Array.from(new Set(selectedDays)).filter((d) => d >= 1 && d <= 7).sort((a, b) => a - b),
@@ -606,12 +701,6 @@ export default function CraftedForYouPage({
             return;
         }
 
-        if (typeof window !== 'undefined' && window.history.length > 1) {
-            window.history.back();
-
-            return;
-        }
-
         exitConsultation();
     }
 
@@ -625,9 +714,19 @@ export default function CraftedForYouPage({
         setSubmitSuccess(false);
 
         try {
+            if (fulfillmentChoice !== 'diy' && fulfillmentChoice !== 'partner_kitchen') {
+                setSubmitError('Choose how you want to receive your meal plan before submitting.');
+                setSubmitting(false);
+                return;
+            }
+
             const payload = buildCraftPlanSubmissionPayload({
                 craftKey,
+                fulfillmentChoice,
                 weekDuration,
+                planWeeks: fulfillmentChoice === 'partner_kitchen' && (planWeeks === 1 || planWeeks === 4)
+                    ? planWeeks
+                    : 4,
                 selectedDays: sortedSelectedDays,
                 selectedByDay,
             });
@@ -655,27 +754,62 @@ export default function CraftedForYouPage({
     const usesManualDaySelection = weekDuration !== 7;
 
     const totalCurationDays = sortedSelectedDays.length;
-    const curationStartScreen = usesManualDaySelection ? 3 : 2; // skip manual-day screen for 7-day plans
+    // Screens: 1 receive → 2 craft → 3 duration → (4 choose days when not 7-day) → curation…
+    const receiveScreen = 1;
+    const craftScreen = 2;
+    const durationScreen = 3;
+    const manualDaysScreen = 4;
+    const curationStartScreen = usesManualDaySelection ? 5 : 4;
     const finalScreen = curationStartScreen + totalCurationDays;
     const totalScreens =
         weekDuration !== null ? curationStartScreen + weekDuration : Math.max(finalScreen, screen);
+    const isPartnerFulfillment = fulfillmentChoice === 'partner_kitchen';
 
     const isCurationScreen = screen >= curationStartScreen && screen <= curationStartScreen + totalCurationDays - 1;
     const curationIndex = isCurationScreen ? screen - curationStartScreen : -1; // 0..N-1
     const curationDay = isCurationScreen ? sortedSelectedDays[curationIndex] ?? null : null;
 
+    // Partner Kitchen path: after payment, resume at Choose your meals (first curation day).
+    useEffect(() => {
+        if (!resumeChooseMeals) {
+            return;
+        }
+
+        if (craftKey === null || weekDuration === null || sortedSelectedDays.length === 0) {
+            setToast({
+                message: 'Pick your craft and days again, then continue to Choose your meals.',
+                visible: true,
+            });
+            return;
+        }
+
+        const first = sortedSelectedDays[0] ?? null;
+        setActiveDay(first);
+        setScreen(curationStartScreen);
+    }, [resumeChooseMeals, craftKey, weekDuration, sortedSelectedDays, curationStartScreen]);
+
     const progressHeaderLabel = useMemo(() => {
         if (isCurationScreen && curationDay !== null) {
             return WEEKDAY_LONG[curationDay - 1] ?? '';
         }
-        if (screen === 1) {
-            return 'Plan setup';
+        if (screen === receiveScreen) {
+            return 'Receive meal plan';
         }
-        if (screen === 2 && usesManualDaySelection) {
+        if (screen === craftScreen) {
+            return 'What’s Your Craft';
+        }
+        if (screen === durationScreen) {
+            if (isPartnerFulfillment && partnerLengthView === 'trial') {
+                return '1 week trial';
+            }
+
+            return isPartnerFulfillment ? 'Plan length' : 'Week duration';
+        }
+        if (screen === manualDaysScreen && usesManualDaySelection) {
             return 'Choose your days';
         }
         if (screen === finalScreen) {
-            return 'Submit';
+            return isPartnerFulfillment ? 'Submit' : 'Submit';
         }
 
         return `Step ${screen} of ${totalScreens}`;
@@ -684,7 +818,13 @@ export default function CraftedForYouPage({
         curationDay,
         screen,
         usesManualDaySelection,
+        receiveScreen,
+        craftScreen,
+        durationScreen,
+        manualDaysScreen,
         finalScreen,
+        isPartnerFulfillment,
+        partnerLengthView,
         totalScreens,
     ]);
 
@@ -696,9 +836,27 @@ export default function CraftedForYouPage({
         return `${curationIndex + 1} of ${totalCurationDays}`;
     }, [isCurationScreen, totalCurationDays, curationIndex]);
 
+    const curationDaySteps = useMemo(
+        () =>
+            sortedSelectedDays.map((day) => ({
+                value: String(day),
+                label: WEEKDAY_LONG[day - 1] ?? `Day ${day}`,
+            })),
+        [sortedSelectedDays],
+    );
+
+    function goBackFromCuration() {
+        if (screen === curationStartScreen) {
+            setScreen(usesManualDaySelection ? manualDaysScreen : durationScreen);
+
+            return;
+        }
+
+        setScreen(screen - 1);
+    }
+
     const calorieDay = curationDay ?? effectiveActiveDay;
 
-    /** Admin preview: keep adapted menu in sync when tier/craft change before day curation. */
     const adaptedMenuDay = useMemo(() => {
         if (calorieDay) {
             return calorieDay;
@@ -708,12 +866,8 @@ export default function CraftedForYouPage({
             return sortedSelectedDays[0] ?? 1;
         }
 
-        if (isAdminPreview && craftKey) {
-            return sortedSelectedDays[0] ?? 1;
-        }
-
         return null;
-    }, [calorieDay, craftKey, weekDuration, sortedSelectedDays, isAdminPreview]);
+    }, [calorieDay, craftKey, weekDuration, sortedSelectedDays]);
 
     const isMenuPending = !disableAdaptedMenuFetch && liveMeals === null;
 
@@ -835,7 +989,6 @@ export default function CraftedForYouPage({
             scheduledDessertBaseline,
             scheduledSoupBaseline,
             dayOfWeek: adaptedMenuDay ?? null,
-            planTier: isAdminPreview ? previewPlanTier : null,
             breakfastId: breakfastId ?? null,
             selectedMainMealIds,
         });
@@ -850,8 +1003,6 @@ export default function CraftedForYouPage({
         selectedByDay,
         scheduledFullCraftByWeekday,
         scheduledSoupsByWeekday,
-        isAdminPreview,
-        previewPlanTier,
         catalogMeals,
     ]);
 
@@ -918,7 +1069,6 @@ export default function CraftedForYouPage({
             sideSaladCalories: fixedPortion.sideSaladCalories || undefined,
             dessertCalories: fixedPortion.dessertCalories || undefined,
             dayOfWeek: adaptedMenuDay,
-            planTier: isAdminPreview ? previewPlanTier : undefined,
             selectedMainMealIds: selectedByDay[adaptedMenuDay]?.meals ?? [],
             selectedBreakfastMealIds: selectedByDay[adaptedMenuDay]?.breakfasts ?? [],
         };
@@ -933,8 +1083,6 @@ export default function CraftedForYouPage({
         scheduledSoupsByWeekday,
         selectedByDay,
         catalogMeals,
-        isAdminPreview,
-        previewPlanTier,
     ]);
 
     const resolveMealDetailQueryString = useCallback(() => {
@@ -949,9 +1097,8 @@ export default function CraftedForYouPage({
             ...base,
             craftKey: detailCraftKey,
             dayOfWeek: base.dayOfWeek ?? calorieDay ?? undefined,
-            planTier: base.planTier ?? (isAdminPreview ? previewPlanTier : undefined),
         });
-    }, [adaptedMenuFetchParams, craftKey, calorieDay, isAdminPreview, previewPlanTier]);
+    }, [adaptedMenuFetchParams, craftKey, calorieDay]);
 
     const { mealDetailModal, detailLoading, openMealDetail, closeMealDetail } = useMealDetailModal(
         mealDetailViewUrlTemplate,
@@ -975,39 +1122,58 @@ export default function CraftedForYouPage({
             return undefined;
         }
 
-        const cacheIdentity = `${craftKey}|${isAdminPreview ? previewPlanTier : 'profile'}|${mealLibraryRevision}`;
+        const cacheIdentity = `${craftKey}|profile|${mealLibraryRevision}`;
         const dayKey = adaptedMenuDay != null ? String(adaptedMenuDay) : '';
 
         if (scheduleCacheIdentityRef.current !== cacheIdentity) {
             scheduleCacheIdentityRef.current = cacheIdentity;
             lastAdaptedMenuFetchKeyByDayRef.current = {};
+            weekSeededDaysRef.current = new Set();
             hasLoadedAdaptedMenuRef.current = false;
             wipeScheduleCacheOnNextSuccessRef.current = true;
         }
 
-        const dayAlreadyCached =
+        const dayHasSchedule =
             dayKey !== '' &&
-            lastAdaptedMenuFetchKeyByDayRef.current[dayKey] === adaptedMenuFetchKey &&
             (scheduledFullCraftByWeekdayRef.current[adaptedMenuDay] != null ||
                 scheduledFullCraftByWeekdayRef.current[dayKey] != null);
+
+        const dayAlreadyCached =
+            dayHasSchedule && lastAdaptedMenuFetchKeyByDayRef.current[dayKey] === adaptedMenuFetchKey;
+
+        // Full-week seed already populated this weekday — open it from cache (no seal / no wait).
+        const dayReadyFromWeekSeed =
+            dayHasSchedule &&
+            adaptedMenuDay != null &&
+            weekSeededDaysRef.current.has(adaptedMenuDay);
 
         if (dayAlreadyCached) {
             return undefined;
         }
 
+        if (dayReadyFromWeekSeed) {
+            weekSeededDaysRef.current.delete(adaptedMenuDay);
+            lastAdaptedMenuFetchKeyByDayRef.current[dayKey] = adaptedMenuFetchKey;
+            return undefined;
+        }
+
         let cancelled = false;
         const fetchGeneration = ++adaptedMenuFetchGenerationRef.current;
-        const showInitialLoading = !hasLoadedAdaptedMenuRef.current;
+        // First load (and craft/tier wipe) builds the full week so Next days already have slots.
+        const isFullWeekFetch = !hasLoadedAdaptedMenuRef.current;
 
         const timeoutId = window.setTimeout(() => {
-            if (showInitialLoading || isAdminPreview) {
+            if (isFullWeekFetch) {
                 setMenuLoading(true);
             }
             setMenuError(null);
 
             (async () => {
                 try {
-                    const payload = await fetchAdaptedMenu(adaptedMenuUrl, adaptedMenuFetchParams);
+                    const fetchParams = isFullWeekFetch
+                        ? { ...adaptedMenuFetchParams, dayOfWeek: undefined }
+                        : adaptedMenuFetchParams;
+                    const payload = await fetchAdaptedMenu(adaptedMenuUrl, fetchParams);
                     if (cancelled || fetchGeneration !== adaptedMenuFetchGenerationRef.current) {
                         return;
                     }
@@ -1050,8 +1216,31 @@ export default function CraftedForYouPage({
                         typeof payload.production_meal_plan_id === 'number' ? payload.production_meal_plan_id : null,
                     );
                     hasLoadedAdaptedMenuRef.current = true;
-                    if (dayKey !== '') {
+
+                    if (isFullWeekFetch) {
+                        // Mark every selected / returned weekday against this base schedule identity
+                        // so day navigation can read slots from cache immediately.
+                        const daysToCache = new Set(sortedSelectedDays);
+                        for (const key of Object.keys(incomingFullCraft)) {
+                            const dayNumber = Number(key);
+                            if (dayNumber >= 1 && dayNumber <= 7) {
+                                daysToCache.add(dayNumber);
+                            }
+                        }
+                        const seededDays = new Set();
+                        for (const day of daysToCache) {
+                            lastAdaptedMenuFetchKeyByDayRef.current[String(day)] = adaptedMenuFetchKey;
+                            // Keep the active first day on the normal adapt path (selection seeding).
+                            if (day !== adaptedMenuDay) {
+                                seededDays.add(day);
+                            }
+                        }
+                        weekSeededDaysRef.current = seededDays;
+                    } else if (dayKey !== '') {
                         lastAdaptedMenuFetchKeyByDayRef.current[dayKey] = adaptedMenuFetchKey;
+                        if (adaptedMenuDay != null) {
+                            weekSeededDaysRef.current.delete(adaptedMenuDay);
+                        }
                     }
                 } catch (error) {
                     if (!cancelled && fetchGeneration === adaptedMenuFetchGenerationRef.current) {
@@ -1075,10 +1264,9 @@ export default function CraftedForYouPage({
         disableAdaptedMenuFetch,
         craftKey,
         adaptedMenuFetchParams,
-        isAdminPreview,
-        previewPlanTier,
         adaptedMenuDay,
         mealLibraryRevision,
+        sortedSelectedDays,
     ]);
 
     useEffect(() => {
@@ -1128,30 +1316,17 @@ export default function CraftedForYouPage({
                 };
 
                 const assigned = scheduledFullCraftCategoryMealsForDay(scheduledFullCraftByWeekday, day);
-                const breakfastDeck = assigned?.breakfasts ?? [];
-                const recommendedBreakfast =
-                    breakfastDeck.find((meal) => meal?.isRecommended) ?? breakfastDeck[0];
-                const deckBreakfast = consultationDeckOptionsForSlotKey(catalogMeals, 'breakfast')[0];
-                const breakfast = recommendedBreakfast ?? deckBreakfast;
+                const breakfastId = resolveProtocolBreakfastSeedId({
+                    assignedBreakfasts: assigned?.breakfasts,
+                    currentBreakfastId: current.breakfasts?.[0],
+                    protectExisting: isBalancedAntiInflammatoryProtocol(dietProtocol),
+                });
 
-                if (!breakfast?.id) {
+                if (!breakfastId) {
                     continue;
                 }
 
-                const breakfastId = normalizeConsultationMealId(breakfast.id);
-
-                // Nutrient Density: seed once with the recommended egg breakfast; never overwrite a customer swap.
-                if (dietProtocol === 'nutrient_dense') {
-                    if ((current.breakfasts?.length ?? 0) > 0) {
-                        continue;
-                    }
-
-                    next[day] = { ...current, breakfasts: [breakfastId] };
-                    changed = true;
-                    continue;
-                }
-
-                if (current.breakfasts?.[0] === breakfastId) {
+                if (normalizeConsultationMealId(current.breakfasts?.[0]) === breakfastId) {
                     continue;
                 }
 
@@ -1161,10 +1336,20 @@ export default function CraftedForYouPage({
 
             return changed ? next : prev;
         });
-    }, [craft, sortedSelectedDays, scheduledFullCraftByWeekday, catalogMeals, dietProtocol]);
+    }, [craft, sortedSelectedDays, scheduledFullCraftByWeekday, dietProtocol]);
 
     useEffect(() => {
-        if (dietProtocol !== 'nutrient_dense' || !craft || sortedSelectedDays.length === 0) {
+        // Seed admin-recommended / primary-slot mains for every protocol (not only nutrient-dense).
+        if (!craft || sortedSelectedDays.length === 0) {
+            return;
+        }
+
+        const mealCap =
+            craft.slots.find((slot) => slot.id === 'meal')?.count ??
+            DEFAULT_FULL_CRAFT_MAX_SELECTIONS.meals ??
+            2;
+
+        if (mealCap <= 0) {
             return;
         }
 
@@ -1182,26 +1367,28 @@ export default function CraftedForYouPage({
                     soup: [],
                 };
 
-                if ((current.meals?.length ?? 0) >= 2) {
+                if ((current.meals?.length ?? 0) >= mealCap) {
                     continue;
                 }
 
                 const assigned = scheduledFullCraftCategoryMealsForDay(scheduledFullCraftByWeekday, day);
                 const mains = assigned?.meals ?? [];
-                const recommended = mains.filter((meal) => meal?.isRecommended);
+                const recommended = mains.filter(
+                    (meal) => meal?.isRecommended || meal?.is_recommended,
+                );
                 const byPrimarySlots = mains.filter((meal) => {
                     const slot = Number(meal?.plan_slot_index ?? meal?.planSlotIndex ?? 0);
 
                     return slot === 1 || slot === 5;
                 });
                 const seedSource =
-                    recommended.length >= 2
+                    recommended.length >= mealCap
                         ? recommended
-                        : byPrimarySlots.length >= 2
+                        : byPrimarySlots.length >= mealCap
                           ? byPrimarySlots
                           : recommended.length > 0
                             ? recommended
-                            : mains.slice(0, 2);
+                            : mains.slice(0, mealCap);
 
                 /** @type {string[]} */
                 const preferredIds = seedSource
@@ -1218,7 +1405,7 @@ export default function CraftedForYouPage({
                 const merged = [...existingIds];
 
                 for (const id of preferredIds) {
-                    if (merged.length >= 2) {
+                    if (merged.length >= mealCap) {
                         break;
                     }
 
@@ -1227,9 +1414,9 @@ export default function CraftedForYouPage({
                     }
                 }
 
-                if (merged.length < 2 && preferredIds.length >= 2) {
-                    // Prefer the two recommended/primary ids over a stale single pick.
-                    merged.splice(0, merged.length, ...preferredIds.slice(0, 2));
+                if (merged.length < mealCap && preferredIds.length >= mealCap) {
+                    // Prefer the recommended/primary ids over a stale partial pick.
+                    merged.splice(0, merged.length, ...preferredIds.slice(0, mealCap));
                 }
 
                 if (merged.length === 0) {
@@ -1244,18 +1431,27 @@ export default function CraftedForYouPage({
                     continue;
                 }
 
-                next[day] = { ...current, meals: merged.slice(0, 2) };
+                next[day] = { ...current, meals: merged.slice(0, mealCap) };
                 changed = true;
             }
 
             return changed ? next : prev;
         });
-    }, [craft, dietProtocol, sortedSelectedDays, scheduledFullCraftByWeekday]);
+    }, [craft, sortedSelectedDays, scheduledFullCraftByWeekday]);
+
+    const afternoonDessertKeptRef = useRef(/** @type {Set<number>} */ (new Set()));
 
     useEffect(() => {
-        if (dietProtocol !== 'nutrient_dense' || !craft || sortedSelectedDays.length === 0) {
+        // Seed admin-recommended sides (1–2 of salad / dessert / soup) for every protocol.
+        if (!craft || sortedSelectedDays.length === 0) {
             return;
         }
+
+        if (!craft.slots.some((slot) => slot.id === 'fixedChoice')) {
+            return;
+        }
+
+        const includeDefaultDessert = craftDefaultsDessert(basePlanTier, craft.key);
 
         setSelectedByDay((prev) => {
             let changed = false;
@@ -1263,13 +1459,33 @@ export default function CraftedForYouPage({
             const next = { ...prev };
 
             for (const day of sortedSelectedDays) {
-                const current = next[day] ?? {
+                let current = next[day] ?? {
                     breakfasts: [],
                     meals: [],
                     sideSalads: [],
                     desserts: [],
                     soup: [],
                 };
+
+                if (
+                    !includeDefaultDessert &&
+                    (current.desserts?.length ?? 0) > 0 &&
+                    !afternoonDessertKeptRef.current.has(day)
+                ) {
+                    const assignedForClear = scheduledFullCraftCategoryMealsForDay(
+                        scheduledFullCraftByWeekday,
+                        day,
+                    );
+                    const adminDessert = (assignedForClear?.desserts ?? []).some(
+                        (meal) => meal?.isRecommended || meal?.is_recommended,
+                    );
+
+                    if (!adminDessert) {
+                        current = { ...current, desserts: [] };
+                        next[day] = current;
+                        changed = true;
+                    }
+                }
 
                 const hasSides =
                     (current.sideSalads?.length ?? 0) > 0 ||
@@ -1285,6 +1501,10 @@ export default function CraftedForYouPage({
                     continue;
                 }
 
+                const adminRecommendedDessert = (assigned.desserts ?? []).some(
+                    (meal) => meal?.isRecommended || meal?.is_recommended,
+                );
+
                 /** @type {import('../../consultation/consultationDraft.js').DaySelections} */
                 const sideSeed = {
                     ...current,
@@ -1293,15 +1513,20 @@ export default function CraftedForYouPage({
                     soup: [],
                 };
 
-                let remaining = 2;
+                let remaining = FIXED_CHOICE_REQUIRED_COUNT;
 
-                for (const key of /** @type {const} */ (['sideSalads', 'desserts', 'soup'])) {
+                const sideSeedKeys =
+                    includeDefaultDessert || adminRecommendedDessert
+                        ? /** @type {const} */ (['sideSalads', 'desserts', 'soup'])
+                        : /** @type {const} */ (['sideSalads', 'soup']);
+
+                for (const key of sideSeedKeys) {
                     if (remaining <= 0) {
                         break;
                     }
 
                     const recommended = (assigned[key] ?? [])
-                        .filter((meal) => meal?.isRecommended)
+                        .filter((meal) => meal?.isRecommended || meal?.is_recommended)
                         .map((meal) => normalizeConsultationMealId(meal?.id))
                         .filter((id) => id !== '');
 
@@ -1325,7 +1550,7 @@ export default function CraftedForYouPage({
 
             return changed ? next : prev;
         });
-    }, [craft, dietProtocol, sortedSelectedDays, scheduledFullCraftByWeekday]);
+    }, [craft, basePlanTier, sortedSelectedDays, scheduledFullCraftByWeekday]);
 
     const assignedMealsForCalorieDay = useMemo(() => {
         if (!calorieDay) {
@@ -1352,13 +1577,155 @@ export default function CraftedForYouPage({
 
     const progressPercent = totalScreens <= 1 ? 0 : ((screen - 1) / (totalScreens - 1)) * 100;
 
-    const canGoNextFromCraftDuration =
-        craftKey !== null && (isLgViewport !== true ? true : weekDuration !== null);
+    const canGoNextFromCraft = craftKey !== null;
+    const canGoNextFromDuration = isPartnerFulfillment
+        ? weekDuration !== null && (planWeeks === 1 || planWeeks === 4) && selectedBilledDays !== null
+        : weekDuration !== null;
     const canGoNextFromManualDays = weekDuration !== null && sortedSelectedDays.length === weekDuration;
 
-    /** Full / Afternoon / Day / Intermittent share the weekly category carousels (same meal options). */
+    const partnerPlanLengthOptions = useMemo(() => {
+        if (!craftKey || !partnerKitchenPricing || typeof partnerKitchenPricing !== 'object') {
+            return [];
+        }
+
+        const options = partnerKitchenPricing.planLengthOptions?.[craftKey];
+
+        return Array.isArray(options) ? options : [];
+    }, [craftKey, partnerKitchenPricing]);
+
+    function partnerDailyRateLabelFor(craftOptionKey) {
+        if (!isPartnerFulfillment || !partnerKitchenPricing) {
+            return null;
+        }
+
+        const label = partnerKitchenPricing.dailyRateLabels?.[craftOptionKey];
+
+        return typeof label === 'string' ? label : null;
+    }
+
+    /**
+     * @param {{ billedDays: number, planWeeks: number, weekDuration: number }} option
+     */
+    function selectPartnerPlanLength(option) {
+        setSelectedBilledDays(option.billedDays);
+        setPlanWeeks(option.planWeeks);
+        setWeekDuration(option.weekDuration);
+    }
+
+    /**
+     * @param {{ billedDays: number, amount: number }} option
+     */
+    function partnerPlanLengthPerDayLabel(option) {
+        const billedDays = Number(option.billedDays);
+        const amount = Number(option.amount);
+        const perDay = billedDays > 0 && Number.isFinite(amount) ? amount / billedDays : 0;
+
+        return `BHD ${perDay.toFixed(1)} / day`;
+    }
+
+    /**
+     * @param {{ billedDays: number, amount: number, planWeeks: number }} option
+     */
+    function renderPartnerPlanLengthOption(option) {
+        const active = selectedBilledDays === option.billedDays;
+        const descriptionId = `plan-length-desc-${option.billedDays}`;
+
+        return (
+            <div key={`${option.planWeeks}-${option.billedDays}`} className="flex w-full flex-col">
+                <OnboardingOptionButton
+                    label={`${option.billedDays} days`}
+                    detail={`BHD ${Number(option.amount).toFixed(1)}`}
+                    selected={active}
+                    onSelect={() => selectPartnerPlanLength(option)}
+                    describedBy={descriptionId}
+                />
+                <div
+                    className={[
+                        'grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none',
+                        active ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]',
+                    ].join(' ')}
+                    aria-hidden={!active}
+                >
+                    <div className="min-h-0 overflow-hidden">
+                        <OnboardingInlineDescription id={descriptionId}>
+                            {partnerPlanLengthPerDayLabel(option)}
+                            {option.planWeeks === 1
+                                ? ' — trial pricing is higher per day than the 4 week plan.'
+                                : ' for this plan length.'}
+                        </OnboardingInlineDescription>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    /**
+     * @param {number[]} [daysOverride] Pass explicit days when React state may still be stale (e.g. just set 7-day week).
+     */
+    async function continueAfterPlanSetup(daysOverride) {
+        const daysForContinue =
+            Array.isArray(daysOverride) && daysOverride.length > 0 ? daysOverride : selectedDays;
+
+        // After payment, resume skips Partner checkout and opens Choose your meals.
+        if (fulfillmentChoice === 'partner_kitchen' && !resumeChooseMeals) {
+            if (!craftKey || weekDuration === null || daysForContinue.length === 0) {
+                setToast({
+                    message: 'Finish craft and week setup before continuing to checkout.',
+                    visible: true,
+                });
+                return;
+            }
+
+            const resolvedPlanWeeks = planWeeks === 1 || planWeeks === 4 ? planWeeks : 4;
+            const resolvedBilledDays =
+                typeof selectedBilledDays === 'number' && selectedBilledDays > 0
+                    ? selectedBilledDays
+                    : resolvedPlanWeeks === 1
+                      ? weekDuration
+                      : weekDuration * 4;
+
+            const draftPayload = {
+                craftKey,
+                weekDuration,
+                planWeeks: resolvedPlanWeeks,
+                selectedBilledDays: resolvedBilledDays,
+                selectedDays: daysForContinue,
+                selectedByDay,
+                businessSideChoiceByDay,
+                afternoonSoupOptInByDay,
+                fullCraftSoupOptInByDay,
+                environmentYes: Boolean(environmentYes),
+                fulfillmentChoice: /** @type {'partner_kitchen'} */ ('partner_kitchen'),
+            };
+
+            saveConsultationDraft(draftPayload);
+
+            try {
+                await stashConsultationResumeDraft(draftPayload, csrfToken);
+            } catch (error) {
+                setToast({
+                    message:
+                        error instanceof Error
+                            ? error.message
+                            : 'Could not save your progress before checkout. Try again.',
+                    visible: true,
+                });
+                return;
+            }
+
+            const separator = deliveryUrl.includes('?') ? '&' : '?';
+            window.location.assign(`${deliveryUrl}${separator}resume=choose_meals`);
+            return;
+        }
+
+        const first = daysForContinue[0] ?? null;
+        setActiveDay(first);
+        setScreen(curationStartScreen);
+    }
+
+    /** Weekly crafts share the default + SEE OTHER OPTIONS day view (no carousel). */
     const usesWeeklyCategoryLayout = useMemo(
-        () => Boolean(craft && ['full', 'afternoon', 'day', 'intermittent'].includes(craft.key)),
+        () => Boolean(craft && ['full', 'afternoon', 'day', 'intermittent', 'business'].includes(craft.key)),
         [craft],
     );
 
@@ -1403,6 +1770,76 @@ export default function CraftedForYouPage({
         scheduledSoupForDay,
         dietProtocol,
         categoryMaxSelections.breakfasts,
+    ]);
+
+    /**
+     * First curation day keeps the looping seal until primary slots resolve on-screen —
+     * schedule fetched, selections seeded, and deck cards available.
+     */
+    const firstCurationDayMealsReady = useMemo(() => {
+        if (disableAdaptedMenuFetch || menuError) {
+            return true;
+        }
+
+        if (liveMeals === null || menuLoading) {
+            return false;
+        }
+
+        if (!curationDay) {
+            return false;
+        }
+
+        if (!usesWeeklyCategoryLayout) {
+            return true;
+        }
+
+        const assigned = scheduledFullCraftCategoryMealsForDay(scheduledFullCraftByWeekday, curationDay);
+
+        if (assigned == null || !weeklyDisplayDecks) {
+            return false;
+        }
+
+        const selections = selectedByDay[curationDay];
+        const needsBreakfast = (categoryMaxSelections.breakfasts ?? 0) > 0;
+        const scheduleHasBreakfast = (assigned.breakfasts?.length ?? 0) > 0;
+        const needsMains = (categoryMaxSelections.meals ?? 0) > 0;
+        const scheduleHasMains = (assigned.meals?.length ?? 0) > 0;
+
+        if (needsBreakfast && scheduleHasBreakfast) {
+            const resolvedBreakfasts = selectedMealsForSlotFromDecks(
+                selections?.breakfasts ?? [],
+                weeklyDisplayDecks.breakfasts,
+                weeklyDisplayDecks,
+            );
+            if (resolvedBreakfasts.length === 0) {
+                return false;
+            }
+        }
+
+        if (needsMains && scheduleHasMains) {
+            const resolvedMains = selectedMealsForSlotFromDecks(
+                selections?.meals ?? [],
+                weeklyDisplayDecks.meals,
+                weeklyDisplayDecks,
+            );
+            if (resolvedMains.length === 0) {
+                return false;
+            }
+        }
+
+        return true;
+    }, [
+        disableAdaptedMenuFetch,
+        menuError,
+        liveMeals,
+        menuLoading,
+        curationDay,
+        usesWeeklyCategoryLayout,
+        scheduledFullCraftByWeekday,
+        selectedByDay,
+        weeklyDisplayDecks,
+        categoryMaxSelections.breakfasts,
+        categoryMaxSelections.meals,
     ]);
 
     const daySelectionsForCalorieDay = useMemo(() => {
@@ -1575,13 +2012,34 @@ export default function CraftedForYouPage({
         return `Please select: ${missing.join(', ')}.`;
     }, [craft, curationDay, requiredSlotsByCraft, selectedByDay, businessSideChoiceByDay]);
 
+    const mobileNavBarClass = embedInScrollParent
+        ? 'mt-8 flex items-center justify-between gap-3 border-t border-gray-200/70 bg-[#F8F9F6] p-3 sm:mt-6 sm:border-t-0 sm:bg-transparent sm:p-0'
+        : 'mt-8 flex items-center justify-between gap-3 fixed bottom-0 left-0 right-0 z-40 border-t border-gray-200/70 bg-[#F8F9F6]/95 p-3 backdrop-blur sm:static sm:mt-6 sm:border-t-0 sm:bg-transparent sm:p-0';
+
+    const simpleSetupNextClass = embedInScrollParent
+        ? 'mt-8 flex w-full justify-center'
+        : 'mt-8 flex w-full justify-center fixed bottom-0 left-0 right-0 z-40 border-t border-gray-200/70 bg-white/95 p-3 backdrop-blur sm:static sm:border-t-0 sm:bg-transparent sm:p-0';
+
+    const isSimplePlanSetupScreen =
+        screen === receiveScreen ||
+        screen === craftScreen ||
+        screen === durationScreen ||
+        (screen === manualDaysScreen && usesManualDaySelection);
+
+    const usesOnboardingChrome =
+        isSimplePlanSetupScreen || isCurationScreen || screen === finalScreen;
+
+    const useDocumentScroll = embedInScrollParent || isCurationScreen;
+
     return (
         <div
             className={[
-                PAGE_BG,
+                usesOnboardingChrome ? 'bg-white' : PAGE_BG,
                 'font-sans',
-                isCurationScreen
-                    ? 'flex h-[100dvh] min-h-0 flex-col overflow-hidden max-md:px-0 max-md:py-0 md:min-h-screen md:overflow-visible md:px-4 md:py-4 md:pb-4'
+                useDocumentScroll
+                    ? isCurationScreen && !embedInScrollParent
+                        ? 'min-h-screen max-md:px-0 max-md:py-0 md:px-4 md:py-4 md:pb-8'
+                        : 'w-full px-4 py-4 pb-8'
                     : 'min-h-screen px-4 py-4 pb-24 sm:pb-4 md:px-4',
             ].join(' ')}
         >
@@ -1595,20 +2053,40 @@ export default function CraftedForYouPage({
               }
               .mc-shake { animation: mcShake 260ms ease-in-out; }
             `}</style>
-            <div
-                className={[
-                    'mx-auto w-full max-w-[1100px]',
-                    isCurationScreen ? 'flex min-h-0 flex-1 flex-col max-md:space-y-0 md:space-y-4' : 'space-y-4',
-                ].join(' ')}
-            >
-                <div
-                    className={[
-                        'z-50 border-b border-gray-200/70 bg-[#F8F9F6]/95 px-4 pb-3 pt-2 backdrop-blur sm:pb-4',
-                        isCurationScreen ? 'shrink-0 sticky top-0' : 'sticky top-0 -mx-4 md:-mx-8 md:px-8',
-                    ].join(' ')}
-                >
-                    <div className="mx-auto max-w-[1100px]">
-                        <div className="flex items-center justify-between gap-3">
+            <div className="mx-auto w-full max-w-[1100px] space-y-4">
+                {isCurationScreen && curationDay !== null ? (
+                    <div
+                        className={[
+                            'z-50 bg-white px-1 pb-2 pt-1 sm:px-0',
+                            embedInScrollParent ? '' : 'sticky top-0',
+                        ].join(' ')}
+                    >
+                        <OnboardingNavHeader
+                            steps={curationDaySteps}
+                            activeStep={String(curationDay)}
+                            onBack={goBackFromCuration}
+                            canGoBack
+                            progressNoun="Day"
+                        />
+                        <div className="mt-3 w-full">
+                            <h1 className="text-center font-montserrat text-2xl font-semibold leading-tight text-[#262A22]">
+                                {WEEKDAY_LONG[curationDay - 1] ?? progressHeaderLabel}
+                            </h1>
+                            <p className="mt-1.5 text-center text-sm leading-snug text-[#555555]">
+                                Choose your meals for this day.
+                            </p>
+                        </div>
+                    </div>
+                ) : usesOnboardingChrome ? null : (
+                    <div
+                        className={[
+                            'z-50 border-b border-gray-200/70 bg-[#F8F9F6]/95 px-4 pb-3 pt-2 backdrop-blur sm:pb-4',
+                            embedInScrollParent
+                                ? '-mx-4'
+                                : 'sticky top-0 -mx-4 md:-mx-8 md:px-8',
+                        ].join(' ')}
+                    >
+                        <div className="mx-auto max-w-[1100px]">
                             <div>
                                 <p className="mb-1 font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#555555]">
                                     {pageEyebrow}
@@ -1617,45 +2095,54 @@ export default function CraftedForYouPage({
                                     Crafted for YOU
                                 </h1>
                             </div>
-                            <Button
-                                label="Close"
-                                variant="ghost"
-                                onClick={exitConsultation}
-                            />
-                        </div>
 
-                        <div className="mt-3 sm:mt-4">
-                            <div className="flex items-center justify-between gap-3 text-xs font-semibold tracking-tight text-[#555555]">
-                                <span className={isCurationScreen ? 'font-montserrat text-sm font-bold text-[#262A22]' : ''}>
-                                    {progressHeaderLabel}
-                                </span>
-                                {progressSubLabel ? <span>{progressSubLabel}</span> : null}
+                            <div className="mt-3 sm:mt-4">
+                                <div className="flex items-center justify-between gap-3 text-xs font-semibold tracking-tight text-[#555555]">
+                                    <span>{progressHeaderLabel}</span>
+                                    {progressSubLabel ? <span>{progressSubLabel}</span> : null}
+                                </div>
+                                <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-gray-200 sm:h-1.5">
+                                    <div
+                                        className="h-full rounded-full bg-[#5A6B44] transition-[width] duration-300 ease-out"
+                                        style={{ width: `${progressPercent}%` }}
+                                    />
+                                </div>
                             </div>
-                            <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-gray-200 sm:h-1.5">
-                                <div
-                                    className="h-full rounded-full bg-[#5A6B44] transition-[width] duration-300 ease-out"
-                                    style={{ width: `${progressPercent}%` }}
+                        </div>
+                    </div>
+                )}
+
+                {screen === receiveScreen ? (
+                    <section className="mx-auto flex w-full max-w-xl flex-col gap-3 px-1 sm:px-0">
+                        <SimpleFlowNavHeader onBack={goBackFromPlanSetup} />
+
+                        <div className="w-full">
+                            <h1 className="text-center font-montserrat text-2xl font-semibold leading-tight text-[#262A22]">
+                                How would you like to receive your meal plan?
+                            </h1>
+                            <p className="mt-1.5 text-center text-sm leading-snug text-[#555555]">
+                                Choose between fresh daily preparation delivered to your door or self-prepared recipes
+                                at home.
+                            </p>
+                            <div className="mt-3 w-full">
+                                <FulfillmentOptionCards
+                                    deliveryUrl={deliveryUrl}
+                                    onContinue={(choice) => {
+                                        setFulfillmentChoice(choice);
+                                        setScreen(craftScreen);
+                                    }}
                                 />
                             </div>
                         </div>
+                    </section>
+                ) : null}
 
-                        {isAdminPreview && isCurationScreen ? (
-                            <AdminPreviewTierPicker
-                                compact
-                                tiers={availablePlanTiers}
-                                selectedTier={previewPlanTier}
-                                onSelectTier={setPreviewPlanTier}
-                            />
-                        ) : null}
-                    </div>
-                </div>
-
-                {!disableAdaptedMenuFetch && menuLoading && liveMeals === null ? (
+                {isCurationScreen && !disableAdaptedMenuFetch && menuLoading && liveMeals === null ? (
                     <p className="mb-4 shrink-0 rounded-[12px] border border-gray-200 bg-white px-4 py-3 font-body text-sm text-[#555555]">
                         Loading your meal library with adapted portions…
                     </p>
                 ) : null}
-                {!disableAdaptedMenuFetch && menuError ? (
+                {isCurationScreen && !disableAdaptedMenuFetch && menuError ? (
                     <p className="mb-4 shrink-0 rounded-[12px] border border-amber-200 bg-amber-50 px-4 py-3 font-body text-sm text-amber-900">
                         {menuError} Showing sample meals until your plan is available.
                         {loginUrl && /log in again/i.test(menuError) ? (
@@ -1669,179 +2156,238 @@ export default function CraftedForYouPage({
                     </p>
                 ) : null}
 
-                {/* Screen 1 — Craft & Duration */}
-                {screen === 1 ? (
-                    <section className="rounded-[12px] border border-gray-200 bg-white p-6 shadow-sm">
-                        {isAdminPreview ? (
-                            <div className="mb-6">
-                                <AdminPreviewTierPicker
-                                    tiers={availablePlanTiers}
-                                    selectedTier={previewPlanTier}
-                                    onSelectTier={setPreviewPlanTier}
-                                />
-                            </div>
-                        ) : null}
-                        <h2 className="font-montserrat text-[16px] font-bold tracking-tight text-[#262A22]">
-                            The Craft &amp; Duration
-                        </h2>
-                        <p className="mt-1 font-body text-sm text-[#555555]">
-                            Choose your craft and how many days you’re crafting for.
-                        </p>
+                {/* Screen 2 — What’s Your Craft */}
+                {screen === craftScreen ? (
+                    <section className="mx-auto flex w-full max-w-xl flex-col gap-3 px-1 pb-24 sm:px-0 sm:pb-0">
+                        <SimpleFlowNavHeader onBack={() => setScreen(receiveScreen)} />
 
-                        <div className="mt-6 grid gap-6 lg:grid-cols-2">
-                            <div>
-                                <h3 className="font-montserrat text-sm font-bold text-[#262A22]">What’s Your Craft</h3>
-                                <div className="mt-4 grid gap-3">
-                                    {CRAFTS.map((c) => {
-                                        const active = c.key === craftKey;
-                                        return (
-                                            <button
-                                                key={c.key}
-                                                type="button"
-                                                onClick={() => setCraftKey(c.key)}
-                                                aria-pressed={active}
-                                                className={[
-                                                    'w-full rounded-[12px] border p-4 text-left transition-colors',
-                                                    active ? 'border-[#5A6B44] bg-[#F8F9F6]' : 'border-gray-200 bg-white hover:bg-[#F8F9F6]',
-                                                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5A6B44] focus-visible:ring-offset-2',
-                                                ].join(' ')}
-                                            >
-                                                <p className="font-montserrat text-sm font-bold text-[#262A22]">{c.title}</p>
-                                                <p className="mt-1 font-body text-sm text-[#555555]">{c.description}</p>
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-
-                            {/* Large screens: week duration on plan setup. Small screens: week duration is on manual day selection instead. */}
-                            <div className="hidden rounded-[12px] border border-gray-200 bg-[#F8F9F6] p-5 lg:block">
-                                <p className="font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#555555]">
-                                    Week duration
-                                </p>
-                                <div className="mt-3 flex flex-wrap gap-2">
-                                    {[5, 6, 7].map((n) => (
-                                        <PillButton
-                                            key={n}
-                                            label={`${n} days`}
-                                            variant={weekDuration === n ? 'primary' : 'outline'}
-                                            size="sm"
-                                            onClick={() => setWeekDuration(n)}
-                                            className={weekDuration === n ? '' : 'ring-1 ring-[#E5E7EB]'}
-                                        />
-                                    ))}
-                                </div>
-                                <p className="mt-3 font-body text-xs text-[#555555]">
-                                    You’ll pick exactly {weekDuration ?? '…'} active day(s) next.
-                                </p>
-                            </div>
-                        </div>
-
-                        <div className="mt-8 flex items-center justify-between gap-3 fixed bottom-0 left-0 right-0 z-40 border-t border-gray-200/70 bg-[#F8F9F6]/95 p-3 backdrop-blur sm:static sm:mt-6 sm:border-t-0 sm:bg-transparent sm:p-0">
-                            <Button label="BACK" variant="outline" onClick={goBackFromPlanSetup} className="px-10" />
-                            <Button
-                                label="NEXT"
-                                variant="primary"
-                                disabled={!canGoNextFromCraftDuration}
-                                onClick={() => {
-                                    if (weekDuration === 7) {
-                                        setSelectedDays([1, 2, 3, 4, 5, 6, 7]);
-                                        setActiveDay(1);
-                                        setScreen(2);
-                                        return;
-                                    }
-
-                                    setScreen(2);
-                                }}
-                                className="px-10"
-                            />
-                        </div>
-                    </section>
-                ) : null}
-
-                {/* Screen 2 — Manual Day Selection */}
-                {screen === 2 && usesManualDaySelection ? (
-                    <section className="rounded-[12px] border border-gray-200 bg-white p-6 shadow-sm">
-                        {isAdminPreview ? (
-                            <div className="mb-6">
-                                <AdminPreviewTierPicker
-                                    tiers={availablePlanTiers}
-                                    selectedTier={previewPlanTier}
-                                    onSelectTier={setPreviewPlanTier}
-                                />
-                            </div>
-                        ) : null}
-                        <h2 className="font-montserrat text-[16px] font-bold tracking-tight text-[#262A22]">
-                            Manual Day Selection
-                        </h2>
-                        <p className="mt-1 font-body text-sm text-[#555555]">
-                            Choose which days of the week are active.
-                        </p>
-
-                        <div className="mt-5 rounded-[12px] border border-gray-200 bg-[#F8F9F6] p-4 lg:hidden">
-                            <p className="font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#555555]">
-                                Week duration
+                        <div className="w-full">
+                            <h1 className="text-center font-montserrat text-2xl font-semibold leading-tight text-[#262A22]">
+                                What’s Your Craft
+                            </h1>
+                            <p className="mt-1.5 text-center text-sm leading-snug text-[#555555]">
+                                Choose the craft that matches how you want to eat this week.
                             </p>
-                            <div className="mt-3 flex flex-wrap gap-2">
-                                {[5, 6, 7].map((n) => (
-                                    <PillButton
-                                        key={n}
-                                        label={`${n} days`}
-                                        variant={weekDuration === n ? 'primary' : 'outline'}
-                                        size="sm"
-                                        onClick={() => setWeekDuration(n)}
-                                        className={weekDuration === n ? '' : 'ring-1 ring-[#E5E7EB]'}
-                                    />
-                                ))}
-                            </div>
-                            <p className="mt-2 font-body text-xs text-[#555555]">
-                                Then choose exactly {weekDuration ?? '…'} active day(s) below.
-                            </p>
-                        </div>
 
-                        <div className="mt-5 rounded-[12px] border border-gray-200 bg-[#F8F9F6] p-5">
-                            <p className="font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#555555]">
-                                CHOOSE YOUR DAYS ({sortedSelectedDays.length}/{weekDuration ?? '…'} SELECTED)
-                            </p>
-                            <div className={['mt-3 flex flex-wrap gap-2', shakeOn ? 'mc-shake' : ''].join(' ')}>
-                                {WEEKDAY_LABELS.map((label, i) => {
-                                    const dayIdx = i + 1;
-                                    const isOn = sortedSelectedDays.includes(dayIdx);
+                            <div className="mt-3 flex w-full flex-col gap-2.5">
+                                {CRAFTS.map((c) => {
+                                    const active = c.key === craftKey;
+                                    const descriptionId = `craft-desc-${c.key}`;
+                                    const dailyPriceLabel = partnerDailyRateLabelFor(c.key);
+
                                     return (
-                                        <PillButton
-                                            key={label}
-                                            label={label}
-                                            variant={isOn ? 'primary' : 'outline'}
-                                            size="sm"
-                                            onClick={() => toggleDay(dayIdx)}
-                                            className={isOn ? '' : 'ring-1 ring-[#E5E7EB]'}
-                                        />
+                                        <div key={c.key} className="flex w-full flex-col">
+                                            <OnboardingOptionButton
+                                                label={c.title}
+                                                detail={dailyPriceLabel}
+                                                selected={active}
+                                                onSelect={() => setCraftKey(c.key)}
+                                                describedBy={descriptionId}
+                                            />
+                                            <div
+                                                className={[
+                                                    'grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none',
+                                                    active ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]',
+                                                ].join(' ')}
+                                                aria-hidden={!active}
+                                            >
+                                                <div className="min-h-0 overflow-hidden">
+                                                    <OnboardingInlineDescription id={descriptionId}>
+                                                        {c.description}
+                                                    </OnboardingInlineDescription>
+                                                </div>
+                                            </div>
+                                        </div>
                                     );
                                 })}
                             </div>
-                            <p className="mt-3 font-body text-xs text-[#555555]">
-                                Selection must not exceed your Week Duration.
-                            </p>
-                        </div>
 
-                        <div className="mt-8 flex items-center justify-between gap-3 fixed bottom-0 left-0 right-0 z-40 border-t border-gray-200/70 bg-[#F8F9F6]/95 p-3 backdrop-blur sm:static sm:border-t-0 sm:bg-transparent sm:p-0">
-                            <Button label="BACK" variant="outline" onClick={() => setScreen(1)} className="px-10" />
-                            <Button
-                                label="NEXT"
-                                variant="primary"
-                                disabled={!canGoNextFromManualDays}
-                                onClick={() => {
-                                    const first = sortedSelectedDays[0] ?? null;
-                                    setActiveDay(first);
-                                    setScreen(curationStartScreen);
-                                }}
-                                className="px-10"
-                            />
+                            <div className={simpleSetupNextClass}>
+                                <Button
+                                    label="NEXT"
+                                    variant="primary"
+                                    disabled={!canGoNextFromCraft}
+                                    onClick={() => {
+                                        if (isPartnerFulfillment && planWeeks !== 1) {
+                                            setPartnerLengthView('fourWeeks');
+                                        }
+                                        setScreen(durationScreen);
+                                    }}
+                                    className="min-w-[200px] uppercase tracking-[0.08em]"
+                                />
+                            </div>
                         </div>
                     </section>
                 ) : null}
 
-                {/* Screens 3..X — Daily Curation (one day per screen) */}
+                {/* Screen 3 — Week duration / Partner plan length */}
+                {screen === durationScreen ? (
+                    <section className="mx-auto flex w-full max-w-xl flex-col gap-3 px-1 pb-24 sm:px-0 sm:pb-0">
+                        <SimpleFlowNavHeader
+                            onBack={() => {
+                                if (isPartnerFulfillment && partnerLengthView === 'trial') {
+                                    setPartnerLengthView('fourWeeks');
+                                    if (planWeeks === 1) {
+                                        setPlanWeeks(null);
+                                        setSelectedBilledDays(null);
+                                        setWeekDuration(null);
+                                    }
+                                    return;
+                                }
+
+                                setScreen(craftScreen);
+                            }}
+                        />
+
+                        <div className="w-full">
+                            <h1 className="text-center font-montserrat text-2xl font-semibold leading-tight text-[#262A22]">
+                                {isPartnerFulfillment
+                                    ? partnerLengthView === 'trial'
+                                        ? '1 week trial'
+                                        : 'Plan length'
+                                    : 'Week duration'}
+                            </h1>
+                            <p className="mt-1.5 text-center text-sm leading-snug text-[#555555]">
+                                {isPartnerFulfillment
+                                    ? partnerLengthView === 'trial'
+                                        ? 'Choose how many days you want for your trial week.'
+                                        : 'Choose how many days you want for this craft.'
+                                    : 'How many days are you crafting for this week?'}
+                            </p>
+
+                            {isPartnerFulfillment ? (
+                                partnerLengthView === 'trial' ? (
+                                    <div className="mt-3 flex w-full flex-col gap-2.5">
+                                        {partnerPlanLengthOptions
+                                            .filter((option) => option.planWeeks === 1)
+                                            .map((option) => renderPartnerPlanLengthOption(option))}
+                                    </div>
+                                ) : (
+                                    <div className="mt-3 flex w-full flex-col gap-5">
+                                        <div className="flex w-full flex-col gap-2.5">
+                                            {partnerPlanLengthOptions
+                                                .filter((option) => option.planWeeks === 4)
+                                                .map((option) => renderPartnerPlanLengthOption(option))}
+                                        </div>
+                                        <button
+                                            type="button"
+                                            className="self-center font-montserrat text-sm font-semibold text-[#6E8C47] underline underline-offset-2 outline-none hover:text-[#556C37] focus-visible:ring-2 focus-visible:ring-[#6E8C47] focus-visible:ring-offset-2"
+                                            onClick={() => {
+                                                setPartnerLengthView('trial');
+                                                if (planWeeks === 4) {
+                                                    setPlanWeeks(null);
+                                                    setSelectedBilledDays(null);
+                                                    setWeekDuration(null);
+                                                }
+                                            }}
+                                        >
+                                            1 week trial
+                                        </button>
+                                    </div>
+                                )
+                            ) : (
+                                <div className="mt-3 w-full">
+                                    <div className="flex flex-wrap justify-center gap-2">
+                                        {[5, 6, 7].map((n) => (
+                                            <FoodFilterPill
+                                                key={n}
+                                                label={`${n} days`}
+                                                isActive={weekDuration === n}
+                                                onClick={() => {
+                                                    setWeekDuration(n);
+                                                    setPlanWeeks(null);
+                                                    setSelectedBilledDays(null);
+                                                }}
+                                            />
+                                        ))}
+                                    </div>
+                                    <p className="mt-3 text-center font-body text-xs text-[#555555]">
+                                        {weekDuration === 7
+                                            ? 'All seven days will be included automatically.'
+                                            : `You’ll pick exactly ${weekDuration ?? '…'} active day(s) next.`}
+                                    </p>
+                                </div>
+                            )}
+
+                            <div className={simpleSetupNextClass}>
+                                <Button
+                                    label="NEXT"
+                                    variant="primary"
+                                    disabled={!canGoNextFromDuration}
+                                    onClick={() => {
+                                        if (weekDuration === 7) {
+                                            const allDays = [1, 2, 3, 4, 5, 6, 7];
+                                            setSelectedDays(allDays);
+                                            setActiveDay(1);
+                                            continueAfterPlanSetup(allDays);
+                                            return;
+                                        }
+
+                                        setScreen(manualDaysScreen);
+                                    }}
+                                    className="min-w-[200px] uppercase tracking-[0.08em]"
+                                />
+                            </div>
+                        </div>
+                    </section>
+                ) : null}
+
+                {/* Screen 4 — Manual Day Selection (5/6-day plans) */}
+                {screen === manualDaysScreen && usesManualDaySelection ? (
+                    <section className="mx-auto flex w-full max-w-xl flex-col gap-3 px-1 pb-24 sm:px-0 sm:pb-0">
+                        <SimpleFlowNavHeader onBack={() => setScreen(durationScreen)} />
+
+                        <div className="w-full">
+                            <h1 className="text-center font-montserrat text-2xl font-semibold leading-tight text-[#262A22]">
+                                Choose your days
+                            </h1>
+                            <p className="mt-1.5 text-center text-sm leading-snug text-[#555555]">
+                                {sortedSelectedDays.length} of {weekDuration ?? '…'} selected
+                            </p>
+
+                            <div className="mt-3 w-full">
+                                <div
+                                    className={[
+                                        'flex flex-wrap justify-center gap-2',
+                                        shakeOn ? 'mc-shake' : '',
+                                    ].join(' ')}
+                                >
+                                    {WEEKDAY_LABELS.map((label, i) => {
+                                        const dayIdx = i + 1;
+                                        const isOn = sortedSelectedDays.includes(dayIdx);
+                                        return (
+                                            <FoodFilterPill
+                                                key={label}
+                                                label={label}
+                                                isActive={isOn}
+                                                onClick={() => toggleDay(dayIdx)}
+                                            />
+                                        );
+                                    })}
+                                </div>
+                                <p className="mt-3 text-center font-body text-xs text-[#555555]">
+                                    Selection must not exceed your Week Duration.
+                                </p>
+                            </div>
+
+                            <div className={simpleSetupNextClass}>
+                                <Button
+                                    label="NEXT"
+                                    variant="primary"
+                                    disabled={!canGoNextFromManualDays}
+                                    onClick={() => {
+                                        const first = sortedSelectedDays[0] ?? null;
+                                        setActiveDay(first);
+                                        continueAfterPlanSetup(sortedSelectedDays);
+                                    }}
+                                    className="min-w-[200px] uppercase tracking-[0.08em]"
+                                />
+                            </div>
+                        </div>
+                    </section>
+                ) : null}
+
+                {/* Daily curation (one day per screen) */}
                 {isCurationScreen ? (
                     <>
                         {curationDay ? (() => {
@@ -1857,6 +2403,10 @@ export default function CraftedForYouPage({
                             const daySelections = selectedByDay[day] ?? emptyDaySelections;
 
                             const toggle = (key, max) => (meal) => {
+                                if (key === 'desserts') {
+                                    afternoonDessertKeptRef.current.add(day);
+                                }
+
                                 setSelectedByDay((prev) => {
                                     const current = prev[day] ?? {
                                         breakfasts: [],
@@ -1883,6 +2433,10 @@ export default function CraftedForYouPage({
                             };
 
                             const toggleFixedChoice = (categoryKey, meal) => {
+                                if (categoryKey === 'desserts') {
+                                    afternoonDessertKeptRef.current.add(day);
+                                }
+
                                 setSelectedByDay((prev) => {
                                     const current = prev[day] ?? {
                                         breakfasts: [],
@@ -1919,9 +2473,10 @@ export default function CraftedForYouPage({
                             };
 
                             return (
-                            <div className="flex min-h-0 w-full flex-1 flex-col">
+                            <div className="w-full">
                             <ChooseYourMeals
-                                panelClassName="h-full min-h-0"
+                                panelClassName="w-full"
+                                documentScroll
                                 soupCatalogMeals={catalogMeals}
                                 dayName={WEEKDAY_LONG[curationDay - 1] ?? ''}
                                 totalKcal={dayCaloriesTotal}
@@ -1955,7 +2510,7 @@ export default function CraftedForYouPage({
                                         ? (categoryKey, meal) => {
                                               if (
                                                   categoryKey === 'breakfasts' &&
-                                                  dietProtocol !== 'nutrient_dense'
+                                                  !isBalancedAntiInflammatoryProtocol(dietProtocol)
                                               ) {
                                                   return;
                                               }
@@ -1977,13 +2532,6 @@ export default function CraftedForYouPage({
                                     usesWeeklyCategoryLayout ? clearFixedChoiceCategory : undefined
                                 }
                                 deckScopePrefix={usesWeeklyCategoryLayout ? String(curationDay) : ''}
-                                onFooterBack={() => {
-                                    if (screen === curationStartScreen) {
-                                        setScreen(usesManualDaySelection ? 2 : 1);
-                                        return;
-                                    }
-                                    setScreen(screen - 1);
-                                }}
                                 onFooterNext={() => {
                                     setScreen(screen + 1);
                                 }}
@@ -1992,7 +2540,9 @@ export default function CraftedForYouPage({
                                 scheduledSoupMeals={scheduledSoupForDay(curationDay)}
                                 onViewDetails={openMealDetailWhenScheduleReady}
                                 dietProtocol={dietProtocol}
+                                protocolSelectedLayout
                                 isMenuPending={isMenuPending}
+                                showSealLoading={curationIndex === 0 && !firstCurationDayMealsReady}
                             >
                                 {usesWeeklyCategoryLayout ? null : (
                                 <AnimatePresence mode="wait" initial={false}>
@@ -2020,7 +2570,10 @@ export default function CraftedForYouPage({
                                                     return consultationDessertDeckForDay(
                                                         catalogMeals,
                                                         assignedForDay?.desserts ?? [],
-                                                        { preferBakedDesserts: dietProtocol === 'nutrient_dense' },
+                                                        {
+                                                            preferBakedDesserts:
+                                                                isBalancedAntiInflammatoryProtocol(dietProtocol),
+                                                        },
                                                     );
                                                 }
 
@@ -2069,13 +2622,12 @@ export default function CraftedForYouPage({
                                                                 ].map((opt) => {
                                                                     const on = side === opt.key;
                                                                     return (
-                                                                        <PillButton
+                                                                        <Button
                                                                             key={opt.key}
                                                                             label={opt.label}
-                                                                            variant={on ? 'primary' : 'outline'}
+                                                                            variant={on ? 'primary' : 'tab'}
                                                                             size="sm"
                                                                             onClick={() => setBusinessSideChoice(day, /** @type {any} */ (opt.key))}
-                                                                            className={on ? '' : 'ring-1 ring-[#E5E7EB]'}
                                                                         />
                                                                     );
                                                                 })}
@@ -2193,123 +2745,203 @@ export default function CraftedForYouPage({
                     </>
                 ) : null}
 
-                {/* Final Screen — Environmental Check & Submit */}
+                {/* Final Screen — Partner: cutlery choice; DIY: Submit only */}
                 {screen === finalScreen ? (
-                    <section className="rounded-[12px] border border-gray-200 bg-white p-6 shadow-sm">
-                        <h2 className="font-montserrat text-[16px] font-bold tracking-tight text-[#262A22]">
-                            Environmental Check &amp; Submit
-                        </h2>
-                        <p className="mt-1 font-body text-sm text-[#555555]">
-                            One last meaningful choice before the big finish.
-                        </p>
+                    <section className="mx-auto flex w-full max-w-xl flex-col gap-3 px-1 pb-24 sm:px-0 sm:pb-0">
+                        <SimpleFlowNavHeader onBack={() => setScreen(screen - 1)} />
 
-                        <div className="mt-6 rounded-[12px] border border-gray-200 bg-[#F8F9F6] p-5">
-                            <p className="font-montserrat text-sm font-bold text-[#262A22]">
-                                Would You Like To Help Saving The Environment?
-                            </p>
-                            <div className="mt-3 flex flex-wrap items-center gap-3">
-                                <button
-                                    type="button"
-                                    className="inline-flex items-center gap-3"
-                                    onClick={() => setEnvironmentYes((v) => !v)}
-                                    aria-pressed={environmentYes}
-                                >
-                                    <SquareCheckbox checked={environmentYes} presentational />
-                                    <span className="font-montserrat text-sm font-bold text-[#262A22]">YES</span>
-                                </button>
-                                {environmentYes ? (
-                                    <span className="font-montserrat text-sm font-bold text-[#C44F5D]">NO CUTLERY FOR ME</span>
-                                ) : null}
+                        <div className="w-full">
+                            <h1 className="text-center font-montserrat text-2xl font-semibold leading-tight text-[#262A22]">
+                                {isPartnerFulfillment ? 'Do you need cutlery?' : 'Submit your meal plan'}
+                            </h1>
+                            {isPartnerFulfillment ? null : (
+                                <p className="mt-1.5 text-center text-sm leading-snug text-[#555555]">
+                                    Save your selections to open your cook-it-yourself plan.
+                                </p>
+                            )}
+
+                            {isPartnerFulfillment ? (
+                                <div className="mt-3 flex w-full flex-col gap-2.5" role="group" aria-label="Cutlery options">
+                                    <OnboardingOptionButton
+                                        label="YES"
+                                        selected={environmentYes === false}
+                                        onSelect={() => setEnvironmentYes(false)}
+                                    />
+                                    <div className="flex w-full flex-col">
+                                        <OnboardingOptionButton
+                                            label="NO"
+                                            selected={environmentYes === true}
+                                            onSelect={() => setEnvironmentYes(true)}
+                                            describedBy="cutlery-no-thanks"
+                                        />
+                                        <div
+                                            className={[
+                                                'grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none',
+                                                environmentYes === true ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]',
+                                            ].join(' ')}
+                                            aria-hidden={environmentYes !== true}
+                                        >
+                                            <div className="min-h-0 overflow-hidden">
+                                                {environmentYes === true ? (
+                                                    <motion.p
+                                                        id="cutlery-no-thanks"
+                                                        role="status"
+                                                        initial={{ opacity: 0, scale: 0.82, y: 12 }}
+                                                        animate={{ opacity: 1, scale: 1.04, y: 0 }}
+                                                        transition={{
+                                                            type: 'spring',
+                                                            stiffness: 380,
+                                                            damping: 16,
+                                                            mass: 0.7,
+                                                        }}
+                                                        className="relative z-10 mt-3 origin-center rounded-[14px] border border-[#6E8C47]/30 bg-white px-4 py-3.5 text-center font-montserrat text-lg font-bold leading-snug text-[#5A6B44] shadow-[0_10px_28px_rgba(90,107,68,0.22)] sm:text-xl"
+                                                    >
+                                                        <span className="me-2 inline-block text-[1.35em] leading-none" aria-hidden>
+                                                            👏
+                                                        </span>
+                                                        Thank you for helping us save the environment.
+                                                    </motion.p>
+                                                ) : null}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ) : null}
+
+                            <div className={simpleSetupNextClass}>
+                                <Button
+                                    label="SUBMIT"
+                                    variant="primary"
+                                    onClick={submit}
+                                    disabled={
+                                        submitting ||
+                                        (isPartnerFulfillment && environmentYes === null)
+                                    }
+                                    className="min-w-[200px] uppercase tracking-[0.08em]"
+                                />
                             </div>
-                        </div>
-
-                        <div className="mt-8 flex items-center justify-between gap-3 fixed bottom-0 left-0 right-0 z-40 border-t border-gray-200/70 bg-[#F8F9F6]/95 p-3 backdrop-blur sm:static sm:border-t-0 sm:bg-transparent sm:p-0">
-                            <Button
-                                label="BACK"
-                                variant="outline"
-                                onClick={() => setScreen(screen - 1)}
-                                className="px-10"
-                            />
-                            <Button
-                                label="SUBMIT"
-                                variant="primary"
-                                onClick={submit}
-                                disabled={submitting}
-                                className="px-12 py-3 text-base"
-                            />
                         </div>
                     </section>
                 ) : null}
             </div>
 
             {submitting ? (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
-                    <div className="absolute inset-0 bg-black/40" />
-                    <div className="relative w-full max-w-[640px] rounded-[12px] bg-white p-8 shadow-2xl">
-                        <div className="flex flex-col items-center text-center">
-                            <div className="h-[140px] w-[140px] animate-pulse">
-                                <MealCraftLogoAnimatedIdentity variant="minimal-animated" />
+                <PhoneFramePortal>
+                    {({ nested }) => (
+                        <div
+                            className={
+                                nested
+                                    ? 'absolute inset-0 z-[100] flex items-center justify-center p-4'
+                                    : 'fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6'
+                            }
+                        >
+                            <div className="absolute inset-0 bg-black/40" />
+                            <div className="relative w-full max-w-full rounded-[12px] bg-white p-6 shadow-2xl">
+                                <div className="flex flex-col items-center text-center">
+                                    <div className="h-[120px] w-[120px] animate-pulse">
+                                        <MealCraftLogoAnimatedIdentity variant="minimal-animated" />
+                                    </div>
+                                    <p className="mt-4 font-montserrat text-sm font-bold uppercase tracking-[0.18em] text-[#5A6B44]">
+                                        Your meal plan is being crafted…
+                                    </p>
+                                    <p className="mt-2 font-body text-sm text-[#555555]">
+                                        Please wait a moment.
+                                    </p>
+                                </div>
                             </div>
-                            <p className="mt-4 font-montserrat text-sm font-bold uppercase tracking-[0.18em] text-[#5A6B44]">
-                                Your meal plan is being crafted…
-                            </p>
-                            <p className="mt-2 font-body text-sm text-[#555555]">Please wait a moment.</p>
                         </div>
-                    </div>
-                </div>
+                    )}
+                </PhoneFramePortal>
             ) : null}
 
             {submitSuccess ? (
-                <div className="fixed bottom-6 left-1/2 z-[110] w-full max-w-[640px] -translate-x-1/2 px-4">
-                    <div className="rounded-[12px] border border-[#5A6B44]/30 bg-white px-4 py-3 shadow-lg">
-                        <p className="font-body text-sm font-semibold text-[#262A22]">
-                            Your craft plan was saved. The kitchen can now produce your selections.
-                        </p>
-                        {homeHref ? (
-                            <button
-                                type="button"
-                                className="mt-3 font-montserrat text-sm font-bold text-[#5A6B44] underline-offset-2 hover:underline"
-                                onClick={() =>
-                                    window.location.assign(summaryHref || homeHref)
-                                }
-                            >
-                                {summaryHref ? 'View your meal plan summary' : 'Back to your plan'}
-                            </button>
-                        ) : null}
-                    </div>
-                </div>
+                <PhoneFramePortal>
+                    {({ nested }) => (
+                        <div
+                            className={
+                                nested
+                                    ? 'absolute inset-x-0 bottom-0 z-[110] px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]'
+                                    : 'fixed bottom-6 left-1/2 z-[110] w-full max-w-[430px] -translate-x-1/2 px-4'
+                            }
+                        >
+                            <div className="rounded-[12px] border border-[#5A6B44]/30 bg-white px-4 py-3 shadow-lg">
+                                <p className="font-body text-sm font-semibold text-[#262A22]">
+                                    Your craft plan was saved. The kitchen can now produce your selections.
+                                </p>
+                                {homeHref ? (
+                                    <button
+                                        type="button"
+                                        className="mt-3 font-montserrat text-sm font-bold text-[#5A6B44] underline-offset-2 hover:underline"
+                                        onClick={() =>
+                                            window.location.assign(summaryHref || homeHref)
+                                        }
+                                    >
+                                        {summaryHref
+                                            ? 'View your meal plan summary'
+                                            : 'Back to your plan'}
+                                    </button>
+                                ) : null}
+                            </div>
+                        </div>
+                    )}
+                </PhoneFramePortal>
             ) : null}
 
             {submitError ? (
-                <div className="fixed bottom-6 left-1/2 z-[110] w-full max-w-[640px] -translate-x-1/2 px-4">
-                    <div className="rounded-[12px] border border-red-200 bg-red-50 px-4 py-3 shadow-lg">
-                        <p className="font-body text-sm text-red-800">
-                            {submitError}
-                            {loginUrl && /log in again/i.test(submitError) ? (
-                                <>
-                                    {' '}
-                                    <a href={loginUrl} className="font-semibold underline underline-offset-2">
-                                        Log in
-                                    </a>
-                                </>
-                            ) : null}
-                        </p>
-                    </div>
-                </div>
+                <PhoneFramePortal>
+                    {({ nested }) => (
+                        <div
+                            className={
+                                nested
+                                    ? 'absolute inset-x-0 bottom-0 z-[110] px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]'
+                                    : 'fixed bottom-6 left-1/2 z-[110] w-full max-w-[430px] -translate-x-1/2 px-4'
+                            }
+                        >
+                            <div className="rounded-[12px] border border-red-200 bg-red-50 px-4 py-3 shadow-lg">
+                                <p className="font-body text-sm text-red-800">
+                                    {submitError}
+                                    {loginUrl && /log in again/i.test(submitError) ? (
+                                        <>
+                                            {' '}
+                                            <a
+                                                href={loginUrl}
+                                                className="font-semibold underline underline-offset-2"
+                                            >
+                                                Log in
+                                            </a>
+                                        </>
+                                    ) : null}
+                                </p>
+                            </div>
+                        </div>
+                    )}
+                </PhoneFramePortal>
             ) : null}
 
             {toast.visible ? (
-                <div className="fixed bottom-6 left-1/2 z-[110] w-full max-w-[640px] -translate-x-1/2 px-4">
-                    <div className="rounded-[12px] border border-gray-200 bg-white px-4 py-3 shadow-lg">
-                        <p className="font-body text-sm text-[#555555]">{toast.message}</p>
-                    </div>
-                </div>
+                <PhoneFramePortal>
+                    {({ nested }) => (
+                        <div
+                            className={
+                                nested
+                                    ? 'absolute inset-x-0 bottom-0 z-[110] px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]'
+                                    : 'fixed bottom-6 left-1/2 z-[110] w-full max-w-[430px] -translate-x-1/2 px-4'
+                            }
+                        >
+                            <div className="rounded-[12px] border border-gray-200 bg-white px-4 py-3 shadow-lg">
+                                <p className="font-body text-sm text-[#555555]">{toast.message}</p>
+                            </div>
+                        </div>
+                    )}
+                </PhoneFramePortal>
             ) : null}
 
             <MealDetailModalPortal
                 mealDetailModal={mealDetailModal}
                 loading={detailLoading}
                 onClose={closeMealDetail}
+                hideInstructions={isPartnerFulfillment}
+                inlineIngredients={isPartnerFulfillment}
             />
         </div>
     );

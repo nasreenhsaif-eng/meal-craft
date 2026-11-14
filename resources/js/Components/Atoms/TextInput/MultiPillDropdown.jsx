@@ -1,6 +1,7 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { IconChevronDown } from '../SvgIcons.jsx';
+import { portalMenuRectFromTrigger, TEXT_INPUT_ROOT } from './fieldLayout.js';
 
 /**
  * Multi-select styled like {@link DropdownTextInput}: pills inside the trigger + portal listbox.
@@ -77,12 +78,7 @@ export default function MultiPillDropdown({
             if (!el) {
                 return;
             }
-            const r = el.getBoundingClientRect();
-            setMenuRect({
-                left: r.left,
-                top: r.bottom,
-                width: r.width,
-            });
+            setMenuRect(portalMenuRectFromTrigger(el.getBoundingClientRect()));
         };
 
         updateRect();
@@ -125,7 +121,7 @@ export default function MultiPillDropdown({
     }
 
     return (
-        <div ref={rootRef} className={`block w-full max-w-[492px] text-left ${className}`.trim()}>
+        <div ref={rootRef} className={`${TEXT_INPUT_ROOT} ${className}`.trim()}>
             <label
                 htmlFor={id}
                 className={
@@ -148,7 +144,7 @@ export default function MultiPillDropdown({
                     aria-multiselectable="true"
                     aria-label={hideLabel ? `${label}: open multi-select` : 'Open multi-select'}
                     onClick={() => setOpen((o) => !o)}
-                    className="relative flex min-h-[49px] w-full appearance-none items-center justify-between gap-3 rounded-[12px] border border-[#E5E7EB] bg-[#FFFFFF] px-[14px] py-2 text-left font-montserrat text-[16px] font-medium tracking-tight text-[#364153] shadow-sm outline-none transition-[border-color,box-shadow,background-color] duration-200 hover:bg-[#F8F9F6] focus-visible:border-[#5A6B44] focus-visible:ring-2 focus-visible:ring-[#5A6B44] focus-visible:ring-offset-2"
+                    className="relative box-border flex min-h-[49px] w-full min-w-0 max-w-full appearance-none items-center justify-between gap-3 rounded-[12px] border border-[#E5E7EB] bg-[#FFFFFF] px-3 py-2 text-left font-montserrat text-[16px] font-medium tracking-tight text-[#364153] shadow-sm outline-none transition-[border-color,box-shadow,background-color] duration-200 hover:bg-[#F8F9F6] focus-visible:border-[#5A6B44] focus-visible:ring-2 focus-visible:ring-[#5A6B44] focus-visible:ring-offset-2 sm:px-[14px]"
                 >
                     <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
                         {orderedSelection.length === 0 ? (
@@ -185,10 +181,10 @@ export default function MultiPillDropdown({
                 ? createPortal(
                       <div
                           data-multi-pill-dropdown-portal
-                          className="fixed z-[9999]"
+                          className="fixed z-[9999] max-w-[calc(100vw-16px)]"
                           style={{
                               left: `${menuRect.left}px`,
-                              top: `${menuRect.top + 8}px`,
+                              top: `${menuRect.top}px`,
                               width: `${menuRect.width}px`,
                           }}
                       >

@@ -2,7 +2,7 @@ import MealDetailView from './MealDetailView';
 import { mealDetailViewFixture } from './mealDetailViewFixture';
 
 export default {
-    title: 'MealCraft/Molecules/MealDetailView',
+    title: 'Design System/04. Organisms/DataCard/MealDetailView',
     component: MealDetailView,
     parameters: {
         layout: 'fullscreen',

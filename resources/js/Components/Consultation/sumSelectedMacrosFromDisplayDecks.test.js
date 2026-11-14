@@ -203,6 +203,40 @@ describe('sumSelectedMacrosFromDisplayDecks', () => {
         expect(decks.meals.map((meal) => meal.id)).toEqual(['100', '101', '102', '103', '104', '105']);
     });
 
+    it('shows up to two savory-egg breakfast options in the deck', () => {
+        const breakfasts = [
+            {
+                id: 'b1',
+                title: 'Egg scramble',
+                mealType: 'Breakfast',
+                savoryEggCount: 3,
+                caloriesNumber: 300,
+            },
+            {
+                id: 'b2',
+                title: 'Chia oats',
+                mealType: 'Breakfast',
+                savoryEggCount: 2,
+                caloriesNumber: 380,
+            },
+            {
+                id: 'b3',
+                title: 'Fruit bowl',
+                mealType: 'Breakfast',
+                caloriesNumber: 220,
+            },
+        ];
+
+        const decks = buildWeeklyConsultationDisplayDecks({
+            meals: breakfasts,
+            includeBreakfast: true,
+        });
+
+        expect(CONSULTATION_DECK_OPTION_LIMITS.breakfast).toBe(2);
+        expect(decks.breakfasts).toHaveLength(2);
+        expect(decks.breakfasts.map((meal) => meal.id)).toEqual(['b1', 'b2']);
+    });
+
     it('pads schedule mains up to six from the catalog', () => {
         const preferred = [
             { id: '1', mealType: 'Meal', caloriesNumber: 500 },

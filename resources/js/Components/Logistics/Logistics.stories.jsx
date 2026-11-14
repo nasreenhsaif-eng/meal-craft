@@ -1,6 +1,6 @@
 /**
  * Logistics operational sheets. For the **meal-plan date picker** UI, use
- * `MealCraft/Components/Calendar` — single + range selection with MealCraft green chrome.
+ * `Design System/03. Molecules/Form and pickers/Calendar` — single + range selection with MealCraft green chrome.
  */
 import { useState } from 'react';
 import { AdminLayout } from '../Admin/AdminLayout.jsx';
@@ -9,7 +9,12 @@ import UserSubmissions from './UserSubmissions.jsx';
 import KitchenDailySheet from './KitchenDailySheet.jsx';
 import KitchenShoppingList from './KitchenShoppingList.jsx';
 import { downloadCsv } from './logisticsCsvExport.js';
-import { mockUserSubmissions, mockKitchenDailyRows, mockIngredientChoiceLines } from './logisticsMockData.js';
+import {
+    mockAdaptedKitchenMeals,
+    mockKitchenBaseRecipes,
+    mockUserSubmissions,
+    mockKitchenDailyRows,
+} from './logisticsMockData.js';
 
 /** Simulates US Letter-ish sheet on screen; `@media print` relies on browser print. */
 function printPaperDecorator(Story) {
@@ -35,7 +40,7 @@ function logisticsCsvDownload(filenameBase) {
 }
 
 export default {
-    title: 'MealCraft/Pages/Admin/Logistics',
+    title: 'Design System/05. Templates & Pages/Admin/Logistics',
     parameters: {
         layout: 'fullscreen',
     },
@@ -56,26 +61,6 @@ export const UserSubmissionsAdmin = {
                     onExportCsv={logisticsCsvDownload(`user-submissions-export-${date}`)}
                 />
             </AdminLayout>
-        );
-    },
-};
-
-export const UserSubmissionsTable = {
-    name: 'User submissions (table only)',
-    parameters: { layout: 'padded' },
-    render: function Render() {
-        const [date, setDate] = useState('');
-        return (
-            <div className="mx-auto max-w-6xl bg-[#F9FAFB] p-6">
-                <UserSubmissions
-                    submissions={mockUserSubmissions}
-                    selectedDate={date}
-                    onDateChange={setDate}
-                    onPrint={() => window.print()}
-                    onSendToGoogleDrive={logisticsCsvDownload('user-submissions-drive-all')}
-                    onExportCsv={logisticsCsvDownload('user-submissions-export-all')}
-                />
-            </div>
         );
     },
 };
@@ -115,15 +100,16 @@ export const KitchenProductionPrintPreview = {
 };
 
 export const KitchenShoppingAggregated = {
-    name: 'Kitchen shopping — aggregated list',
+    name: 'Kitchen operation sheets — recipes + bulk',
     parameters: { layout: 'padded' },
     render: () => (
         <div className="mx-auto max-w-6xl bg-[#F9FAFB] p-6">
             <KitchenShoppingList
-                lines={mockIngredientChoiceLines}
+                adaptedMeals={mockAdaptedKitchenMeals}
+                baseRecipes={mockKitchenBaseRecipes}
                 dayLabel="Monday, Apr 14, 2026"
                 onGenerateCsvForDrive={() =>
-                    downloadCsv('kitchen-shopping-demo.csv', 'Section,Row,Value\nBulk,Salmon (g),1950')
+                    downloadCsv('kitchen-operations-demo.csv', 'Section,Row,Value\nBulk,Salmon (g),1950')
                 }
             />
         </div>
@@ -144,10 +130,11 @@ export const KitchenLogisticsInAdminLayout = {
                         onGenerateCsvForDrive={logisticsCsvDownload(`kitchen-daily-${d}`)}
                     />
                     <KitchenShoppingList
-                        lines={mockIngredientChoiceLines}
+                        adaptedMeals={mockAdaptedKitchenMeals}
+                        baseRecipes={mockKitchenBaseRecipes}
                         dayLabel={d}
                         onGenerateCsvForDrive={() =>
-                            downloadCsv(`kitchen-shopping-${d}.csv`, 'Section,Row,Value\nBulk,Salmon (g),1950')
+                            downloadCsv(`kitchen-operations-${d}.csv`, 'Section,Row,Value\nBulk,Salmon (g),1950')
                         }
                     />
                 </div>

@@ -17,15 +17,17 @@ class DatabaseSeeder extends Seeder
     {
         // User::factory(10)->create();
 
-        User::query()->firstOrCreate(['email' => 'test@example.com'], [
+        User::query()->updateOrCreate(['email' => 'test@example.com'], [
             'name' => 'Test User',
             'email' => 'test@example.com',
             'password' => Hash::make('password'),
-            'role' => UserRole::Admin,
+            'role' => UserRole::CraftMasterGeneral,
+            'admin_permissions' => null,
             'email_verified_at' => now(),
             'is_active' => true,
         ]);
 
         $this->call(MenuDevelopmentSeeder::class);
+        $this->call(PartnerKitchenPriceSeeder::class);
     }
 }

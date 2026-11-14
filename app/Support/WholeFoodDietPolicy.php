@@ -96,6 +96,15 @@ final class WholeFoodDietPolicy
         'Chicken Broth',
     ];
 
+    /**
+     * Single-ingredient dark chocolate (cacao + sugar only) — not flavored chips.
+     *
+     * @var list<string>
+     */
+    public const ALLOWED_DARK_CHOCOLATE_NAMES = [
+        'Dark Chocolate',
+    ];
+
     /** @var list<string> */
     public const ALLOWED_DAIRY_EXCEPTION_NAMES = [
         'Grass Fed Butter',
@@ -129,6 +138,10 @@ final class WholeFoodDietPolicy
         }
 
         if (in_array($name, self::ALLOWED_PANTRY_NAMES, true)) {
+            return false;
+        }
+
+        if (in_array($name, self::ALLOWED_DARK_CHOCOLATE_NAMES, true)) {
             return false;
         }
 

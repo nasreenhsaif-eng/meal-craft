@@ -17,7 +17,6 @@ final class AdaptedMenuBuildOptionsFromRequest
      *     dessert_calories?: float,
      *     day_of_week?: int,
      *     craft_key?: string,
-     *     plan_tier?: float,
      *     selected_main_meal_ids?: list<int>,
      * }
      */
@@ -31,7 +30,6 @@ final class AdaptedMenuBuildOptionsFromRequest
             'side_salad_calories' => ['sometimes', 'numeric', 'min:0'],
             'dessert_calories' => ['sometimes', 'numeric', 'min:0'],
             'day_of_week' => ['sometimes', 'integer', 'min:1', 'max:7'],
-            'plan_tier' => ['sometimes', 'integer', Rule::in(UserPlanCalculator::planTiers())],
             'selected_fixed_slots' => ['sometimes', 'array'],
             'selected_fixed_slots.*' => ['string', Rule::in(UserPlanCalculator::fixedChoiceSlots())],
             'fixed_slot_actual_macros' => ['sometimes', 'array'],
@@ -77,12 +75,6 @@ final class AdaptedMenuBuildOptionsFromRequest
 
         if (isset($validated['craft_key'])) {
             $buildOptions['craft_key'] = $validated['craft_key'];
-        }
-
-        $isAdminPreview = $user->isAdmin() && $user->isCustomer() !== true;
-
-        if (isset($validated['plan_tier']) && $isAdminPreview) {
-            $buildOptions['plan_tier'] = (float) (int) $validated['plan_tier'];
         }
 
         if (isset($validated['selected_main_meal_ids'])) {

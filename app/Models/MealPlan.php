@@ -2,9 +2,11 @@
 
 namespace App\Models;
 
+use App\Enums\DietProtocol;
 use App\Enums\MealCyclePhaseTag;
 use App\Enums\MealPlanLibraryCategory;
 use App\Enums\MealPlanSchemaType;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -14,6 +16,7 @@ class MealPlan extends Model
     protected $fillable = [
         'name',
         'goal',
+        'description',
         'schema_type',
         'plan_category',
         'cycle_phase',
@@ -22,6 +25,8 @@ class MealPlan extends Model
         'target_total_carbs_g',
         'target_total_fat_g',
         'default_day_selections',
+        'published_starts_on',
+        'published_ends_on',
     ];
 
     protected function casts(): array
@@ -35,6 +40,8 @@ class MealPlan extends Model
             'target_total_carbs_g' => 'float',
             'target_total_fat_g' => 'float',
             'default_day_selections' => 'array',
+            'published_starts_on' => 'date',
+            'published_ends_on' => 'date',
         ];
     }
 
@@ -50,6 +57,48 @@ class MealPlan extends Model
             MealPlanSchemaType::FourWeek => 28,
             MealPlanSchemaType::WeeklyStructured => 7,
             default => 0,
+        };
+    }
+
+    public function usesNutrientDenseProtocol(): bool
+    {
+        if ($this->plan_category === MealPlanLibraryCategory::NutrientDense) {
+            return true;
+        }
+
+        $name = strtolower((string) ($this->name ?? ''));
+
+        return str_contains($name, 'tbd')
+            || str_contains($name, 'anti-inflammatory')
+            || str_contains($name, 'anti inflammatory');
+    }
+
+    public function isPublished(): bool
+    {
+        return $this->published_starts_on !== null && $this->published_ends_on !== null;
+    }
+
+    /**
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    public function scopePublished(Builder $query): Builder
+    {
+        return $query
+            ->whereNotNull('published_starts_on')
+            ->whereNotNull('published_ends_on');
+    }
+
+    public function dietProtocol(): DietProtocol
+    {
+        if ($this->usesNutrientDenseProtocol()) {
+            return DietProtocol::NutrientDense;
+        }
+
+        return match ($this->plan_category) {
+            MealPlanLibraryCategory::SickleCellWarrior => DietProtocol::SickleCellWarrior,
+            MealPlanLibraryCategory::CycleSync => DietProtocol::CycleSync,
+            default => DietProtocol::Balanced,
         };
     }
 

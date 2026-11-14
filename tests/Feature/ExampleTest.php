@@ -3,5 +3,5 @@
 test('returns a successful response', function () {
     $response = $this->get(route('home'));
 
-    $response->assertRedirect(route('login'));
+    $response->assertOk();
 });

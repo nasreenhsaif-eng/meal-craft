@@ -4,6 +4,7 @@ namespace Database\Factories;
 
 use App\Enums\UserRole;
 use App\Models\User;
+use App\Support\AdminPortalPermission;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -29,6 +30,7 @@ class UserFactory extends Factory
             'email_verified_at' => now(),
             'is_active' => true,
             'role' => UserRole::Admin,
+            'admin_permissions' => AdminPortalPermission::keys(),
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
             'two_factor_secret' => null,
@@ -44,10 +46,19 @@ class UserFactory extends Factory
         ]);
     }
 
+    public function craftMasterGeneral(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'role' => UserRole::CraftMasterGeneral,
+            'admin_permissions' => null,
+        ]);
+    }
+
     public function customer(): static
     {
         return $this->state(fn (array $attributes) => [
             'role' => UserRole::Customer,
+            'admin_permissions' => null,
         ]);
     }
 
@@ -55,6 +66,18 @@ class UserFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'role' => UserRole::Staff,
+            'admin_permissions' => null,
+        ]);
+    }
+
+    /**
+     * @param  list<string>  $permissions
+     */
+    public function withAdminPermissions(array $permissions): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'role' => UserRole::Admin,
+            'admin_permissions' => AdminPortalPermission::sanitize($permissions),
         ]);
     }
 
