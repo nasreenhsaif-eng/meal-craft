@@ -26,6 +26,8 @@ function toggleFilterSelection(selected, id) {
  *   onChange?: (value: FoodFilterId[]) => void;
  *   otherText?: string;
  *   onOtherTextChange?: (value: string) => void;
+ *   options?: import('./foodFilterOptions.js').FoodFilterOption[];
+ *   showOther?: boolean;
  *   className?: string;
  * }} props
  */
@@ -34,6 +36,8 @@ export function FoodFilterMultiSelect({
     onChange,
     otherText = '',
     onOtherTextChange,
+    options = FOOD_FILTER_OPTIONS,
+    showOther = true,
     className = '',
 }) {
     const isOtherActive = value.includes(FOOD_FILTER_OTHER_ID);
@@ -55,7 +59,7 @@ export function FoodFilterMultiSelect({
                 role="group"
                 aria-label="Food filter options"
             >
-                {FOOD_FILTER_OPTIONS.map((option) => (
+                {options.map((option) => (
                     <FoodFilterPill
                         key={option.id}
                         label={option.label}
@@ -66,7 +70,7 @@ export function FoodFilterMultiSelect({
                 ))}
             </div>
 
-            {isOtherActive ? (
+            {showOther && isOtherActive ? (
                 <div className="mt-4 w-full">
                     <TextInput
                         label="Other ingredients or sensitivities"

@@ -5,6 +5,8 @@
  */
 
 import type { IngredientProfile } from './calculateMealNutrition';
+import { gramsFromIngredientAmountAndUnit } from './ingredientQuantityString';
+import { finalizeRecipeNutrition } from './recipeMacroRounding';
 
 const MICRO_KEYS = [
     'fiber',
@@ -19,6 +21,12 @@ const MICRO_KEYS = [
     'vitamin_d',
     'vitamin_k2',
 ] as const;
+
+/** Matches PHP {@see App\Support\PureCookingFatNutrition::OIL_DENSITY_G_PER_ML}. */
+export const PURE_OIL_DENSITY_G_PER_ML = 0.92;
+
+const PURE_OIL_FAT_PER_100G = 100;
+const PURE_OIL_CALORIES_PER_100G = 884;
 
 function microFromJson(m: Record<string, number> | undefined, key: string): number {
     const v = m?.[key];
@@ -36,6 +44,89 @@ export function stripBaseRecipeSuffix(label: string): string {
         .replace(/\s*\(\s*base(?:\s+recipe)?\s*\)\s*$/iu, '')
         .replace(/\s*-\s*base(?:\s+recipe)?\s*$/iu, '')
         .trim();
+}
+
+/**
+ * Pure cooking oils / butter / ghee (aligned with PHP PureCookingFatNutrition).
+ */
+export function isPureCookingFatName(name: string): boolean {
+    const n = normalizeIngredientKey(name);
+    if (!n || n.includes('(base)')) {
+        return false;
+    }
+
+    for (const excluded of [
+        'peanut butter',
+        'almond butter',
+        'cashew butter',
+        'coconut butter',
+        'butter bean',
+        'butternut',
+        'cocoa butter',
+        'shea butter',
+        'tahini',
+    ]) {
+        if (n.includes(excluded)) {
+            return false;
+        }
+    }
+
+    if (/\boil\b/.test(n)) {
+        return true;
+    }
+    if (n.includes('ghee')) {
+        return true;
+    }
+    return /\bbutter\b/.test(n);
+}
+
+export function isVegetableOilName(name: string): boolean {
+    return isPureCookingFatName(name) && /\boil\b/.test(normalizeIngredientKey(name));
+}
+
+function densityForProfile(profile: IngredientProfile | undefined, name: string): number {
+    const stored = typeof profile?.density === 'number' && profile.density > 0 ? profile.density : 0;
+    if (!isPureCookingFatName(name)) {
+        return stored > 0 ? stored : 1;
+    }
+    if (stored >= 0.85 && stored <= 0.98) {
+        return stored;
+    }
+    return isVegetableOilName(name) ? PURE_OIL_DENSITY_G_PER_ML : 0.91;
+}
+
+function macroPer100ForProfile(profile: IngredientProfile, name: string): {
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+} {
+    if (isVegetableOilName(name)) {
+        return {
+            calories: PURE_OIL_CALORIES_PER_100G,
+            protein: 0,
+            carbs: 0,
+            fat: PURE_OIL_FAT_PER_100G,
+        };
+    }
+
+    if (isPureCookingFatName(name)) {
+        const fat = (profile.fat ?? 0) >= 80 ? profile.fat : name.toLowerCase().includes('ghee') ? 99.5 : 81.1;
+        const calories = (profile.calories ?? 0) >= 700 ? profile.calories : Math.round(fat * 9 * 10) / 10;
+        return {
+            calories,
+            protein: Math.max(0, profile.protein ?? 0),
+            carbs: Math.max(0, profile.carbs ?? 0),
+            fat,
+        };
+    }
+
+    return {
+        calories: profile.calories ?? 0,
+        protein: profile.protein ?? 0,
+        carbs: profile.carbs ?? 0,
+        fat: profile.fat ?? 0,
+    };
 }
 
 function resolveIngredientProfile(
@@ -76,18 +167,19 @@ function resolveIngredientProfile(
     return undefined;
 }
 
+/**
+ * @deprecated Prefer {@link gramsFromAmountUnitAndDensity} — kept for call sites that only have kg/ltr.
+ */
 export function gramsFromAmountAndUnit(amount: string, unit: string): number {
+    return gramsFromAmountUnitAndDensity(amount, unit, 1);
+}
+
+export function gramsFromAmountUnitAndDensity(amount: string, unit: string, densityGramsPerMl: number): number {
     const n = Number(amount);
     if (!Number.isFinite(n) || n <= 0) {
         return 0;
     }
-    if (unit === 'kg') {
-        return n * 1000;
-    }
-    if (unit === 'ltr') {
-        return n * 1000;
-    }
-    return n;
+    return gramsFromIngredientAmountAndUnit(n, unit, densityGramsPerMl);
 }
 
 export type IngredientRowForNutrition = {
@@ -140,27 +232,31 @@ export function aggregateNutritionFromIngredientRows(
     };
 
     let resolvedLineCount = 0;
+    let pureFatFloor = 0;
+    let pureFatCalorieFloor = 0;
 
     for (const r of rows) {
-        const grams = gramsFromAmountAndUnit(r.amount, r.unit);
-        if (grams <= 0) {
-            continue;
-        }
-
         const label = (r.selectedName || r.nameQuery || '').trim();
         const ing = resolveIngredientProfile(label, r.ingredientId, byId, byName);
         if (!ing) {
             continue;
         }
 
+        const density = densityForProfile(ing, label || ing.name);
+        const grams = gramsFromAmountUnitAndDensity(r.amount, r.unit, density);
+        if (grams <= 0) {
+            continue;
+        }
+
         resolvedLineCount += 1;
         const factor = grams / 100;
         const micros = ing.micronutrients ?? {};
+        const macros = macroPer100ForProfile(ing, label || ing.name);
 
-        nutrition.calories += (ing.calories ?? 0) * factor;
-        nutrition.protein += (ing.protein ?? 0) * factor;
-        nutrition.carbs += (ing.carbs ?? 0) * factor;
-        nutrition.fat += (ing.fat ?? 0) * factor;
+        nutrition.calories += macros.calories * factor;
+        nutrition.protein += macros.protein * factor;
+        nutrition.carbs += macros.carbs * factor;
+        nutrition.fat += macros.fat * factor;
         nutrition.b6 += (ing.b6 ?? 0) * factor;
         nutrition.b9_folate += (ing.b9_folate ?? 0) * factor;
         nutrition.b12 += (ing.b12 ?? 0) * factor;
@@ -170,11 +266,15 @@ export function aggregateNutritionFromIngredientRows(
         for (const k of MICRO_KEYS) {
             nutrition[k] += microFromJson(micros, k) * factor;
         }
+
+        if (isPureCookingFatName(label || ing.name)) {
+            pureFatFloor += macros.fat * factor;
+            pureFatCalorieFloor += macros.calories * factor;
+        }
     }
 
-    for (const k of Object.keys(nutrition)) {
-        nutrition[k] = Math.round((nutrition[k] ?? 0) * 100) / 100;
-    }
+    nutrition.fat = Math.max(nutrition.fat, pureFatFloor);
+    nutrition.calories = Math.max(nutrition.calories, pureFatCalorieFloor);
 
-    return { nutrition, resolvedLineCount };
+    return { nutrition: finalizeRecipeNutrition(nutrition), resolvedLineCount };
 }

@@ -211,6 +211,45 @@ export function IconShellfish({ className = '' }) {
 /**
  * @param {{ className?: string }} props
  */
+export function IconFish({ className = '' }) {
+    return (
+        <svg
+            className={`${ICON_BASE} ${className}`.trim()}
+            viewBox="0 0 24 24"
+            fill="none"
+            aria-hidden="true"
+        >
+            <path
+                d="M4 12c2.5-2 5.5-3 8-3 2 0 4 .5 6 1.5L20 8v8l-2-2.5c-2 1-4 1.5-6 1.5-2.5 0-5.5-1-8-3Z"
+                stroke="currentColor"
+                strokeWidth="1.75"
+                strokeLinejoin="round"
+            />
+            <circle cx="14" cy="11" r="1" fill="currentColor" />
+        </svg>
+    );
+}
+
+/**
+ * @param {{ className?: string }} props
+ */
+export function IconSesame({ className = '' }) {
+    return (
+        <svg
+            className={`${ICON_BASE} ${className}`.trim()}
+            viewBox="0 0 24 24"
+            fill="none"
+            aria-hidden="true"
+        >
+            <ellipse cx="12" cy="12" rx="7" ry="4.5" stroke="currentColor" strokeWidth="1.75" />
+            <path d="M8.5 10.5h.01M11 9.5h.01M13 9.5h.01M15.5 10.5h.01M9.5 12.5h.01M12 13h.01M14.5 12.5h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+        </svg>
+    );
+}
+
+/**
+ * @param {{ className?: string }} props
+ */
 export function IconOther({ className = '' }) {
     return (
         <svg

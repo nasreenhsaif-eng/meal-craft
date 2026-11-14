@@ -4,7 +4,7 @@ import MealCraftLogo from './MealCraftLogo.jsx';
 
 /** @type {import('@storybook/react-vite').Meta} */
 const meta = {
-    title: 'MealCraft/Identity/Animated',
+    title: 'Design System/01. Foundations/Logos/Animated',
     component: MealCraftLogo,
     parameters: {
         controls: { disable: true },

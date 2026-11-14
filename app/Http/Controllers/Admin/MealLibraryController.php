@@ -11,25 +11,33 @@ use App\Http\Requests\ReorderMealsFromLibraryRequest;
 use App\Http\Requests\StoreMealFromLibraryRequest;
 use App\Models\Ingredient;
 use App\Models\Meal;
+use App\Models\MealCalorieTier;
 use App\Models\MealCsvImportPendingRow;
 use App\Models\User;
 use App\Services\BaseIngredientService;
 use App\Services\CollapsedPrimaryProteinHealer;
 use App\Services\MealCraftMasterCsvExport;
+use App\Services\MealLibraryPersistenceSync;
 use App\Services\MenuDevelopmentCsvExport;
 use App\Services\MenuDevelopmentCsvSync;
 use App\Services\Nutrition\AdaptedMenuBuilder;
 use App\Services\RecipeNutritionCalculator;
 use App\Support\EggIngredientPresentation;
 use App\Support\IngredientAllergenCatalog;
+use App\Support\IngredientCookingYield;
 use App\Support\IngredientG6pdSafety;
 use App\Support\IngredientLibraryNameMatcher;
+use App\Support\KitchenPortionRounding;
+use App\Support\KitchenSpoonPresentation;
 use App\Support\LiquidIngredientPresentation;
+use App\Support\MealFoodFilterCatalog;
 use App\Support\MealImagePath;
 use App\Support\MealInstructionsText;
 use App\Support\MealLibraryBulkNutrition;
 use App\Support\MealLibraryEditGuard;
 use App\Support\MealLibraryTaxonomy;
+use App\Support\MealTiersLibraryBrowseTab;
+use App\Support\MealTiersLibraryPresentation;
 use App\Support\RawPrepIngredientPresentation;
 use App\Support\SaladMealPresentation;
 use App\Support\SickleCellNutrientRdi;
@@ -48,6 +56,7 @@ class MealLibraryController extends Controller
     public function __construct(
         private MenuDevelopmentCsvExport $menuDevelopmentCsvExport,
         private MenuDevelopmentCsvSync $menuDevelopmentCsvSync,
+        private MealLibraryPersistenceSync $mealLibraryPersistenceSync,
     ) {}
 
     public function downloadMealCraftCsvTemplate(): SymfonyResponse
@@ -106,11 +115,14 @@ class MealLibraryController extends Controller
         $ids = $request->validated('ids');
 
         $deletedCount = 0;
+        /** @var list<string> $deletedMealNames */
+        $deletedMealNames = [];
 
         Meal::queryForMealLibrary()
             ->whereIn('id', $ids)
             ->orderBy('id')
-            ->each(function (Meal $meal) use (&$deletedCount): void {
+            ->each(function (Meal $meal) use (&$deletedCount, &$deletedMealNames): void {
+                $deletedMealNames[] = $meal->name;
                 $nameKey = strtolower(trim($meal->name));
 
                 Meal::withTrashed()
@@ -139,7 +151,7 @@ class MealLibraryController extends Controller
             ? __('1 meal removed from the library.')
             : __(':count meals removed from the library.', ['count' => $deletedCount]);
 
-        $this->syncMealMasterCsvFromDatabase();
+        $this->mealLibraryPersistenceSync->afterMealsDeleted(array_values(array_unique($deletedMealNames)));
 
         if ($request->expectsJson()) {
             return response()->json([
@@ -209,9 +221,12 @@ class MealLibraryController extends Controller
         $mealType = MealType::fromRecipeCategory($category);
 
         $dietTags = array_values(array_unique(array_filter($data['diet_tags'] ?? [])));
+        $foodFilterTags = MealFoodFilterCatalog::canonicalSlugsFromList($data['food_filter_tags'] ?? null);
         $planPhaseBundle = $this->mealPlanTagsAndCyclePhasesForPersistence($data);
 
-        DB::transaction(function () use ($request, $data, $category, $mealType, $planPhaseBundle, $dietTags): void {
+        $savedMeal = null;
+
+        DB::transaction(function () use ($request, $data, $category, $mealType, $planPhaseBundle, $dietTags, $foodFilterTags, &$savedMeal): void {
             $createData = [
                 'name' => $data['name'],
                 'category' => $category,
@@ -227,6 +242,7 @@ class MealLibraryController extends Controller
                 'total_carbs' => (float) ($data['total_carbs'] ?? 0),
                 'total_fat' => (float) ($data['total_fat'] ?? 0),
                 'diet_tags' => $dietTags,
+                'food_filter_tags' => $foodFilterTags,
                 'diet_type' => null,
                 'cycle_phase' => $planPhaseBundle['cycle_phase'],
                 'cycle_phases' => $planPhaseBundle['cycle_phases'],
@@ -247,9 +263,12 @@ class MealLibraryController extends Controller
             $meal = Meal::query()->create($createData);
 
             $this->syncLibraryMealIngredientsPhotoAndAggregates($request, $meal, $data);
+            $savedMeal = $meal->fresh(['ingredients']);
         });
 
-        $this->syncMealMasterCsvFromDatabase();
+        if ($savedMeal instanceof Meal) {
+            $this->mealLibraryPersistenceSync->afterMealSaved($savedMeal);
+        }
 
         $successMessage = ($data['submission_context'] ?? null) === 'duplicate'
             ? __('New meal version saved successfully.')
@@ -280,6 +299,7 @@ class MealLibraryController extends Controller
         $mealType = MealType::fromRecipeCategory($category);
 
         $dietTags = array_values(array_unique(array_filter($data['diet_tags'] ?? [])));
+        $foodFilterTags = MealFoodFilterCatalog::canonicalSlugsFromList($data['food_filter_tags'] ?? null);
         $planPhaseBundle = $this->mealPlanTagsAndCyclePhasesForPersistence($data);
 
         $ingredientRows = is_array($data['ingredients'] ?? null) ? $data['ingredients'] : [];
@@ -310,7 +330,7 @@ class MealLibraryController extends Controller
             }
         }
 
-        DB::transaction(function () use ($request, $data, $meal, $category, $mealType, $planPhaseBundle, $dietTags): void {
+        DB::transaction(function () use ($request, $data, $meal, $category, $mealType, $planPhaseBundle, $dietTags, $foodFilterTags): void {
             $updateData = [
                 'name' => $data['name'],
                 'category' => $category,
@@ -326,6 +346,7 @@ class MealLibraryController extends Controller
                 'total_carbs' => (float) ($data['total_carbs'] ?? 0),
                 'total_fat' => (float) ($data['total_fat'] ?? 0),
                 'diet_tags' => $dietTags,
+                'food_filter_tags' => $foodFilterTags,
                 'diet_type' => null,
                 'cycle_phase' => $planPhaseBundle['cycle_phase'],
                 'cycle_phases' => $planPhaseBundle['cycle_phases'],
@@ -345,7 +366,7 @@ class MealLibraryController extends Controller
             $this->syncLibraryMealIngredientsPhotoAndAggregates($request, $meal, $data);
         });
 
-        $this->syncMealMasterCsvFromDatabase();
+        $this->mealLibraryPersistenceSync->afterMealSaved($meal->fresh(['ingredients']));
 
         return redirect()
             ->route('admin.meal-library')
@@ -367,7 +388,10 @@ class MealLibraryController extends Controller
         $meal->ingredients()->detach();
 
         foreach ($byIngredientGrams as $ingredientId => $grams) {
-            $rounded = round($grams, 2);
+            $rounded = KitchenPortionRounding::snapGramsForIngredient(
+                Ingredient::query()->findOrFail($ingredientId),
+                $grams,
+            );
             $meal->ingredients()->attach($ingredientId, [
                 'amount_grams' => $rounded,
                 'amount' => $rounded,
@@ -388,7 +412,11 @@ class MealLibraryController extends Controller
         $meal->load('ingredients');
 
         $ingredientIdsForSafety = array_map(intval(...), array_keys($byIngredientGrams));
-        $meal->safety_alert_tags = $this->safetyAlertTagsForIngredientIds($ingredientIdsForSafety);
+        $foodFilterTags = MealFoodFilterCatalog::canonicalSlugsFromList($data['food_filter_tags'] ?? null);
+        $meal->food_filter_tags = $foodFilterTags;
+        $meal->safety_alert_tags = $foodFilterTags !== []
+            ? $this->safetyAlertTagsForMeal($foodFilterTags, $ingredientIdsForSafety)
+            : $this->safetyAlertTagsForIngredientIds($ingredientIdsForSafety);
 
         $isBulk = (bool) ($data['is_bulk'] ?? false);
 
@@ -611,6 +639,9 @@ class MealLibraryController extends Controller
             'category' => ($meal->category ?? RecipeCategory::Meal)->value,
             'mealPlanTags' => $mealPlanTagsArr,
             'dietTags' => is_array($meal->diet_tags) ? array_values(array_filter($meal->diet_tags, static fn ($t): bool => is_string($t) && trim($t) !== '')) : [],
+            'foodFilterTags' => MealFoodFilterCatalog::canonicalSlugsFromList(
+                is_array($meal->food_filter_tags) ? $meal->food_filter_tags : null,
+            ),
             'cyclePhaseValues' => $cyclePhaseValues,
             'description' => $this->mealInstructionsText($meal),
             'highlight' => $this->mealShortDescriptionText($meal),
@@ -746,6 +777,7 @@ class MealLibraryController extends Controller
             'meals' => $meals,
             'ingredientProfiles' => $ingredientProfiles,
             'pendingMealImports' => $pendingMealImports,
+            'browseTabs' => MealTiersLibraryBrowseTab::tabsForMeals($meals),
         ];
     }
 
@@ -767,6 +799,89 @@ class MealLibraryController extends Controller
     }
 
     /**
+     * Authored Meal Tiers Library tabs for plan preview — lookup only, no scaling.
+     *
+     * @return list<array{
+     *     calorie_tier: int,
+     *     macros: array{calories: int, protein: float, carbs: float, fat: float},
+     *     nutrition: array<string, float>,
+     *     nutritionalData: array<string, mixed>,
+     *     kitchenIngredientRows: list<array{ingredientId: int, selectedName: string, nameQuery: string, amount: string, unit: string}>
+     * }>
+     */
+    public function compactCalorieTiersForPlanPreview(Meal $meal): array
+    {
+        $meal->loadMissing('calorieTiers.ingredients');
+
+        $tiers = [];
+
+        foreach ($meal->calorieTiers as $tier) {
+            if (! $tier instanceof MealCalorieTier) {
+                continue;
+            }
+
+            $nutrition = is_array($tier->nutrition) && $tier->nutrition !== []
+                ? $tier->nutrition
+                : [
+                    'calories' => $tier->total_calories,
+                    'protein' => $tier->total_protein,
+                    'carbs' => $tier->total_carbs,
+                    'fat' => $tier->total_fat,
+                ];
+
+            /** @var array<string, float> $nutritionFloats */
+            $nutritionFloats = [];
+            foreach ($nutrition as $key => $value) {
+                if (is_numeric($value)) {
+                    $nutritionFloats[(string) $key] = (float) $value;
+                }
+            }
+
+            $tiers[] = [
+                'calorie_tier' => (int) $tier->calorie_tier,
+                'macros' => [
+                    'calories' => (int) round((float) ($nutritionFloats['calories'] ?? 0)),
+                    'protein' => round((float) ($nutritionFloats['protein'] ?? 0), 1),
+                    'carbs' => round((float) ($nutritionFloats['carbs'] ?? 0), 1),
+                    'fat' => round((float) ($nutritionFloats['fat'] ?? 0), 1),
+                ],
+                'nutrition' => $nutritionFloats,
+                'nutritionalData' => MealTiersLibraryPresentation::nutritionalData($nutritionFloats),
+                'kitchenIngredientRows' => $this->kitchenIngredientRowsFromTier($tier),
+            ];
+        }
+
+        return $tiers;
+    }
+
+    /**
+     * @return list<array{ingredientId: int, selectedName: string, nameQuery: string, amount: string, unit: string}>
+     */
+    public function kitchenIngredientRowsFromTier(MealCalorieTier $tier): array
+    {
+        $rows = [];
+
+        foreach ($tier->ingredients as $ingredient) {
+            $name = trim((string) $ingredient->name);
+            $grams = (float) ($ingredient->pivot->amount_grams ?? 0);
+
+            if ($name === '' || $grams <= 0) {
+                continue;
+            }
+
+            $rows[] = [
+                'ingredientId' => (int) $ingredient->id,
+                'selectedName' => $name,
+                'nameQuery' => $name,
+                'amount' => (string) (round($grams * 10000) / 10000),
+                'unit' => 'g',
+            ];
+        }
+
+        return $rows;
+    }
+
+    /**
      * Merge profile-adapted nutrition and scaled ingredient amounts onto a UI meal row.
      *
      * @param  array<string, mixed>  $baseRow
@@ -781,7 +896,47 @@ class MealLibraryController extends Controller
             $row['detailView'] = $this->overlayAdaptedDetailView($row['detailView'], $adapted, $meal);
         }
 
+        $row['kitchenIngredientRows'] = $this->kitchenIngredientRowsFromAdapted($adapted);
+
         return $row;
+    }
+
+    /**
+     * @param  array<string, mixed>  $adapted
+     * @return list<array{ingredientId: int, selectedName: string, nameQuery: string, amount: string, unit: string}>
+     */
+    public function kitchenIngredientRowsFromAdapted(array $adapted): array
+    {
+        $ingredients = is_array($adapted['ingredients'] ?? null) ? $adapted['ingredients'] : [];
+        $rows = [];
+
+        foreach ($ingredients as $ingredient) {
+            if (! is_array($ingredient)) {
+                continue;
+            }
+
+            $name = trim((string) ($ingredient['name'] ?? ''));
+
+            if ($name === '') {
+                continue;
+            }
+
+            $grams = (float) ($ingredient['adapted_amount_grams'] ?? 0);
+
+            if ($grams <= 0) {
+                continue;
+            }
+
+            $rows[] = [
+                'ingredientId' => (int) ($ingredient['id'] ?? 0),
+                'selectedName' => $name,
+                'nameQuery' => $name,
+                'amount' => (string) (round($grams * 10000) / 10000),
+                'unit' => 'g',
+            ];
+        }
+
+        return $rows;
     }
 
     /**
@@ -811,6 +966,24 @@ class MealLibraryController extends Controller
 
         $adaptedIngredients = is_array($adapted['ingredients'] ?? null) ? $adapted['ingredients'] : [];
         $detailView['ingredients'] = $this->adaptedIngredientLinesForDetailView($meal, $adaptedIngredients);
+
+        $adaptedGramsByIngredientId = [];
+        foreach ($adaptedIngredients as $row) {
+            if (! is_array($row)) {
+                continue;
+            }
+
+            $ingredientId = (int) ($row['id'] ?? 0);
+            if ($ingredientId <= 0) {
+                continue;
+            }
+
+            $adaptedGramsByIngredientId[$ingredientId] = (float) ($row['adapted_amount_grams'] ?? 0);
+        }
+
+        $meal->loadMissing('ingredients');
+        $yieldSummary = IngredientCookingYield::mealYieldSummary($meal->ingredients, $adaptedGramsByIngredientId);
+        $detailView['cookingYieldNote'] = $yieldSummary['note'] !== '' ? $yieldSummary['note'] : null;
 
         if (SaladMealPresentation::isSaladMeal($meal)) {
             $ingredientSections = SaladMealPresentation::ingredientSectionsForMeal(
@@ -878,7 +1051,8 @@ class MealLibraryController extends Controller
         float $grams,
         ?array $adaptedRow = null,
     ): string {
-        $grams = MealLibraryBulkNutrition::perServingGramsForMealDisplay($meal, $grams);
+        // Bulk meals store pan/batch grams — show those kitchen amounts (never ÷ servings into 1/4 egg).
+        // Per-serving macros stay in nutritionalData via MealLibraryBulkNutrition.
         $formattedGrams = $this->formatTrimmedDecimal($grams, 2);
 
         if (EggIngredientPresentation::isEggIngredient($ingredient)) {
@@ -889,11 +1063,27 @@ class MealLibraryController extends Controller
             return RawPrepIngredientPresentation::formatLine($grams, $formattedGrams, $ingredient);
         }
 
+        if (RawPrepIngredientPresentation::isCannedPrepIngredient($ingredient)) {
+            return RawPrepIngredientPresentation::formatCannedLine($grams, $formattedGrams, $ingredient);
+        }
+
+        if (RawPrepIngredientPresentation::isDryWeightIngredient($ingredient)) {
+            return RawPrepIngredientPresentation::formatDryLine($grams, $formattedGrams, $ingredient);
+        }
+
+        if (RawPrepIngredientPresentation::isPreCookedBaseIngredient($ingredient)) {
+            return RawPrepIngredientPresentation::formatBaseLine($grams, $formattedGrams, $ingredient);
+        }
+
         if (is_array($adaptedRow)) {
             $unit = (string) ($adaptedRow['unit'] ?? 'g');
             $adaptedAmount = $adaptedRow['adapted_amount'] ?? null;
 
             if ($adaptedAmount !== null && $unit !== '' && $unit !== 'g') {
+                if (KitchenSpoonPresentation::appliesTo($ingredient) && $grams > 0) {
+                    return KitchenSpoonPresentation::formatLibraryLine($ingredient, $grams, $formattedGrams);
+                }
+
                 if (LiquidIngredientPresentation::isLiquidIngredient($ingredient)) {
                     return LiquidIngredientPresentation::formatLineFromAmountAndUnit(
                         (float) $adaptedAmount,
@@ -906,8 +1096,8 @@ class MealLibraryController extends Controller
             }
         }
 
-        if ($grams > 0 && LiquidIngredientPresentation::isLiquidIngredient($ingredient)) {
-            return LiquidIngredientPresentation::formatLine($grams, $ingredient);
+        if ($grams > 0 && KitchenSpoonPresentation::appliesTo($ingredient)) {
+            return KitchenSpoonPresentation::formatLibraryLine($ingredient, $grams, $formattedGrams);
         }
 
         if ($grams > 0) {
@@ -958,9 +1148,14 @@ class MealLibraryController extends Controller
         $nutrientHighlights = array_values(array_unique($nutrientHighlights));
 
         $storedSafety = is_array($meal->safety_alert_tags) ? $meal->safety_alert_tags : [];
-        $safetyAlertTags = $ingredientIds !== []
-            ? $this->safetyAlertTagsForIngredientIds($ingredientIds)
-            : array_values($storedSafety);
+        $foodFilterTags = MealFoodFilterCatalog::canonicalSlugsFromList(
+            is_array($meal->food_filter_tags) ? $meal->food_filter_tags : null,
+        );
+        $safetyAlertTags = $foodFilterTags !== []
+            ? $this->safetyAlertTagsForMeal($foodFilterTags, $ingredientIds)
+            : ($ingredientIds !== []
+                ? $this->safetyAlertTagsForIngredientIds($ingredientIds)
+                : array_values($storedSafety));
 
         return [
             'id' => (string) $meal->id,
@@ -968,6 +1163,7 @@ class MealLibraryController extends Controller
             'imageUrl' => $this->mealImageUrl($meal),
             'mealType' => ($meal->category ?? RecipeCategory::Meal)->value,
             'category' => ($meal->category ?? RecipeCategory::Meal)->value,
+            'browseTab' => MealTiersLibraryBrowseTab::forMeal($meal),
             'prepMinutes' => 0,
             'macros' => [
                 'calories' => (int) round((float) ($nutrition['calories'] ?? 0)),
@@ -1044,6 +1240,15 @@ class MealLibraryController extends Controller
             $ingredientLines = [__('No ingredients on file.')];
         }
 
+        $yieldSummary = IngredientCookingYield::mealYieldSummary($meal->ingredients);
+
+        $ingredientsPrepNote = RawPrepIngredientPresentation::ingredientsPrepNote();
+        if ($meal->is_bulk && (float) ($meal->servings_count ?? 0) > 0) {
+            $ingredientsPrepNote = __('Batch recipe for :count servings — ingredient amounts are for the full pan (kitchen quantities), not one serving.', [
+                'count' => (int) $meal->servings_count,
+            ]).' '.$ingredientsPrepNote;
+        }
+
         $payload = [
             'shortDescription' => $shortDescription,
             'cyclePhases' => $cyclePhases,
@@ -1053,6 +1258,8 @@ class MealLibraryController extends Controller
             'sickleCellHighlights' => $sickleCellHighlights,
             'nutritionalData' => $this->nutritionalDataForDetailView($nutrition),
             'ingredients' => $ingredientLines,
+            'ingredientsPrepNote' => $ingredientsPrepNote,
+            'cookingYieldNote' => $yieldSummary['note'] !== '' ? $yieldSummary['note'] : null,
             'instructions' => $instructions,
             'imageUrl' => $this->mealImageUrl($meal),
             'imageAlt' => $meal->name,
@@ -1168,7 +1375,8 @@ class MealLibraryController extends Controller
             ['label' => __('Total calories'), 'value' => (string) (int) round($calories)],
             ['label' => __('Protein (g)'), 'value' => $this->formatTrimmedDecimal($protein, 1), 'valueClass' => 'text-[#916A00]'],
             ['label' => __('Fats (g)'), 'value' => $this->formatTrimmedDecimal($fat, 1), 'valueClass' => 'text-[#2F4C9B]'],
-            ['label' => __('Net carbs (g)'), 'value' => $this->formatTrimmedDecimal($netCarbs, 1), 'valueClass' => 'text-[#8F55A8]'],
+            ['label' => __('Carbs (g)'), 'value' => $this->formatTrimmedDecimal($carbs, 1), 'valueClass' => 'text-[#8F55A8]'],
+            ['label' => __('Net carbs (g)'), 'value' => $this->formatTrimmedDecimal($netCarbs, 1)],
             ['label' => __('Fiber (g)'), 'value' => $this->formatTrimmedDecimal($fiber, 1)],
             ['label' => __('Sugar (g)'), 'value' => $this->formatTrimmedDecimal($sugar, 1)],
         ];
@@ -1212,6 +1420,19 @@ class MealLibraryController extends Controller
         $formatted = number_format($value, $decimals, '.', '');
 
         return rtrim(rtrim($formatted, '0'), '.') ?: '0';
+    }
+
+    /**
+     * @param  list<string>  $foodFilterTags
+     * @param  list<int>  $ingredientIds
+     * @return list<string>
+     */
+    private function safetyAlertTagsForMeal(array $foodFilterTags, array $ingredientIds): array
+    {
+        return IngredientG6pdSafety::mergeTriggerIntoSafetyLabels(
+            MealFoodFilterCatalog::safetyLabelsFromSlugs($foodFilterTags),
+            IngredientG6pdSafety::mealContainsG6pdTrigger($ingredientIds),
+        );
     }
 
     /**
@@ -1362,6 +1583,20 @@ class MealLibraryController extends Controller
             )),
             'is_g6pd_trigger' => IngredientG6pdSafety::ingredientHasEffectiveG6pdTrigger($ingredient),
             'is_prepared_base' => $ingredient->isPreparedBaseIngredient(),
+            'finished_weight_grams' => $ingredient->finished_weight_grams !== null
+                ? (float) $ingredient->finished_weight_grams
+                : null,
+            'components' => $ingredient->relationLoaded('components')
+                ? $ingredient->components
+                    ->map(static fn (Ingredient $child): array => [
+                        'id' => (int) $child->getKey(),
+                        'name' => (string) $child->name,
+                        'amount_grams' => (float) ($child->pivot->amount_grams ?? 0),
+                    ])
+                    ->filter(static fn (array $row): bool => $row['id'] > 0 && $row['name'] !== '' && $row['amount_grams'] > 0)
+                    ->values()
+                    ->all()
+                : [],
         ];
     }
 }

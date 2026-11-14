@@ -35,6 +35,7 @@ function wordmarkFontSizeForWidth(containerWidthPx, max = 81) {
  *   alt?: string;
  *   title?: string;
  *   presentation?: 'inline' | 'splash';
+ *   loop?: boolean;
  *   onSplashComplete?: () => void;
  *   onAnimationComplete?: () => void;
  * }} props
@@ -46,6 +47,7 @@ export function MealCraftLogoAnimatedIdentity({
     alt = 'Meal Craft',
     title,
     presentation = 'inline',
+    loop = false,
     onSplashComplete,
     onAnimationComplete,
 }) {
@@ -90,6 +92,7 @@ export function MealCraftLogoAnimatedIdentity({
                 <AnimatedSeal
                     size={sealSize}
                     background="transparent"
+                    loop={loop && !isSplash}
                     onComplete={isSplash ? onSealCycleEnd : onAnimationComplete}
                     className="max-w-full shrink-0"
                     ariaHidden

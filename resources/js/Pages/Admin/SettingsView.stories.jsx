@@ -7,7 +7,7 @@ import { AdminSettingsSecurityInner } from './Settings/Security.jsx';
 const SETTINGS_CONTENT_WRAPPER = 'mx-auto w-full max-w-[1400px]';
 
 export default {
-    title: 'MealCraft/Pages/Admin/SettingsView',
+    title: 'Design System/05. Templates & Pages/SettingsView',
     parameters: {
         layout: 'fullscreen',
         docs: {
@@ -46,22 +46,7 @@ export const Profile = {
     render: function Render() {
         return (
             <SettingsStoryShell>
-                <AdminSettingsProfileInner emailVerified={false} />
-            </SettingsStoryShell>
-        );
-    },
-};
-
-export const ProfileVerified = {
-    name: 'Profile (verified email)',
-    render: function Render() {
-        return (
-            <SettingsStoryShell>
-                <AdminSettingsProfileInner
-                    name="Nasreen Saif"
-                    email="nasreen@mealcrafthq.test"
-                    emailVerified
-                />
+                <AdminSettingsProfileInner name="Nasreen Saif" email="nasreen@mealcrafthq.test" />
             </SettingsStoryShell>
         );
     },
@@ -97,7 +82,7 @@ export const InteractiveTabs = {
         return (
             <SettingsStoryShell>
                 {activeSection === 'profile' ? (
-                    <AdminSettingsProfileInner emailVerified={false} onNavigate={setActiveSection} />
+                    <AdminSettingsProfileInner onNavigate={setActiveSection} />
                 ) : null}
                 {activeSection === 'security' ? (
                     <AdminSettingsSecurityInner onNavigate={setActiveSection} />

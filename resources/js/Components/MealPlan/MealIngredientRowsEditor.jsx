@@ -1,7 +1,6 @@
 import { createPortal } from 'react-dom';
 import { useEffect, useRef, useState } from 'react';
 import Button from '../Atoms/Button.jsx';
-import PillButton from '../Atoms/Button/Button.jsx';
 import TextInput from '../Atoms/TextInput/TextInput.jsx';
 import DropdownTextInput from '../Atoms/TextInput/DropdownTextInput.jsx';
 import { filterIngredientsForCombobox } from '../../meal-library/ingredientSearch.ts';
@@ -238,7 +237,7 @@ export default function MealIngredientRowsEditor({
                                 />
 
                                 <div className="flex justify-end">
-                                    <PillButton
+                                    <Button
                                         label="Remove"
                                         variant="outline"
                                         size="sm"

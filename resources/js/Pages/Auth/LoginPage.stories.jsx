@@ -1,14 +1,14 @@
 import LoginPage from './LoginPage';
 
 export default {
-    title: 'MealCraft/Pages/Auth/LoginPage',
+    title: 'Design System/05. Templates & Pages/Auth/LoginPage',
     component: LoginPage,
     parameters: {
         layout: 'fullscreen',
         docs: {
             description: {
                 component:
-                    'Sign-in form with static `seal-md` mark. After a successful login, the `marketing-animated` seal plays on the page, then the browser navigates to the server redirect (portal choice, onboarding, or `/app`).\n\n**Smart login redirect (server):** after submit, admins/staff → [`PortalChoicePage`](./PortalChoicePage.stories.jsx); customers with incomplete onboarding → `/onboarding/welcome`; customers with completed onboarding → `/app`. Guests start at [`WelcomePage`](./WelcomePage.stories.jsx).',
+                    'Sign-in form in the same phone frame as landing and onboarding. Static `seal-md` mark; after success, `marketing-animated` seal plays then redirects.\n\n**Smart login redirect (server):** admins/staff → portal choice; incomplete onboarding → `/onboarding/gender`; finished onboarding → Welcome Back (`/app`).',
             },
         },
     },

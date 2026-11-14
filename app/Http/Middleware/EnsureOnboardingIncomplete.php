@@ -9,16 +9,13 @@ use Symfony\Component\HttpFoundation\Response;
 class EnsureOnboardingIncomplete
 {
     /**
+     * Completed customers may revisit and update onboarding steps (profile edit).
+     * Incomplete customers continue through the wizard as usual.
+     *
      * @param  Closure(Request): Response  $next
      */
     public function handle(Request $request, Closure $next): Response
     {
-        $user = $request->user();
-
-        if ($user !== null && $user->isCustomer() && $user->hasCompletedOnboarding()) {
-            return redirect()->route('app.home');
-        }
-
         return $next($request);
     }
 }

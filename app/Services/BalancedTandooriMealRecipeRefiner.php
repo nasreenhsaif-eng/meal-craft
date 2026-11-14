@@ -6,6 +6,7 @@ use App\Models\Ingredient;
 use App\Models\Meal;
 use App\Support\MealInstructionsText;
 use App\Support\MealLibraryEditGuard;
+use App\Support\MealLibraryRefinerOverrides;
 use App\Support\StandardMeatPortion;
 use App\Support\WholeFoodDietPolicy;
 use Illuminate\Support\Facades\DB;
@@ -137,13 +138,13 @@ final class BalancedTandooriMealRecipeRefiner
         $tags = WholeFoodDietPolicy::REQUIRED_MEAL_DIET_TAGS;
         $spicyTags = array_merge($tags, ['Spicy']);
 
-        return [
+        $definitions = [
             'Tandoori Chicken Salad' => [
                 'ingredients' => [
                     self::TANDOORI_CHICKEN_BASE => StandardMeatPortion::GRAMS,
-                    'Romaine Lettuce' => 55,
+                    'Romaine Lettuce' => 50,
                     'Cucumber' => 45,
-                    'Cherry Tomatoes' => 45,
+                    'Cherry Tomatoes' => 80,
                     'Celery' => 20,
                     'Red Onion' => 12,
                     'Fresh Coriander' => 4,
@@ -154,7 +155,7 @@ final class BalancedTandooriMealRecipeRefiner
                 ],
                 'instructions' => [
                     'Grill or pan-sear Tandoori Chicken (Base) until golden then in the oven for 20 minutes exactly, then Rest and slice.',
-                    'Toss romaine, cucumber, celery, tomatoes, onion, herbs, and pomegranate.',
+                    'Toss romaine, cucumber, celery, about 8 halved cherry tomatoes, onion, herbs, and pomegranate.',
                     'Top with chicken and cashews.',
                     SaladDressingMealRefiner::SERVE_DRESSING_ON_THE_SIDE,
                 ],
@@ -189,7 +190,7 @@ final class BalancedTandooriMealRecipeRefiner
                     'Cooked Quinoa (Base)' => 84,
                     'Cabbage (Purple)' => 30,
                     'Carrots' => 20,
-                    'Cucumber' => 30,
+                    'Cucumber' => 40,
                     'Tomato (Raw)' => 60,
                     'Red Onion' => 15,
                     'White Onion' => 40,
@@ -215,7 +216,7 @@ final class BalancedTandooriMealRecipeRefiner
                     'Cooked Quinoa (Base)' => 84,
                     'Cabbage (Purple)' => 30,
                     'Carrots' => 20,
-                    'Cucumber' => 30,
+                    'Cucumber' => 40,
                     'Tomato (Raw)' => 60,
                     'Red Onion' => 15,
                     'White Onion' => 40,
@@ -236,5 +237,7 @@ final class BalancedTandooriMealRecipeRefiner
                 'diet_tags' => $spicyTags,
             ],
         ];
+
+        return MealLibraryRefinerOverrides::mergeRecipeDefinitionMap($definitions);
     }
 }

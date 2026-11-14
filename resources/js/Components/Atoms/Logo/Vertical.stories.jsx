@@ -3,7 +3,7 @@ import { mealCraftLogoPageDecorator } from './logoStoryDecorators.jsx';
 
 /** @type {import('@storybook/react-vite').Meta} */
 const meta = {
-    title: 'MealCraft/Identity/Vertical Lockups',
+    title: 'Design System/01. Foundations/Logos/Vertical Lockups',
     component: MealCraftLogo,
     decorators: [mealCraftLogoPageDecorator],
     argTypes: mealCraftLogoArgTypes,

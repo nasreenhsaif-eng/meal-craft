@@ -11,7 +11,7 @@ import {
  */
 export const AUTO_ADVANCE_DIET_PROTOCOL_ID = 'balanced';
 
-/** @typedef {'balanced' | 'ketobiotic' | 'cycle_sync' | 'thyroid' | 'sickle_cell'} DietProtocolId */
+/** @typedef {'balanced' | 'ketobiotic' | 'cycle_sync' | 'thyroid' | 'sickle_cell' | 'nutrient_dense'} DietProtocolId */
 
 /**
  * @typedef {{
@@ -26,8 +26,9 @@ export const AUTO_ADVANCE_DIET_PROTOCOL_ID = 'balanced';
 export const DIET_PROTOCOL_OPTIONS = [
     {
         id: 'balanced',
-        label: 'Balanced Protocol',
-        description: 'Flexible macros with varied whole foods for everyday wellness.',
+        label: 'Balanced Anti-inflammatory',
+        description:
+            'Nutrient-dense meal plan with balanced macronutrients and anti-inflammatory whole foods.',
         Icon: IconBalanced,
     },
     {

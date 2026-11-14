@@ -51,6 +51,7 @@ export function normalizeDietProtocol(value) {
         thyroid: 'thyroid',
         sickle_cell: 'sickle_cell_warrior',
         sickle_cell_warrior: 'sickle_cell_warrior',
+        nutrient_dense: 'nutrient_dense',
     };
 
     if (typeof value === 'string' && map[value]) {

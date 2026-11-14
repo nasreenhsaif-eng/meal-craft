@@ -7,16 +7,16 @@ import TextInput from '../../Components/Atoms/TextInput/TextInput.jsx';
 import DropdownTextInput from '../../Components/Atoms/TextInput/DropdownTextInput.jsx';
 import MultiPillDropdown from '../../Components/Atoms/TextInput/MultiPillDropdown.jsx';
 import Button from '../../Components/Atoms/Button.jsx';
-import PillButton from '../../Components/Atoms/Button/Button.jsx';
 import MealCard from '../../Components/MealCard.jsx';
+import MealBrowseTabs from '../../Components/MealBrowseTabs.jsx';
 import MealDetailView from '../../Components/Molecules/MealDetailView/MealDetailView';
 import MealLibrarySortableTable from '../../Components/MealLibrary/MealLibrarySortableTable.jsx';
 import CSVUploader from '../../Components/CSVUploader.jsx';
 import RoundIconButton from '../../Components/Atoms/Icons/RoundIconButton.jsx';
 import { IconLayoutGrid, IconLayoutList } from '../../Components/Atoms/SvgIcons.jsx';
 import SquareCheckbox from '../../Components/Atoms/Icons/SquareCheckbox.jsx';
-import NutrientBadge from '../../Components/Atoms/MealSystem/NutrientBadge.jsx';
-import { aggregateNutritionFromIngredientRows, normalizeIngredientKey } from '../../meal-library/aggregateIngredientNutrition.ts';
+import NutrientBadge from '../../Components/MealSystem/NutrientBadge.jsx';
+import { aggregateNutritionFromIngredientRows, isPureCookingFatName, isVegetableOilName, normalizeIngredientKey, PURE_OIL_DENSITY_G_PER_ML } from '../../meal-library/aggregateIngredientNutrition.ts';
 import { calculateMealNutrition, calorieWarningsForCategory, resolveMealLibraryCategory } from '../../meal-library/calculateMealNutrition.ts';
 import { resolveMealImageUrl } from '../../meal-library/resolveMealImageUrl.ts';
 import { gramsFromIngredientAmountAndUnit, parseIngredientQuantityString } from '../../meal-library/ingredientQuantityString.ts';
@@ -49,6 +49,8 @@ import { resolvePerServingActualForTargets, scaleNutritionRecord } from '../../m
 import { downloadMissingIngredientsCSV } from '../../meal-library/downloadMissingIngredientsCSV.ts';
 import { downloadMealCraftCsvTemplate } from '../../meal-library/generateLibraryExportCSV.ts';
 import SafetyAlerts from '../../Components/MealSystem/SafetyAlerts.jsx';
+import FoodFilterMultiSelect from '../../Components/MealSystem/FoodFilterMultiSelect.jsx';
+import { MEAL_LIBRARY_FOOD_FILTER_OPTIONS } from '../../Components/MealSystem/foodFilterOptions.js';
 
 const PAGE_BG = 'bg-[#F8F9F6]';
 const PAGE_SIZE = 12;
@@ -376,7 +378,7 @@ function mealCsvImportIngredientLibraryRowNames(rows) {
     return names;
 }
 
-const MEAL_FORM_TYPE_OPTIONS = ['Breakfast', 'Meal', 'Side Salad', 'Soup', 'Dessert'];
+const MEAL_FORM_TYPE_OPTIONS = ['Breakfast', 'Meal', 'Side Salad', 'Soup', 'Dessert', 'Chia Pudding'];
 const UNIT_OPTIONS = ['g', 'kg', 'ml', 'ltr'];
 
 const DEFAULT_CYCLE_PHASES = [
@@ -472,18 +474,27 @@ function batchMacroDisplayFromPerServing(perServingStr, servings) {
     return fmtMacroFromNutrition(per * servings);
 }
 
-function unitToGrams(amount, unit) {
+function unitToGrams(amount, unit, densityGramsPerMl = 1) {
     const n = Number(amount);
     if (!Number.isFinite(n) || n <= 0) {
         return 0;
     }
-    if (unit === 'kg') {
-        return n * 1000;
+    return gramsFromIngredientAmountAndUnit(n, unit, densityGramsPerMl);
+}
+
+function densityForIngredientLabel(name, profiles) {
+    const key = normalizeIngredientKey(name ?? '');
+    const profile = Array.isArray(profiles)
+        ? profiles.find((p) => normalizeIngredientKey(p?.name ?? '') === key)
+        : null;
+    const stored = typeof profile?.density === 'number' && profile.density > 0 ? profile.density : 0;
+    if (!isPureCookingFatName(name ?? '')) {
+        return stored > 0 ? stored : 1;
     }
-    if (unit === 'ltr') {
-        return n * 1000;
+    if (stored >= 0.85 && stored <= 0.98) {
+        return stored;
     }
-    return n;
+    return isVegetableOilName(name ?? '') ? PURE_OIL_DENSITY_G_PER_ML : 0.91;
 }
 
 /**
@@ -606,6 +617,7 @@ function deleteSelectedButtonClass(anySelected) {
  *   cyclePhases?: { value: string; label: string }[];
  *   meals?: object[];
  *   ingredientProfiles?: object[];
+ *   browseTabs?: Array<{ id: string, label: string }>;
  *   csvMealCraftTemplateUrl?: string;
  *   csvExportUrl?: string;
  *   csvImportUrl?: string;
@@ -633,6 +645,7 @@ function deleteSelectedButtonClass(anySelected) {
 export function MealLibraryPageContent({
     cyclePhases = DEFAULT_CYCLE_PHASES,
     meals = [],
+    browseTabs = [],
     ingredientProfiles = [],
     csvMealCraftTemplateUrl = '',
     csvExportUrl = '#',
@@ -653,6 +666,7 @@ export function MealLibraryPageContent({
     onRowReorder,
 }) {
     const [query, setQuery] = useState('');
+    const [browseTab, setBrowseTab] = useState(browseTabs[0]?.id ?? 'all');
     const [mealRows, setMealRows] = useState(meals);
     const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
     const [selectedRows, setSelectedRows] = useState(/** @type {string[]} */ ([]));
@@ -674,11 +688,15 @@ export function MealLibraryPageContent({
     }, [mealCsvImportFlash]);
 
     const reloadMealLibraryRows = useCallback(() => {
-        void router.reload({
-            only: ['meals'],
-            preserveState: true,
-            preserveScroll: true,
-        });
+        try {
+            void router.reload({
+                only: ['meals'],
+                preserveState: true,
+                preserveScroll: true,
+            });
+        } catch {
+            // Storybook and other non-Inertia mounts have no current page.
+        }
     }, []);
 
     const dismissMealCsvImportModal = useCallback(() => {
@@ -700,14 +718,6 @@ export function MealLibraryPageContent({
     }, [meals]);
 
     useEffect(() => {
-        void router.reload({
-            only: ['meals'],
-            preserveScroll: true,
-            preserveState: true,
-        });
-    }, []);
-
-    useEffect(() => {
         if (initialViewMode !== undefined) {
             setViewMode(initialViewMode);
         }
@@ -715,7 +725,7 @@ export function MealLibraryPageContent({
 
     useEffect(() => {
         setVisibleCount(PAGE_SIZE);
-    }, [query, mealRows]);
+    }, [query, mealRows, browseTab]);
 
     useEffect(() => {
         if (storyInitialCreateModalOpen) {
@@ -738,6 +748,7 @@ export function MealLibraryPageContent({
     const [isBulkRecipe, setIsBulkRecipe] = useState(false);
     const [bulkServingsCount, setBulkServingsCount] = useState('');
     const [selectedDietTags, setSelectedDietTags] = useState(/** @type {string[]} */ ([]));
+    const [selectedFoodFilterTags, setSelectedFoodFilterTags] = useState(/** @type {string[]} */ ([]));
     const [selectedCyclePhaseValues, setSelectedCyclePhaseValues] = useState(/** @type {string[]} */ ([]));
     const [formInstructions, setFormInstructions] = useState('');
     const [formHighlight, setFormHighlight] = useState('');
@@ -769,6 +780,7 @@ export function MealLibraryPageContent({
         setIsBulkRecipe(false);
         setBulkServingsCount('');
         setSelectedDietTags([]);
+        setSelectedFoodFilterTags([]);
         setSelectedCyclePhaseValues([]);
         setFormInstructions('');
         setFormHighlight('');
@@ -849,6 +861,11 @@ export function MealLibraryPageContent({
         const mpt = Array.isArray(ef.mealPlanTags) ? ef.mealPlanTags.filter((t) => typeof t === 'string' && t.trim() !== '') : [];
         setSelectedMealPlanTags(mpt.length ? [...mpt] : ef.mealPlanTag ? [String(ef.mealPlanTag)] : []);
         setSelectedDietTags(canonicalDietTagsFromList(Array.isArray(ef.dietTags) ? ef.dietTags : []));
+        setSelectedFoodFilterTags(
+            Array.isArray(ef.foodFilterTags)
+                ? ef.foodFilterTags.filter((tag) => typeof tag === 'string' && tag.trim() !== '')
+                : [],
+        );
         const cpv = Array.isArray(ef.cyclePhaseValues)
             ? ef.cyclePhaseValues.filter((v) => typeof v === 'string' && v.trim() !== '')
             : [];
@@ -919,33 +936,6 @@ export function MealLibraryPageContent({
         setSelectedDietTags((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]));
     }
 
-    const canSave = useMemo(() => {
-        const nameOk = formName.trim().length > 0;
-        const svc = parseBulkServingsCount(bulkServingsCount);
-        const hasResolvedIngredientLines = ingredientRows.some((r) => {
-            const grams = unitToGrams(r.amount, r.unit);
-            const label = (r.selectedName || r.nameQuery || '').trim();
-            return grams > 0 && label.length > 0;
-        });
-        const ingredientBackedOk = hasResolvedIngredientLines && (!isBulkRecipe || svc != null);
-        const cal = Number(formCalories);
-        const batchCalOk = formCalories.trim() !== '' && Number.isFinite(cal) && cal >= 0;
-        const editingExisting = Boolean(mealToEdit?.editForm?.id);
-        if (!nameOk) {
-            return false;
-        }
-        if (editingExisting && batchCalOk && hasResolvedIngredientLines) {
-            return !isBulkRecipe || svc != null;
-        }
-        if (!batchCalOk && !ingredientBackedOk) {
-            return false;
-        }
-        if (!isBulkRecipe) {
-            return true;
-        }
-        return svc != null;
-    }, [formName, formCalories, isBulkRecipe, bulkServingsCount, ingredientRows, mealToEdit]);
-
     const ingredientDatabase = useMemo(
         () =>
             (ingredientProfiles ?? []).map((p) => ({
@@ -967,6 +957,33 @@ export function MealLibraryPageContent({
             })),
         [ingredientProfiles],
     );
+
+    const canSave = useMemo(() => {
+        const nameOk = formName.trim().length > 0;
+        const svc = parseBulkServingsCount(bulkServingsCount);
+        const hasResolvedIngredientLines = ingredientRows.some((r) => {
+            const label = (r.selectedName || r.nameQuery || '').trim();
+            const grams = unitToGrams(r.amount, r.unit, densityForIngredientLabel(label, ingredientDatabase));
+            return grams > 0 && label.length > 0;
+        });
+        const ingredientBackedOk = hasResolvedIngredientLines && (!isBulkRecipe || svc != null);
+        const cal = Number(formCalories);
+        const batchCalOk = formCalories.trim() !== '' && Number.isFinite(cal) && cal >= 0;
+        const editingExisting = Boolean(mealToEdit?.editForm?.id);
+        if (!nameOk) {
+            return false;
+        }
+        if (editingExisting && batchCalOk && hasResolvedIngredientLines) {
+            return !isBulkRecipe || svc != null;
+        }
+        if (!batchCalOk && !ingredientBackedOk) {
+            return false;
+        }
+        if (!isBulkRecipe) {
+            return true;
+        }
+        return svc != null;
+    }, [formName, formCalories, isBulkRecipe, bulkServingsCount, ingredientRows, mealToEdit, ingredientDatabase]);
 
     const [activeSuggestRow, setActiveSuggestRow] = useState(/** @type {number|null} */ (null));
     const ingredientSuggestRootRef = useRef(null);
@@ -1038,12 +1055,23 @@ export function MealLibraryPageContent({
         };
     }, [activeSuggestRow]);
 
+    const activeBrowseTab = browseTabs.some((tab) => tab.id === browseTab)
+        ? browseTab
+        : (browseTabs[0]?.id ?? 'all');
+    const activeBrowseLabel = browseTabs.find((tab) => tab.id === activeBrowseTab)?.label ?? 'All';
+
     const filteredMeals = useMemo(() => {
         const q = query.trim().toLowerCase();
+        const inBrowseTab =
+            browseTabs.length === 0 || activeBrowseTab === 'all'
+                ? mealRows
+                : mealRows.filter((m) => m.browseTab === activeBrowseTab);
+
         if (!q) {
-            return mealRows;
+            return inBrowseTab;
         }
-        return mealRows.filter((m) => {
+
+        return inBrowseTab.filter((m) => {
             const titleMatch = String(m.title ?? '')
                 .toLowerCase()
                 .includes(q);
@@ -1058,7 +1086,7 @@ export function MealLibraryPageContent({
                 m.tags.some((t) => String(t.label ?? t ?? '').toLowerCase().includes(q));
             return titleMatch || mealTypeMatch || categoryMatch || tagMatch;
         });
-    }, [mealRows, query]);
+    }, [mealRows, query, browseTabs, activeBrowseTab]);
 
     const displayedMeals = useMemo(
         () => filteredMeals.slice(0, Math.min(visibleCount, filteredMeals.length)),
@@ -1133,10 +1161,10 @@ export function MealLibraryPageContent({
                     },
                 );
             } catch {
-                void router.reload({ only: ['meals'], preserveScroll: true });
+                reloadMealLibraryRows();
             }
         },
-        [csrfToken, handleMealRowReorder, mealReorderUrl],
+        [csrfToken, handleMealRowReorder, mealReorderUrl, reloadMealLibraryRows],
     );
 
     function handleConfirmDelete() {
@@ -1203,7 +1231,7 @@ export function MealLibraryPageContent({
         return ingredientRows
             .map((r) => {
                 const name = (r.selectedName || r.nameQuery || '').trim();
-                const grams = unitToGrams(r.amount, r.unit);
+                const grams = unitToGrams(r.amount, r.unit, densityForIngredientLabel(name, ingredientDatabase));
                 if (!name || grams <= 0) {
                     return null;
                 }
@@ -1275,6 +1303,7 @@ export function MealLibraryPageContent({
             description: formInstructions,
             highlight: formHighlight,
             diet_tags: canonicalDietTagsFromList(selectedDietTags),
+            food_filter_tags: selectedFoodFilterTags,
             is_bulk: useBulk,
             servings_count: useBulk ? servingsDivisor : null,
         });
@@ -1458,7 +1487,7 @@ export function MealLibraryPageContent({
         const pairs = ingredientRows
             .map((r) => {
                 const name = (r.selectedName || r.nameQuery || '').trim();
-                const grams = unitToGrams(r.amount, r.unit);
+                const grams = unitToGrams(r.amount, r.unit, densityForIngredientLabel(name, ingredientDatabase));
                 if (!name || grams <= 0) {
                     return null;
                 }
@@ -1482,6 +1511,7 @@ export function MealLibraryPageContent({
         formType,
         formInstructions,
         formHighlight,
+        ingredientDatabase,
     ]);
 
     const nutritionResult = useMemo(
@@ -1578,10 +1608,22 @@ export function MealLibraryPageContent({
         [ingredientRowsForSafety, ingredientPasteField, ingredientDatabase],
     );
 
-    const safetyFormAlerts = useMemo(
-        () => collectSafetyAlertLabelsFromIngredientSelection(ingredientRowsForSafety, ingredientDatabase),
-        [ingredientRowsForSafety, ingredientDatabase],
-    );
+    const safetyFormAlerts = useMemo(() => {
+        if (selectedFoodFilterTags.length > 0) {
+            const labels = selectedFoodFilterTags
+                .map((id) => MEAL_LIBRARY_FOOD_FILTER_OPTIONS.find((option) => option.id === id)?.label ?? id)
+                .filter((label) => label.trim() !== '')
+                .sort();
+
+            if (hasG6pdTrigger) {
+                labels.push(G6PD_TRIGGER_SAFETY_LABEL);
+            }
+
+            return labels;
+        }
+
+        return collectSafetyAlertLabelsFromIngredientSelection(ingredientRowsForSafety, ingredientDatabase);
+    }, [selectedFoodFilterTags, ingredientRowsForSafety, ingredientDatabase, hasG6pdTrigger]);
 
     const [g6pdToastVisible, setG6pdToastVisible] = useState(false);
     const g6pdToastShownRef = useRef(false);
@@ -1852,45 +1894,48 @@ export function MealLibraryPageContent({
                             </div>
                         </div>
 
-                        <div className="flex w-full min-w-0 flex-col gap-3 sm:flex-row sm:items-end">
-                            <div className="min-w-0 flex-1">
-                                <TextInput
-                                    label="Search meals"
-                                    placeholder="Search by name, meal type, category, or tag…"
-                                    value={query}
-                                    onChange={(e) => setQuery(e.target.value)}
-                                    className="!max-w-none"
-                                />
-                            </div>
-                            <div
-                                className="flex shrink-0 items-center gap-1 self-stretch rounded-[12px] border border-[#E5E7EB] bg-[#F8F9F6] p-1 sm:self-auto"
-                                role="group"
-                                aria-label="Library view"
-                            >
-                                <RoundIconButton
-                                    type="button"
-                                    icon={<IconLayoutGrid className={viewMode === 'grid' ? 'text-[#5A6B44]' : ''} />}
-                                    ariaLabel="Grid view"
-                                    aria-pressed={viewMode === 'grid'}
-                                    onClick={() => setViewMode('grid')}
-                                    className={
-                                        viewMode === 'grid'
-                                            ? '!border-transparent bg-white text-[#262A22] shadow-sm'
-                                            : '!border-transparent bg-transparent text-[#6B7280] shadow-none hover:bg-white/70'
-                                    }
-                                />
-                                <RoundIconButton
-                                    type="button"
-                                    icon={<IconLayoutList className={viewMode === 'list' ? 'text-[#5A6B44]' : ''} />}
-                                    ariaLabel="List view"
-                                    aria-pressed={viewMode === 'list'}
-                                    onClick={() => setViewMode('list')}
-                                    className={
-                                        viewMode === 'list'
-                                            ? '!border-transparent bg-white text-[#262A22] shadow-sm'
-                                            : '!border-transparent bg-transparent text-[#6B7280] shadow-none hover:bg-white/70'
-                                    }
-                                />
+                        <div className="flex w-full min-w-0 flex-col gap-3">
+                            <MealBrowseTabs tabs={browseTabs} activeId={activeBrowseTab} onChange={setBrowseTab} />
+                            <div className="flex w-full min-w-0 flex-col gap-3 sm:flex-row sm:items-end">
+                                <div className="min-w-0 flex-1">
+                                    <TextInput
+                                        label="Search meals"
+                                        placeholder="Search by name, meal type, category, or tag…"
+                                        value={query}
+                                        onChange={(e) => setQuery(e.target.value)}
+                                        className="!max-w-none"
+                                    />
+                                </div>
+                                <div
+                                    className="flex shrink-0 items-center gap-1 self-stretch rounded-[12px] border border-[#E5E7EB] bg-[#F8F9F6] p-1 sm:self-auto"
+                                    role="group"
+                                    aria-label="Library view"
+                                >
+                                    <RoundIconButton
+                                        type="button"
+                                        icon={<IconLayoutGrid className={viewMode === 'grid' ? 'text-[#5A6B44]' : ''} />}
+                                        ariaLabel="Grid view"
+                                        aria-pressed={viewMode === 'grid'}
+                                        onClick={() => setViewMode('grid')}
+                                        className={
+                                            viewMode === 'grid'
+                                                ? '!border-transparent bg-white text-[#262A22] shadow-sm'
+                                                : '!border-transparent bg-transparent text-[#6B7280] shadow-none hover:bg-white/70'
+                                        }
+                                    />
+                                    <RoundIconButton
+                                        type="button"
+                                        icon={<IconLayoutList className={viewMode === 'list' ? 'text-[#5A6B44]' : ''} />}
+                                        ariaLabel="List view"
+                                        aria-pressed={viewMode === 'list'}
+                                        onClick={() => setViewMode('list')}
+                                        className={
+                                            viewMode === 'list'
+                                                ? '!border-transparent bg-white text-[#262A22] shadow-sm'
+                                                : '!border-transparent bg-transparent text-[#6B7280] shadow-none hover:bg-white/70'
+                                        }
+                                    />
+                                </div>
                             </div>
                         </div>
 
@@ -1927,7 +1972,9 @@ export function MealLibraryPageContent({
                     <div className="p-5">
                         {filteredMeals.length === 0 ? (
                             <p className="rounded-[12px] border border-dashed border-gray-200 bg-[#F8F9F6] p-8 text-center font-body text-sm text-[#555555]">
-                                No meals match your search. Try another name, type, category, or tag.
+                                {query.trim()
+                                    ? 'No meals match your search. Try another name, type, category, or tag.'
+                                    : `No ${activeBrowseLabel.toLowerCase()} meals in the Meal Library yet.`}
                             </p>
                         ) : viewMode === 'grid' ? (
                             <>
@@ -2269,21 +2316,12 @@ export function MealLibraryPageContent({
                         className="relative flex max-h-[min(92dvh,calc(100dvh-2rem))] w-full max-w-[960px] flex-col overflow-hidden rounded-t-[12px] bg-[#F8F9F6] shadow-2xl sm:rounded-[12px]"
                     >
                         <div className="flex shrink-0 items-start justify-between gap-3 border-b border-gray-200 px-4 py-4 md:px-6">
-                            <div className="min-w-0 flex-1">
-                                <h2
-                                    id="meal-library-detail-title"
-                                    className="break-words font-montserrat text-xl font-bold tracking-tight text-[#262A22] md:text-2xl"
-                                >
-                                    {mealDetailModal.title}
-                                </h2>
-                                {mealDetailModal.detailView?.shortDescription ||
-                                mealDetailModal.detailView?.description ? (
-                                    <p className="mt-1 line-clamp-2 font-montserrat text-sm font-medium text-[#555555] md:text-base">
-                                        {mealDetailModal.detailView.shortDescription ||
-                                            mealDetailModal.detailView.description}
-                                    </p>
-                                ) : null}
-                            </div>
+                            <h2
+                                id="meal-library-detail-title"
+                                className="min-w-0 flex-1 break-words font-montserrat text-xl font-bold tracking-tight text-[#262A22] md:text-2xl"
+                            >
+                                {mealDetailModal.title}
+                            </h2>
                             <Button label="Close" variant="ghost" type="button" onClick={() => setMealDetailModal(null)} />
                         </div>
                         {detailLoading ? (
@@ -2575,9 +2613,9 @@ export function MealLibraryPageContent({
                                     />
                                     <div className="space-y-2">
                                         <p className="font-montserrat text-sm font-bold leading-snug tracking-tight text-grey-94">
-                                            Dietary tags
+                                            Diet tags
                                         </p>
-                                        <div className="flex flex-wrap gap-3" role="group" aria-label="Dietary tags">
+                                        <div className="flex flex-wrap gap-3" role="group" aria-label="Diet tags">
                                             {DIETARY_TAG_OPTIONS.map((tag) => {
                                                 const checked = selectedDietTags.includes(tag);
                                                 return (
@@ -2594,6 +2632,18 @@ export function MealLibraryPageContent({
                                                 );
                                             })}
                                         </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <p className="font-montserrat text-sm font-bold leading-snug tracking-tight text-grey-94">
+                                            Food filters
+                                        </p>
+                                        <FoodFilterMultiSelect
+                                            value={selectedFoodFilterTags}
+                                            onChange={setSelectedFoodFilterTags}
+                                            options={MEAL_LIBRARY_FOOD_FILTER_OPTIONS}
+                                            showOther={false}
+                                            className="!justify-start"
+                                        />
                                     </div>
                                     <MultiPillDropdown
                                         label="Cycle phase"
@@ -2820,7 +2870,7 @@ export function MealLibraryPageContent({
                                                             />
 
                                                             <div className="flex justify-end">
-                                                                <PillButton
+                                                                <Button
                                                                     label="Remove"
                                                                     variant="outline"
                                                                     size="sm"

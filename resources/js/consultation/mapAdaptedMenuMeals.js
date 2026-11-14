@@ -33,6 +33,42 @@ function mealTypeLabelForSlot(slot) {
     }
 }
 
+import { buildNutritionalDataFromNutrition } from '../meal-library/buildNutritionalDataFromNutrition.js';
+
+/**
+ * @param {Array<{ name?: string; adapted_amount_grams?: number; unit?: string; adapted_amount?: number | null }>} [ingredients]
+ * @returns {string[]}
+ */
+function buildAdaptedIngredientLines(ingredients) {
+    if (!Array.isArray(ingredients) || ingredients.length === 0) {
+        return [];
+    }
+
+    return ingredients
+        .map((row) => {
+            const name = String(row?.name ?? '').trim();
+            if (!name) {
+                return null;
+            }
+
+            const grams = Number(row.adapted_amount_grams ?? 0);
+            if (Number.isFinite(grams) && grams > 0) {
+                const formatted = Math.round(grams * 100) / 100;
+
+                return `${formatted}g ${name}`;
+            }
+
+            const amount = row.adapted_amount;
+            const unit = String(row.unit ?? '').trim();
+            if (amount != null && unit !== '') {
+                return `${amount} ${unit} ${name}`;
+            }
+
+            return name;
+        })
+        .filter((line) => typeof line === 'string' && line !== '');
+}
+
 /**
  * @param {Record<string, unknown>} apiMeal
  */
@@ -41,6 +77,10 @@ export function mapAdaptedApiMealToConsultationMeal(apiMeal) {
     const label = mealTypeLabelForSlot(slot);
     const adapted = /** @type {Record<string, number>} */ (apiMeal.adapted_nutrition ?? {});
     const calories = Number(adapted.calories ?? 0);
+    const nutritionalData = buildNutritionalDataFromNutrition(adapted);
+    const ingredientLines = buildAdaptedIngredientLines(
+        Array.isArray(apiMeal.ingredients) ? apiMeal.ingredients : [],
+    );
 
     return {
         id: String(apiMeal.id ?? ''),
@@ -65,9 +105,30 @@ export function mapAdaptedApiMealToConsultationMeal(apiMeal) {
             typeof apiMeal.scaling_multiplier === 'number' ? apiMeal.scaling_multiplier : 1,
         proteinBalanced: Boolean(apiMeal.protein_balanced),
         isVegan: Boolean(apiMeal.is_vegan),
+        savoryEggCount:
+            typeof apiMeal.savory_egg_count === 'number' ? apiMeal.savory_egg_count : undefined,
         baselineCalories: Number(
             /** @type {Record<string, number>} */ (apiMeal.baseline_nutrition ?? {}).calories ?? 0,
         ),
+        plan_slot_index:
+            typeof apiMeal.plan_slot_index === 'number'
+                ? apiMeal.plan_slot_index
+                : typeof apiMeal.planSlotIndex === 'number'
+                  ? apiMeal.planSlotIndex
+                  : undefined,
+        isRecommended: Boolean(apiMeal.is_recommended ?? apiMeal.isRecommended),
+        detailView: {
+            nutritionalData,
+            nutritionSubheading: 'Adapted for your plan',
+            macros: {
+                calories: Math.round(calories),
+                protein: Math.round(Number(adapted.protein ?? 0) * 10) / 10,
+                carbs: Math.round(Number(adapted.carbs ?? 0) * 10) / 10,
+                fat: Math.round(Number(adapted.fat ?? 0) * 10) / 10,
+            },
+            nutrition: adapted,
+            ...(ingredientLines.length > 0 ? { ingredients: ingredientLines } : {}),
+        },
     };
 }
 
@@ -218,7 +279,7 @@ export function scheduledFullCraftCategoryMealsForDay(schedule, dayOfWeek) {
 }
 
 /**
- * @param {{ includeSoup?: boolean; selectedFixedSlots?: string[]; craftKey?: string; soupCalories?: number; sideSaladCalories?: number; dessertCalories?: number; dayOfWeek?: number; planTier?: number; fixedChiaBreakfast?: boolean }} [options]
+ * @param {{ includeSoup?: boolean; selectedFixedSlots?: string[]; craftKey?: string; soupCalories?: number; sideSaladCalories?: number; dessertCalories?: number; dayOfWeek?: number; planTier?: number; selectedMainMealIds?: string[]; selectedBreakfastMealIds?: string[] }} [options]
  */
 export function buildAdaptedMenuQueryString(options = {}) {
     const params = new URLSearchParams();
@@ -230,6 +291,16 @@ export function buildAdaptedMenuQueryString(options = {}) {
     if (Array.isArray(options.selectedFixedSlots) && options.selectedFixedSlots.length > 0) {
         for (const slot of options.selectedFixedSlots) {
             params.append('selected_fixed_slots[]', slot);
+        }
+    }
+    if (Array.isArray(options.selectedMainMealIds) && options.selectedMainMealIds.length > 0) {
+        for (const mealId of options.selectedMainMealIds) {
+            params.append('selected_main_meal_ids[]', String(mealId));
+        }
+    }
+    if (Array.isArray(options.selectedBreakfastMealIds) && options.selectedBreakfastMealIds.length > 0) {
+        for (const mealId of options.selectedBreakfastMealIds) {
+            params.append('selected_breakfast_meal_ids[]', String(mealId));
         }
     }
     if (typeof options.soupCalories === 'number' && options.soupCalories > 0) {
@@ -250,16 +321,13 @@ export function buildAdaptedMenuQueryString(options = {}) {
     if (typeof options.planTier === 'number' && options.planTier > 0) {
         params.set('plan_tier', String(Math.round(options.planTier)));
     }
-    if (options.fixedChiaBreakfast) {
-        params.set('fixed_chia_breakfast', '1');
-    }
 
     return params.toString();
 }
 
 /**
  * @param {string} url
- * @param {{ includeSoup?: boolean; craftKey?: string; soupCalories?: number; sideSaladCalories?: number; dessertCalories?: number; dayOfWeek?: number; planTier?: number; fixedChiaBreakfast?: boolean }} [options]
+ * @param {{ includeSoup?: boolean; craftKey?: string; soupCalories?: number; sideSaladCalories?: number; dessertCalories?: number; dayOfWeek?: number; planTier?: number; selectedMainMealIds?: string[] }} [options]
  */
 export async function fetchAdaptedMenu(url, options = {}) {
     const query = buildAdaptedMenuQueryString(options);

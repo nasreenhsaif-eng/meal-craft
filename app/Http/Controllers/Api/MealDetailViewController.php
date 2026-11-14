@@ -28,7 +28,7 @@ class MealDetailViewController extends Controller
 
         if ($profile !== null && $profile->daily_calorie_target !== null) {
             $buildOptions = AdaptedMenuBuildOptionsFromRequest::resolve($request, $user);
-            $adapted = AdaptedMenuBuilder::adaptMealForProfile($profile, $meal, $buildOptions);
+            $adapted = AdaptedMenuBuilder::adaptedMealForDetailView($profile, $meal, $buildOptions);
 
             if ($adapted !== null) {
                 $row = $mealLibrary->applyAdaptedToMealRow($row, $adapted, $meal);

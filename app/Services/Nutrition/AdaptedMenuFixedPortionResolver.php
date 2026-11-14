@@ -3,10 +3,10 @@
 namespace App\Services\Nutrition;
 
 use App\Enums\MealPlanSlotType;
+use App\Models\CustomerProfile;
 use App\Models\Meal;
 use App\Models\MealPlan;
 use App\Models\MealPlanDayMeal;
-use App\Support\ChiaBreakfastMeals;
 
 /**
  * Resolves actual fixed-portion calories for plan budgeting (side salad, dessert, soup).
@@ -21,51 +21,107 @@ final class AdaptedMenuFixedPortionResolver
      *     side_salad_calories?: float,
      *     dessert_calories?: float,
      *     day_of_week?: int,
-     *     fixed_chia_breakfast?: bool,
      * }  $options
      * @return array{
      *     side_salad_calories?: float,
      *     dessert_calories?: float,
      *     soup_calories?: float,
-     *     fixed_chia_breakfast?: bool,
      * }
      */
     public static function mergeIntoBuildOptions(array $options, ?MealPlan $productionPlan = null): array
     {
         $merged = $options;
+        $dayOfWeek = isset($options['day_of_week']) ? (int) $options['day_of_week'] : 0;
 
-        if (! isset($merged['side_salad_calories']) || ! isset($merged['dessert_calories'])) {
-            $dayOfWeek = isset($options['day_of_week']) ? (int) $options['day_of_week'] : 0;
+        if ($dayOfWeek < 1 || $dayOfWeek > 7) {
+            return $merged;
+        }
 
-            if ($dayOfWeek >= 1 && $dayOfWeek <= 7) {
-                $fromSchedule = self::fromProductionSchedule($dayOfWeek, $productionPlan);
+        $fromSchedule = self::fromProductionSchedule($dayOfWeek, $productionPlan);
 
-                if (! isset($merged['side_salad_calories']) && isset($fromSchedule['side_salad_calories'])) {
-                    $merged['side_salad_calories'] = $fromSchedule['side_salad_calories'];
-                }
+        if (! isset($merged['side_salad_calories']) && isset($fromSchedule['side_salad_calories'])) {
+            $merged['side_salad_calories'] = $fromSchedule['side_salad_calories'];
+        }
 
-                if (! isset($merged['dessert_calories']) && isset($fromSchedule['dessert_calories'])) {
-                    $merged['dessert_calories'] = $fromSchedule['dessert_calories'];
-                }
+        if (! isset($merged['dessert_calories']) && isset($fromSchedule['dessert_calories'])) {
+            $merged['dessert_calories'] = $fromSchedule['dessert_calories'];
+        }
 
-                $soupSelected = in_array('soup', $options['selected_fixed_slots'] ?? [], true)
-                    || ($options['include_soup'] ?? false);
+        $soupSelected = in_array('soup', $options['selected_fixed_slots'] ?? [], true)
+            || ($options['include_soup'] ?? false);
 
-                if (
-                    ! isset($merged['soup_calories'])
-                    && $soupSelected
-                    && isset($fromSchedule['soup_calories'])
-                ) {
-                    $merged['soup_calories'] = $fromSchedule['soup_calories'];
-                }
-
-                if (! isset($merged['fixed_chia_breakfast']) && ($fromSchedule['fixed_chia_breakfast'] ?? false)) {
-                    $merged['fixed_chia_breakfast'] = true;
-                }
-            }
+        if (
+            ! isset($merged['soup_calories'])
+            && $soupSelected
+            && isset($fromSchedule['soup_calories'])
+        ) {
+            $merged['soup_calories'] = $fromSchedule['soup_calories'];
         }
 
         return $merged;
+    }
+
+    /**
+     * @param  array<string, list<int|string>>  $daySelection
+     * @param  array<int, Meal>  $mealsById
+     * @param  array<string, mixed>  $baseOptions
+     * @return array{
+     *     side_salad_calories?: float,
+     *     dessert_calories?: float,
+     *     soup_calories?: float,
+     * }
+     */
+    public static function fromSelectedCarouselMeals(
+        CustomerProfile $profile,
+        array $daySelection,
+        array $mealsById,
+        array $baseOptions = [],
+    ): array {
+        /** @var array<string, array{optionKey: string, slot: string}> $categoryMap */
+        $categoryMap = [
+            'sideSalads' => ['optionKey' => 'side_salad_calories', 'slot' => 'side_salad'],
+            'desserts' => ['optionKey' => 'dessert_calories', 'slot' => 'dessert'],
+            'soup' => ['optionKey' => 'soup_calories', 'slot' => 'soup'],
+        ];
+
+        $out = [];
+
+        foreach ($categoryMap as $categoryKey => $mapping) {
+            $mealIds = $daySelection[$categoryKey] ?? [];
+
+            if (! is_array($mealIds) || $mealIds === []) {
+                continue;
+            }
+
+            $mealId = (int) ($mealIds[0] ?? 0);
+            $meal = $mealsById[$mealId] ?? null;
+
+            if (! $meal instanceof Meal) {
+                continue;
+            }
+
+            $adapted = AdaptedMenuBuilder::adaptMealForProfile($profile, $meal, array_merge(
+                $baseOptions,
+                ['schedule_slot' => $mapping['slot']],
+            ));
+
+            if (! is_array($adapted)) {
+                continue;
+            }
+
+            $adaptedNutrition = is_array($adapted['adapted_nutrition'] ?? null)
+                ? $adapted['adapted_nutrition']
+                : [];
+            $calories = (float) ($adaptedNutrition['calories'] ?? 0);
+
+            if ($calories <= 0) {
+                continue;
+            }
+
+            $out[$mapping['optionKey']] = round($calories, 2);
+        }
+
+        return $out;
     }
 
     /**
@@ -73,7 +129,6 @@ final class AdaptedMenuFixedPortionResolver
      *     side_salad_calories?: float,
      *     dessert_calories?: float,
      *     soup_calories?: float,
-     *     fixed_chia_breakfast?: bool,
      * }
      */
     public static function fromProductionSchedule(int $dayOfWeek, ?MealPlan $plan = null): array
@@ -120,14 +175,6 @@ final class AdaptedMenuFixedPortionResolver
 
             if ($slotType === MealPlanSlotType::Soup && ! isset($out['soup_calories'])) {
                 $out['soup_calories'] = round($calories, 2);
-            }
-
-            if (
-                $slotType === MealPlanSlotType::Breakfast
-                && (int) $row->slot_index === 1
-                && ChiaBreakfastMeals::isChiaBreakfast($row->meal)
-            ) {
-                $out['fixed_chia_breakfast'] = true;
             }
         }
 

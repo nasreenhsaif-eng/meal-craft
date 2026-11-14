@@ -6,6 +6,7 @@ use App\Models\Ingredient;
 use App\Models\Meal;
 use App\Support\MealInstructionsText;
 use App\Support\MealLibraryEditGuard;
+use App\Support\MealLibraryRefinerOverrides;
 use App\Support\SaladMealPresentation;
 use App\Support\StandardMeatPortion;
 use App\Support\WholeFoodDietPolicy;
@@ -56,8 +57,7 @@ final class SaladDressingMealRefiner
                     continue;
                 }
 
-                if (MealLibraryEditGuard::shouldSkipMealRefinement($meal)
-                    && ! MealLibraryEditGuard::mealHasCollapsedOrMissingPrimaryMeat($meal)) {
+                if (MealLibraryEditGuard::shouldSkipMealRefinement($meal)) {
                     continue;
                 }
 
@@ -174,45 +174,41 @@ final class SaladDressingMealRefiner
         $wholeFoodTags = WholeFoodDietPolicy::REQUIRED_MEAL_DIET_TAGS;
         $veganTags = array_merge($wholeFoodTags, ['Vegan']);
 
-        return [
+        $definitions = [
             'Marinated Pineapple, Peppers, Red Onion & Cilantro Side Salad' => [
                 'salad_ingredients' => [
-                    'Pineapple' => 40,
-                    'Bell Pepper (Red)' => 25,
-                    'Cabbage (Purple)' => 45,
-                    'Cucumber' => 35,
-                    'Red Onion' => 12,
-                    'Fresh Coriander' => 4,
+                    'Cabbage (Purple)' => 60,
+                    'Cucumber' => 55,
+                    'Pineapple' => 50,
+                    'Bell Pepper (Red)' => 35,
+                    'Red Onion' => 15,
+                    'Fresh Coriander' => 6,
                     'Red Thai Chillies' => 2,
                 ],
                 'dressing_ingredients' => [
-                    'Zesty Lime Chili Salad Dressing (Base)' => 12,
+                    'Zesty Lime Chili Salad Dressing (Base)' => 20,
                 ],
                 'salad_instructions' => [
-                    'Dice pineapple, pepper, cucumber, and red onion.',
-                    'Toss with thinly sliced cabbage and fresh coriander.',
-                    'Refrigerate 15–30 minutes so the vegetables soften slightly.',
-                    'Add chilli just before serving.',
+                    'Finely shred the purple cabbage. Cut pineapple into small bite-sized chunks. Slice cucumber into thin half-moons and red pepper into thin matchsticks. Very thinly shave the red onion.',
+                    'Toss cabbage, cucumber, pineapple, red pepper, red onion, and fresh coriander. Portion into a 500 ml container.',
+                    'Finely slice the red Thai chillies and add just before serving (or pack separately if preferred).',
                     self::SERVE_DRESSING_ON_THE_SIDE,
                 ],
                 'diet_tags' => $veganTags,
             ],
             'Classic Garden Salad' => [
                 'salad_ingredients' => [
-                    'Romaine Lettuce' => 50,
-                    'Tomato (Raw)' => 60,
+                    'Romaine Lettuce' => 90,
+                    'Tomato (Raw)' => 50,
                     'Cucumber' => 60,
-                    'Bell Pepper (Red)' => 40,
-                    'Cabbage (Purple)' => 30,
-                    'Red Onion' => 25,
+                    'Carrots' => 35,
                 ],
                 'dressing_ingredients' => [
-                    self::CLASSIC_LEMON_GARLIC_DRESSING => 15,
+                    self::CLASSIC_LEMON_GARLIC_DRESSING => 20,
                 ],
                 'salad_instructions' => [
-                    'Wash and chop the lettuce, tomato, cucumber, pepper, cabbage, and onion.',
-                    'Toss the vegetables together in a large bowl.',
-                    'Serve immediately.',
+                    'Wash and shred or chop the romaine for airy, high-fill volume. Slice cucumber into half-moons. Use cherry tomatoes or sliced raw tomato. Julienned or shred the carrots.',
+                    'Toss romaine, tomato, cucumber, and carrots. Portion into a 500 ml container.',
                     self::SERVE_DRESSING_ON_THE_SIDE,
                 ],
                 'diet_tags' => $veganTags,
@@ -242,24 +238,23 @@ final class SaladDressingMealRefiner
             ],
             'Citrus Beet Arugula Salad' => [
                 'salad_ingredients' => [
-                    'Arugula' => 45,
-                    'Beetroot' => 75,
-                    'Orange Sections' => 45,
-                    'Cucumber' => 30,
-                    'Walnuts' => 8,
+                    'Arugula' => 80,
+                    'Beetroot' => 60,
+                    'Orange Sections' => 40,
+                    'Cucumber' => 40,
+                    'Walnuts' => 6,
                     'Fresh Mint' => 3,
                 ],
                 'dressing_ingredients' => [
-                    self::CLASSIC_LEMON_GARLIC_DRESSING => 12,
+                    self::CLASSIC_LEMON_GARLIC_DRESSING => 15,
                 ],
                 'salad_instructions' => [
-                    'Roast or boil beetroot until tender. Cool, peel, and slice.',
-                    'Arrange arugula on plates.',
-                    'Top with beets, orange segments, cucumber, walnuts, and mint.',
+                    'Roast or boil beetroot until tender. Cool, peel, and slice or wedge. Supreme or peel the orange into segments. Thinly slice cucumber into half-moons. Lightly toast and roughly chop the walnuts. Tear the mint leaves.',
+                    'Portion arugula into a 500 ml container as an airy bed. Top with beets, orange segments, cucumber, walnuts, and mint.',
                     self::SERVE_DRESSING_ON_THE_SIDE,
                 ],
                 'diet_tags' => $veganTags,
-                'short_description' => 'Roasted beet and citrus salad with arugula, walnuts, and lemon-garlic dressing.',
+                'short_description' => 'Roasted beet and citrus salad on a generous arugula bed with cucumber, walnuts, and mint — packed for a 500 ml bowl with lemon-garlic dressing on the side.',
             ],
             'Shaved Fennel Rocca Salad' => [
                 'salad_ingredients' => [
@@ -268,6 +263,8 @@ final class SaladDressingMealRefiner
                     'Orange Sections' => 40,
                     'Pomegranate Seeds' => 12,
                     'Walnuts' => 6,
+                    'Sesame Seeds' => 8,
+                    'Feta' => 25,
                 ],
                 'dressing_ingredients' => [
                     self::CLASSIC_LEMON_GARLIC_DRESSING => 12,
@@ -275,10 +272,12 @@ final class SaladDressingMealRefiner
                 'salad_instructions' => [
                     'Shave fennel very thin with a mandoline or sharp knife.',
                     'Toss fennel, rocca, orange segments, pomegranate, and walnuts together.',
+                    'Crumble goat feta over the top.',
                     'Serve immediately.',
                     self::SERVE_DRESSING_ON_THE_SIDE,
                 ],
-                'diet_tags' => $veganTags,
+                'diet_tags' => ['Gluten-free', 'Vegetarian'],
+                'short_description' => 'Ultra-crisp shaved fennel and rocca with orange, pomegranate, walnuts, and crumbled goat feta.',
             ],
             'Roasted Eggplant Rocca Salad' => [
                 'salad_ingredients' => [
@@ -300,42 +299,41 @@ final class SaladDressingMealRefiner
             ],
             'Marinated Strawberry Beet Salad' => [
                 'salad_ingredients' => [
-                    'Strawberries' => 55,
-                    'Beetroot' => 65,
-                    'Romaine Lettuce' => 45,
-                    'White Onion' => 15,
+                    'Romaine Lettuce' => 80,
+                    'Beetroot' => 60,
+                    'Strawberries' => 50,
+                    'Celery' => 30,
+                    'White Onion' => 10,
+                    'Fresh Mint' => 4,
                     'Walnuts' => 8,
-                    'Fresh Mint' => 3,
                 ],
                 'dressing_ingredients' => [
-                    'Apple Cider Beet Marinade (Base)' => 14,
+                    'Apple Cider Beet Marinade (Base)' => 15,
                 ],
                 'salad_instructions' => [
-                    'Cook beetroot until tender. Cool and dice.',
-                    'Slice strawberries and onion.',
-                    'Toss beets, strawberries, onion, walnuts, and mint. Marinate 20 minutes.',
-                    'Serve over romaine.',
+                    'Cook or roast beetroot until tender. Cool and cut into matchsticks. Slice strawberries. Thinly slice celery into half-moons. Very thinly shave the onion. Tear the mint leaves. Lightly crush the walnuts.',
+                    'Toss beets, strawberries, celery, onion, walnuts, and mint. Marinate briefly.',
+                    'Portion chopped romaine into a 500 ml container and top with the marinated mixture.',
                     self::SERVE_DRESSING_ON_THE_SIDE,
                 ],
                 'diet_tags' => $veganTags,
             ],
             'Coconut Grapefruit Salad' => [
                 'salad_ingredients' => [
-                    'Romaine Lettuce' => 50,
-                    'Grapefruit Sections' => 65,
-                    'Cucumber' => 45,
-                    'Coconut Meat' => 12,
+                    'Romaine Lettuce' => 60,
+                    'Broccoli' => 40,
+                    'Grapefruit Sections' => 55,
+                    'Cucumber' => 40,
+                    'Pomegranate Seeds' => 10,
                     'Red Onion' => 10,
-                    'Fresh Mint' => 4,
-                    'Pomegranate Seeds' => 12,
+                    'Coconut Meat' => 7,
                 ],
                 'dressing_ingredients' => [
-                    'Grapefruit Lime Dressing (Base)' => 13,
+                    'Grapefruit Lime Dressing (Base)' => 15,
                 ],
                 'salad_instructions' => [
-                    'Segment grapefruit and slice cucumber and red onion.',
-                    'Toss romaine with grapefruit, cucumber, onion, mint, and pomegranate.',
-                    'Top with coconut and serve.',
+                    'Chop the romaine. Finely chop or shave raw broccoli florets. Peel grapefruit into supremes/segments. Slice cucumber into half-moons. Very thinly shave the red onion. Shave coconut meat into ribbons.',
+                    'Toss romaine and broccoli with grapefruit, cucumber, red onion, and pomegranate seeds. Top with coconut. Portion into a 500 ml container.',
                     self::SERVE_DRESSING_ON_THE_SIDE,
                 ],
                 'diet_tags' => $veganTags,
@@ -344,6 +342,7 @@ final class SaladDressingMealRefiner
                 'salad_ingredients' => [
                     'Rosemary Garlic Chicken (Base)' => StandardMeatPortion::GRAMS,
                     'Rocca' => 50,
+                    'Purslane' => 40,
                     'Cucumber' => 55,
                     'Roasted Cherry Tomato (Base)' => 45,
                     'Rosemary (Fresh)' => 2,
@@ -355,7 +354,7 @@ final class SaladDressingMealRefiner
                 ],
                 'salad_instructions' => [
                     'Grill or pan-sear Rosemary Garlic Chicken (Base) until golden then in the oven for 20 minutes exactly, then Rest and slice.',
-                    'Toss rocca, cucumber, and cherry tomatoes in a bowl.',
+                    'Toss rocca, purslane, cucumber, and cherry tomatoes in a bowl.',
                     'Top with chicken and walnuts.',
                     self::SERVE_DRESSING_ON_THE_SIDE,
                 ],
@@ -363,24 +362,26 @@ final class SaladDressingMealRefiner
             ],
             'Turmeric Chicken Kale Salad' => [
                 'salad_ingredients' => [
-                    'Chicken Breast' => StandardMeatPortion::GRAMS,
-                    'Kale' => 55,
-                    'Broccoli' => 60,
+                    'Turmeric Chicken (Base)' => StandardMeatPortion::GRAMS,
+                    'Kale' => 80,
                     'Avocado' => 40,
-                    'Fresh Coriander' => 5,
+                    'Broccoli' => 60,
                     'Pumpkin Seeds' => 10,
+                    'Sesame Seeds' => 6,
+                    'Fresh Coriander' => 8,
                 ],
                 'dressing_ingredients' => [
-                    'Turmeric Lemon Dressing (Base)' => 20,
+                    'Turmeric Lemon Dressing (Base)' => 14,
                 ],
                 'salad_instructions' => [
-                    'Rub chicken with half the turmeric lemon dressing as a marinade. Grill or pan-sear chicken until golden then in the oven for 20 minutes exactly, then Rest and slice.',
-                    'Massage kale until tender. Blanch or lightly steam broccoli until bright and just tender.',
-                    'Toss kale and broccoli with avocado, coriander, and pumpkin seeds. Top with warm turmeric chicken.',
+                    'Grill or pan-sear Turmeric Chicken (Base) until golden then in the oven for 20 minutes exactly, then Rest and slice.',
+                    'Massage kale until tender; lightly steam or blanch broccoli until bright green.',
+                    'Toss kale, broccoli, avocado, coriander, pumpkin seeds, and sesame seeds.',
+                    'Top with warm turmeric chicken.',
                     self::SERVE_DRESSING_ON_THE_SIDE,
                 ],
-                'short_description' => 'Golden turmeric chicken over massaged kale with avocado, broccoli, seeds, and turmeric lemon dressing.',
                 'diet_tags' => $wholeFoodTags,
+                'short_description' => 'Golden turmeric chicken over massaged kale with avocado, broccoli, seeds, and turmeric lemon dressing.',
             ],
             'Chicken Thai Mango Salad' => [
                 'salad_ingredients' => [
@@ -391,7 +392,7 @@ final class SaladDressingMealRefiner
                     'Cherry Tomatoes' => 40,
                     'Red Onion' => 15,
                     'Fresh Coriander' => 5,
-                    'Peanuts (Crushed)' => 8,
+                    'Cashew Nuts' => 10,
                 ],
                 'dressing_ingredients' => [
                     self::PEANUT_BUTTER_DRESSING => 25,
@@ -400,7 +401,7 @@ final class SaladDressingMealRefiner
                     'Grill or pan-sear chicken until golden then in the oven for 20 minutes exactly, then Rest and slice thinly.',
                     'Shred cabbage; slice mango, cucumber, tomatoes, and red onion.',
                     'Toss vegetables with coriander.',
-                    'Top with chicken and crushed peanuts.',
+                    'Top with chicken and cashew nuts.',
                     self::SERVE_DRESSING_ON_THE_SIDE,
                 ],
                 'diet_tags' => $wholeFoodTags,
@@ -458,7 +459,7 @@ final class SaladDressingMealRefiner
                     'Spinach (Fresh)' => 40,
                     'Carrots' => 40,
                     'Bell Pepper (Red)' => 35,
-                    'Cucumber' => 35,
+                    'Cucumber' => 40,
                     'Red Onion' => 15,
                     'Fresh Coriander' => 4,
                     'Wild Rice (Cooked)' => 75,
@@ -500,51 +501,53 @@ final class SaladDressingMealRefiner
             ],
             'Thai Rainbow Peanut Salad' => [
                 'salad_ingredients' => [
-                    'Cabbage (Purple)' => 55,
-                    'Carrots' => 40,
-                    'Cucumber' => 40,
-                    'Bell Pepper (Red)' => 30,
+                    'Cabbage (Purple)' => 80,
+                    'Carrots' => 45,
+                    'Cucumber' => 45,
+                    'Bell Pepper (Red)' => 35,
                     'Red Onion' => 12,
                     'Fresh Coriander' => 5,
-                    'Peanuts (Crushed)' => 8,
+                    'Peanuts (Crushed)' => 5,
                 ],
                 'dressing_ingredients' => [
-                    self::PEANUT_BUTTER_DRESSING => 25,
+                    self::PEANUT_BUTTER_DRESSING => 15,
                 ],
                 'salad_instructions' => [
-                    'Shred cabbage and julienne carrots, cucumber, and red onion.',
-                    'Toss vegetables with coriander and crushed peanuts.',
-                    'Serve chilled.',
+                    'Finely shred the purple cabbage. Julienne the carrots. Cut cucumber into matchsticks or thinly sliced half-moons. Cut red pepper into thin strips. Very thinly shave the red onion. Chop the coriander. Use roasted unsalted crushed peanuts.',
+                    'Toss cabbage, carrots, cucumber, red pepper, red onion, coriander, and crushed peanuts. Portion into a 500 ml container.',
                     self::SERVE_DRESSING_ON_THE_SIDE,
                 ],
                 'diet_tags' => $veganTags,
             ],
             'Vegan Harissa Roasted Cauliflower & Chickpea Salad w Tahini Dressing' => [
                 'salad_ingredients' => [
-                    'Cauliflower' => 150,
-                    'Beetroot' => 100,
-                    'Cooked Chickpeas (Base)' => 75,
-                    'Shallots' => 20,
-                    'Harissa Paste (Base)' => 5,
-                    'Olive Oil (Extra Virgin)' => 5,
-                    'Fresh Mint' => 3,
-                    'Dill (Fresh)' => 2,
-                    'Sunflower Seeds' => 10,
-                    'Black Seeds' => 5,
+                    'Cooked Chickpeas (Base)' => 120.0,
+                    'Beetroot' => 150.0,
+                    'Cauliflower' => 150.0,
+                    'Shallots' => 10.0,
+                    'Olive Oil (Extra Virgin)' => 5.0,
+                    'Sunflower Seeds' => 10.0,
+                    'Harissa Paste (Base)' => 10.0,
+                    'Black Seeds' => 3.0,
+                    'Dill (Fresh)' => 5.0,
+                    'Fresh Mint' => 5.0,
+                    'Sea Salt' => 0.5,
                 ],
                 'dressing_ingredients' => [
-                    'Lemon-Tahini Dressing (Base)' => 35,
+                    'Lemon-Tahini Dressing (Base)' => 20.0,
                 ],
                 'salad_instructions' => [
-                    'Prepare Cooked Chickpeas (Base) per base recipe instructions.',
-                    'Toss cauliflower, beetroot, and chickpeas with Harissa Paste (Base) and olive oil.',
-                    'Roast at 200°C for 25 minutes until crisp and charred at the edges.',
-                    'Toss roasted vegetables with shallots, dill, mint, sunflower seeds, and black seeds.',
-                    'Serve warm or at room temperature.',
-                    self::SERVE_DRESSING_ON_THE_SIDE,
+                    'Prepare Cooked Chickpeas (Base) per base recipe instructions from about 55g dry chickpeas (about 120g cooked), or measure 120g cooked chickpeas.',
+                    'Toss the cooked chickpeas, cubed beetroot, and cauliflower florets with olive oil, Harissa Paste (Base), and a pinch of sea salt.',
+                    'Spread onto a baking sheet and roast at 200°C for 22–25 minutes until caramelized and tender.',
+                    'Transfer roasted vegetables and chickpeas to a wide serving bowl. Toss gently with sliced shallots, fresh dill, and fresh mint.',
+                    'Scatter sunflower seeds and black seeds over the top.',
+                    'Drizzle Lemon-Tahini Dressing (Base) over the salad, or serve on the side.',
                 ],
                 'diet_tags' => $veganTags,
             ],
         ];
+
+        return MealLibraryRefinerOverrides::mergeRecipeDefinitionMap($definitions);
     }
 }

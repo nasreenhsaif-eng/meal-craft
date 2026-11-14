@@ -69,16 +69,16 @@ test('adapted menu auto provisions a preview profile for admin staff without one
     expect($admin->fresh()->customerProfile?->daily_calorie_target)->toBe(2000);
 });
 
-test('admin staff can preview adapted menu at a chosen plan tier', function () {
+test('adapted menu ignores plan_tier query and keeps the stored daily target', function () {
     $admin = User::factory()->create();
 
     $this->actingAs($admin)
         ->getJson('/api/menu/adapted?plan_tier=1500')
         ->assertSuccessful()
-        ->assertJsonPath('plan.plan_tier', 1500)
-        ->assertJsonPath('daily_calorie_target', 1500);
+        ->assertJsonPath('plan.plan_tier', 2000)
+        ->assertJsonPath('daily_calorie_target', 2000);
 
-    expect($admin->fresh()->customerProfile?->daily_calorie_target)->toBe(1500);
+    expect($admin->fresh()->customerProfile?->daily_calorie_target)->toBe(2000);
 });
 
 test('customers cannot override plan tier via adapted menu query', function () {
@@ -88,7 +88,7 @@ test('customers cannot override plan tier via adapted menu query', function () {
     ]);
 
     $this->actingAs($user)
-        ->getJson('/api/menu/adapted?plan_tier=1000')
+        ->getJson('/api/menu/adapted?plan_tier=1250')
         ->assertSuccessful()
         ->assertJsonPath('plan.plan_tier', 2000);
 
@@ -98,7 +98,7 @@ test('customers cannot override plan tier via adapted menu query', function () {
 test('selected fixed slots keep explicit tier slot targets and day total at tier', function () {
     $user = User::factory()->create();
     CustomerProfile::factory()->for($user)->create([
-        'daily_calorie_target' => 1200,
+        'daily_calorie_target' => 1250,
         'protein_percentage' => 40,
         'carb_percentage' => 30,
         'fat_percentage' => 30,
@@ -110,9 +110,9 @@ test('selected fixed slots keep explicit tier slot targets and day total at tier
         'soup_calories' => 107,
     ]);
 
-    expect($withSideAndSoup['day_total_calories'])->toBe(1200.0)
-        ->and($withSideAndSoup['scalable_slot_targets']['breakfast']['calories'])->toBe(194.0)
-        ->and($withSideAndSoup['scalable_slot_targets']['main_each']['calories'])->toBe(339.5)
+    expect($withSideAndSoup['day_total_calories'])->toBe(1250.0)
+        ->and($withSideAndSoup['scalable_slot_targets']['breakfast']['calories'])->toBe(300.0)
+        ->and($withSideAndSoup['scalable_slot_targets']['main_each']['calories'])->toBe(311.5)
         ->and($withSideAndSoup['fixed_portion']['per_slot']['side_salad'])->toBe(220.0)
         ->and($withSideAndSoup['fixed_portion']['per_slot']['soup'])->toBe(107.0);
 });
@@ -223,6 +223,61 @@ test('adapted menu returns fixed portion meals with unscaled recipe nutrition', 
         ->and((float) $sideSalad['adapted_nutrition']['calories'])->toBe(180.0);
 });
 
+test('adapted menu lists chia dessert as fixed portion when high-cal dessert is selected', function () {
+    $user = User::factory()->create();
+    CustomerProfile::factory()->for($user)->create([
+        'daily_calorie_target' => 1500,
+        'protein_percentage' => 30,
+        'carb_percentage' => 40,
+        'fat_percentage' => 30,
+        'allergies' => [],
+        'food_filters' => [],
+    ]);
+
+    $base = Ingredient::factory()->create([
+        'name' => 'Greek Yogurt Chia Pudding (Base)',
+        'calories' => 126,
+        'protein' => 10.3,
+        'carbs' => 13.1,
+        'fat' => 4.1,
+    ]);
+
+    Meal::factory()->create([
+        'name' => 'Blueberry Walnut Chia Pudding',
+        'meal_type' => MealType::Dessert,
+        'category' => RecipeCategory::Dessert,
+        'total_calories' => 318,
+        'library_sort_order' => 10,
+    ]);
+
+    Meal::factory()->create([
+        'name' => 'Blueberry Walnut Greek Yogurt Chia Pudding',
+        'meal_type' => MealType::Dessert,
+        'category' => RecipeCategory::Dessert,
+        'total_calories' => 201,
+        'library_sort_order' => 11,
+    ])->ingredients()->attach($base->id, ['amount_grams' => 150]);
+
+    $response = $this->actingAs($user)->getJson(
+        '/api/menu/adapted?craft_key=full'
+        .'&selected_fixed_slots[]=side_salad&selected_fixed_slots[]=dessert'
+        .'&dessert_calories=318&side_salad_calories=150&plan_tier=1500'
+    );
+
+    $response->assertSuccessful()
+        ->assertJsonPath('plan.scalable_slot_targets.breakfast.calories', 300);
+
+    expect((float) $response->json('plan.scalable_slot_targets.main_each.calories'))->toEqualWithDelta(400.0, 1.0)
+        ->and((float) $response->json('plan.day_total_calories'))->toBe(1500.0);
+
+    $chia = collect($response->json('fixed_portion_meals'))->firstWhere('name', 'Blueberry Walnut Greek Yogurt Chia Pudding');
+
+    expect($chia)->not->toBeNull()
+        ->and($chia['portion_behavior'])->toBe('fixed_portion')
+        ->and($chia['is_scaled'])->toBeFalse()
+        ->and((float) $chia['adapted_nutrition']['calories'])->toBeGreaterThanOrEqual(150.0);
+});
+
 test('adapted menu lists soups as fixed portions when soup is a selected fixed slot', function () {
     $user = User::factory()->create();
     CustomerProfile::factory()->for($user)->create([
@@ -295,6 +350,8 @@ test('adapted menu exposes admin-scheduled soups per weekday from production mea
         'goal' => 'Customer production schedule',
         'schema_type' => MealPlanSchemaType::WeeklyStructured,
         'plan_category' => 'balanced',
+        'published_starts_on' => now()->toDateString(),
+        'published_ends_on' => now()->addDays(6)->toDateString(),
     ]);
 
     foreach ([1 => [$veganSoup, $boneBroth], 2 => [$tuesdayVeganSoup, $boneBroth]] as $dayNumber => $meals) {
@@ -324,23 +381,17 @@ test('adapted menu exposes admin-scheduled soups per weekday from production mea
     expect($response->json('scheduled_soups_by_weekday.3'))->toBeNull();
 });
 
-test('adapted menu exposes full craft day options with two breakfasts and four mains per weekday', function () {
+test('adapted menu exposes full craft day options with one breakfast and four mains per weekday', function () {
     $user = User::factory()->create();
     CustomerProfile::factory()->for($user)->create([
         'daily_calorie_target' => 1500,
     ]);
 
-    $breakfastOne = Meal::factory()->create([
-        'name' => 'Chia Day One',
+    $breakfast = Meal::factory()->create([
+        'name' => 'Gouda & Spinach Scramble',
         'meal_type' => MealType::Breakfast,
         'category' => RecipeCategory::Breakfast,
         'total_calories' => 300,
-    ]);
-    $breakfastTwo = Meal::factory()->create([
-        'name' => 'Egg Day One',
-        'meal_type' => MealType::Breakfast,
-        'category' => RecipeCategory::Breakfast,
-        'total_calories' => 320,
     ]);
 
     $mains = collect(range(1, 4))->map(fn (int $index) => Meal::factory()->create([
@@ -364,10 +415,10 @@ test('adapted menu exposes full craft day options with two breakfasts and four m
     ]);
 
     $dessertOne = Meal::factory()->create([
-        'name' => 'Rotating Dessert',
+        'name' => 'Chia Day One',
         'meal_type' => MealType::Dessert,
         'category' => RecipeCategory::Dessert,
-        'total_calories' => 200,
+        'total_calories' => 318,
     ]);
     $dessertTwo = Meal::factory()->create([
         'name' => 'Fruit Salad Bowl',
@@ -381,11 +432,12 @@ test('adapted menu exposes full craft day options with two breakfasts and four m
         'goal' => 'Customer production schedule',
         'schema_type' => MealPlanSchemaType::WeeklyStructured,
         'plan_category' => 'balanced',
+        'published_starts_on' => now()->toDateString(),
+        'published_ends_on' => now()->addDays(6)->toDateString(),
     ]);
 
     $slots = [
-        [MealPlanSlotType::Breakfast, 1, $breakfastOne],
-        [MealPlanSlotType::Breakfast, 2, $breakfastTwo],
+        [MealPlanSlotType::Breakfast, 1, $breakfast],
         [MealPlanSlotType::Main, 1, $mains[0]],
         [MealPlanSlotType::Main, 2, $mains[1]],
         [MealPlanSlotType::Main, 3, $mains[2]],
@@ -412,13 +464,65 @@ test('adapted menu exposes full craft day options with two breakfasts and four m
     $response = $this->actingAs($user)->getJson('/api/menu/adapted?craft_key=full');
 
     $response->assertSuccessful()
-        ->assertJsonCount(2, 'scheduled_full_craft_by_weekday.1.breakfasts')
+        ->assertJsonCount(1, 'scheduled_full_craft_by_weekday.1.breakfasts')
         ->assertJsonCount(4, 'scheduled_full_craft_by_weekday.1.meals')
         ->assertJsonCount(2, 'scheduled_full_craft_by_weekday.1.sideSalads')
         ->assertJsonCount(2, 'scheduled_full_craft_by_weekday.1.desserts')
-        ->assertJsonPath('scheduled_full_craft_by_weekday.1.breakfasts.0.name', 'Chia Day One')
-        ->assertJsonPath('scheduled_full_craft_by_weekday.1.breakfasts.1.name', 'Egg Day One')
+        ->assertJsonPath('scheduled_full_craft_by_weekday.1.breakfasts.0.name', 'Gouda & Spinach Scramble')
+        ->assertJsonPath('scheduled_full_craft_by_weekday.1.desserts.0.name', 'Chia Day One')
         ->assertJsonPath('scheduled_full_craft_by_weekday.1.sideSalads.1.name', 'Classic Garden Salad');
+});
+
+test('adapted menu keeps sunday breakfast when production plan still references legacy halloumi scramble name', function () {
+    $user = User::factory()->create();
+    CustomerProfile::factory()->for($user)->create([
+        'daily_calorie_target' => 1500,
+    ]);
+
+    $breakfast = Meal::factory()->create([
+        'name' => 'Halloumi & Spinach Scramble',
+        'meal_type' => MealType::Breakfast,
+        'category' => RecipeCategory::Breakfast,
+        'total_calories' => 300,
+    ]);
+
+    $main = Meal::factory()->create([
+        'name' => 'Sunday Main',
+        'meal_type' => MealType::Main,
+        'category' => RecipeCategory::Meal,
+        'total_calories' => 420,
+    ]);
+
+    $plan = MealPlan::query()->create([
+        'name' => 'Legacy Halloumi Production Plan',
+        'goal' => 'Customer production schedule',
+        'schema_type' => MealPlanSchemaType::WeeklyStructured,
+        'plan_category' => 'balanced',
+        'published_starts_on' => now()->toDateString(),
+        'published_ends_on' => now()->addDays(6)->toDateString(),
+    ]);
+
+    foreach ([
+        [MealPlanSlotType::Breakfast, 1, $breakfast],
+        [MealPlanSlotType::Main, 1, $main],
+    ] as [$slotType, $slotIndex, $meal]) {
+        MealPlanDayMeal::query()->create([
+            'meal_plan_id' => $plan->id,
+            'meal_id' => $meal->id,
+            'day_number' => 1,
+            'slot_type' => $slotType->value,
+            'slot_index' => $slotIndex,
+            'is_option_b' => false,
+        ]);
+    }
+
+    config(['customer_nutrition.production_meal_plan_id' => $plan->id]);
+
+    $response = $this->actingAs($user)->getJson('/api/menu/adapted?craft_key=full');
+
+    $response->assertSuccessful()
+        ->assertJsonCount(1, 'scheduled_full_craft_by_weekday.1.breakfasts')
+        ->assertJsonPath('scheduled_full_craft_by_weekday.1.breakfasts.0.name', 'Halloumi & Spinach Scramble');
 });
 
 test('adapted menu applies craft-specific calorie budgets when craft_key is provided', function () {
@@ -431,10 +535,10 @@ test('adapted menu applies craft-specific calorie budgets when craft_key is prov
 
     $response->assertSuccessful()
         ->assertJsonPath('plan.craft_key', 'business')
-        ->assertJsonPath('plan.craft_day_calories', 525);
+        ->assertJsonPath('plan.craft_day_calories', 650);
 });
 
-test('adapted menu day craft subtracts one main meal from the plan tier', function () {
+test('adapted menu day craft snaps to the nearest Day Craft library total', function () {
     $user = User::factory()->create();
     CustomerProfile::factory()->for($user)->create([
         'daily_calorie_target' => 2000,
@@ -444,5 +548,202 @@ test('adapted menu day craft subtracts one main meal from the plan tier', functi
 
     $response->assertSuccessful()
         ->assertJsonPath('plan.craft_key', 'day')
-        ->assertJsonPath('plan.craft_day_calories', 1375);
+        ->assertJsonPath('plan.craft_day_calories', 1400);
 });
+
+test('adapted menu returns day macro tolerance and consistent daily macros across tier switches', function () {
+    $user = User::factory()->create();
+    $profile = CustomerProfile::factory()->for($user)->create([
+        'daily_calorie_target' => 2000,
+        'protein_percentage' => 40,
+        'carb_percentage' => 30,
+        'fat_percentage' => 30,
+    ]);
+
+    $at2000 = $this->actingAs($user)->getJson('/api/menu/adapted?craft_key=full');
+    $at2000->assertSuccessful()
+        ->assertJsonPath('plan.plan_tier', 2000)
+        ->assertJsonPath('plan.day_macro_tolerance.protein_g', 15);
+
+    $proteinAt2000 = (float) $at2000->json('plan.daily_macros.protein_g');
+    expect($proteinAt2000)->toBeGreaterThanOrEqual(190)->toBeLessThanOrEqual(200);
+
+    $profile->update(['daily_calorie_target' => 1500]);
+    $user->refresh();
+
+    $this->actingAs($user)->getJson('/api/menu/adapted?craft_key=full')->assertSuccessful()
+        ->assertJsonPath('plan.plan_tier', 1500);
+
+    $profile->update(['daily_calorie_target' => 2000]);
+    $user->refresh();
+
+    $this->actingAs($user)->getJson('/api/menu/adapted?craft_key=full')->assertSuccessful()
+        ->assertJsonPath('plan.plan_tier', 2000);
+
+    expect((float) $this->actingAs($user)->getJson('/api/menu/adapted?craft_key=full')->json('plan.daily_macros.protein_g'))
+        ->toBe($proteinAt2000);
+});
+
+test('adapted menu swaps scheduled coconut chia to greek when dairy is not filtered', function () {
+    $user = User::factory()->create();
+    CustomerProfile::factory()->for($user)->create([
+        'daily_calorie_target' => 2000,
+        'allergies' => [],
+        'food_filters' => [],
+    ]);
+
+    $plan = seedProductionFullCraftDayWithChiaDessert('Blueberry Walnut Chia Pudding');
+
+    config(['customer_nutrition.production_meal_plan_id' => $plan->id]);
+
+    $response = $this->actingAs($user)->getJson('/api/menu/adapted?craft_key=full');
+
+    $response->assertSuccessful()
+        ->assertJsonPath(
+            'scheduled_full_craft_by_weekday.1.desserts.0.name',
+            'Blueberry Walnut Greek Yogurt Chia Pudding',
+        );
+});
+
+test('adapted menu keeps scheduled coconut chia when dairy is filtered', function () {
+    $user = User::factory()->create();
+    CustomerProfile::factory()->for($user)->create([
+        'daily_calorie_target' => 2000,
+        'allergies' => ['dairy'],
+        'food_filters' => ['dairy'],
+    ]);
+
+    $plan = seedProductionFullCraftDayWithChiaDessert('Blueberry Walnut Chia Pudding');
+
+    config(['customer_nutrition.production_meal_plan_id' => $plan->id]);
+
+    $response = $this->actingAs($user)->getJson('/api/menu/adapted?craft_key=full');
+
+    $response->assertSuccessful()
+        ->assertJsonPath(
+            'scheduled_full_craft_by_weekday.1.desserts.0.name',
+            'Blueberry Walnut Chia Pudding',
+        );
+});
+
+test('adapted menu fixed portion catalog includes only one chia variant family per profile', function () {
+    $user = User::factory()->create();
+    CustomerProfile::factory()->for($user)->create([
+        'daily_calorie_target' => 2000,
+        'allergies' => [],
+        'food_filters' => [],
+    ]);
+
+    Meal::factory()->create([
+        'name' => 'Blueberry Walnut Chia Pudding',
+        'meal_type' => MealType::Dessert,
+        'category' => RecipeCategory::Dessert,
+        'total_calories' => 318,
+        'library_sort_order' => 10,
+    ]);
+
+    Meal::factory()->create([
+        'name' => 'Blueberry Walnut Greek Yogurt Chia Pudding',
+        'meal_type' => MealType::Dessert,
+        'category' => RecipeCategory::Dessert,
+        'total_calories' => 201,
+        'library_sort_order' => 11,
+    ]);
+
+    $response = $this->actingAs($user)->getJson('/api/menu/adapted?craft_key=full');
+
+    $response->assertSuccessful();
+
+    $fixedNames = collect($response->json('fixed_portion_meals'))->pluck('name');
+
+    expect($fixedNames)->toContain('Blueberry Walnut Greek Yogurt Chia Pudding')
+        ->and($fixedNames)->not->toContain('Blueberry Walnut Chia Pudding');
+});
+
+function seedProductionFullCraftDayWithChiaDessert(string $chiaDessertName): MealPlan
+{
+    $breakfast = Meal::factory()->create([
+        'name' => 'Gouda & Spinach Scramble',
+        'meal_type' => MealType::Breakfast,
+        'category' => RecipeCategory::Breakfast,
+        'total_calories' => 300,
+    ]);
+
+    $mains = collect(range(1, 4))->map(fn (int $index) => Meal::factory()->create([
+        'name' => "Main {$index} Day One",
+        'meal_type' => MealType::Main,
+        'category' => RecipeCategory::Meal,
+        'total_calories' => 400 + $index,
+    ]));
+
+    $saladOne = Meal::factory()->create([
+        'name' => 'Rotating Salad',
+        'meal_type' => MealType::Salad,
+        'category' => RecipeCategory::SideSalad,
+        'total_calories' => 120,
+    ]);
+
+    $saladTwo = Meal::factory()->create([
+        'name' => 'Classic Garden Salad',
+        'meal_type' => MealType::Salad,
+        'category' => RecipeCategory::SideSalad,
+        'total_calories' => 90,
+    ]);
+
+    $coconutChia = Meal::factory()->create([
+        'name' => $chiaDessertName,
+        'meal_type' => MealType::Dessert,
+        'category' => RecipeCategory::Dessert,
+        'total_calories' => 318,
+    ]);
+
+    $greekChiaName = str_replace('Chia Pudding', 'Greek Yogurt Chia Pudding', $chiaDessertName);
+
+    Meal::factory()->create([
+        'name' => $greekChiaName,
+        'meal_type' => MealType::Dessert,
+        'category' => RecipeCategory::Dessert,
+        'total_calories' => 201,
+    ]);
+
+    $dessertTwo = Meal::factory()->create([
+        'name' => 'Fruit Salad Bowl',
+        'meal_type' => MealType::Dessert,
+        'category' => RecipeCategory::Dessert,
+        'total_calories' => 150,
+    ]);
+
+    $plan = MealPlan::query()->create([
+        'name' => 'Production Weekly Full Craft Chia Swap',
+        'goal' => 'Customer production schedule',
+        'schema_type' => MealPlanSchemaType::WeeklyStructured,
+        'plan_category' => 'balanced',
+        'published_starts_on' => now()->toDateString(),
+        'published_ends_on' => now()->addDays(6)->toDateString(),
+    ]);
+
+    $slots = [
+        [MealPlanSlotType::Breakfast, 1, $breakfast],
+        [MealPlanSlotType::Main, 1, $mains[0]],
+        [MealPlanSlotType::Main, 2, $mains[1]],
+        [MealPlanSlotType::Main, 3, $mains[2]],
+        [MealPlanSlotType::Main, 4, $mains[3]],
+        [MealPlanSlotType::Salad, 1, $saladOne],
+        [MealPlanSlotType::Salad, 2, $saladTwo],
+        [MealPlanSlotType::Dessert, 1, $coconutChia],
+        [MealPlanSlotType::Dessert, 2, $dessertTwo],
+    ];
+
+    foreach ($slots as [$slotType, $slotIndex, $meal]) {
+        MealPlanDayMeal::query()->create([
+            'meal_plan_id' => $plan->id,
+            'meal_id' => $meal->id,
+            'day_number' => 1,
+            'slot_type' => $slotType->value,
+            'slot_index' => $slotIndex,
+            'is_option_b' => false,
+        ]);
+    }
+
+    return $plan;
+}

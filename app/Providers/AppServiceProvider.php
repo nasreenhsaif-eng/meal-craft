@@ -6,12 +6,15 @@ use App\Http\Responses\LoginResponse;
 use App\Http\Responses\LogoutResponse;
 use App\Http\Responses\RegisterResponse;
 use App\Http\Responses\TwoFactorLoginResponse;
+use App\Listeners\SendSignupVerificationCode;
 use App\Services\CollapsedPrimaryProteinHealer;
 use Carbon\CarbonImmutable;
+use Illuminate\Auth\Events\Registered;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 use Laravel\Fortify\Contracts\LoginResponse as LoginResponseContract;
@@ -39,6 +42,8 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->configureDefaults();
         $this->healCollapsedPrimaryChickenOncePerWindow();
+
+        Event::listen(Registered::class, SendSignupVerificationCode::class);
 
         Blade::directive('viteReactRefresh', fn (): string => '<?php echo \\Illuminate\\Support\\Facades\\Vite::reactRefresh(); ?>');
     }

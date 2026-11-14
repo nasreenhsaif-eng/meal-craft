@@ -98,16 +98,16 @@ final class MealLibraryBulkNutrition
             return $meal->persistedNutritionAsCalculatorShape();
         }
 
-        $batch = RecipeNutritionCalculator::fromMeal($meal);
+        $batch = RecipeNutritionCalculator::fromMeal($meal, finalize: false);
 
         if ($meal->is_bulk) {
             $servings = (float) ($meal->servings_count ?? 0);
             if ($servings > 0) {
-                return self::scaleNutrition($batch, 1 / $servings);
+                return RecipeMacroRounding::finalize(self::scaleNutritionUnrounded($batch, 1 / $servings));
             }
         }
 
-        return $batch;
+        return RecipeMacroRounding::finalize($batch);
     }
 
     /**
@@ -124,18 +124,20 @@ final class MealLibraryBulkNutrition
         $factor = 1 / $servingsCount;
 
         if ($hasResolvedIngredients && self::nutritionHasMeaningfulCalories($batchNutrition)) {
-            return self::scaleNutrition($batchNutrition, $factor);
+            return RecipeMacroRounding::finalize(self::scaleNutritionUnrounded($batchNutrition, $factor));
         }
 
         if ($csvBatchMacros !== null && self::nutritionHasMeaningfulCalories($csvBatchMacros)) {
-            return self::scaleNutrition(self::expandMacroShape($csvBatchMacros), $factor);
+            return RecipeMacroRounding::finalize(
+                self::scaleNutritionUnrounded(self::expandMacroShape($csvBatchMacros), $factor)
+            );
         }
 
         if (self::nutritionHasMeaningfulCalories($batchNutrition)) {
-            return self::scaleNutrition($batchNutrition, $factor);
+            return RecipeMacroRounding::finalize(self::scaleNutritionUnrounded($batchNutrition, $factor));
         }
 
-        return self::expandMacroShape($csvBatchMacros ?? []);
+        return RecipeMacroRounding::finalize(self::expandMacroShape($csvBatchMacros ?? []));
     }
 
     /**
@@ -158,6 +160,15 @@ final class MealLibraryBulkNutrition
      */
     public static function scaleNutrition(array $nutrition, float $factor): array
     {
+        return RecipeMacroRounding::finalize(self::scaleNutritionUnrounded($nutrition, $factor));
+    }
+
+    /**
+     * @param  array<string, float>  $nutrition
+     * @return array<string, float>
+     */
+    public static function scaleNutritionUnrounded(array $nutrition, float $factor): array
+    {
         if (! is_finite($factor) || $factor <= 0) {
             return [];
         }
@@ -167,7 +178,7 @@ final class MealLibraryBulkNutrition
             if (! is_numeric($value)) {
                 continue;
             }
-            $out[$key] = round((float) $value * $factor, 4);
+            $out[$key] = (float) $value * $factor;
         }
 
         return $out;
@@ -184,20 +195,11 @@ final class MealLibraryBulkNutrition
     }
 
     /**
-     * Ingredient pivot grams on bulk meals are batch totals; customer-facing views show one serving.
+     * @deprecated Ingredient detail lines show full batch grams for bulk meals.
+     *             Prefer batch pivot amounts; use {@see perServingNutritionForMealDisplay()} for macros only.
      */
     public static function perServingGramsForMealDisplay(Meal $meal, float $batchGrams): float
     {
-        if (! ($meal->is_bulk ?? false)) {
-            return $batchGrams;
-        }
-
-        $servings = (float) ($meal->servings_count ?? 0);
-
-        if ($servings <= 0) {
-            return $batchGrams;
-        }
-
-        return round($batchGrams / $servings, 4);
+        return $batchGrams;
     }
 }

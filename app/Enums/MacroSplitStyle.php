@@ -7,6 +7,14 @@ enum MacroSplitStyle: string
     case Balanced = 'balanced';
     case HighProtein = 'high_protein';
 
+    public function label(): string
+    {
+        return match ($this) {
+            self::Balanced => __('Balanced'),
+            self::HighProtein => __('High protein'),
+        };
+    }
+
     /**
      * @return array{protein_percentage: float, carb_percentage: float, fat_percentage: float}
      */
