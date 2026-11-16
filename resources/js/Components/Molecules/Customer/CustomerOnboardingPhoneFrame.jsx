@@ -21,8 +21,9 @@ export default function CustomerOnboardingPhoneFrame({
             <div
                 className={[
                     'relative flex h-full min-h-0 w-full flex-col overflow-clip',
-                    'rounded-[28px] border border-gray-200 bg-white shadow-lg',
-                    'px-3 pt-3 font-sans text-[#262A22]',
+                    'rounded-[36px] border border-gray-200 bg-white shadow-lg',
+                    // Extra top inset so the header logo clears the rounded chrome.
+                    'px-3 pb-3 pt-8 font-sans text-[#262A22]',
                     className,
                 ]
                     .join(' ')
@@ -51,10 +52,12 @@ export default function CustomerOnboardingPhoneFrame({
             <div
                 className={[
                     'relative mx-auto flex h-[min(844px,100dvh-5rem)] w-full max-w-[430px] flex-col overflow-clip',
-                    'rounded-[28px] border border-gray-200 bg-white shadow-lg',
+                    'rounded-[36px] border border-gray-200 bg-white shadow-lg',
                     // On real small phones, fill the viewport without device chrome.
                     'max-[429px]:h-dvh max-[429px]:max-h-dvh max-[429px]:rounded-none max-[429px]:border-0 max-[429px]:shadow-none',
-                    'px-3 pt-3',
+                    // Desktop chrome: room under the top radius. Real phones: safe-area + padding.
+                    'px-3 pb-3 pt-8',
+                    'max-[429px]:px-3 max-[429px]:pb-3 max-[429px]:pt-[max(2rem,env(safe-area-inset-top))]',
                 ].join(' ')}
                 data-customer-onboarding-frame={storybook ? undefined : ''}
                 data-storybook-onboarding-frame={storybook ? '' : undefined}

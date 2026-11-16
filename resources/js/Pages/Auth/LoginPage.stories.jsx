@@ -1,4 +1,5 @@
 import LoginPage from './LoginPage';
+import { withOnboardingMobileFrame } from '../Onboarding/onboardingStoryDecorators.jsx';
 
 export default {
     title: 'Design System/05. Templates & Pages/Auth/LoginPage',
@@ -17,4 +18,18 @@ export default {
 export const Default = {
     name: 'Default',
     render: () => <LoginPage />,
+};
+
+/** White post-auth seal — plays after login / signup verify, before redirect. */
+export const SuccessSeal = {
+    name: 'Success Seal',
+    decorators: withOnboardingMobileFrame,
+    parameters: {
+        docs: {
+            description: {
+                story: 'Fullscreen white overlay with `marketing-animated` seal after successful auth (login or signup OTP). Not the dark Logos/Animated splash.',
+            },
+        },
+    },
+    render: () => <LoginPage previewSuccessSeal />,
 };

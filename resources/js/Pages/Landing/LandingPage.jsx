@@ -191,7 +191,7 @@ function StartNowCta({ loginHref, onStartNow, reduceMotion }) {
 
     return (
         <motion.div
-            className="mt-8 inline-flex flex-col items-start gap-2"
+            className="mt-10 inline-flex flex-col items-start gap-3"
             initial={reduceMotion ? false : { opacity: 0, scale: 0.92 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={
@@ -214,7 +214,7 @@ function StartNowCta({ loginHref, onStartNow, reduceMotion }) {
                 onBlurCapture={() => setPaused(false)}
             >
                 <PillButton
-                    className="bg-brand-primary text-white hover:bg-brand-primary-pressed"
+                    className="bg-brand-primary px-8 py-3.5 text-base text-white hover:bg-brand-primary-pressed sm:px-10 sm:py-4 sm:text-lg"
                     href={onStartNow ? undefined : loginHref}
                     onClick={onStartNow}
                 >
@@ -234,7 +234,7 @@ function StartNowCta({ loginHref, onStartNow, reduceMotion }) {
                 </PillButton>
             </motion.div>
             <motion.p
-                className="font-montserrat text-sm text-grey-33"
+                className="font-montserrat text-base font-medium text-[#2D3128] sm:text-lg"
                 initial={reduceMotion ? false : { opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={
@@ -326,7 +326,12 @@ export default function LandingPage({ loginHref = '/login', onStartNow, onLearnM
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => {
-                                    document.querySelector(item.href)?.scrollIntoView({ behavior: 'smooth' });
+                                    const target = document.querySelector(item.href);
+                                    if (!target) {
+                                        return;
+                                    }
+                                    // Honor CSS scroll-margin so titles clear the sticky header
+                                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
                                 }}
                             />
                         ))}
@@ -334,83 +339,71 @@ export default function LandingPage({ loginHref = '/login', onStartNow, onLearnM
                 </div>
             </header>
 
-            <section className="mx-auto grid w-full max-w-6xl items-center gap-10 px-5 py-12 lg:grid-cols-[1.15fr_0.85fr] lg:py-16">
-                <div>
-                    <h1 className="font-montserrat text-4xl font-bold leading-[1.05] tracking-tight sm:text-5xl">
-                        {['Healing', 'Through'].map((line, index) => (
+            <section
+                className="relative isolate w-full overflow-hidden bg-[#F7F6F3] min-h-[min(94vh,980px)] lg:min-h-[min(92vh,1040px)]"
+                aria-label="Hero"
+            >
+                <LandingAppPreview />
+                <div className="relative z-10 mx-auto flex min-h-[inherit] w-full max-w-6xl items-center px-5 py-16 sm:px-8 lg:py-24">
+                    <motion.div
+                        className="mr-auto w-full max-w-[36rem] shrink-0 lg:max-w-[42rem]"
+                        initial={reduceMotion ? false : { opacity: 0, x: -24 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={
+                            reduceMotion
+                                ? { duration: 0 }
+                                : { delay: 0.2, duration: 0.55, ease: EASE_OUT }
+                        }
+                    >
+                        <h1 className="font-montserrat text-5xl font-bold leading-[1.02] tracking-tight text-[#1F241C] sm:text-6xl lg:text-7xl">
+                            {['Healing', 'Through'].map((line, index) => (
+                                <motion.span
+                                    key={line}
+                                    className="block"
+                                    initial={reduceMotion ? false : { opacity: 0, y: 18 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={
+                                        reduceMotion
+                                            ? { duration: 0 }
+                                            : { delay: 0.28 + index * 0.12, duration: 0.5, ease: EASE_OUT }
+                                    }
+                                >
+                                    {line}
+                                </motion.span>
+                            ))}
                             <motion.span
-                                key={line}
-                                className="block"
+                                className="block text-[#4F6A32]"
                                 initial={reduceMotion ? false : { opacity: 0, y: 18 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={
                                     reduceMotion
                                         ? { duration: 0 }
-                                        : { delay: 0.12 + index * 0.14, duration: 0.55, ease: EASE_OUT }
+                                        : { delay: 0.52, duration: 0.5, ease: EASE_OUT }
                                 }
                             >
-                                {line}
+                                Whole Foods
                             </motion.span>
-                        ))}
-                        <motion.span
-                            className="block text-brand-primary"
-                            initial={reduceMotion ? false : { opacity: 0, y: 18 }}
+                        </h1>
+                        <motion.p
+                            className="mt-6 max-w-xl text-lg font-medium leading-relaxed text-[#2D3128] sm:text-xl"
+                            initial={reduceMotion ? false : { opacity: 0, y: 12 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={
                                 reduceMotion
                                     ? { duration: 0 }
-                                    : { delay: 0.4, duration: 0.55, ease: EASE_OUT }
+                                    : { delay: 0.65, duration: 0.45, ease: EASE_OUT }
                             }
                         >
-                            Whole Foods
-                        </motion.span>
-                    </h1>
-                    <motion.p
-                        className="mt-5 max-w-prose text-base leading-relaxed text-grey-33"
-                        initial={reduceMotion ? false : { opacity: 0, y: 12 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={
-                            reduceMotion
-                                ? { duration: 0 }
-                                : { delay: 0.58, duration: 0.5, ease: EASE_OUT }
-                        }
-                    >
-                        Create personalized anti-inflammatory meal plans from whole foods with our clean food
-                        philosophy and zero tolerance for harmful additives.
-                    </motion.p>
-                    <StartNowCta
-                        loginHref={loginHref}
-                        onStartNow={onStartNow}
-                        reduceMotion={reduceMotion}
-                    />
+                            Create personalized anti-inflammatory meal plans from whole foods with our clean food
+                            philosophy and zero tolerance for harmful additives.
+                        </motion.p>
+                        <StartNowCta
+                            loginHref={loginHref}
+                            onStartNow={onStartNow}
+                            reduceMotion={reduceMotion}
+                        />
+                    </motion.div>
                 </div>
-                <motion.div
-                    className="flex justify-center"
-                    initial={reduceMotion ? false : { opacity: 0, scale: 0.94 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={
-                        reduceMotion
-                            ? { duration: 0 }
-                            : { delay: 0.35, duration: 0.6, ease: EASE_OUT }
-                    }
-                >
-                    <LandingAppPreview />
-                </motion.div>
-            </section>
-
-            <section className="border-y border-border-light bg-bg-page" aria-label="Standards">
-                <dl className="mx-auto grid w-full max-w-6xl grid-cols-3 gap-4 px-5 py-8 text-center">
-                    {[
-                        ['4', 'Meal Plans'],
-                        ['100%', 'Whole Foods'],
-                        ['0', 'Additives'],
-                    ].map(([value, label]) => (
-                        <div key={label}>
-                            <dt className="font-montserrat text-3xl font-bold">{value}</dt>
-                            <dd className="mt-1 font-montserrat text-xs font-medium text-grey-33">{label}</dd>
-                        </div>
-                    ))}
-                </dl>
             </section>
 
             <section className="bg-bg-page px-5 py-16">
@@ -479,7 +472,7 @@ export default function LandingPage({ loginHref = '/login', onStartNow, onLearnM
                 </div>
             </section>
 
-            <section id="meal-plans" className="px-5 py-16">
+            <section id="meal-plans" className="scroll-mt-28 px-5 py-16">
                 <div className="mx-auto w-full max-w-6xl">
                     <h2 className="text-center font-montserrat text-3xl font-bold tracking-tight sm:text-4xl">
                         Four Anti-inflammatory Meal Plans
@@ -532,7 +525,7 @@ export default function LandingPage({ loginHref = '/login', onStartNow, onLearnM
                 </div>
             </section>
 
-            <section id="sickle-cell" className="bg-bg-page px-5 py-16">
+            <section id="sickle-cell" className="scroll-mt-28 bg-bg-page px-5 py-16">
                 <div className="mx-auto grid w-full max-w-6xl items-center gap-10 rounded-[24px] bg-white p-6 shadow-sm lg:grid-cols-2 lg:p-10">
                     <PhotoPlaceholder label="Journey photo" className="aspect-[4/5] w-full rounded-[20px]" />
                     <div>
@@ -570,7 +563,7 @@ export default function LandingPage({ loginHref = '/login', onStartNow, onLearnM
                 </div>
             </section>
 
-            <section id="philosophy" className="px-5 py-16">
+            <section id="philosophy" className="scroll-mt-28 px-5 py-16">
                 <div className="mx-auto w-full max-w-6xl">
                     <div>
                         <h2 className="font-montserrat text-3xl font-bold tracking-tight">Our Philosophy</h2>
@@ -612,7 +605,7 @@ export default function LandingPage({ loginHref = '/login', onStartNow, onLearnM
 
             <section
                 id="weekly-menu"
-                className="bg-[color-mix(in_srgb,var(--brand-secondary)_16%,white)] px-5 py-16"
+                className="scroll-mt-28 bg-[color-mix(in_srgb,var(--brand-secondary)_16%,white)] px-5 py-16"
             >
                 <div className="mx-auto grid w-full max-w-6xl items-center gap-8 lg:grid-cols-2">
                     <div className="grid gap-4">

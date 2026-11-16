@@ -36,6 +36,7 @@ const SUCCESS_SEAL_FADE_MS = 700;
  * @param {string} [props.statusMessage] Session flash (e.g. reset link sent).
  * @param {string} [props.errorMessage] Session flash error (e.g. CSRF expired).
  * @param {(event: import('react').FormEvent<HTMLFormElement>) => void} [props.onSubmit]
+ * @param {boolean} [props.previewSuccessSeal] Storybook-only — show the white post-auth seal overlay.
  */
 export default function LoginPage({
     formAction,
@@ -51,6 +52,7 @@ export default function LoginPage({
     statusMessage = '',
     errorMessage: initialErrorMessage = '',
     onSubmit,
+    previewSuccessSeal = false,
 }) {
     const isServerForm = Boolean(formAction);
     const rememberInputId = useId();
@@ -62,7 +64,7 @@ export default function LoginPage({
     const [passwordError, setPasswordError] = useState(initialPasswordError);
     const [errorMessage, setErrorMessage] = useState(initialErrorMessage);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [successSealVisible, setSuccessSealVisible] = useState(false);
+    const [successSealVisible, setSuccessSealVisible] = useState(previewSuccessSeal);
     const [redirectAfterSeal, setRedirectAfterSeal] = useState('');
 
     useEffect(() => {

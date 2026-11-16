@@ -28,7 +28,7 @@ export default function OnboardingNavHeader({
     const noun = typeof progressNoun === 'string' && progressNoun.trim() !== '' ? progressNoun.trim() : 'Step';
 
     return (
-        <header className="w-full" aria-label="Onboarding navigation">
+        <header className="w-full shrink-0 pt-1" aria-label="Onboarding navigation">
             <div className="grid w-full grid-cols-[2.5rem_1fr_auto] items-center gap-x-2">
                 <button
                     type="button"

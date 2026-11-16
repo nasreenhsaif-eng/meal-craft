@@ -74,7 +74,7 @@ export default function CustomerLayout({
     );
 
     const header = (
-        <header className="w-full shrink-0 bg-white px-1 py-2" aria-label="Meal Craft">
+        <header className="w-full shrink-0 bg-white px-1 pb-2 pt-1" aria-label="Meal Craft">
             <div className="grid w-full grid-cols-[2.5rem_1fr_minmax(4.5rem,auto)] items-center gap-x-2">
                 {typeof onBack === 'function' ? (
                     <button
