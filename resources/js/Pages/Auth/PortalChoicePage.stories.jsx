@@ -2,7 +2,7 @@ import { fn } from 'storybook/test';
 import PortalChoicePage from './PortalChoicePage';
 
 export default {
-    title: 'MealCraft/Pages/Auth/PortalChoicePage',
+    title: 'Design System/05. Templates & Pages/Auth/PortalChoicePage',
     component: PortalChoicePage,
     parameters: {
         layout: 'fullscreen',
@@ -12,7 +12,7 @@ export default {
         docs: {
             description: {
                 component:
-                    'Post-login workspace picker at `/login/portal-choice` — **admin/staff only**. Shown after successful login instead of jumping straight to the admin dashboard. **Customer Onboarding / Experience** previews `/onboarding/welcome`; **Admin Portal Dashboard** goes to `/admin/dashboard`. Standard customers never see this screen.',
+                    'Post-login workspace picker at `/login/portal-choice` — **admin/staff only**. Shown after successful login instead of jumping straight to the admin dashboard. **Customer Onboarding / Experience** opens Welcome Back (`/app`); **Admin Portal Dashboard** goes to `/admin/dashboard`. Standard customers never see this screen.',
             },
         },
     },

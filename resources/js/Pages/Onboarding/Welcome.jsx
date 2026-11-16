@@ -11,6 +11,7 @@ import { getOnboardingStepIndex } from '../../meal-craft/onboarding/onboardingTa
  * @param {string} props.customerName
  * @param {Array<{ value: string, label: string }>} [props.visibleSteps]
  * @param {() => void} [props.onBack]
+ * @param {boolean} [props.canGoBack]
  * @param {boolean} [props.centerHeader]
  * @param {boolean} [props.hideDefaultHeader]
  * @param {string} [props.titleClassName]
@@ -25,6 +26,7 @@ export function OnboardingShell({
     customerName,
     visibleSteps,
     onBack,
+    canGoBack: canGoBackProp,
     centerHeader = false,
     hideDefaultHeader = false,
     titleClassName = '',
@@ -34,7 +36,10 @@ export function OnboardingShell({
     const headerAlign = centerHeader ? 'text-center' : '';
     const stepsForNav = visibleSteps ?? steps;
     const stepIndex = getOnboardingStepIndex(currentStep, stepsForNav);
-    const canGoBack = stepIndex > 0;
+    const canGoBack =
+        typeof canGoBackProp === 'boolean'
+            ? canGoBackProp && typeof onBack === 'function'
+            : stepIndex > 0 && typeof onBack === 'function';
 
     const navigation =
         navHeader ??
@@ -43,28 +48,30 @@ export function OnboardingShell({
                 steps={stepsForNav}
                 activeStep={currentStep}
                 onBack={onBack}
-                canGoBack={canGoBack && typeof onBack === 'function'}
+                canGoBack={canGoBack}
             />
         ) : null);
 
     return (
         <CustomerInertiaShell customerName={customerName} layoutVariant="onboarding">
-            <div className="flex w-full flex-col space-y-6 md:space-y-8">
+            <div className="flex w-full flex-col gap-3">
                 {navigation}
-                <div className="h-auto w-full md:rounded-2xl md:border md:border-gray-100 md:bg-white md:p-8 md:shadow-sm">
+                <div className="h-auto w-full">
                     {hideDefaultHeader ? null : (
                         <>
-                            <h1 className={`font-montserrat text-2xl font-semibold text-[#262A22] ${headerAlign} ${titleClassName}`.trim()}>
+                            <h1
+                                className={`font-montserrat text-2xl font-semibold leading-tight text-[#262A22] ${headerAlign} ${titleClassName}`.trim()}
+                            >
                                 {title}
                             </h1>
                             {description ? (
-                                <p className={`mt-2 text-sm text-[#555555] ${headerAlign}`.trim()}>{description}</p>
+                                <p className={`mt-1.5 text-sm leading-snug text-[#555555] ${headerAlign}`.trim()}>
+                                    {description}
+                                </p>
                             ) : null}
                         </>
                     )}
-                    <div className={`w-full ${hideDefaultHeader ? '' : 'mt-4 md:mt-5'}`.trim()}>
-                        {children}
-                    </div>
+                    <div className={`w-full ${hideDefaultHeader ? '' : 'mt-3'}`.trim()}>{children}</div>
                 </div>
             </div>
         </CustomerInertiaShell>

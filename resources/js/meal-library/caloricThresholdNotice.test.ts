@@ -1,19 +1,22 @@
 import { describe, expect, it } from 'vitest';
 import {
+    CALORIC_THRESHOLD_NOTICE_MAX_CALORIES,
     isBelowMicronutrientEnforcedCalories,
-    MICRONUTRIENT_ENFORCED_MIN_CALORIES,
 } from './caloricThresholdNotice.ts';
 
 describe('isBelowMicronutrientEnforcedCalories', () => {
-    it('flags tiers below 1500 kcal', () => {
+    it('flags tiers at or below 1200 kcal', () => {
+        expect(isBelowMicronutrientEnforcedCalories(800)).toBe(true);
         expect(isBelowMicronutrientEnforcedCalories(1000)).toBe(true);
         expect(isBelowMicronutrientEnforcedCalories(1200)).toBe(true);
+        expect(CALORIC_THRESHOLD_NOTICE_MAX_CALORIES).toBe(1200);
     });
 
-    it('does not flag enforced tiers', () => {
-        expect(isBelowMicronutrientEnforcedCalories(MICRONUTRIENT_ENFORCED_MIN_CALORIES)).toBe(false);
+    it('does not flag tiers above 1200 kcal', () => {
+        expect(isBelowMicronutrientEnforcedCalories(1201)).toBe(false);
+        expect(isBelowMicronutrientEnforcedCalories(1250)).toBe(false);
+        expect(isBelowMicronutrientEnforcedCalories(1500)).toBe(false);
         expect(isBelowMicronutrientEnforcedCalories(1800)).toBe(false);
-        expect(isBelowMicronutrientEnforcedCalories(2000)).toBe(false);
     });
 
     it('ignores unset tier', () => {

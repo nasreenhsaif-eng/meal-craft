@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import KitchenDailySheet from '../../Components/Logistics/KitchenDailySheet.jsx';
 import KitchenShoppingList from '../../Components/Logistics/KitchenShoppingList.jsx';
+import {
+    aggregateBulkIngredientsFromRecipeBatches,
+    aggregateKitchenRecipeBatches,
+} from '../../Components/Logistics/kitchenRecipeBatches.js';
 import { downloadCsv, buildKitchenDailySheetCsv } from '../../Components/Logistics/logisticsCsvExport.js';
 import adminInertiaLayout from '../../lib/adminInertiaLayout.jsx';
 import { fetchKitchenDailySheet } from '../../logistics/fetchKitchenDailySheet.js';
@@ -11,8 +15,11 @@ import { fetchKitchenDailySheet } from '../../logistics/fetchKitchenDailySheet.j
 function KitchenLogisticsView({ initialProductionDate, kitchenDailySheetUrl = '/api/admin/kitchen/daily-sheet' }) {
     const [productionDate, setProductionDate] = useState(initialProductionDate);
     const [rows, setRows] = useState(/** @type {import('../../Components/Logistics/logisticsMockData.js').KitchenDailyRow[]} */ ([]));
-    const [ingredientLines, setIngredientLines] = useState(
-        /** @type {import('../../Components/Logistics/logisticsMockData.js').IngredientChoiceLine[]} */ ([]),
+    const [adaptedMeals, setAdaptedMeals] = useState(
+        /** @type {import('../../Components/Logistics/kitchenRecipeBatches.js').AdaptedKitchenMeal[]} */ ([]),
+    );
+    const [baseRecipes, setBaseRecipes] = useState(
+        /** @type {import('../../Components/Logistics/kitchenRecipeBatches.js').KitchenBaseRecipe[]} */ ([]),
     );
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(/** @type {string | null} */ (null));
@@ -24,10 +31,12 @@ function KitchenLogisticsView({ initialProductionDate, kitchenDailySheetUrl = '/
         try {
             const payload = await fetchKitchenDailySheet(productionDate, kitchenDailySheetUrl);
             setRows(payload.rows);
-            setIngredientLines(payload.ingredientLines);
+            setAdaptedMeals(payload.adaptedMeals ?? []);
+            setBaseRecipes(payload.baseRecipes ?? []);
         } catch (loadError) {
             setRows([]);
-            setIngredientLines([]);
+            setAdaptedMeals([]);
+            setBaseRecipes([]);
             setError(loadError instanceof Error ? loadError.message : 'Could not load kitchen sheet.');
         } finally {
             setLoading(false);
@@ -43,13 +52,31 @@ function KitchenLogisticsView({ initialProductionDate, kitchenDailySheetUrl = '/
         downloadCsv(`kitchen-daily-${productionDate || 'undated'}.csv`, csv);
     }, [productionDate, rows]);
 
+    const handleGenerateBulkIngredientsCsv = useCallback(() => {
+        const bulk = aggregateBulkIngredientsFromRecipeBatches(
+            aggregateKitchenRecipeBatches(adaptedMeals),
+            baseRecipes,
+        );
+        const csv =
+            'Ingredient,Unit,Total needed,Used in\n' +
+            bulk
+                .map((line) => {
+                    const usedIn = (line.usedInRecipes ?? []).join('; ').replaceAll('"', '""');
+
+                    return `"${line.ingredient.replaceAll('"', '""')}","${line.unit}",${line.totalAmount},"${usedIn}"`;
+                })
+                .join('\n');
+
+        downloadCsv(`kitchen-bulk-ingredients-${productionDate || 'undated'}.csv`, csv);
+    }, [adaptedMeals, baseRecipes, productionDate]);
+
     return (
         <div className="space-y-8">
             <div>
                 <h1 className="font-montserrat text-2xl font-semibold text-[#262A22]">Kitchen production</h1>
                 <p className="mt-2 text-sm text-[#555555]">
-                    Customer craft plans for the selected production date, with scaled ingredient lines for mains and
-                    breakfast.
+                    Customer craft plans for the selected production date, with scaled recipes and aggregated bulk
+                    ingredients.
                 </p>
             </div>
 
@@ -71,20 +98,10 @@ function KitchenLogisticsView({ initialProductionDate, kitchenDailySheetUrl = '/
             />
 
             <KitchenShoppingList
-                lines={ingredientLines}
+                adaptedMeals={adaptedMeals}
+                baseRecipes={baseRecipes}
                 dayLabel={productionDate}
-                onGenerateCsvForDrive={() =>
-                    downloadCsv(
-                        `kitchen-ingredients-${productionDate || 'undated'}.csv`,
-                        'Customer,Meal,Ingredient,Grams\n' +
-                            ingredientLines
-                                .map(
-                                    (line) =>
-                                        `"${line.recipeLabel?.split(' — ')[0] ?? ''}","${line.recipeLabel?.split(' — ')[1] ?? ''}","${line.ingredient}",${line.gramsPerPortion}`,
-                                )
-                                .join('\n'),
-                    )
-                }
+                onGenerateCsvForDrive={handleGenerateBulkIngredientsCsv}
             />
         </div>
     );

@@ -10,6 +10,7 @@ import {
     getPreviousTabStep,
     getVisibleOnboardingSteps,
 } from '../../meal-craft/onboarding/onboardingTabFlow.js';
+import { resolveOnboardingStepDefaults } from '../../meal-craft/onboarding/resolveOnboardingStepDefaults.js';
 import { validateOnboardingStep } from '../../meal-craft/onboarding/validateOnboardingStep.js';
 import customerOnboardingLayout from '../../Layouts/customerOnboardingLayout.jsx';
 import { OnboardingActivityInner } from './Activity.jsx';
@@ -38,6 +39,10 @@ function nextButtonLabel(step) {
         return 'Confirm';
     }
 
+    if (step === 'gender') {
+        return 'Continue';
+    }
+
     return 'Next';
 }
 
@@ -48,6 +53,7 @@ export default function Container() {
     const pageProps = usePage().props;
     const onboarding = onboardingFromPage(pageProps);
     const activeStep = pageProps.activeStep ?? 'gender';
+    const inertiaErrors = pageProps.errors ?? {};
     const { state, patch, profileInput, computeTargetsBeforeSummary } = useOnboardingStore();
     const [processing, setProcessing] = useState(false);
     const [validationErrors, setValidationErrors] = useState(/** @type {Record<string, string>} */ ({}));
@@ -96,11 +102,24 @@ export default function Container() {
 
         if (previous) {
             visitStep(previous);
+            return;
         }
-    }, [activeStep, visibleSteps, visitStep]);
+
+        // First step while editing a finished profile → return to Welcome Back.
+        if (onboarding.completed) {
+            const homeUrl = onboarding.urls?.appHome ?? '/app';
+            router.visit(homeUrl);
+        }
+    }, [activeStep, visibleSteps, visitStep, onboarding.completed, onboarding.urls]);
 
     const handleNext = useCallback(() => {
-        const { valid, errors } = validateOnboardingStep(activeStep, state);
+        const resolvedState = resolveOnboardingStepDefaults(activeStep, state);
+
+        if (resolvedState !== state) {
+            patch(resolvedState);
+        }
+
+        const { valid, errors } = validateOnboardingStep(activeStep, resolvedState);
 
         if (!valid) {
             setValidationErrors(errors);
@@ -121,11 +140,18 @@ export default function Container() {
             computeTargetsBeforeSummary();
         }
 
-        const payload = buildOnboardingStepPayload(activeStep, state);
+        const payload = buildOnboardingStepPayload(activeStep, resolvedState);
 
         setProcessing(true);
 
         const isFinalStep = activeStep === 'food_filters';
+        const nextVisibleSteps =
+            activeStep === 'gender'
+                ? getVisibleOnboardingSteps(steps, {
+                      gender: resolvedState.gender,
+                      dietProtocol: resolvedState.dietProtocol,
+                  })
+                : visibleSteps;
 
         router.post(postUrl, payload, {
             preserveState: !isFinalStep,
@@ -136,10 +162,11 @@ export default function Container() {
                     return;
                 }
 
-                const next = getNextTabStep(activeStep, visibleSteps);
+                const next = getNextTabStep(activeStep, nextVisibleSteps);
 
                 if (next) {
                     patch({ currentStep: next });
+                    visitStep(next);
                 }
             },
         });
@@ -149,48 +176,10 @@ export default function Container() {
         onboarding.urls,
         computeTargetsBeforeSummary,
         visibleSteps,
+        steps,
         patch,
+        visitStep,
     ]);
-
-    const handleGenderSelect = useCallback(
-        (value) => {
-            if (processing) {
-                return;
-            }
-
-            patch({ gender: value });
-            setValidationErrors({});
-
-            const urls = onboarding.urls ?? {};
-            const postUrl = resolveOnboardingStepPostUrl('gender', urls);
-
-            if (!postUrl) {
-                return;
-            }
-
-            const nextVisibleSteps = getVisibleOnboardingSteps(steps, { gender: value });
-
-            setProcessing(true);
-
-            router.post(
-                postUrl,
-                { sex: value },
-                {
-                    preserveState: true,
-                    preserveScroll: true,
-                    onFinish: () => setProcessing(false),
-                    onSuccess: () => {
-                        const next = getNextTabStep('gender', nextVisibleSteps);
-
-                        if (next) {
-                            patch({ currentStep: next });
-                        }
-                    },
-                },
-            );
-        },
-        [processing, patch, onboarding.urls, steps],
-    );
 
     const handleDietProtocolSelect = useCallback(
         (value) => {
@@ -229,6 +218,7 @@ export default function Container() {
 
                     if (next) {
                         patch({ currentStep: next });
+                        visitStep(next);
                     }
                 },
             });
@@ -240,6 +230,7 @@ export default function Container() {
             computeTargetsBeforeSummary,
             state,
             steps,
+            visitStep,
         ],
     );
 
@@ -249,7 +240,7 @@ export default function Container() {
         currentStep: activeStep,
         customerName: onboarding.customerName ?? '',
         processing,
-        errors: validationErrors,
+        errors: { ...inertiaErrors, ...validationErrors },
         onSubmit: handleNext,
     };
 
@@ -259,7 +250,7 @@ export default function Container() {
                 {...sharedInner}
                 sex={state.gender}
                 options={options.sex?.length ? options.sex : undefined}
-                onSexSelect={handleGenderSelect}
+                onSexChange={(value) => patch({ gender: value })}
             />
         ),
         period_tracking: (
@@ -348,6 +339,8 @@ export default function Container() {
     };
 
     const hideFooterNext = meta.hideNext === true && activeStep !== 'diet_protocol';
+    const canGoBack =
+        Boolean(getPreviousTabStep(activeStep, visibleSteps)) || Boolean(onboarding.completed);
 
     return (
         <OnboardingShell
@@ -361,6 +354,7 @@ export default function Container() {
             titleClassName={meta.titleClassName ?? ''}
             visibleSteps={visibleSteps}
             onBack={handleBack}
+            canGoBack={canGoBack}
         >
             <div className="relative min-h-[200px] w-full">
                 {steps.map((step) => (

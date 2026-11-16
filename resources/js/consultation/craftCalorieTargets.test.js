@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
     categoryMacroTargetsFromPlan,
+    craftDayCaloriesForKey,
+    craftDefaultsDessert,
     dailyMacroTargetsFromPlan,
     dayMacroToleranceFromPlan,
     isMacroOutsideTolerance,
@@ -8,6 +10,8 @@ import {
     macroSplitPercentagesFromPlan,
     mainSlotMacroTargetsFromPlan,
     nutritionPlanMatchesTier,
+    afternoonCraftDefaultsDessert,
+    snapToCraftTotal,
 } from './craftCalorieTargets.js';
 
 describe('dailyMacroTargetsFromPlan', () => {
@@ -38,7 +42,7 @@ describe('dailyMacroTargetsFromPlan', () => {
         };
 
         expect(nutritionPlanMatchesTier(plan, 2000)).toBe(false);
-        expect(dailyMacroTargetsFromPlan(plan, 2000, 'full').protein).toBe(196);
+        expect(dailyMacroTargetsFromPlan(plan, 2000, 'full').protein).toBe(200);
     });
 
     it('scales craft day macros when craft is not full', () => {
@@ -49,7 +53,7 @@ describe('dailyMacroTargetsFromPlan', () => {
 
         const targets = dailyMacroTargetsFromPlan(plan, 2000, 'day');
 
-        expect(targets.calories).toBeLessThan(2000);
+        expect(targets.calories).toBe(1400);
         expect(targets.protein).toBeLessThan(196);
     });
 });
@@ -81,8 +85,8 @@ describe('categoryMacroTargetsFromPlan', () => {
 
         const targets = categoryMacroTargetsFromPlan('full', 2000, null, categories);
 
-        expect(targets.breakfasts?.calories).toBe(450);
-        expect(targets.meals?.calories).toBe(1250);
+        expect(targets.breakfasts?.calories).toBe(500);
+        expect(targets.meals?.calories).toBe(1200);
         expect(targets.sideSalads?.calories).toBe(150);
         expect(targets.desserts?.calories).toBe(150);
     });
@@ -138,5 +142,45 @@ describe('macroCaloriePercentsFromGrams', () => {
             carbs: 0,
             fat: 0,
         });
+    });
+});
+
+describe('craft library snap', () => {
+    it('snaps Full Craft 2000 to breakfast 500 and two 600 mains', () => {
+        expect(snapToCraftTotal(2000, 'full')).toBe(2000);
+        expect(craftDayCaloriesForKey('full', 2000)).toBe(2000);
+        expect(categoryMacroTargetsFromPlan('full', 2000, null, {
+            breakfasts: [{}],
+            meals: [{}, {}],
+        }).breakfasts?.calories).toBe(500);
+        expect(categoryMacroTargetsFromPlan('full', 2000, null, {
+            breakfasts: [{}],
+            meals: [{}, {}],
+        }).meals?.calories).toBe(1200);
+    });
+
+    it('leaves Afternoon Craft dessert off below 1500 and on around 1500', () => {
+        expect(afternoonCraftDefaultsDessert(1000)).toBe(false);
+        expect(afternoonCraftDefaultsDessert(1250)).toBe(false);
+        expect(afternoonCraftDefaultsDessert(1391)).toBe(false);
+        expect(afternoonCraftDefaultsDessert(1500)).toBe(true);
+        expect(afternoonCraftDefaultsDessert(1800)).toBe(true);
+        expect(snapToCraftTotal(1000, 'afternoon')).toBe(950);
+        expect(snapToCraftTotal(1250, 'afternoon')).toBe(1200);
+        expect(snapToCraftTotal(1391, 'afternoon')).toBe(1200);
+        expect(snapToCraftTotal(1500, 'afternoon')).toBe(1500);
+    });
+
+    it('leaves Full Craft dessert off around 1200–1400', () => {
+        expect(craftDefaultsDessert(1250, 'full')).toBe(false);
+        expect(craftDefaultsDessert(1375, 'full')).toBe(false);
+        expect(craftDefaultsDessert(1500, 'full')).toBe(true);
+        expect(snapToCraftTotal(1375, 'full')).toBe(1250);
+        expect(snapToCraftTotal(1400, 'full')).toBe(1500);
+    });
+
+    it('snaps Day Craft 2000 needs to 1400', () => {
+        expect(snapToCraftTotal(2000, 'day')).toBe(1400);
+        expect(craftDayCaloriesForKey('day', 2000)).toBe(1400);
     });
 });

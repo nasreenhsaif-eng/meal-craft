@@ -78,6 +78,8 @@ test('adaptedMealForDetailView prefers reconciled weekday schedule over isolated
         'goal' => 'Detail view tests',
         'schema_type' => MealPlanSchemaType::WeeklyStructured,
         'plan_category' => 'balanced',
+        'published_starts_on' => now()->toDateString(),
+        'published_ends_on' => now()->addDays(6)->toDateString(),
     ]);
 
     foreach (

@@ -1,0 +1,26 @@
+import CaloricThresholdNotice from './CaloricThresholdNotice.jsx';
+import { withConsultationMobileFrame } from '../../Pages/Consultation/consultationStoryDecorators.jsx';
+
+export default {
+    title: 'Design System/05. Templates & Pages/Crafted for you/CaloricThresholdNotice',
+    component: CaloricThresholdNotice,
+    decorators: withConsultationMobileFrame,
+    parameters: {
+        layout: 'fullscreen',
+        docs: {
+            description: {
+                component:
+                    'Amber notice shown when the plan tier is at or below 1200 kcal.',
+            },
+        },
+    },
+};
+
+export const BelowThreshold = {
+    name: 'At or below 1200 kcal',
+    render: () => (
+        <div className="w-full px-3 py-4 sm:mx-auto sm:max-w-[40rem] sm:px-6 sm:py-8">
+            <CaloricThresholdNotice planTierCalories={1200} />
+        </div>
+    ),
+};

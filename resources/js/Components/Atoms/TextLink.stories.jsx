@@ -1,7 +1,7 @@
 import TextLink from './TextLink.jsx';
 
 export default {
-    title: 'MealCraft/Atoms/Buttons & Links/TextLink',
+    title: 'Design System/02. Atoms/Button/TextLink',
     component: TextLink,
     parameters: { layout: 'padded' },
     argTypes: {

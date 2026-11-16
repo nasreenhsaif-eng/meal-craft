@@ -18,7 +18,7 @@ if (rootEl && configEl) {
         <StrictMode>
             <PortalChoicePage
                 userName={config.userName ?? ''}
-                onboardingHref={config.onboardingHref ?? '/onboarding/welcome'}
+                onboardingHref={config.onboardingHref ?? '/app'}
                 adminHref={config.adminHref ?? '/admin/dashboard'}
             />
         </StrictMode>,

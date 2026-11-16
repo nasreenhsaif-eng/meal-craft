@@ -1,8 +1,12 @@
 <?php
 
+use App\Enums\CustomerActivityLevel;
+use App\Enums\CustomerGoal;
+use App\Enums\CustomerSex;
 use App\Enums\OnboardingStep;
 use App\Models\CustomerProfile;
 use App\Models\User;
+use App\Services\Nutrition\OnboardingDailyTargetsCalculator;
 use App\Support\MealCraftInertiaSharedData;
 
 test('legacy onboarding welcome url redirects to gender', function () {
@@ -187,6 +191,25 @@ test('gender onboarding page renders with shared props', function () {
             ->has('mealCraft.onboarding.urls.gender')
             ->has('mealCraft.onboarding.options.sex')
             ->where('mealCraft.onboarding.currentStep', OnboardingStep::Gender->value));
+});
+
+test('customer can save birthday on the first day of the minimum picker year', function () {
+    $customer = User::factory()->customer()->create();
+    CustomerProfile::factory()->for($customer)->withoutOnboarding()->create([
+        'onboarding_step' => OnboardingStep::Birthday,
+        'sex' => 'female',
+    ]);
+
+    $date = now()->subYears(100)->startOfYear()->toDateString();
+
+    $this->actingAs($customer)
+        ->post(route('onboarding.birthday.store'), [
+            'date_of_birth' => $date,
+        ])
+        ->assertRedirect(route('onboarding.show', ['step' => OnboardingStep::Height->value]));
+
+    expect($customer->fresh()->customerProfile?->date_of_birth?->toDateString())->toBe($date)
+        ->and($customer->fresh()->currentOnboardingStep())->toBe(OnboardingStep::Height);
 });
 
 test('customer can save birthday and advance to height', function () {
@@ -411,7 +434,7 @@ test('diet protocol submission calculates and persists daily targets', function 
     $profile = $customer->fresh()->customerProfile;
 
     expect($profile?->diet_protocol)->toBe('ketobiotic')
-        ->and($profile?->daily_calorie_target)->toBeIn([1000, 1200, 1500, 1800, 2000])
+        ->and($profile?->daily_calorie_target)->toBeIn([1250, 1500, 1800, 2000])
         ->and($profile?->fat_percentage)->toBe(70.0)
         ->and($customer->fresh()->currentOnboardingStep())->toBe(OnboardingStep::Birthday);
 
@@ -471,7 +494,7 @@ test('onboarding pages receive shared meal craft onboarding props', function () 
             ->where('mealCraft.onboarding.currentStep', OnboardingStep::Activity->value));
 });
 
-test('completed onboarding redirects to meal selection', function () {
+test('completed onboarding redirects to crafted for you', function () {
     $customer = User::factory()->customer()->create();
     CustomerProfile::factory()->for($customer)->withoutOnboarding()->create([
         'onboarding_step' => OnboardingStep::FoodFilters,
@@ -481,7 +504,7 @@ test('completed onboarding redirects to meal selection', function () {
         ->post(route('onboarding.food-filters.store'), [
             'allergies' => ['gluten', 'dairy'],
         ])
-        ->assertRedirect(route('consultation.crafted-for-you', ['from' => 'onboarding'], absolute: false));
+        ->assertRedirect(route('consultation.crafted-for-you'));
 
     $profile = $customer->fresh()->customerProfile;
 
@@ -490,14 +513,44 @@ test('completed onboarding redirects to meal selection', function () {
 
     $this->actingAs($customer)
         ->get(route('app.home'))
+        ->assertRedirect(route('consultation.crafted-for-you'));
+});
+
+test('customer home shows the onboarding calorie target range instead of the snapped plan tier', function () {
+    $customer = User::factory()->customer()->create();
+    $profile = CustomerProfile::factory()->for($customer)->create([
+        'daily_calorie_target' => 1500,
+        'goal' => CustomerGoal::LoseWeight,
+        'weight_kg' => 72,
+        'target_weight_kg' => 65,
+        'height_cm' => 168,
+        'age' => 32,
+        'sex' => CustomerSex::Female,
+        'activity_level' => CustomerActivityLevel::LightlyActive,
+    ]);
+    $profile->craftPlans()->create([
+        'craft_key' => 'full',
+        'week_duration' => 5,
+        'selected_weekdays' => [1, 2, 3, 4, 5],
+        'submitted_at' => now(),
+    ]);
+
+    $targets = OnboardingDailyTargetsCalculator::calculate($profile);
+
+    expect($targets['daily_calories_min'])->not->toBe(1500)
+        ->and($targets['daily_calories_max'])->not->toBe(1500);
+
+    $this->actingAs($customer)
+        ->get(route('app.home'))
         ->assertSuccessful()
         ->assertInertia(fn ($page) => $page
             ->component('App/Home')
-            ->where('consultationUrl', route('consultation.crafted-for-you'))
-            ->where('craftPlan', null));
+            ->where('profile.dailyCalorieTarget', 1500)
+            ->where('profile.dailyCaloriesMin', $targets['daily_calories_min'])
+            ->where('profile.dailyCaloriesMax', $targets['daily_calories_max']));
 });
 
-test('inertia food filter completion uses external location redirect to meal selection', function () {
+test('inertia food filter completion redirects to crafted for you', function () {
     $customer = User::factory()->customer()->create();
     CustomerProfile::factory()->for($customer)->withoutOnboarding()->create([
         'onboarding_step' => OnboardingStep::FoodFilters,
@@ -509,8 +562,7 @@ test('inertia food filter completion uses external location redirect to meal sel
         ], [
             'X-Inertia' => 'true',
         ])
-        ->assertStatus(409)
-        ->assertHeader('X-Inertia-Location', route('consultation.crafted-for-you', ['from' => 'onboarding'], absolute: false));
+        ->assertRedirect(route('consultation.crafted-for-you'));
 });
 
 test('completed customers can reset onboarding for testing', function () {
@@ -529,13 +581,23 @@ test('completed customers can reset onboarding for testing', function () {
         ->and($profile?->onboarding_step)->toBe(OnboardingStep::Gender);
 });
 
-test('completed customers are redirected away from onboarding', function () {
+test('completed customers can revisit earlier onboarding steps', function () {
     $customer = User::factory()->customer()->create();
     CustomerProfile::factory()->for($customer)->create();
 
     $this->actingAs($customer)
         ->get(route('onboarding.show', ['step' => OnboardingStep::Gender->value]))
-        ->assertRedirect(route('app.home'));
+        ->assertSuccessful()
+        ->assertInertia(fn ($page) => $page
+            ->component('Onboarding/Container')
+            ->where('activeStep', OnboardingStep::Gender->value));
+
+    $this->actingAs($customer)
+        ->get(route('onboarding.show', ['step' => OnboardingStep::DailyTargets->value]))
+        ->assertSuccessful()
+        ->assertInertia(fn ($page) => $page
+            ->component('Onboarding/Container')
+            ->where('activeStep', OnboardingStep::DailyTargets->value));
 });
 
 test('completed customers can revisit food filters from meal consultation', function () {
@@ -545,6 +607,46 @@ test('completed customers can revisit food filters from meal consultation', func
     $this->actingAs($customer)
         ->get(route('onboarding.show', ['step' => OnboardingStep::FoodFilters->value]))
         ->assertSuccessful();
+});
+
+test('completed customers finish profile edits at food filters and return home when meals are submitted', function () {
+    $customer = User::factory()->customer()->create();
+    $profile = CustomerProfile::factory()->for($customer)->create([
+        'allergies' => ['dairy'],
+        'food_filters' => ['dairy'],
+    ]);
+    $profile->craftPlans()->create([
+        'craft_key' => 'full',
+        'week_duration' => 5,
+        'selected_weekdays' => [1, 2, 3, 4, 5],
+        'submitted_at' => now(),
+    ]);
+
+    $this->actingAs($customer)
+        ->post(route('onboarding.food-filters.store'), [
+            'allergies' => ['gluten'],
+        ])
+        ->assertRedirect(route('app.home'));
+
+    $profile = $customer->fresh()->customerProfile;
+
+    expect($profile?->food_filters)->toBe(['gluten'])
+        ->and($profile?->onboarding_completed_at)->not->toBeNull();
+});
+
+test('completed customers can continue editing profile through onboarding steps', function () {
+    $customer = User::factory()->customer()->create();
+    CustomerProfile::factory()->for($customer)->create([
+        'sex' => 'male',
+    ]);
+
+    $this->actingAs($customer)
+        ->post(route('onboarding.gender.store'), [
+            'sex' => 'female',
+        ])
+        ->assertRedirect(route('onboarding.show', ['step' => OnboardingStep::DietProtocol->value]));
+
+    expect($customer->fresh()->customerProfile?->sex?->value)->toBe('female');
 });
 
 test('admin can view customer profiles list', function () {

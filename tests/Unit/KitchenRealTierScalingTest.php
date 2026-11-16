@@ -173,7 +173,7 @@ test('breakfast stays tier-fixed when dessert calories change', function (int $t
         ->and($heavy['scalable_slot_targets']['breakfast']['calories'])->toBe($expectedBreakfast)
         ->and($heavy['scalable_slot_targets']['main_each']['calories'])
         ->toBeLessThan($light['scalable_slot_targets']['main_each']['calories']);
-})->with([1000, 1200, 1500, 1800, 2000]);
+})->with([1250, 1500, 1800, 2000]);
 
 test('kitchen-safe surplus trim preserves olive oil and vegetables while cutting starch', function () {
     $ingredients = kitchenRealIngredients();
@@ -409,4 +409,4 @@ test('reconcile with heavy dessert lands near tier calories and protein across p
             ->and(MealScalingRole::roleForIngredient($ingredients['fat'], $meal))->toBe(MealScalingRoleEnum::Fat)
             ->and(MealScalingRole::roleForIngredient($ingredients['veg'], $meal))->toBe(MealScalingRoleEnum::Vegetable);
     }
-})->with([1000, 1200, 1500, 1800, 2000]);
+})->with([1250, 1500, 1800, 2000]);

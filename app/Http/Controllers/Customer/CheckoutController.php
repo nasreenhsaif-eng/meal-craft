@@ -1,0 +1,298 @@
+<?php
+
+namespace App\Http\Controllers\Customer;
+
+use App\Http\Controllers\Api\ConsultationResumeDraftController;
+use App\Http\Controllers\Controller;
+use App\Http\Requests\Customer\StoreCheckoutDetailsRequest;
+use App\Http\Requests\Customer\StoreCheckoutPaymentRequest;
+use App\Http\Requests\Customer\StoreCheckoutPlanWeeksRequest;
+use App\Models\CustomerCraftPlan;
+use App\Models\CustomerProfile;
+use App\Services\CustomerCraftPlanPresentationService;
+use App\Services\Nutrition\UserPlanCalculator;
+use App\Support\AdminConsultationPreviewProfile;
+use App\Support\CheckoutBasket;
+use App\Support\CustomerIntake;
+use App\Support\CustomerSubscriptionRecorder;
+use App\Support\PartnerKitchenPrice;
+use Illuminate\Http\RedirectResponse;
+use Inertia\Inertia;
+use Inertia\Response;
+
+class CheckoutController extends Controller
+{
+    public function fulfillment(): Response
+    {
+        $user = request()->user();
+
+        return Inertia::render('Checkout/FulfillmentSelection', [
+            'customerName' => $user?->name ?? '',
+            'homeUrl' => route('app.home'),
+            'profileUrl' => route('app.profile'),
+            'shopUrl' => route('app.shop'),
+            'mealPlanSummaryUrl' => route('app.meal-plan'),
+            'deliveryUrl' => route('checkout.delivery'),
+            'recipesUrl' => route('meal-plan.recipes'),
+        ]);
+    }
+
+    public function delivery(CustomerCraftPlanPresentationService $presentation): Response
+    {
+        $user = request()->user();
+        $profile = $user !== null ? AdminConsultationPreviewProfile::resolve($user) : null;
+
+        if (request()->query('resume') === 'choose_meals') {
+            request()->session()->put('checkout_resume_choose_meals', true);
+            request()->session()->put(ConsultationResumeDraftController::SESSION_RESUME_KEY, true);
+        }
+
+        $quotes = $this->deliveryQuotes($profile, $presentation);
+        $selectedPlanWeeks = (int) request()->session()->get('checkout_plan_weeks', $quotes['selectedPlanWeeks']);
+        $selectedPlanWeeks = $selectedPlanWeeks === 1 ? 1 : 4;
+        $selectedQuote = $selectedPlanWeeks === 1 ? $quotes['oneWeek'] : $quotes['fourWeeks'];
+        $billedDays = $selectedPlanWeeks === 1
+            ? $quotes['billedDaysOneWeek']
+            : $quotes['billedDaysFourWeeks'];
+
+        if (isset($quotes['selectedBilledDays'], $quotes['selectedAmount'])) {
+            $billedDays = (int) $quotes['selectedBilledDays'];
+            $selectedQuote = (float) $quotes['selectedAmount'];
+            $selectedPlanWeeks = PartnerKitchenPrice::planWeeksFromBilledDays($billedDays);
+            request()->session()->put('checkout_plan_weeks', $selectedPlanWeeks);
+        }
+
+        return Inertia::render('Checkout/Delivery', [
+            'customerName' => $user?->name ?? '',
+            'detailsUrl' => route('checkout.details'),
+            'planWeeksUrl' => route('checkout.delivery.plan-weeks'),
+            'homeUrl' => route('app.home'),
+            'profileUrl' => route('app.profile'),
+            'shopUrl' => route('app.shop'),
+            'mealPlanSummaryUrl' => route('app.meal-plan'),
+            'currency' => (string) config('checkout.currency', 'BHD'),
+            'selectedPlanWeeks' => $selectedPlanWeeks,
+            'selectedQuote' => $selectedQuote,
+            'billedDays' => $billedDays,
+            'craftTitle' => $quotes['craftTitle'],
+        ]);
+    }
+
+    public function storePlanWeeks(StoreCheckoutPlanWeeksRequest $request): RedirectResponse
+    {
+        $planWeeks = (int) $request->validated('plan_weeks');
+        $request->session()->put('checkout_plan_weeks', $planWeeks === 1 ? 1 : 4);
+
+        $user = $request->user();
+        $profile = $user !== null ? AdminConsultationPreviewProfile::resolve($user) : null;
+        $plan = $profile?->craftPlans()
+            ->whereNotNull('submitted_at')
+            ->latest('submitted_at')
+            ->first();
+
+        if ($plan instanceof CustomerCraftPlan) {
+            $plan->update(['plan_weeks' => $planWeeks === 1 ? 1 : 4]);
+        }
+
+        return redirect()->route('checkout.details');
+    }
+
+    public function details(): Response
+    {
+        $user = request()->user();
+        $profile = $user !== null ? AdminConsultationPreviewProfile::resolve($user) : null;
+
+        abort_if($profile === null, 404);
+
+        // Same CustomerInertiaShell / phone frame as Profile, Delivery, etc.
+        return Inertia::render('Checkout/CustomerDetails', [
+            ...CustomerIntake::pageProps($profile),
+            'customerName' => $user?->name ?? '',
+            'submitUrl' => route('checkout.details.store'),
+            'deliveryUrl' => route('checkout.delivery'),
+            'closeUrl' => route('app.profile'),
+            'homeUrl' => route('app.home'),
+            'profileUrl' => route('app.profile'),
+            'shopUrl' => route('app.shop'),
+            'mealPlanSummaryUrl' => route('app.meal-plan'),
+        ]);
+    }
+
+    public function storeDetails(StoreCheckoutDetailsRequest $request): RedirectResponse
+    {
+        $user = $request->user();
+        $profile = $user !== null ? AdminConsultationPreviewProfile::resolve($user) : null;
+
+        abort_if($profile === null, 404);
+
+        CustomerIntake::applyCheckout($profile, $request->validated());
+
+        // Hard redirect so payment always boots in a fresh document (avoids blank SPA roots).
+        return redirect()
+            ->away(route('checkout.payment'))
+            ->with('success', 'Your details were confirmed.');
+    }
+
+    public function payment(CustomerCraftPlanPresentationService $presentation): Response|RedirectResponse
+    {
+        $user = request()->user();
+        $profile = $user !== null ? AdminConsultationPreviewProfile::resolve($user) : null;
+
+        abort_if($profile === null, 404);
+
+        if ($profile->intake_declaration_accepted_at === null) {
+            return redirect()->route('checkout.details');
+        }
+
+        $promoCode = request()->query('promo');
+        $promoCode = is_string($promoCode) ? $promoCode : null;
+        $sessionWeeks = request()->session()->get('checkout_plan_weeks');
+        $planWeeksOverride = is_numeric($sessionWeeks) ? ((int) $sessionWeeks === 1 ? 1 : 4) : null;
+
+        return Inertia::render('Checkout/Payment', [
+            'customerName' => $user?->name ?? '',
+            'basket' => CheckoutBasket::forProfile($profile, $presentation, $promoCode, $planWeeksOverride),
+            'detailsUrl' => route('checkout.details'),
+            'homeUrl' => route('app.home'),
+            'profileUrl' => route('app.profile'),
+            'shopUrl' => route('app.shop'),
+            'mealPlanSummaryUrl' => route('app.meal-plan'),
+            'submitUrl' => route('checkout.payment.store'),
+            'applyPromoUrl' => route('checkout.payment'),
+        ]);
+    }
+
+    /**
+     * @return array{
+     *     selectedPlanWeeks: int,
+     *     oneWeek: float,
+     *     fourWeeks: float,
+     *     billedDaysOneWeek: int,
+     *     billedDaysFourWeeks: int,
+     *     craftTitle: string|null,
+     *     selectedBilledDays?: int,
+     *     selectedAmount?: float
+     * }
+     */
+    private function deliveryQuotes(
+        ?CustomerProfile $profile,
+        CustomerCraftPlanPresentationService $presentation,
+    ): array {
+        $plan = $profile?->craftPlans()
+            ->whereNotNull('submitted_at')
+            ->latest('submitted_at')
+            ->first();
+
+        $planTierCalories = $profile?->daily_calorie_target !== null
+            ? (int) UserPlanCalculator::snapToPlanTier((float) $profile->daily_calorie_target)
+            : 1200;
+
+        $craftKey = 'full';
+        $weekDuration = 7;
+        $selectedPlanWeeks = 4;
+        $craftTitle = null;
+        $priceCalories = $planTierCalories;
+        $selectedBilledDays = null;
+
+        /** @var array<string, mixed>|null $draft */
+        $draft = request()->session()->get(ConsultationResumeDraftController::SESSION_DRAFT_KEY);
+
+        // Prefer the in-progress consultation choice over an older submitted plan.
+        if (is_array($draft) && isset($draft['craftKey'], $draft['weekDuration'])) {
+            $craftKey = (string) $draft['craftKey'];
+            $weekDuration = (int) $draft['weekDuration'];
+            $selectedPlanWeeks = (int) ($draft['planWeeks'] ?? 4) === 1 ? 1 : 4;
+            $craftTitle = match ($craftKey) {
+                'afternoon' => 'Afternoon Craft',
+                'day' => 'Day Craft',
+                'intermittent' => 'Intermittent Craft',
+                'business' => 'Business Craft',
+                default => 'Full Craft',
+            };
+
+            if (isset($draft['selectedBilledDays']) && is_numeric($draft['selectedBilledDays'])) {
+                $selectedBilledDays = (int) $draft['selectedBilledDays'];
+                $weekDuration = PartnerKitchenPrice::weekDurationFromBilledDays($selectedBilledDays);
+                $selectedPlanWeeks = PartnerKitchenPrice::planWeeksFromBilledDays($selectedBilledDays);
+            }
+        } elseif ($plan instanceof CustomerCraftPlan) {
+            $summary = $presentation->presentSummary($plan, $planTierCalories);
+            $craftKey = (string) ($summary['craftKey'] ?? $plan->craft_key);
+            $weekDuration = (int) ($summary['weekDuration'] ?? $plan->week_duration ?? 7);
+            $selectedPlanWeeks = (int) ($plan->plan_weeks ?: 4) === 1 ? 1 : 4;
+            $craftTitle = (string) ($summary['craftTitle'] ?? $craftKey);
+            $priceCalories = (int) ($summary['planTierCalories'] ?? $planTierCalories);
+        }
+
+        $priceCalories = PartnerKitchenPrice::priceCaloriesForCraft($priceCalories, $craftKey);
+
+        $quotes = [
+            'selectedPlanWeeks' => $selectedPlanWeeks,
+            'oneWeek' => PartnerKitchenPrice::packageAmount($craftKey, $priceCalories, $weekDuration, 1),
+            'fourWeeks' => PartnerKitchenPrice::packageAmount($craftKey, $priceCalories, $weekDuration, 4),
+            'billedDaysOneWeek' => PartnerKitchenPrice::billedDays($weekDuration, 1),
+            'billedDaysFourWeeks' => PartnerKitchenPrice::billedDays($weekDuration, 4),
+            'craftTitle' => $craftTitle,
+        ];
+
+        if ($selectedBilledDays !== null) {
+            $quotes['selectedBilledDays'] = $selectedBilledDays;
+            $quotes['selectedAmount'] = PartnerKitchenPrice::amountForBilledDays(
+                $craftKey,
+                $priceCalories,
+                $selectedBilledDays,
+            );
+        }
+
+        return $quotes;
+    }
+
+    public function storePayment(StoreCheckoutPaymentRequest $request): RedirectResponse
+    {
+        $user = $request->user();
+        $profile = $user !== null ? AdminConsultationPreviewProfile::resolve($user) : null;
+
+        abort_if($profile === null, 404);
+
+        if ($profile->intake_declaration_accepted_at === null) {
+            return redirect()->route('checkout.details');
+        }
+
+        // Simulator: treat Make payment as paid so admin/customer can test start/expiry.
+        CustomerSubscriptionRecorder::recordPaidFromLatestPlan($profile);
+
+        $isAdminPreview = $user?->isAdmin() === true && $user?->isCustomer() !== true;
+
+        $shouldResumeChooseMeals = $isAdminPreview
+            || $request->session()->pull('checkout_resume_choose_meals') === true
+            || $request->session()->get(ConsultationResumeDraftController::SESSION_RESUME_KEY) === true
+            || $request->session()->has(ConsultationResumeDraftController::SESSION_DRAFT_KEY);
+
+        if ($shouldResumeChooseMeals) {
+            $request->session()->put(ConsultationResumeDraftController::SESSION_RESUME_KEY, true);
+
+            return redirect()
+                ->route('consultation.crafted-for-you', ['choose_meals' => 1])
+                ->with('success', 'Payment recorded. Choose your meals to finish your plan.');
+        }
+
+        return redirect()
+            ->route('checkout.payment')
+            ->with('success', 'Payment recorded. Your subscription is marked as paid.');
+    }
+
+    public function policies(): Response
+    {
+        $user = request()->user();
+
+        return Inertia::render('Checkout/Policies', [
+            'customerName' => $user?->name ?? '',
+            'homeUrl' => route('app.home'),
+            'profileUrl' => route('app.profile'),
+            'shopUrl' => route('app.shop'),
+            'mealPlanSummaryUrl' => route('app.meal-plan'),
+            'paymentUrl' => route('checkout.payment'),
+            'cartUrl' => route('app.cart'),
+        ]);
+    }
+}

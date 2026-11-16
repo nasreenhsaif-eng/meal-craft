@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Ingredient;
 use App\Models\Meal;
+use App\Support\BoneBrothBaseRecipe;
 use App\Support\MealLibraryBulkNutrition;
 use App\Support\MealLibraryEditGuard;
 use App\Support\MealLibraryRefinerOverrides;
@@ -50,6 +51,37 @@ final class BalancedCanonicalMealRecipeRefiner
 
     /** One US tablespoon psyllium husks per batch-soup serving (15 ml at library density 1.0 g/ml). */
     public const BATCH_SOUP_PSYLLIUM_TABLESPOON_GRAMS = 15.0;
+
+    public const VEGAN_MUSHROOM_SOUP_NAME = 'Vegan Mushroom Soup';
+
+    /** One-liter kitchen batch poured into two 500 ml cups. */
+    public const VEGAN_MUSHROOM_SOUP_BATCH_SERVINGS_COUNT = 2;
+
+    /** Optional thickener for the full 1 L mushroom soup batch (~1.5 tsp). */
+    public const VEGAN_MUSHROOM_SOUP_PSYLLIUM_BATCH_GRAMS = 5.0;
+
+    public const MISO_MUSHROOM_SOUP_NAME = 'Miso Mushroom Soup';
+
+    /** Two-liter kitchen batch poured into four 500 ml cups. */
+    public const MISO_MUSHROOM_SOUP_BATCH_SERVINGS_COUNT = 4;
+
+    /** Optional fiber boost for the full 2 L miso mushroom batch (~2 tsp). */
+    public const MISO_MUSHROOM_SOUP_PSYLLIUM_BATCH_GRAMS = 8.0;
+
+    public const RED_LENTIL_TURMERIC_SOUP_NAME = 'Red Lentil Turmeric Soup';
+
+    /** Five-liter kitchen batch poured into ten 500 ml cups. */
+    public const RED_LENTIL_TURMERIC_SOUP_BATCH_SERVINGS_COUNT = 10;
+
+    public const CAULIFLOWER_GINGER_SOUP_NAME = 'Cauliflower Ginger Soup';
+
+    /** Five-liter kitchen batch poured into ten 500 ml cups. */
+    public const CAULIFLOWER_GINGER_SOUP_BATCH_SERVINGS_COUNT = 10;
+
+    public const LENTIL_CARROT_SOUP_NAME = 'Lentil Carrot Soup';
+
+    /** Five-liter kitchen batch poured into ten 500 ml cups. */
+    public const LENTIL_CARROT_SOUP_BATCH_SERVINGS_COUNT = 10;
 
     public const ROSEMARY_GARLIC_CHICKEN_PLATE_LEGACY_NAME = 'Grilled Rosemary Garlic Chicken Salad w Rocca & Red Pepper Dressing';
 
@@ -308,24 +340,24 @@ final class BalancedCanonicalMealRecipeRefiner
             ],
             self::VEGAN_BUTTERNUT_PEANUT_STEW_NAME => [
                 'ingredients' => [
-                    'Cooked Brown Basmati Rice (Base)' => 113,
+                    'Cooked Brown Basmati Rice (Base)' => 80,
                     'Red Onion' => 30,
-                    'Olive Oil' => 5,
+                    'Olive Oil' => 3,
                     'Garlic (Raw)' => 2,
                     'Tomato (Raw)' => 80,
                     'Bell Pepper (Red)' => 30,
-                    'Lentils (Red)' => 40,
+                    'Lentils (Red)' => 30,
                     'Butternut Squash' => 60,
-                    'Water (Filtered)' => 144,
-                    'Peanut Butter' => 10,
-                    'Vegetable Stock' => 48,
+                    'Water (Filtered)' => 130,
+                    'Peanut Butter' => 8,
+                    'Vegetable Stock' => 50,
                     'Chili Flakes' => 0.5,
                     'Mushrooms' => 30,
                     'Zucchini' => 30,
                     'Spinach (Fresh)' => 16,
                     'Cabbage (Purple)' => 16,
                     'Fresh Coriander' => 4,
-                    'Peanuts (Crushed)' => 15,
+                    'Peanuts (Crushed)' => 8,
                     'Lime Juice' => 3,
                     'Sea Salt' => 0.5,
                     'Black Pepper' => 0.5,
@@ -336,27 +368,25 @@ final class BalancedCanonicalMealRecipeRefiner
             ],
             'Marinated Pineapple, Peppers, Red Onion & Cilantro Side Salad' => [
                 'ingredients' => [
-                    'Pineapple' => 40,
-                    'Bell Pepper (Red)' => 25,
-                    'Cabbage (Purple)' => 45,
-                    'Cucumber' => 35,
-                    'Red Onion' => 12,
-                    'Fresh Coriander' => 4,
+                    'Cabbage (Purple)' => 60,
+                    'Cucumber' => 55,
+                    'Pineapple' => 50,
+                    'Bell Pepper (Red)' => 35,
+                    'Red Onion' => 15,
+                    'Fresh Coriander' => 6,
                     'Red Thai Chillies' => 2,
-                    'Zesty Lime Chili Salad Dressing (Base)' => 12,
+                    'Zesty Lime Chili Salad Dressing (Base)' => 20,
                 ],
                 'diet_tags' => array_merge($wholeFoodTags, ['Vegan']),
+                'short_description' => 'Tropical side salad of pineapple, peppers, red onion, cucumber, and cilantro with zesty lime-chili dressing — packed for a 500 ml bowl with dressing on the side.',
             ],
             'Classic Garden Salad' => [
                 'ingredients' => [
-                    'Romaine Lettuce' => 50,
-                    'Tomato (Raw)' => 60,
+                    'Romaine Lettuce' => 90,
+                    'Tomato (Raw)' => 50,
                     'Cucumber' => 60,
-                    'Carrots' => 40,
-                    'Fresh Basil' => 5,
-                    'Fresh Mint' => 5,
-                    'Olive Oil' => 5,
-                    'Lemon Juice' => 8,
+                    'Carrots' => 35,
+                    'Classic Lemon Garlic Dressing (Base)' => 20,
                 ],
                 'diet_tags' => array_merge($wholeFoodTags, ['Vegan']),
             ],
@@ -380,20 +410,24 @@ final class BalancedCanonicalMealRecipeRefiner
                 ],
                 'diet_tags' => array_merge($wholeFoodTags, ['Vegan']),
             ],
-            'Vegan Mushroom Soup' => $this->bulkSoupDefinition(
-                [
-                    'Mushrooms' => 200,
-                    'White Onion' => 30,
-                    'Homemade Coconut Milk' => 25,
-                    'Water (Filtered)' => 140,
-                    'Vegetable Stock' => 40,
-                    'Garlic' => 3,
-                    'Olive Oil' => 5,
-                    'Turmeric Powder' => 2,
-                    'Thyme (Fresh)' => 3,
+            self::VEGAN_MUSHROOM_SOUP_NAME => [
+                'ingredients' => [
+                    'Mushrooms' => 600.0,
+                    'White Onion' => 75.0,
+                    'Garlic' => 8.0,
+                    'Olive Oil' => 10.0,
+                    'Bone Broth (Base)' => 250.0,
+                    'Water (Filtered)' => 350.0,
+                    'Thyme (Fresh)' => 3.0,
+                    'Psyllium Husks' => self::VEGAN_MUSHROOM_SOUP_PSYLLIUM_BATCH_GRAMS,
+                    'Sea Salt' => 3.0,
+                    'Black Pepper' => 1.0,
                 ],
-                array_merge($wholeFoodTags, ['Vegan']),
-            ),
+                'is_bulk' => true,
+                'servings_count' => self::VEGAN_MUSHROOM_SOUP_BATCH_SERVINGS_COUNT,
+                'diet_tags' => $wholeFoodTags,
+                'short_description' => 'Deeply browned mushroom soup prepared as a 1 L batch with bone broth, then portioned into 500 ml cups (2 servings).',
+            ],
             'Tomato Basil Soup' => $this->bulkSoupDefinition(
                 [
                     'Tomato (Raw)' => 250,
@@ -407,48 +441,74 @@ final class BalancedCanonicalMealRecipeRefiner
                 ],
                 array_merge($wholeFoodTags, ['Vegan']),
             ),
-            'Red Lentil Turmeric Soup' => $this->bulkSoupDefinition(
-                [
-                    'Lentils (Red)' => 80,
-                    'Carrots' => 80,
-                    'Spinach (Fresh)' => 40,
-                    'Turmeric Powder' => 2,
-                    'Ginger (Raw)' => 8,
-                    'Garlic' => 4,
-                    'Cumin Seeds' => 2,
-                    'Water (Filtered)' => 150,
-                    'Vegetable Broth (Base)' => 50,
-                    'Olive Oil' => 5,
-                    'Lemon Juice' => 8,
-                    'White Onion' => 30,
+            self::RED_LENTIL_TURMERIC_SOUP_NAME => [
+                'ingredients' => [
+                    'Lentils (Red)' => 250.0,
+                    'Carrots' => 600.0,
+                    'Spinach (Fresh)' => 300.0,
+                    'White Onion' => 250.0,
+                    'Olive Oil' => 15.0,
+                    'Vegetable Broth (Base)' => 500.0,
+                    'Water (Filtered)' => 3800.0,
+                    'Lemon Juice' => 60.0,
+                    'Garlic' => 30.0,
+                    'Ginger (Raw)' => 25.0,
+                    'Turmeric Powder' => 15.0,
+                    'cumin powder' => 8.0,
+                    'Black Pepper' => 2.0,
+                    'Sea Salt' => 18.0,
                 ],
-                array_merge($wholeFoodTags, ['Vegan']),
-            ),
-            'Cauliflower Ginger Soup' => $this->bulkSoupDefinition(
-                [
-                    'Cauliflower Florets' => 220,
-                    'Ginger (Raw)' => 12,
-                    'Homemade Coconut Milk' => 40,
-                    'Water (Filtered)' => 110,
-                    'Vegetable Stock' => 40,
-                    'White Onion' => 30,
-                    'Garlic' => 4,
-                    'Olive Oil' => 5,
-                    'Turmeric Powder' => 2,
-                    'Black Pepper' => 1,
+                'is_bulk' => true,
+                'servings_count' => self::RED_LENTIL_TURMERIC_SOUP_BATCH_SERVINGS_COUNT,
+                'diet_tags' => array_merge($wholeFoodTags, ['Vegan']),
+                'short_description' => 'Warming red lentil turmeric soup prepared as a 5 L batch with carrots and spinach, then portioned into 500 ml cups (10 servings).',
+            ],
+            self::CAULIFLOWER_GINGER_SOUP_NAME => [
+                'ingredients' => [
+                    'Cauliflower Florets' => 2200.0,
+                    'White Onion' => 350.0,
+                    'Garlic' => 35.0,
+                    'Ginger (Raw)' => 35.0,
+                    'Olive Oil' => 25.0,
+                    'Homemade Coconut Milk' => 450.0,
+                    'Water (Filtered)' => 3200.0,
+                    'Vegetable Broth (Base)' => 20.0,
+                    'Turmeric Powder' => 12.0,
+                    'Black Pepper' => 3.0,
+                    'Sea Salt' => 20.0,
+                    'Lemon Juice' => 25.0,
                 ],
-                array_merge($wholeFoodTags, ['Vegan']),
-            ),
+                'is_bulk' => true,
+                'servings_count' => self::CAULIFLOWER_GINGER_SOUP_BATCH_SERVINGS_COUNT,
+                'diet_tags' => array_merge($wholeFoodTags, ['Vegan']),
+                'short_description' => 'Silky cauliflower-ginger soup prepared as a 5 L batch with coconut milk and turmeric, then portioned into 500 ml cups (10 servings).',
+            ],
             'Carrot Cumin Soup' => $this->bulkSoupDefinition(
                 $this->carrotCuminSoupPerServingIngredients(),
                 array_merge($wholeFoodTags, ['Vegan']),
                 'Hearty carrot and French lentil soup with cumin, fresh parsley, and psyllium husks for fiber.',
             ),
-            'Lentil Carrot Soup' => $this->bulkSoupDefinition(
-                $this->carrotCuminSoupPerServingIngredients(),
-                array_merge($wholeFoodTags, ['Vegan']),
-                'Earthy carrot and French lentil soup with cumin and coriander.',
-            ),
+            self::LENTIL_CARROT_SOUP_NAME => [
+                'ingredients' => [
+                    'French Lentils' => 220.0,
+                    'Carrots' => 1200.0,
+                    'White Onion' => 350.0,
+                    'Fresh Parsley' => 40.0,
+                    'Olive Oil' => 15.0,
+                    'Vegetable Broth (Base)' => 500.0,
+                    'Water (Filtered)' => 3600.0,
+                    'Lemon Juice' => 60.0,
+                    'Garlic' => 30.0,
+                    'Cumin Seeds' => 10.0,
+                    'Coriander Seeds' => 8.0,
+                    'Sea Salt' => 20.0,
+                    'Black Pepper' => 2.0,
+                ],
+                'is_bulk' => true,
+                'servings_count' => self::LENTIL_CARROT_SOUP_BATCH_SERVINGS_COUNT,
+                'diet_tags' => array_merge($wholeFoodTags, ['Vegan']),
+                'short_description' => 'Earthy French lentil and carrot soup prepared as a 5 L batch with cumin and coriander, then portioned into 500 ml cups (10 servings).',
+            ],
             'Sweet Potato Fennel Soup' => $this->bulkSoupDefinition(
                 [
                     'Sweet Potato' => 120,
@@ -469,17 +529,20 @@ final class BalancedCanonicalMealRecipeRefiner
                 array_merge($wholeFoodTags, ['Vegan']),
                 'A silky velvet roasted pumpkin soup blended with light coconut cream, spices, and psyllium husks for fiber.',
             ),
-            'Miso Mushroom Soup' => $this->bulkSoupDefinition(
-                [
-                    'Mushrooms' => 120,
-                    'Water (Filtered)' => 200,
-                    'Miso Paste' => 10,
-                    'Spring Onion' => 10,
-                    'Ginger (Raw)' => 5,
+            self::MISO_MUSHROOM_SOUP_NAME => [
+                'ingredients' => [
+                    'Mushrooms' => 700.0,
+                    'Water (Filtered)' => 2000.0,
+                    'Miso Paste' => 100.0,
+                    'Ginger (Raw)' => 15.0,
+                    'Spring Onion' => 70.0,
+                    'Psyllium Husks' => self::MISO_MUSHROOM_SOUP_PSYLLIUM_BATCH_GRAMS,
                 ],
-                array_merge($wholeFoodTags, ['Vegan']),
-                'Silky miso broth with mushrooms — fermented mineral anchor with psyllium husks for fiber.',
-            ),
+                'is_bulk' => true,
+                'servings_count' => self::MISO_MUSHROOM_SOUP_BATCH_SERVINGS_COUNT,
+                'diet_tags' => array_merge($wholeFoodTags, ['Vegan']),
+                'short_description' => 'Gentle miso-mushroom broth prepared as a 2 L batch, then portioned into 500 ml cups (4 servings).',
+            ],
             'Miso Carrot Ginger Soup' => $this->bulkSoupDefinition(
                 [
                     'Carrots' => 112.5,
@@ -499,13 +562,16 @@ final class BalancedCanonicalMealRecipeRefiner
                 array_merge($wholeFoodTags, ['Vegan']),
                 'Golden carrot-ginger miso soup with roasted nori, scallions, sesame oil, and shichimi togarashi.',
             ),
-            BalancedMealLibraryConfigurator::BONE_BROTH_MEAL_NAME => $this->bulkSoupDefinition(
-                [
-                    'Bone Broth (Base)' => BalancedMealLibraryConfigurator::BONE_BROTH_SERVING_GRAMS,
+            BalancedMealLibraryConfigurator::BONE_BROTH_MEAL_NAME => [
+                'ingredients' => [
+                    BoneBrothBaseRecipe::NAME => BalancedMealLibraryConfigurator::BONE_BROTH_SERVING_GRAMS
+                        * BalancedMealLibraryConfigurator::BONE_BROTH_BATCH_SERVINGS_COUNT,
                 ],
-                $wholeFoodTags,
-                '500 ml cup of defatted house bone broth — long-simmered, gelatin-rich, with psyllium husks for fiber.',
-            ),
+                'is_bulk' => true,
+                'servings_count' => BalancedMealLibraryConfigurator::BONE_BROTH_BATCH_SERVINGS_COUNT,
+                'diet_tags' => $wholeFoodTags,
+                'short_description' => '500 ml cup of fully defatted house bone broth — long-simmered, gelatin-rich collagen broth from cracked beef leg bones.',
+            ],
         ];
 
         return MealLibraryRefinerOverrides::mergeRecipeDefinitionMap($definitions);

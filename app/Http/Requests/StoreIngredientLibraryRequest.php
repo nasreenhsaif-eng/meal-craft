@@ -62,6 +62,7 @@ class StoreIngredientLibraryRequest extends FormRequest
             'carbs' => ['nullable', 'numeric', 'min:0'],
             'fat' => ['nullable', 'numeric', 'min:0'],
             'density' => ['nullable', 'numeric', 'gt:0'],
+            'unit_cost_bhd' => ['nullable', 'numeric', 'min:0'],
         ];
     }
 }

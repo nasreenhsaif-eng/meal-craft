@@ -24,13 +24,20 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Inertia\Inertia;
 use Inertia\Response;
-use Symfony\Component\HttpFoundation\Response as HttpFoundationResponse;
 
 class OnboardingController extends Controller
 {
     public function index(Request $request): RedirectResponse
     {
         $user = $request->user();
+
+        if ($user !== null && $user->shouldLandOnWelcomeBack()) {
+            return redirect()->route('app.home');
+        }
+
+        if ($user !== null && $user->shouldLandOnCraftedForYou()) {
+            return redirect()->route('consultation.crafted-for-you');
+        }
 
         return redirect()->route('onboarding.show', [
             'step' => $user?->currentOnboardingStep()->value ?? OnboardingStep::entry()->value,
@@ -239,14 +246,21 @@ class OnboardingController extends Controller
         return $this->advanceStep($request, OnboardingStep::DailyTargets);
     }
 
-    public function storeFoodFilters(StoreOnboardingFoodFiltersRequest $request): RedirectResponse|HttpFoundationResponse
+    public function storeFoodFilters(StoreOnboardingFoodFiltersRequest $request): RedirectResponse
     {
         $user = $request->user();
         $profile = $user?->customerProfile;
 
-        if ($profile === null || $user->currentOnboardingStep() !== OnboardingStep::FoodFilters) {
+        if ($profile === null) {
+            abort(403);
+        }
+
+        $atFoodFilters = $user->currentOnboardingStep() === OnboardingStep::FoodFilters;
+        $revisitingCompletedProfile = $user->hasCompletedOnboarding();
+
+        if (! $atFoodFilters && ! $revisitingCompletedProfile) {
             return redirect()->route('onboarding.show', [
-                'step' => $user?->currentOnboardingStep()->value ?? OnboardingStep::entry()->value,
+                'step' => $user->currentOnboardingStep()->value,
             ]);
         }
 
@@ -262,15 +276,15 @@ class OnboardingController extends Controller
         return $this->redirectAfterOnboardingComplete();
     }
 
-    private function redirectAfterOnboardingComplete(): RedirectResponse|HttpFoundationResponse
+    private function redirectAfterOnboardingComplete(): RedirectResponse
     {
-        $url = route('consultation.crafted-for-you', ['from' => 'onboarding'], absolute: false);
+        $user = request()->user();
 
-        if (request()->header('X-Inertia')) {
-            return Inertia::location($url);
+        if ($user !== null && $user->shouldLandOnWelcomeBack()) {
+            return redirect()->route('app.home');
         }
 
-        return redirect($url);
+        return redirect()->route('consultation.crafted-for-you');
     }
 
     private function advanceStep(Request $request, OnboardingStep $completedStep): RedirectResponse

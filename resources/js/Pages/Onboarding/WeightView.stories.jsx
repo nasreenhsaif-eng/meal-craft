@@ -3,7 +3,7 @@ import { withOnboardingMobileFrame } from './onboardingStoryDecorators.jsx';
 import { ONBOARDING_STEPS } from './onboardingSteps.js';
 
 export default {
-    title: 'MealCraft/Pages/Onboarding/WeightView',
+    title: 'Design System/05. Templates & Pages/Onboarding/WeightView',
     component: OnboardingWeightInner,
     parameters: {
         layout: 'fullscreen',

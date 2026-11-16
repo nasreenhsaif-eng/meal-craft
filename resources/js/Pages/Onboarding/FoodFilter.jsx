@@ -74,7 +74,7 @@ export function OnboardingFoodFilterInner({
                 centerHeader
             >
                 <form
-                    className="flex w-full flex-col gap-6 md:mx-auto md:max-w-xl"
+                    className="flex w-full flex-col gap-4 md:mx-auto md:max-w-xl"
                     onSubmit={(event) => {
                         event.preventDefault();
                         onSubmit?.();

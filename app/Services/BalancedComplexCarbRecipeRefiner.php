@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Ingredient;
 use App\Models\Meal;
+use App\Support\GhormehSabziStewBaseRecipe;
 use App\Support\MealLibraryEditGuard;
 use App\Support\MealLibraryRefinerOverrides;
 use App\Support\StandardMeatPortion;
@@ -125,6 +126,8 @@ final class BalancedComplexCarbRecipeRefiner
             'Grilled Salmon Mango Salsa' => [
                 'ingredients' => [
                     'Salmon (Raw)' => StandardMeatPortion::GRAMS,
+                    'Lemon Herb Salmon Marinade (Base)' => 20,
+                    'Citrus Herb Sauce (Base)' => 30,
                     'Pumpkin' => 90,
                     'Mango' => 50,
                     'Bell Pepper (Red)' => 30,
@@ -132,7 +135,6 @@ final class BalancedComplexCarbRecipeRefiner
                     'Avocado' => 40,
                     'Purslane' => 40,
                     'Cashew Nuts' => 10,
-                    'Lime Juice' => 10,
                     'Fresh Coriander' => 3,
                 ],
                 'diet_tags' => $tags,
@@ -171,14 +173,8 @@ final class BalancedComplexCarbRecipeRefiner
             'Persian Herb Beef Stew' => [
                 'ingredients' => [
                     'Beef Chuck Roast' => StandardMeatPortion::GRAMS,
-                    'Cannellini Beans' => 70,
-                    'Steamed Basmati Rice (Base)' => 75,
-                    'Spinach (Fresh)' => 35,
-                    'Fresh Coriander' => 8,
-                    'Dill (Fresh)' => 4,
-                    'White Onion' => 28,
-                    'Lemon Juice' => 8,
-                    'Olive Oil' => 2,
+                    'Ghormeh Sabzi Stew (Base)' => GhormehSabziStewBaseRecipe::PER_SERVING_GRAMS,
+                    'Steamed Basmati Rice (Base)' => 70,
                 ],
                 'diet_tags' => $tags,
             ],

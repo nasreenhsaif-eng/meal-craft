@@ -85,6 +85,7 @@ final class MealCsvLibraryImportService
             RecipeCategory::SideSalad,
             RecipeCategory::Soup,
             RecipeCategory::Dessert,
+            RecipeCategory::ChiaPudding,
         ];
     }
 
@@ -105,6 +106,9 @@ final class MealCsvLibraryImportService
             'entree' => RecipeCategory::Meal,
             'entrée' => RecipeCategory::Meal,
             'salad' => RecipeCategory::SideSalad,
+            'chia' => RecipeCategory::ChiaPudding,
+            'chia pudding' => RecipeCategory::ChiaPudding,
+            'chia puddings' => RecipeCategory::ChiaPudding,
             'snack' => RecipeCategory::Dessert,
             'treat' => RecipeCategory::Dessert,
             'treats' => RecipeCategory::Dessert,

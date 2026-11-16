@@ -20,6 +20,7 @@ final class SavoryEggBreakfastMeals
     /** @var array<string, string> Legacy library names still referenced by older production plans. */
     private const LEGACY_MEAL_NAME_ALIASES = [
         'Halloumi & Spinach Scramble' => 'Gouda & Spinach Scramble',
+        'Butternut Squash & Eggs' => 'Butternut Squash Frittata',
     ];
 
     public static function canonicalMealName(string $mealName): string
@@ -47,20 +48,14 @@ final class SavoryEggBreakfastMeals
     {
         $canonicalName = self::canonicalMealName($mealName);
 
-        $meal = Meal::queryForMealLibrary()
-            ->where('name', $canonicalName)
-            ->with('ingredients')
-            ->first();
+        $meal = self::firstLibraryMealByName($canonicalName);
 
         if ($meal instanceof Meal) {
             return $meal;
         }
 
         foreach (self::legacyMealNamesForCanonical($canonicalName) as $legacyName) {
-            $legacyMeal = Meal::queryForMealLibrary()
-                ->where('name', $legacyName)
-                ->with('ingredients')
-                ->first();
+            $legacyMeal = self::firstLibraryMealByName($legacyName);
 
             if ($legacyMeal instanceof Meal) {
                 return $legacyMeal;
@@ -68,6 +63,25 @@ final class SavoryEggBreakfastMeals
         }
 
         return null;
+    }
+
+    private static function firstLibraryMealByName(string $mealName): ?Meal
+    {
+        $tiersMeal = Meal::queryScheduledTiersMeals()
+            ->where('name', $mealName)
+            ->with('ingredients')
+            ->first();
+
+        if ($tiersMeal instanceof Meal) {
+            return $tiersMeal;
+        }
+
+        $classicMeal = Meal::queryForMealLibrary()
+            ->where('name', $mealName)
+            ->with('ingredients')
+            ->first();
+
+        return $classicMeal instanceof Meal ? $classicMeal : null;
     }
 
     /**
@@ -216,6 +230,7 @@ final class SavoryEggBreakfastMeals
         $counts = config('customer_nutrition.savory_egg_breakfast_tier_counts', [
             1000 => 2,
             1200 => 2,
+            1250 => 3,
             1500 => 3,
             1800 => 4,
             2000 => 4,
@@ -353,7 +368,9 @@ final class SavoryEggBreakfastMeals
             return null;
         }
 
-        $referenceBreakfast = UserPlanCalculator::tierSlotCalories(1000.0)['breakfast'];
+        $planTiers = UserPlanCalculator::planTiers();
+        $referenceTier = (float) ($planTiers[0] ?? 1250);
+        $referenceBreakfast = UserPlanCalculator::tierSlotCalories($referenceTier)['breakfast'];
         $tierBreakfast = UserPlanCalculator::tierSlotCalories($planTier)['breakfast'];
 
         if ($referenceBreakfast <= 0 || $tierBreakfast <= 0) {

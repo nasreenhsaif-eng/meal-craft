@@ -1,79 +1,127 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
-import { Link, router } from '@inertiajs/react';
+import { router } from '@inertiajs/react';
 import { AnimatePresence, motion } from 'framer-motion';
-import PillButton from '../../Components/Atoms/Button/Button.jsx';
-import Button from '../../Components/Atoms/Button.jsx';
+import OnboardingOptionButton from '../../Components/Atoms/Button/OnboardingOptionButton.jsx';
 import DayNutritionalSummaryPanel, {
     DAY_SUMMARY_TABS,
 } from '../../Components/Consultation/DayNutritionalSummaryPanel.jsx';
-import CustomerAppHeaderActions from '../../Components/Molecules/Customer/CustomerAppHeaderActions.jsx';
-import {
-    PLAN_MACRO_CATEGORY_ROWS,
-    sumActiveDayMacros,
-} from '../../Components/Consultation/ChooseYourMeals.jsx';
+import { PLAN_MACRO_CATEGORY_ROWS } from '../../Components/Consultation/ChooseYourMeals.jsx';
 import MealDetailModalPortal from '../../Components/Molecules/MealDetailModalPortal.jsx';
+import CustomerAppBottomNav from '../../Components/Molecules/Customer/CustomerAppBottomNav.jsx';
 import CustomerInertiaShell from '../../Layouts/CustomerInertiaShell.jsx';
 import { saveSummaryCraftPlanAndNavigateToEdit } from '../../consultation/consultationDraft.js';
-import { dailyMacroTargetsFromPlan } from '../../consultation/craftCalorieTargets.js';
 import { resolveInertiaLayoutChild } from '../../lib/resolveInertiaLayoutChild.js';
 import { useMealDetailModal } from '../../meal-library/useMealDetailModal.js';
 
-const PAGE_BG = 'bg-[#F8F9F6]';
+const PAGE_BG = 'bg-white';
+
+/** @typedef {'days' | 'day'} SummaryStep */
+/** @typedef {'meals' | 'macronutrients' | 'micronutrients' | 'allergies' | 'sickle'} DaySummaryTabId */
+
+const slideTransition = { type: 'spring', stiffness: 260, damping: 30, mass: 0.85 };
 
 /**
- * @param {number} value
+ * @typedef {{
+ *   craftKey?: string;
+ *   craftTitle?: string;
+ *   fulfillmentChoice?: 'diy' | 'partner_kitchen' | null;
+ *   weekDuration?: number;
+ *   planTierCalories?: number;
+ *   dietProtocol?: string | null;
+ *   submittedAt?: string | null;
+ *   planDateRange?: { startsOn?: string; endsOn?: string; label?: string };
+ *   days?: Array<{
+ *     dayNumber: number;
+ *     label: string;
+ *     dateLabel?: string;
+ *     includeSoup?: boolean;
+ *     categories?: Record<string, Array<{ id: string; title?: string; detailView?: object }>>;
+ *   }>;
+ * }} MealPlanSummaryCraftPlan
  */
-function formatMacroValue(value) {
-    if (!Number.isFinite(value)) {
-        return '0';
+
+/**
+ * Map legacy Storybook / deep-link step names onto the two-step flow.
+ *
+ * @param {string | undefined} raw
+ * @param {boolean} hasMultipleDays
+ * @returns {SummaryStep}
+ */
+function resolveStartingStep(raw, hasMultipleDays) {
+    if (raw === 'days' && hasMultipleDays) {
+        return 'days';
     }
 
-    return Number.isInteger(value) ? String(value) : value.toFixed(1);
+    if (raw === 'day' || raw === 'content' || raw === 'topics') {
+        return 'day';
+    }
+
+    return hasMultipleDays ? 'days' : 'day';
 }
 
 /**
  * @param {object} props
  * @param {string} [props.customerName]
- * @param {{
- *   craftKey?: string;
- *   craftTitle?: string;
- *   weekDuration?: number;
- *   planTierCalories?: number;
- *   dietProtocol?: string | null;
- *   submittedAt?: string | null;
- *   days?: Array<{
- *     dayNumber: number;
- *     label: string;
- *     includeSoup?: boolean;
- *     categories?: Record<string, Array<{ id: string; title?: string; detailView?: object }>>;
- *   }>;
- * }} props.craftPlan
+ * @param {MealPlanSummaryCraftPlan} [props.craftPlan]
  * @param {string} [props.consultationUrl]
  * @param {string} [props.consultationEditUrl]
  * @param {string} [props.homeUrl]
+ * @param {string | null} [props.sex]
+ * @param {string | null} [props.activityLevel]
+ * @param {number | null} [props.dailyCalorieTarget]
+ * @param {boolean} [props.enableMealDetailModal]
+ * @param {DaySummaryTabId} [props.initialContentTab] Storybook / deep-link: starting topic tab.
+ * @param {string} [props.initialMobileStep] Storybook / deep-link: starting screen (legacy prop name).
+ * @param {string} [props.initialStep] Storybook / deep-link: starting screen.
+ * @param {boolean} [props.preview] Marketing embed — same UI, no navigation or page scroll.
  */
-export default function MealPlanSummary({
+export function MealPlanSummaryInner({
     customerName = '',
     craftPlan = {},
     consultationUrl = '/consultation/crafted-for-you',
     consultationEditUrl = '',
     homeUrl = '/app',
+    profileUrl = '/app/profile',
+    shopUrl = '/app/shop',
+    mealPlanSummaryUrl = '/app/meal-plan',
+    cartUrl = '/app/cart',
+    sex = null,
+    activityLevel = null,
+    dailyCalorieTarget = null,
+    enableMealDetailModal = true,
+    initialContentTab = 'meals',
+    initialMobileStep,
+    initialStep,
+    preview = false,
 }) {
     const days = craftPlan.days ?? [];
+    const hasMultipleDays = days.length > 1;
+    const isDiyFulfillment = craftPlan.fulfillmentChoice === 'diy';
+    const startingStep = resolveStartingStep(initialStep ?? initialMobileStep, hasMultipleDays);
+
     const [activeDay, setActiveDay] = useState(() => days[0]?.dayNumber ?? 1);
-    const [contentTab, setContentTab] = useState(/** @type {'meals' | 'macronutrients' | 'micronutrients' | 'allergies' | 'sickle'} */ ('meals'));
+    /** @type {[DaySummaryTabId, import('react').Dispatch<import('react').SetStateAction<DaySummaryTabId>>]} */
+    const [contentTab, setContentTab] = useState(initialContentTab);
+    /** @type {[SummaryStep, import('react').Dispatch<import('react').SetStateAction<SummaryStep>>]} */
+    const [step, setStep] = useState(startingStep);
+
+    const mealModalEnabled = enableMealDetailModal && !preview;
     const { mealDetailModal, detailLoading, openMealDetail, closeMealDetail } = useMealDetailModal();
 
     useEffect(() => {
+        if (!mealModalEnabled || typeof router.on !== 'function') {
+            return undefined;
+        }
+
         const removeListener = router.on('before', () => {
             closeMealDetail();
         });
 
         return () => {
-            removeListener();
+            removeListener?.();
             closeMealDetail();
         };
-    }, [closeMealDetail]);
+    }, [closeMealDetail, mealModalEnabled]);
 
     const activeDayData = useMemo(
         () => days.find((day) => day.dayNumber === activeDay) ?? days[0] ?? null,
@@ -100,40 +148,16 @@ export default function MealPlanSummary({
         return out;
     }, [activeDayData]);
 
-    const weekOverview = useMemo(
-        () =>
-            days.map((day) => {
-                /** @type {Record<string, unknown[]>} */
-                const categories = {};
-
-                for (const row of PLAN_MACRO_CATEGORY_ROWS) {
-                    const items = day.categories?.[row.key] ?? [];
-                    if (row.optional && items.length === 0) {
-                        continue;
-                    }
-
-                    categories[row.key] = items;
-                }
-
-                const totals = sumActiveDayMacros(categories);
-
-                return {
-                    dayNumber: day.dayNumber,
-                    label: day.label,
-                    totals,
-                };
-            }),
-        [days],
-    );
-
     const planCategoryLabel = `${craftPlan.craftTitle ?? 'Craft'} · ${craftPlan.planTierCalories ?? ''} kcal`.trim();
-
-    const dayMacroTargets = useMemo(
-        () => dailyMacroTargetsFromPlan(null, craftPlan.planTierCalories ?? 0, craftPlan.craftKey ?? 'full'),
-        [craftPlan.planTierCalories, craftPlan.craftKey],
-    );
+    const activeDayLabel = activeDayData?.dateLabel
+        ? `${activeDayData.label} ${activeDayData.dateLabel}`
+        : (activeDayData?.label ?? 'Day');
 
     const handleEditSelections = useCallback(() => {
+        if (preview) {
+            return;
+        }
+
         const editUrl =
             typeof consultationEditUrl === 'string' && consultationEditUrl.trim() !== ''
                 ? consultationEditUrl
@@ -145,130 +169,225 @@ export default function MealPlanSummary({
         }
 
         saveSummaryCraftPlanAndNavigateToEdit(consultationUrl, craftPlan);
-    }, [consultationEditUrl, consultationUrl, craftPlan]);
+    }, [consultationEditUrl, consultationUrl, craftPlan, preview]);
+
+    const handleSelectDay = useCallback((dayNumber) => {
+        setActiveDay(dayNumber);
+        setContentTab('meals');
+        setStep('day');
+    }, []);
 
     useLayoutEffect(() => {
+        if (preview) {
+            return;
+        }
+
         window.scrollTo(0, 0);
-    }, [activeDay, contentTab]);
+    }, [activeDay, contentTab, step, preview]);
+
+    const pageIntro = (
+        <div className="mb-3 min-w-0">
+            <h1 className="text-center font-montserrat text-2xl font-semibold leading-tight text-[#262A22] sm:text-3xl">
+                Your week, crafted.
+            </h1>
+            <p className="mt-1.5 text-center text-sm leading-snug text-[#555555] sm:text-base">
+                Open a day. Every meal, every ingredient, every detail.
+            </p>
+            <p className="mt-1 text-center font-body text-xs text-[#6B7280] sm:text-sm">
+                {planCategoryLabel}
+                {craftPlan.planDateRange?.label ? ` · ${craftPlan.planDateRange.label}` : null}
+                {days.length > 0 ? ` · ${days.length} delivery ${days.length === 1 ? 'day' : 'days'}` : null}
+            </p>
+        </div>
+    );
+
+    const summaryPanel = (
+        <DayNutritionalSummaryPanel
+            tab={contentTab}
+            categories={activeDayCategories}
+            dayLabel={activeDayData?.label ?? 'Day'}
+            planCategoryLabel=""
+            planTierCalories={craftPlan.planTierCalories ?? 0}
+            craftKey={craftPlan.craftKey ?? 'full'}
+            sex={sex}
+            activityLevel={activityLevel}
+            dailyCalories={dailyCalorieTarget ?? craftPlan.planTierCalories ?? 0}
+            dietProtocol={craftPlan.dietProtocol ?? null}
+            onOpenMeal={mealModalEnabled ? openMealDetail : undefined}
+            onEditMeals={preview ? undefined : handleEditSelections}
+            fullMealDetails
+        />
+    );
+
+    const daysScreen = (
+        <>
+            {pageIntro}
+            <p className="mb-3 text-center font-body text-sm text-[#555555]">Pick a day to open your meals.</p>
+            <div className="mx-auto flex w-full max-w-xl flex-col gap-2" role="list" aria-label="Plan days">
+                {days.map((day) => {
+                    const label = day.dateLabel ? `${day.label} ${day.dateLabel}` : day.label;
+
+                    return (
+                        <OnboardingOptionButton
+                            key={day.dayNumber}
+                            label={label}
+                            align="center"
+                            selected={day.dayNumber === activeDay}
+                            onSelect={() => handleSelectDay(day.dayNumber)}
+                        />
+                    );
+                })}
+            </div>
+        </>
+    );
+
+    const dayScreen = (
+        <>
+            <div className="mb-2 min-w-0">
+                {hasMultipleDays ? (
+                    <>
+                        <h1 className="text-center font-montserrat text-2xl font-semibold leading-tight text-[#262A22] sm:text-3xl">
+                            {activeDayLabel}
+                        </h1>
+                        <p className="mt-1.5 text-center text-sm leading-snug text-[#555555]">
+                            Every meal, every ingredient, every detail.
+                        </p>
+                    </>
+                ) : (
+                    pageIntro
+                )}
+            </div>
+
+            <div
+                className="mb-3 flex gap-1.5 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                role="tablist"
+                aria-label="Day information"
+            >
+                {DAY_SUMMARY_TABS.map((tab) => {
+                    const selected = contentTab === tab.id;
+
+                    return (
+                        <button
+                            key={tab.id}
+                            type="button"
+                            role="tab"
+                            aria-selected={selected}
+                            onClick={() => setContentTab(/** @type {DaySummaryTabId} */ (tab.id))}
+                            className={[
+                                'shrink-0 rounded-full px-2.5 py-1 font-montserrat text-[11px] font-bold tracking-wide transition-colors',
+                                selected
+                                    ? 'bg-[#5A6B44] text-white'
+                                    : 'bg-white text-[#555555] ring-1 ring-gray-200 hover:text-[#262A22]',
+                            ].join(' ')}
+                        >
+                            {tab.label}
+                        </button>
+                    );
+                })}
+            </div>
+
+            <div className="pb-6">{summaryPanel}</div>
+        </>
+    );
+
+    const screen = step === 'days' && hasMultipleDays ? daysScreen : dayScreen;
 
     return (
-        <CustomerInertiaShell customerName={customerName} headerActions={<CustomerAppHeaderActions />}>
+        <CustomerInertiaShell
+            customerName={customerName}
+            cartUrl={cartUrl}
+            embedded={preview}
+            onBack={
+                step === 'day' && hasMultipleDays
+                    ? () => setStep('days')
+                    : null
+            }
+            backAriaLabel="Back to days"
+            footerNav={
+                <CustomerAppBottomNav
+                    activeTab="meals"
+                    homeUrl={homeUrl}
+                    profileUrl={profileUrl}
+                    shopUrl={shopUrl}
+                    mealsUrl={mealPlanSummaryUrl}
+                    navigationDisabled={preview}
+                />
+            }
+        >
             <div className={`min-h-full font-body ${PAGE_BG}`}>
-                <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6 lg:px-8">
-                    <div className="mb-5 min-w-0">
-                        <Link
-                            href={homeUrl}
-                            className="inline-flex items-center gap-1 font-montserrat text-sm font-semibold text-[#5A6B44] hover:underline"
-                        >
-                            ← Back to home
-                        </Link>
-                        <h1 className="mt-2 font-montserrat text-2xl font-bold tracking-tight text-[#262A22] sm:text-3xl">
-                            Your meal plan
-                        </h1>
-                        <p className="mt-2 font-body text-sm text-[#555555] sm:text-base">
-                            {planCategoryLabel}
-                            {days.length > 0 ? ` · ${days.length} delivery ${days.length === 1 ? 'day' : 'days'}` : null}
-                        </p>
-                    </div>
-
-                    {weekOverview.length > 1 ? (
-                        <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                            {weekOverview.map((day) => {
-                                const selected = day.dayNumber === activeDay;
-
-                                return (
-                                    <button
-                                        key={day.dayNumber}
-                                        type="button"
-                                        onClick={() => setActiveDay(day.dayNumber)}
-                                        className={[
-                                            'rounded-[12px] border px-4 py-3 text-left transition',
-                                            selected
-                                                ? 'border-[#5A6B44] bg-white shadow-sm'
-                                                : 'border-gray-200 bg-white/80 hover:border-[#5A6B44]/40',
-                                        ].join(' ')}
-                                    >
-                                        <p className="font-montserrat text-sm font-bold text-[#262A22]">{day.label}</p>
-                                        <p className="mt-1 font-body text-xs text-[#555555]">
-                                            {formatMacroValue(day.totals.calories)} / {formatMacroValue(dayMacroTargets.calories)} kcal · P{' '}
-                                            {formatMacroValue(day.totals.protein)}/{formatMacroValue(dayMacroTargets.protein)}g · C{' '}
-                                            {formatMacroValue(day.totals.carbs)}/{formatMacroValue(dayMacroTargets.carbs)}g · F{' '}
-                                            {formatMacroValue(day.totals.fat)}/{formatMacroValue(dayMacroTargets.fat)}g
-                                        </p>
-                                    </button>
-                                );
-                            })}
-                        </div>
-                    ) : null}
-
-                    <div className="mb-6 overflow-visible rounded-[12px] border border-gray-200 bg-white p-3 sm:p-4">
-                        <div
-                            className="flex w-full flex-wrap items-center justify-center gap-2 sm:justify-start"
-                            role="tablist"
-                            aria-label="Day content"
-                        >
-                            {DAY_SUMMARY_TABS.map((tab) => (
-                                <PillButton
-                                    key={tab.id}
-                                    type="button"
-                                    role="tab"
-                                    aria-selected={contentTab === tab.id}
-                                    label={tab.label}
-                                    variant={contentTab === tab.id ? 'primary' : 'tab'}
-                                    size="sm"
-                                    onClick={() => setContentTab(tab.id)}
-                                    className="shrink-0"
-                                />
-                            ))}
-                        </div>
-                    </div>
-
+                <div className="mx-auto w-full max-w-5xl py-3 sm:py-4">
                     <AnimatePresence mode="wait" initial={false}>
                         <motion.div
-                            key={`${activeDayData?.dayNumber ?? 'empty'}-${contentTab}`}
+                            key={`${step}-${activeDay}-${contentTab}`}
                             initial={{ x: 24, opacity: 0 }}
                             animate={{ x: 0, opacity: 1 }}
                             exit={{ x: -24, opacity: 0 }}
-                            transition={{ type: 'spring', stiffness: 260, damping: 30, mass: 0.85 }}
-                            className="space-y-8 pb-12"
+                            transition={slideTransition}
                         >
-                            <DayNutritionalSummaryPanel
-                                tab={contentTab}
-                                categories={activeDayCategories}
-                                dayLabel={activeDayData?.label ?? 'Day'}
-                                planCategoryLabel={planCategoryLabel}
-                                planTierCalories={craftPlan.planTierCalories ?? 0}
-                                craftKey={craftPlan.craftKey ?? 'full'}
-                                dietProtocol={craftPlan.dietProtocol ?? null}
-                                onOpenMeal={openMealDetail}
-                                onEditMeals={handleEditSelections}
-                            />
+                            {screen}
                         </motion.div>
                     </AnimatePresence>
-
-                    <div className="mt-4 flex flex-wrap gap-3 border-t border-gray-200 pt-6">
-                        <Button
-                            label="Edit selections"
-                            variant="outline"
-                            onClick={handleEditSelections}
-                            className="px-8"
-                        />
-                        <Button
-                            label="Done"
-                            variant="primary"
-                            onClick={() => window.location.assign(homeUrl)}
-                            className="px-10"
-                        />
-                    </div>
                 </div>
             </div>
 
-            <MealDetailModalPortal
-                mealDetailModal={mealDetailModal}
-                loading={detailLoading}
-                onClose={closeMealDetail}
-            />
+            {mealModalEnabled ? (
+                <MealDetailModalPortal
+                    mealDetailModal={mealDetailModal}
+                    loading={detailLoading}
+                    onClose={closeMealDetail}
+                    hideInstructions
+                    enableGetRecipe={isDiyFulfillment}
+                    inlineIngredients={!isDiyFulfillment}
+                />
+            ) : null}
         </CustomerInertiaShell>
+    );
+}
+
+/**
+ * @param {object} props
+ * @param {string} [props.customerName]
+ * @param {MealPlanSummaryCraftPlan} [props.craftPlan]
+ * @param {string} [props.consultationUrl]
+ * @param {string} [props.consultationEditUrl]
+ * @param {string} [props.homeUrl]
+ * @param {string} [props.profileUrl]
+ * @param {string} [props.shopUrl]
+ * @param {string} [props.mealPlanSummaryUrl]
+ * @param {string} [props.cartUrl]
+ * @param {string | null} [props.sex]
+ * @param {string | null} [props.activityLevel]
+ * @param {number | null} [props.dailyCalorieTarget]
+ */
+export default function MealPlanSummary({
+    customerName = '',
+    craftPlan = {},
+    consultationUrl = '/consultation/crafted-for-you',
+    consultationEditUrl = '',
+    homeUrl = '/app',
+    profileUrl = '/app/profile',
+    shopUrl = '/app/shop',
+    mealPlanSummaryUrl = '/app/meal-plan',
+    cartUrl = '/app/cart',
+    sex = null,
+    activityLevel = null,
+    dailyCalorieTarget = null,
+}) {
+    return (
+        <MealPlanSummaryInner
+            customerName={customerName}
+            craftPlan={craftPlan}
+            consultationUrl={consultationUrl}
+            consultationEditUrl={consultationEditUrl}
+            homeUrl={homeUrl}
+            profileUrl={profileUrl}
+            shopUrl={shopUrl}
+            mealPlanSummaryUrl={mealPlanSummaryUrl}
+            cartUrl={cartUrl}
+            sex={sex}
+            activityLevel={activityLevel}
+            dailyCalorieTarget={dailyCalorieTarget}
+        />
     );
 }
 
