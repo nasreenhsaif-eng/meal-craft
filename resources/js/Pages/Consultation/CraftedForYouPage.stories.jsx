@@ -1,5 +1,7 @@
 import { useState } from 'react';
-import CraftedForYouPage, { consultationMeals } from './CraftedForYouPage.jsx';
+import CraftedForYouPage from './CraftedForYouPage.jsx';
+import { withConsultationMobileFrame } from './consultationStoryDecorators.jsx';
+import { consultationMeals } from '../../consultation/consultationMockMeals.js';
 import { consultationDeckOptionsForSlotKey } from '../../Components/Consultation/ChooseYourMeals.jsx';
 import StackedDeckCarousel from '../../Components/MealCard/StackedDeckCarousel.jsx';
 import MealCardClientViewNano from '../../Components/MealCardClientViewNano.jsx';
@@ -7,20 +9,52 @@ import MealCardClientViewNano from '../../Components/MealCardClientViewNano.jsx'
 const mealOptionsDemo = consultationDeckOptionsForSlotKey(consultationMeals, 'meal');
 
 export default {
-    title: 'MealCraft/Pages/Admin/Consultation/CraftedForYou',
+    title: 'Design System/05. Templates & Pages/Crafted for you',
     component: CraftedForYouPage,
+    decorators: withConsultationMobileFrame,
     parameters: {
         layout: 'fullscreen',
         a11y: { config: { rules: [{ id: 'color-contrast', enabled: true }] } },
+        docs: {
+            description: {
+                component:
+                    'Customer Crafted for YOU consultation: craft → week duration → manual days (5/6) → **receive meal plan** → daily curation. Mock library data (no adapted-menu API).',
+            },
+        },
     },
 };
 
-export const Default = {
-    render: () => <CraftedForYouPage disableAdaptedMenuFetch />,
+/**
+ * Embed mode grows with content (no nested overflow / fixed footers) so Storybook
+ * mobile viewports can scroll the document.
+ */
+export const CraftedForYour = {
+    name: 'Crafted for your',
+    render: () => (
+        <CraftedForYouPage
+            disableAdaptedMenuFetch
+            embedInScrollParent
+            pageEyebrow="Your plan"
+        />
+    ),
+};
+
+/** Opens on Partner Kitchen / DIY — first consultation screen in the live flow. */
+export const ReceiveMealPlan = {
+    name: 'Receive meal plan',
+    render: () => (
+        <CraftedForYouPage
+            disableAdaptedMenuFetch
+            embedInScrollParent
+            pageEyebrow="Your plan"
+            initialScreen={1}
+        />
+    ),
 };
 
 /**
- * Isolated meal ribbon — same 4 capped mains as production consultation decks.
+ * Isolated meal ribbon — same capped mains as production consultation decks.
+ * Story id: design-system-05-templates-pages-crafted-for-you--stacked-deck-consultation-meals
  */
 export const StackedDeckConsultationMeals = {
     render: () => {
@@ -39,11 +73,11 @@ export const StackedDeckConsultationMeals = {
         };
 
         return (
-            <div className="min-h-screen bg-[#F8F9F6] p-6">
+            <div className="w-full px-3 py-4 sm:px-6 sm:py-6">
                 <p className="mb-4 font-montserrat text-sm font-bold text-[#262A22]">
-                    Meals of the Day deck — 4 options, select exactly 2 (mock fixtures)
+                    Meals of the Day deck — 6 options, select exactly 2 (mock fixtures)
                 </p>
-                <div className="max-w-5xl rounded-[12px] border border-gray-200 bg-white p-6 shadow-sm">
+                <div className="w-full rounded-[12px] border border-gray-200 bg-white p-3 shadow-sm sm:p-6">
                     <StackedDeckCarousel
                         title=""
                         meals={mealOptionsDemo}

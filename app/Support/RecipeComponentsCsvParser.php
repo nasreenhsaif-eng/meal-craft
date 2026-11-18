@@ -286,4 +286,42 @@ final class RecipeComponentsCsvParser
 
         return implode(' ', $parts);
     }
+
+    /**
+     * @param  list<array{ingredient_id: int, amount_grams: float}>  $componentRows
+     */
+    public static function formatComponentRowsAsNameCell(array $componentRows): string
+    {
+        if ($componentRows === []) {
+            return '';
+        }
+
+        $ids = array_values(array_unique(array_map(
+            static fn (array $row): int => (int) ($row['ingredient_id'] ?? 0),
+            $componentRows,
+        )));
+
+        /** @var array<int, string> $namesById */
+        $namesById = Ingredient::query()
+            ->whereIn('id', $ids)
+            ->pluck('name', 'id')
+            ->all();
+
+        $segments = [];
+
+        foreach ($componentRows as $row) {
+            $ingredientId = (int) ($row['ingredient_id'] ?? 0);
+            $grams = (float) ($row['amount_grams'] ?? 0);
+            $name = trim((string) ($namesById[$ingredientId] ?? ''));
+
+            if ($ingredientId <= 0 || $name === '' || $grams <= 0) {
+                continue;
+            }
+
+            $amount = rtrim(rtrim(number_format($grams, 4, '.', ''), '0'), '.');
+            $segments[] = "{$name} ({$amount}g)";
+        }
+
+        return implode(' | ', $segments);
+    }
 }

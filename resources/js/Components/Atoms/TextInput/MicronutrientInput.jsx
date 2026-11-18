@@ -1,4 +1,5 @@
 import { useId } from 'react';
+import { TEXT_INPUT_ROOT } from './fieldLayout.js';
 
 /**
  * Single multi-line field for micronutrient data (matches TextInput chrome; Smart Kitchen radius + focus ring).
@@ -30,14 +31,14 @@ export default function MicronutrientInput({
     const hintDomId = hint ? `${inputId}-hint` : undefined;
 
     const boxNormal =
-        'relative flex w-full min-h-[120px] bg-white ' +
+        'relative box-border flex w-full min-h-[120px] min-w-0 max-w-full bg-white ' +
         'rounded-[12px] border border-[#E5E7EB] shadow-sm ' +
         'transition-[border-color,box-shadow] duration-200 ' +
         'focus-within:border-[#6E8C47] ' +
         'focus-within:shadow-[0_1px_2px_rgba(0,0,0,0.05),inset_0_0_0_1px_rgba(110,140,71,0.18)]';
 
     const boxError =
-        'relative flex w-full min-h-[120px] bg-white ' +
+        'relative box-border flex w-full min-h-[120px] min-w-0 max-w-full bg-white ' +
         'rounded-[12px] border border-status-error shadow-sm ' +
         'transition-[border-color,box-shadow] duration-200 ' +
         'focus-within:border-status-error ' +
@@ -46,9 +47,9 @@ export default function MicronutrientInput({
     const boxClassName = error ? boxError : boxNormal;
 
     const textareaClassName = [
-        'min-h-[120px] w-full resize-y border-none bg-transparent font-body text-[16px] tracking-tight',
+        'box-border min-h-[120px] w-full min-w-0 max-w-full resize-y border-none bg-transparent font-body text-[16px] tracking-tight',
         'text-[#364153] placeholder:text-[#364153]/50',
-        'rounded-[12px] px-[20px] py-[14px] outline-none ring-0',
+        'rounded-[12px] px-4 py-3 outline-none ring-0 sm:px-5 sm:py-[14px]',
         'focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0',
         'disabled:cursor-not-allowed disabled:text-[#364153]/40 disabled:placeholder:text-[#364153]/25',
     ].join(' ');
@@ -56,7 +57,7 @@ export default function MicronutrientInput({
     const describedBy = [error ? errorId : null, hintDomId].filter(Boolean).join(' ') || undefined;
 
     return (
-        <div className={`block w-full max-w-[492px] text-left ${className}`.trim()}>
+        <div className={`${TEXT_INPUT_ROOT} ${className}`.trim()}>
             <label
                 htmlFor={inputId}
                 className="mb-2 block font-montserrat text-sm font-bold leading-snug tracking-tight text-grey-94 dark:text-zinc-300"

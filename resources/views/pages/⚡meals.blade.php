@@ -8,6 +8,7 @@ use App\Models\Meal;
 use App\Services\MealCsvLibraryImportService;
 use App\Services\MealCyclePhaseTaggingService;
 use App\Services\MealRecipeAsIngredientSyncService;
+use App\Services\MealLibraryPersistenceSync;
 use App\Services\MenuDevelopmentCsvSync;
 use App\Services\RecipeIngredientUnitConverter;
 use App\Services\RecipeNutritionCalculator;
@@ -378,16 +379,22 @@ new #[Title('Meals')] class extends Component {
         $ids = array_values(array_unique(array_map('intval', $this->selectedMeals)));
         $count = 0;
 
+        $deletedMealNames = [];
+
         foreach ($ids as $id) {
-            if ($id > 0 && $this->performMealDeletion($id)) {
-                $count++;
+            if ($id > 0) {
+                $deletedName = $this->performMealDeletion($id);
+                if ($deletedName !== null) {
+                    $deletedMealNames[] = $deletedName;
+                    $count++;
+                }
             }
         }
 
         $this->selectedMeals = [];
 
         if ($count > 0) {
-            app(MenuDevelopmentCsvSync::class)->syncMealsFromDatabase();
+            app(MealLibraryPersistenceSync::class)->afterMealsDeleted($deletedMealNames);
             $this->status = __(':count meal(s) deleted.', ['count' => $count]);
             $this->resetPage();
         }
@@ -519,7 +526,7 @@ new #[Title('Meals')] class extends Component {
      */
     public function getCalculatedNutritionProperty(): array
     {
-        return RecipeNutritionCalculator::fromRows($this->recipeIngredients);
+        return RecipeNutritionCalculator::fromRows($this->recipeIngredients, applyMealCookingYield: true);
     }
 
     public function formatNutritionValue(float $value): string
@@ -675,7 +682,7 @@ new #[Title('Meals')] class extends Component {
 
         app(MealCyclePhaseTaggingService::class)->refreshAutoTagsForEntireLibrary();
 
-        app(MenuDevelopmentCsvSync::class)->syncMealsFromDatabase();
+        app(MealLibraryPersistenceSync::class)->afterMealSaved($meal->fresh(['ingredients']));
 
         if (request()->routeIs('meals.edit')) {
             $this->redirect(route('meals.index'), navigate: true);
@@ -801,8 +808,10 @@ new #[Title('Meals')] class extends Component {
 
     public function deleteMeal(int $mealId): void
     {
-        if ($this->performMealDeletion($mealId)) {
-            app(MenuDevelopmentCsvSync::class)->syncMealsFromDatabase();
+        $deletedName = $this->performMealDeletion($mealId);
+
+        if ($deletedName !== null) {
+            app(MealLibraryPersistenceSync::class)->afterMealsDeleted([$deletedName]);
             $this->selectedMeals = array_values(array_filter(
                 $this->selectedMeals,
                 fn ($id): bool => (int) $id !== $mealId
@@ -812,13 +821,15 @@ new #[Title('Meals')] class extends Component {
         }
     }
 
-    private function performMealDeletion(int $mealId): bool
+    private function performMealDeletion(int $mealId): ?string
     {
         $meal = Meal::query()->find($mealId);
 
         if ($meal === null) {
-            return false;
+            return null;
         }
+
+        $mealName = $meal->name;
 
         if ($this->detailsMealId === $mealId) {
             $this->showMealDetailsModal = false;
@@ -835,7 +846,7 @@ new #[Title('Meals')] class extends Component {
 
         $meal->delete();
 
-        return true;
+        return $mealName;
     }
 
     public function editMeal(int $mealId): void
@@ -1504,6 +1515,16 @@ new #[Title('Meals')] class extends Component {
                         <h2 class="font-serif text-2xl font-semibold leading-tight text-stone-800 dark:text-stone-100">
                             {{ $this->detailsMeal->name }}
                         </h2>
+                        @php
+                            $mealShortDescription = filled($this->detailsMeal->short_description)
+                                ? $this->detailsMeal->short_description
+                                : $this->detailsMeal->highlight;
+                        @endphp
+                        @if (filled($mealShortDescription))
+                            <p class="mt-1 text-sm leading-snug text-stone-600 dark:text-stone-300">
+                                {{ $mealShortDescription }}
+                            </p>
+                        @endif
                         <div class="mt-2 flex flex-wrap items-center gap-2">
                             @if ($this->detailsMeal->meal_type === \App\Enums\MealType::BaseRecipe)
                                 <flux:badge

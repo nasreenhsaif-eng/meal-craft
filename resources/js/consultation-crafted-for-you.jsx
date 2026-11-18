@@ -1,12 +1,20 @@
 import { createRoot } from 'react-dom/client';
 import { Component, StrictMode } from 'react';
+import CustomerOnboardingPhoneFrame from './Components/Molecules/Customer/CustomerOnboardingPhoneFrame.jsx';
 import CraftedForYouPage from './Pages/Consultation/CraftedForYouPage.jsx';
 import { syncCsrfMetaTag } from './lib/csrfToken.js';
+
+// Bump when consultation curation shell changes so stale Fast Refresh clients reload.
+export const CONSULTATION_CURATION_BUNDLE_EPOCH = '2026-10-22-fulfillment-paths';
 
 const rootEl = document.getElementById('mc-consultation-crafted-root');
 const configEl = document.getElementById('mc-consultation-crafted-config');
 
-/** @type {{ closeHref?: string; homeHref?: string; summaryHref?: string; loginUrl?: string; signOutUrl?: string; csrfToken?: string; isCustomerAccount?: boolean; isAdminPreview?: boolean; pageEyebrow?: string; adaptedMenuUrl?: string; planTier?: number | null; planTiers?: number[]; chiaBreakfastMealNames?: string[]; editDraft?: object | null }} */
+if (typeof window !== 'undefined') {
+    window.__MC_CONSULTATION_CURATION_BUNDLE_EPOCH__ = CONSULTATION_CURATION_BUNDLE_EPOCH;
+}
+
+/** @type {{ closeHref?: string; homeHref?: string; backHref?: string; summaryHref?: string; deliveryUrl?: string; loginUrl?: string; signOutUrl?: string; csrfToken?: string; isCustomerAccount?: boolean; isAdminPreview?: boolean; pageEyebrow?: string; adaptedMenuUrl?: string; mealLibraryRevision?: number; planTier?: number | null; planTiers?: number[]; editDraft?: object | null; resumeDraft?: object | null; dietProtocol?: string | null; sex?: string | null; activityLevel?: string | null; dailyCalorieTarget?: number | null; resumeChooseMeals?: boolean; forceReceive?: boolean; initialFulfillmentChoice?: 'diy' | 'partner_kitchen' | null }} */
 let config = {};
 
 if (configEl) {
@@ -47,8 +55,8 @@ class ConsultationErrorBoundary extends Component {
                     : String(this.state.error ?? 'Unknown error');
 
             return (
-                <div className="min-h-[100dvh] w-full bg-[#F8F9F6] p-6">
-                    <div className="mx-auto w-full max-w-lg rounded-[12px] border border-red-200 bg-white p-6 font-sans text-sm text-[#262A22] shadow-sm">
+                <div className="box-border min-h-[100dvh] w-full min-w-0 bg-[#F8F9F6] p-6">
+                    <div className="mx-auto w-full min-w-0 max-w-lg rounded-[12px] border border-red-200 bg-white p-6 font-sans text-sm text-[#262A22] shadow-sm">
                         <h1 className="font-montserrat text-lg font-bold">Could not load meal selection</h1>
                         <p className="mt-2 text-[#555555]">
                             Refresh the page. If this keeps happening, open DevTools → Console and share the error with
@@ -67,34 +75,76 @@ class ConsultationErrorBoundary extends Component {
 }
 
 if (rootEl) {
-    rootEl.classList.add('h-full', 'min-h-0', 'w-full');
+    rootEl.classList.add('min-h-full', 'w-full');
 
-    createRoot(rootEl).render(
-        <StrictMode>
-            <ConsultationErrorBoundary>
-                <CraftedForYouPage
-                    closeHref={typeof config.closeHref === 'string' ? config.closeHref : undefined}
-                    homeHref={typeof config.homeHref === 'string' ? config.homeHref : undefined}
-                    summaryHref={typeof config.summaryHref === 'string' ? config.summaryHref : undefined}
-                    loginUrl={typeof config.loginUrl === 'string' ? config.loginUrl : undefined}
-                    signOutUrl={typeof config.signOutUrl === 'string' ? config.signOutUrl : undefined}
-                    csrfToken={typeof config.csrfToken === 'string' ? config.csrfToken : undefined}
-                    isCustomerAccount={config.isCustomerAccount === true}
-                    isAdminPreview={config.isAdminPreview === true}
-                    pageEyebrow={typeof config.pageEyebrow === 'string' ? config.pageEyebrow : undefined}
-                    adaptedMenuUrl={
-                        typeof config.adaptedMenuUrl === 'string' ? config.adaptedMenuUrl : '/api/menu/adapted'
-                    }
-                    initialPlanTier={typeof config.planTier === 'number' ? config.planTier : null}
-                    initialPlanTiers={Array.isArray(config.planTiers) ? config.planTiers : undefined}
-                    chiaBreakfastMealNames={
-                        Array.isArray(config.chiaBreakfastMealNames) ? config.chiaBreakfastMealNames : []
-                    }
-                    initialEditDraft={
-                        config.editDraft && typeof config.editDraft === 'object' ? config.editDraft : null
-                    }
-                />
-            </ConsultationErrorBoundary>
-        </StrictMode>,
+    const isCustomerAccount = config.isCustomerAccount === true;
+
+    const page = (
+        <CraftedForYouPage
+            backHref={typeof config.backHref === 'string' ? config.backHref : undefined}
+            closeHref={typeof config.closeHref === 'string' ? config.closeHref : undefined}
+            homeHref={typeof config.homeHref === 'string' ? config.homeHref : undefined}
+            summaryHref={typeof config.summaryHref === 'string' ? config.summaryHref : undefined}
+            deliveryUrl={typeof config.deliveryUrl === 'string' ? config.deliveryUrl : '/checkout/delivery'}
+            resumeChooseMeals={config.resumeChooseMeals === true}
+            forceReceive={config.forceReceive === true}
+            initialFulfillmentChoice={
+                config.initialFulfillmentChoice === 'diy' || config.initialFulfillmentChoice === 'partner_kitchen'
+                    ? config.initialFulfillmentChoice
+                    : null
+            }
+            loginUrl={typeof config.loginUrl === 'string' ? config.loginUrl : undefined}
+            signOutUrl={typeof config.signOutUrl === 'string' ? config.signOutUrl : undefined}
+            csrfToken={typeof config.csrfToken === 'string' ? config.csrfToken : undefined}
+            isCustomerAccount={isCustomerAccount}
+            isAdminPreview={config.isAdminPreview === true}
+            pageEyebrow={typeof config.pageEyebrow === 'string' ? config.pageEyebrow : undefined}
+            adaptedMenuUrl={
+                typeof config.adaptedMenuUrl === 'string' ? config.adaptedMenuUrl : '/api/menu/adapted'
+            }
+            mealLibraryRevision={typeof config.mealLibraryRevision === 'number' ? config.mealLibraryRevision : 0}
+            initialPlanTier={typeof config.planTier === 'number' ? config.planTier : null}
+            initialEditDraft={config.editDraft && typeof config.editDraft === 'object' ? config.editDraft : null}
+            initialResumeDraft={
+                config.resumeDraft && typeof config.resumeDraft === 'object' ? config.resumeDraft : null
+            }
+            dietProtocol={typeof config.dietProtocol === 'string' ? config.dietProtocol : null}
+            sex={typeof config.sex === 'string' ? config.sex : null}
+            activityLevel={typeof config.activityLevel === 'string' ? config.activityLevel : null}
+            dailyCalorieTarget={typeof config.dailyCalorieTarget === 'number' ? config.dailyCalorieTarget : null}
+            partnerKitchenPricing={
+                config.partnerKitchenPricing && typeof config.partnerKitchenPricing === 'object'
+                    ? config.partnerKitchenPricing
+                    : null
+            }
+            embedInScrollParent
+        />
     );
+
+    /** @type {{ current: import('react-dom/client').Root | null }} */
+    const consultationRootRef = (window.__MC_CONSULTATION_ROOT__ ??= { current: null });
+
+    try {
+        if (!consultationRootRef.current) {
+            consultationRootRef.current = createRoot(rootEl);
+        }
+
+        consultationRootRef.current.render(
+            <StrictMode>
+                <ConsultationErrorBoundary>
+                    <CustomerOnboardingPhoneFrame>
+                        <div className="flex h-full min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain">
+                            {page}
+                        </div>
+                    </CustomerOnboardingPhoneFrame>
+                </ConsultationErrorBoundary>
+            </StrictMode>,
+        );
+    } catch (error) {
+        // eslint-disable-next-line no-console
+        console.error(error);
+        if (!consultationRootRef.current) {
+            window.location.reload();
+        }
+    }
 }

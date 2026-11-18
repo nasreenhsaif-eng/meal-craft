@@ -19,6 +19,7 @@ test('admin dashboard renders with hardcoded stats payload', function () {
             ->where('stats.totalSubmissions', 0)
             ->where('stats.totalRevenue', 0)
             ->where('stats.activeUsers', [])
+            ->where('users', [])
             ->where('stats.customersCount', 0)
             ->where('stats.ingredientCount', 0)
             ->where('stats.mealCount', 0)

@@ -1,22 +1,21 @@
-import { Fragment, useMemo } from 'react';
-import NutrientBadge from '../Atoms/MealSystem/NutrientBadge.jsx';
+import { Fragment, useMemo, useState } from 'react';
+import Button from '../Atoms/Button/Button.jsx';
+import NutrientBadge from '../MealSystem/NutrientBadge.jsx';
 import SafetyAlerts from '../MealSystem/SafetyAlerts.jsx';
 import { G6PD_HIGHLIGHT_BADGE } from '../../meal-library/mealSafetyAndSickle.ts';
 import { aggregateDayMicronutrientRows } from '../../meal-library/aggregateDayNutritionalData.ts';
 import {
     BEST_EFFORT_NUTRIENT_LABELS,
+    calculateMicronutrientTargets,
     FLOOR_RDI_TARGET_PERCENT,
-    isMicronutrientTierEnforced,
 } from '../../meal-library/nutrientDailyRdi.ts';
-import DayMicronutrientGapSuggestions from './DayMicronutrientGapSuggestions.jsx';
 import CaloricThresholdNotice from './CaloricThresholdNotice.jsx';
 import {
     PLAN_MACRO_CATEGORY_ROWS,
     PlanMacroSummaryPanel,
     sumActiveDayMacros,
 } from './ChooseYourMeals.jsx';
-
-/** @typedef {'meals' | 'macronutrients' | 'micronutrients' | 'allergies' | 'sickle'} DaySummaryTabId */
+import ProtocolMealSlotCard from './ProtocolMealSlotCard.jsx';
 
 export const DAY_SUMMARY_TABS = /** @type {const} */ ([
     { id: 'meals', label: 'Meals' },
@@ -25,6 +24,16 @@ export const DAY_SUMMARY_TABS = /** @type {const} */ ([
     { id: 'allergies', label: 'Allergy & safety' },
     { id: 'sickle', label: 'Sickle cell' },
 ]);
+
+/** Macro + micro tabs for day nutrition review during consultation or admin preview. */
+export const DAY_MACRO_MICRO_TABS = /** @type {const} */ ([
+    { id: 'macronutrients', label: 'Macronutrients' },
+    { id: 'micronutrients', label: 'Micronutrients' },
+]);
+
+/** @typedef {'meals' | 'macronutrients' | 'micronutrients' | 'allergies' | 'sickle'} DaySummaryTabId */
+
+/** @typedef {'macronutrients' | 'micronutrients'} DayMacroMicroTabId */
 
 /**
  * @param {Partial<Record<string, Array<{ title?: string; detailView?: Record<string, unknown> }>>>} categories
@@ -87,6 +96,7 @@ export function listDayMealsWithHighlights(categories) {
                 id: String(meal.id ?? `${row.key}-${meal.title}`),
                 title: meal.title ?? 'Meal',
                 category: row.label,
+                imageUrl: typeof meal.imageUrl === 'string' ? meal.imageUrl : undefined,
                 macros: meal.macros,
                 safetyAlerts: mealAlerts,
                 sickleCellHighlights: mealSickle,
@@ -104,94 +114,60 @@ const SICKLE_RDI_FOOTNOTE = 'High Source: ≥20% of daily RDI per serving';
 function SummarySection({ title, description, children, tone = 'white' }) {
     const toneClass =
         tone === 'muted' ? 'border-gray-200 bg-[#F8F9F6]' : 'border-gray-200 bg-white';
+    const hasHeading = Boolean(title) || Boolean(description);
 
     return (
-        <div className={`rounded-[12px] border px-4 py-4 sm:px-5 ${toneClass}`}>
-            <p className="font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#374151]">{title}</p>
-            {description ? <p className="mt-1 font-body text-xs text-[#6B7280]">{description}</p> : null}
-            <div className="mt-4">{children}</div>
+        <div className={`rounded-[12px] border px-2 py-4 sm:px-5 ${toneClass}`}>
+            {title ? (
+                <p className="font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#374151]">{title}</p>
+            ) : null}
+            {description ? (
+                <p className={`font-body text-xs text-[#6B7280] ${title ? 'mt-1' : ''}`.trim()}>{description}</p>
+            ) : null}
+            <div className={`min-w-0 ${hasHeading ? 'mt-4' : ''}`.trim()}>{children}</div>
         </div>
     );
 }
 
 /**
+ * Same Crafted-for-you slot cards on Meal Plan Summary and Cook It Yourself.
+ *
  * @param {object} props
- * @param {Array<{ id: string; title: string; category: string; safetyAlerts: object[]; sickleCellHighlights: string[]; hasG6pdTrigger: boolean; detailView?: object }>} props.meals
+ * @param {Array<{ id: string; title: string; category: string; imageUrl?: string; macros?: object; safetyAlerts: object[]; sickleCellHighlights: string[]; hasG6pdTrigger: boolean; detailView?: object }>} props.meals
  * @param {(meal: object) => void} [props.onOpenMeal]
+ * @param {boolean} [props.fullDetails] Kept for callers; both paths use ProtocolMealSlotCard.
  */
-export function DayMealsTabPanel({ meals, onOpenMeal }) {
+export function DayMealsTabPanel({ meals, onOpenMeal, fullDetails: _fullDetails = false }) {
     if (meals.length === 0) {
         return <p className="font-body text-sm text-[#555555]">No meals assigned for this day.</p>;
     }
 
-    /** @type {Record<string, typeof meals>} */
-    const byCategory = meals.reduce((acc, meal) => {
-        if (!acc[meal.category]) {
-            acc[meal.category] = [];
+    /** @type {Array<{ title: string; meals: typeof meals }>} */
+    const slots = [];
+
+    for (const row of PLAN_MACRO_CATEGORY_ROWS) {
+        const categoryMeals = meals.filter((meal) => meal.category === row.label);
+        if (categoryMeals.length === 0) {
+            continue;
         }
 
-        acc[meal.category].push(meal);
+        slots.push({ title: row.label, meals: categoryMeals });
+    }
 
-        return acc;
-    }, {});
+    if (slots.length === 0) {
+        return <p className="font-body text-sm text-[#555555]">No meals assigned for this day.</p>;
+    }
 
     return (
-        <div className="space-y-6">
-            {Object.entries(byCategory).map(([category, categoryMeals]) => (
-                <section key={category} className="rounded-[12px] border border-gray-200 bg-white px-4 py-4 sm:px-5">
-                    <h2 className="font-montserrat text-sm font-bold uppercase tracking-[0.12em] text-[#5A6B44]">
-                        {category}
-                    </h2>
-                    <ul className="mt-4 space-y-4">
-                        {categoryMeals.map((meal) => {
-                            const hasHighlights =
-                                meal.hasG6pdTrigger ||
-                                meal.safetyAlerts.length > 0 ||
-                                meal.sickleCellHighlights.length > 0;
-
-                            return (
-                                <li key={meal.id} className="border-t border-gray-100 pt-4 first:border-t-0 first:pt-0">
-                                    {onOpenMeal ? (
-                                        <button
-                                            type="button"
-                                            onClick={() => onOpenMeal(meal)}
-                                            className="text-left font-montserrat text-sm font-bold text-[#262A22] hover:text-[#5A6B44] hover:underline"
-                                        >
-                                            {meal.title}
-                                        </button>
-                                    ) : (
-                                        <p className="font-montserrat text-sm font-bold text-[#262A22]">{meal.title}</p>
-                                    )}
-
-                                    {hasHighlights ? (
-                                        <div className="mt-3 space-y-2">
-                                            <p className="font-montserrat text-[10px] font-bold uppercase tracking-[0.14em] text-[#5A6B44]">
-                                                Highlights
-                                            </p>
-                                            {meal.hasG6pdTrigger ? (
-                                                <div>
-                                                    <NutrientBadge type="G6PD Safety Alert" />
-                                                </div>
-                                            ) : null}
-                                            {meal.safetyAlerts.length > 0 ? (
-                                                <SafetyAlerts alerts={meal.safetyAlerts} />
-                                            ) : null}
-                                            {meal.sickleCellHighlights.length > 0 ? (
-                                                <div className="flex flex-wrap gap-2">
-                                                    {meal.sickleCellHighlights.map((badge) => (
-                                                        <NutrientBadge key={`${meal.id}-${badge}`} type={badge} />
-                                                    ))}
-                                                </div>
-                                            ) : null}
-                                        </div>
-                                    ) : (
-                                        <p className="mt-2 font-body text-xs text-[#6B7280]">No sickle-cell or safety highlights.</p>
-                                    )}
-                                </li>
-                            );
-                        })}
-                    </ul>
-                </section>
+        <div className="flex flex-col gap-4">
+            {slots.map((slot) => (
+                <ProtocolMealSlotCard
+                    key={slot.title}
+                    title={slot.title}
+                    selectedMeals={slot.meals}
+                    multiSelect={slot.meals.length > 1}
+                    onViewDetails={onOpenMeal}
+                />
             ))}
         </div>
     );
@@ -202,8 +178,18 @@ export function DayMealsTabPanel({ meals, onOpenMeal }) {
  * @param {Partial<Record<string, unknown[]>>} props.categories
  * @param {string} [props.dayLabel]
  * @param {string} [props.planCategoryLabel]
+ * @param {string | null | undefined} [props.craftKey] Reserved for callers; day targets are not shown.
+ * @param {number} [props.planTierCalories] Reserved for callers; day targets are not shown.
+ * @param {Record<string, unknown> | null | undefined} [props.nutritionPlan]
  */
-export function DayMacronutrientsTabPanel({ categories, dayLabel = 'Day', planCategoryLabel = '' }) {
+export function DayMacronutrientsTabPanel({
+    categories,
+    dayLabel = 'Day',
+    planCategoryLabel = '',
+    craftKey: _craftKey = 'full',
+    planTierCalories: _planTierCalories = 0,
+    nutritionPlan = null,
+}) {
     const activeDayTotals = useMemo(() => sumActiveDayMacros(categories), [categories]);
 
     return (
@@ -212,13 +198,12 @@ export function DayMacronutrientsTabPanel({ categories, dayLabel = 'Day', planCa
             categories={categories}
             dayLabel={dayLabel}
             planCategoryLabel={planCategoryLabel}
+            nutritionPlan={nutritionPlan}
         />
     );
 }
 
-function MicronutrientRdiTable({ rows, planTierCalories = 0 }) {
-    const tierEnforced = isMicronutrientTierEnforced(planTierCalories);
-
+function MicronutrientRdiTable({ rows }) {
     if (rows.length === 0) {
         return (
             <p className="font-body text-sm text-[#555555]">No micronutrient data available for this day.</p>
@@ -248,13 +233,12 @@ function MicronutrientRdiTable({ rows, planTierCalories = 0 }) {
     sections.sort((a, b) => a.order - b.order);
 
     return (
-        <div className="space-y-3">
-            <div
+        <div
             role="region"
             aria-label="Micronutrients with percent RDI"
-            className="overflow-x-auto rounded-[12px] border border-gray-200 bg-white"
+            className="w-full overflow-x-auto rounded-[12px] border border-gray-200 bg-white"
         >
-            <table className="w-full min-w-[320px] border-collapse text-left text-sm">
+            <table className="w-full min-w-0 border-collapse text-left text-sm">
                 <thead>
                     <tr className="border-b border-gray-200 bg-[#F8F9F6]">
                         <th className="px-3 py-2.5 font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#374151]">
@@ -281,7 +265,7 @@ function MicronutrientRdiTable({ rows, planTierCalories = 0 }) {
                             </tr>
                             {section.rows.map((row) => (
                                 <tr key={`${section.title}-${row.label}`} className="border-b border-gray-100 last:border-b-0">
-                                    <td className="px-3 py-2.5 font-montserrat text-sm font-medium text-[#374151]">
+                                    <td className="px-3 py-2.5 font-montserrat text-sm font-medium leading-snug text-[#374151]">
                                         {row.label}
                                         {BEST_EFFORT_NUTRIENT_LABELS.has(row.label) ? (
                                             <span className="ml-1.5 font-body text-xs font-normal text-[#555555]">
@@ -289,23 +273,20 @@ function MicronutrientRdiTable({ rows, planTierCalories = 0 }) {
                                             </span>
                                         ) : null}
                                     </td>
-                                    <td className="px-3 py-2.5 text-right font-montserrat text-sm font-bold tabular-nums text-[#1F2937]">
+                                    <td className="whitespace-nowrap px-3 py-2.5 text-right font-montserrat text-sm font-bold tabular-nums text-[#1F2937]">
                                         {row.formattedTotal}
                                     </td>
                                     <td
                                         className={[
-                                            'px-3 py-2.5 text-right font-montserrat text-sm font-bold tabular-nums',
-                                            BEST_EFFORT_NUTRIENT_LABELS.has(row.label)
-                                                ? 'text-[#555555]'
-                                                : tierEnforced
-                                                  && row.rdiPercent != null
-                                                  && row.rdiPercent < FLOOR_RDI_TARGET_PERCENT
-                                                  && !row.label.includes('Sugar')
-                                                  && !row.label.includes('Sodium')
-                                                    ? 'text-amber-800'
-                                                    : row.rdiPercent != null && row.rdiPercent >= 20
-                                                      ? 'text-[#5A6B44]'
-                                                      : 'text-[#1F2937]',
+                                            'whitespace-nowrap px-3 py-2.5 text-right font-montserrat text-sm font-bold tabular-nums',
+                                            row.rdiPercent != null
+                                              && row.rdiPercent < FLOOR_RDI_TARGET_PERCENT
+                                              && !row.label.includes('Sugar')
+                                              && !row.label.includes('Sodium')
+                                                ? 'text-[#C44F5D]'
+                                                : row.rdiPercent != null && row.rdiPercent >= 20
+                                                  ? 'text-[#5A6B44]'
+                                                  : 'text-[#1F2937]',
                                         ].join(' ')}
                                     >
                                         {row.formattedRdiPercent ?? '—'}
@@ -317,7 +298,6 @@ function MicronutrientRdiTable({ rows, planTierCalories = 0 }) {
                 </tbody>
             </table>
         </div>
-        </div>
     );
 }
 
@@ -326,29 +306,49 @@ function MicronutrientRdiTable({ rows, planTierCalories = 0 }) {
  * @param {Partial<Record<string, unknown[]>>} props.categories
  * @param {string} [props.dayLabel]
  * @param {number} [props.planTierCalories]
- * @param {() => void} [props.onEditMeals]
+ * @param {string | null} [props.sex]
+ * @param {string | null} [props.activityLevel]
+ * @param {number | null} [props.dailyCalories]
  */
 export function DayMicronutrientsTabPanel({
     categories,
     dayLabel = 'Day',
     planTierCalories = 0,
-    onEditMeals,
+    sex = null,
+    activityLevel = null,
+    dailyCalories = null,
 }) {
-    const micronutrientRows = useMemo(() => aggregateDayMicronutrientRows(categories), [categories]);
+    const micronutrientRows = useMemo(() => {
+        const calories = Number(dailyCalories ?? planTierCalories);
+        const targets = calculateMicronutrientTargets({
+            sex: sex ?? 'female',
+            activityLevel: activityLevel ?? 'sedentary',
+            dailyCalories: Number.isFinite(calories) && calories > 0 ? calories : null,
+        });
+
+        return aggregateDayMicronutrientRows(categories, targets);
+    }, [activityLevel, categories, dailyCalories, planTierCalories, sex]);
 
     return (
-        <SummarySection
-            title="Micronutrients"
-            description={`Full-day totals and % of daily reference intake for ${dayLabel.toLowerCase()}. Vitamin D is shown as best effort — it is difficult to reach 100% from food alone. Scroll below the table for nutrient guidance.`}
-        >
+        <div className="space-y-4">
+            <p className="font-body text-xs text-[#6B7280]">
+                {`Full-day totals and % of daily reference intake for ${dayLabel}.`}
+            </p>
+            <MicronutrientRdiTable rows={micronutrientRows} />
             <CaloricThresholdNotice planTierCalories={planTierCalories} />
-            <MicronutrientRdiTable rows={micronutrientRows} planTierCalories={planTierCalories} />
-            <DayMicronutrientGapSuggestions
-                categories={categories}
-                planTierCalories={planTierCalories}
-                onEditMeals={onEditMeals}
-            />
-        </SummarySection>
+            <button
+                type="button"
+                className="w-full rounded-[12px] border border-[#6E8C47]/25 bg-[#6E8C47]/10 px-3 py-3 text-left outline-none transition hover:bg-[#6E8C47]/15 focus-visible:ring-2 focus-visible:ring-[#6E8C47] focus-visible:ring-offset-2"
+            >
+                <span className="font-montserrat text-xs font-bold uppercase tracking-[0.12em] text-[#5A6B44]">
+                    Vitamin D
+                </span>
+                <span className="mt-1 block font-body text-sm leading-snug text-[#374151]">
+                    Vitamin D is shown as a best-effort estimate — it is difficult to reach 100% from food alone.
+                    The best source is sun exposure.
+                </span>
+            </button>
+        </div>
     );
 }
 
@@ -437,13 +437,93 @@ export function DaySickleCellTabPanel({ categories }) {
 }
 
 /**
+ * Tabbed macronutrients + micronutrients panel for a single day (consultation or admin preview).
+ *
+ * @param {object} props
+ * @param {Partial<Record<string, unknown[]>>} props.categories
+ * @param {string} [props.dayLabel]
+ * @param {string} [props.planCategoryLabel]
+ * @param {string | null | undefined} [props.craftKey]
+ * @param {number} [props.planTierCalories]
+ * @param {string | null} [props.sex]
+ * @param {string | null} [props.activityLevel]
+ * @param {number | null} [props.dailyCalories]
+ * @param {Record<string, unknown> | null | undefined} [props.nutritionPlan]
+ * @param {DayMacroMicroTabId} [props.initialTab]
+ */
+export function DayMacroMicroTabPanel({
+    categories,
+    dayLabel = 'Day',
+    planCategoryLabel = '',
+    craftKey = 'full',
+    planTierCalories = 0,
+    sex = null,
+    activityLevel = null,
+    dailyCalories = null,
+    nutritionPlan = null,
+    initialTab = 'macronutrients',
+}) {
+    const [tab, setTab] = useState(initialTab);
+
+    return (
+        <div className="space-y-4">
+            <div
+                className="flex w-full flex-wrap items-center gap-2"
+                role="tablist"
+                aria-label={`${dayLabel} nutrition`}
+            >
+                {DAY_MACRO_MICRO_TABS.map((item) => (
+                    <Button
+                        key={item.id}
+                        type="button"
+                        role="tab"
+                        aria-selected={tab === item.id}
+                        label={item.label}
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setTab(item.id)}
+                        className={['shrink-0', tab === item.id ? 'bg-[#5A6B44]/10' : ''].join(' ').trim()}
+                    />
+                ))}
+            </div>
+
+            {tab === 'macronutrients' ? (
+                <DayMacronutrientsTabPanel
+                    categories={categories}
+                    dayLabel={dayLabel}
+                    planCategoryLabel={planCategoryLabel}
+                    craftKey={craftKey}
+                    planTierCalories={planTierCalories}
+                    nutritionPlan={nutritionPlan}
+                />
+            ) : (
+                <DayMicronutrientsTabPanel
+                    categories={categories}
+                    dayLabel={dayLabel}
+                    planTierCalories={planTierCalories}
+                    sex={sex}
+                    activityLevel={activityLevel}
+                    dailyCalories={dailyCalories}
+                />
+            )}
+        </div>
+    );
+}
+
+/**
  * @param {object} props
  * @param {DaySummaryTabId} props.tab
  * @param {Partial<Record<string, unknown[]>>} props.categories
  * @param {string} [props.dayLabel]
  * @param {string} [props.planCategoryLabel]
+ * @param {number} [props.planTierCalories]
+ * @param {string | null | undefined} [props.craftKey]
+ * @param {string | null} [props.sex]
+ * @param {string | null} [props.activityLevel]
+ * @param {number | null} [props.dailyCalories]
+ * @param {Record<string, unknown> | null | undefined} [props.nutritionPlan]
  * @param {(meal: object) => void} [props.onOpenMeal]
- * @param {() => void} [props.onEditMeals]
+ * @param {boolean} [props.fullMealDetails]
  */
 export default function DayNutritionalSummaryPanel({
     tab,
@@ -451,20 +531,30 @@ export default function DayNutritionalSummaryPanel({
     dayLabel = 'Day',
     planCategoryLabel = '',
     planTierCalories = 0,
+    craftKey = 'full',
+    sex = null,
+    activityLevel = null,
+    dailyCalories = null,
+    nutritionPlan = null,
     onOpenMeal,
-    onEditMeals,
+    fullMealDetails = false,
 }) {
     const meals = useMemo(() => listDayMealsWithHighlights(categories), [categories]);
 
     switch (tab) {
         case 'meals':
-            return <DayMealsTabPanel meals={meals} onOpenMeal={onOpenMeal} />;
+            return (
+                <DayMealsTabPanel meals={meals} onOpenMeal={onOpenMeal} fullDetails={fullMealDetails} />
+            );
         case 'macronutrients':
             return (
                 <DayMacronutrientsTabPanel
                     categories={categories}
                     dayLabel={dayLabel}
                     planCategoryLabel={planCategoryLabel}
+                    craftKey={craftKey}
+                    planTierCalories={planTierCalories}
+                    nutritionPlan={nutritionPlan}
                 />
             );
         case 'micronutrients':
@@ -473,7 +563,9 @@ export default function DayNutritionalSummaryPanel({
                     categories={categories}
                     dayLabel={dayLabel}
                     planTierCalories={planTierCalories}
-                    onEditMeals={onEditMeals}
+                    sex={sex}
+                    activityLevel={activityLevel}
+                    dailyCalories={dailyCalories}
                 />
             );
         case 'allergies':

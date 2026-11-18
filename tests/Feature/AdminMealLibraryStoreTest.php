@@ -19,7 +19,8 @@ test('authenticated user can store a meal from the meal library form', function 
             'total_fat' => 8,
             'category' => 'Meal',
             'meal_plan_tag' => 'Balanced',
-            'diet_tags' => ['Vegan', 'Gluten-free'],
+            'diet_tags' => ['Vegan', 'High protein'],
+            'food_filter_tags' => ['gluten', 'nuts'],
             'cycle_phase' => 'luteal',
             'description' => 'Test instructions',
             'highlight' => 'A highlight',
@@ -33,7 +34,9 @@ test('authenticated user can store a meal from the meal library form', function 
         ->and($meal->meal_plan_tags)->toBe(['Balanced'])
         ->and($meal->cycle_phases)->toBe(['luteal'])
         ->and($meal->cycle_phase)->toBe(CyclePhase::Luteal)
-        ->and($meal->diet_tags)->toBe(['Vegan', 'Gluten-free'])
+        ->and($meal->diet_tags)->toBe(['Vegan', 'High protein'])
+        ->and($meal->food_filter_tags)->toBe(['gluten', 'nuts'])
+        ->and($meal->safety_alert_tags)->toBe(['Gluten', 'Nuts'])
         ->and($meal->diet_type)->toBeNull()
         ->and($meal->nutrition_aggregates_synced)->toBeFalse();
 });

@@ -174,16 +174,9 @@ export function OnboardingFlowViewInner({
         [patch, computeTargets, flowContext],
     );
 
-    const onGenderSelect = useCallback(
+    const onGenderChange = useCallback(
         (value) => {
             patch({ gender: value });
-
-            const next = advanceMaleOnboardingStep('gender', { gender: value });
-
-            if (next) {
-                setCurrentStep(next);
-                patch({ currentStep: next });
-            }
         },
         [patch],
     );
@@ -232,7 +225,7 @@ export function OnboardingFlowViewInner({
                         {...shared}
                         sex={wizardState.gender}
                         options={SEX_OPTIONS}
-                        onSexSelect={onGenderSelect}
+                        onSexChange={onGenderChange}
                     />
                 );
             case 'birthday':

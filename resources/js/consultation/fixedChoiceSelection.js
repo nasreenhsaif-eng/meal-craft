@@ -1,13 +1,18 @@
 /** @typedef {'sideSalads' | 'desserts' | 'soup'} FixedChoiceCategoryKey */
 
-/** Side salad / dessert / soup — pick exactly 2 total across these categories. */
+/** Side salad / dessert / soup — pick 1–2 total across these categories. */
 export const FIXED_CHOICE_CATEGORY_KEYS = Object.freeze(
     /** @type {const} */ (['sideSalads', 'desserts', 'soup']),
 );
 
-export const FIXED_CHOICE_REQUIRED_COUNT = 2;
+export const FIXED_CHOICE_MAX_COUNT = 2;
 
-/** Display order for the horizontal toggle bar. */
+/** @deprecated Use {@link FIXED_CHOICE_MAX_COUNT} */
+export const FIXED_CHOICE_REQUIRED_COUNT = FIXED_CHOICE_MAX_COUNT;
+
+export const FIXED_CHOICE_MIN_COUNT = 1;
+
+/** Display order for the horizontal toggle bar — soup is always last. */
 export const FIXED_CHOICE_TOGGLE_OPTIONS = Object.freeze([
     {
         selectionKey: 'sideSalads',
@@ -17,18 +22,18 @@ export const FIXED_CHOICE_TOGGLE_OPTIONS = Object.freeze([
         mealTypeLabel: 'Side salad',
     },
     {
-        selectionKey: 'soup',
-        label: 'Soup',
-        deckSuffix: 'soup',
-        header: 'Soups',
-        mealTypeLabel: 'Soup',
-    },
-    {
         selectionKey: 'desserts',
         label: 'Dessert',
         deckSuffix: 'dessert',
         header: 'Desserts',
         mealTypeLabel: 'Dessert',
+    },
+    {
+        selectionKey: 'soup',
+        label: 'Soup',
+        deckSuffix: 'soup',
+        header: 'Soups',
+        mealTypeLabel: 'Soup',
     },
 ]);
 
@@ -49,7 +54,9 @@ export function countFixedChoiceSelections(categorySelections) {
  * @param {Partial<Record<FixedChoiceCategoryKey, string[]>> | null | undefined} categorySelections
  */
 export function isFixedChoiceComplete(categorySelections) {
-    return countFixedChoiceSelections(categorySelections) === FIXED_CHOICE_REQUIRED_COUNT;
+    const count = countFixedChoiceSelections(categorySelections);
+
+    return count >= FIXED_CHOICE_MIN_COUNT && count <= FIXED_CHOICE_MAX_COUNT;
 }
 
 /**
@@ -76,19 +83,20 @@ export function visibleFixedChoiceCategoriesFromSelections(categorySelections) {
  * @returns {{ next: Partial<Record<FixedChoiceCategoryKey, string[]>>; blocked: boolean }}
  */
 export function applyFixedChoiceToggle(current, categoryKey, mealId) {
-    const existing = current[categoryKey] ?? [];
-    const isOn = existing.includes(mealId);
+    const normalizedId = String(mealId);
+    const existing = (current[categoryKey] ?? []).map((id) => String(id));
+    const isOn = existing.includes(normalizedId);
 
     if (isOn) {
         return {
-            next: { ...current, [categoryKey]: existing.filter((id) => id !== mealId) },
+            next: { ...current, [categoryKey]: existing.filter((id) => id !== normalizedId) },
             blocked: false,
         };
     }
 
     if (existing.length >= 1) {
         return {
-            next: { ...current, [categoryKey]: [mealId] },
+            next: { ...current, [categoryKey]: [normalizedId] },
             blocked: false,
         };
     }
@@ -98,12 +106,61 @@ export function applyFixedChoiceToggle(current, categoryKey, mealId) {
         0,
     );
 
-    if (otherTotal + existing.length >= FIXED_CHOICE_REQUIRED_COUNT) {
+    if (otherTotal + existing.length >= FIXED_CHOICE_MAX_COUNT) {
         return { next: current, blocked: true };
     }
 
     return {
-        next: { ...current, [categoryKey]: [...existing, mealId] },
+        next: { ...current, [categoryKey]: [...existing, normalizedId] },
         blocked: false,
     };
+}
+
+/**
+ * Meals to show under a checked side category. Falls back to the recommended/first card
+ * when saved ids no longer match the on-screen deck.
+ *
+ * @param {Array<string|number>} selectedIds
+ * @param {object[]} cards
+ * @param {Partial<Record<string, object[]>>} [allDecks]
+ * @returns {object[]}
+ */
+export function resolveFixedChoiceSelectedMeals(selectedIds, cards = [], allDecks = {}) {
+    const normalizedIds = (selectedIds ?? []).map((id) => String(id)).filter((id) => id !== '');
+    /** @type {object[]} */
+    const resolved = [];
+    const seen = new Set();
+
+    for (const id of normalizedIds) {
+        const fromCategory = (cards ?? []).find((meal) => String(meal?.id ?? '') === id);
+        let found = fromCategory ?? null;
+
+        if (!found) {
+            for (const deck of Object.values(allDecks ?? {})) {
+                found = (deck ?? []).find((meal) => String(meal?.id ?? '') === id) ?? null;
+                if (found) {
+                    break;
+                }
+            }
+        }
+
+        if (!found || seen.has(String(found.id))) {
+            continue;
+        }
+
+        seen.add(String(found.id));
+        resolved.push(found);
+    }
+
+    if (resolved.length > 0) {
+        return resolved;
+    }
+
+    if (normalizedIds.length === 0) {
+        return [];
+    }
+
+    const fallback = (cards ?? []).find((meal) => meal?.isRecommended || meal?.is_recommended) ?? (cards ?? [])[0];
+
+    return fallback ? [fallback] : [];
 }

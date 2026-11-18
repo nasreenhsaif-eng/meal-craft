@@ -34,16 +34,16 @@ enum MealPlanSlotType: string
     public static function daySlotTemplate(): array
     {
         $out = [];
-        for ($i = 1; $i <= 2; $i++) {
+        for ($i = 1; $i <= 1; $i++) {
             $out[] = [self::Breakfast, $i];
         }
-        for ($i = 1; $i <= 4; $i++) {
+        for ($i = 1; $i <= 6; $i++) {
             $out[] = [self::Main, $i];
         }
         for ($i = 1; $i <= 2; $i++) {
             $out[] = [self::Salad, $i];
         }
-        for ($i = 1; $i <= 2; $i++) {
+        for ($i = 1; $i <= 3; $i++) {
             $out[] = [self::Dessert, $i];
         }
         for ($i = 1; $i <= 2; $i++) {

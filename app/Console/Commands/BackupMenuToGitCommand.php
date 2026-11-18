@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Services\MealLibraryRefinerSourceSync;
 use App\Services\MenuDevelopmentCsvSync;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Process;
@@ -14,13 +15,16 @@ class BackupMenuToGitCommand extends Command
 
     protected $description = 'Export live menu library from the database to CSV, stage meal images, commit, and push — run at end of day after UI edits';
 
-    public function handle(MenuDevelopmentCsvSync $menuDevelopmentCsvSync): int
+    public function handle(MenuDevelopmentCsvSync $menuDevelopmentCsvSync, MealLibraryRefinerSourceSync $refinerSourceSync): int
     {
         if (! is_dir(base_path('.git'))) {
             $this->error('This project is not a git repository.');
 
             return self::FAILURE;
         }
+
+        $refinerSnapshots = $refinerSourceSync->syncAllManagedMealsFromDatabase();
+        $this->info(sprintf('Snapshotted %d managed rotation meal(s) into library_refiner_overrides.php.', $refinerSnapshots));
 
         $counts = $menuDevelopmentCsvSync->syncAllFromDatabase();
 
@@ -30,6 +34,7 @@ class BackupMenuToGitCommand extends Command
             'git', 'add',
             'database/data/menu/meals.csv',
             'database/data/menu/ingredients.csv',
+            'database/data/menu/library_refiner_overrides.php',
             'database/data/menu/legacy_ingredient_id_map.json',
         ]);
         if (! $csvAdd->successful()) {

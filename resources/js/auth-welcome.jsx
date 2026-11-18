@@ -1,6 +1,6 @@
 import { createRoot } from 'react-dom/client';
 import { StrictMode } from 'react';
-import WelcomePage from './Pages/Auth/WelcomePage.jsx';
+import LandingPage from './Pages/Landing/LandingPage.jsx';
 
 const rootEl = document.getElementById('mc-auth-welcome-root');
 const configEl = document.getElementById('mc-auth-welcome-config');
@@ -16,7 +16,7 @@ if (rootEl && configEl) {
 
     createRoot(rootEl).render(
         <StrictMode>
-            <WelcomePage loginHref={config.loginHref ?? '/login'} />
+            <LandingPage loginHref={config.loginHref ?? '/login'} />
         </StrictMode>,
     );
 }

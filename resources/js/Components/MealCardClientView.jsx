@@ -126,7 +126,7 @@ export default function MealCardClientView({
                         />
                         <Button
                             type="button"
-                            variant={selected ? 'primary' : 'secondary'}
+                            variant={selected ? 'secondary' : 'ghost'}
                             disabled={disabled}
                             label={selected ? 'SELECTED' : 'CRAFT THIS MEAL'}
                             aria-label={
@@ -134,7 +134,9 @@ export default function MealCardClientView({
                                     ? `${title} is selected for your craft. Tap to remove.`
                                     : `Craft the ${title} meal`
                             }
-                            className="w-full justify-center rounded-[12px] !h-[36px] !min-h-[36px] !px-4 !text-[12px]"
+                            className={`w-full justify-center rounded-[12px] !h-[36px] !min-h-[36px] !px-4 !text-[12px] ${
+                                selected ? '' : 'border border-[#5A6B44]'
+                            }`.trim()}
                             onClick={(e) => {
                                 e.stopPropagation();
                                 onToggleSelected?.();

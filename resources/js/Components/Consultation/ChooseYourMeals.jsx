@@ -1,38 +1,54 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import PillButton from '../Atoms/Button/Button.jsx';
+import Button from '../Atoms/Button.jsx';
 import SquareCheckbox from '../Atoms/Icons/SquareCheckbox.jsx';
 import StackedDeckCarousel from '../MealCard/StackedDeckCarousel.jsx';
 import MealCardClientViewNano from '../MealCardClientViewNano.jsx';
+import ProtocolMealSlotCard from './ProtocolMealSlotCard.jsx';
+import ProtocolMealOptionsScreen from './ProtocolMealOptionsScreen.jsx';
+import ProtocolFixedChoiceSides from './ProtocolFixedChoiceSides.jsx';
 import {
     FIXED_CHOICE_CATEGORY_KEYS,
+    FIXED_CHOICE_MAX_COUNT,
+    FIXED_CHOICE_MIN_COUNT,
     FIXED_CHOICE_REQUIRED_COUNT,
     FIXED_CHOICE_SECTIONS,
     FIXED_CHOICE_TOGGLE_OPTIONS,
     applyFixedChoiceToggle,
     countFixedChoiceSelections,
     isFixedChoiceComplete,
-    visibleFixedChoiceCategoriesFromSelections,
 } from '../../consultation/fixedChoiceSelection.js';
+import {
+    macroCaloriePercentsFromGrams,
+    macroSplitPercentagesFromPlan,
+} from '../../consultation/craftCalorieTargets.js';
+import { sumConsultationMealCardMacros } from '../../consultation/balanceMainMealProtein.ts';
+import { isBalancedAntiInflammatoryProtocol } from '../Molecules/Onboarding/dietProtocolUtils.js';
 
 export {
     FIXED_CHOICE_CATEGORY_KEYS,
+    FIXED_CHOICE_MAX_COUNT,
+    FIXED_CHOICE_MIN_COUNT,
     FIXED_CHOICE_REQUIRED_COUNT,
     FIXED_CHOICE_SECTIONS,
     FIXED_CHOICE_TOGGLE_OPTIONS,
     applyFixedChoiceToggle,
     countFixedChoiceSelections,
     isFixedChoiceComplete,
-    visibleFixedChoiceCategoriesFromSelections,
 } from '../../consultation/fixedChoiceSelection.js';
 
 /** @typedef {{ id: string; mealType?: string; category?: string; caloriesNumber?: number }} ConsultationMeal */
 
 /** @typedef {'breakfasts' | 'meals' | 'sideSalads' | 'desserts' | 'soup'} SelectionCategoryKey */
 
-/** Required categories for Full Craft NEXT (pick 2 fixed slots separate). */
+/** Required categories for Full Craft NEXT (breakfast is auto-assigned; pick 1–2 fixed slots separate). */
 export const FULL_CRAFT_REQUIRED_SELECTION_KEYS = Object.freeze(
-    /** @type {const} */ (['breakfasts', 'meals']),
+    /** @type {const} */ (['meals']),
+);
+
+/** Auto-assigned from the weekly rotation — not shown as a customer pick step. */
+export const AUTO_ASSIGNED_SELECTION_KEYS = Object.freeze(
+    /** @type {const} */ (['breakfasts']),
 );
 
 /**
@@ -88,14 +104,250 @@ export function soupOfTheDayMeals(source) {
     return soups.length > 0 ? soups.slice(0, 2) : [];
 }
 
-/** Max cards shown per category deck in consultation (matches fixture / product caps). */
+/** Max cards shown per category deck in consultation (matches weekly main carousel: 6 mains). */
 export const CONSULTATION_DECK_OPTION_LIMITS = Object.freeze({
     breakfast: 2,
-    meal: 4,
+    meal: 6,
     sidesalad: 2,
-    dessert: 2,
+    /** Balanced keeps 3 (baked + fruit + chia). TBD Weekly Protocol uses 2 via preferBakedDesserts. */
+    dessert: 3,
     soup: 2,
 });
+
+/**
+ * Prefer scheduled/assigned cards first, then fill from the catalog up to the deck limit.
+ *
+ * @param {ConsultationMeal[]} preferred
+ * @param {ConsultationMeal[]} filler
+ * @param {number} limit
+ * @returns {ConsultationMeal[]}
+ */
+export function padConsultationDeckOptions(preferred, filler, limit) {
+    /** @type {ConsultationMeal[]} */
+    const deck = [];
+    const seen = new Set();
+
+    for (const list of [preferred, filler]) {
+        for (const meal of list ?? []) {
+            const id = normalizeConsultationMealId(meal?.id);
+            if (id === '' || seen.has(id)) {
+                continue;
+            }
+
+            seen.add(id);
+            deck.push(meal);
+
+            if (deck.length >= limit) {
+                return deck;
+            }
+        }
+    }
+
+    return deck;
+}
+
+/**
+ * @param {unknown} id
+ */
+export function normalizeConsultationMealId(id) {
+    if (id === null || id === undefined) {
+        return '';
+    }
+
+    return String(id);
+}
+
+/**
+ * Resolve selected meals in selection order, looking in the slot deck first, then every on-screen deck.
+ *
+ * @param {Array<string|number>} selectedIds
+ * @param {ConsultationMeal[]} [categoryCards]
+ * @param {Partial<Record<string, ConsultationMeal[]>> | null | undefined} [allDecks]
+ * @returns {ConsultationMeal[]}
+ */
+export function selectedMealsForSlotFromDecks(selectedIds, categoryCards = [], allDecks = null) {
+    /** @type {Map<string, ConsultationMeal>} */
+    const byId = new Map();
+
+    for (const meal of categoryCards ?? []) {
+        const id = normalizeConsultationMealId(meal?.id);
+        if (id !== '') {
+            byId.set(id, meal);
+        }
+    }
+
+    for (const cards of Object.values(allDecks ?? {})) {
+        for (const meal of cards ?? []) {
+            const id = normalizeConsultationMealId(meal?.id);
+            if (id !== '' && !byId.has(id)) {
+                byId.set(id, meal);
+            }
+        }
+    }
+
+    /** @type {ConsultationMeal[]} */
+    const selected = [];
+    const seen = new Set();
+
+    for (const rawId of selectedIds ?? []) {
+        const id = normalizeConsultationMealId(rawId);
+        if (id === '' || seen.has(id)) {
+            continue;
+        }
+
+        const meal = byId.get(id);
+        if (!meal) {
+            continue;
+        }
+
+        seen.add(id);
+        selected.push(meal);
+    }
+
+    return selected;
+}
+
+/**
+ * Card arrays shown in weekly category carousels (same objects MacroGrid reads).
+ *
+ * @param {{
+ *   meals?: ConsultationMeal[];
+ *   assignedMealsByCategory?: Partial<Record<SelectionCategoryKey, ConsultationMeal[]>> | null;
+ *   scheduledSoupMeals?: ConsultationMeal[];
+ *   soupCatalogMeals?: ConsultationMeal[];
+ *   dietProtocol?: string | null;
+ *   includeBreakfast?: boolean;
+ * }} options
+ * @returns {Record<SelectionCategoryKey, ConsultationMeal[]>}
+ */
+export function buildWeeklyConsultationDisplayDecks({
+    meals = [],
+    assignedMealsByCategory = null,
+    scheduledSoupMeals = [],
+    soupCatalogMeals = [],
+    dietProtocol = null,
+    includeBreakfast = true,
+} = {}) {
+    /** @type {Record<SelectionCategoryKey, ConsultationMeal[]>} */
+    const decks = {
+        breakfasts: [],
+        meals: [],
+        sideSalads: [],
+        desserts: [],
+        soup: [],
+    };
+
+    const catalogMains = filterMealsByCategory(meals ?? [], 'Meal');
+
+    if (includeBreakfast) {
+        const catalogBreakfasts = filterMealsByCategory(meals ?? [], 'Breakfast').filter(
+            (meal) => typeof meal.savoryEggCount === 'number' && meal.savoryEggCount > 0,
+        );
+        decks.breakfasts = padConsultationDeckOptions(
+            assignedMealsByCategory?.breakfasts ?? [],
+            catalogBreakfasts,
+            CONSULTATION_DECK_OPTION_LIMITS.breakfast,
+        );
+    }
+
+    decks.meals = padConsultationDeckOptions(
+        assignedMealsByCategory?.meals ?? [],
+        catalogMains,
+        CONSULTATION_DECK_OPTION_LIMITS.meal,
+    );
+
+    const catalogSource = (soupCatalogMeals.length > 0 ? soupCatalogMeals : meals) ?? [];
+    decks.desserts = consultationDessertDeckForDay(catalogSource, assignedMealsByCategory?.desserts ?? [], {
+        preferBakedDesserts: isBalancedAntiInflammatoryProtocol(dietProtocol),
+    });
+    decks.sideSalads = consultationSideSaladDeckForDay(meals ?? [], assignedMealsByCategory?.sideSalads ?? []);
+
+    const assignedSoups = assignedMealsByCategory?.soup ?? [];
+    if (assignedSoups.length > 0) {
+        decks.soup = assignedSoups;
+    } else if (scheduledSoupMeals.length > 0) {
+        decks.soup = scheduledSoupMeals;
+    } else {
+        decks.soup = soupOfTheDayMeals(catalogSource);
+    }
+
+    return decks;
+}
+
+/**
+ * Selected meal cards in on-screen deck order (breakfast → meals → sides → dessert → soup).
+ * Only cards that appear in `displayDecks` are returned — same objects the carousels render.
+ *
+ * @param {Partial<Record<SelectionCategoryKey, string[]>> | null | undefined} categorySelections
+ * @param {Partial<Record<SelectionCategoryKey, ConsultationMeal[]>>} displayDecks
+ * @returns {ConsultationMeal[]}
+ */
+export function selectedMealsFromDisplayDecks(categorySelections, displayDecks) {
+    /** @type {Map<string, ConsultationMeal>} */
+    const byId = new Map();
+
+    // Prefer earlier deck slots (breakfast → meals → sides → dessert → soup). First write wins
+    // so a later catalog duplicate cannot replace an on-screen scheduled card.
+    for (const key of ['breakfasts', 'meals', 'sideSalads', 'desserts', 'soup']) {
+        for (const meal of displayDecks?.[key] ?? []) {
+            const id = normalizeConsultationMealId(meal?.id);
+            if (id !== '' && !byId.has(id)) {
+                byId.set(id, meal);
+            }
+        }
+    }
+
+    for (const [bucket, cards] of Object.entries(displayDecks ?? {})) {
+        if (['breakfasts', 'meals', 'sideSalads', 'desserts', 'soup'].includes(bucket)) {
+            continue;
+        }
+
+        for (const meal of cards ?? []) {
+            const id = normalizeConsultationMealId(meal?.id);
+            if (id !== '' && !byId.has(id)) {
+                byId.set(id, meal);
+            }
+        }
+    }
+
+    const selections = categorySelections ?? {};
+    /** @type {ConsultationMeal[]} */
+    const selectedCards = [];
+    const seen = new Set();
+
+    for (const id of [
+        ...(selections.breakfasts ?? []),
+        ...(selections.meals ?? []),
+        ...(selections.sideSalads ?? []),
+        ...(selections.desserts ?? []),
+        ...(selections.soup ?? []),
+    ]) {
+        const key = normalizeConsultationMealId(id);
+        if (key === '' || seen.has(key)) {
+            continue;
+        }
+
+        const meal = byId.get(key);
+        if (!meal) {
+            continue;
+        }
+
+        seen.add(key);
+        selectedCards.push(meal);
+    }
+
+    return selectedCards;
+}
+
+/**
+ * Footer totals from selected ids resolved against the decks currently on screen.
+ *
+ * @param {Partial<Record<SelectionCategoryKey, string[]>> | null | undefined} categorySelections
+ * @param {Partial<Record<SelectionCategoryKey, ConsultationMeal[]>>} displayDecks
+ */
+export function sumSelectedMacrosFromDisplayDecks(categorySelections, displayDecks) {
+    return sumConsultationMealCardMacros(selectedMealsFromDisplayDecks(categorySelections, displayDecks));
+}
 
 const CONSULTATION_SLOT_MEAL_TYPE_LABELS = Object.freeze({
     breakfast: 'Breakfast',
@@ -117,10 +369,178 @@ export function consultationDeckOptionsForSlotKey(source, slotKey) {
         return [];
     }
 
-    const filtered = source.filter((meal) => meal.mealType === mealTypeLabel);
+    const filtered = source.filter((meal) => {
+        if (meal.mealType !== mealTypeLabel) {
+            return false;
+        }
+
+        if (slotKey === 'breakfast') {
+            return typeof meal.savoryEggCount === 'number' && meal.savoryEggCount > 0;
+        }
+
+        return true;
+    });
     const limit = CONSULTATION_DECK_OPTION_LIMITS[slotKey];
 
     return limit !== undefined ? filtered.slice(0, limit) : filtered;
+}
+
+/**
+ * @param {ConsultationMeal} meal
+ */
+export function isChiaDessertMeal(meal) {
+    const title = String(meal.title ?? '');
+
+    return title.includes('Chia');
+}
+
+/**
+ * @param {ConsultationMeal} meal
+ */
+export function isGreekYogurtChiaDessertMeal(meal) {
+    const title = String(meal.title ?? '');
+
+    return isChiaDessertMeal(meal) && title.includes('Greek Yogurt');
+}
+
+/**
+ * @param {ConsultationMeal} meal
+ */
+export function isBakedDessertMeal(meal) {
+    const title = String(meal.title ?? '');
+
+    if (title.includes('Chia') || title.includes('Fruit Salad')) {
+        return false;
+    }
+
+    return ['Brownie', 'Muffin', 'Cake', 'Bar', 'Balls'].some((hint) => title.includes(hint));
+}
+
+/**
+ * Dessert deck: today's rotated dessert (from schedule) first, then fill from the catalog.
+ * Balanced: up to 3 (baked + fruit + one Greek yogurt chia).
+ * TBD Weekly Protocol (`preferBakedDesserts`): up to 2 — chia is a breakfast option, not dessert.
+ *
+ * @param {ConsultationMeal[]} source
+ * @param {ConsultationMeal[]} [scheduledDesserts]
+ * @param {{ preferBakedDesserts?: boolean }} [options]
+ */
+export function consultationDessertDeckForDay(source, scheduledDesserts = [], options = {}) {
+    const { preferBakedDesserts = false } = options;
+    const limit = preferBakedDesserts ? 2 : CONSULTATION_DECK_OPTION_LIMITS.dessert;
+    /** @type {ConsultationMeal[]} */
+    const deck = [];
+    const seen = new Set();
+    let hasChia = false;
+    let hasBaked = false;
+
+    for (const meal of scheduledDesserts) {
+        const id = normalizeConsultationMealId(meal?.id);
+        if (id === '' || seen.has(id)) {
+            continue;
+        }
+
+        // Chia moved to breakfast on TBD Weekly Protocol — never surface it as a dessert option.
+        if (preferBakedDesserts && isChiaDessertMeal(meal)) {
+            continue;
+        }
+
+        seen.add(id);
+        deck.push(meal);
+
+        if (isChiaDessertMeal(meal)) {
+            hasChia = true;
+        }
+
+        if (isBakedDessertMeal(meal)) {
+            hasBaked = true;
+        }
+
+        if (deck.length >= limit) {
+            return deck.slice(0, limit);
+        }
+    }
+
+    const catalogDesserts = source.filter((meal) => meal.mealType === 'Dessert');
+
+    if (!preferBakedDesserts && !hasChia) {
+        const greekYogurtChia = catalogDesserts.find((meal) => {
+            const id = normalizeConsultationMealId(meal?.id);
+
+            return id !== '' && !seen.has(id) && isGreekYogurtChiaDessertMeal(meal);
+        });
+
+        if (greekYogurtChia) {
+            seen.add(normalizeConsultationMealId(greekYogurtChia.id));
+            deck.push(greekYogurtChia);
+            hasChia = true;
+        }
+    }
+
+    for (const meal of catalogDesserts) {
+        if (deck.length >= limit) {
+            break;
+        }
+
+        const id = normalizeConsultationMealId(meal?.id);
+        if (id === '' || seen.has(id)) {
+            continue;
+        }
+
+        if (isChiaDessertMeal(meal)) {
+            if (preferBakedDesserts || hasChia) {
+                continue;
+            }
+
+            if (!isGreekYogurtChiaDessertMeal(meal)) {
+                continue;
+            }
+        }
+
+        seen.add(id);
+        deck.push(meal);
+    }
+
+    return deck.slice(0, limit);
+}
+
+/**
+ * Side salad deck: today's scheduled rotation first, then fill to the slot limit from the catalog.
+ *
+ * @param {ConsultationMeal[]} source
+ * @param {ConsultationMeal[]} [scheduledSideSalads]
+ */
+export function consultationSideSaladDeckForDay(source, scheduledSideSalads = []) {
+    const limit = CONSULTATION_DECK_OPTION_LIMITS.sidesalad;
+    /** @type {ConsultationMeal[]} */
+    const deck = [];
+    const seen = new Set();
+
+    for (const meal of scheduledSideSalads) {
+        const id = normalizeConsultationMealId(meal?.id);
+        if (id === '' || seen.has(id)) {
+            continue;
+        }
+
+        seen.add(id);
+        deck.push(meal);
+    }
+
+    for (const meal of source.filter((entry) => mealMatchesConsultationCategory(entry, 'Side salad'))) {
+        if (deck.length >= limit) {
+            break;
+        }
+
+        const id = normalizeConsultationMealId(meal?.id);
+        if (id === '' || seen.has(id)) {
+            continue;
+        }
+
+        seen.add(id);
+        deck.push(meal);
+    }
+
+    return deck.slice(0, limit);
 }
 
 /**
@@ -154,19 +574,20 @@ export function buildConsultationDeckCatalog(source) {
  * @returns {string[]}
  */
 export function applyDeckSelectionToggle(existingIds, mealId, max) {
-    const existing = existingIds ?? [];
-    const isOn = existing.includes(mealId);
+    const normalizedId = normalizeConsultationMealId(mealId);
+    const existing = (existingIds ?? []).map((id) => normalizeConsultationMealId(id));
+    const isOn = existing.includes(normalizedId);
 
     if (isOn) {
-        return existing.filter((id) => id !== mealId);
+        return existing.filter((id) => id !== normalizedId);
     }
 
     if (existing.length < max) {
-        return [...existing, mealId];
+        return [...existing, normalizedId];
     }
 
     if (max === 1) {
-        return [mealId];
+        return [normalizedId];
     }
 
     return existing;
@@ -185,7 +606,7 @@ export function selectionLimitWarningMessage(maxSelected) {
     return `You can only select ${slotLabel}. Deselect one to choose a different meal.`;
 }
 
-/** Default slot caps for Full Craft (pick 2 of side / dessert / soup). */
+/** Default slot caps for Full Craft (pick 1–2 of side / dessert / soup). */
 export const DEFAULT_FULL_CRAFT_MAX_SELECTIONS = Object.freeze({
     breakfasts: 1,
     meals: 2,
@@ -198,7 +619,7 @@ export const FULL_CRAFT_CATEGORY_SECTIONS = Object.freeze([
     {
         selectionKey: 'breakfasts',
         deckSuffix: 'breakfast',
-        header: 'Choose Your Breakfast',
+        header: 'Your Breakfast',
         mealTypeLabel: 'Breakfast',
         defaultMax: 1,
     },
@@ -283,17 +704,31 @@ export function sumMealCardMacros(meals) {
 
 /**
  * Build per-category macro segments for a day's assigned meals.
+ * Main meals are listed individually as Meal 1 / Meal 2 (not one summed "Meals chosen" row).
  *
  * @param {Partial<Record<SelectionCategoryKey, ConsultationMeal[]>> | null | undefined} categories
- * @returns {Array<{ key: SelectionCategoryKey; label: string; optional: boolean; itemCount: number; totals: MacroTotals }>}
+ * @returns {Array<{ key: string; label: string; optional: boolean; itemCount: number; totals: MacroTotals }>}
  */
 export function buildCategoryMacroBreakdown(categories) {
-    /** @type {Array<{ key: SelectionCategoryKey; label: string; optional: boolean; itemCount: number; totals: MacroTotals }>} */
+    /** @type {Array<{ key: string; label: string; optional: boolean; itemCount: number; totals: MacroTotals }>} */
     const rows = [];
 
     for (const row of PLAN_MACRO_CATEGORY_ROWS) {
         const items = categories?.[row.key] ?? [];
         if (row.optional && items.length === 0) {
+            continue;
+        }
+
+        if (row.key === 'meals') {
+            items.forEach((meal, index) => {
+                rows.push({
+                    key: `meals:${index}`,
+                    label: `Meal ${index + 1}`,
+                    optional: row.optional,
+                    itemCount: 1,
+                    totals: sumMealCardMacros([meal]),
+                });
+            });
             continue;
         }
 
@@ -346,41 +781,34 @@ const PLAN_MACRO_CELL_META = Object.freeze([
 ]);
 
 const PLAN_MACRO_TABLE_GRID =
-    'grid grid-cols-[5.5rem_repeat(4,minmax(0,1fr))] items-center gap-x-2 gap-y-2 sm:grid-cols-[6rem_repeat(4,minmax(0,1fr))] sm:gap-x-3';
+    'grid w-full min-w-0 grid-cols-[minmax(5.25rem,1.2fr)_repeat(4,minmax(2.75rem,1fr))] items-center gap-x-2 gap-y-2 sm:grid-cols-[minmax(6.5rem,1.15fr)_repeat(4,minmax(3.25rem,1fr))] sm:gap-x-3';
 
 /** @param {'calories' | 'protein' | 'carbs' | 'fat'} key @param {number | string | null | undefined} raw */
 function formatPlanMacroValue(key, raw) {
     const n = Number(raw ?? 0);
-    if (key === 'calories') {
-        return String(Math.round(n));
-    }
     if (!Number.isFinite(n)) {
         return '0';
     }
-    return Number.isInteger(n) ? String(n) : String(Number.parseFloat(n.toFixed(1)));
+
+    // Calories and gram macros: whole numbers only (no fractional display noise).
+    return String(Math.round(n));
 }
 
 /**
- * @param {object} props
- * @param {string} [props.planCategoryLabel]
+ * Column headers only — short labels so Cal/Pro/Carb/Fat stay readable in phone frames.
  */
-function PlanMacroTableHeader({ planCategoryLabel = '' }) {
+function PlanMacroTableHeader() {
     return (
         <>
-            {planCategoryLabel ? (
-                <span className="justify-self-start rounded-full bg-[#E8EFE0] px-2.5 py-1 font-montserrat text-[10px] font-semibold text-[#5A6B44] sm:px-3 sm:text-xs">
-                    {planCategoryLabel}
-                </span>
-            ) : (
-                <div aria-hidden="true" />
-            )}
+            <div aria-hidden="true" />
             {PLAN_MACRO_CELL_META.map((cell) => (
                 <p
                     key={cell.key}
-                    className="truncate text-center font-montserrat text-[9px] font-semibold uppercase tracking-[0.12em] sm:text-[10px]"
+                    className="min-w-0 text-center font-montserrat text-[9px] font-semibold uppercase tracking-[0.08em] sm:text-[10px] sm:tracking-[0.12em]"
                     style={{ color: cell.color }}
+                    title={cell.label}
                 >
-                    {cell.label}
+                    {cell.shortLabel}
                 </p>
             ))}
         </>
@@ -392,27 +820,65 @@ function PlanMacroTableHeader({ planCategoryLabel = '' }) {
  *
  * @param {object} props
  * @param {MacroTotals} props.macros
+ * @param {{ protein?: number; carbs?: number; fat?: number } | null} [props.macroPercents]
  * @param {string} [props.cellClassName]
  * @param {string} [props.lastCellClassName]
  */
-function PlanMacroValueCells({ macros, cellClassName = '', lastCellClassName = '' }) {
+function PlanMacroValueCells({
+    macros,
+    macroPercents = null,
+    cellClassName = '',
+    lastCellClassName = '',
+    highlightKeys = [],
+    muted = false,
+}) {
     return (
         <>
-            {PLAN_MACRO_CELL_META.map((cell, index) => (
-                <p
-                    key={cell.key}
-                    className={[
-                        'truncate text-center text-sm font-bold tabular-nums leading-none sm:text-[15px]',
-                        cellClassName,
-                        index === PLAN_MACRO_CELL_META.length - 1 ? lastCellClassName : '',
-                    ]
-                        .join(' ')
-                        .trim()}
-                    style={{ color: cell.color }}
-                >
-                    {formatPlanMacroValue(cell.key, macros?.[cell.key])}
-                </p>
-            ))}
+            {PLAN_MACRO_CELL_META.map((cell, index) => {
+                const highlighted = !muted && highlightKeys.includes(cell.key);
+                const percent =
+                    cell.key !== 'calories' && macroPercents ? macroPercents[cell.key] : null;
+
+                return (
+                    <div
+                        key={cell.key}
+                        className={[
+                            'min-w-0 px-1 text-center sm:px-1.5',
+                            cellClassName,
+                            index === PLAN_MACRO_CELL_META.length - 1 ? lastCellClassName : '',
+                        ]
+                            .join(' ')
+                            .trim()}
+                    >
+                        <p
+                            className={[
+                                'whitespace-nowrap text-sm font-bold tabular-nums leading-tight sm:text-[15px] sm:leading-none',
+                                muted ? 'font-semibold text-[#9CA3AF]' : '',
+                                highlighted ? 'text-amber-800' : '',
+                            ]
+                                .join(' ')
+                                .trim()}
+                            style={highlighted || muted ? undefined : { color: cell.color }}
+                        >
+                            {formatPlanMacroValue(cell.key, macros?.[cell.key])}
+                        </p>
+                        {percent !== null && percent !== undefined ? (
+                            <p
+                                className={[
+                                    'mt-0.5 whitespace-nowrap font-montserrat text-[10px] font-semibold tabular-nums leading-none tracking-tight',
+                                    muted ? 'text-[#C4C9D1]' : 'text-[#9CA3AF]',
+                                ]
+                                    .join(' ')
+                                    .trim()}
+                            >
+                                {percent}%
+                            </p>
+                        ) : macroPercents ? (
+                            <span className="mt-0.5 block h-[10px]" aria-hidden="true" />
+                        ) : null}
+                    </div>
+                );
+            })}
         </>
     );
 }
@@ -423,15 +889,23 @@ function PlanMacroValueCells({ macros, cellClassName = '', lastCellClassName = '
  * @param {object} props
  * @param {MacroTotals} props.macros
  * @param {string} [props.ariaLabel]
+ * @param {Array<'calories' | 'protein' | 'carbs' | 'fat'>} [props.highlightKeys]
+ * @param {boolean} [props.muted]
  */
-export function PlanMacroSummaryRow({ macros, ariaLabel = 'Macros' }) {
+export function PlanMacroSummaryRow({ macros, ariaLabel = 'Macros', highlightKeys = [], muted = false }) {
     return (
         <div className="grid w-full grid-cols-4 gap-2 sm:gap-3" role="group" aria-label={ariaLabel}>
             {PLAN_MACRO_CELL_META.map((cell) => (
                 <div key={cell.key} className="min-w-0 text-center">
                     <p
-                        className="truncate text-sm font-bold tabular-nums leading-none sm:text-[15px]"
-                        style={{ color: cell.color }}
+                        className={[
+                            'truncate text-sm font-bold tabular-nums leading-none sm:text-[15px]',
+                            muted ? 'opacity-70' : '',
+                            highlightKeys.includes(cell.key) ? 'text-amber-800' : '',
+                        ]
+                            .join(' ')
+                            .trim()}
+                        style={highlightKeys.includes(cell.key) ? undefined : { color: muted ? '#6B7280' : cell.color }}
                     >
                         {formatPlanMacroValue(cell.key, macros?.[cell.key])}
                     </p>
@@ -441,38 +915,128 @@ export function PlanMacroSummaryRow({ macros, ariaLabel = 'Macros' }) {
     );
 }
 
+/** Column labels for compact consultation macro footer (Cal / Pro / Carb / Fat). */
+export function PlanMacroColumnHeaderRow() {
+    return (
+        <div className="mb-1 grid w-full grid-cols-4 gap-2 sm:gap-3" aria-hidden="true">
+            {PLAN_MACRO_CELL_META.map((cell) => (
+                <p
+                    key={cell.key}
+                    className="truncate text-center font-montserrat text-[9px] font-semibold uppercase tracking-[0.12em] text-[#6B7280] sm:text-[10px]"
+                >
+                    {cell.shortLabel}
+                </p>
+            ))}
+        </div>
+    );
+}
+
+/**
+ * Compact selected macros in the consultation footer — column labels + values only.
+ *
+ * @param {object} props
+ * @param {MacroTotals} props.totals
+ * @param {Array<'calories' | 'protein' | 'carbs' | 'fat'>} [props.highlightKeys]
+ */
+function ConsultationDayMacroFooterGrid({ totals, highlightKeys = [] }) {
+    return (
+        <div role="table" aria-label="Selected day macros">
+            <PlanMacroColumnHeaderRow />
+            <PlanMacroSummaryRow macros={totals} ariaLabel="Selected macros" highlightKeys={highlightKeys} />
+        </div>
+    );
+}
+
 /**
  * Stacked category macro rows for meal plan detail / admin day views.
  *
  * @param {object} props
  * @param {Partial<Record<SelectionCategoryKey, ConsultationMeal[]>>} props.categories
+ * @param {Partial<Record<SelectionCategoryKey, MacroTotals>> | null} [props.categoryTargets]
  * @param {string} [props.dayLabel]
+ * @param {boolean} [props.compact] Mobile: category title above a full-width 4-col value row.
  */
-export function PlanDayMacroBreakdown({ categories, dayLabel }) {
+export function PlanDayMacroBreakdown({ categories, categoryTargets = null, dayLabel, compact = false }) {
     const rows = useMemo(() => buildCategoryMacroBreakdown(categories), [categories]);
 
     if (rows.length === 0) {
         return null;
     }
 
+    if (compact) {
+        return (
+            <div className="space-y-3">
+                <p className="font-montserrat text-[11px] font-bold uppercase tracking-[0.12em] text-[#5A6B44]">
+                    {dayLabel ? `${dayLabel} breakdown` : 'Choice breakdown'}
+                </p>
+                <div className="grid w-full min-w-0 grid-cols-4 gap-x-2 px-1" aria-hidden="true">
+                    {PLAN_MACRO_CELL_META.map((cell) => (
+                        <p
+                            key={cell.key}
+                            className="min-w-0 text-center font-montserrat text-[9px] font-semibold uppercase tracking-[0.08em]"
+                            style={{ color: cell.color }}
+                        >
+                            {cell.shortLabel}
+                        </p>
+                    ))}
+                </div>
+                {rows.map((row) => (
+                    <div
+                        key={row.key}
+                        className="rounded-[10px] bg-[#F8F9F6] px-3 py-2.5"
+                        role="rowgroup"
+                        aria-label={`${row.label} macros`}
+                    >
+                        <p className="mb-2 font-montserrat text-[10px] font-bold leading-tight text-[#262A22]">
+                            {row.label}
+                        </p>
+                        <div className="grid w-full min-w-0 grid-cols-4 gap-x-2">
+                            <PlanMacroValueCells macros={row.totals} />
+                        </div>
+                        {categoryTargets?.[row.key] ? (
+                            <div className="mt-1.5 grid w-full min-w-0 grid-cols-4 gap-x-2">
+                                <PlanMacroValueCells macros={categoryTargets[row.key]} muted />
+                            </div>
+                        ) : null}
+                    </div>
+                ))}
+            </div>
+        );
+    }
+
     return (
         <>
-            <p className="col-span-full mt-4 border-t border-gray-100 pt-3 font-montserrat text-[11px] font-bold uppercase tracking-[0.12em] text-[#5A6B44]">
+            <p className="col-span-full font-montserrat text-[11px] font-bold uppercase tracking-[0.12em] text-[#5A6B44]">
                 {dayLabel ? `${dayLabel} breakdown` : 'Choice breakdown'}
             </p>
+            <PlanMacroTableHeader />
             {rows.map((row) => (
-                <div key={row.key} className="contents" role="row">
-                    <p
-                        className="rounded-l-[10px] bg-[#F8F9F6] py-2 pl-2 font-montserrat text-[11px] font-bold leading-tight text-[#262A22] sm:pl-3 sm:text-xs"
-                        role="rowheader"
-                    >
-                        {row.label}
-                    </p>
-                    <PlanMacroValueCells
-                        macros={row.totals}
-                        cellClassName="bg-[#F8F9F6] py-2"
-                        lastCellClassName="rounded-r-[10px]"
-                    />
+                <div key={row.key} className="contents" role="rowgroup" aria-label={`${row.label} macros`}>
+                    <div className="contents" role="row">
+                        <p
+                            className="min-w-0 break-words rounded-l-[10px] bg-[#F8F9F6] py-2.5 pl-2 font-montserrat text-[10px] font-bold leading-tight text-[#262A22] sm:pl-3 sm:text-xs"
+                            role="rowheader"
+                        >
+                            {row.label}
+                        </p>
+                        <PlanMacroValueCells
+                            macros={row.totals}
+                            cellClassName="bg-[#F8F9F6] py-2.5"
+                            lastCellClassName="rounded-r-[10px]"
+                        />
+                    </div>
+                    {categoryTargets?.[row.key] ? (
+                        <div className="contents" role="row">
+                            <p className="py-1 pl-2 font-montserrat text-[10px] font-semibold uppercase tracking-[0.08em] text-[#9CA3AF] sm:pl-3">
+                                Target
+                            </p>
+                            <PlanMacroValueCells
+                                macros={categoryTargets[row.key]}
+                                cellClassName="py-1"
+                                muted
+                            />
+                        </div>
+                    ) : null}
                 </div>
             ))}
         </>
@@ -509,98 +1073,260 @@ export function SoupOfTheDayOptIn({ checked, onChange, header = 'Soups for this 
 }
 
 /**
- * Full-width macro panel for meal plan detail pages (day total + category breakdown).
+ * Full-width macro panel for meal plan detail pages (day totals + category breakdown).
+ * Day-total values stay; the "{day} total" title label is omitted.
  *
  * @param {object} props
  * @param {MacroTotals} props.activeDayTotals
+ * @param {MacroTotals | null} [props.dayMacroTargets]
+ * @param {Partial<Record<SelectionCategoryKey, MacroTotals>> | null} [props.categoryMacroTargets]
  * @param {Partial<Record<SelectionCategoryKey, ConsultationMeal[]>>} [props.categories]
  * @param {string} [props.dayLabel]
  * @param {string} [props.planCategoryLabel]
+ * @param {Record<string, unknown> | null | undefined} [props.nutritionPlan]
  */
-export function PlanMacroSummaryPanel({ activeDayTotals, categories, dayLabel = 'Day', planCategoryLabel = '' }) {
+export function PlanMacroSummaryPanel({
+    activeDayTotals,
+    dayMacroTargets = null,
+    categoryMacroTargets = null,
+    categories,
+    dayLabel = 'Day',
+    planCategoryLabel = '',
+    nutritionPlan = null,
+}) {
+    const selectedMacroPercents = useMemo(
+        () => macroCaloriePercentsFromGrams(activeDayTotals),
+        [activeDayTotals],
+    );
+    const targetMacroPercents = useMemo(
+        () => macroSplitPercentagesFromPlan(nutritionPlan),
+        [nutritionPlan],
+    );
+
     return (
-        <div className="w-full rounded-[12px] border border-gray-200 bg-white px-4 py-4 sm:px-5">
-            <div className={PLAN_MACRO_TABLE_GRID} role="table" aria-label={`${dayLabel} macro summary`}>
-                <PlanMacroTableHeader planCategoryLabel={planCategoryLabel} />
+        <div className="w-full min-w-0 overflow-hidden rounded-[12px] border border-gray-200 bg-white px-3 py-4 sm:px-5">
+            {planCategoryLabel ? (
+                <div className="mb-3">
+                    <span className="inline-flex max-w-full truncate rounded-full bg-[#E8EFE0] px-2.5 py-1 font-montserrat text-[10px] font-semibold text-[#5A6B44] sm:px-3 sm:text-xs">
+                        {planCategoryLabel}
+                    </span>
+                </div>
+            ) : null}
 
-                <p className="font-montserrat text-[11px] font-bold uppercase tracking-[0.1em] text-[#5A6B44]">
-                    {dayLabel} total
-                </p>
-                <PlanMacroValueCells macros={activeDayTotals} />
-
-                {categories ? <PlanDayMacroBreakdown categories={categories} dayLabel={dayLabel} /> : null}
+            {/* Day totals: full-width 4-col grid (no empty label column after removing the title). */}
+            <div role="table" aria-label={`${dayLabel} macro summary`}>
+                <div className="grid w-full min-w-0 grid-cols-4 items-start gap-x-2 gap-y-2 sm:gap-x-3">
+                    {PLAN_MACRO_CELL_META.map((cell) => (
+                        <p
+                            key={cell.key}
+                            className="min-w-0 text-center font-montserrat text-[9px] font-semibold uppercase tracking-[0.08em] sm:text-[10px]"
+                            style={{ color: cell.color }}
+                        >
+                            {cell.shortLabel}
+                        </p>
+                    ))}
+                    <PlanMacroValueCells macros={activeDayTotals} macroPercents={selectedMacroPercents} />
+                    {dayMacroTargets ? (
+                        <PlanMacroValueCells
+                            macros={dayMacroTargets}
+                            macroPercents={targetMacroPercents}
+                            muted
+                        />
+                    ) : null}
+                </div>
             </div>
+
+            {categories ? (
+                <>
+                    <div className="mt-4 border-t border-gray-100 pt-3 sm:hidden">
+                        <PlanDayMacroBreakdown
+                            categories={categories}
+                            categoryTargets={categoryMacroTargets}
+                            dayLabel={dayLabel}
+                            compact
+                        />
+                    </div>
+
+                    <div
+                        className={`mt-4 hidden border-t border-gray-100 pt-3 sm:grid ${PLAN_MACRO_TABLE_GRID}`}
+                        role="table"
+                        aria-label={`${dayLabel} macro breakdown`}
+                    >
+                        <PlanDayMacroBreakdown
+                            categories={categories}
+                            categoryTargets={categoryMacroTargets}
+                            dayLabel={dayLabel}
+                        />
+                    </div>
+                </>
+            ) : null}
         </div>
     );
 }
 
 /**
- * Full Craft: breakfasts ×1, meals ×2, and exactly 2 fixed picks across side / dessert / soup.
+ * @param {Partial<Record<SelectionCategoryKey, number>> | null | undefined} maxSelectionsByCategory
+ * @returns {Record<SelectionCategoryKey, number>}
+ */
+export function resolveCategoryMaxSelections(maxSelectionsByCategory = null) {
+    return {
+        ...DEFAULT_FULL_CRAFT_MAX_SELECTIONS,
+        ...(maxSelectionsByCategory ?? {}),
+    };
+}
+
+/**
+ * Weekly-schedule crafts: breakfast (when required), mains, and 1–2 fixed picks.
  *
  * @param {Partial<Record<SelectionCategoryKey, string[]>> | null | undefined} categorySelections
+ * @param {Partial<Record<SelectionCategoryKey, number>> | null | undefined} [maxSelectionsByCategory]
+ * @param {{ requireFixedChoice?: boolean }} [options]
  */
-export function isFullCraftCategoriesComplete(categorySelections) {
+export function isFullCraftCategoriesComplete(
+    categorySelections,
+    maxSelectionsByCategory = null,
+    options = {},
+) {
     if (!categorySelections) {
         return false;
     }
 
+    const max = resolveCategoryMaxSelections(maxSelectionsByCategory);
+    const requireFixedChoice = options.requireFixedChoice !== false;
+
+    if ((max.breakfasts ?? 0) > 0) {
+        if ((categorySelections.breakfasts?.length ?? 0) !== max.breakfasts) {
+            return false;
+        }
+    }
+
     const coreComplete = FULL_CRAFT_REQUIRED_SELECTION_KEYS.every((key) => {
-        const need = DEFAULT_FULL_CRAFT_MAX_SELECTIONS[key];
+        const need = max[key] ?? 0;
         const have = categorySelections[key]?.length ?? 0;
 
         return have === need;
     });
 
-    return coreComplete && isFixedChoiceComplete(categorySelections);
+    if (!coreComplete) {
+        return false;
+    }
+
+    return !requireFixedChoice || isFixedChoiceComplete(categorySelections);
 }
 
 /**
  * @param {Partial<Record<SelectionCategoryKey, string[]>> | null | undefined} categorySelections
- * @returns {SelectionCategoryKey[]}
+ * @param {Partial<Record<SelectionCategoryKey, number>> | null | undefined} [maxSelectionsByCategory]
+ * @param {{ requireFixedChoice?: boolean }} [options]
+ * @returns {Array<SelectionCategoryKey | 'fixedChoice'>}
  */
-export function getIncompleteFullCraftCategoryKeys(categorySelections) {
+export function getIncompleteFullCraftCategoryKeys(
+    categorySelections,
+    maxSelectionsByCategory = null,
+    options = {},
+) {
+    const max = resolveCategoryMaxSelections(maxSelectionsByCategory);
+    const requireFixedChoice = options.requireFixedChoice !== false;
+
     if (!categorySelections) {
-        return [...FULL_CRAFT_REQUIRED_SELECTION_KEYS, 'fixedChoice'];
+        /** @type {Array<SelectionCategoryKey | 'fixedChoice'>} */
+        const emptyMissing = [];
+        if ((max.breakfasts ?? 0) > 0) {
+            emptyMissing.push('breakfasts');
+        }
+        emptyMissing.push(...FULL_CRAFT_REQUIRED_SELECTION_KEYS);
+        if (requireFixedChoice) {
+            emptyMissing.push('fixedChoice');
+        }
+
+        return emptyMissing;
     }
 
-    /** @type {(SelectionCategoryKey | 'fixedChoice')[]} */
-    const missing = FULL_CRAFT_REQUIRED_SELECTION_KEYS.filter((key) => {
-        const need = DEFAULT_FULL_CRAFT_MAX_SELECTIONS[key];
+    /** @type {Array<SelectionCategoryKey | 'fixedChoice'>} */
+    const missing = [];
+
+    if ((max.breakfasts ?? 0) > 0 && (categorySelections.breakfasts?.length ?? 0) !== max.breakfasts) {
+        missing.push('breakfasts');
+    }
+
+    for (const key of FULL_CRAFT_REQUIRED_SELECTION_KEYS) {
+        const need = max[key] ?? 0;
         const have = categorySelections[key]?.length ?? 0;
 
-        return have !== need;
-    });
+        if (have !== need) {
+            missing.push(key);
+        }
+    }
 
-    if (!isFixedChoiceComplete(categorySelections)) {
+    if (requireFixedChoice && !isFixedChoiceComplete(categorySelections)) {
         missing.push('fixedChoice');
     }
 
     return missing;
 }
 
-const INCOMPLETE_SELECTION_LABELS = Object.freeze({
-    breakfasts: 'breakfast',
-    meals: '2 main meals',
-    sideSalads: 'side salad',
-    desserts: 'dessert',
-    fixedChoice: '2 of side salad, dessert, or soup',
-});
+/**
+ * @param {SelectionCategoryKey | 'fixedChoice'} key
+ * @param {Partial<Record<SelectionCategoryKey, number>> | null | undefined} [maxSelectionsByCategory]
+ */
+function incompleteSelectionLabelForKey(key, maxSelectionsByCategory = null) {
+    if (key === 'meals') {
+        const need = resolveCategoryMaxSelections(maxSelectionsByCategory).meals;
+
+        return need === 1 ? '1 main meal' : `${need} main meals`;
+    }
+
+    const labels = {
+        breakfasts: 'breakfast',
+        sideSalads: 'side salad',
+        desserts: 'dessert',
+        soup: 'soup',
+        fixedChoice: 'at least 1 side (up to 2 from side salad, dessert, or soup)',
+    };
+
+    return labels[key] ?? key;
+}
 
 /**
- * @param {SelectionCategoryKey[]} missingKeys
+ * @param {Array<SelectionCategoryKey | 'fixedChoice'>} missingKeys
+ * @param {Partial<Record<SelectionCategoryKey, number>> | null | undefined} [maxSelectionsByCategory]
  */
-export function incompleteSelectionWarningMessage(missingKeys) {
+export function incompleteSelectionWarningMessage(missingKeys, maxSelectionsByCategory = null) {
     if (missingKeys.length === 0) {
         return 'Select all required meals before continuing.';
     }
 
-    const parts = missingKeys.map((key) => INCOMPLETE_SELECTION_LABELS[key] ?? key);
+    const parts = missingKeys.map((key) => incompleteSelectionLabelForKey(key, maxSelectionsByCategory));
 
     if (parts.length === 1) {
         return `Please select a ${parts[0]} before continuing.`;
     }
 
     return `Please select: ${parts.join(', ')}.`;
+}
+
+/**
+ * @param {number} minWidthPx
+ */
+function useMinWidth(minWidthPx) {
+    const [matches, setMatches] = useState(() => {
+        if (typeof window === 'undefined') {
+            return false;
+        }
+
+        return window.matchMedia(`(min-width: ${minWidthPx}px)`).matches;
+    });
+
+    useEffect(() => {
+        const mq = window.matchMedia(`(min-width: ${minWidthPx}px)`);
+        const onChange = () => setMatches(mq.matches);
+        onChange();
+        mq.addEventListener('change', onChange);
+
+        return () => mq.removeEventListener('change', onChange);
+    }, [minWidthPx]);
+
+    return matches;
 }
 
 /**
@@ -619,8 +1345,10 @@ export function incompleteSelectionWarningMessage(missingKeys) {
  * @param {SelectionCategoryKey} [props.sectionKey]
  * @param {boolean} [props.validationFlash]
  * @param {boolean} [props.readOnly]
+ * @param {boolean} [props.showSelectedState] Locked selection: show green SELECTED chrome without toggling.
  * @param {(meal: ConsultationMeal) => void} [props.onViewDetails]
  * @param {(meal: ConsultationMeal) => void} [props.onEditMeal]
+ * @param {boolean} [props.isLoading] Show a skeleton while scheduled meals are still loading.
  */
 export function MealSlotCarousel({
     title,
@@ -635,13 +1363,16 @@ export function MealSlotCarousel({
     sectionKey,
     validationFlash = false,
     readOnly = false,
+    showSelectedState = false,
     onViewDetails,
     onEditMeal,
+    isLoading = false,
 }) {
-    const selectedSet = new Set(selectedIds);
+    const selectedSet = new Set(selectedIds.map((id) => normalizeConsultationMealId(id)));
     const atLimit = selectedIds.length >= maxSelected;
     const stackZ = 35 + sectionStackOrder * 6;
-    const showSwipeHint = cards.length > 2;
+    const isDesktopViewport = useMinWidth(768);
+    const showSwipeHint = cards.length > 2 && !isDesktopViewport;
     const [limitWarning, setLimitWarning] = useState(/** @type {string | null} */ (null));
     const limitWarningTimerRef = useRef(0);
 
@@ -669,8 +1400,8 @@ export function MealSlotCarousel({
 
     const handleSelect = useCallback(
         (meal) => {
-            const mealId = /** @type {ConsultationMeal} */ (meal).id;
-            const isSelected = selectedIds.includes(mealId);
+            const mealId = normalizeConsultationMealId(/** @type {ConsultationMeal} */ (meal).id);
+            const isSelected = selectedSet.has(mealId);
 
             if (!readOnly && !isSelected && atLimit && maxSelected > 1) {
                 showSelectionLimitWarning();
@@ -679,18 +1410,27 @@ export function MealSlotCarousel({
 
             onSelect?.(/** @type {ConsultationMeal} */ (meal));
         },
-        [atLimit, maxSelected, onSelect, readOnly, selectedIds, showSelectionLimitWarning],
+        [atLimit, maxSelected, onSelect, readOnly, selectedSet, showSelectionLimitWarning],
     );
 
     const deckSubheader = (() => {
+        if (readOnly && showSelectedState) {
+            const countPart = `${selectedIds.length}/${maxSelected} selected`;
+
+            return showSwipeHint
+                ? `In your plan • ${countPart} • Swipe the deck to browse`
+                : `In your plan • ${countPart}`;
+        }
+
         if (readOnly) {
             return showSwipeHint ? `${cards.length} assigned • Swipe the deck to browse` : `${cards.length} assigned`;
         }
+        const optionsPart = `${cards.length} option${cards.length === 1 ? '' : 's'}`;
         const selectionPart = maxSelected === 1 ? 'Select 1' : `Select exactly ${maxSelected}`;
         const countPart = `${selectedIds.length}/${maxSelected} selected`;
         return showSwipeHint
-            ? `${selectionPart} • ${countPart} • Swipe the deck to browse`
-            : `${selectionPart} • ${countPart}`;
+            ? `${optionsPart} • ${selectionPart} • ${countPart} • Swipe the deck to browse`
+            : `${optionsPart} • ${selectionPart} • ${countPart}`;
     })();
 
     return (
@@ -711,7 +1451,7 @@ export function MealSlotCarousel({
                             {title}
                         </p>
                     ) : null}
-                    {!readOnly ? (
+                    {!readOnly || showSelectedState ? (
                         <p
                             className={`font-body text-xs leading-snug text-[#555555] sm:text-sm ${!deckOnly && title ? 'mt-0.5 sm:mt-1' : 'mt-0'}`}
                         >
@@ -734,18 +1474,37 @@ export function MealSlotCarousel({
             ) : null}
 
             <div
-                className={`relative mx-auto flex w-full max-w-full flex-col items-center justify-center overflow-y-visible px-4 [-webkit-overflow-scrolling:touch] max-md:overflow-x-clip md:overflow-x-visible md:px-0 ${deckOnly ? 'mt-0 min-h-[calc(min(90vw,280px)+5.5rem)] py-1.5' : 'mt-0.5 min-h-[calc(min(90vw,280px)+5.5rem)] py-1'}`}
+                className={`relative mx-auto flex w-full max-w-full flex-col items-center justify-center overflow-y-visible [-webkit-overflow-scrolling:touch] max-md:overflow-x-clip md:overflow-x-visible ${deckOnly ? 'mt-0 min-h-[calc(240px+4.5rem)] px-0 py-0' : 'mt-0.5 min-h-[calc(240px+5.5rem)] px-4 py-1 md:px-0'}`}
                 data-consultation-deck=""
             >
                 {cards.length === 0 ? (
-                    <p className="font-body text-sm text-[#666666]">
-                        {readOnly ? 'No meal assigned for this slot yet.' : 'No options match this slot yet.'}
-                    </p>
+                    isLoading ? (
+                        <div
+                            className="mx-auto w-full max-w-[320px] animate-pulse rounded-[16px] border border-gray-200 bg-white p-4 shadow-sm"
+                            aria-busy="true"
+                            aria-label="Loading meal"
+                        >
+                            <div className="aspect-[4/3] w-full rounded-[12px] bg-gray-200" />
+                            <div className="mt-4 h-4 w-3/4 rounded bg-gray-200" />
+                            <div className="mt-3 flex gap-2">
+                                <div className="h-8 flex-1 rounded bg-gray-100" />
+                                <div className="h-8 flex-1 rounded bg-gray-100" />
+                                <div className="h-8 flex-1 rounded bg-gray-100" />
+                                <div className="h-8 flex-1 rounded bg-gray-100" />
+                            </div>
+                            <div className="mt-4 h-10 w-full rounded-full bg-gray-200" />
+                        </div>
+                    ) : (
+                        <p className="font-body text-sm text-[#666666]">
+                            {readOnly ? 'No meal assigned for this slot yet.' : 'No options match this slot yet.'}
+                        </p>
+                    )
                 ) : (
                     <div
                         className={[
                             'w-full',
                             cards.length === 2 ? 'md:mx-auto md:max-w-[680px]' : '',
+                            cards.length === 3 ? 'md:mx-auto md:max-w-[960px]' : '',
                         ]
                             .filter(Boolean)
                             .join(' ')}
@@ -755,10 +1514,11 @@ export function MealSlotCarousel({
                                 title=""
                                 meals={cards}
                                 deckScopeKey={deckScopeKey}
+                                forceRibbon={deckOnly}
                                 getKey={(m) => /** @type {ConsultationMeal} */ (m).id}
                                 renderCard={(m, _idx, { isFront, deckLayout }) => {
                                     const meal = /** @type {ConsultationMeal} */ (m);
-                                    const isSelected = selectedSet.has(meal.id);
+                                    const isSelected = selectedSet.has(normalizeConsultationMealId(meal.id));
                                     const atSelectionLimit =
                                         !readOnly && !isSelected && atLimit && maxSelected > 1;
 
@@ -771,10 +1531,10 @@ export function MealSlotCarousel({
                                             title={meal.title ?? ''}
                                             imageUrl={meal.imageUrl}
                                             macros={meal.macros}
-                                            selected={!readOnly && isSelected}
-                                            assigned={readOnly && isSelected}
+                                            selected={isSelected && (!readOnly || showSelectedState)}
+                                            assigned={readOnly && isSelected && !showSelectedState}
                                             disabled={false}
-                                            hideCraftButton={readOnly}
+                                            hideCraftButton={readOnly && !showSelectedState}
                                             imageLoading={isFront ? 'eager' : 'lazy'}
                                             imageAlt={meal.title ?? ''}
                                             onToggleSelected={readOnly ? undefined : () => handleSelect(meal)}
@@ -794,17 +1554,18 @@ export function MealSlotCarousel({
 }
 
 /**
- * Pick-2 side options: horizontal category toggles reveal one deck per checked category.
+ * Pick 1–2 of 3 side categories — side salad, soup, and dessert decks always visible (onboarding UX).
  *
  * @param {object} props
  * @param {Partial<Record<SelectionCategoryKey, string[]>> | null | undefined} props.categorySelections
  * @param {(categoryKey: SelectionCategoryKey, meal: ConsultationMeal) => void} [props.onSelectMeal]
- * @param {(categoryKey: SelectionCategoryKey) => void} [props.onClearCategory]
  * @param {string} [props.deckScopePrefix]
  * @param {ConsultationMeal[]} [props.meals]
  * @param {Partial<Record<SelectionCategoryKey, ConsultationMeal[]>>} [props.assignedMealsByCategory]
+ * @param {Partial<Record<SelectionCategoryKey, ConsultationMeal[]>>} [props.displayDecks] Exact decks shown elsewhere — prefer over rebuilding.
  * @param {ConsultationMeal[]} [props.scheduledSoupMeals]
  * @param {ConsultationMeal[]} [props.soupCatalogMeals]
+ * @param {string | null} [props.dietProtocol]
  * @param {boolean} [props.readOnly]
  * @param {boolean} [props.validationFlash]
  * @param {(meal: ConsultationMeal) => void} [props.onViewDetails]
@@ -813,22 +1574,19 @@ export function MealSlotCarousel({
 export function FixedChoicePicker({
     categorySelections,
     onSelectMeal,
-    onClearCategory,
     deckScopePrefix = '',
     meals = [],
     assignedMealsByCategory = null,
+    displayDecks = null,
     scheduledSoupMeals = [],
     soupCatalogMeals = [],
+    dietProtocol = null,
     readOnly = false,
     validationFlash = false,
     onViewDetails,
     resolveCards = null,
 }) {
-    const [visibleCategories, setVisibleCategories] = useState(
-        () => visibleFixedChoiceCategoriesFromSelections(categorySelections),
-    );
     const [mealLimitWarning, setMealLimitWarning] = useState(/** @type {string | null} */ (null));
-    const [categoryLimitWarning, setCategoryLimitWarning] = useState(/** @type {string | null} */ (null));
     const warningTimerRef = useRef(0);
 
     const pickEnabled = typeof onSelectMeal === 'function' && !readOnly;
@@ -841,21 +1599,8 @@ export function FixedChoicePicker({
     );
 
     useEffect(() => {
-        setVisibleCategories(visibleFixedChoiceCategoriesFromSelections(categorySelections));
         setMealLimitWarning(null);
-        setCategoryLimitWarning(null);
     }, [deckScopePrefix]);
-
-    useEffect(() => {
-        setVisibleCategories((previous) => {
-            const fromSelections = visibleFixedChoiceCategoriesFromSelections(categorySelections);
-            const merged = new Set([...previous, ...fromSelections]);
-
-            return FIXED_CHOICE_TOGGLE_OPTIONS.map((option) => option.selectionKey).filter((key) =>
-                merged.has(key),
-            );
-        });
-    }, [categorySelections]);
 
     const fixedChoiceCount = countFixedChoiceSelections(categorySelections);
 
@@ -880,37 +1625,6 @@ export function FixedChoicePicker({
         warningTimerRef.current = window.setTimeout(() => setter(null), 3200);
     }, []);
 
-    const handleCategoryToggle = useCallback(
-        (categoryKey) => {
-            if (readOnly) {
-                return;
-            }
-
-            const isVisible = visibleCategories.includes(categoryKey);
-
-            if (isVisible) {
-                setVisibleCategories((previous) => previous.filter((key) => key !== categoryKey));
-                onClearCategory?.(categoryKey);
-                setCategoryLimitWarning(null);
-
-                return;
-            }
-
-            if (visibleCategories.length >= FIXED_CHOICE_REQUIRED_COUNT) {
-                showTransientWarning(
-                    setCategoryLimitWarning,
-                    'You can only open 2 categories. Uncheck one to choose a different side type.',
-                );
-
-                return;
-            }
-
-            setVisibleCategories((previous) => [...previous, categoryKey]);
-            setCategoryLimitWarning(null);
-        },
-        [readOnly, visibleCategories, onClearCategory, showTransientWarning],
-    );
-
     const handleMealSelect = useCallback(
         (categoryKey, meal) => {
             if (!categorySelections || !onSelectMeal) {
@@ -922,7 +1636,7 @@ export function FixedChoicePicker({
             if (blocked) {
                 showTransientWarning(
                     setMealLimitWarning,
-                    'You can only pick 2 of side salad, dessert, or soup. Deselect one to choose a different option.',
+                    'You can pick a maximum of 2 sides. Deselect one to choose a different option.',
                 );
 
                 return;
@@ -936,6 +1650,11 @@ export function FixedChoicePicker({
 
     const cardsForSection = useCallback(
         (def) => {
+            const fromDisplayDecks = displayDecks?.[def.selectionKey];
+            if (Array.isArray(fromDisplayDecks) && fromDisplayDecks.length > 0) {
+                return fromDisplayDecks;
+            }
+
             if (typeof resolveCards === 'function') {
                 const resolved = resolveCards([], def.selectionKey);
 
@@ -945,6 +1664,27 @@ export function FixedChoicePicker({
             }
 
             const assignedCards = assignedMealsByCategory?.[def.selectionKey];
+            if (assignedCards && assignedCards.length > 0 && def.selectionKey !== 'desserts' && def.selectionKey !== 'sideSalads') {
+                return assignedCards;
+            }
+
+            if (def.selectionKey === 'desserts') {
+                const catalogSource = (soupCatalogMeals.length > 0 ? soupCatalogMeals : meals) ?? [];
+
+                return consultationDessertDeckForDay(catalogSource, assignedMealsByCategory?.desserts ?? [], {
+                    preferBakedDesserts: isBalancedAntiInflammatoryProtocol(dietProtocol),
+                });
+            }
+
+            if (def.selectionKey === 'sideSalads') {
+                const scheduledSideSalads = assignedMealsByCategory?.sideSalads ?? [];
+                const deckOptions = consultationSideSaladDeckForDay(meals ?? [], scheduledSideSalads);
+
+                if (deckOptions.length > 0) {
+                    return deckOptions;
+                }
+            }
+
             if (assignedCards && assignedCards.length > 0) {
                 return assignedCards;
             }
@@ -955,7 +1695,15 @@ export function FixedChoicePicker({
 
             return filterMealsByCategory(meals ?? [], def.mealTypeLabel);
         },
-        [assignedMealsByCategory, meals, resolveCards, soupDeckMeals],
+        [
+            displayDecks,
+            assignedMealsByCategory,
+            meals,
+            resolveCards,
+            soupDeckMeals,
+            dietProtocol,
+            soupCatalogMeals,
+        ],
     );
 
     const prefix = deckScopePrefix ? `${deckScopePrefix}-` : '';
@@ -964,54 +1712,14 @@ export function FixedChoicePicker({
         <div className="relative isolate w-full overflow-x-clip overflow-y-visible py-0.5">
             <div className="mx-auto min-w-0 max-w-full px-4 text-center md:px-0">
                 <p className="font-montserrat text-[15px] font-bold leading-snug tracking-tight text-[#262A22] sm:text-base">
-                    Pick 2 — side salad, dessert, or soup
+                    Pick 1–2 of 3 sides
                 </p>
                 <p className="mt-0.5 font-body text-xs leading-snug text-[#555555] sm:text-sm">
                     {pickEnabled
-                        ? `Each option is ~150 kcal • ${fixedChoiceCount}/${FIXED_CHOICE_REQUIRED_COUNT} selected`
-                        : `${fixedChoiceCount} selected (~150 kcal each)`}
+                        ? `Side salad, soup, or dessert • ${fixedChoiceCount}/${FIXED_CHOICE_MAX_COUNT} selected (min ${FIXED_CHOICE_MIN_COUNT})`
+                        : `${fixedChoiceCount} selected (standard kitchen portion)`}
                 </p>
-
-                <div
-                    className="mt-3 flex flex-wrap items-center justify-center gap-2 sm:gap-3"
-                    role="group"
-                    aria-label="Choose which side categories to show"
-                >
-                    {FIXED_CHOICE_TOGGLE_OPTIONS.map((option) => {
-                        const checked = visibleCategories.includes(option.selectionKey);
-
-                        return (
-                            <button
-                                key={option.selectionKey}
-                                type="button"
-                                aria-pressed={checked}
-                                disabled={readOnly}
-                                onClick={() => handleCategoryToggle(option.selectionKey)}
-                                className={[
-                                    'inline-flex items-center gap-2 rounded-full border px-3 py-2 font-body text-sm transition-colors sm:px-4',
-                                    checked
-                                        ? 'border-[#5A6B44] bg-[#F8F9F6] text-[#262A22] shadow-sm'
-                                        : 'border-gray-200 bg-white text-[#555555] hover:border-[#5A6B44]/40 hover:bg-[#F8F9F6]',
-                                    readOnly ? 'cursor-default opacity-80' : 'cursor-pointer',
-                                ]
-                                    .join(' ')
-                                    .trim()}
-                            >
-                                <SquareCheckbox checked={checked} presentational className="shrink-0" />
-                                <span className="font-medium">{option.label}</span>
-                            </button>
-                        );
-                    })}
-                </div>
             </div>
-
-            {categoryLimitWarning ? (
-                <div className="mx-auto mt-2 max-w-full px-4 md:px-0" role="alert" aria-live="polite">
-                    <p className="rounded-[10px] border border-red-200 bg-red-50 px-3 py-2 text-center font-body text-xs font-semibold text-red-800 sm:text-sm">
-                        {categoryLimitWarning}
-                    </p>
-                </div>
-            ) : null}
 
             {mealLimitWarning ? (
                 <div className="mx-auto mt-2 max-w-full px-4 md:px-0" role="alert" aria-live="polite">
@@ -1030,10 +1738,6 @@ export function FixedChoicePicker({
                     .trim()}
             >
                 {FIXED_CHOICE_TOGGLE_OPTIONS.map((def, idx) => {
-                    if (!visibleCategories.includes(def.selectionKey)) {
-                        return null;
-                    }
-
                     const cards = cardsForSection(def);
                     const selectedIds = categorySelections?.[def.selectionKey] ?? [];
 
@@ -1054,6 +1758,7 @@ export function FixedChoicePicker({
                             sectionKey={def.selectionKey}
                             sectionStackOrder={idx}
                             title={def.header}
+                            showSelectionSubheader
                             deckScopeKey={`${prefix}${def.deckSuffix}`}
                             cards={cards}
                             selectedIds={selectedIds}
@@ -1079,15 +1784,24 @@ export function FixedChoicePicker({
  * @param {ConsultationMeal[]} [props.scheduledSoupMeals]
  * @param {ConsultationMeal[]} [props.soupCatalogMeals] Full menu catalog for soup fallback (deck meals omit soup).
  * @param {Partial<Record<SelectionCategoryKey, ConsultationMeal[]>>} [props.assignedMealsByCategory]
+ * @param {Partial<Record<SelectionCategoryKey, ConsultationMeal[]>>} [props.displayDecks] Parent-built decks — prefer over rebuilding so footer matches carousels.
  * @param {boolean} [props.categoriesReadOnly]
  * @param {(categoryKey: SelectionCategoryKey) => void} [props.onClearFixedChoiceCategory]
  * @param {(meal: ConsultationMeal) => void} [props.onViewDetails]
+ * @param {(meal: ConsultationMeal) => void} [props.onEditMeal]
  * @param {string} [props.panelClassName] Height class for the viewport-locked panel shell.
+ * @param {boolean} [props.documentScroll] Grow with content and scroll the parent (Storybook / embed).
+ * @param {boolean} [props.isMenuPending] Adapted menu / weekly schedule still loading from the API.
+ * @param {boolean} [props.showSealLoading] Seal / skeleton only on first curation day while pending.
+ * @param {boolean} [props.protocolSelectedLayout] Force the customer onboarding slot cards (SEE OTHER OPTIONS).
  */
 export default function ChooseYourMeals({
     dayName = '',
     totalKcal = 0,
     dayMacroTotals = null,
+    dayMacroTargets = null,
+    dayMacroTolerance = null,
+    nutritionPlan = null,
     summaryLabel,
     targetCalories = 1200,
     dayCalorieTolerance = 50,
@@ -1104,7 +1818,7 @@ export default function ChooseYourMeals({
     children,
     craftTitle,
     dayProgressLabel,
-    hintText = 'Fill every required slot to continue.',
+    hintText = '',
     navigation,
     onFooterBack,
     onFooterNext,
@@ -1114,19 +1828,102 @@ export default function ChooseYourMeals({
     scheduledSoupMeals = [],
     soupCatalogMeals = [],
     assignedMealsByCategory = null,
+    displayDecks = null,
     categoriesReadOnly = false,
     onClearFixedChoiceCategory,
     onViewDetails,
-    panelClassName = 'h-[100dvh] min-h-screen',
+    onEditMeal,
+    panelClassName,
+    documentScroll = false,
+    isMenuPending = false,
+    showSealLoading = false,
+    dietProtocol = null,
+    protocolSelectedLayout = false,
 }) {
-    const craftingSubtitle = `CRAFTING YOUR ${String(dayName).trim().toUpperCase()}`;
+    const resolvedPanelClassName =
+        panelClassName ?? (documentScroll ? 'w-full' : 'h-[100dvh] min-h-screen');
     /** Daily option decks stay interactive whenever the parent wires selection (hides CRAFT THIS MEAL only in true read-only review). */
     const categoryPickEnabled = typeof onToggleCategory === 'function' && !categoriesReadOnly;
+    const useProtocolSelectedLayout = Boolean(protocolSelectedLayout) || layout === 'categories';
 
     const [validationFlashKeys, setValidationFlashKeys] = useState(/** @type {(SelectionCategoryKey | 'fixedChoice')[]} */ ([]));
     const [incompleteWarning, setIncompleteWarning] = useState(/** @type {string | null} */ (null));
+    const [optionsSlotKey, setOptionsSlotKey] = useState(/** @type {SelectionCategoryKey | null} */ (null));
 
     const scrollContainerRef = useRef(/** @type {HTMLDivElement | null} */ (null));
+
+    useEffect(() => {
+        setOptionsSlotKey(null);
+    }, [dayName, deckScopePrefix]);
+
+    const categoryMaxForDisplay = useMemo(
+        () => resolveCategoryMaxSelections(maxSelectionsByCategory),
+        [maxSelectionsByCategory],
+    );
+
+    const weeklyDisplayDecks = useMemo(() => {
+        if (layout !== 'categories') {
+            return null;
+        }
+
+        if (displayDecks && typeof displayDecks === 'object') {
+            const decks = {
+                breakfasts: displayDecks.breakfasts ?? [],
+                meals: displayDecks.meals ?? [],
+                sideSalads: displayDecks.sideSalads ?? [],
+                desserts: displayDecks.desserts ?? [],
+                soup: displayDecks.soup ?? [],
+            };
+            const catalog = [...(meals ?? []), ...Object.values(decks).flat()];
+
+            if (decks.sideSalads.length === 0) {
+                decks.sideSalads = consultationSideSaladDeckForDay(
+                    catalog,
+                    assignedMealsByCategory?.sideSalads ?? [],
+                );
+            }
+
+            return decks;
+        }
+
+        return buildWeeklyConsultationDisplayDecks({
+            meals,
+            assignedMealsByCategory,
+            scheduledSoupMeals,
+            soupCatalogMeals,
+            dietProtocol,
+            includeBreakfast: (categoryMaxForDisplay.breakfasts ?? 0) > 0,
+        });
+    }, [
+        layout,
+        displayDecks,
+        meals,
+        assignedMealsByCategory,
+        scheduledSoupMeals,
+        soupCatalogMeals,
+        dietProtocol,
+        categoryMaxForDisplay.breakfasts,
+    ]);
+
+    const selectedFooterMeals = useMemo(() => {
+        if (!weeklyDisplayDecks || !categorySelections) {
+            return [];
+        }
+
+        return selectedMealsFromDisplayDecks(categorySelections, weeklyDisplayDecks);
+    }, [weeklyDisplayDecks, categorySelections]);
+
+    const displayFooterMacros = useMemo(() => {
+        if (layout === 'categories' && categorySelections) {
+            return sumConsultationMealCardMacros(selectedFooterMeals);
+        }
+
+        return null;
+    }, [layout, categorySelections, selectedFooterMeals]);
+
+    // Categories layout: only sum cards currently on-screen (never parent catalog reconcile).
+    const footerMacroTotals =
+        layout === 'categories' ? (displayFooterMacros ?? { calories: 0, protein: 0, carbs: 0, fat: 0 }) : dayMacroTotals;
 
     useLayoutEffect(() => {
         const scroller = scrollContainerRef.current;
@@ -1135,6 +1932,40 @@ export default function ChooseYourMeals({
         }
 
         window.scrollTo(0, 0);
+
+        // Consultation embeds scroll the phone-frame parent, not this panel.
+        let node = scroller?.parentElement ?? null;
+        while (node && node !== document.body) {
+            const style = window.getComputedStyle(node);
+            const overflowY = style.overflowY;
+            const canScroll =
+                (overflowY === 'auto' || overflowY === 'scroll' || overflowY === 'overlay') &&
+                node.scrollHeight > node.clientHeight;
+
+            if (canScroll || node.scrollTop > 0) {
+                node.scrollTop = 0;
+            }
+
+            node = node.parentElement;
+        }
+
+        const frame =
+            document.querySelector('[data-customer-onboarding-frame]') ||
+            document.querySelector('[data-storybook-onboarding-frame]');
+
+        if (frame instanceof HTMLElement) {
+            frame.scrollTop = 0;
+            frame.querySelectorAll('*').forEach((el) => {
+                if (!(el instanceof HTMLElement) || el.scrollTop <= 0) {
+                    return;
+                }
+
+                const style = window.getComputedStyle(el);
+                if (style.overflowY === 'auto' || style.overflowY === 'scroll' || style.overflowY === 'overlay') {
+                    el.scrollTop = 0;
+                }
+            });
+        }
     }, [dayName, dayProgressLabel, deckScopePrefix]);
 
     const wheelDeltaY = useCallback((event, element) => {
@@ -1183,6 +2014,10 @@ export default function ChooseYourMeals({
     );
 
     useLayoutEffect(() => {
+        if (documentScroll) {
+            return undefined;
+        }
+
         const scroller = scrollContainerRef.current;
         if (!scroller) {
             return undefined;
@@ -1195,14 +2030,18 @@ export default function ChooseYourMeals({
             scroller.removeEventListener('wheel', forwardWheelToMealScroller, { capture: true });
             document.removeEventListener('wheel', forwardWheelToMealScroller, { capture: true });
         };
-    }, [forwardWheelToMealScroller]);
+    }, [documentScroll, forwardWheelToMealScroller]);
 
     useEffect(() => {
-        if (layout === 'categories' && categorySelections && isFullCraftCategoriesComplete(categorySelections)) {
+        if (
+            layout === 'categories' &&
+            categorySelections &&
+            isFullCraftCategoriesComplete(categorySelections, maxSelectionsByCategory)
+        ) {
             setValidationFlashKeys([]);
             setIncompleteWarning(null);
         }
-    }, [layout, categorySelections]);
+    }, [layout, categorySelections, maxSelectionsByCategory]);
 
     useEffect(() => {
         if (layout !== 'categories' && !footerNextDisabled) {
@@ -1211,31 +2050,27 @@ export default function ChooseYourMeals({
     }, [layout, footerNextDisabled]);
 
     const categoriesComplete = useMemo(
-        () => (layout === 'categories' ? isFullCraftCategoriesComplete(categorySelections) : true),
-        [layout, categorySelections],
+        () =>
+            layout === 'categories'
+                ? isFullCraftCategoriesComplete(categorySelections, maxSelectionsByCategory)
+                : true,
+        [layout, categorySelections, maxSelectionsByCategory],
     );
 
-    /** Full Craft: gate only on required slot counts; other layouts defer to `footerNextDisabled`. */
+    /** Weekly category crafts: gate on slot counts; other layouts defer to `footerNextDisabled`. */
     const craftFooterDisabled = layout === 'categories' ? !categoriesComplete : footerNextDisabled;
 
     const showIncompleteValidation = useCallback(() => {
         if (layout === 'categories') {
-            if (!categorySelections) {
-                setValidationFlashKeys([...FULL_CRAFT_REQUIRED_SELECTION_KEYS]);
-                setIncompleteWarning(incompleteSelectionWarningMessage([...FULL_CRAFT_REQUIRED_SELECTION_KEYS]));
-                window.setTimeout(() => setValidationFlashKeys([]), 2200);
-                return;
-            }
-
-            const missing = getIncompleteFullCraftCategoryKeys(categorySelections);
+            const missing = getIncompleteFullCraftCategoryKeys(categorySelections, maxSelectionsByCategory);
             setValidationFlashKeys(missing);
-            setIncompleteWarning(incompleteSelectionWarningMessage(missing));
+            setIncompleteWarning(incompleteSelectionWarningMessage(missing, maxSelectionsByCategory));
             window.setTimeout(() => setValidationFlashKeys([]), 2200);
             return;
         }
 
         setIncompleteWarning(footerIncompleteMessage);
-    }, [layout, categorySelections, footerIncompleteMessage]);
+    }, [layout, categorySelections, maxSelectionsByCategory, footerIncompleteMessage]);
 
     const handleFooterNextClick = useCallback(() => {
         if (craftFooterDisabled) {
@@ -1259,23 +2094,63 @@ export default function ChooseYourMeals({
             return null;
         }
 
-        const coreSections = FULL_CRAFT_CATEGORY_SECTIONS.filter(
-            (def) => def.selectionKey === 'breakfasts' || def.selectionKey === 'meals',
-        );
+        const categoryMax = resolveCategoryMaxSelections(maxSelectionsByCategory);
+
+        const coreSections = FULL_CRAFT_CATEGORY_SECTIONS.filter((def) => {
+            if (def.selectionKey === 'breakfasts') {
+                return (categoryMax.breakfasts ?? 0) > 0;
+            }
+
+            return def.selectionKey === 'meals';
+        });
 
         return coreSections.map((def, idx) => {
-            const assignedCards = assignedMealsByCategory?.[def.selectionKey];
+            const isAutoAssigned =
+                !useProtocolSelectedLayout && AUTO_ASSIGNED_SELECTION_KEYS.includes(def.selectionKey);
+            const cardsFromDecks = weeklyDisplayDecks?.[def.selectionKey] ?? [];
             const cards =
-                assignedCards && assignedCards.length > 0
-                    ? assignedCards
-                    : filterMealsByCategory(meals ?? [], def.mealTypeLabel);
+                isAutoAssigned && isMenuPending && cardsFromDecks.length === 0 ? [] : cardsFromDecks;
             const max =
                 maxSelectionsByCategory?.[def.selectionKey] !== undefined
                     ? /** @type {number} */ (maxSelectionsByCategory[def.selectionKey])
                     : def.defaultMax;
-            const selectedIds = categorySelections[def.selectionKey] ?? [];
+            const selectedIds = (categorySelections[def.selectionKey] ?? []).map((id) =>
+                normalizeConsultationMealId(id),
+            );
             const prefix = deckScopePrefix ? `${deckScopePrefix}-` : '';
             const flash = validationFlashKeys.includes(def.selectionKey);
+            const mealTitle =
+                def.selectionKey === 'meals' && max === 1 ? 'Choose Your Meal of the Day' : def.header;
+
+            if (useProtocolSelectedLayout) {
+                const selectedMeals = selectedMealsForSlotFromDecks(
+                    selectedIds,
+                    cards,
+                    weeklyDisplayDecks,
+                );
+                const slotTitle =
+                    def.selectionKey === 'meals'
+                        ? 'Main Meals'
+                        : def.selectionKey === 'breakfasts'
+                          ? 'Breakfast'
+                          : mealTitle;
+
+                return (
+                    <ProtocolMealSlotCard
+                        key={def.selectionKey}
+                        title={slotTitle}
+                        selectedMeals={selectedMeals}
+                        multiSelect={max > 1}
+                        isLoading={showSealLoading}
+                        onSeeOtherOptions={
+                            categoryPickEnabled ? () => setOptionsSlotKey(def.selectionKey) : undefined
+                        }
+                        onViewDetails={onViewDetails}
+                        onEditMeal={onEditMeal}
+                        className={flash ? 'ring-2 ring-red-300' : ''}
+                    />
+                );
+            }
 
             return (
                 <MealSlotCarousel
@@ -1283,14 +2158,17 @@ export default function ChooseYourMeals({
                     sectionKey={def.selectionKey}
                     validationFlash={flash}
                     sectionStackOrder={idx}
-                    title={def.header}
+                    title={mealTitle}
                     deckScopeKey={`${prefix}${def.deckSuffix}`}
                     cards={cards}
                     selectedIds={selectedIds}
                     maxSelected={max}
-                    readOnly={!categoryPickEnabled}
-                    onSelect={categoryPickEnabled ? (meal) => onToggleCategory?.(def.selectionKey, meal) : () => {}}
+                    readOnly={isAutoAssigned || !categoryPickEnabled}
+                    showSelectedState={isAutoAssigned}
+                    isLoading={showSealLoading && isAutoAssigned && cards.length === 0}
+                    onSelect={categoryPickEnabled && !isAutoAssigned ? (meal) => onToggleCategory?.(def.selectionKey, meal) : () => {}}
                     onViewDetails={onViewDetails}
+                    onEditMeal={onEditMeal}
                 />
             );
         });
@@ -1306,9 +2184,35 @@ export default function ChooseYourMeals({
         categoriesReadOnly,
         categoryPickEnabled,
         onViewDetails,
+        onEditMeal,
+        isMenuPending,
+        showSealLoading,
+        weeklyDisplayDecks,
+        useProtocolSelectedLayout,
     ]);
 
+    const protocolFixedChoiceBlock =
+        useProtocolSelectedLayout &&
+        layout === 'categories' &&
+        categorySelections &&
+        (categoryPickEnabled || categoriesReadOnly) ? (
+            <ProtocolFixedChoiceSides
+                categorySelections={categorySelections}
+                displayDecks={weeklyDisplayDecks ?? {}}
+                readOnly={!categoryPickEnabled}
+                validationFlash={validationFlashKeys.includes('fixedChoice')}
+                onSelectMeal={categoryPickEnabled ? onToggleCategory : undefined}
+                onClearCategory={categoryPickEnabled ? onClearFixedChoiceCategory : undefined}
+                onSeeOtherOptions={
+                    categoryPickEnabled ? (key) => setOptionsSlotKey(key) : undefined
+                }
+                onViewDetails={onViewDetails}
+                onEditMeal={onEditMeal}
+            />
+        ) : null;
+
     const fixedChoiceBlock =
+        !useProtocolSelectedLayout &&
         layout === 'categories' &&
         categorySelections &&
         (categoryPickEnabled || categoriesReadOnly) ? (
@@ -1318,12 +2222,13 @@ export default function ChooseYourMeals({
                     deckScopePrefix={deckScopePrefix}
                     meals={meals}
                     assignedMealsByCategory={assignedMealsByCategory ?? undefined}
+                    displayDecks={weeklyDisplayDecks ?? undefined}
                     scheduledSoupMeals={scheduledSoupMeals}
                     soupCatalogMeals={soupCatalogMeals}
+                    dietProtocol={dietProtocol}
                     readOnly={!categoryPickEnabled}
                     validationFlash={validationFlashKeys.includes('fixedChoice')}
                     onSelectMeal={categoryPickEnabled ? onToggleCategory : undefined}
-                    onClearCategory={categoryPickEnabled ? onClearFixedChoiceCategory : undefined}
                     onViewDetails={onViewDetails}
                 />
             </div>
@@ -1336,12 +2241,81 @@ export default function ChooseYourMeals({
         meals?.length &&
         typeof onSelectMeal === 'function';
 
+    const optionsSectionDef = useMemo(() => {
+        if (!optionsSlotKey) {
+            return null;
+        }
+
+        return (
+            FULL_CRAFT_CATEGORY_SECTIONS.find((section) => section.selectionKey === optionsSlotKey) ??
+            FIXED_CHOICE_SECTIONS.find((section) => section.selectionKey === optionsSlotKey) ??
+            null
+        );
+    }, [optionsSlotKey]);
+
+    const optionsCards = optionsSlotKey ? (weeklyDisplayDecks?.[optionsSlotKey] ?? []) : [];
+    const optionsSelectedIds = optionsSlotKey
+        ? (categorySelections?.[optionsSlotKey] ?? []).map((id) => normalizeConsultationMealId(id))
+        : [];
+    let optionsMaxSelected = 1;
+    if (optionsSlotKey) {
+        if (FIXED_CHOICE_CATEGORY_KEYS.includes(optionsSlotKey)) {
+            optionsMaxSelected = 1;
+        } else if (maxSelectionsByCategory?.[optionsSlotKey] !== undefined) {
+            optionsMaxSelected = /** @type {number} */ (maxSelectionsByCategory[optionsSlotKey]);
+        } else {
+            optionsMaxSelected = optionsSectionDef?.defaultMax ?? 1;
+        }
+    }
+    const optionsPrefix = deckScopePrefix ? `${deckScopePrefix}-` : '';
+
+    const optionsScreen =
+        useProtocolSelectedLayout && optionsSlotKey && optionsSectionDef && categorySelections ? (
+            <ProtocolMealOptionsScreen
+                dayLabel={dayName}
+                sectionTitle={
+                    optionsSlotKey === 'meals'
+                        ? 'Main Meals'
+                        : optionsSlotKey === 'breakfasts'
+                          ? 'Breakfast'
+                          : optionsSectionDef.header
+                }
+                onBack={() => setOptionsSlotKey(null)}
+                onConfirm={() => setOptionsSlotKey(null)}
+            >
+                <MealSlotCarousel
+                    title=""
+                    deckOnly
+                    cards={optionsCards}
+                    selectedIds={optionsSelectedIds}
+                    maxSelected={optionsMaxSelected}
+                    onSelect={(meal) => {
+                        if (!categoryPickEnabled) {
+                            return;
+                        }
+
+                        onToggleCategory?.(optionsSlotKey, meal);
+                    }}
+                    deckScopeKey={`${optionsPrefix}${optionsSlotKey}-options`}
+                    onViewDetails={onViewDetails}
+                    onEditMeal={onEditMeal}
+                />
+            </ProtocolMealOptionsScreen>
+        ) : null;
+
     const mainScrollable =
         layout === 'categories' ? (
-            <div className="flex flex-col gap-1.5 md:gap-2">
-                {categorySections}
-                {fixedChoiceBlock}
-            </div>
+            useProtocolSelectedLayout ? (
+                <div className="flex flex-col gap-3" role="list" aria-label="Meal sections">
+                    {categorySections}
+                    {protocolFixedChoiceBlock}
+                </div>
+            ) : (
+                <div className="flex flex-col gap-1.5 md:gap-2">
+                    {categorySections}
+                    {fixedChoiceBlock}
+                </div>
+            )
         ) : children ? (
             children
         ) : legacySingleDeck ? (
@@ -1357,114 +2331,179 @@ export default function ChooseYourMeals({
             />
         ) : null;
 
-    const showStickyFooterNav = typeof onFooterNext === 'function';
+    const showFooterNav = typeof onFooterNext === 'function';
 
     const showLegacyNavigation = typeof onFooterNext !== 'function' && navigation;
 
+    const macroHighlightKeys = useMemo(() => {
+        if (!footerMacroTotals || !dayMacroTargets) {
+            return [];
+        }
+
+        const tolerance = {
+            protein: dayMacroTolerance?.protein ?? 15,
+            carbs: dayMacroTolerance?.carbs ?? 20,
+            fat: dayMacroTolerance?.fat ?? 15,
+        };
+
+        /** @type {Array<'calories' | 'protein' | 'carbs' | 'fat'>} */
+        const keys = [];
+
+        if (Math.abs(Math.round(footerMacroTotals.calories) - Math.round(dayMacroTargets.calories)) > dayCalorieTolerance) {
+            keys.push('calories');
+        }
+
+        if (Math.abs(Math.round(footerMacroTotals.protein) - Math.round(dayMacroTargets.protein)) > tolerance.protein) {
+            keys.push('protein');
+        }
+
+        if (Math.abs(Math.round(footerMacroTotals.carbs) - Math.round(dayMacroTargets.carbs)) > tolerance.carbs) {
+            keys.push('carbs');
+        }
+
+        if (Math.abs(Math.round(footerMacroTotals.fat) - Math.round(dayMacroTargets.fat)) > tolerance.fat) {
+            keys.push('fat');
+        }
+
+        return keys;
+    }, [footerMacroTotals, dayMacroTargets, dayMacroTolerance, dayCalorieTolerance]);
+
+    const dayMacroSummary = (
+        <>
+            {incompleteWarning ? (
+                <div
+                    className="mb-3 rounded-[12px] border border-red-200 bg-red-50 px-4 py-3"
+                    role="alert"
+                    aria-live="polite"
+                >
+                    <p className="font-body text-sm font-semibold text-red-800">{incompleteWarning}</p>
+                </div>
+            ) : null}
+
+            {footerMacroTotals ? (
+                <ConsultationDayMacroFooterGrid
+                    totals={
+                        footerMacroTotals.calories > 0
+                            ? footerMacroTotals
+                            : { calories: 0, protein: 0, carbs: 0, fat: 0 }
+                    }
+                    highlightKeys={footerMacroTotals.calories > 0 ? macroHighlightKeys : []}
+                />
+            ) : null}
+
+            {dayProgressLabel ? (
+                <p className="mt-2 font-body text-sm leading-snug text-[#555555]">{dayProgressLabel}</p>
+            ) : null}
+        </>
+    );
+
+    const footerNav = showFooterNav ? (
+        <div
+            className={[
+                'flex flex-wrap items-center gap-3',
+                useProtocolSelectedLayout
+                    ? 'mt-2 justify-center'
+                    : [
+                          'mt-6 border-t border-gray-200 pt-4',
+                          typeof onFooterBack === 'function' ? 'justify-between' : 'justify-center',
+                      ].join(' '),
+            ].join(' ')}
+        >
+            {useProtocolSelectedLayout ? null : typeof onFooterBack === 'function' ? (
+                <Button
+                    type="button"
+                    label="BACK"
+                    variant="outline"
+                    size="md"
+                    className="min-w-[120px] px-10"
+                    onClick={onFooterBack}
+                />
+            ) : (
+                <span className="hidden min-w-[120px] sm:block" aria-hidden="true" />
+            )}
+            <Button
+                type="button"
+                label={footerNextLabel}
+                variant="primary"
+                size="md"
+                aria-disabled={craftFooterDisabled}
+                className={['min-w-[140px] px-10', craftFooterDisabled ? 'opacity-60' : ''].join(' ')}
+                onClick={handleFooterNextClick}
+            />
+        </div>
+    ) : null;
+
+    const protocolOuterClassName = [
+        'box-border flex w-full flex-col overflow-x-clip bg-white',
+        resolvedPanelClassName,
+    ]
+        .join(' ')
+        .trim();
+
+    const legacyOuterClassName = [
+        'box-border flex w-full flex-col overflow-x-clip overflow-hidden border border-gray-200 bg-white shadow-sm',
+        'max-md:rounded-t-[12px] max-md:border-x-0 max-md:shadow-none md:rounded-[12px]',
+        resolvedPanelClassName,
+    ]
+        .join(' ')
+        .trim();
+
     return (
         <section
-            className={`box-border flex w-full flex-col overflow-x-clip border border-gray-200 bg-white shadow-sm max-md:rounded-none max-md:border-x-0 max-md:shadow-none md:rounded-[12px] ${panelClassName}`.trim()}
+            className={useProtocolSelectedLayout ? protocolOuterClassName : legacyOuterClassName}
+            aria-label={dayName ? `Crafting your ${String(dayName).trim()}` : 'Crafting your day'}
         >
-            <div className="shrink-0 border-b border-gray-200 px-4 py-3 text-left max-md:px-4 sm:px-5 sm:py-4 md:p-6">
-                <div className="min-w-0 space-y-1 sm:space-y-1.5">
-                    <p className="font-montserrat text-[15px] font-bold leading-snug tracking-tight text-[#262A22] sm:text-[16px]">
-                        {craftingSubtitle}
-                    </p>
-                    {dayProgressLabel ? (
-                        <p className="font-body text-sm leading-snug text-[#555555]">{dayProgressLabel}</p>
-                    ) : null}
-                    {craftTitle ? (
-                        <p className="min-w-0 truncate whitespace-nowrap font-montserrat text-[10px] font-bold leading-none tracking-[0.1em] text-[#555555] sm:text-[11px] sm:tracking-[0.12em] md:text-xs md:tracking-[0.14em]">
-                            <span className="uppercase">{craftTitle}</span>{' '}
-                            <span className="font-normal normal-case tracking-normal text-[#6B7280]">of</span>{' '}
-                            <span className="tabular-nums tracking-normal text-[#6B7280]">{Math.round(targetCalories)} CAL</span>
-                        </p>
-                    ) : null}
+            {optionsScreen}
+            {useProtocolSelectedLayout ? null : (
+                <div className="shrink-0 rounded-t-[12px] border-b border-gray-200 bg-white px-4 py-3 max-md:px-4 sm:px-5 sm:py-4 md:px-6 md:py-4">
+                    {dayMacroSummary}
                 </div>
-            </div>
+            )}
 
-            <div className="flex min-h-0 flex-1 flex-col overflow-x-clip">
+            <div
+                className={
+                    documentScroll
+                        ? 'flex w-full flex-col overflow-x-clip'
+                        : 'flex min-h-0 flex-1 flex-col overflow-x-clip'
+                }
+            >
                 <div
                     ref={scrollContainerRef}
-                    className="mc-choose-meals-scroll min-h-0 flex-1 overflow-y-auto overscroll-y-contain pt-2 max-md:px-0 max-md:pb-4 md:px-5 md:pb-8 md:pt-4 [-webkit-overflow-scrolling:touch]"
+                    className={
+                        useProtocolSelectedLayout
+                            ? documentScroll
+                                ? 'mc-choose-meals-scroll w-full overflow-x-clip pb-28'
+                                : 'mc-choose-meals-scroll min-h-0 flex-1 overflow-y-auto overscroll-y-contain [scrollbar-gutter:stable] pb-28 [-webkit-overflow-scrolling:touch]'
+                            : documentScroll
+                              ? 'mc-choose-meals-scroll w-full overflow-x-clip pt-2 max-md:px-0 max-md:pb-8 md:px-5 md:pb-10 md:pt-4'
+                              : 'mc-choose-meals-scroll min-h-0 flex-1 overflow-y-auto overscroll-y-contain [scrollbar-gutter:stable] pt-2 max-md:px-0 max-md:pb-8 md:px-5 md:pb-10 md:pt-4 [-webkit-overflow-scrolling:touch]'
+                    }
                 >
-                    <div className="relative z-0 min-w-0 space-y-0">{mainScrollable}</div>
+                    {useProtocolSelectedLayout ? (
+                        <div className="relative z-0 min-w-0">
+                            {mainScrollable}
+                            {footerNav}
+                        </div>
+                    ) : (
+                        <div className="relative z-0 min-w-0 space-y-0">{mainScrollable}</div>
+                    )}
+                    {useProtocolSelectedLayout ? null : footerNav ? (
+                        <div className="px-4 md:px-0">{footerNav}</div>
+                    ) : null}
+                    {showLegacyNavigation ? (
+                        <div className="relative z-[70] mt-4 border-t border-gray-200/80 bg-white">{navigation}</div>
+                    ) : null}
                 </div>
 
-                <div className="z-[120] shrink-0 border-t border-gray-200 bg-white p-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-[0_-4px_24px_rgba(15,23,42,0.06)] max-md:px-4 md:sticky md:bottom-0 md:px-6">
-                    {incompleteWarning ? (
-                        <div
-                            className="mb-3 rounded-[12px] border border-red-200 bg-red-50 px-4 py-3"
-                            role="alert"
-                            aria-live="polite"
+                {useProtocolSelectedLayout ? (
+                    <div className="sticky bottom-0 z-40 shrink-0 bg-white/95 px-0 pb-2 pt-1 backdrop-blur">
+                        <section
+                            className="rounded-[12px] border border-gray-200 bg-white px-4 py-3 sm:px-5 sm:py-3"
+                            aria-label="Day macros"
                         >
-                            <p className="font-body text-sm font-semibold text-red-800">{incompleteWarning}</p>
-                        </div>
-                    ) : null}
-
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                        {summaryLabel ? (
-                            <p className="font-montserrat text-sm font-bold text-[#262A22]">{summaryLabel}</p>
-                        ) : (
-                            <span className="min-w-0 flex-1" />
-                        )}
-                        <p
-                            className={[
-                                'font-montserrat text-sm font-bold tabular-nums',
-                                Math.abs(Math.round(totalKcal) - Math.round(targetCalories)) > dayCalorieTolerance
-                                    ? 'text-amber-800'
-                                    : 'text-[#1F2937]',
-                            ]
-                                .join(' ')
-                                .trim()}
-                        >
-                            Total: {Math.round(totalKcal)} kcal
-                            <span className="ml-1.5 font-body text-xs font-normal text-[#555555]">
-                                (target {Math.round(targetCalories)} ±{dayCalorieTolerance})
-                            </span>
-                        </p>
+                            {dayMacroSummary}
+                        </section>
                     </div>
-                    {dayMacroTotals && dayMacroTotals.calories > 0 ? (
-                        <div className="mt-2">
-                            <PlanMacroSummaryRow
-                                macros={dayMacroTotals}
-                                ariaLabel="Selected day macros"
-                            />
-                        </div>
-                    ) : null}
-                    {hintText ? <p className="mt-1.5 font-body text-xs text-[#555555]">{hintText}</p> : null}
-
-                    {showStickyFooterNav ? (
-                        <div
-                            className={`mt-3 flex flex-wrap items-center gap-3 ${typeof onFooterBack === 'function' ? 'justify-between' : 'justify-center'}`}
-                        >
-                            {typeof onFooterBack === 'function' ? (
-                                <PillButton
-                                    type="button"
-                                    label="BACK"
-                                    variant="outline"
-                                    size="md"
-                                    className="min-w-[120px] px-10"
-                                    onClick={onFooterBack}
-                                />
-                            ) : (
-                                <span className="hidden min-w-[120px] sm:block" aria-hidden="true" />
-                            )}
-                            <PillButton
-                                type="button"
-                                label={footerNextLabel}
-                                variant="primary"
-                                size="md"
-                                aria-disabled={craftFooterDisabled}
-                                className={['min-w-[140px] px-10', craftFooterDisabled ? 'opacity-60' : ''].join(' ')}
-                                onClick={handleFooterNextClick}
-                            />
-                        </div>
-                    ) : null}
-                </div>
-
-                {showLegacyNavigation ? (
-                    <div className="relative z-[70] shrink-0 border-t border-gray-200/80 bg-white">{navigation}</div>
                 ) : null}
             </div>
         </section>

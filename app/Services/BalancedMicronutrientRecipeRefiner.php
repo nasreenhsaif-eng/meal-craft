@@ -8,6 +8,7 @@ use App\Models\Ingredient;
 use App\Models\Meal;
 use App\Models\User;
 use App\Services\Nutrition\DayMicronutrientCoverageAnalyzer;
+use App\Support\MainMealVegetablePortionFloor;
 use App\Support\MealLibraryEditGuard;
 use App\Support\NutrientDailyRdi;
 use Illuminate\Support\Facades\DB;
@@ -92,6 +93,11 @@ final class BalancedMicronutrientRecipeRefiner
             $updated = array_merge($updated, $this->refineMealList(
                 BalancedWeeklyRotationSchedule::BEEF_MAINS,
                 self::ANIMAL_MAIN_PRIORITY_KEYS,
+            ));
+
+            $updated = array_merge($updated, $this->refineMealList(
+                BalancedWeeklyRotationSchedule::LIVER_MAINS,
+                ['b12', 'vitamin_k2', 'iron', 'b9_folate', 'vitamin_a', 'fiber', 'potassium', 'magnesium', 'zinc', 'b6', 'vitamin_e'],
             ));
 
             $updated = array_merge($updated, $this->refineMealList(
@@ -220,13 +226,19 @@ final class BalancedMicronutrientRecipeRefiner
         return match ($nutritionKey) {
             'iron', 'b9_folate', 'vitamin_a', 'vitamin_c', 'fiber', 'potassium' => 'side_salad',
             'calcium', 'magnesium', 'zinc', 'vitamin_e', 'b6' => 'side_salad',
-            'b12', 'vitamin_k2' => 'fish_beef',
+            'b12', 'vitamin_k2' => 'liver',
             default => 'main',
         };
     }
 
     private function mealForDayRole(int $dayNumber, string $role): ?Meal
     {
+        if ($role === 'liver') {
+            return $this->findMealByName(
+                BalancedWeeklyRotationSchedule::mealNameForDay($dayNumber, MealPlanSlotType::Main, 5),
+            );
+        }
+
         if ($role === 'fish_beef') {
             return $this->findMealByName(
                 BalancedWeeklyRotationSchedule::mealNameForDay($dayNumber, MealPlanSlotType::Main, 3),
@@ -235,14 +247,11 @@ final class BalancedMicronutrientRecipeRefiner
 
         if ($role === 'breakfast') {
             return $this->findMealByName(
-                BalancedWeeklyRotationSchedule::mealNameForDay($dayNumber, MealPlanSlotType::Breakfast, 2),
+                BalancedWeeklyRotationSchedule::mealNameForDay($dayNumber, MealPlanSlotType::Breakfast, 1),
             );
         }
 
         return match ($role) {
-            'breakfast' => $this->findMealByName(
-                BalancedWeeklyRotationSchedule::mealNameForDay($dayNumber, MealPlanSlotType::Breakfast, 2),
-            ),
             'side_salad' => $this->findMealByName(
                 BalancedWeeklyRotationSchedule::mealNameForDay($dayNumber, MealPlanSlotType::Salad, 1),
             ),
@@ -292,7 +301,7 @@ final class BalancedMicronutrientRecipeRefiner
             return false;
         }
 
-        $reduceName = $this->resolveFlexibleReduceTarget($ingredientGrams, $nutritionKey);
+        $reduceName = $this->resolveFlexibleReduceTarget($ingredientGrams, $nutritionKey, $meal);
 
         if ($reduceName === null) {
             return false;
@@ -317,7 +326,12 @@ final class BalancedMicronutrientRecipeRefiner
         $addedCalories = $gramStep * $boostCaloriesPerGram;
         $gramsToRemove = $addedCalories / $reduceCaloriesPerGram;
 
-        if (($ingredientGrams[$reduceName] ?? 0) - $gramsToRemove < 1.0) {
+        $minimumRemaining = max(
+            1.0,
+            MainMealVegetablePortionFloor::minimumGrams($meal, $reduceName) ?? 1.0,
+        );
+
+        if (($ingredientGrams[$reduceName] ?? 0) - $gramsToRemove < $minimumRemaining) {
             return false;
         }
 
@@ -370,7 +384,7 @@ final class BalancedMicronutrientRecipeRefiner
             ];
         }
 
-        return RecipeNutritionCalculator::fromRows($rows);
+        return RecipeNutritionCalculator::fromRows($rows, applyMealCookingYield: true);
     }
 
     /**
@@ -379,7 +393,7 @@ final class BalancedMicronutrientRecipeRefiner
     private function resolveBoostIngredientName(string $nutritionKey, array $ingredientGrams, ?string $mealName = null): ?string
     {
         $isChia = $mealName !== null
-            && in_array($mealName, BalancedWeeklyRotationSchedule::CHIA_BREAKFASTS, true);
+            && in_array($mealName, BalancedWeeklyRotationSchedule::CHIA_DESSERTS, true);
 
         $primaryPool = $isChia
             ? MicronutrientBoostCatalog::chiaBoostIngredientsForKey($nutritionKey)
@@ -391,7 +405,7 @@ final class BalancedMicronutrientRecipeRefiner
             $mealName,
         );
 
-        $selected = $this->selectBestBoostCandidate($candidates, $ingredientGrams);
+        $selected = MicronutrientBoostCatalog::selectBestBoostCandidate($candidates, $ingredientGrams);
 
         if ($selected !== null) {
             return $selected;
@@ -407,7 +421,7 @@ final class BalancedMicronutrientRecipeRefiner
             $mealName,
         );
 
-        return $this->selectBestBoostCandidate($fallback, $ingredientGrams);
+        return MicronutrientBoostCatalog::selectBestBoostCandidate($fallback, $ingredientGrams);
     }
 
     /**
@@ -418,7 +432,7 @@ final class BalancedMicronutrientRecipeRefiner
     private function filterBoostCandidates(array $candidates, array $ingredientGrams, ?string $mealName): array
     {
         $isChia = $mealName !== null
-            && in_array($mealName, BalancedWeeklyRotationSchedule::CHIA_BREAKFASTS, true);
+            && in_array($mealName, BalancedWeeklyRotationSchedule::CHIA_DESSERTS, true);
 
         return array_values(array_filter($candidates, function (string $candidate) use ($ingredientGrams, $isChia, $mealName): bool {
             if ($isChia && ! MicronutrientBoostCatalog::isChiaAllowedBoost($candidate)) {
@@ -440,48 +454,19 @@ final class BalancedMicronutrientRecipeRefiner
     }
 
     /**
-     * @param  list<string>  $candidates
      * @param  array<string, float>  $ingredientGrams
      */
-    private function selectBestBoostCandidate(array $candidates, array $ingredientGrams): ?string
-    {
-        if ($candidates === []) {
-            return null;
-        }
-
-        $greenCandidates = array_values(array_filter(
-            $candidates,
-            fn (string $candidate): bool => MicronutrientBoostCatalog::isGreenBoostIngredient($candidate),
-        ));
-
-        if ($greenCandidates !== []) {
-            usort(
-                $greenCandidates,
-                fn (string $a, string $b): int => ($ingredientGrams[$a] ?? 0) <=> ($ingredientGrams[$b] ?? 0),
-            );
-
-            return $greenCandidates[0];
-        }
-
-        foreach ($candidates as $candidate) {
-            if (array_key_exists($candidate, $ingredientGrams)) {
-                return $candidate;
-            }
-        }
-
-        return $candidates[0];
-    }
-
-    /**
-     * @param  array<string, float>  $ingredientGrams
-     */
-    private function resolveFlexibleReduceTarget(array $ingredientGrams, string $nutritionKey): ?string
+    private function resolveFlexibleReduceTarget(array $ingredientGrams, string $nutritionKey, Meal $meal): ?string
     {
         $bestName = null;
         $bestScore = null;
 
         foreach ($ingredientGrams as $name => $grams) {
             if ($grams <= self::GRAM_STEP || MicronutrientBoostCatalog::isAnchorIngredient($name)) {
+                continue;
+            }
+
+            if (MainMealVegetablePortionFloor::minimumGrams($meal, $name) !== null) {
                 continue;
             }
 
@@ -510,6 +495,8 @@ final class BalancedMicronutrientRecipeRefiner
      */
     private function syncMeal(Meal $meal, array $ingredientGrams): void
     {
+        $ingredientGrams = MainMealVegetablePortionFloor::applyFloors($meal, $ingredientGrams);
+
         $sync = [];
 
         foreach ($ingredientGrams as $ingredientName => $grams) {

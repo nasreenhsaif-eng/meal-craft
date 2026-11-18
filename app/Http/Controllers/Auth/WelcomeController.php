@@ -10,7 +10,7 @@ use Illuminate\View\View;
 class WelcomeController extends Controller
 {
     /**
-     * Public marketing welcome screen — guests only.
+     * Public marketing landing — guests only. Authenticated users go home.
      */
     public function show(Request $request): View|RedirectResponse
     {

@@ -4,15 +4,21 @@ namespace App\Services;
 
 use App\Models\Ingredient;
 use App\Models\Meal;
+use App\Support\IngredientCookingYield;
+use App\Support\PureCookingFatNutrition;
+use App\Support\RecipeMacroRounding;
 use App\Support\SickleCellNutrientRdi;
 
 final class RecipeNutritionCalculator
 {
     /**
      * @param  array<int, array{ingredient_id: int|null, amount?: float|int|string|null, unit?: string|null, amount_grams?: float|int|string|null}>  $rows
+     * @param  bool  $applyMealCookingYield  When true, rescale dry-weighed cooked-macro staples for meal totals.
+     *                                       Leave false for base-recipe component rollups.
+     * @param  bool  $finalize  When false, return unrounded floats (for intermediate per-100 g formulation).
      * @return array<string, float>
      */
-    public static function fromRows(array $rows): array
+    public static function fromRows(array $rows, bool $applyMealCookingYield = false, bool $finalize = true): array
     {
         $ingredientIds = collect($rows)
             ->map(fn (array $r): ?int => isset($r['ingredient_id']) && is_numeric($r['ingredient_id']) ? (int) $r['ingredient_id'] : null)
@@ -50,7 +56,8 @@ final class RecipeNutritionCalculator
             'vitamin_k2' => 0.0,
         ];
 
-        $jsonKeys = ['fiber', 'sugar', 'calcium', 'potassium', 'sodium', 'zinc', 'vitamin_c', 'vitamin_a', 'vitamin_e', 'vitamin_d', 'vitamin_k2'];
+        /** @var list<array{ingredient: Ingredient, grams: float}> $pureFatPortions */
+        $pureFatPortions = [];
 
         foreach ($rows as $row) {
             $ingredientId = isset($row['ingredient_id']) && is_numeric($row['ingredient_id']) ? (int) $row['ingredient_id'] : null;
@@ -66,31 +73,52 @@ final class RecipeNutritionCalculator
                 continue;
             }
 
-            $grams = self::resolvedGramsForRow($row, $ingredient);
+            $inputGrams = self::resolvedGramsForRow($row, $ingredient);
 
-            if ($grams <= 0) {
+            if ($inputGrams <= 0) {
                 continue;
             }
 
-            $factor = $grams / 100.0;
-            $per100 = self::per100gNutritionForIngredient($ingredient);
+            // Pure cooking fats never use cooked-yield rescale — lipid mass is conserved.
+            $nutritionGrams = $applyMealCookingYield && ! PureCookingFatNutrition::isPureCookingFat($ingredient)
+                ? IngredientCookingYield::nutritionMassGrams($ingredient, $inputGrams)
+                : $inputGrams;
+
+            if ($nutritionGrams <= 0) {
+                continue;
+            }
+
+            if (PureCookingFatNutrition::isPureCookingFat($ingredient)) {
+                $pureFatPortions[] = [
+                    'ingredient' => $ingredient,
+                    'grams' => $nutritionGrams,
+                ];
+            }
+
+            // Unrounded: mass_g × (per-100g nutrient / 100) = mass_g × nutrient_per_gram.
+            $perGram = self::unroundedNutrientsPerGram($ingredient);
 
             foreach ($nutrition as $key => $_value) {
-                $nutrition[$key] += ((float) ($per100[$key] ?? 0)) * $factor;
+                $nutrition[$key] += $nutritionGrams * ((float) ($perGram[$key] ?? 0));
             }
         }
 
-        foreach ($nutrition as $key => $value) {
-            $nutrition[$key] = round($value, 2);
+        $nutrition = PureCookingFatNutrition::enforceFatFloor($nutrition, $pureFatPortions);
+
+        if (! $finalize) {
+            return $nutrition;
         }
 
-        return $nutrition;
+        return RecipeMacroRounding::finalize($nutrition);
     }
 
     /**
      * Whole-meal nutrition from ingredient pivots (amount + unit when set, else grams).
+     * Applies cooked-yield mass corrections for dry-weighed staples with cooked macros.
+     *
+     * @return array<string, float>
      */
-    public static function fromMeal(Meal $meal): array
+    public static function fromMeal(Meal $meal, bool $finalize = true): array
     {
         $meal->loadMissing('ingredients');
 
@@ -99,22 +127,25 @@ final class RecipeNutritionCalculator
             $pivotAmount = $pivot->amount;
             $hasDisplayAmount = $pivotAmount !== null && $pivotAmount !== '' && (float) $pivotAmount > 0;
             $unitRaw = $pivot->unit ?? '';
+            $amountGrams = (float) ($pivot->amount_grams ?? 0);
 
+            // Always pass amount_grams so pure-fat resolution can refuse volume undercounts.
             if ($hasDisplayAmount && is_string($unitRaw) && $unitRaw !== '') {
                 return [
                     'ingredient_id' => $ingredient->id,
                     'amount' => (float) $pivotAmount,
                     'unit' => $unitRaw,
+                    'amount_grams' => $amountGrams,
                 ];
             }
 
             return [
                 'ingredient_id' => $ingredient->id,
-                'amount_grams' => (float) ($pivot->amount_grams ?? 0),
+                'amount_grams' => $amountGrams,
             ];
         })->all();
 
-        return self::fromRows($rows);
+        return self::fromRows($rows, applyMealCookingYield: true, finalize: $finalize);
     }
 
     /**
@@ -137,8 +168,9 @@ final class RecipeNutritionCalculator
     }
 
     /**
-     * Per-100 g nutrition for a library row. Prepared base ingredients prefer live rollup from
-     * {@see Ingredient::components()} when stored parent macros are empty or components exist.
+     * Per-100 g nutrition for a library row. Prepared base ingredients prefer stored finished
+     * product density; when empty, roll up components using {@see Ingredient::$finished_weight_grams}
+     * as the cooked yield divisor (matching {@see BaseIngredientService::upsert}).
      *
      * @return array<string, float>
      */
@@ -163,17 +195,36 @@ final class RecipeNutritionCalculator
     }
 
     /**
+     * Raw nutrients per gram from the library row (no intermediate rounding).
+     *
+     * @return array<string, float>
+     */
+    public static function unroundedNutrientsPerGram(Ingredient $ingredient): array
+    {
+        $per100 = self::per100gNutritionForIngredient($ingredient);
+        $perGram = [];
+
+        foreach ($per100 as $key => $value) {
+            $perGram[$key] = ((float) $value) / 100.0;
+        }
+
+        return $perGram;
+    }
+
+    /**
      * @return array<string, float>
      */
     private static function per100gFromStoredColumns(Ingredient $ingredient): array
     {
         $micros = is_array($ingredient->micronutrients) ? $ingredient->micronutrients : [];
+        $canonical = PureCookingFatNutrition::canonicalPer100gMacros($ingredient);
 
-        $nutrition = [
-            'calories' => (float) $ingredient->calories,
-            'protein' => (float) $ingredient->protein,
-            'carbs' => (float) $ingredient->carbs,
-            'fat' => (float) $ingredient->fat,
+        // Keep full float precision — rounding happens only on final dish totals.
+        return [
+            'calories' => (float) $canonical['calories'],
+            'protein' => (float) $canonical['protein'],
+            'carbs' => (float) $canonical['carbs'],
+            'fat' => (float) $canonical['fat'],
             'b6' => (float) ($ingredient->b6 ?? 0),
             'b9_folate' => (float) ($ingredient->b9_folate ?? 0),
             'b12' => (float) ($ingredient->b12 ?? 0),
@@ -191,21 +242,18 @@ final class RecipeNutritionCalculator
             'vitamin_d' => self::micronutrientPer100g($micros, 'vitamin_d'),
             'vitamin_k2' => self::micronutrientPer100g($micros, 'vitamin_k2'),
         ];
-
-        foreach ($nutrition as $key => $value) {
-            $nutrition[$key] = round($value, 4);
-        }
-
-        return $nutrition;
     }
 
     /**
+     * Roll up child nutrition into per-100 g of finished product.
+     * Uses {@see Ingredient::$finished_weight_grams} when set (cooked yield), else raw component sum.
+     *
      * @return array<string, float>
      */
     private static function per100gFromComponentFormulation(Ingredient $parent): array
     {
         $rows = [];
-        $totalGrams = 0.0;
+        $componentGrams = 0.0;
 
         foreach ($parent->components as $child) {
             $grams = (float) ($child->pivot->amount_grams ?? 0);
@@ -217,24 +265,28 @@ final class RecipeNutritionCalculator
                 'ingredient_id' => (int) $child->getKey(),
                 'amount_grams' => $grams,
             ];
-            $totalGrams += $grams;
+            $componentGrams += $grams;
         }
 
-        if ($rows === [] || $totalGrams <= 0) {
+        if ($rows === [] || $componentGrams <= 0) {
             return self::per100gFromStoredColumns($parent);
         }
 
-        $batch = self::fromRows($rows);
-        $factor = 100.0 / $totalGrams;
+        $finished = $parent->finished_weight_grams !== null ? (float) $parent->finished_weight_grams : 0.0;
+        $divisorGrams = $finished > 0 ? $finished : $componentGrams;
 
-        return self::scaleNutritionValues($batch, $factor);
+        // Unrounded batch → scale to per-100 g; library storage keeps float precision.
+        $batch = self::fromRows($rows, applyMealCookingYield: false, finalize: false);
+        $factor = 100.0 / $divisorGrams;
+
+        return self::scaleNutritionValuesUnrounded($batch, $factor);
     }
 
     /**
      * @param  array<string, float>  $nutrition
      * @return array<string, float>
      */
-    private static function scaleNutritionValues(array $nutrition, float $factor): array
+    private static function scaleNutritionValuesUnrounded(array $nutrition, float $factor): array
     {
         if (! is_finite($factor) || $factor <= 0) {
             return [];
@@ -245,7 +297,7 @@ final class RecipeNutritionCalculator
             if (! is_numeric($value)) {
                 continue;
             }
-            $out[$key] = round((float) $value * $factor, 4);
+            $out[$key] = (float) $value * $factor;
         }
 
         return $out;
@@ -266,27 +318,7 @@ final class RecipeNutritionCalculator
      */
     private static function resolvedGramsForRow(array $row, Ingredient $ingredient): float
     {
-        $density = (float) ($ingredient->getAttribute('density') ?? 1.0);
-
-        $hasAmountUnit = array_key_exists('amount', $row)
-            && array_key_exists('unit', $row)
-            && $row['unit'] !== null
-            && (string) $row['unit'] !== ''
-            && is_numeric($row['amount'] ?? null);
-
-        if ($hasAmountUnit) {
-            return RecipeIngredientUnitConverter::toGrams(
-                max(0.0, (float) $row['amount']),
-                (string) $row['unit'],
-                $density
-            );
-        }
-
-        if (isset($row['amount_grams']) && is_numeric($row['amount_grams'])) {
-            return max(0.0, (float) $row['amount_grams']);
-        }
-
-        return 0.0;
+        return PureCookingFatNutrition::resolvedGramsForRow($row, $ingredient);
     }
 
     private static function micronutrientPer100g(array $micronutrients, string $key): float

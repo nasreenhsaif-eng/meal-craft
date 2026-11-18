@@ -1,25 +1,226 @@
 import { createPortal } from 'react-dom';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link } from '@inertiajs/react';
+import { Link, router, usePage } from '@inertiajs/react';
 import { AnimatePresence, motion } from 'framer-motion';
 import adminInertiaLayout from '../../lib/adminInertiaLayout.jsx';
 import { resolveUrl } from '../../meal-craft/mealCraftPageProps.js';
-import PillButton from '../../Components/Atoms/Button/Button.jsx';
 import Button from '../../Components/Atoms/Button.jsx';
-import {
+import AdminPreviewTierPicker from '../../Components/Admin/AdminPreviewTierPicker.jsx';
+import CalendarRangeField from '../../Components/Molecules/Calendar/CalendarRangeField.jsx';
+import ChooseYourMeals, {
     applyDeckSelectionToggle,
     DEFAULT_FULL_CRAFT_MAX_SELECTIONS,
-    MealSlotCarousel,
-    PlanMacroSummaryPanel,
-    SoupOfTheDayOptIn,
-    sumActiveDayMacros,
 } from '../../Components/Consultation/ChooseYourMeals.jsx';
+import {
+    applyFixedChoiceToggle,
+    FIXED_CHOICE_CATEGORY_KEYS,
+} from '../../consultation/fixedChoiceSelection.js';
+import { DayMacroMicroTabPanel } from '../../Components/Consultation/DayNutritionalSummaryPanel.jsx';
 import MealDetailView from '../../Components/Molecules/MealDetailView/MealDetailView';
 import MealPlanMealEditSheet from '../../Components/MealPlan/MealPlanMealEditSheet.jsx';
 import { SCHEDULER_SLOT_SECTIONS } from '../../meal-library/mealSearch.ts';
 import { updateMealInPlanDays } from './mealPlanMealEdit.js';
+import { useMealDetailModal } from '../../meal-library/useMealDetailModal.js';
+import DayShoppingListModal, {
+    SavedShoppingListModal,
+} from '../../Components/MealPlan/DayShoppingListModal.jsx';
+import {
+    aggregateSelectedDayShoppingIngredients,
+    mergeShoppingListItems,
+    readStoredShoppingList,
+    writeStoredShoppingList,
+} from './dayShoppingList.js';
+import {
+    applyLibraryTierPortions,
+    daysUseLibraryPortions,
+} from '../../consultation/applyLibraryTierPortions.js';
 
 const PAGE_BG = 'bg-[#F8F9F6]';
+
+const WEEKDAY_LONG = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+const DEFAULT_PLAN_TIERS = [1250, 1500, 1800, 2000];
+
+/**
+ * @param {number} mealPlanId
+ * @param {number[]} planTiers
+ * @param {number} fallback
+ */
+function readStoredMealPlanTier(mealPlanId, planTiers, fallback) {
+    if (typeof window === 'undefined' || mealPlanId <= 0) {
+        return fallback;
+    }
+
+    try {
+        const raw = sessionStorage.getItem(`mc-admin-meal-plan-tier-${mealPlanId}`);
+        const value = raw ? Number.parseInt(raw, 10) : Number.NaN;
+
+        if (Number.isFinite(value) && planTiers.includes(value)) {
+            return value;
+        }
+    } catch {
+        // ignore storage errors
+    }
+
+    return fallback;
+}
+
+/**
+ * @param {string} tierPreviewUrl
+ * @param {number} planTier
+ * @param {Record<number, Record<string, string[]>>} [daySelections]
+ */
+async function fetchTierPreviewDays(tierPreviewUrl, planTier, daySelections = {}) {
+    const url = new URL(tierPreviewUrl, window.location.origin);
+    url.searchParams.set('plan_tier', String(planTier));
+
+    if (Object.keys(daySelections).length > 0) {
+        url.searchParams.set('selections', JSON.stringify(daySelections));
+    }
+
+    const response = await fetch(url.toString(), {
+        headers: {
+            Accept: 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+        },
+        credentials: 'same-origin',
+    });
+
+    if (!response.ok) {
+        throw new Error('Could not load tier preview.');
+    }
+
+    const payload = await response.json();
+
+    return payload.days ?? [];
+}
+
+const CATEGORY_KEYS_FOR_SELECTION = ['breakfasts', 'meals', 'sideSalads', 'desserts', 'soup'];
+
+/**
+ * Keep chosen breakfast / side cards visible after tier preview recategorizes a meal.
+ *
+ * @param {Array<{ dayNumber: number; categories?: Record<string, object[]> }>} previewDays
+ * @param {Array<{ dayNumber: number; categories?: Record<string, object[]> }>} previousDays
+ * @param {Record<number, Record<string, Array<string|number>>>} daySelections
+ */
+function retainSelectedMealsInPreviewDays(previewDays, previousDays, daySelections) {
+    /** @type {Map<number, { dayNumber: number; categories?: Record<string, object[]> }>} */
+    const previousByDay = new Map((previousDays ?? []).map((day) => [day.dayNumber, day]));
+
+    return (previewDays ?? []).map((day) => {
+        const previous = previousByDay.get(day.dayNumber);
+        const selections = daySelections?.[day.dayNumber] ?? daySelections?.[String(day.dayNumber)] ?? {};
+        /** @type {Map<string, object>} */
+        const catalog = new Map();
+
+        for (const source of [previous?.categories, day.categories]) {
+            for (const meals of Object.values(source ?? {})) {
+                for (const meal of meals ?? []) {
+                    const id = String(meal?.id ?? '');
+                    if (id !== '' && !catalog.has(id)) {
+                        catalog.set(id, meal);
+                    }
+                }
+            }
+        }
+
+        /** @type {Record<string, object[]>} */
+        const categories = { ...(day.categories ?? {}) };
+
+        for (const categoryKey of CATEGORY_KEYS_FOR_SELECTION) {
+            const existing = Array.isArray(categories[categoryKey]) ? [...categories[categoryKey]] : [];
+            const previousMeals = previous?.categories?.[categoryKey] ?? [];
+            const existingIds = new Set(existing.map((meal) => String(meal?.id ?? '')).filter((id) => id !== ''));
+
+            if (existing.length === 0) {
+                for (const meal of previousMeals) {
+                    const id = String(meal?.id ?? '');
+                    if (id === '' || existingIds.has(id)) {
+                        continue;
+                    }
+
+                    existing.push(meal);
+                    existingIds.add(id);
+                }
+            }
+
+            for (const rawId of selections[categoryKey] ?? []) {
+                const id = String(rawId);
+                if (id === '' || existingIds.has(id)) {
+                    continue;
+                }
+
+                const meal = catalog.get(id);
+                if (!meal) {
+                    continue;
+                }
+
+                existing.push(meal);
+                existingIds.add(id);
+            }
+
+            categories[categoryKey] = existing;
+        }
+
+        return { ...day, categories };
+    });
+}
+
+/**
+ * Rebind checked side categories onto a card that is actually on the day.
+ *
+ * @param {Record<number, Record<string, string[]>>} daySelections
+ * @param {Array<{ dayNumber: number; categories?: Record<string, object[]> }>} planDays
+ */
+function repairFixedChoiceSelections(daySelections, planDays) {
+    let changed = false;
+    const next = { ...daySelections };
+
+    for (const day of planDays ?? []) {
+        const current = next[day.dayNumber] ?? next[String(day.dayNumber)] ?? {};
+        let dayChanged = false;
+        const patched = { ...current };
+
+        for (const key of FIXED_CHOICE_CATEGORY_KEYS) {
+            const ids = (current[key] ?? []).map((id) => String(id)).filter((id) => id !== '');
+
+            if (ids.length === 0) {
+                continue;
+            }
+
+            const cards = day.categories?.[key] ?? [];
+            const cardIds = new Set(cards.map((meal) => String(meal?.id ?? '')).filter((id) => id !== ''));
+            const valid = ids.filter((id) => cardIds.has(id));
+
+            if (valid.length === ids.length) {
+                continue;
+            }
+
+            dayChanged = true;
+
+            if (valid.length > 0) {
+                patched[key] = valid;
+                continue;
+            }
+
+            if (cards.length === 0) {
+                continue;
+            }
+
+            const recommended =
+                cards.find((meal) => meal?.isRecommended || meal?.is_recommended) ?? cards[0];
+            patched[key] = [String(recommended.id)];
+        }
+
+        if (dayChanged) {
+            next[day.dayNumber] = patched;
+            changed = true;
+        }
+    }
+
+    return changed ? next : daySelections;
+}
 
 /** @type {Record<string, 'breakfasts' | 'meals' | 'sideSalads' | 'desserts' | 'soup'>} */
 const SLOT_KEY_TO_CATEGORY = {
@@ -37,11 +238,27 @@ const DETAIL_SECTIONS = SCHEDULER_SLOT_SECTIONS.map((section) => ({
     maxSelected: section.count,
 }));
 
-const SOUP_SECTION = DETAIL_SECTIONS.find((section) => section.categoryKey === 'soup');
-
 /** @param {string} categoryKey */
 function defaultSelectionCapForCategory(categoryKey) {
     return DEFAULT_FULL_CRAFT_MAX_SELECTIONS[categoryKey] ?? 1;
+}
+
+/**
+ * Prefer recommended / primary-slot meals when seeding admin preview selections.
+ *
+ * @param {Array<{ id?: string|number; isRecommended?: boolean; plan_slot_index?: number; planSlotIndex?: number }>} meals
+ * @param {number} cap
+ * @returns {string[]}
+ */
+function initialSelectedIdsForCategory(meals, cap) {
+    if (!Array.isArray(meals) || meals.length === 0 || cap <= 0) {
+        return [];
+    }
+
+    const recommended = meals.filter((meal) => meal?.isRecommended || meal?.is_recommended);
+    const source = recommended.length > 0 ? recommended : meals;
+
+    return source.slice(0, cap).map((meal) => String(meal.id));
 }
 
 /** @param {Array<{ dayNumber: number; categories?: Record<string, { id: string }[]> }>} planDays */
@@ -59,65 +276,237 @@ function buildInitialDaySelections(planDays) {
 
             const meals = day.categories?.[section.categoryKey] ?? [];
             const cap = defaultSelectionCapForCategory(section.categoryKey);
-            out[day.dayNumber][section.categoryKey] = meals.slice(0, cap).map((meal) => String(meal.id));
+            out[day.dayNumber][section.categoryKey] = initialSelectedIdsForCategory(meals, cap);
         }
     }
 
     return out;
 }
 
-/** @param {Array<{ dayNumber: number }>} planDays */
-function buildInitialSoupOptInByDay(planDays) {
-    /** @type {Record<number, boolean>} */
+/**
+ * @param {Record<number|string, Record<string, Array<number|string>>>|null|undefined} stored
+ * @param {Array<{ dayNumber: number; categories?: Record<string, { id: string }[]> }>} planDays
+ */
+function buildInitialDaySelectionsFromStored(stored, planDays) {
+    if (!stored || typeof stored !== 'object' || Object.keys(stored).length === 0) {
+        return null;
+    }
+
+    /** @type {Record<number, Record<string, string[]>>} */
     const out = {};
 
     for (const day of planDays) {
-        out[day.dayNumber] = false;
+        const dayKey = day.dayNumber;
+        const rawDay = stored[dayKey] ?? stored[String(dayKey)] ?? {};
+        out[dayKey] = {};
+
+        for (const section of DETAIL_SECTIONS) {
+            const ids = Array.isArray(rawDay?.[section.categoryKey])
+                ? rawDay[section.categoryKey].map((id) => String(id)).filter((id) => id !== '')
+                : [];
+            out[dayKey][section.categoryKey] = ids;
+        }
     }
 
     return out;
 }
 
 /**
+ * @param {Array<{ dayNumber: number; categories?: Record<string, { id: string }[]> }>} planDays
+ * @param {Record<number|string, Record<string, Array<number|string>>>|null|undefined} defaultDaySelections
+ */
+function resolveInitialDaySelections(planDays, defaultDaySelections) {
+    return buildInitialDaySelectionsFromStored(defaultDaySelections, planDays) ?? buildInitialDaySelections(planDays);
+}
+
+/**
+ * @param {{ categories?: Record<string, Array<{ id?: string|number }>> } | null} dayData
+ * @param {{ id?: string|number }} meal
+ */
+function categoryKeyForMeal(dayData, meal) {
+    const mealId = String(meal?.id ?? '');
+
+    if (!dayData?.categories || mealId === '') {
+        return null;
+    }
+
+    for (const section of DETAIL_SECTIONS) {
+        const meals = dayData.categories[section.categoryKey] ?? [];
+
+        if (meals.some((item) => String(item?.id ?? '') === mealId)) {
+            return section.categoryKey;
+        }
+    }
+
+    return null;
+}
+
+/**
  * @param {object} props
  * @param {object} props.mealPlan
  * @param {Array<{ dayNumber: number; label: string; categories: Record<string, unknown[]> }>} props.days
+ * @param {Record<number|string, Record<string, Array<number|string>>>} [props.defaultDaySelections]
+ * @param {number[]} [props.planTiers]
+ * @param {number} [props.defaultPlanTier]
+ * @param {string} [props.tierPreviewUrl]
+ * @param {string} [props.saveDefaultSelectionsUrl]
  * @param {string} [props.libraryUrl]
  * @param {object[]} [props.ingredientProfiles]
+ * @param {string} [props.dietProtocol]
  */
 export default function MealPlanDetailPage({
     mealPlan,
     days = [],
+    defaultDaySelections = null,
+    planTiers = DEFAULT_PLAN_TIERS,
+    defaultPlanTier = 1500,
+    tierPreviewUrl = '',
+    saveDefaultSelectionsUrl = '',
     libraryUrl = '/admin/meal-plan-library',
     ingredientProfiles = [],
+    dietProtocol = 'balanced',
 }) {
-    const [planDays, setPlanDays] = useState(days);
-    const [activeDay, setActiveDay] = useState(() => days[0]?.dayNumber ?? 1);
-    const [daySelections, setDaySelections] = useState(() => buildInitialDaySelections(days));
-    const [soupOptInByDay, setSoupOptInByDay] = useState(() => buildInitialSoupOptInByDay(days));
-    const [mealDetailModal, setMealDetailModal] = useState(
-        /** @type {{ title: string; detailView: object } | null} */ (null),
+    const page = usePage();
+    const flashSuccess = page.props?.flash?.success ?? null;
+    const availablePlanTiers = planTiers.length > 0 ? planTiers : DEFAULT_PLAN_TIERS;
+    const mealPlanId = mealPlan?.id ?? 0;
+    const initialTier = readStoredMealPlanTier(
+        mealPlanId,
+        availablePlanTiers,
+        availablePlanTiers.includes(defaultPlanTier) ? defaultPlanTier : availablePlanTiers[0],
     );
+
+    const [selectedTier, setSelectedTier] = useState(initialTier);
+    const libraryBacked = useMemo(() => daysUseLibraryPortions(days), [days]);
+    const [sourceDays, setSourceDays] = useState(days);
+    const [tierLoading, setTierLoading] = useState(() => Boolean(tierPreviewUrl) && !daysUseLibraryPortions(days));
+    const [tierError, setTierError] = useState(/** @type {string | null} */ (null));
+    const [activeDay, setActiveDay] = useState(() => days[0]?.dayNumber ?? 1);
+    const [daySelections, setDaySelections] = useState(() =>
+        resolveInitialDaySelections(days, defaultDaySelections),
+    );
+    const [savingDefaults, setSavingDefaults] = useState(false);
+    const [saveDefaultsError, setSaveDefaultsError] = useState(/** @type {string | null} */ (null));
+    const [planDescription, setPlanDescription] = useState(() => String(mealPlan?.description ?? mealPlan?.goal ?? ''));
+    const [publishRange, setPublishRange] = useState(() => ({
+        start: mealPlan?.publishedStartsOn ?? null,
+        end: mealPlan?.publishedEndsOn ?? null,
+    }));
     const [mealEditModal, setMealEditModal] = useState(
         /** @type {{ dayNumber: number; categoryKey: string; meal: object } | null} */ (null),
     );
+    const [dayShoppingListOpen, setDayShoppingListOpen] = useState(false);
+    const [savedShoppingList, setSavedShoppingList] = useState(() => readStoredShoppingList(mealPlanId));
+    const [viewSavedShoppingListOpen, setViewSavedShoppingListOpen] = useState(false);
+    const { mealDetailModal, detailLoading, openMealDetail, closeMealDetail } = useMealDetailModal(
+        '/api/meals/{id}/detail-view',
+        () => {
+            const params = new URLSearchParams();
+            params.set('plan_tier', String(selectedTier));
+            params.set('craft_key', 'full');
+            params.set('day_of_week', String(activeDay));
+
+            return params.toString();
+        },
+    );
 
     useEffect(() => {
-        setPlanDays(days);
-        setDaySelections(buildInitialDaySelections(days));
-        setSoupOptInByDay(buildInitialSoupOptInByDay(days));
-    }, [days]);
+        setSavedShoppingList(readStoredShoppingList(mealPlanId));
+    }, [mealPlanId]);
+
+    const planDays = useMemo(
+        () => (libraryBacked ? applyLibraryTierPortions(sourceDays, selectedTier) : sourceDays),
+        [libraryBacked, sourceDays, selectedTier],
+    );
+
+    useEffect(() => {
+        setSourceDays(days);
+        setDaySelections(resolveInitialDaySelections(days, defaultDaySelections));
+        setPlanDescription(String(mealPlan?.description ?? mealPlan?.goal ?? ''));
+        setPublishRange({
+            start: mealPlan?.publishedStartsOn ?? null,
+            end: mealPlan?.publishedEndsOn ?? null,
+        });
+    }, [days, defaultDaySelections, mealPlan?.description, mealPlan?.goal, mealPlan?.publishedStartsOn, mealPlan?.publishedEndsOn]);
+
+    const daySelectionsJson = useMemo(() => JSON.stringify(daySelections), [daySelections]);
+
+    useEffect(() => {
+        if (libraryBacked || !tierPreviewUrl) {
+            setTierLoading(false);
+            return undefined;
+        }
+
+        let cancelled = false;
+
+        setTierLoading(true);
+        setTierError(null);
+
+        const timer = window.setTimeout(() => {
+            fetchTierPreviewDays(tierPreviewUrl, selectedTier, daySelections)
+                .then((tierDays) => {
+                    if (cancelled) {
+                        return;
+                    }
+
+                    setSourceDays(retainSelectedMealsInPreviewDays(tierDays, days, daySelections));
+                })
+                .catch(() => {
+                    if (!cancelled) {
+                        setTierError('Could not load Meal Tiers Library portions for this tier. Showing stored meals.');
+                        setSourceDays(days);
+                    }
+                })
+                .finally(() => {
+                    if (!cancelled) {
+                        setTierLoading(false);
+                    }
+                });
+        }, 300);
+
+        return () => {
+            cancelled = true;
+            window.clearTimeout(timer);
+        };
+    }, [libraryBacked, tierPreviewUrl, selectedTier, daySelectionsJson, days]);
+
+    useEffect(() => {
+        if (mealPlanId <= 0) {
+            return;
+        }
+
+        try {
+            sessionStorage.setItem(`mc-admin-meal-plan-tier-${mealPlanId}`, String(selectedTier));
+        } catch {
+            // ignore storage errors
+        }
+    }, [mealPlanId, selectedTier]);
 
     const activeDayData = useMemo(
         () => planDays.find((day) => day.dayNumber === activeDay) ?? planDays[0] ?? null,
         [activeDay, planDays],
     );
 
-    const soupOptIn = soupOptInByDay[activeDay] ?? false;
+    useEffect(() => {
+        setDaySelections((prev) => repairFixedChoiceSelections(prev, planDays));
+    }, [planDays]);
+
+    const catalogMeals = useMemo(() => {
+        if (!activeDayData?.categories) {
+            return [];
+        }
+
+        return Object.values(activeDayData.categories).flat().filter(Boolean);
+    }, [activeDayData]);
 
     const activeDaySelections = daySelections[activeDay] ?? {};
 
-    const selectedCategoriesForMacros = useMemo(() => {
+    const activeDayReconciliationWarnings = useMemo(
+        () => (Array.isArray(activeDayData?.reconciliationWarnings) ? activeDayData.reconciliationWarnings : []),
+        [activeDayData],
+    );
+
+    const selectedCategoriesForDayNutrition = useMemo(() => {
         if (!activeDayData?.categories) {
             return {};
         }
@@ -126,32 +515,44 @@ export default function MealPlanDetailPage({
         const out = {};
 
         for (const section of DETAIL_SECTIONS) {
-            if (section.categoryKey === 'soup' && !soupOptIn) {
-                continue;
-            }
-
             const meals = activeDayData.categories?.[section.categoryKey] ?? [];
-            const selectedSet = new Set(activeDaySelections[section.categoryKey] ?? []);
-            out[section.categoryKey] = meals.filter((meal) => selectedSet.has(String(meal.id)));
+            const selectedSet = new Set(
+                (activeDaySelections[section.categoryKey] ?? []).map((id) => String(id)),
+            );
+
+            out[section.categoryKey] = meals.filter((meal) => selectedSet.has(String(meal?.id ?? '')));
         }
 
         return out;
-    }, [activeDayData, activeDaySelections, soupOptIn]);
+    }, [activeDayData, activeDaySelections]);
+
+    const dayShoppingIngredients = useMemo(
+        () =>
+            aggregateSelectedDayShoppingIngredients(
+                selectedCategoriesForDayNutrition,
+                ingredientProfiles,
+            ),
+        [selectedCategoriesForDayNutrition, ingredientProfiles],
+    );
+
+    const handleAddToShoppingList = useCallback(
+        (selected) => {
+            setSavedShoppingList((prev) => {
+                const next = mergeShoppingListItems(prev, selected);
+                writeStoredShoppingList(mealPlanId, next);
+
+                return next;
+            });
+        },
+        [mealPlanId],
+    );
 
     const backUrl = resolveUrl(libraryUrl, '/admin/meal-plan-library');
 
-    const openMealDetail = useCallback((meal) => {
-        if (!meal?.detailView) {
-            return;
-        }
-        setMealDetailModal({
-            title: meal.title ?? 'Meal details',
-            detailView: meal.detailView,
-        });
-    }, []);
-
     const openMealEdit = useCallback((meal, categoryKey) => {
-        if (!meal?.editForm) {
+        const hasKitchenRows = Array.isArray(meal?.kitchenIngredientRows) && meal.kitchenIngredientRows.length > 0;
+
+        if (!meal?.editForm && !hasKitchenRows) {
             return;
         }
         setMealEditModal({
@@ -165,12 +566,27 @@ export default function MealPlanDetailPage({
         if (!mealEditModal) {
             return;
         }
-        setPlanDays((prev) =>
+        setSourceDays((prev) =>
             updateMealInPlanDays(prev, {
                 dayNumber: mealEditModal.dayNumber,
                 categoryKey: mealEditModal.categoryKey,
                 mealId: String(mealEditModal.meal.id),
-            }, updatedMeal),
+            }, {
+                ...updatedMeal,
+                calorieTiers: (mealEditModal.meal.calorieTiers ?? updatedMeal.calorieTiers ?? []).map((tier) => {
+                    if (Number(tier?.calorie_tier) !== Number(updatedMeal.libraryCalorieTier ?? mealEditModal.meal.libraryCalorieTier)) {
+                        return tier;
+                    }
+
+                    return {
+                        ...tier,
+                        macros: updatedMeal.macros ?? tier.macros,
+                        kitchenIngredientRows: updatedMeal.kitchenIngredientRows ?? tier.kitchenIngredientRows,
+                        nutrition: updatedMeal.detailView?.nutrition ?? tier.nutrition,
+                        nutritionalData: updatedMeal.detailView?.nutritionalData ?? tier.nutritionalData,
+                    };
+                }),
+            }),
         );
     }, [mealEditModal]);
 
@@ -192,33 +608,105 @@ export default function MealPlanDetailPage({
         });
     }, [activeDay]);
 
-    const setSoupOptInForActiveDay = useCallback((next) => {
-        setSoupOptInByDay((prev) => ({ ...prev, [activeDay]: next }));
+    /** Side salad / dessert / soup behave as one "pick 1–2 of 3" group, matching the customer flow. */
+    const toggleFixedChoiceSide = useCallback((categoryKey, meal) => {
+        const mealId = String(meal.id);
 
-        if (!next) {
-            setDaySelections((prev) => ({
+        setDaySelections((prev) => {
+            const day = prev[activeDay] ?? {};
+            const { next, blocked } = applyFixedChoiceToggle(day, categoryKey, mealId);
+
+            if (blocked) {
+                return prev;
+            }
+
+            return {
                 ...prev,
-                [activeDay]: {
-                    ...(prev[activeDay] ?? {}),
-                    soup: [],
-                },
-            }));
-        }
+                [activeDay]: next,
+            };
+        });
     }, [activeDay]);
 
-    const planCategoryLabel = String(mealPlan?.category ?? '').trim();
-    const goalText = String(mealPlan?.goal ?? '').trim();
-    const showGoalDescription =
-        goalText !== '' &&
-        goalText.toLowerCase() !== planCategoryLabel.toLowerCase() &&
-        goalText.toLowerCase() !== 'balanced';
+    const clearFixedChoiceCategory = useCallback((categoryKey) => {
+        setDaySelections((prev) => {
+            const day = prev[activeDay] ?? {};
 
-    const activeDayTotals = useMemo(
-        () => sumActiveDayMacros(selectedCategoriesForMacros),
-        [selectedCategoriesForMacros],
+            return {
+                ...prev,
+                [activeDay]: {
+                    ...day,
+                    [categoryKey]: [],
+                },
+            };
+        });
+    }, [activeDay]);
+
+    const saveDefaultSelections = useCallback(() => {
+        if (!saveDefaultSelectionsUrl) {
+            return;
+        }
+
+        if (!publishRange.start || !publishRange.end) {
+            setSaveDefaultsError('Select a start and end date on the calendar before publishing.');
+            return;
+        }
+
+        setSavingDefaults(true);
+        setSaveDefaultsError(null);
+
+        router.put(
+            saveDefaultSelectionsUrl,
+            {
+                selections: daySelections,
+                description: planDescription,
+                published_starts_on: publishRange.start,
+                published_ends_on: publishRange.end,
+            },
+            {
+                preserveScroll: true,
+                onFinish: () => setSavingDefaults(false),
+                onError: () => {
+                    setSaveDefaultsError('Could not publish the meal plan. Please try again.');
+                },
+            },
+        );
+    }, [daySelections, planDescription, publishRange.end, publishRange.start, saveDefaultSelectionsUrl]);
+
+    const planCategoryLabel = String(mealPlan?.category ?? '').trim();
+
+    const categoryMaxSelections = useMemo(() => {
+        const breakfastCount = activeDayData?.categories?.breakfasts?.length ?? 0;
+
+        return {
+            ...DEFAULT_FULL_CRAFT_MAX_SELECTIONS,
+            breakfasts: breakfastCount > 0 ? DEFAULT_FULL_CRAFT_MAX_SELECTIONS.breakfasts : 0,
+        };
+    }, [activeDayData]);
+
+    const handleToggleCategory = useCallback(
+        (categoryKey, meal) => {
+            if (FIXED_CHOICE_CATEGORY_KEYS.includes(categoryKey)) {
+                toggleFixedChoiceSide(categoryKey, meal);
+                return;
+            }
+
+            toggleMealSelection(categoryKey, meal, defaultSelectionCapForCategory(categoryKey));
+        },
+        [toggleFixedChoiceSide, toggleMealSelection],
     );
 
-    const nonSoupSections = DETAIL_SECTIONS.filter((section) => section.categoryKey !== 'soup');
+    const handleEditMeal = useCallback(
+        (meal) => {
+            const categoryKey = categoryKeyForMeal(activeDayData, meal);
+
+            if (!categoryKey) {
+                return;
+            }
+
+            openMealEdit(meal, categoryKey);
+        },
+        [activeDayData, openMealEdit],
+    );
 
     return (
         <div className={`min-h-full font-body ${PAGE_BG}`}>
@@ -230,134 +718,206 @@ export default function MealPlanDetailPage({
                     >
                         ← Back to Meal Plan Library
                     </Link>
-                    <h1 className="mt-2 font-montserrat text-2xl font-bold tracking-tight text-[#262A22] sm:text-3xl">
-                        {mealPlan?.name ?? 'Meal plan'}
-                    </h1>
-                    {showGoalDescription ? (
-                        <p className="mt-2 max-w-3xl font-body text-sm leading-relaxed text-[#555555] sm:text-base">
-                            {goalText}
-                        </p>
-                    ) : null}
-                </div>
 
-                <div className="mb-6">
-                    <PlanMacroSummaryPanel
-                        activeDayTotals={activeDayTotals}
-                        categories={selectedCategoriesForMacros}
-                        dayLabel={activeDayData?.label ?? 'Day'}
-                        planCategoryLabel={planCategoryLabel}
-                    />
-                </div>
+                    <div className="mt-4 grid items-start gap-x-6 gap-y-3 sm:grid-cols-[minmax(0,1fr)_minmax(240px,320px)]">
+                        <div className="min-w-0 sm:col-start-1 sm:row-start-1">
+                            <h1 className="font-montserrat text-2xl font-bold tracking-tight text-[#262A22] sm:text-3xl">
+                                {mealPlan?.name ?? 'Meal plan'}
+                            </h1>
+                        </div>
 
-                <div className="sticky top-0 z-30 overflow-visible rounded-[12px] border border-gray-200 bg-[#F8F9F6]/95 p-3 backdrop-blur-sm sm:p-4">
-                    <div className="overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                        <div
-                            className="flex w-max min-w-full items-center gap-2 px-1 py-2"
-                            role="tablist"
-                            aria-label="Meal plan days"
-                        >
-                            {planDays.map((day) => {
-                                const selected = day.dayNumber === activeDay;
-                                return (
-                                    <PillButton
-                                        key={day.dayNumber}
-                                        type="button"
-                                        role="tab"
-                                        aria-selected={selected}
-                                        label={day.label}
-                                        variant={selected ? 'primary' : 'tab'}
-                                        size="sm"
-                                        onClick={() => setActiveDay(day.dayNumber)}
-                                        className="shrink-0"
-                                    />
-                                );
-                            })}
+                        <div className="flex justify-start sm:col-start-2 sm:row-start-1 sm:justify-end">
+                            <Button
+                                type="button"
+                                variant="primary"
+                                size="sm"
+                                label={savingDefaults ? 'Publishing…' : 'Publish meal plan'}
+                                disabled={!saveDefaultSelectionsUrl || savingDefaults}
+                                onClick={saveDefaultSelections}
+                            />
+                        </div>
+
+                        <div className="min-w-0 sm:col-start-1 sm:row-start-2">
+                            <label className="block">
+                                <span className="sr-only">Meal plan description</span>
+                                <textarea
+                                    value={planDescription}
+                                    onChange={(event) => setPlanDescription(event.target.value)}
+                                    rows={4}
+                                    placeholder="Nutrient-dense meal plan with balanced macronutrients and anti-inflammatory whole foods."
+                                    className="w-full resize-none rounded-[12px] border border-gray-200 bg-white px-3 py-2 font-body text-sm leading-relaxed text-[#262A22] placeholder:text-[#777777] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#6E8C47] focus-visible:ring-offset-2"
+                                />
+                            </label>
+                            <p className="mt-3 max-w-3xl font-body text-sm text-[#555555]">
+                                Select the default meals for each day, then publish. Customers start with these picks and
+                                can still change them via SEE OTHER OPTIONS.
+                            </p>
+                            {flashSuccess ? (
+                                <p className="mt-3 font-body text-sm text-[#5A6B44]">{String(flashSuccess)}</p>
+                            ) : null}
+                            {saveDefaultsError ? (
+                                <p className="mt-3 font-body text-sm text-red-700">{saveDefaultsError}</p>
+                            ) : null}
+                        </div>
+
+                        <div className="min-w-0 sm:col-start-2 sm:row-start-2 sm:justify-self-end sm:w-full">
+                            <CalendarRangeField
+                                label="Plan week"
+                                rangeValue={publishRange}
+                                onRangeChange={setPublishRange}
+                                placeholder="Select week"
+                                className="w-full max-w-[320px] sm:ml-auto"
+                            />
                         </div>
                     </div>
                 </div>
 
-                <AnimatePresence mode="wait" initial={false}>
-                    <motion.div
-                        key={activeDayData?.dayNumber ?? 'empty'}
-                        initial={{ x: 24, opacity: 0 }}
-                        animate={{ x: 0, opacity: 1 }}
-                        exit={{ x: -24, opacity: 0 }}
-                        transition={{ type: 'spring', stiffness: 260, damping: 30, mass: 0.85 }}
-                        className="mt-8 space-y-10 overflow-visible pb-12"
-                    >
-                        {activeDayData ? (
-                            <>
-                                {nonSoupSections.map((section, idx) => {
-                                    const cards = activeDayData.categories?.[section.categoryKey] ?? [];
-                                    const selectedIds = activeDaySelections[section.categoryKey] ?? [];
-
+                <div className="mb-6 rounded-[12px] border border-gray-200 bg-white p-3 sm:p-4">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                            <div
+                                className="flex w-max min-w-full items-center gap-2 px-1 py-2"
+                                role="tablist"
+                                aria-label="Meal plan days"
+                            >
+                                {planDays.map((day) => {
+                                    const selected = day.dayNumber === activeDay;
                                     return (
-                                        <MealSlotCarousel
-                                            key={`${activeDayData.dayNumber}-${section.categoryKey}`}
-                                            title={section.header}
-                                            deckScopeKey={`plan-${mealPlan?.id ?? 'x'}-day-${activeDayData.dayNumber}-${section.deckSuffix}`}
-                                            sectionKey={section.categoryKey}
-                                            sectionStackOrder={idx}
-                                            cards={cards}
-                                            selectedIds={selectedIds}
-                                            maxSelected={defaultSelectionCapForCategory(section.categoryKey)}
-                                            onSelect={(meal) =>
-                                                toggleMealSelection(
-                                                    section.categoryKey,
-                                                    meal,
-                                                    defaultSelectionCapForCategory(section.categoryKey),
-                                                )
-                                            }
-                                            onViewDetails={openMealDetail}
-                                            onEditMeal={(meal) => openMealEdit(meal, section.categoryKey)}
+                                        <Button
+                                            key={day.dayNumber}
+                                            type="button"
+                                            role="tab"
+                                            aria-selected={selected}
+                                            label={day.label}
+                                            variant={selected ? 'secondary' : 'ghost'}
+                                            size="sm"
+                                            onClick={() => setActiveDay(day.dayNumber)}
+                                            className={['shrink-0', selected ? '' : 'border border-[#5A6B44]'].join(' ').trim()}
                                         />
                                     );
                                 })}
+                            </div>
+                        </div>
+                        <div className="flex shrink-0 flex-wrap items-center gap-2 px-1 sm:justify-end">
+                            <Button
+                                type="button"
+                                label="Ingredient list"
+                                variant="ghost"
+                                size="sm"
+                                className="border border-[#5A6B44]"
+                                onClick={() => setDayShoppingListOpen(true)}
+                            />
+                            {savedShoppingList.length > 0 ? (
+                                <button
+                                    type="button"
+                                    aria-label={`Shopping list, ${savedShoppingList.length} items`}
+                                    aria-pressed={viewSavedShoppingListOpen}
+                                    title="Shopping list"
+                                    onClick={() => setViewSavedShoppingListOpen(true)}
+                                    className={[
+                                        'relative inline-flex h-[40px] min-h-[40px] w-[40px] shrink-0 cursor-pointer items-center justify-center',
+                                        'rounded-[12px] transition-all duration-200 ease-in-out',
+                                        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5A6B44] focus-visible:ring-offset-2 focus-visible:ring-offset-white',
+                                        'active:scale-[0.98] active:border-[#6E8C47] active:bg-[#6E8C47] active:text-white',
+                                        viewSavedShoppingListOpen
+                                            ? 'border border-transparent bg-[color-mix(in_srgb,#6E8C47_50%,white)] text-[#364153] hover:bg-[color-mix(in_srgb,#6E8C47_70%,white)]'
+                                            : 'border border-[#5A6B44] bg-transparent text-[#5A6B44] hover:bg-[#5A6B44]/10',
+                                    ].join(' ')}
+                                >
+                                    <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="1.75"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        className="h-5 w-5"
+                                        aria-hidden="true"
+                                    >
+                                        <circle cx="9" cy="20" r="1.25" fill="currentColor" stroke="none" />
+                                        <circle cx="17" cy="20" r="1.25" fill="currentColor" stroke="none" />
+                                        <path d="M3 4h2l1.4 8.4A2 2 0 0 0 8.4 14H17a2 2 0 0 0 2-1.6L20 7H6" />
+                                    </svg>
+                                    <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#5A6B44] px-1 font-montserrat text-[10px] font-bold leading-none text-white">
+                                        {savedShoppingList.length > 99 ? '99+' : savedShoppingList.length}
+                                    </span>
+                                </button>
+                            ) : null}
+                        </div>
+                    </div>
+                </div>
 
-                                {SOUP_SECTION ? (
-                                    <div className="space-y-4">
-                                        <SoupOfTheDayOptIn
-                                            checked={soupOptIn}
-                                            header={SOUP_SECTION.header}
-                                            onChange={setSoupOptInForActiveDay}
-                                        />
-                                        <AnimatePresence initial={false}>
-                                            {soupOptIn ? (
-                                                <motion.div
-                                                    key={`soup-deck-${activeDayData.dayNumber}`}
-                                                    initial={{ opacity: 0, y: 12 }}
-                                                    animate={{ opacity: 1, y: 0 }}
-                                                    exit={{ opacity: 0, y: 8 }}
-                                                    transition={{ type: 'spring', stiffness: 320, damping: 34 }}
-                                                >
-                                                    <MealSlotCarousel
-                                                        title=""
-                                                        deckOnly
-                                                        showSelectionSubheader
-                                                        deckScopeKey={`plan-${mealPlan?.id ?? 'x'}-day-${activeDayData.dayNumber}-${SOUP_SECTION.deckSuffix}`}
-                                                        sectionKey={SOUP_SECTION.categoryKey}
-                                                        sectionStackOrder={nonSoupSections.length}
-                                                        cards={activeDayData.categories?.soup ?? []}
-                                                        selectedIds={activeDaySelections.soup ?? []}
-                                                        maxSelected={defaultSelectionCapForCategory(SOUP_SECTION.categoryKey)}
-                                                        onSelect={(meal) =>
-                                                            toggleMealSelection(
-                                                                SOUP_SECTION.categoryKey,
-                                                                meal,
-                                                                defaultSelectionCapForCategory(SOUP_SECTION.categoryKey),
-                                                            )
-                                                        }
-                                                        onViewDetails={openMealDetail}
-                                                        onEditMeal={(meal) =>
-                                                            openMealEdit(meal, SOUP_SECTION.categoryKey)
-                                                        }
-                                                    />
-                                                </motion.div>
-                                            ) : null}
-                                        </AnimatePresence>
-                                    </div>
-                                ) : null}
-                            </>
+                {tierPreviewUrl ? (
+                    <div className="mb-6">
+                        <AdminPreviewTierPicker
+                            tiers={availablePlanTiers}
+                            selectedTier={selectedTier}
+                            onSelectTier={setSelectedTier}
+                            loading={tierLoading}
+                            description=""
+                        />
+                        {activeDayReconciliationWarnings.length > 0 ? (
+                            <div className="mt-2 rounded-[10px] border border-amber-200 bg-amber-50 px-3 py-2 font-body text-sm text-amber-900">
+                                {activeDayReconciliationWarnings.map((warning) => (
+                                    <p key={warning}>{warning}</p>
+                                ))}
+                            </div>
+                        ) : null}
+                        {tierError ? (
+                            <p className="mt-2 rounded-[10px] border border-amber-200 bg-amber-50 px-3 py-2 font-body text-sm text-amber-900">
+                                {tierError}
+                            </p>
+                        ) : null}
+                    </div>
+                ) : null}
+
+                {activeDayData ? (
+                    <div className="mb-8">
+                        <DayMacroMicroTabPanel
+                            key={`day-nutrition-${activeDayData.dayNumber}-${selectedTier}`}
+                            categories={selectedCategoriesForDayNutrition}
+                            dayLabel={activeDayData.label ?? 'Day'}
+                            planCategoryLabel={planCategoryLabel}
+                            craftKey="full"
+                            planTierCalories={selectedTier}
+                            nutritionPlan={null}
+                            initialTab="micronutrients"
+                        />
+                    </div>
+                ) : null}
+
+                <AnimatePresence mode="wait" initial={false}>
+                    <motion.div
+                        key={`${activeDayData?.dayNumber ?? 'empty'}-${selectedTier}`}
+                        initial={{ x: 24, opacity: 0 }}
+                        animate={{ x: 0, opacity: tierLoading ? 0.6 : 1 }}
+                        exit={{ x: -24, opacity: 0 }}
+                        transition={{ type: 'spring', stiffness: 260, damping: 30, mass: 0.85 }}
+                        className={`mt-6 space-y-10 overflow-visible pb-12 ${tierLoading ? 'pointer-events-none' : ''}`}
+                        aria-busy={tierLoading}
+                    >
+                        {activeDayData ? (
+                            <ChooseYourMeals
+                                documentScroll
+                                panelClassName="w-full"
+                                dayName={WEEKDAY_LONG[(activeDayData.dayNumber ?? 1) - 1] ?? activeDayData.label}
+                                layout="categories"
+                                dietProtocol={dietProtocol}
+                                protocolSelectedLayout
+                                meals={catalogMeals}
+                                displayDecks={activeDayData.categories}
+                                assignedMealsByCategory={activeDayData.categories}
+                                categorySelections={activeDaySelections}
+                                maxSelectionsByCategory={categoryMaxSelections}
+                                onToggleCategory={handleToggleCategory}
+                                onClearFixedChoiceCategory={clearFixedChoiceCategory}
+                                deckScopePrefix={`plan-${mealPlan?.id ?? 'x'}-day-${activeDayData.dayNumber}`}
+                                onViewDetails={openMealDetail}
+                                onEditMeal={handleEditMeal}
+                                targetCalories={selectedTier}
+                                craftTitle={mealPlan?.name ?? ''}
+                            />
                         ) : (
                             <p className="rounded-[12px] border border-dashed border-gray-200 bg-white p-8 text-center text-sm text-[#555555]">
                                 No day data available for this plan.
@@ -373,7 +933,7 @@ export default function MealPlanDetailPage({
                           <button
                               type="button"
                               className="absolute inset-0 bg-black/40"
-                              onClick={() => setMealDetailModal(null)}
+                              onClick={closeMealDetail}
                               aria-label="Close meal details"
                           />
                           <div
@@ -383,22 +943,23 @@ export default function MealPlanDetailPage({
                               className="relative z-10 flex max-h-[min(92dvh,900px)] w-full max-w-2xl flex-col overflow-hidden rounded-t-[16px] bg-white shadow-2xl sm:rounded-[16px]"
                           >
                               <div className="flex shrink-0 items-start justify-between gap-4 border-b border-gray-100 px-5 py-4">
-                                  <div className="min-w-0">
-                                      <h2
-                                          id="meal-plan-detail-modal-title"
-                                          className="break-words font-montserrat text-lg font-bold text-[#262A22]"
-                                      >
-                                          {mealDetailModal.title}
-                                      </h2>
-                                  </div>
+                                  <h2
+                                      id="meal-plan-detail-modal-title"
+                                      className="min-w-0 flex-1 break-words font-montserrat text-lg font-bold text-[#262A22]"
+                                  >
+                                      {mealDetailModal.title}
+                                  </h2>
                                   <Button
                                       label="Close"
                                       variant="ghost"
                                       type="button"
-                                      onClick={() => setMealDetailModal(null)}
+                                      onClick={closeMealDetail}
                                   />
                               </div>
                               <MealDetailView meal={mealDetailModal.detailView} embedded />
+                              {detailLoading ? (
+                                  <p className="px-5 pb-4 text-sm text-stone-500">Loading meal details…</p>
+                              ) : null}
                           </div>
                       </div>,
                       document.body,
@@ -423,6 +984,8 @@ export default function MealPlanDetailPage({
                               <MealPlanMealEditSheet
                                   meal={mealEditModal.meal}
                                   ingredientProfiles={ingredientProfiles}
+                                  planTier={selectedTier}
+                                  tierPreviewActive={Boolean(tierPreviewUrl)}
                                   onClose={() => setMealEditModal(null)}
                                   onApply={handleApplyMealEdit}
                               />
@@ -431,6 +994,29 @@ export default function MealPlanDetailPage({
                       document.body,
                   )
                 : null}
+
+            <DayShoppingListModal
+                open={dayShoppingListOpen}
+                dayLabel={
+                    WEEKDAY_LONG[(activeDayData?.dayNumber ?? activeDay) - 1] ??
+                    activeDayData?.label ??
+                    'this day'
+                }
+                ingredients={dayShoppingIngredients}
+                onClose={() => setDayShoppingListOpen(false)}
+                onAddToShoppingList={handleAddToShoppingList}
+            />
+
+            <SavedShoppingListModal
+                open={viewSavedShoppingListOpen}
+                ingredients={savedShoppingList}
+                onClose={() => setViewSavedShoppingListOpen(false)}
+                onClear={() => {
+                    setSavedShoppingList([]);
+                    writeStoredShoppingList(mealPlanId, []);
+                    setViewSavedShoppingListOpen(false);
+                }}
+            />
         </div>
     );
 }

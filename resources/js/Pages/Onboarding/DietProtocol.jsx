@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { router, useForm, usePage } from '@inertiajs/react';
 import OnboardingInlineDescription from '../../Components/Molecules/Onboarding/OnboardingInlineDescription.jsx';
-import OnboardingOptionButton from '../../Components/Molecules/Onboarding/OnboardingOptionButton.jsx';
+import OnboardingOptionButton from '../../Components/Atoms/Button/OnboardingOptionButton.jsx';
 import {
     dietProtocolOptionsForGender,
     shouldAutoAdvanceDietProtocol,
@@ -119,7 +119,7 @@ export function OnboardingDietProtocolInner({
             customerName={customerName}
             centerHeader
         >
-            <div className="flex w-full flex-col gap-5">
+            <div className="flex w-full flex-col gap-4">
                 <div
                     className="w-full"
                     role="group"

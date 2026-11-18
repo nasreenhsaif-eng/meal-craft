@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\MealLibraryKey;
 use App\Enums\MealPlanSchemaType;
 use App\Enums\MealPlanSlotType;
 use App\Enums\MealType;
@@ -7,7 +8,7 @@ use App\Enums\RecipeCategory;
 use App\Models\Ingredient;
 use App\Models\Meal;
 use App\Models\MealPlan;
-use App\Services\BalancedChiaBreakfastRecipeRefiner;
+use App\Services\BalancedChiaDessertRecipeRefiner;
 use App\Services\BalancedWeeklyMealPlanBuilder;
 use App\Services\BalancedWeeklyRotationSchedule;
 use App\Support\WholeFoodDietPolicy;
@@ -52,7 +53,7 @@ function seedBalancedWeeklyPlanDeck(): void
     }
 }
 
-test('balanced weekly plan builder creates seven day rotating menus with twelve slots per day', function (): void {
+test('balanced weekly plan builder creates seven day rotating menus with fourteen slots per day', function (): void {
     seedBalancedWeeklyPlanDeck();
 
     $result = app(BalancedWeeklyMealPlanBuilder::class)->build(refineRecipes: false);
@@ -62,10 +63,35 @@ test('balanced weekly plan builder creates seven day rotating menus with twelve 
 
     expect($plan->schema_type)->toBe(MealPlanSchemaType::WeeklyStructured)
         ->and($plan->name)->toBe(BalancedWeeklyMealPlanBuilder::PLAN_NAME)
+        ->and($slotsPerDay)->toBe(14)
         ->and($result['slots'])->toBe(7 * $slotsPerDay)
         ->and($plan->dayMeals()->count())->toBe($result['slots'] * 2);
 
-    $dayOneChia = $plan->dayMeals()
+    $dayOneDessert = $plan->dayMeals()
+        ->where('day_number', 1)
+        ->where('slot_type', MealPlanSlotType::Dessert->value)
+        ->where('slot_index', 1)
+        ->where('is_option_b', false)
+        ->first()
+        ?->meal?->name;
+
+    $dayTwoDessert = $plan->dayMeals()
+        ->where('day_number', 2)
+        ->where('slot_type', MealPlanSlotType::Dessert->value)
+        ->where('slot_index', 1)
+        ->where('is_option_b', false)
+        ->first()
+        ?->meal?->name;
+
+    $dayOneChiaDessert = $plan->dayMeals()
+        ->where('day_number', 1)
+        ->where('slot_type', MealPlanSlotType::Dessert->value)
+        ->where('slot_index', 3)
+        ->where('is_option_b', false)
+        ->first()
+        ?->meal?->name;
+
+    $dayOneSavoryBreakfast = $plan->dayMeals()
         ->where('day_number', 1)
         ->where('slot_type', MealPlanSlotType::Breakfast->value)
         ->where('slot_index', 1)
@@ -73,16 +99,10 @@ test('balanced weekly plan builder creates seven day rotating menus with twelve 
         ->first()
         ?->meal?->name;
 
-    $dayTwoChia = $plan->dayMeals()
-        ->where('day_number', 2)
-        ->where('slot_type', MealPlanSlotType::Breakfast->value)
-        ->where('slot_index', 1)
-        ->where('is_option_b', false)
-        ->first()
-        ?->meal?->name;
-
-    expect($dayOneChia)->toBe('Blueberry Walnut Chia Pudding')
-        ->and($dayTwoChia)->toBe('Mango Pumpkin Seed Chia Pudding');
+    expect($dayOneDessert)->toBe(BalancedWeeklyRotationSchedule::mealNameForDay(1, MealPlanSlotType::Dessert, 1))
+        ->and($dayTwoDessert)->toBe(BalancedWeeklyRotationSchedule::mealNameForDay(2, MealPlanSlotType::Dessert, 1))
+        ->and($dayOneChiaDessert)->toBe(BalancedWeeklyRotationSchedule::mealNameForDay(1, MealPlanSlotType::Dessert, 3))
+        ->and($dayOneSavoryBreakfast)->toBe('Gouda & Spinach Scramble');
 
     foreach (range(1, 7) as $day) {
         $rotatingSoup = $plan->dayMeals()
@@ -103,10 +123,72 @@ test('balanced weekly plan builder creates seven day rotating menus with twelve 
 
         expect($rotatingSoup)->toBe(BalancedWeeklyRotationSchedule::mealNameForDay($day, MealPlanSlotType::Soup, 1))
             ->and($boneBroth)->toBe('Bone Broth Cup');
+
+        $liverMain = $plan->dayMeals()
+            ->where('day_number', $day)
+            ->where('slot_type', MealPlanSlotType::Main->value)
+            ->where('slot_index', 5)
+            ->where('is_option_b', false)
+            ->first()
+            ?->meal?->name;
+
+        expect($liverMain)->toBe(
+            BalancedWeeklyRotationSchedule::mealNameForDay($day, MealPlanSlotType::Main, 5),
+        );
+
+        $beefMain = $plan->dayMeals()
+            ->where('day_number', $day)
+            ->where('slot_type', MealPlanSlotType::Main->value)
+            ->where('slot_index', 4)
+            ->where('is_option_b', false)
+            ->first()
+            ?->meal?->name;
+
+        expect($beefMain)->toBe(
+            BalancedWeeklyRotationSchedule::mealNameForDay($day, MealPlanSlotType::Main, 4),
+        );
+
+        $veganMain = $plan->dayMeals()
+            ->where('day_number', $day)
+            ->where('slot_type', MealPlanSlotType::Main->value)
+            ->where('slot_index', 6)
+            ->where('is_option_b', false)
+            ->first()
+            ?->meal?->name;
+
+        expect($veganMain)->toBe(
+            BalancedWeeklyRotationSchedule::mealNameForDay($day, MealPlanSlotType::Main, 6),
+        );
     }
 });
 
-test('chia breakfast refiner standardizes deck meals on coconut chia base', function (): void {
+test('balanced weekly plan prefers meal tiers library copies by name', function (): void {
+    seedBalancedWeeklyPlanDeck();
+
+    $classic = Meal::queryForMealLibrary()->where('name', 'Gouda & Spinach Scramble')->firstOrFail();
+    $tiersCopy = Meal::factory()->tiers()->create([
+        'name' => 'Gouda & Spinach Scramble',
+        'category' => RecipeCategory::Breakfast,
+        'meal_type' => MealType::Breakfast,
+        'total_calories' => 300,
+        'library_sort_order' => 1,
+    ]);
+
+    $result = app(BalancedWeeklyMealPlanBuilder::class)->build(refineRecipes: false);
+
+    $scheduledBreakfast = $result['plan']->dayMeals()
+        ->where('day_number', 1)
+        ->where('slot_type', MealPlanSlotType::Breakfast->value)
+        ->where('slot_index', 1)
+        ->where('is_option_b', false)
+        ->first();
+
+    expect($scheduledBreakfast?->meal_id)->toBe($tiersCopy->id)
+        ->and($scheduledBreakfast?->meal?->library_key)->toBe(MealLibraryKey::Tiers)
+        ->and($classic->id)->not->toBe($tiersCopy->id);
+});
+
+test('chia dessert refiner standardizes deck meals on coconut chia base', function (): void {
     seedBalancedWeeklyPlanDeck();
 
     $base = Ingredient::query()->create([
@@ -201,24 +283,99 @@ test('chia breakfast refiner standardizes deck meals on coconut chia base', func
         'micronutrients' => [],
     ]);
 
+    Ingredient::query()->create([
+        'name' => 'Black Seeds',
+        'usda_food_category' => 'Spices',
+        'calories' => 345,
+        'protein' => 16,
+        'carbs' => 44,
+        'fat' => 15,
+        'b6' => 0,
+        'b9_folate' => 0,
+        'b12' => 0,
+        'iron' => 0,
+        'magnesium' => 0,
+        'micronutrients' => [],
+    ]);
+
     $meal = Meal::query()->where('name', 'Blueberry Walnut Chia Pudding')->firstOrFail();
     $meal->ingredients()->sync([
         $base->id => ['amount_grams' => 25],
     ]);
 
-    app(BalancedChiaBreakfastRecipeRefiner::class)->refine('Blueberry Walnut Chia Pudding');
+    app(BalancedChiaDessertRecipeRefiner::class)->refine('Blueberry Walnut Chia Pudding');
 
     $meal->refresh()->load('ingredients');
     $names = $meal->ingredients->pluck('name')->all();
+    $baseLine = $meal->ingredients->firstWhere('name', 'Coconut Chia Pudding (Base)');
 
     expect($names)->not->toContain('Protein Powder (Isolate)')
         ->and($names)->not->toContain('Almond Milk (Unsweetened)')
         ->and($names)->toContain('Coconut Chia Pudding (Base)')
         ->and($names)->toContain('Blueberries')
         ->and($names)->toContain('Walnuts')
+        ->and($names)->toContain('Black Seeds')
         ->and($names)->not->toContain('Pumpkin Seeds')
         ->and($names)->toContain('Cinnamon')
-        ->and($meal->total_calories)->toBeLessThanOrEqual(BalancedChiaBreakfastRecipeRefiner::MAX_CALORIES);
+        ->and($meal->meal_type)->toBe(MealType::Dessert)
+        ->and($meal->category)->toBe(RecipeCategory::ChiaPudding)
+        ->and((float) $baseLine->pivot->amount_grams)->toBe(BalancedChiaDessertRecipeRefiner::COCONUT_CHIA_BASE_GRAMS)
+        ->and($meal->total_calories)->toBeGreaterThanOrEqual(BalancedChiaDessertRecipeRefiner::MIN_CALORIES);
+});
+
+test('greek yogurt chia dessert refiner keeps gluten free without dairy free tag', function (): void {
+    $base = Ingredient::query()->create([
+        'name' => 'Greek Yogurt Chia Pudding (Base)',
+        'usda_food_category' => 'Base Ingredient',
+        'calories' => 120,
+        'protein' => 8,
+        'carbs' => 12,
+        'fat' => 5,
+        'b6' => 0,
+        'b9_folate' => 0,
+        'b12' => 0,
+        'iron' => 0,
+        'magnesium' => 0,
+        'micronutrients' => [],
+    ]);
+
+    foreach (['Blueberries', 'Walnuts', 'Fresh Mint', 'Cinnamon', 'Psyllium Husks'] as $name) {
+        Ingredient::query()->create([
+            'name' => $name,
+            'usda_food_category' => 'Pantry',
+            'calories' => 50,
+            'protein' => 2,
+            'carbs' => 5,
+            'fat' => 2,
+            'b6' => 0,
+            'b9_folate' => 0,
+            'b12' => 0,
+            'iron' => 0,
+            'magnesium' => 0,
+            'micronutrients' => [],
+        ]);
+    }
+
+    $meal = Meal::query()->create([
+        'name' => 'Blueberry Walnut Greek Yogurt Chia Pudding',
+        'category' => RecipeCategory::Dessert,
+        'meal_type' => MealType::Dessert,
+        'diet_tags' => ['Vegetarian'],
+        'library_sort_order' => 1,
+    ]);
+
+    $meal->ingredients()->sync([
+        $base->id => ['amount_grams' => 150],
+    ]);
+
+    app(BalancedChiaDessertRecipeRefiner::class)->refine('Blueberry Walnut Greek Yogurt Chia Pudding');
+
+    $meal->refresh();
+
+    expect($meal->diet_tags)->toContain('Gluten-free')
+        ->and($meal->diet_tags)->toContain('Vegetarian')
+        ->and($meal->diet_tags)->not->toContain('Dairy-free')
+        ->and(WholeFoodDietPolicy::violationsForMeal($meal->fresh(['ingredients'])))->toBe([]);
 });
 
 test('whole food policy flags meals with banned ingredients or missing tags', function (): void {
@@ -287,7 +444,7 @@ test('rebuilding balanced weekly plan replaces existing plan with same name', fu
         ->and($second['plan']->id)->not->toBe($first['plan']->id);
 });
 
-test('balanced weekly plan stores day-level 40/30/30 macro targets from diet protocol preset', function (): void {
+test('balanced weekly plan stores day-level 35/35/30 macro targets from diet protocol preset', function (): void {
     seedBalancedWeeklyPlanDeck();
 
     $builder = app(BalancedWeeklyMealPlanBuilder::class);
@@ -296,8 +453,8 @@ test('balanced weekly plan stores day-level 40/30/30 macro targets from diet pro
     $result = $builder->build(refineRecipes: false);
     $plan = $result['plan'];
 
-    expect($dailyProtein)->toBe(150.0)
-        ->and($dailyCarbs)->toBe(112.5)
+    expect($dailyProtein)->toBe(131.25)
+        ->and($dailyCarbs)->toBe(131.25)
         ->and($dailyFat)->toBe(50.0)
         ->and((float) $plan->target_total_calories / 7)->toBe(BalancedWeeklyMealPlanBuilder::REFERENCE_DAILY_CALORIES)
         ->and((float) $plan->target_total_protein_g / 7)->toBe($dailyProtein)

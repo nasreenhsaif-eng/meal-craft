@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import PrimaryButton from '../Atoms/Button/PrimaryButton.jsx';
 import { MEAL_PLAN_HEADERS, MEAL_PLAN_KEYS, displayMealCell } from './logisticsMealColumns.js';
 import { buildKitchenDailySheetCsv, downloadCsv } from './logisticsCsvExport.js';
@@ -52,6 +52,34 @@ export default function KitchenDailySheet({
     className = '',
 }) {
     const [datePickerOpen, setDatePickerOpen] = useState(false);
+    const datePickerRef = useRef(null);
+    const datePickerId = useId();
+
+    useEffect(() => {
+        if (!datePickerOpen) {
+            return undefined;
+        }
+
+        const handlePointerDown = (event) => {
+            if (datePickerRef.current && !datePickerRef.current.contains(event.target)) {
+                setDatePickerOpen(false);
+            }
+        };
+
+        const handleKeyDown = (event) => {
+            if (event.key === 'Escape') {
+                setDatePickerOpen(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handlePointerDown);
+        document.addEventListener('keydown', handleKeyDown);
+
+        return () => {
+            document.removeEventListener('mousedown', handlePointerDown);
+            document.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [datePickerOpen]);
 
     const shell = printPreview
         ? 'rounded-none border-0 bg-white shadow-none print:shadow-none'
@@ -97,37 +125,60 @@ export default function KitchenDailySheet({
                     </p>
                 </div>
                 <div className="flex flex-col items-stretch gap-2 sm:items-end">
-                    <button
-                        type="button"
-                        onClick={() => setDatePickerOpen((o) => !o)}
-                        aria-expanded={datePickerOpen}
-                        className="inline-flex h-10 items-center justify-center rounded-full border-2 border-[#556C37] bg-white px-4 font-sans text-sm font-semibold text-[#556C37] shadow-sm transition-colors hover:bg-[#556C37]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#556C37] focus-visible:ring-offset-2"
-                    >
-                        Choose date
-                    </button>
-                    {datePickerOpen ? (
-                        <div className="flex flex-col gap-2 rounded-lg border border-gray-200 bg-[#F9FAFB] p-3">
-                            <p className="text-xs font-bold uppercase tracking-wide text-[#555555]">FILTER BY DATE</p>
-                            <p className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-sm font-medium leading-snug text-[#364153]">
-                                <span className="shrink-0">Selected</span>
-                                <span className="whitespace-nowrap font-semibold text-[#6E8C47]" aria-live="polite">
-                                    {formatLongDate(productionDate)}
-                                </span>
-                            </p>
-                            <Calendar
-                                mode="single"
-                                value={productionDate}
-                                onChange={(iso) => onProductionDateChange(iso ?? '')}
-                                defaultMonth={
-                                    productionDate
-                                        ? new Date(Number(productionDate.slice(0, 4)), Number(productionDate.slice(5, 7)) - 1, 1)
-                                        : undefined
-                                }
-                                aria-label="Choose production date"
-                                className="w-full max-w-none"
-                            />
-                        </div>
-                    ) : null}
+                    <div ref={datePickerRef} className="relative">
+                        <button
+                            type="button"
+                            onClick={() => setDatePickerOpen((o) => !o)}
+                            aria-expanded={datePickerOpen}
+                            aria-haspopup="dialog"
+                            aria-controls={datePickerOpen ? datePickerId : undefined}
+                            className="inline-flex h-10 items-center justify-center rounded-full border-2 border-[#556C37] bg-white px-4 font-sans text-sm font-semibold text-[#556C37] shadow-sm transition-colors hover:bg-[#556C37]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#556C37] focus-visible:ring-offset-2"
+                        >
+                            Choose date
+                        </button>
+                        {datePickerOpen ? (
+                            <div
+                                id={datePickerId}
+                                role="dialog"
+                                aria-label="Filter by date"
+                                className="absolute right-0 z-40 mt-2 w-[min(100vw-2rem,400px)] max-w-[calc(100vw-2rem)]"
+                            >
+                                <div className="flex flex-col gap-2 rounded-lg border border-gray-200 bg-[#F9FAFB] p-3 shadow-lg">
+                                    <p className="text-xs font-bold uppercase tracking-wide text-[#555555]">
+                                        FILTER BY DATE
+                                    </p>
+                                    <p className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-sm font-medium leading-snug text-[#364153]">
+                                        <span className="shrink-0">Selected</span>
+                                        <span
+                                            className="whitespace-nowrap font-semibold text-[#6E8C47]"
+                                            aria-live="polite"
+                                        >
+                                            {formatLongDate(productionDate)}
+                                        </span>
+                                    </p>
+                                    <Calendar
+                                        mode="single"
+                                        value={productionDate}
+                                        onChange={(iso) => {
+                                            onProductionDateChange(iso ?? '');
+                                            setDatePickerOpen(false);
+                                        }}
+                                        defaultMonth={
+                                            productionDate
+                                                ? new Date(
+                                                      Number(productionDate.slice(0, 4)),
+                                                      Number(productionDate.slice(5, 7)) - 1,
+                                                      1,
+                                                  )
+                                                : undefined
+                                        }
+                                        aria-label="Choose production date"
+                                        className="w-full max-w-none shadow-lg"
+                                    />
+                                </div>
+                            </div>
+                        ) : null}
+                    </div>
                     <PrimaryButton
                         type="button"
                         label="Generate CSV for Google Drive"
@@ -141,13 +192,14 @@ export default function KitchenDailySheet({
             <div className="overflow-x-auto px-2 py-3 sm:px-4 print:overflow-visible print:px-1 print:py-2">
                 <table className="kitchen-daily-print-table min-w-[1500px] w-full border-collapse text-left text-xs print:min-w-0 print:w-full print:text-[10px]">
                     <colgroup>
-                        <col style={{ width: '8%' }} />
-                        {MEAL_PLAN_KEYS.map((k) => (
-                            <col key={k} style={{ width: '8.5%' }} />
-                        ))}
                         <col style={{ width: '7%' }} />
-                        <col style={{ width: '17%' }} />
-                        <col style={{ width: '17%' }} />
+                        {MEAL_PLAN_KEYS.map((k) => (
+                            <col key={k} style={{ width: '7.5%' }} />
+                        ))}
+                        <col style={{ width: '6%' }} />
+                        <col style={{ width: '14%' }} />
+                        <col style={{ width: '14%' }} />
+                        <col style={{ width: '14%' }} />
                     </colgroup>
                     <thead>
                         <tr className="border-b border-gray-200 bg-[#F9FAFB] print:bg-transparent">
@@ -167,6 +219,12 @@ export default function KitchenDailySheet({
                                 className="px-2 py-2 font-sans text-[10px] font-bold uppercase leading-tight tracking-wide text-[#262A22] print:px-1 print:text-[9px]"
                             >
                                 Cutlery
+                            </th>
+                            <th
+                                scope="col"
+                                className="px-2 py-2 font-sans text-[10px] font-bold uppercase leading-tight tracking-wide text-[#262A22] print:px-1 print:text-[9px]"
+                            >
+                                Kitchen instructions
                             </th>
                             <th
                                 scope="col"
@@ -195,6 +253,9 @@ export default function KitchenDailySheet({
                                 ))}
                                 <td className="whitespace-normal break-words px-2 py-2 align-top text-[#364153] print:px-1 print:text-[10px]">
                                     {displayMealCell(row.cutlery)}
+                                </td>
+                                <td className="whitespace-pre-line break-words px-2 py-2 align-top text-[#364153] print:px-1 print:text-[10px]">
+                                    {displayMealCell(row.kitchenInstructions)}
                                 </td>
                                 <DislikeTagGroupCell
                                     allergies={row.allergies}

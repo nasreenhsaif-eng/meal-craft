@@ -16,4 +16,6 @@ return [
 
     'ingredients_csv_path' => env('MENU_DEVELOPMENT_INGREDIENTS_CSV_PATH'),
 
+    'refiner_overrides_path' => env('MENU_DEVELOPMENT_REFINER_OVERRIDES_PATH'),
+
 ];

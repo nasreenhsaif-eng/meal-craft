@@ -4,7 +4,7 @@ import { withOnboardingMobileFrame } from './onboardingStoryDecorators.jsx';
 import { ONBOARDING_STEPS } from './onboardingSteps.js';
 
 export default {
-    title: 'MealCraft/Pages/Onboarding/FoodFilterView',
+    title: 'Design System/05. Templates & Pages/Onboarding/FoodFilterView',
     component: OnboardingFoodFilterInner,
     parameters: {
         layout: 'fullscreen',
@@ -45,8 +45,21 @@ export const WithOtherSelected = {
     name: 'Other selected',
     render: () => (
         <OnboardingFoodFilterInner
-            selectedFilters={[FOOD_FILTER_OTHER_ID, 'dairy']}
+            selectedFilters={[FOOD_FILTER_OTHER_ID]}
             otherText="Cilantro, raw onion"
+            steps={ONBOARDING_STEPS}
+            currentStep="food_filters"
+            customerName="Amina Saif"
+        />
+    ),
+};
+
+export const DairySelected = {
+    name: 'Dairy selected (modal)',
+    render: () => (
+        <OnboardingFoodFilterInner
+            selectedFilters={['dairy']}
+            otherText=""
             steps={ONBOARDING_STEPS}
             currentStep="food_filters"
             customerName="Amina Saif"

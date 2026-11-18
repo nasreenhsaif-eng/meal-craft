@@ -1,5 +1,6 @@
 import { useId, useState } from 'react';
 import { IconEye, IconEyeOff } from '../SvgIcons.jsx';
+import { TEXT_INPUT_ROOT } from './fieldLayout.js';
 
 /**
  * Single-line text field — fixed `h-[49px]` box with optional `prefixIcon` / `suffixIcon`
@@ -41,14 +42,14 @@ function TextInput({
 
     /** `overflow-hidden` + matching radius keeps the inner input’s focus paint inside the pill (no square corners). */
     const boxNormal =
-        'relative w-full h-[49px] flex items-center overflow-hidden bg-white ' +
+        'relative box-border flex h-[49px] w-full min-w-0 max-w-full items-center overflow-hidden bg-white ' +
         'rounded-[12px] border border-[#E5E7EB] shadow-sm ' +
         'transition-[border-color,box-shadow] duration-200 ' +
         'focus-within:border-[#6E8C47] ' +
         'focus-within:shadow-[0_1px_2px_rgba(0,0,0,0.05),inset_0_0_0_1px_rgba(110,140,71,0.18)]';
 
     const boxError =
-        'relative w-full h-[49px] flex items-center overflow-hidden bg-white ' +
+        'relative box-border flex h-[49px] w-full min-w-0 max-w-full items-center overflow-hidden bg-white ' +
         'rounded-[12px] border border-status-error shadow-sm ' +
         'transition-[border-color,box-shadow] duration-200 ' +
         'focus-within:border-status-error ' +
@@ -74,19 +75,20 @@ function TextInput({
               }
             : null);
 
-    let inputPad = 'px-[20px]';
+    let inputPad = 'px-4 sm:px-5';
 
     if (prefixIcon && (suffixIcon || effectiveSuffixButton)) {
-        inputPad = 'pl-[50px] pr-[50px]';
+        inputPad = 'pl-12 pr-12 sm:pl-[50px] sm:pr-[50px]';
     } else if (prefixIcon) {
-        inputPad = 'pl-[50px] pr-[20px]';
+        inputPad = 'pl-12 pr-4 sm:pl-[50px] sm:pr-5';
     } else if (suffixIcon || effectiveSuffixButton) {
-        inputPad = 'pl-[20px] pr-[50px]';
+        inputPad = 'pl-4 pr-12 sm:pl-5 sm:pr-[50px]';
     }
 
     const inputClassName = [
-        'h-full w-full min-w-0 flex-1 appearance-none border-none bg-transparent font-body text-[16px] tracking-tight',
+        'box-border h-full w-full min-w-0 max-w-full flex-1 appearance-none border-none bg-transparent font-body text-[16px] tracking-tight',
         'text-[#364153] placeholder:text-[#364153]/50',
+        '[&::-webkit-datetime-edit]:min-w-0 [&::-webkit-date-and-time-value]:min-w-0',
         /** Match pill radius so focus/autofill never draws a square over the wrapper */
         'rounded-[12px] outline-none ring-0',
         'focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0',
@@ -103,7 +105,7 @@ function TextInput({
         'pointer-events-none absolute top-1/2 z-10 -translate-y-1/2 text-[#364153] [&_svg]:block [&_svg]:shrink-0';
 
     return (
-        <div className={`block w-full max-w-[492px] text-left ${className}`.trim()}>
+        <div className={`${TEXT_INPUT_ROOT} ${className}`.trim()}>
             <label
                 htmlFor={inputId}
                 className="mb-2 block font-montserrat text-sm font-bold leading-snug tracking-tight text-grey-94 dark:text-zinc-300"
@@ -112,7 +114,7 @@ function TextInput({
             </label>
             <div className={boxClassName}>
                 {prefixIcon ? (
-                    <span className={`${iconWrap} left-[20px]`} aria-hidden="true">
+                    <span className={`${iconWrap} left-4 sm:left-5`} aria-hidden="true">
                         {prefixIcon}
                     </span>
                 ) : null}
@@ -128,7 +130,7 @@ function TextInput({
                     {...props}
                 />
                 {suffixIcon ? (
-                    <span className={`${iconWrap} right-[20px]`} aria-hidden="true">
+                    <span className={`${iconWrap} right-4 sm:right-5`} aria-hidden="true">
                         {suffixIcon}
                     </span>
                 ) : null}

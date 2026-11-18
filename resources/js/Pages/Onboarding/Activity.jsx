@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useForm, usePage } from '@inertiajs/react';
 import OnboardingInlineDescription from '../../Components/Molecules/Onboarding/OnboardingInlineDescription.jsx';
-import OnboardingOptionButton from '../../Components/Molecules/Onboarding/OnboardingOptionButton.jsx';
+import OnboardingOptionButton from '../../Components/Atoms/Button/OnboardingOptionButton.jsx';
 import {
     ACTIVITY_LEVEL_OPTIONS,
     defaultActivityLevel,
@@ -69,7 +69,7 @@ export function OnboardingActivityInner({
             centerHeader
         >
             <form
-                className="flex w-full flex-col gap-5"
+                className="flex w-full flex-col gap-4"
                 onSubmit={(event) => {
                     event.preventDefault();
                     onSubmit?.();
