@@ -24,18 +24,9 @@ use App\Http\Controllers\Customer\OnboardingController;
 use App\Http\Controllers\MealLibraryCsvExportController;
 use App\Http\Controllers\MealLibraryCsvImportController as JsonMealLibraryCsvImportController;
 use App\Models\Meal;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function (Request $request) {
-    $user = $request->user();
-
-    if ($user !== null) {
-        return redirect($user->homePath());
-    }
-
-    return redirect()->route('login');
-})->name('home');
+Route::get('/', [WelcomeController::class, 'show'])->name('home');
 
 Route::get('/welcome', [WelcomeController::class, 'show'])->name('welcome');
 

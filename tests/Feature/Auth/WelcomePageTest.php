@@ -2,9 +2,10 @@
 
 use App\Models\User;
 
-test('guests visiting home are redirected to login', function () {
+test('guests visiting home see the marketing landing page', function () {
     $this->get(route('home'))
-        ->assertRedirect(route('login'));
+        ->assertOk()
+        ->assertSee('mc-auth-welcome-root', false);
 });
 
 test('guests can view the marketing welcome page', function () {
