@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('meal_meal_plan', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('meal_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('meal_plan_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('meal_id');
+            $table->foreignId('meal_plan_id');
             $table->string('day_of_week');
             $table->string('meal_type');
             $table->timestamps();
