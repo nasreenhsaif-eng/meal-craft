@@ -21,7 +21,7 @@ return new class extends Migration
             $table->decimal('amount_grams', 14, 4);
             $table->timestamps();
 
-            $table->unique(['parent_ingredient_id', 'child_ingredient_id']);
+            $table->unique(['parent_ingredient_id', 'child_ingredient_id'], 'ingredient_component_parent_child_unique');
         });
     }
 
