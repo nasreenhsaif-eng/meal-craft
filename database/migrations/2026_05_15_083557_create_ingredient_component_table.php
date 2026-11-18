@@ -8,6 +8,8 @@ return new class extends Migration
 {
     public function up(): void
     {
+        Schema::dropIfExists('ingredient_component');
+
         Schema::create('ingredient_component', function (Blueprint $table) {
             $table->id();
             $table->foreignId('parent_ingredient_id')
