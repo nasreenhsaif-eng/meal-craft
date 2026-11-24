@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Ingredient;
 use App\Models\Meal;
 use App\Support\MealLibraryEditGuard;
+use App\Support\MealLibraryRefinerOverrides;
 use App\Support\WholeFoodDietPolicy;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -107,25 +108,16 @@ final class BalancedVeganSideSaladRecipeRefiner
     {
         $veganTags = array_merge(WholeFoodDietPolicy::REQUIRED_MEAL_DIET_TAGS, ['Vegan']);
 
-        return [
+        $definitions = [
             'Citrus Beet Arugula Salad' => [
                 'ingredients' => [
-                    'Arugula' => 45,
-                    'Beetroot' => 80,
-                    'Orange Sections' => 45,
-                    'Walnuts' => 8,
-                    'Lemon Juice' => 8,
-                    'Olive Oil' => 4,
-                ],
-                'diet_tags' => $veganTags,
-            ],
-            'Shaved Fennel Rocca Salad' => [
-                'ingredients' => [
-                    'Fennel Bulb' => 70,
-                    'Rocca' => 45,
+                    'Arugula' => 80,
+                    'Beetroot' => 60,
                     'Orange Sections' => 40,
-                    'Lemon Juice' => 8,
-                    'Olive Oil' => 4,
+                    'Cucumber' => 40,
+                    'Walnuts' => 6,
+                    'Fresh Mint' => 3,
+                    'Classic Lemon Garlic Dressing (Base)' => 15,
                 ],
                 'diet_tags' => $veganTags,
             ],
@@ -136,42 +128,51 @@ final class BalancedVeganSideSaladRecipeRefiner
                     'Rocca' => 45,
                     'Pomegranate Seeds' => 15,
                     'Lemon Juice' => 8,
-                    'Olive Oil' => 4,
                 ],
                 'diet_tags' => $veganTags,
             ],
             'Marinated Strawberry Beet Salad' => [
                 'ingredients' => [
-                    'Strawberries' => 60,
-                    'Beetroot' => 70,
-                    'Romaine Lettuce' => 50,
-                    'White Onion' => 15,
-                    'Apple Cider Vinegar' => 10,
-                    'Olive Oil' => 4,
+                    'Romaine Lettuce' => 80,
+                    'Beetroot' => 60,
+                    'Strawberries' => 50,
+                    'Celery' => 30,
+                    'White Onion' => 10,
+                    'Fresh Mint' => 4,
+                    'Walnuts' => 8,
+                    'Apple Cider Beet Marinade (Base)' => 15,
                 ],
                 'diet_tags' => $veganTags,
             ],
             'Coconut Grapefruit Salad' => [
                 'ingredients' => [
-                    'Romaine Lettuce' => 55,
-                    'Grapefruit Sections' => 70,
-                    'Cucumber' => 50,
-                    'Lime Juice' => 10,
-                    'Olive Oil' => 3,
-                    'Coconut Meat' => 10,
+                    'Romaine Lettuce' => 60,
+                    'Broccoli' => 40,
+                    'Grapefruit Sections' => 55,
+                    'Cucumber' => 40,
+                    'Pomegranate Seeds' => 10,
+                    'Red Onion' => 10,
+                    'Coconut Meat' => 7,
+                    'Grapefruit Lime Dressing (Base)' => 15,
                 ],
                 'diet_tags' => $veganTags,
             ],
             'Vegan Curry Lentil Salad' => [
                 'ingredients' => [
                     'French Lentils' => 60,
-                    'Spinach (Fresh)' => 40,
+                    'White Onion' => 40,
+                    'Kale' => 40,
+                    'Broccoli' => 50,
                     'Carrots' => 40,
-                    'Bell Pepper (Red)' => 40,
-                    'Curry Powder' => 2,
-                    'Lemon Juice' => 10,
-                    'Olive Oil' => 5,
-                    'Wild Rice (Cooked)' => 80,
+                    'Bell Pepper (Red)' => 35,
+                    'Fresh Coriander' => 5,
+                    'Mint Coconut Chutney Dressing (Base)' => 20,
+                    'Pumpkin Seeds' => 10,
+                    'Sesame Seeds' => 5,
+                    'Cumin Ground' => 2,
+                    'Sea Salt' => 1,
+                    'Black Pepper' => 1,
+                    'Olive Oil' => 8,
                 ],
                 'diet_tags' => $veganTags,
             ],
@@ -183,23 +184,24 @@ final class BalancedVeganSideSaladRecipeRefiner
                     'Cumin Seeds' => 2,
                     'Smoked Paprika' => 1,
                     'Lemon Juice' => 8,
-                    'Olive Oil' => 4,
                 ],
                 'diet_tags' => $veganTags,
             ],
             'Thai Rainbow Peanut Salad' => [
                 'ingredients' => [
-                    'Cabbage (Purple)' => 60,
-                    'Carrots' => 40,
-                    'Cucumber' => 40,
-                    'Bell Pepper (Red)' => 30,
-                    'Peanut Butter' => 10,
-                    'Lime Juice' => 10,
-                    'Water (Filtered)' => 10,
-                    'Fresh Coriander' => 4,
+                    'Cabbage (Purple)' => 80,
+                    'Carrots' => 45,
+                    'Cucumber' => 45,
+                    'Bell Pepper (Red)' => 35,
+                    'Red Onion' => 12,
+                    'Fresh Coriander' => 5,
+                    'Peanuts (Crushed)' => 5,
+                    'Peanut Butter Dressing (Base)' => 15,
                 ],
                 'diet_tags' => $veganTags,
             ],
         ];
+
+        return MealLibraryRefinerOverrides::mergeRecipeDefinitionMap($definitions);
     }
 }

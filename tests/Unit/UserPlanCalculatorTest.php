@@ -48,29 +48,9 @@ test('selected fixed slots budget only chosen categories at 150 kcal each', func
             'side_salad' => 150.0,
             'soup' => 150.0,
         ])
-        ->and($sideAndSoup['scalable_slot_targets']['breakfast']['calories'])->toBe(450.0)
-        ->and($sideAndSoup['scalable_slot_targets']['main_each']['calories'])->toBe(625.0)
+        ->and($sideAndSoup['scalable_slot_targets']['breakfast']['calories'])->toBe(500.0)
+        ->and($sideAndSoup['scalable_slot_targets']['main_each']['calories'])->toBe(600.0)
         ->and($sideAndSoup['day_total_calories'])->toBe(2000.0);
-});
-
-test('fixed chia breakfast flag is tracked but tier breakfast targets still apply', function () {
-    $profile = new CustomerProfile([
-        'id' => 1,
-        'daily_calorie_target' => 1500,
-        'protein_percentage' => 30.0,
-        'carb_percentage' => 40.0,
-        'fat_percentage' => 30.0,
-    ]);
-
-    $plan = UserPlanCalculator::calculateUserPlan($profile, [
-        'fixed_chia_breakfast' => true,
-    ]);
-
-    expect($plan['fixed_chia_breakfast'])->toBeTrue()
-        ->and($plan['fixed_portion']['calories'])->toBe(300.0)
-        ->and($plan['scalable_slot_targets']['breakfast']['calories'])->toBe(300.0)
-        ->and($plan['scalable_slot_targets']['main_each']['calories'])->toBe(450.0)
-        ->and($plan['day_total_calories'])->toBe(1500.0);
 });
 
 test('tier slot targets match spreadsheet at each plan tier', function (int $tier, float $breakfast, float $mainEach) {
@@ -88,11 +68,30 @@ test('tier slot targets match spreadsheet at each plan tier', function (int $tie
         ->and($plan['scalable_slot_targets']['main_each']['calories'])->toBe($mainEach)
         ->and($plan['day_total_calories'])->toBe((float) $tier);
 })->with([
-    [1000, 200.0, 250.0],
-    [1200, 200.0, 350.0],
+    [1250, 300.0, 325.0],
     [1500, 300.0, 450.0],
     [1800, 400.0, 550.0],
-    [2000, 450.0, 625.0],
+    [2000, 500.0, 600.0],
+]);
+
+test('main each slot uses protein-first macro split at every tier', function (int $tier, float $mainCalories, float $expectedProteinG) {
+    $profile = new CustomerProfile([
+        'id' => 1,
+        'daily_calorie_target' => $tier,
+        'protein_percentage' => 30.0,
+        'carb_percentage' => 40.0,
+        'fat_percentage' => 30.0,
+    ]);
+
+    $plan = UserPlanCalculator::calculateUserPlan($profile, ['plan_tier' => (float) $tier]);
+
+    expect($plan['scalable_slot_targets']['main_each']['calories'])->toBe($mainCalories)
+        ->and($plan['scalable_slot_targets']['main_each']['macros']['protein_g'])->toBe($expectedProteinG);
+})->with([
+    '1250 kcal tier' => [1250, 325.0, 36.56],
+    '1500 kcal tier' => [1500, 450.0, 50.63],
+    '1800 kcal tier' => [1800, 550.0, 61.88],
+    '2000 kcal tier' => [2000, 600.0, 67.5],
 ]);
 
 test('calculateUserPlan derives scaling multiplier from scalable budget and library baseline', function () {
@@ -116,6 +115,8 @@ test('calculateUserPlan derives scaling multiplier from scalable budget and libr
 
 test('snapToPlanTier returns nearest configured tier', function () {
     expect(UserPlanCalculator::snapToPlanTier(1480))->toBe(1500.0)
+        ->and(UserPlanCalculator::snapToPlanTier(1464))->toBe(1500.0)
+        ->and(UserPlanCalculator::snapToPlanTier(1100))->toBe(1250.0)
         ->and(UserPlanCalculator::snapToPlanTier(1620))->toBe(1500.0)
         ->and(UserPlanCalculator::snapToPlanTier(1900))->toBe(1800.0);
 });
@@ -126,4 +127,34 @@ test('macro grams follow 4-4-9 rule from calorie percentages', function () {
     expect($macros['protein_g'])->toBe(150.0)
         ->and($macros['carbs_g'])->toBe(200.0)
         ->and($macros['fat_g'])->toBe(66.67);
+});
+
+test('calculateUserPlan subtracts actual fixed-slot macros from scalable budget', function () {
+    $profile = new CustomerProfile([
+        'id' => 1,
+        'daily_calorie_target' => 1250,
+        'protein_percentage' => 35.0,
+        'carb_percentage' => 35.0,
+        'fat_percentage' => 30.0,
+    ]);
+
+    $plan = UserPlanCalculator::calculateUserPlan($profile, [
+        'fixed_slot_actual_macros' => [
+            'protein_g' => 12.0,
+            'carbs_g' => 18.0,
+            'fat_g' => 14.0,
+        ],
+    ]);
+
+    expect($plan['fixed_portion']['macros']['protein_g'])->toBe(12.0)
+        ->and($plan['scalable_budget']['macros']['protein_g'])->toBe(97.38)
+        ->and($plan['scalable_budget']['macros']['fat_g'])->toBe(27.67);
+});
+
+test('breakfast slot uses protein-forward breakfast macro split', function () {
+    $macros = UserPlanCalculator::breakfastMacroGrams(200.0);
+
+    expect($macros['protein_g'])->toBe(20.0)
+        ->and($macros['carbs_g'])->toBe(12.5)
+        ->and($macros['fat_g'])->toBe(7.78);
 });

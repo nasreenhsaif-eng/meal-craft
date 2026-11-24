@@ -23,7 +23,7 @@ export default function OnboardingTabNav({ steps, activeStep, onStepSelect }) {
                             ? 'bg-[#556C37] text-white'
                             : status === 'complete'
                               ? 'bg-[#E8EFE0] text-[#556C37] hover:bg-[#d8e6c8]'
-                              : 'border border-[#E5E7EB] bg-white text-[#6B7280] hover:border-[#556C37]/40 hover:bg-[#F8F9F6]';
+                              : 'border border-border-light bg-white text-[#6B7280] hover:border-[#556C37]/40 hover:bg-surface-soft';
 
                     return (
                         <li key={step.value} className="max-w-full">

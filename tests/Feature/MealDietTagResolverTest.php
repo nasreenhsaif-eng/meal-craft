@@ -72,3 +72,18 @@ test('harissa chicken is spicy and omnivore', function () {
     expect($tags)->toContain('Spicy', 'Dairy-free', 'Gluten-free', 'Nut-free')
         ->and($tags)->not->toContain('Vegan', 'Vegetarian');
 });
+
+test('feta salad is vegetarian but not dairy-free', function () {
+    $feta = Ingredient::factory()->create(['name' => 'Feta', 'usda_food_category' => 'Dairy']);
+    $rocca = Ingredient::factory()->create(['name' => 'Rocca']);
+    $meal = Meal::factory()->create(['name' => 'Test Feta Salad']);
+    $meal->ingredients()->sync([
+        $feta->id => ['amount_grams' => 25],
+        $rocca->id => ['amount_grams' => 45],
+    ]);
+
+    $tags = MealDietTagResolver::resolveForMeal($meal->fresh(['ingredients.components']));
+
+    expect($tags)->toContain('Vegetarian', 'Gluten-free', 'Nut-free')
+        ->and($tags)->not->toContain('Dairy-free', 'Vegan');
+});

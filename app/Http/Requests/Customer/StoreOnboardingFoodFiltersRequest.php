@@ -21,7 +21,20 @@ class StoreOnboardingFoodFiltersRequest extends FormRequest
             'allergies' => ['nullable', 'array'],
             'allergies.*' => [
                 'string',
-                Rule::in(['dairy', 'gluten', 'eggs', 'soy', 'nightshades', 'beans', 'nuts', 'spicy', 'shellfish', 'other']),
+                Rule::in([
+                    'dairy',
+                    'gluten',
+                    'eggs',
+                    'soy',
+                    'nightshades',
+                    'beans',
+                    'nuts',
+                    'spicy',
+                    'shellfish',
+                    'fish',
+                    'sesame',
+                    'other',
+                ]),
             ],
         ];
     }

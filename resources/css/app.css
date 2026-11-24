@@ -11,15 +11,18 @@
   --color-brand-primary: var(--brand-primary-default);
   --color-brand-primary-hover: var(--brand-primary-hover);
   --color-brand-primary-pressed: var(--brand-primary-pressed);
-  --color-protocol-selected: var(--brand-protocol-selected);
-  --color-protocol-selected-hover: var(--brand-protocol-selected-hover);
-  --color-protocol-selected-pressed: var(--brand-protocol-selected-pressed);
   --color-brand-secondary: var(--brand-secondary);
   --color-brand-accent: var(--brand-accent);
   
   --color-status-error: var(--status-error);
-  --color-bg-page: var(--brand-blue-page-background);
+  /* Soft surface (folded former Page into Grey 96) */
+  --color-surface-soft: var(--color-grey-96);
+  --color-bg-page: var(--color-surface-soft);
+  --color-surface-dark: var(--surface-dark);
   --color-border-light: var(--brand-blue-border);
+  --color-heading: var(--color-chartreuse-green-15);
+  --color-body: var(--color-grey-33);
+  --color-form-label: var(--color-grey-94);
 
   /* Nutrient Tag Colors */
   --color-tag-folate: var(--tags-folate);
@@ -31,52 +34,53 @@
   /* --- 2. Primitive Colors (The Raw Palette) --- */
   --color-grey-91: var(--color-grey-91);
   --color-grey-94: var(--color-grey-94);
-  --color-grey-95: var(--color-grey-95);
   --color-grey-96: var(--color-grey-96);
-  --color-grey-53: var(--color-grey-53);
   --color-grey-33: var(--color-grey-33);
   --color-chartreuse-41: var(--color-chartreuse-green-41);
+  --color-chartreuse-15: var(--color-chartreuse-green-15);
 
   /* --- 3. Typography & Spacing --- */
   --font-family-header: var(--font-family-font-1); /* Montserrat */
   --font-family-body: var(--font-family-font-2);   /* Montserrat (UI / body) */
-  --font-body: var(--font-family-font-2); /* Montserrat — `font-body` utility for inputs / UI copy */
-  
-  --font-size-h1: var(--text-h1-size);
-  --font-size-h2: var(--text-h2-size);
-  --font-size-body: var(--text-body-size);
-  --font-size-caption: var(--text-caption-size);
+  --font-body: var(--font-family-font-2); /* Montserrat — `font-body` / `font-montserrat` */
+  --font-display: var(--font-family-display); /* Baloo 2 — logo wordmarks only */
+
+  /* Type scale (Tailwind v4 `--text-*` → `text-*` size utilities).
+     Do NOT use `--text-body`: `--color-body` already owns `text-body` (color). */
+  --text-h1: 32px;
+  --text-h2: 24px;
+  --text-copy: 16px;
+  --text-caption: 12px;
 
   --spacing-sm: var(--spacing-sm);
   --spacing-md: var(--spacing-md);
   --spacing-lg: var(--spacing-lg);
+
+  /* Product corner radius (cards, inputs, buttons) → rounded-card */
+  --radius-card: 12px;
 }
 
 :root {
   /* Semantic Tokens */
   --brand-primary-default: #6E8C47;
-  --brand-primary-hover: #6E8C47;
+  --brand-primary-hover: #617B3E;
   --brand-primary-pressed: #5A6B44;
-  --brand-protocol-selected: #536643;
-  --brand-protocol-selected-hover: #475538;
-  --brand-protocol-selected-pressed: #3d4830;
   --brand-secondary: #D8A933;
   --brand-accent: #8F55A8;
   --status-error: #C44F5D;
-  --brand-blue-page-background: #F9FAFB;
+  /* Legacy alias — Soft surface is Grey 96 */
+  --brand-blue-page-background: #F6F6F4;
   --brand-blue-border: #E5E7EB;
+  --surface-dark: #0E1420;
 
   /* Primitive Colors from Figma */
   --color-white-solid: #FFFFFF;
   --color-grey-96: #F6F6F4;
-  --color-grey-95: #F2F2F2;
-  /* WCAG AA on white (~4.68:1 at typical body sizes); secondary UI copy */
+  /* WCAG AA on white (~4.68:1 at typical body sizes); form / UI chrome labels */
   --color-grey-94: #616a75;
   --color-grey-91: #E5E7EB;
-  --color-grey-53: #888888;
   --color-grey-33: #555555;
   --color-chartreuse-green-41: #6E8C47;
-  --color-chartreuse-green-17: #2D3128;
   --color-chartreuse-green-15: #262A22;
 
   /* Nutrient Specifics */
@@ -89,6 +93,7 @@
   /* Typography Values */
   --font-family-font-1: "Montserrat", sans-serif;
   --font-family-font-2: "Montserrat", sans-serif;
+  --font-family-display: "Baloo 2", system-ui, sans-serif;
   --text-h1-size: 32px;
   --text-h2-size: 24px;
   --text-body-size: 16px;
@@ -98,6 +103,9 @@
   --spacing-sm: 8px;
   --spacing-md: 16px;
   --spacing-lg: 24px;
+
+  /* Radius */
+  --radius-card: 12px;
 }
 
 @layer base {
@@ -126,25 +134,28 @@
   .mc-auth-slot-contents { display: contents; }
 
   .mc-auth-intro { @apply mt-6 text-center sm:mt-8; }
-  .mc-auth-heading { @apply font-sans text-2xl font-bold tracking-tight text-[#6E8C47] sm:text-3xl lg:text-4xl; }
-  .mc-auth-subheading { @apply mx-auto mt-3 max-w-prose text-base font-medium leading-relaxed text-grey-94 sm:text-lg; }
+  .mc-auth-heading { @apply font-sans text-2xl font-bold tracking-tight text-brand-primary sm:text-3xl lg:text-4xl; }
+  .mc-auth-subheading { @apply mx-auto mt-3 max-w-prose text-base font-medium leading-relaxed text-form-label sm:text-lg; }
 
   .mc-auth-session { @apply mt-4; }
 
   .mc-auth-form { @apply mt-6 w-full; }
   .mc-auth-email-stack { @apply space-y-2 text-left; }
   .mc-auth-password-stack { @apply mt-4 space-y-2 text-left; }
-  .mc-auth-label { @apply font-montserrat text-sm font-medium text-[#364153]; }
-  .mc-auth-field-error { @apply mt-2 text-sm font-medium text-red-600; }
+  .mc-auth-label { @apply font-montserrat text-sm font-medium text-body; }
+  .mc-auth-field-error { @apply mt-2 text-sm font-medium text-status-error; }
 
   .mc-auth-password-label-row { @apply flex flex-wrap items-center justify-between gap-x-4 gap-y-3; }
   .mc-auth-remember-row { @apply mt-3 flex items-center gap-2; }
-  .mc-auth-checkbox { @apply size-5 rounded-sm border border-neutral-300 accent-[#556C37] focus:ring-[#556C37]; }
+  .mc-auth-checkbox {
+    @apply size-5 shrink-0 cursor-pointer rounded-sm border border-neutral-300 accent-[#556C37]
+      outline-none focus:outline-none focus-visible:ring-2 focus-visible:ring-[#556C37] focus-visible:ring-offset-1;
+  }
 
   .mc-auth-submit-wrap { @apply mt-4; }
   .mc-auth-login-submit { @apply w-full; }
 
-  .mc-auth-footer { @apply mx-auto mt-4 w-full text-center font-sans text-[13px] leading-relaxed text-grey-94 sm:text-sm; }
+  .mc-auth-footer { @apply mx-auto mt-4 w-full text-center font-sans text-[13px] leading-relaxed text-form-label sm:text-sm; }
 
   .mc-gender-option {
     display: block;

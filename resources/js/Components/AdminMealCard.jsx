@@ -1,0 +1,279 @@
+import { useState } from 'react';
+import MacroGrid from './MacroGrid.jsx';
+import MealCalorieTierTabs from './MealCalorieTierTabs.jsx';
+import Button from './Atoms/Button.jsx';
+import RoundIconButton from './Atoms/Icons/RoundIconButton.jsx';
+import { IconEdit } from './Atoms/SvgIcons.jsx';
+import MealCraftLogo from './Atoms/Logo/MealCraftLogo.jsx';
+import CategoryBadge from './MealSystem/CategoryBadges.jsx';
+import { resolveMealImageUrl } from '../meal-library/resolveMealImageUrl.ts';
+import { resolveMealCategoryBadgeProps } from '../meal-library/mealCategoryBadge.ts';
+import SelectionCheckBadge from './Atoms/Icons/SelectionCheckBadge.jsx';
+import { MEAL_CARD_DECK_SHELL_CLASS } from './Consultation/consultationNanoCardWidth.js';
+
+/**
+ * Same shell as consultation Nano / options-modal cards (fixed 240px).
+ */
+const DECK_SHELL = `${MEAL_CARD_DECK_SHELL_CLASS} shadow-md font-montserrat`;
+
+/**
+ * @param {{ macros?: { calories: unknown; protein: unknown; carbs: unknown; fat: unknown } | null }} props
+ */
+function MacroGridDeckSection({ macros }) {
+    if (!macros) {
+        return null;
+    }
+
+    return (
+        <div className="mt-0 w-full min-w-0 shrink px-0">
+            <MacroGrid
+                calories={macros.calories}
+                protein={macros.protein}
+                carbs={macros.carbs}
+                fat={macros.fat}
+                compact
+                fluid
+                abbreviated={false}
+                className="!w-full !max-w-full min-w-0"
+            />
+        </div>
+    );
+}
+
+/**
+ * Admin meal card — layout matches {@link CustomerMealCard} **deck (consultation)** card:
+ * `240px` shell, `aspect-[4/3]` hero, deck `MacroGrid` (fluid), title + VIEW DETAILS + CRAFT THIS MEAL.
+ *
+ * @param {object} props
+ * @param {object} [props.meal]
+ * @param {boolean} [props.isAdmin]
+ * @param {string} [props.variant]
+ * @param {string} [props.title]
+ * @param {string} [props.imageUrl]
+ * @param {string} [props.photoUrl]
+ * @param {string} [props.imageAlt]
+ * @param {{ calories: unknown; protein: unknown; carbs: unknown; fat: unknown }} [props.macros]
+ * @param {boolean} [props.adminControls]
+ * @param {boolean} [props.showActions]
+ * @param {string} [props.category] Meal library category (e.g. Breakfast, Meal, Soup).
+ * @param {boolean} [props.selected]
+ * @param {(next?: boolean) => void} [props.onToggleSelected]
+ * @param {() => void} [props.onEdit]
+ * @param {(meal: object) => void} [props.onViewDetails] Invoked with the resolved meal payload (spread `meal` prop plus card fields when `meal` is set).
+ * @param {() => void} [props.onPrimaryAction]
+ * @param {() => void} [props.onCraftThisMeal]
+ * @param {boolean} [props.disabled]
+ * @param {string} [props.className]
+ * @param {number[]} [props.calorieTierTabs] Admin Meal Tiers Library only. Omit on the classic Meal Library.
+ * @param {object[]} [props.calorieTiers]
+ * @param {(tier: number, payload: object | null) => void} [props.onCalorieTierChange]
+ */
+export default function AdminMealCard({
+    meal,
+    isAdmin: isAdminProp,
+    variant = 'client',
+    title,
+    imageUrl,
+    photoUrl,
+    imageAlt = '',
+    macros,
+    adminControls = false,
+    showActions = false,
+    category: categoryProp,
+    selected = false,
+    onToggleSelected,
+    onEdit,
+    onViewDetails,
+    onPrimaryAction,
+    onCraftThisMeal,
+    disabled = false,
+    className = '',
+    calorieTierTabs = null,
+    calorieTiers = null,
+    onCalorieTierChange,
+}) {
+    const [mediaFailed, setMediaFailed] = useState(false);
+
+    const mealRecord = meal && typeof meal === 'object' ? meal : null;
+
+    const resolvedTitle = String(title ?? mealRecord?.title ?? '').trim();
+    if (!resolvedTitle) {
+        return null;
+    }
+
+    const resolvedImageUrl = resolveMealImageUrl(
+        photoUrl ?? imageUrl ?? mealRecord?.photoUrl ?? mealRecord?.imageUrl ?? '',
+    );
+    const resolvedImageAlt = String(imageAlt ?? mealRecord?.imageAlt ?? '').trim();
+    const resolvedMacros = macros ?? mealRecord?.nutritionalSummary ?? mealRecord?.macros ?? null;
+    const resolvedCategoryRaw =
+        categoryProp ?? mealRecord?.category ?? mealRecord?.mealType ?? mealRecord?.meal_type ?? '';
+    const categoryBadgeProps = resolveMealCategoryBadgeProps(resolvedCategoryRaw);
+
+    const isAdmin = Boolean(isAdminProp) || variant === 'admin';
+    const showAdminChrome = isAdmin && (Boolean(showActions) || Boolean(adminControls));
+    const showImage = Boolean(resolvedImageUrl) && !mediaFailed;
+
+    const viewDetailsHandler = onViewDetails ?? onPrimaryAction;
+
+    const emitViewDetails = () => {
+        const payload =
+            mealRecord !== null
+                ? { ...mealRecord }
+                : {
+                      title: resolvedTitle,
+                      imageUrl: resolvedImageUrl,
+                      imageAlt: resolvedImageAlt,
+                      macros: resolvedMacros,
+                  };
+        if (typeof viewDetailsHandler === 'function') {
+            viewDetailsHandler(payload);
+        }
+    };
+
+    const craftHandler = onCraftThisMeal ?? onToggleSelected;
+
+    const craftPrimaryAria =
+        selected === true
+            ? `${resolvedTitle} is selected for your craft. Tap to remove from this slot.`
+            : `Craft the ${resolvedTitle} meal`;
+
+    /** Client-only: subtle selected ring — no light-green gradient or inset glow. */
+    const selectedShellClass = !isAdmin && selected ? 'ring-2 ring-[#5A6B44]/35 ring-offset-0' : '';
+    const innerR = 'rounded-[12px]';
+
+    const titleClass = 'min-h-0 text-[17px] leading-snug';
+    const btnRow = '!h-[36px] !min-h-[36px] !px-3 !text-[12px]';
+
+    return (
+        <article className={`relative ${DECK_SHELL} ${selectedShellClass} ${className}`.trim()}>
+            <div
+                className={`relative flex w-full min-h-0 flex-1 flex-col overflow-hidden bg-white ${innerR} shadow-none`.trim()}
+            >
+                {!isAdmin && selected ? (
+                    <div className="pointer-events-none absolute right-2.5 top-2.5 z-30">
+                        <SelectionCheckBadge />
+                    </div>
+                ) : null}
+
+                {showAdminChrome ? (
+                    <div className="absolute right-3 top-3 z-30">
+                        <RoundIconButton
+                            icon={<IconEdit />}
+                            ariaLabel="Edit meal"
+                            intent="default"
+                            onClick={onEdit}
+                            className="!h-9 !w-9 !min-h-0 !rounded-lg !border-0 !bg-transparent !shadow-none hover:!border-0 hover:!bg-black/[0.06] active:!scale-[95%]"
+                        />
+                    </div>
+                ) : null}
+
+                <div className="relative aspect-[4/3] w-full shrink-0 overflow-hidden bg-surface-soft">
+                    {showAdminChrome ? (
+                        <div className="pointer-events-none absolute left-3 top-3 z-30">
+                            <CategoryBadge
+                                variant={categoryBadgeProps.variant}
+                                label={categoryBadgeProps.label}
+                            />
+                        </div>
+                    ) : null}
+                    {showImage ? (
+                        <img
+                            src={resolvedImageUrl}
+                            alt={resolvedImageAlt || resolvedTitle}
+                            className="absolute inset-0 h-full w-full object-cover"
+                            loading="lazy"
+                            decoding="async"
+                            onError={() => setMediaFailed(true)}
+                        />
+                    ) : (
+                        <div className="absolute inset-0 flex items-center justify-center bg-surface-soft">
+                            <MealCraftLogo
+                                variant="seal-sm"
+                                width={56}
+                                className="opacity-70"
+                                alt="MealCraft"
+                                title="MealCraft"
+                            />
+                        </div>
+                    )}
+                </div>
+
+                <div className="relative flex flex-col gap-0 px-3 pb-2 pt-0">
+                    <div className="min-h-[2.5rem] shrink-0">
+                        <h3
+                            className={`mt-2 w-full text-center font-bold tracking-tight text-heading ${titleClass}`}
+                            style={{
+                                display: '-webkit-box',
+                                WebkitBoxOrient: 'vertical',
+                                overflow: 'hidden',
+                                WebkitLineClamp: 2,
+                            }}
+                        >
+                            {resolvedTitle}
+                        </h3>
+                    </div>
+
+                    {Array.isArray(calorieTierTabs) && calorieTierTabs.length > 0 && isAdmin ? (
+                        <MealCalorieTierTabs
+                            tabValues={calorieTierTabs}
+                            calorieTiers={calorieTiers ?? mealRecord?.calorieTiers ?? []}
+                            onCalorieTierChange={onCalorieTierChange}
+                        />
+                    ) : (
+                        <MacroGridDeckSection macros={resolvedMacros} />
+                    )}
+
+                    {!isAdmin ? (
+                        <>
+                            <button
+                                type="button"
+                                aria-label={`View details for ${resolvedTitle}`}
+                                className={`mx-auto mb-1.5 inline-flex w-full max-w-full items-center justify-center rounded-[12px] px-2 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-[#5A6B44] hover:bg-[#5A6B44]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5A6B44] focus-visible:ring-offset-2 ${resolvedMacros ? 'mt-1' : 'mt-2'}`}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    emitViewDetails();
+                                }}
+                            >
+                                VIEW DETAILS
+                            </button>
+
+                            <div className="mt-1 w-full shrink-0 pb-0.5">
+                                <Button
+                                    type="button"
+                                    variant={selected ? 'secondary' : 'ghost'}
+                                    disabled={disabled}
+                                    label={selected ? 'SELECTED' : 'CRAFT THIS MEAL'}
+                                    aria-label={craftPrimaryAria}
+                                    className={`w-full justify-center rounded-[12px] ${btnRow} ${
+                                        selected ? '' : 'border border-[#5A6B44]'
+                                    }`.trim()}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        craftHandler?.();
+                                    }}
+                                />
+                            </div>
+                        </>
+                    ) : (
+                        <div
+                            className={`w-full shrink-0 pb-0.5 ${resolvedMacros ? 'mt-1' : 'mt-2'}`}
+                        >
+                            <Button
+                                type="button"
+                                variant="primary"
+                                disabled={disabled}
+                                label="View details"
+                                className={`w-full justify-center rounded-[12px] ${btnRow}`}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    emitViewDetails();
+                                }}
+                            />
+                        </div>
+                    )}
+                </div>
+            </div>
+        </article>
+    );
+}

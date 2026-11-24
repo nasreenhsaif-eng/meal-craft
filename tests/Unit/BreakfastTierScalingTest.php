@@ -6,42 +6,20 @@ use App\Models\CustomerProfile;
 use App\Models\Ingredient;
 use App\Models\Meal;
 use App\Services\Nutrition\AdaptedMenuBuilder;
-use App\Support\ChiaBreakfastMeals;
+use App\Services\Nutrition\CraftCaloriePlanner;
+use App\Services\Nutrition\UserPlanCalculator;
 use App\Support\SavoryEggBreakfastMeals;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-test('breakfast meals scale to explicit tier targets', function (int $tier, float $breakfastTarget) {
-    $base = Ingredient::factory()->create([
-        'name' => 'Coconut Chia Pudding (Base)',
-        'calories' => 265,
-        'protein' => 3.9,
-        'carbs' => 14.6,
-        'fat' => 23,
-    ]);
-
+test('savory egg breakfasts follow Full Craft library breakfast tabs and egg counts', function (int $tier, float $breakfastTarget, int $eggCount) {
     $egg = Ingredient::factory()->create([
         'name' => 'Egg',
         'calories' => 155,
         'protein' => 12.6,
         'carbs' => 1.1,
         'fat' => 10.6,
-    ]);
-
-    $chia = Meal::factory()->create([
-        'name' => ChiaBreakfastMeals::mealNames()[0],
-        'meal_type' => MealType::Breakfast,
-        'category' => RecipeCategory::Breakfast,
-        'total_calories' => 198,
-        'total_protein' => 8,
-        'total_carbs' => 18,
-        'total_fat' => 10,
-    ]);
-    $chia->ingredients()->attach($base->id, [
-        'amount_grams' => 75,
-        'amount' => 75,
-        'unit' => 'g',
     ]);
 
     $omelet = Meal::factory()->create([
@@ -67,16 +45,20 @@ test('breakfast meals scale to explicit tier targets', function (int $tier, floa
     ]);
 
     $options = ['plan_tier' => (float) $tier, 'craft_key' => 'full'];
+    $plan = CraftCaloriePlanner::applyCraftToPlan(
+        UserPlanCalculator::calculateUserPlan($profile, $options),
+        CraftCaloriePlanner::CRAFT_FULL,
+    );
 
-    $adaptedChia = AdaptedMenuBuilder::adaptMealForProfile($profile, $chia->fresh(['ingredients']), $options);
     $adaptedEgg = AdaptedMenuBuilder::adaptMealForProfile($profile, $omelet->fresh(['ingredients']), $options);
 
-    expect((float) $adaptedChia['adapted_nutrition']['calories'])->toEqualWithDelta($breakfastTarget, 1.0)
-        ->and((float) $adaptedEgg['adapted_nutrition']['calories'])->toEqualWithDelta($breakfastTarget, 1.0);
+    expect($plan['scalable_slot_targets']['breakfast']['calories'])->toBe($breakfastTarget)
+        ->and($adaptedEgg['savory_egg_count'])->toBe($eggCount)
+        ->and((float) collect($adaptedEgg['ingredients'])->firstWhere('name', 'Egg')['adapted_amount_grams'])
+        ->toEqualWithDelta($eggCount * 50.0, 0.5);
 })->with([
-    [1000, 200.0],
-    [1200, 200.0],
-    [1500, 300.0],
-    [1800, 400.0],
-    [2000, 450.0],
+    [1250, 300.0, 3],
+    [1500, 300.0, 3],
+    [1800, 400.0, 4],
+    [2000, 500.0, 4],
 ]);

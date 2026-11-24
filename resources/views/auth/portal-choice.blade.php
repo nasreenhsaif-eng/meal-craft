@@ -1,7 +1,7 @@
 @php
     $portalChoiceConfig = $portalChoiceConfig ?? [
         'userName' => auth()->user()?->name ?? '',
-        'onboardingHref' => route('onboarding.show', ['step' => 'gender']),
+        'onboardingHref' => route('app.home'),
         'adminHref' => route('admin.dashboard'),
     ];
 @endphp

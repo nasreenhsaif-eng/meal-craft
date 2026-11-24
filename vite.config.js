@@ -19,8 +19,11 @@ export default defineConfig({
       'resources/js/admin-intro.jsx',
       'resources/js/ingredient-analyzer.jsx',
       'resources/js/auth-login.jsx',
+      'resources/js/auth-join.jsx',
+      'resources/js/auth-join-verify.jsx',
       'resources/js/auth-welcome.jsx',
       'resources/js/auth-portal-choice.jsx',
+      'resources/js/auth-sign-out.jsx',
       'resources/js/consultation-crafted-for-you.jsx',
     ],
     refresh: true
@@ -38,6 +41,14 @@ export default defineConfig({
   },
   test: {
     projects: [{
+      extends: true,
+      test: {
+        name: 'unit',
+        environment: 'node',
+        include: ['resources/js/**/*.{test,spec}.{js,jsx,ts,tsx}'],
+        exclude: ['**/*.stories.*', '**/node_modules/**'],
+      },
+    }, {
       extends: true,
       plugins: [
       // The plugin will run tests for the stories defined in your Storybook config

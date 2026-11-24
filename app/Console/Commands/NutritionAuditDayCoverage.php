@@ -11,7 +11,7 @@ use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
 
-#[Signature('nutrition:audit-day-coverage {--tier= : Limit audit to a single plan tier} {--day= : Limit audit to a single weekday (1-7)} {--ingredients : Audit boost-catalog ingredient micro data completeness}')]
+#[Signature('nutrition:audit-day-coverage {--tier= : Limit audit to a single plan tier} {--day= : Limit audit to a single weekday (1-7)} {--ingredients : Audit boost-catalog ingredient micro data completeness} {--with-liver : Simulate swapping slot-3 main for daily liver main (slot 5)}')]
 #[Description('Audit Full Craft day micronutrient coverage against RDI targets by tier and fixed-slot combination')]
 class NutritionAuditDayCoverage extends Command
 {
@@ -33,6 +33,7 @@ class NutritionAuditDayCoverage extends Command
 
         $tierFilter = $this->option('tier');
         $dayFilter = $this->option('day');
+        $withLiver = (bool) $this->option('with-liver');
 
         $tiers = NutrientDailyRdi::allAuditTiers();
 
@@ -51,8 +52,8 @@ class NutritionAuditDayCoverage extends Command
 
         foreach ($tiers as $tier) {
             $sectionLabel = NutrientDailyRdi::tierEnforced($tier)
-                ? "Enforced tier {$tier} kcal"
-                : "Informational tier {$tier} kcal (expected gaps)";
+                ? "Enforced tier {$tier} kcal".($withLiver ? ' (liver swap)' : '')
+                : "Informational tier {$tier} kcal (expected gaps)".($withLiver ? ' (liver swap)' : '');
 
             $this->newLine();
             $this->info($sectionLabel);
@@ -67,6 +68,7 @@ class NutritionAuditDayCoverage extends Command
                         $dayNumber,
                         (float) $tier,
                         $slots,
+                        $withLiver,
                     );
 
                     $fixedLabel = implode(' + ', $report['selected_fixed_slots']);

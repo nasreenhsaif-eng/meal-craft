@@ -1,6 +1,7 @@
 @php
     $welcomeConfig = $welcomeConfig ?? [
         'loginHref' => route('login'),
+        'joinHref' => route('join'),
     ];
 @endphp
 <!DOCTYPE html>
@@ -8,7 +9,7 @@
 <head>
     @include('partials.head', [
         'viteEntries' => ['resources/css/app.css', 'resources/js/auth-welcome.jsx'],
-        'title' => __('Welcome'),
+        'title' => config('app.name'),
     ])
 </head>
 <body class="min-h-screen w-full bg-white antialiased">

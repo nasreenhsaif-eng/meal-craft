@@ -8,7 +8,7 @@ const SEX_OPTIONS = [
 ];
 
 export default {
-    title: 'MealCraft/Pages/Onboarding/GenderView',
+    title: 'Design System/06. Pages/Onboarding/GenderView',
     component: OnboardingGenderInner,
     parameters: {
         layout: 'fullscreen',

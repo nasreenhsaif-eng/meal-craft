@@ -11,6 +11,35 @@ import customerOnboardingLayout from './Layouts/customerOnboardingLayout.jsx';
 configureLaravelAxios(axios);
 configureLaravelInertia(router);
 
+const ROOT_KEY = '__mcInertiaRoot';
+
+/**
+ * Mount (or remount) Inertia into #app without calling createRoot twice.
+ * Double createRoot blanks Chrome ("container already passed to createRoot").
+ *
+ * @param {HTMLElement} el
+ * @param {import('react').ReactNode} app
+ */
+function mountInertiaRoot(el, app) {
+    /** @type {import('react-dom/client').Root | undefined} */
+    let root = el[ROOT_KEY];
+
+    if (root && typeof root.render === 'function') {
+        root.render(app);
+        return;
+    }
+
+    try {
+        root = createRoot(el);
+    } catch {
+        el.replaceChildren();
+        root = createRoot(el);
+    }
+
+    el[ROOT_KEY] = root;
+    root.render(app);
+}
+
 class InertiaErrorBoundary extends Component {
     constructor(props) {
         super(props);
@@ -25,9 +54,18 @@ class InertiaErrorBoundary extends Component {
         if (this.state.error) {
             return (
                 <div className="p-6 font-sans text-sm text-zinc-800">
-                    <h1 className="text-lg font-semibold text-zinc-900">Admin app failed to render</h1>
-                    <p className="mt-2 text-zinc-600">Open DevTools → Console for the full stack trace.</p>
-                    <pre className="mt-4 max-h-48 overflow-auto rounded-md bg-zinc-100 p-3 text-xs">{this.state.error.message}</pre>
+                    <h1 className="text-lg font-semibold text-zinc-900">This page failed to render</h1>
+                    <p className="mt-2 text-zinc-600">
+                        Hard refresh (<kbd>Cmd</kbd>+<kbd>Shift</kbd>+<kbd>R</kbd>), then try again.
+                    </p>
+                    <pre className="mt-4 max-h-48 overflow-auto rounded-md bg-zinc-100 p-3 text-xs">
+                        {this.state.error.message}
+                    </pre>
+                    <p className="mt-4">
+                        <a className="font-semibold text-[#5A6B44] underline" href="/checkout/payment">
+                            Open payment checkout
+                        </a>
+                    </p>
                 </div>
             );
         }
@@ -50,29 +88,12 @@ createInertiaApp({
         return page;
     },
     setup({ el, App, props }) {
-        const rootEl = el ?? document.getElementById('app');
-        if (!rootEl) {
-            // eslint-disable-next-line no-console
-            console.error('Inertia root element not found (expected #app from @inertia).');
-            document.body.insertAdjacentHTML(
-                'beforeend',
-                '<p class="p-6 font-sans text-sm text-zinc-800">Missing Inertia root <code>#app</code>. Check <code>resources/views/app.blade.php</code> includes <code>@inertia</code>.</p>',
-            );
-            return;
-        }
-
-        try {
-            createRoot(rootEl).render(
-                <InertiaErrorBoundary>
-                    <App {...props} />
-                </InertiaErrorBoundary>,
-            );
-        } catch (error) {
-            // eslint-disable-next-line no-console
-            console.error(error);
-            rootEl.innerHTML =
-                '<p class="p-6 font-sans text-sm text-zinc-800">Failed to start the admin app. Open DevTools → Console for details.</p>';
-        }
+        mountInertiaRoot(
+            el,
+            <InertiaErrorBoundary>
+                <App {...props} />
+            </InertiaErrorBoundary>,
+        );
     },
     progress: {
         color: '#6E8C47',

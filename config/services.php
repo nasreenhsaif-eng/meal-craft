@@ -55,4 +55,13 @@ return [
         'base_url' => env('CALORIEKING_BASE_URL', 'https://foodapi.calorieking.com/v1'),
     ],
 
+    'whatsapp' => [
+        'token' => env('WHATSAPP_TOKEN'),
+        'phone_number_id' => env('WHATSAPP_PHONE_NUMBER_ID'),
+        'otp_template' => env('WHATSAPP_OTP_TEMPLATE'),
+        'otp_template_language' => env('WHATSAPP_OTP_TEMPLATE_LANGUAGE', 'en'),
+        'graph_version' => env('WHATSAPP_GRAPH_VERSION', 'v21.0'),
+        'send_http' => false,
+    ],
+
 ];

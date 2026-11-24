@@ -24,6 +24,7 @@ final class IngredientG6pdSafety
      */
     private const CANONICAL_NAME_FRAGMENTS = [
         'cannellini',
+        'chickpea',
         'green beans',
     ];
 
@@ -93,6 +94,48 @@ final class IngredientG6pdSafety
                 });
             })
             ->exists();
+    }
+
+    /**
+     * Recompute {@see Ingredient::$is_g6pd_trigger} from canonical name rules and component tree.
+     */
+    public static function refreshStoredTriggerFlag(Ingredient $ingredient): bool
+    {
+        if (self::canonicalNameIndicatesG6pdTrigger($ingredient->name)) {
+            return true;
+        }
+
+        $childIds = $ingredient->relationLoaded('components')
+            ? $ingredient->components->pluck('id')->map(static fn ($id): int => (int) $id)->all()
+            : $ingredient->components()->pluck('ingredients.id')->map(static fn ($id): int => (int) $id)->all();
+
+        if ($childIds !== []) {
+            return self::mealContainsG6pdTrigger($childIds);
+        }
+
+        return (bool) $ingredient->is_g6pd_trigger;
+    }
+
+    /**
+     * @return int Number of ingredients updated
+     */
+    public static function refreshAllStoredTriggerFlags(): int
+    {
+        $updated = 0;
+
+        Ingredient::query()
+            ->where('is_verified', true)
+            ->with('components')
+            ->each(function (Ingredient $ingredient) use (&$updated): void {
+                $resolved = self::refreshStoredTriggerFlag($ingredient);
+
+                if ((bool) $ingredient->is_g6pd_trigger !== $resolved) {
+                    $ingredient->update(['is_g6pd_trigger' => $resolved]);
+                    $updated++;
+                }
+            });
+
+        return $updated;
     }
 
     /**

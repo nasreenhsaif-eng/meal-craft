@@ -34,7 +34,7 @@ const WEEKDAY_LABELS_MON_FIRST = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun
  * @param {boolean} isToday
  */
 function dayButtonClasses(visualState, inMonth, containingRange, iso, isClickDisabled, isToday) {
-    const muted = !inMonth ? 'text-grey-94/60' : 'text-grey-33';
+    const muted = !inMonth ? 'text-form-label/60' : 'text-body';
     const futureCursor = isClickDisabled ? 'cursor-default' : '';
 
     if (visualState.logged && inMonth) {
@@ -44,7 +44,7 @@ function dayButtonClasses(visualState, inMonth, containingRange, iso, isClickDis
     }
 
     if (!inMonth) {
-        return `${cellBase} ${cellFocus} bg-white hover:bg-grey-96 ${muted}`;
+        return `${cellBase} ${cellFocus} bg-white hover:bg-surface-soft ${muted}`;
     }
 
     const layers = [cellBase, cellFocus];
@@ -61,14 +61,14 @@ function dayButtonClasses(visualState, inMonth, containingRange, iso, isClickDis
         layers.push('text-brand-accent ring-1 ring-brand-accent');
     } else if (!visualState.isFertile && !visualState.isPredictedPeriod) {
         if (isToday) {
-            layers.push('bg-white ring-1 ring-border-light hover:bg-grey-96', muted);
+            layers.push('bg-white ring-1 ring-border-light hover:bg-surface-soft', muted);
         } else if (isClickDisabled) {
-            layers.push('cursor-default bg-white text-grey-94/70 hover:bg-white');
+            layers.push('cursor-default bg-white text-form-label/70 hover:bg-white');
         } else {
-            layers.push('bg-white hover:bg-grey-96', muted);
+            layers.push('bg-white hover:bg-surface-soft', muted);
         }
     } else {
-        layers.push('text-grey-33', futureCursor);
+        layers.push('text-body', futureCursor);
     }
 
     return layers.join(' ');
@@ -229,7 +229,7 @@ export default function PeriodRangeCalendar({
                             <div
                                 key={wd}
                                 role="columnheader"
-                                className="flex min-w-0 items-center justify-center font-sans text-[11px] font-bold uppercase tracking-wide text-grey-94"
+                                className="flex min-w-0 items-center justify-center font-sans text-[11px] font-bold uppercase tracking-wide text-form-label"
                             >
                                 {wd}
                             </div>

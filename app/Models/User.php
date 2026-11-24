@@ -5,6 +5,7 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Enums\OnboardingStep;
 use App\Enums\UserRole;
+use App\Support\AdminPortalPermission;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -15,7 +16,7 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 
-#[Fillable(['name', 'email', 'password', 'is_active', 'role'])]
+#[Fillable(['name', 'email', 'password', 'is_active', 'role', 'admin_permissions'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -32,6 +33,7 @@ class User extends Authenticatable
             'password' => 'hashed',
             'is_active' => 'boolean',
             'role' => UserRole::class,
+            'admin_permissions' => 'array',
         ];
     }
 
@@ -42,7 +44,17 @@ class User extends Authenticatable
 
     public function isAdmin(): bool
     {
-        return $this->role->isStaff();
+        return $this->canAccessAdminPortal();
+    }
+
+    public function isCraftMasterGeneral(): bool
+    {
+        return $this->role === UserRole::CraftMasterGeneral;
+    }
+
+    public function canAccessAdminPortal(): bool
+    {
+        return $this->role->canAccessAdminPortal();
     }
 
     public function isCustomer(): bool
@@ -50,14 +62,96 @@ class User extends Authenticatable
         return $this->role->isCustomer();
     }
 
+    /**
+     * @return list<string>
+     */
+    public function adminPermissionKeys(): array
+    {
+        if ($this->isCraftMasterGeneral()) {
+            return AdminPortalPermission::keys();
+        }
+
+        return AdminPortalPermission::sanitize($this->admin_permissions);
+    }
+
+    public function hasAdminPermission(string $key): bool
+    {
+        if ($this->isCraftMasterGeneral()) {
+            return in_array($key, AdminPortalPermission::keys(), true);
+        }
+
+        if (! $this->canAccessAdminPortal()) {
+            return false;
+        }
+
+        return in_array($key, $this->adminPermissionKeys(), true);
+    }
+
     public function canAccessCustomerPortal(): bool
     {
-        return $this->isCustomer() || $this->isAdmin();
+        return $this->isCustomer() || $this->role->isStaff();
     }
 
     public function hasCompletedOnboarding(): bool
     {
         return $this->customerProfile?->onboarding_completed_at !== null;
+    }
+
+    /**
+     * Customer finished onboarding and submitted at least one craft meal plan.
+     */
+    public function hasSubmittedMealPlan(): bool
+    {
+        $profile = $this->customerProfile;
+
+        if ($profile === null) {
+            return false;
+        }
+
+        return $profile->craftPlans()
+            ->whereNotNull('submitted_at')
+            ->exists();
+    }
+
+    /**
+     * Welcome back home after profile onboarding and at least one submitted meal plan.
+     * Applies to anyone using the customer portal (customers and staff preview).
+     */
+    public function shouldLandOnWelcomeBack(): bool
+    {
+        return $this->canAccessCustomerPortal()
+            && $this->hasCompletedOnboarding()
+            && $this->hasSubmittedMealPlan();
+    }
+
+    /**
+     * Crafted for YOU is the next step after profile onboarding, before meals are submitted.
+     * Applies to anyone using the customer portal (customers and staff preview).
+     */
+    public function shouldLandOnCraftedForYou(): bool
+    {
+        return $this->canAccessCustomerPortal()
+            && $this->hasCompletedOnboarding()
+            && ! $this->hasSubmittedMealPlan();
+    }
+
+    /**
+     * New customers must confirm one OTP sent to email and WhatsApp.
+     * Customers without a profile are not gated (staff preview and legacy rows).
+     */
+    public function needsSignupVerification(): bool
+    {
+        if (! $this->isCustomer()) {
+            return false;
+        }
+
+        $profile = $this->customerProfile;
+
+        if ($profile === null) {
+            return false;
+        }
+
+        return $profile->phone_verified_at === null;
     }
 
     public function currentOnboardingStep(): OnboardingStep
@@ -69,12 +163,20 @@ class User extends Authenticatable
 
     public function homePath(): string
     {
-        if ($this->isAdmin()) {
+        if ($this->needsSignupVerification()) {
+            return route('join.verify', absolute: false);
+        }
+
+        if ($this->canAccessAdminPortal()) {
             return route('admin.dashboard', absolute: false);
         }
 
-        if ($this->hasCompletedOnboarding()) {
+        if ($this->shouldLandOnWelcomeBack()) {
             return route('app.home', absolute: false);
+        }
+
+        if ($this->shouldLandOnCraftedForYou()) {
+            return route('consultation.crafted-for-you', absolute: false);
         }
 
         return route('onboarding.show', [

@@ -23,6 +23,7 @@ final class MealLibraryTaxonomy
         'Gluten-free',
         'Nut-free',
         'Spicy',
+        'High protein',
     ];
 
     /**

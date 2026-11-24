@@ -5,6 +5,7 @@ namespace App\Enums;
 enum DietProtocol: string
 {
     case Balanced = 'balanced';
+    case NutrientDense = 'nutrient_dense';
     case Ketobiotic = 'ketobiotic';
     case CycleSync = 'cycle_sync';
     case Thyroid = 'thyroid';
@@ -13,7 +14,8 @@ enum DietProtocol: string
     public function label(): string
     {
         return match ($this) {
-            self::Balanced => __('Balanced Protocol'),
+            self::Balanced => __('Balanced Anti-inflammatory'),
+            self::NutrientDense => __('Balanced Anti-inflammatory'),
             self::Ketobiotic => __('Ketobiotic'),
             self::CycleSync => __('Cycle sync'),
             self::Thyroid => __('Thyroid Protocol'),

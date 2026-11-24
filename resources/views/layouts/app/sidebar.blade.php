@@ -29,9 +29,6 @@
                     <flux:sidebar.item icon="squares-2x2" :href="route('meal-plans.four-week')" :current="request()->routeIs('meal-plans.four-week')" wire:navigate>
                         {{ __('4-week plans') }}
                     </flux:sidebar.item>
-                    <flux:sidebar.item icon="clipboard-document-list" :href="route('consultation.crafted-for-you')" :current="request()->routeIs('consultation.crafted-for-you')">
-                        {{ __('Consultation') }}
-                    </flux:sidebar.item>
                 </flux:sidebar.group>
             </flux:sidebar.nav>
 

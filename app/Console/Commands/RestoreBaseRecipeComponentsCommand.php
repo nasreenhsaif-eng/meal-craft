@@ -204,13 +204,17 @@ class RestoreBaseRecipeComponentsCommand extends Command
                 continue;
             }
 
-            $resolvedCell = collect($componentRows)
-                ->map(static fn (array $component): string => sprintf(
-                    '%d:%s',
-                    (int) $component['ingredient_id'],
-                    rtrim(rtrim(number_format((float) $component['amount_grams'], 4, '.', ''), '0'), '.'),
-                ))
-                ->implode(',');
+            $resolvedCell = RecipeComponentsCsvParser::formatComponentRowsAsNameCell($componentRows);
+
+            if ($resolvedCell === '') {
+                $resolvedCell = collect($componentRows)
+                    ->map(static fn (array $component): string => sprintf(
+                        '%d:%s',
+                        (int) $component['ingredient_id'],
+                        rtrim(rtrim(number_format((float) $component['amount_grams'], 4, '.', ''), '0'), '.'),
+                    ))
+                    ->implode(',');
+            }
 
             $row[$index['recipe_components']] = $resolvedCell;
             $rows[$rowIndex] = $row;

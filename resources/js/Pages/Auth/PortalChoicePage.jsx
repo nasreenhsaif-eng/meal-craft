@@ -21,7 +21,7 @@ const portalChoiceButtonClass =
  */
 export default function PortalChoicePage({
     userName = '',
-    onboardingHref = '/onboarding/gender',
+    onboardingHref = '/app',
     adminHref = '/admin/dashboard',
     onSelectCustomerExperience,
     onSelectAdminPortal,
@@ -62,7 +62,7 @@ export default function PortalChoicePage({
                     <header className="mt-8 text-center">
                         <p className="font-montserrat text-sm font-semibold text-[#6E8C47]">{greeting}</p>
 
-                        <h1 className="mt-3 font-montserrat text-2xl font-bold tracking-tight text-[#262A22] sm:text-3xl">
+                        <h1 className="mt-3 font-montserrat text-2xl font-bold tracking-tight text-heading sm:text-3xl">
                             Choose your workspace
                         </h1>
 

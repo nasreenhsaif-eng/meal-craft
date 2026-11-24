@@ -28,6 +28,7 @@
  *   sideSalad: string;
  *   dessert: string;
  *   cutlery: string;
+ *   kitchenInstructions?: string;
  *   specialRequests: string;
  *   allergies: string;
  * }} KitchenDailyRow
@@ -115,6 +116,8 @@ export const mockKitchenDailyRows = [
         sideSalad: 'Mixed greens',
         dessert: '—',
         cutlery: 'Fork + spoon',
+        kitchenInstructions:
+            'breakfast: 3 eggs, vegetables: 100g, carbs: 40g\nmeal 1: chicken 120g, carbs: 180g, vegetables: 50g, sauce: 50g\nmeal 2: salmon 140g, carbs: 120g, vegetables: 60g',
         specialRequests: 'Extra ice pack for AM delivery',
         allergies: 'Shellfish — anaphylaxis',
     },
@@ -128,6 +131,8 @@ export const mockKitchenDailyRows = [
         sideSalad: 'Side Caesar',
         dessert: 'Dark chocolate square',
         cutlery: 'Full set',
+        kitchenInstructions:
+            'breakfast: 2 eggs, vegetables: 80g\nmeal 1: beef 150g, carbs: 150g, vegetables: 80g',
         specialRequests: '—',
         allergies: 'None declared',
     },
@@ -141,6 +146,7 @@ export const mockKitchenDailyRows = [
         sideSalad: 'Simple greens',
         dessert: '—',
         cutlery: 'Spoon only',
+        kitchenInstructions: 'meal 1: chicken 90g, carbs: 180g, vegetables: 140g',
         specialRequests: 'No cilantro anywhere',
         allergies: 'Dairy — mild; avoid whey',
     },
@@ -162,4 +168,89 @@ export const mockIngredientChoiceLines = [
     { ingredient: 'Cod fillet', unit: 'g', gramsPerPortion: 140, portions: 6, recipeLabel: 'Baked cod' },
     { ingredient: 'Baby spinach', unit: 'g', gramsPerPortion: 40, portions: 22, recipeLabel: 'Salads / sides' },
     { ingredient: 'Olive oil', unit: 'ml', gramsPerPortion: 12, portions: 40, recipeLabel: 'Kitchen wide' },
+];
+
+/**
+ * Flattened adapted meals for kitchen operation sheet recipe batches (Storybook / demos).
+ *
+ * @type {import('./kitchenRecipeBatches.js').AdaptedKitchenMeal[]}
+ */
+export const mockAdaptedKitchenMeals = [
+    ...Array.from({ length: 13 }, (_, index) => ({
+        mealId: 101,
+        mealName: 'Salmon bowl',
+        slot: 'main',
+        imageUrl: null,
+        instructions: '1. Season the salmon.\n2. Roast with vegetables.\n3. Plate over greens.',
+        customerName: `Guest ${index + 1}`,
+        ingredients: [
+            { id: 1, name: 'Atlantic salmon (skin-on)', adaptedAmountGrams: 150, adaptedAmount: null, unit: 'g' },
+            { id: 2, name: 'Baby spinach', adaptedAmountGrams: 40, adaptedAmount: null, unit: 'g' },
+        ],
+    })),
+    ...Array.from({ length: 14 }, (_, index) => ({
+        mealId: 202,
+        mealName: 'Chicken quinoa',
+        slot: 'main',
+        imageUrl: null,
+        instructions: '1. Cook quinoa.\n2. Sear chicken.\n3. Combine and finish with herbs.',
+        customerName: `Guest ${index + 20}`,
+        ingredients: [
+            { id: 3, name: 'Free-range chicken breast', adaptedAmountGrams: 170, adaptedAmount: null, unit: 'g' },
+            { id: 4, name: 'Quinoa (dry)', adaptedAmountGrams: 65, adaptedAmount: null, unit: 'g' },
+        ],
+    })),
+    {
+        mealId: 303,
+        mealName: 'Baked cod',
+        slot: 'main',
+        imageUrl: null,
+        instructions: '1. Bake cod until flaky.\n2. Serve with lemon.',
+        customerName: 'Guest 99',
+        ingredients: [{ id: 5, name: 'Cod fillet', adaptedAmountGrams: 140, adaptedAmount: null, unit: 'g' }],
+    },
+    {
+        mealId: 303,
+        mealName: 'Baked cod',
+        slot: 'main',
+        imageUrl: null,
+        instructions: '1. Bake cod until flaky.\n2. Serve with lemon.',
+        customerName: 'Guest 100',
+        ingredients: [{ id: 5, name: 'Cod fillet', adaptedAmountGrams: 160, adaptedAmount: null, unit: 'g' }],
+    },
+];
+
+/**
+ * Prepared base recipes aggregated for the kitchen day (Storybook / demos).
+ *
+ * @type {import('./kitchenRecipeBatches.js').KitchenBaseRecipe[]}
+ */
+export const mockKitchenBaseRecipes = [
+    {
+        id: 901,
+        name: 'Marinara Sauce (Base)',
+        instructions: '1. Sweat onion and garlic.\n2. Simmer tomatoes until thick.\n3. Season and cool.',
+        image_path: null,
+        finished_weight_grams: 500,
+        total_adapted_grams: 650,
+        usage_count: 13,
+        components: [
+            { id: 11, name: 'Tomato', amount_grams: 400 },
+            { id: 12, name: 'Onion', amount_grams: 60 },
+            { id: 13, name: 'Olive oil', amount_grams: 20 },
+        ],
+    },
+    {
+        id: 902,
+        name: 'Cooked Quinoa (Base)',
+        instructions: '1. Rinse quinoa.\n2. Simmer until fluffy.\n3. Rest covered.',
+        image_path: null,
+        finished_weight_grams: 400,
+        total_adapted_grams: 910,
+        usage_count: 14,
+        components: [
+            { id: 14, name: 'Quinoa (dry)', amount_grams: 160 },
+            { id: 15, name: 'Water', amount_grams: 320 },
+        ],
+    },
 ];

@@ -85,12 +85,14 @@ final class MenuDevelopmentCsvExport
 
         if ($isBaseRecipe) {
             $recipeComponents = $ingredient->components
+                ->sortBy(fn (Ingredient $child): string => strtolower($child->name))
+                ->values()
                 ->map(fn (Ingredient $child): string => sprintf(
-                    '%d:%s',
-                    (int) $child->id,
+                    '%s (%sg)',
+                    $child->name,
                     rtrim(rtrim(number_format((float) ($child->pivot->amount_grams ?? 0), 4, '.', ''), '0'), '.')
                 ))
-                ->implode(',');
+                ->implode(' | ');
         }
 
         return [

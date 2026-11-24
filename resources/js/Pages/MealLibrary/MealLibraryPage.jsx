@@ -7,16 +7,16 @@ import TextInput from '../../Components/Atoms/TextInput/TextInput.jsx';
 import DropdownTextInput from '../../Components/Atoms/TextInput/DropdownTextInput.jsx';
 import MultiPillDropdown from '../../Components/Atoms/TextInput/MultiPillDropdown.jsx';
 import Button from '../../Components/Atoms/Button.jsx';
-import PillButton from '../../Components/Atoms/Button/Button.jsx';
-import MealCard from '../../Components/MealCard.jsx';
+import AdminMealCard from '../../Components/AdminMealCard.jsx';
+import MealBrowseTabs from '../../Components/MealBrowseTabs.jsx';
 import MealDetailView from '../../Components/Molecules/MealDetailView/MealDetailView';
 import MealLibrarySortableTable from '../../Components/MealLibrary/MealLibrarySortableTable.jsx';
 import CSVUploader from '../../Components/CSVUploader.jsx';
 import RoundIconButton from '../../Components/Atoms/Icons/RoundIconButton.jsx';
 import { IconLayoutGrid, IconLayoutList } from '../../Components/Atoms/SvgIcons.jsx';
 import SquareCheckbox from '../../Components/Atoms/Icons/SquareCheckbox.jsx';
-import NutrientBadge from '../../Components/Atoms/MealSystem/NutrientBadge.jsx';
-import { aggregateNutritionFromIngredientRows, normalizeIngredientKey } from '../../meal-library/aggregateIngredientNutrition.ts';
+import NutrientBadge from '../../Components/MealSystem/NutrientBadge.jsx';
+import { aggregateNutritionFromIngredientRows, isPureCookingFatName, isVegetableOilName, normalizeIngredientKey, PURE_OIL_DENSITY_G_PER_ML } from '../../meal-library/aggregateIngredientNutrition.ts';
 import { calculateMealNutrition, calorieWarningsForCategory, resolveMealLibraryCategory } from '../../meal-library/calculateMealNutrition.ts';
 import { resolveMealImageUrl } from '../../meal-library/resolveMealImageUrl.ts';
 import { gramsFromIngredientAmountAndUnit, parseIngredientQuantityString } from '../../meal-library/ingredientQuantityString.ts';
@@ -49,8 +49,10 @@ import { resolvePerServingActualForTargets, scaleNutritionRecord } from '../../m
 import { downloadMissingIngredientsCSV } from '../../meal-library/downloadMissingIngredientsCSV.ts';
 import { downloadMealCraftCsvTemplate } from '../../meal-library/generateLibraryExportCSV.ts';
 import SafetyAlerts from '../../Components/MealSystem/SafetyAlerts.jsx';
+import FoodFilterMultiSelect from '../../Components/MealSystem/FoodFilterMultiSelect.jsx';
+import { MEAL_LIBRARY_FOOD_FILTER_OPTIONS } from '../../Components/MealSystem/foodFilterOptions.js';
 
-const PAGE_BG = 'bg-[#F8F9F6]';
+const PAGE_BG = 'bg-surface-soft';
 const PAGE_SIZE = 12;
 
 /**
@@ -376,7 +378,7 @@ function mealCsvImportIngredientLibraryRowNames(rows) {
     return names;
 }
 
-const MEAL_FORM_TYPE_OPTIONS = ['Breakfast', 'Meal', 'Side Salad', 'Soup', 'Dessert'];
+const MEAL_FORM_TYPE_OPTIONS = ['Breakfast', 'Meal', 'Side Salad', 'Soup', 'Dessert', 'Chia Pudding'];
 const UNIT_OPTIONS = ['g', 'kg', 'ml', 'ltr'];
 
 const DEFAULT_CYCLE_PHASES = [
@@ -472,18 +474,27 @@ function batchMacroDisplayFromPerServing(perServingStr, servings) {
     return fmtMacroFromNutrition(per * servings);
 }
 
-function unitToGrams(amount, unit) {
+function unitToGrams(amount, unit, densityGramsPerMl = 1) {
     const n = Number(amount);
     if (!Number.isFinite(n) || n <= 0) {
         return 0;
     }
-    if (unit === 'kg') {
-        return n * 1000;
+    return gramsFromIngredientAmountAndUnit(n, unit, densityGramsPerMl);
+}
+
+function densityForIngredientLabel(name, profiles) {
+    const key = normalizeIngredientKey(name ?? '');
+    const profile = Array.isArray(profiles)
+        ? profiles.find((p) => normalizeIngredientKey(p?.name ?? '') === key)
+        : null;
+    const stored = typeof profile?.density === 'number' && profile.density > 0 ? profile.density : 0;
+    if (!isPureCookingFatName(name ?? '')) {
+        return stored > 0 ? stored : 1;
     }
-    if (unit === 'ltr') {
-        return n * 1000;
+    if (stored >= 0.85 && stored <= 0.98) {
+        return stored;
     }
-    return n;
+    return isVegetableOilName(name ?? '') ? PURE_OIL_DENSITY_G_PER_ML : 0.91;
 }
 
 /**
@@ -606,6 +617,7 @@ function deleteSelectedButtonClass(anySelected) {
  *   cyclePhases?: { value: string; label: string }[];
  *   meals?: object[];
  *   ingredientProfiles?: object[];
+ *   browseTabs?: Array<{ id: string, label: string }>;
  *   csvMealCraftTemplateUrl?: string;
  *   csvExportUrl?: string;
  *   csvImportUrl?: string;
@@ -633,6 +645,7 @@ function deleteSelectedButtonClass(anySelected) {
 export function MealLibraryPageContent({
     cyclePhases = DEFAULT_CYCLE_PHASES,
     meals = [],
+    browseTabs = [],
     ingredientProfiles = [],
     csvMealCraftTemplateUrl = '',
     csvExportUrl = '#',
@@ -653,6 +666,7 @@ export function MealLibraryPageContent({
     onRowReorder,
 }) {
     const [query, setQuery] = useState('');
+    const [browseTab, setBrowseTab] = useState(browseTabs[0]?.id ?? 'all');
     const [mealRows, setMealRows] = useState(meals);
     const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
     const [selectedRows, setSelectedRows] = useState(/** @type {string[]} */ ([]));
@@ -674,11 +688,15 @@ export function MealLibraryPageContent({
     }, [mealCsvImportFlash]);
 
     const reloadMealLibraryRows = useCallback(() => {
-        void router.reload({
-            only: ['meals'],
-            preserveState: true,
-            preserveScroll: true,
-        });
+        try {
+            void router.reload({
+                only: ['meals'],
+                preserveState: true,
+                preserveScroll: true,
+            });
+        } catch {
+            // Storybook and other non-Inertia mounts have no current page.
+        }
     }, []);
 
     const dismissMealCsvImportModal = useCallback(() => {
@@ -700,14 +718,6 @@ export function MealLibraryPageContent({
     }, [meals]);
 
     useEffect(() => {
-        void router.reload({
-            only: ['meals'],
-            preserveScroll: true,
-            preserveState: true,
-        });
-    }, []);
-
-    useEffect(() => {
         if (initialViewMode !== undefined) {
             setViewMode(initialViewMode);
         }
@@ -715,7 +725,7 @@ export function MealLibraryPageContent({
 
     useEffect(() => {
         setVisibleCount(PAGE_SIZE);
-    }, [query, mealRows]);
+    }, [query, mealRows, browseTab]);
 
     useEffect(() => {
         if (storyInitialCreateModalOpen) {
@@ -738,6 +748,7 @@ export function MealLibraryPageContent({
     const [isBulkRecipe, setIsBulkRecipe] = useState(false);
     const [bulkServingsCount, setBulkServingsCount] = useState('');
     const [selectedDietTags, setSelectedDietTags] = useState(/** @type {string[]} */ ([]));
+    const [selectedFoodFilterTags, setSelectedFoodFilterTags] = useState(/** @type {string[]} */ ([]));
     const [selectedCyclePhaseValues, setSelectedCyclePhaseValues] = useState(/** @type {string[]} */ ([]));
     const [formInstructions, setFormInstructions] = useState('');
     const [formHighlight, setFormHighlight] = useState('');
@@ -769,6 +780,7 @@ export function MealLibraryPageContent({
         setIsBulkRecipe(false);
         setBulkServingsCount('');
         setSelectedDietTags([]);
+        setSelectedFoodFilterTags([]);
         setSelectedCyclePhaseValues([]);
         setFormInstructions('');
         setFormHighlight('');
@@ -849,6 +861,11 @@ export function MealLibraryPageContent({
         const mpt = Array.isArray(ef.mealPlanTags) ? ef.mealPlanTags.filter((t) => typeof t === 'string' && t.trim() !== '') : [];
         setSelectedMealPlanTags(mpt.length ? [...mpt] : ef.mealPlanTag ? [String(ef.mealPlanTag)] : []);
         setSelectedDietTags(canonicalDietTagsFromList(Array.isArray(ef.dietTags) ? ef.dietTags : []));
+        setSelectedFoodFilterTags(
+            Array.isArray(ef.foodFilterTags)
+                ? ef.foodFilterTags.filter((tag) => typeof tag === 'string' && tag.trim() !== '')
+                : [],
+        );
         const cpv = Array.isArray(ef.cyclePhaseValues)
             ? ef.cyclePhaseValues.filter((v) => typeof v === 'string' && v.trim() !== '')
             : [];
@@ -919,33 +936,6 @@ export function MealLibraryPageContent({
         setSelectedDietTags((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]));
     }
 
-    const canSave = useMemo(() => {
-        const nameOk = formName.trim().length > 0;
-        const svc = parseBulkServingsCount(bulkServingsCount);
-        const hasResolvedIngredientLines = ingredientRows.some((r) => {
-            const grams = unitToGrams(r.amount, r.unit);
-            const label = (r.selectedName || r.nameQuery || '').trim();
-            return grams > 0 && label.length > 0;
-        });
-        const ingredientBackedOk = hasResolvedIngredientLines && (!isBulkRecipe || svc != null);
-        const cal = Number(formCalories);
-        const batchCalOk = formCalories.trim() !== '' && Number.isFinite(cal) && cal >= 0;
-        const editingExisting = Boolean(mealToEdit?.editForm?.id);
-        if (!nameOk) {
-            return false;
-        }
-        if (editingExisting && batchCalOk && hasResolvedIngredientLines) {
-            return !isBulkRecipe || svc != null;
-        }
-        if (!batchCalOk && !ingredientBackedOk) {
-            return false;
-        }
-        if (!isBulkRecipe) {
-            return true;
-        }
-        return svc != null;
-    }, [formName, formCalories, isBulkRecipe, bulkServingsCount, ingredientRows, mealToEdit]);
-
     const ingredientDatabase = useMemo(
         () =>
             (ingredientProfiles ?? []).map((p) => ({
@@ -967,6 +957,33 @@ export function MealLibraryPageContent({
             })),
         [ingredientProfiles],
     );
+
+    const canSave = useMemo(() => {
+        const nameOk = formName.trim().length > 0;
+        const svc = parseBulkServingsCount(bulkServingsCount);
+        const hasResolvedIngredientLines = ingredientRows.some((r) => {
+            const label = (r.selectedName || r.nameQuery || '').trim();
+            const grams = unitToGrams(r.amount, r.unit, densityForIngredientLabel(label, ingredientDatabase));
+            return grams > 0 && label.length > 0;
+        });
+        const ingredientBackedOk = hasResolvedIngredientLines && (!isBulkRecipe || svc != null);
+        const cal = Number(formCalories);
+        const batchCalOk = formCalories.trim() !== '' && Number.isFinite(cal) && cal >= 0;
+        const editingExisting = Boolean(mealToEdit?.editForm?.id);
+        if (!nameOk) {
+            return false;
+        }
+        if (editingExisting && batchCalOk && hasResolvedIngredientLines) {
+            return !isBulkRecipe || svc != null;
+        }
+        if (!batchCalOk && !ingredientBackedOk) {
+            return false;
+        }
+        if (!isBulkRecipe) {
+            return true;
+        }
+        return svc != null;
+    }, [formName, formCalories, isBulkRecipe, bulkServingsCount, ingredientRows, mealToEdit, ingredientDatabase]);
 
     const [activeSuggestRow, setActiveSuggestRow] = useState(/** @type {number|null} */ (null));
     const ingredientSuggestRootRef = useRef(null);
@@ -1038,12 +1055,23 @@ export function MealLibraryPageContent({
         };
     }, [activeSuggestRow]);
 
+    const activeBrowseTab = browseTabs.some((tab) => tab.id === browseTab)
+        ? browseTab
+        : (browseTabs[0]?.id ?? 'all');
+    const activeBrowseLabel = browseTabs.find((tab) => tab.id === activeBrowseTab)?.label ?? 'All';
+
     const filteredMeals = useMemo(() => {
         const q = query.trim().toLowerCase();
+        const inBrowseTab =
+            browseTabs.length === 0 || activeBrowseTab === 'all'
+                ? mealRows
+                : mealRows.filter((m) => m.browseTab === activeBrowseTab);
+
         if (!q) {
-            return mealRows;
+            return inBrowseTab;
         }
-        return mealRows.filter((m) => {
+
+        return inBrowseTab.filter((m) => {
             const titleMatch = String(m.title ?? '')
                 .toLowerCase()
                 .includes(q);
@@ -1058,7 +1086,7 @@ export function MealLibraryPageContent({
                 m.tags.some((t) => String(t.label ?? t ?? '').toLowerCase().includes(q));
             return titleMatch || mealTypeMatch || categoryMatch || tagMatch;
         });
-    }, [mealRows, query]);
+    }, [mealRows, query, browseTabs, activeBrowseTab]);
 
     const displayedMeals = useMemo(
         () => filteredMeals.slice(0, Math.min(visibleCount, filteredMeals.length)),
@@ -1133,10 +1161,10 @@ export function MealLibraryPageContent({
                     },
                 );
             } catch {
-                void router.reload({ only: ['meals'], preserveScroll: true });
+                reloadMealLibraryRows();
             }
         },
-        [csrfToken, handleMealRowReorder, mealReorderUrl],
+        [csrfToken, handleMealRowReorder, mealReorderUrl, reloadMealLibraryRows],
     );
 
     function handleConfirmDelete() {
@@ -1203,7 +1231,7 @@ export function MealLibraryPageContent({
         return ingredientRows
             .map((r) => {
                 const name = (r.selectedName || r.nameQuery || '').trim();
-                const grams = unitToGrams(r.amount, r.unit);
+                const grams = unitToGrams(r.amount, r.unit, densityForIngredientLabel(name, ingredientDatabase));
                 if (!name || grams <= 0) {
                     return null;
                 }
@@ -1275,6 +1303,7 @@ export function MealLibraryPageContent({
             description: formInstructions,
             highlight: formHighlight,
             diet_tags: canonicalDietTagsFromList(selectedDietTags),
+            food_filter_tags: selectedFoodFilterTags,
             is_bulk: useBulk,
             servings_count: useBulk ? servingsDivisor : null,
         });
@@ -1458,7 +1487,7 @@ export function MealLibraryPageContent({
         const pairs = ingredientRows
             .map((r) => {
                 const name = (r.selectedName || r.nameQuery || '').trim();
-                const grams = unitToGrams(r.amount, r.unit);
+                const grams = unitToGrams(r.amount, r.unit, densityForIngredientLabel(name, ingredientDatabase));
                 if (!name || grams <= 0) {
                     return null;
                 }
@@ -1482,6 +1511,7 @@ export function MealLibraryPageContent({
         formType,
         formInstructions,
         formHighlight,
+        ingredientDatabase,
     ]);
 
     const nutritionResult = useMemo(
@@ -1578,10 +1608,22 @@ export function MealLibraryPageContent({
         [ingredientRowsForSafety, ingredientPasteField, ingredientDatabase],
     );
 
-    const safetyFormAlerts = useMemo(
-        () => collectSafetyAlertLabelsFromIngredientSelection(ingredientRowsForSafety, ingredientDatabase),
-        [ingredientRowsForSafety, ingredientDatabase],
-    );
+    const safetyFormAlerts = useMemo(() => {
+        if (selectedFoodFilterTags.length > 0) {
+            const labels = selectedFoodFilterTags
+                .map((id) => MEAL_LIBRARY_FOOD_FILTER_OPTIONS.find((option) => option.id === id)?.label ?? id)
+                .filter((label) => label.trim() !== '')
+                .sort();
+
+            if (hasG6pdTrigger) {
+                labels.push(G6PD_TRIGGER_SAFETY_LABEL);
+            }
+
+            return labels;
+        }
+
+        return collectSafetyAlertLabelsFromIngredientSelection(ingredientRowsForSafety, ingredientDatabase);
+    }, [selectedFoodFilterTags, ingredientRowsForSafety, ingredientDatabase, hasG6pdTrigger]);
 
     const [g6pdToastVisible, setG6pdToastVisible] = useState(false);
     const g6pdToastShownRef = useRef(false);
@@ -1732,7 +1774,7 @@ export function MealLibraryPageContent({
                 {flashSuccess ? (
                     <div
                         role="status"
-                        className="rounded-[12px] border border-[#5A6B44]/30 bg-[#F8F9F6] px-4 py-3 font-body text-sm text-[#262A22]"
+                        className="rounded-[12px] border border-[#5A6B44]/30 bg-surface-soft px-4 py-3 font-body text-sm text-heading"
                     >
                         {flashSuccess}
                     </div>
@@ -1852,52 +1894,55 @@ export function MealLibraryPageContent({
                             </div>
                         </div>
 
-                        <div className="flex w-full min-w-0 flex-col gap-3 sm:flex-row sm:items-end">
-                            <div className="min-w-0 flex-1">
-                                <TextInput
-                                    label="Search meals"
-                                    placeholder="Search by name, meal type, category, or tag…"
-                                    value={query}
-                                    onChange={(e) => setQuery(e.target.value)}
-                                    className="!max-w-none"
-                                />
-                            </div>
-                            <div
-                                className="flex shrink-0 items-center gap-1 self-stretch rounded-[12px] border border-[#E5E7EB] bg-[#F8F9F6] p-1 sm:self-auto"
-                                role="group"
-                                aria-label="Library view"
-                            >
-                                <RoundIconButton
-                                    type="button"
-                                    icon={<IconLayoutGrid className={viewMode === 'grid' ? 'text-[#5A6B44]' : ''} />}
-                                    ariaLabel="Grid view"
-                                    aria-pressed={viewMode === 'grid'}
-                                    onClick={() => setViewMode('grid')}
-                                    className={
-                                        viewMode === 'grid'
-                                            ? '!border-transparent bg-white text-[#262A22] shadow-sm'
-                                            : '!border-transparent bg-transparent text-[#6B7280] shadow-none hover:bg-white/70'
-                                    }
-                                />
-                                <RoundIconButton
-                                    type="button"
-                                    icon={<IconLayoutList className={viewMode === 'list' ? 'text-[#5A6B44]' : ''} />}
-                                    ariaLabel="List view"
-                                    aria-pressed={viewMode === 'list'}
-                                    onClick={() => setViewMode('list')}
-                                    className={
-                                        viewMode === 'list'
-                                            ? '!border-transparent bg-white text-[#262A22] shadow-sm'
-                                            : '!border-transparent bg-transparent text-[#6B7280] shadow-none hover:bg-white/70'
-                                    }
-                                />
+                        <div className="flex w-full min-w-0 flex-col gap-3">
+                            <MealBrowseTabs tabs={browseTabs} activeId={activeBrowseTab} onChange={setBrowseTab} />
+                            <div className="flex w-full min-w-0 flex-col gap-3 sm:flex-row sm:items-end">
+                                <div className="min-w-0 flex-1">
+                                    <TextInput
+                                        label="Search meals"
+                                        placeholder="Search by name, meal type, category, or tag…"
+                                        value={query}
+                                        onChange={(e) => setQuery(e.target.value)}
+                                        className="!max-w-none"
+                                    />
+                                </div>
+                                <div
+                                    className="flex shrink-0 items-center gap-1 self-stretch rounded-[12px] border border-border-light bg-surface-soft p-1 sm:self-auto"
+                                    role="group"
+                                    aria-label="Library view"
+                                >
+                                    <RoundIconButton
+                                        type="button"
+                                        icon={<IconLayoutGrid className={viewMode === 'grid' ? 'text-[#5A6B44]' : ''} />}
+                                        ariaLabel="Grid view"
+                                        aria-pressed={viewMode === 'grid'}
+                                        onClick={() => setViewMode('grid')}
+                                        className={
+                                            viewMode === 'grid'
+                                                ? '!border-transparent bg-white text-heading shadow-sm'
+                                                : '!border-transparent bg-transparent text-[#6B7280] shadow-none hover:bg-white/70'
+                                        }
+                                    />
+                                    <RoundIconButton
+                                        type="button"
+                                        icon={<IconLayoutList className={viewMode === 'list' ? 'text-[#5A6B44]' : ''} />}
+                                        ariaLabel="List view"
+                                        aria-pressed={viewMode === 'list'}
+                                        onClick={() => setViewMode('list')}
+                                        className={
+                                            viewMode === 'list'
+                                                ? '!border-transparent bg-white text-heading shadow-sm'
+                                                : '!border-transparent bg-transparent text-[#6B7280] shadow-none hover:bg-white/70'
+                                        }
+                                    />
+                                </div>
                             </div>
                         </div>
 
                         <div className="-mx-5 flex flex-wrap items-center justify-between gap-3 border-t border-gray-200 px-5 pb-0 pt-4">
                             <div className="min-w-0">
-                                <p className="font-montserrat text-sm font-bold tracking-tight text-[#262A22]">Meal library</p>
-                                <p className="mt-0.5 font-body text-xs text-[#555555]">
+                                <p className="font-montserrat text-sm font-bold tracking-tight text-heading">Meal library</p>
+                                <p className="mt-0.5 font-body text-xs text-body">
                                     <span className="font-semibold text-[#374151]">{mealRows.length}</span> in library ·{' '}
                                     {displayedMeals.length} of {filteredMeals.length} in view
                                     {filteredMeals.length < mealRows.length ? ' (filtered)' : ''} · {selectedRows.length}{' '}
@@ -1926,15 +1971,17 @@ export function MealLibraryPageContent({
 
                     <div className="p-5">
                         {filteredMeals.length === 0 ? (
-                            <p className="rounded-[12px] border border-dashed border-gray-200 bg-[#F8F9F6] p-8 text-center font-body text-sm text-[#555555]">
-                                No meals match your search. Try another name, type, category, or tag.
+                            <p className="rounded-[12px] border border-dashed border-gray-200 bg-surface-soft p-8 text-center font-body text-sm text-body">
+                                {query.trim()
+                                    ? 'No meals match your search. Try another name, type, category, or tag.'
+                                    : `No ${activeBrowseLabel.toLowerCase()} meals in the Meal Library yet.`}
                             </p>
                         ) : viewMode === 'grid' ? (
                             <>
                                 <ul className="m-0 grid list-none grid-cols-1 gap-6 p-0 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                                     {displayedMeals.map((meal) => (
                                         <li key={meal.id} className="flex justify-center">
-                                            <MealCard
+                                            <AdminMealCard
                                                 isAdmin
                                                 adminControls
                                                 showActions
@@ -1988,7 +2035,7 @@ export function MealLibraryPageContent({
                           >
                               <h2
                                   id="meal-csv-import-summary-title"
-                                  className="text-center font-montserrat text-[22px] font-bold tracking-tight text-[#262A22]"
+                                  className="text-center font-montserrat text-[22px] font-bold tracking-tight text-heading"
                               >
                                   Meal CSV import
                               </h2>
@@ -1996,7 +2043,7 @@ export function MealLibraryPageContent({
                                   <div className="mt-4 space-y-3 text-left font-body text-sm text-[#7F1D1D]" role="alert">
                                       <p className="text-center">{mealCsvImportResultModal.error}</p>
                                       {mealCsvImportResultModal.validationErrors ? (
-                                          <ul className="list-disc space-y-1 pl-5 text-[#262A22]">
+                                          <ul className="list-disc space-y-1 pl-5 text-heading">
                                               {Object.entries(mealCsvImportResultModal.validationErrors).map(([key, msgs]) =>
                                                   Array.isArray(msgs) ? (
                                                       msgs.map((m) => (
@@ -2014,9 +2061,9 @@ export function MealLibraryPageContent({
                                       ) : null}
                                   </div>
                               ) : (
-                                  <div className="mt-6 space-y-4 font-body text-sm text-[#262A22]">
+                                  <div className="mt-6 space-y-4 font-body text-sm text-heading">
                                       {mealCsvImportMealLibrarySavedCount(mealCsvImportResultModal.summary) > 0 ? (
-                                          <div className="flex gap-3 rounded-[12px] border border-[#E5E7EB] bg-[#F8F9F6] px-4 py-3">
+                                          <div className="flex gap-3 rounded-[12px] border border-border-light bg-surface-soft px-4 py-3">
                                               <span className="text-lg leading-none text-[#5A6B44]" aria-hidden>
                                                   ✓
                                               </span>
@@ -2077,7 +2124,7 @@ export function MealLibraryPageContent({
                                       {(mealCsvImportResultModal.uniquePending ?? []).length > 0 ? (
                                           <div className="rounded-[12px] border border-amber-200/80 bg-white px-4 py-3 text-amber-950">
                                               <p className="font-semibold">Missing from ingredient library</p>
-                                              <p className="mt-1 text-sm text-[#555555]">
+                                              <p className="mt-1 text-sm text-body">
                                                   This is not a crash — the meal was held until these exist in your library.
                                                   After you add them, upload the ingredient CSV on the Ingredient Library page;
                                                   the meal will be created automatically (or re-upload this meal CSV).
@@ -2215,10 +2262,10 @@ export function MealLibraryPageContent({
                         <p className="text-center font-montserrat text-xs font-bold uppercase tracking-[0.22em] text-[#C44F5D]">
                             Warning
                         </p>
-                        <p className="mt-3 text-center font-montserrat text-[22px] font-bold tracking-tight text-[#262A22]">
+                        <p className="mt-3 text-center font-montserrat text-[22px] font-bold tracking-tight text-heading">
                             Remove selected meals from the library?
                         </p>
-                        <p className="mt-3 text-center font-body text-sm text-[#555555]">
+                        <p className="mt-3 text-center font-body text-sm text-body">
                             Removed meals will no longer appear in the Meal Library or in CSV export.
                         </p>
                         {deleteError ? (
@@ -2266,28 +2313,19 @@ export function MealLibraryPageContent({
                         role="dialog"
                         aria-modal="true"
                         aria-labelledby="meal-library-detail-title"
-                        className="relative flex max-h-[min(92dvh,calc(100dvh-2rem))] w-full max-w-[960px] flex-col overflow-hidden rounded-t-[12px] bg-[#F8F9F6] shadow-2xl sm:rounded-[12px]"
+                        className="relative flex max-h-[min(92dvh,calc(100dvh-2rem))] w-full max-w-[960px] flex-col overflow-hidden rounded-t-[12px] bg-surface-soft shadow-2xl sm:rounded-[12px]"
                     >
                         <div className="flex shrink-0 items-start justify-between gap-3 border-b border-gray-200 px-4 py-4 md:px-6">
-                            <div className="min-w-0 flex-1">
-                                <h2
-                                    id="meal-library-detail-title"
-                                    className="break-words font-montserrat text-xl font-bold tracking-tight text-[#262A22] md:text-2xl"
-                                >
-                                    {mealDetailModal.title}
-                                </h2>
-                                {mealDetailModal.detailView?.shortDescription ||
-                                mealDetailModal.detailView?.description ? (
-                                    <p className="mt-1 line-clamp-2 font-montserrat text-sm font-medium text-[#555555] md:text-base">
-                                        {mealDetailModal.detailView.shortDescription ||
-                                            mealDetailModal.detailView.description}
-                                    </p>
-                                ) : null}
-                            </div>
+                            <h2
+                                id="meal-library-detail-title"
+                                className="min-w-0 flex-1 break-words font-montserrat text-xl font-bold tracking-tight text-heading md:text-2xl"
+                            >
+                                {mealDetailModal.title}
+                            </h2>
                             <Button label="Close" variant="ghost" type="button" onClick={() => setMealDetailModal(null)} />
                         </div>
                         {detailLoading ? (
-                            <p className="px-4 py-8 text-center font-body text-sm text-[#555555] md:px-6">Loading meal details…</p>
+                            <p className="px-4 py-8 text-center font-body text-sm text-body md:px-6">Loading meal details…</p>
                         ) : (
                             <MealDetailView meal={mealDetailModal.detailView} embedded />
                         )}
@@ -2320,11 +2358,11 @@ export function MealLibraryPageContent({
                                         <div>
                                             <h2
                                                 id="meal-library-create-title"
-                                                className="font-montserrat text-[22px] font-bold tracking-tight text-[#262A22]"
+                                                className="font-montserrat text-[22px] font-bold tracking-tight text-heading"
                                             >
                                                 {mealToEdit?.editForm?.id ? 'Edit meal' : 'Create meal'}
                                             </h2>
-                                            <p className="mt-1 font-body text-sm text-[#555555]">
+                                            <p className="mt-1 font-body text-sm text-body">
                                                 {isBulkRecipe
                                                     ? 'Bulk mode: enter batch totals for calories and macros, then set how many servings that batch makes. We save single-serving values to your library.'
                                                     : 'Build a meal and calculate nutrition live from your ingredient library.'}
@@ -2351,11 +2389,11 @@ export function MealLibraryPageContent({
                                             aria-pressed={isBulkRecipe}
                                         >
                                             <SquareCheckbox checked={isBulkRecipe} />
-                                            <span className="font-montserrat text-sm font-bold text-[#262A22]">
+                                            <span className="font-montserrat text-sm font-bold text-heading">
                                                 Bulk recipe
                                             </span>
                                         </button>
-                                        <p className="mt-2 font-body text-sm text-[#555555]">
+                                        <p className="mt-2 font-body text-sm text-body">
                                             Totals you enter are for the full batch; single-serving values are computed and
                                             stored for meal cards and plans.
                                         </p>
@@ -2424,7 +2462,7 @@ export function MealLibraryPageContent({
                                     </div>
 
                                     <div className="rounded-[12px] border border-gray-200 bg-white p-4">
-                                        <p className="font-montserrat text-sm font-bold text-[#262A22]">
+                                        <p className="font-montserrat text-sm font-bold text-heading">
                                             Ingredient string (library match)
                                         </p>
                                         <p className="mt-1 font-body text-xs text-[#6B7280]">
@@ -2436,7 +2474,7 @@ export function MealLibraryPageContent({
                                             matching is case-insensitive. Green = matched name; red = not in library or unparsed. Apply
                                             replaces ingredient rows and refreshes the nutrition summary.
                                         </p>
-                                        <div className="relative mt-3 rounded-[12px] border border-[#E5E7EB] bg-[#F8F9F6]">
+                                        <div className="relative mt-3 rounded-[12px] border border-border-light bg-surface-soft">
                                             <textarea
                                                 ref={ingredientPasteTextareaRef}
                                                 value={ingredientPasteField}
@@ -2507,7 +2545,7 @@ export function MealLibraryPageContent({
                                     </div>
 
                                     <div className="rounded-[12px] border border-[#C4B5A0]/35 bg-[#FAF8F5] p-4">
-                                        <p className="font-montserrat text-sm font-bold text-[#262A22]">Planning targets</p>
+                                        <p className="font-montserrat text-sm font-bold text-heading">Planning targets</p>
                                         <p className="mt-1 font-body text-xs text-[#6B7280]">
                                             Per-serving editorial goals (never batch totals). These fields never sync with batch
                                             totals, ingredient lines, or system nutrition — only your typing (or loading a meal for
@@ -2574,17 +2612,17 @@ export function MealLibraryPageContent({
                                         placeholder="Select one or more plan tags…"
                                     />
                                     <div className="space-y-2">
-                                        <p className="font-montserrat text-sm font-bold leading-snug tracking-tight text-grey-94">
-                                            Dietary tags
+                                        <p className="font-montserrat text-sm font-bold leading-snug tracking-tight text-form-label">
+                                            Diet tags
                                         </p>
-                                        <div className="flex flex-wrap gap-3" role="group" aria-label="Dietary tags">
+                                        <div className="flex flex-wrap gap-3" role="group" aria-label="Diet tags">
                                             {DIETARY_TAG_OPTIONS.map((tag) => {
                                                 const checked = selectedDietTags.includes(tag);
                                                 return (
                                                     <button
                                                         key={tag}
                                                         type="button"
-                                                        className="inline-flex items-center gap-2 rounded-[10px] border border-[#E5E7EB] bg-[#F8F9F6] px-3 py-2 font-body text-sm text-[#262A22] transition-colors hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5A6B44] focus-visible:ring-offset-2"
+                                                        className="inline-flex items-center gap-2 rounded-[10px] border border-border-light bg-surface-soft px-3 py-2 font-body text-sm text-heading transition-colors hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5A6B44] focus-visible:ring-offset-2"
                                                         aria-pressed={checked}
                                                         onClick={() => toggleDietTag(tag)}
                                                     >
@@ -2594,6 +2632,18 @@ export function MealLibraryPageContent({
                                                 );
                                             })}
                                         </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <p className="font-montserrat text-sm font-bold leading-snug tracking-tight text-form-label">
+                                            Food filters
+                                        </p>
+                                        <FoodFilterMultiSelect
+                                            value={selectedFoodFilterTags}
+                                            onChange={setSelectedFoodFilterTags}
+                                            options={MEAL_LIBRARY_FOOD_FILTER_OPTIONS}
+                                            showOther={false}
+                                            className="!justify-start"
+                                        />
                                     </div>
                                     <MultiPillDropdown
                                         label="Cycle phase"
@@ -2606,14 +2656,14 @@ export function MealLibraryPageContent({
                                     />
 
                                     <div className="block w-full max-w-[492px] text-left !max-w-none">
-                                        <label className="mb-2 block font-montserrat text-sm font-bold leading-snug tracking-tight text-grey-94">
+                                        <label className="mb-2 block font-montserrat text-sm font-bold leading-snug tracking-tight text-form-label">
                                             Instructions
                                         </label>
                                         <textarea
                                             value={formInstructions}
                                             onChange={(e) => setFormInstructions(e.target.value)}
                                             rows={4}
-                                            className="block w-full resize-y whitespace-pre-wrap rounded-[12px] border border-[#E5E7EB] bg-white px-4 py-3 font-body text-[15px] leading-relaxed text-[#1F2937] shadow-sm outline-none focus-visible:border-[#5A6B44] focus-visible:ring-2 focus-visible:ring-[#5A6B44] focus-visible:ring-offset-2"
+                                            className="block w-full resize-y whitespace-pre-wrap rounded-[12px] border border-border-light bg-white px-4 py-3 font-body text-[15px] leading-relaxed text-[#1F2937] shadow-sm outline-none focus-visible:border-[#5A6B44] focus-visible:ring-2 focus-visible:ring-[#5A6B44] focus-visible:ring-offset-2"
                                             placeholder="Steps, prep notes, cooking instructions…"
                                         />
                                     </div>
@@ -2627,12 +2677,12 @@ export function MealLibraryPageContent({
                                     />
 
                                     <div className="block w-full text-left">
-                                        <p className="mb-2 font-montserrat text-sm font-bold leading-snug tracking-tight text-grey-94">
+                                        <p className="mb-2 font-montserrat text-sm font-bold leading-snug tracking-tight text-form-label">
                                             Meal photo
                                         </p>
                                         {mealToEdit?.editForm?.imageUrl && !formPhoto ? (
-                                            <div className="mb-3 rounded-[12px] border border-gray-200 bg-[#F8F9F6] p-3">
-                                                <p className="mb-2 font-body text-xs font-medium text-[#555555]">
+                                            <div className="mb-3 rounded-[12px] border border-gray-200 bg-surface-soft p-3">
+                                                <p className="mb-2 font-body text-xs font-medium text-body">
                                                     Current photo (upload a new file below to replace)
                                                 </p>
                                                 <img
@@ -2663,7 +2713,7 @@ export function MealLibraryPageContent({
                                                 </div>
                                             </div>
                                         ) : null}
-                                        <label className="relative block cursor-pointer overflow-hidden rounded-[12px] border-2 border-dashed border-gray-200 bg-[#F8F9F6] p-10">
+                                        <label className="relative block cursor-pointer overflow-hidden rounded-[12px] border-2 border-dashed border-gray-200 bg-surface-soft p-10">
                                             <div className="aspect-[4/3] w-full">
                                                 <div className="flex h-full flex-col items-center justify-center px-6 text-center">
                                                     <p className="max-w-2xl font-montserrat text-[14px] font-bold uppercase leading-relaxed tracking-[0.10em] text-[#5A6B44]">
@@ -2686,7 +2736,7 @@ export function MealLibraryPageContent({
 
                                     <div className="rounded-[12px] border border-gray-200 bg-white p-4">
                                         <div className="flex items-center justify-between gap-3">
-                                            <p className="font-montserrat text-sm font-bold text-[#262A22]">Ingredients</p>
+                                            <p className="font-montserrat text-sm font-bold text-heading">Ingredients</p>
                                             <Button
                                                 label="Add ingredient"
                                                 variant="secondary"
@@ -2707,7 +2757,7 @@ export function MealLibraryPageContent({
                                                         ? []
                                                         : filterIngredientsForCombobox(ingredientDatabase, row.nameQuery, 15);
                                                 return (
-                                                    <div key={idx} className="rounded-[12px] border border-gray-100 bg-[#F8F9F6] p-3">
+                                                    <div key={idx} className="rounded-[12px] border border-gray-100 bg-surface-soft p-3">
                                                         <div className="grid gap-4 md:grid-cols-[1fr_100px_90px_auto] md:items-end">
                                                             <div className="relative min-w-0">
                                                                 <TextInput
@@ -2751,7 +2801,7 @@ export function MealLibraryPageContent({
                                                                               <div
                                                                                   id={`ingredient-listbox-${idx}`}
                                                                                   role="listbox"
-                                                                                  className="w-full rounded-[12px] border border-[#E5E7EB] bg-white p-2 shadow-2xl"
+                                                                                  className="w-full rounded-[12px] border border-border-light bg-white p-2 shadow-2xl"
                                                                               >
                                                                                   <div className="max-h-56 overflow-auto">
                                                                                       {matches.map((m) => (
@@ -2759,7 +2809,7 @@ export function MealLibraryPageContent({
                                                                                               key={m.id != null ? `ing-${m.id}` : m.name}
                                                                                               type="button"
                                                                                               role="option"
-                                                                                              className="flex w-full items-center justify-between gap-3 rounded-[12px] px-4 py-2 text-left font-montserrat text-sm font-bold text-[#262A22] transition-colors hover:bg-[#F8F9F6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5A6B44] focus-visible:ring-inset"
+                                                                                              className="flex w-full items-center justify-between gap-3 rounded-[12px] px-4 py-2 text-left font-montserrat text-sm font-bold text-heading transition-colors hover:bg-surface-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5A6B44] focus-visible:ring-inset"
                                                                                               onClick={() => {
                                                                                                   setIngredientRows((prev) =>
                                                                                                       prev.map((r, i) =>
@@ -2781,7 +2831,7 @@ export function MealLibraryPageContent({
                                                                                               }}
                                                                                           >
                                                                                               <span className="min-w-0 truncate">{m.name}</span>
-                                                                                              <span className="shrink-0 text-xs font-medium text-[#555555]">
+                                                                                              <span className="shrink-0 text-xs font-medium text-body">
                                                                                                   per 100g
                                                                                               </span>
                                                                                           </button>
@@ -2820,7 +2870,7 @@ export function MealLibraryPageContent({
                                                             />
 
                                                             <div className="flex justify-end">
-                                                                <PillButton
+                                                                <Button
                                                                     label="Remove"
                                                                     variant="outline"
                                                                     size="sm"
@@ -2881,13 +2931,13 @@ export function MealLibraryPageContent({
                             </div>
 
                             {/* Right: Nutrition Summary */}
-                            <div className="max-h-[85vh] overflow-y-auto bg-[#F8F9F6] px-10 pb-10 pt-14">
+                            <div className="max-h-[85vh] overflow-y-auto bg-surface-soft px-10 pb-10 pt-14">
                                 <div className="sticky top-0">
                                     <div className="min-w-0 pr-12">
-                                    <h3 className="font-montserrat text-[18px] font-bold tracking-tight text-[#262A22]">
+                                    <h3 className="font-montserrat text-[18px] font-bold tracking-tight text-heading">
                                         {isBulkRecipe ? 'Nutrition Summary (Per Serving)' : 'Nutrition Summary'}
                                     </h3>
-                                    <p className="mt-1 font-body text-sm text-[#555555]">
+                                    <p className="mt-1 font-body text-sm text-body">
                                         {isBulkRecipe
                                             ? 'What one serving looks like from your ingredient rollup ÷ number of servings. Batch macro fields on the left are not shown here.'
                                             : 'Live totals from selected ingredients (per 100 g library values).'}
@@ -2909,7 +2959,7 @@ export function MealLibraryPageContent({
                                                         }))}
                                                     />
                                                 ) : (
-                                                    <p className="font-body text-sm text-[#555555]">
+                                                    <p className="font-body text-sm text-body">
                                                         No common-allergen ingredients detected in the current lines.
                                                     </p>
                                                 )}
@@ -2920,7 +2970,7 @@ export function MealLibraryPageContent({
                                             <div className="overflow-hidden rounded-[12px] border border-gray-200 bg-white">
                                                 <table className="w-full border-collapse text-left text-sm">
                                                     <thead>
-                                                        <tr className="border-b border-gray-200 bg-[#F8F9F6]">
+                                                        <tr className="border-b border-gray-200 bg-surface-soft">
                                                             <th className="px-3 py-2 font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#374151]">
                                                                 Nutrient
                                                             </th>
@@ -2932,7 +2982,7 @@ export function MealLibraryPageContent({
                                                     <tbody>
                                                         {nutritionSummarySections.map((sec) => (
                                                             <Fragment key={sec.title}>
-                                                                <tr className="bg-[#F8F9F6]">
+                                                                <tr className="bg-surface-soft">
                                                                     <td
                                                                         colSpan={2}
                                                                         className="px-3 py-2 font-montserrat text-xs font-bold uppercase tracking-[0.12em] text-[#5A6B44]"
@@ -2959,7 +3009,7 @@ export function MealLibraryPageContent({
                                                 </table>
                                             </div>
                                         ) : (
-                                            <p className="rounded-[12px] border border-dashed border-gray-200 bg-[#F8F9F6] px-3 py-4 font-body text-sm text-[#555555]">
+                                            <p className="rounded-[12px] border border-dashed border-gray-200 bg-surface-soft px-3 py-4 font-body text-sm text-body">
                                                 {isBulkRecipe
                                                     ? parseBulkServingsCount(bulkServingsCount) == null
                                                         ? 'Enter a valid number of servings so ingredient totals can be divided into per-serving system nutrition.'
@@ -2976,7 +3026,7 @@ export function MealLibraryPageContent({
                                                 {scBadges.length > 0 ? (
                                                     scBadges.map((b) => <NutrientBadge key={b} type={b} />)
                                                 ) : (
-                                                    <p className="font-body text-sm text-[#555555]">—</p>
+                                                    <p className="font-body text-sm text-body">—</p>
                                                 )}
                                             </div>
                                         </div>

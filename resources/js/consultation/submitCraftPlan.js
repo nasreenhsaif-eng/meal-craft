@@ -1,7 +1,10 @@
 /**
  * @param {{
  *   craftKey: string;
+ *   fulfillmentChoice: 'diy' | 'partner_kitchen';
+ *   includeCutlery?: boolean | null;
  *   weekDuration: number;
+ *   planWeeks?: number;
  *   selectedDays: number[];
  *   selectedByDay: Record<number, {
  *     breakfasts: string[];
@@ -35,12 +38,21 @@ export function buildCraftPlanSubmissionPayload(input) {
         };
     });
 
-    return {
+    /** @type {Record<string, unknown>} */
+    const payload = {
         craft_key: input.craftKey,
+        fulfillment_choice: input.fulfillmentChoice,
         week_duration: input.weekDuration,
+        plan_weeks: input.planWeeks === 1 ? 1 : 4,
         selected_days: input.selectedDays,
         days,
     };
+
+    if (input.fulfillmentChoice === 'partner_kitchen' && typeof input.includeCutlery === 'boolean') {
+        payload.include_cutlery = input.includeCutlery;
+    }
+
+    return payload;
 }
 
 import { CSRF_SESSION_EXPIRED_MESSAGE, resolveCsrfToken, resolveXsrfHeaderToken } from '../lib/csrfToken.js';

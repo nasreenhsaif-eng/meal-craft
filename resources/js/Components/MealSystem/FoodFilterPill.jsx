@@ -16,8 +16,8 @@ export function FoodFilterPill({ label, icon, isActive = false, onClick, classNa
             onClick={onClick}
             aria-pressed={isActive}
             className={[
-                'inline-flex min-h-[34px] max-w-full shrink-0 items-center gap-2 rounded-[12px] border-0 px-3 py-2 shadow-none',
-                'font-montserrat text-[11px] font-bold uppercase leading-none tracking-wide whitespace-nowrap text-[#364153]',
+                'inline-flex min-h-[44px] max-w-full shrink-0 items-center gap-2.5 rounded-[12px] border-0 px-3.5 py-2.5 shadow-none',
+                'font-montserrat text-[11px] font-bold uppercase leading-none tracking-wide whitespace-nowrap text-body',
                 'transition-all duration-200 ease-in-out',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6E8C47] focus-visible:ring-offset-2',
                 isActive
@@ -27,7 +27,7 @@ export function FoodFilterPill({ label, icon, isActive = false, onClick, classNa
             ].join(' ')}
         >
             {icon ? (
-                <span className="flex h-4 w-4 shrink-0 items-center justify-center text-[#364153] [&_svg]:text-current">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center text-body [&>*]:!h-8 [&>*]:!w-8 [&_svg]:h-8 [&_svg]:w-8 [&_svg]:text-current">
                     {icon}
                 </span>
             ) : null}
