@@ -11,10 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
+        Schema::dropIfExists('ingredient_meal');
+
         Schema::create('ingredient_meal', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('ingredient_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('meal_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('ingredient_id');
+            $table->foreignId('meal_id');
             $table->decimal('amount_grams', 10, 2)->default(0);
             $table->timestamps();
 
