@@ -20,7 +20,7 @@ export const Default = {
     render: () => (
         <CustomerOnboardingPhoneFrame storybook>
             <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-2">
-                <p className="font-body text-sm text-[#555555]">Food filters sit behind the dairy note.</p>
+                <p className="font-body text-sm text-body">Food filters sit behind the dairy note.</p>
                 <DairyFreeFilterNotice onDismiss={() => {}} />
             </div>
         </CustomerOnboardingPhoneFrame>

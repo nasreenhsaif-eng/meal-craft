@@ -2,7 +2,7 @@ import LoginPage from './LoginPage';
 import { withOnboardingMobileFrame } from '../Onboarding/onboardingStoryDecorators.jsx';
 
 export default {
-    title: 'Design System/05. Templates & Pages/Auth/LoginPage',
+    title: 'Design System/06. Pages/Auth/LoginPage',
     component: LoginPage,
     parameters: {
         layout: 'fullscreen',

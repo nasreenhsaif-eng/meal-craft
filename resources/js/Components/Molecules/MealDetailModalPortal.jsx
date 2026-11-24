@@ -141,7 +141,7 @@ export default function MealDetailModalPortal({
                 aria-modal="true"
                 aria-labelledby="mc-meal-detail-modal-title"
                 className={[
-                    'flex w-full flex-col overflow-hidden bg-[#F8F9F6]',
+                    'flex w-full flex-col overflow-hidden bg-surface-soft',
                     nestedInPhoneFrame
                         ? 'absolute inset-0 rounded-none'
                         : [
@@ -155,7 +155,7 @@ export default function MealDetailModalPortal({
                 <div className="flex shrink-0 items-start justify-between gap-3 border-b border-gray-200 bg-white px-4 py-3 sm:px-5 sm:py-4">
                     <h2
                         id="mc-meal-detail-modal-title"
-                        className="min-w-0 flex-1 break-words font-montserrat text-lg font-bold text-[#262A22] sm:text-xl"
+                        className="min-w-0 flex-1 break-words font-montserrat text-lg font-bold text-heading sm:text-xl"
                     >
                         {mealDetailModal?.title ?? 'Meal details'}
                     </h2>
@@ -170,7 +170,7 @@ export default function MealDetailModalPortal({
                 </div>
                 <div className="min-h-0 flex-1 overflow-x-clip overflow-y-auto overscroll-y-contain bg-white [-webkit-overflow-scrolling:touch]">
                     {loading ? (
-                        <p className="px-5 py-8 text-center font-body text-sm text-[#555555] sm:px-6">
+                        <p className="px-5 py-8 text-center font-body text-sm text-body sm:px-6">
                             Loading meal details…
                         </p>
                     ) : mealDetailModal ? (

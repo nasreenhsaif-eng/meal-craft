@@ -4,7 +4,7 @@ import { router, usePage } from '@inertiajs/react';
 import adminInertiaLayout from '../../lib/adminInertiaLayout.jsx';
 import Button from '../../Components/Atoms/Button.jsx';
 import MealBrowseTabs from '../../Components/MealBrowseTabs.jsx';
-import MealCard from '../../Components/MealCard.jsx';
+import AdminMealCard from '../../Components/AdminMealCard.jsx';
 import MealCalorieTierTabs from '../../Components/MealCalorieTierTabs.jsx';
 import MealIngredientRowsEditor from '../../Components/MealPlan/MealIngredientRowsEditor.jsx';
 import MealDetailView from '../../Components/Molecules/MealDetailView/MealDetailView';
@@ -249,7 +249,7 @@ export default function MealTiersLibraryPage({
     return (
         <div className="flex flex-col gap-6">
             {flashSuccess ? (
-                <p className="rounded-[12px] border border-[#5A6B44]/30 bg-white px-4 py-3 font-body text-sm text-[#262A22]" role="status">
+                <p className="rounded-[12px] border border-[#5A6B44]/30 bg-white px-4 py-3 font-body text-sm text-heading" role="status">
                     {flashSuccess}
                 </p>
             ) : null}
@@ -258,8 +258,8 @@ export default function MealTiersLibraryPage({
                 <div className="flex flex-col gap-4">
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                         <div>
-                            <h2 className="font-montserrat text-lg font-bold text-[#262A22]">Meal Tiers Library</h2>
-                            <p className="mt-1 max-w-2xl font-body text-sm text-[#555555]">
+                            <h2 className="font-montserrat text-lg font-bold text-heading">Meal Tiers Library</h2>
+                            <p className="mt-1 max-w-2xl font-body text-sm text-body">
                                 Work calorie-tab recipes here. Mains use 400–800 tabs; savory breakfasts use 300 / 400 /
                                 500; chia, sides, desserts, and soups stay one size.
                             </p>
@@ -287,7 +287,7 @@ export default function MealTiersLibraryPage({
             </section>
 
             {visibleMeals.length === 0 ? (
-                <p className="font-body text-sm text-[#555555]">
+                <p className="font-body text-sm text-body">
                     {activeBrowseTab === 'all'
                         ? 'No meals in the Meal Tiers Library yet. Copy a meal from the Meal Library to get started.'
                         : `No ${activeBrowseLabel.toLowerCase()} meals in the Meal Tiers Library yet.`}
@@ -295,7 +295,7 @@ export default function MealTiersLibraryPage({
             ) : (
                 <div className="grid grid-cols-1 justify-items-center gap-6 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
                     {visibleMeals.map((meal) => (
-                        <MealCard
+                        <AdminMealCard
                             key={meal.id}
                             isAdmin
                             adminControls
@@ -329,7 +329,7 @@ export default function MealTiersLibraryPage({
                               <div className="flex shrink-0 items-start justify-between gap-3 border-b border-gray-200 px-4 py-4 md:px-6">
                                   <h3
                                       id="meal-tiers-detail-title"
-                                      className="min-w-0 break-words font-montserrat text-xl font-bold tracking-tight text-[#262A22] md:text-2xl"
+                                      className="min-w-0 break-words font-montserrat text-xl font-bold tracking-tight text-heading md:text-2xl"
                                   >
                                       {detailMeal.title}
                                   </h3>
@@ -385,15 +385,15 @@ export default function MealTiersLibraryPage({
                               onClick={() => setEditorOpen(false)}
                           />
                           <div className="relative max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-[12px] bg-white p-6 shadow-2xl">
-                              <h3 className="font-montserrat text-xl font-bold text-[#262A22]">
+                              <h3 className="font-montserrat text-xl font-bold text-heading">
                                   {editingMeal ? 'Edit tiers meal' : 'Create tiers meal'}
                               </h3>
                               <div className="mt-4 grid gap-4">
                                   <TextInput label="Name" value={name} onChange={(event) => setName(event.target.value)} />
-                                  <label className="flex flex-col gap-1 font-body text-xs font-semibold text-[#555555]">
+                                  <label className="flex flex-col gap-1 font-body text-xs font-semibold text-body">
                                       Category
                                       <select
-                                          className="rounded-[12px] border border-gray-200 px-3 py-2 font-body text-sm text-[#262A22]"
+                                          className="rounded-[12px] border border-gray-200 px-3 py-2 font-body text-sm text-heading"
                                           value={category}
                                           onChange={(event) => setCategory(event.target.value)}
                                       >
@@ -404,10 +404,10 @@ export default function MealTiersLibraryPage({
                                           ))}
                                       </select>
                                   </label>
-                                  <label className="flex flex-col gap-1 font-body text-xs font-semibold text-[#555555]">
+                                  <label className="flex flex-col gap-1 font-body text-xs font-semibold text-body">
                                       Notes
                                       <textarea
-                                          className="min-h-20 rounded-[12px] border border-gray-200 px-3 py-2 font-body text-sm text-[#262A22]"
+                                          className="min-h-20 rounded-[12px] border border-gray-200 px-3 py-2 font-body text-sm text-heading"
                                           value={description}
                                           onChange={(event) => setDescription(event.target.value)}
                                       />
@@ -422,7 +422,7 @@ export default function MealTiersLibraryPage({
                                                       className={`rounded-full px-3 py-1 font-montserrat text-xs font-bold ${
                                                           activeTab === tier
                                                               ? 'bg-[#5A6B44] text-white'
-                                                              : 'bg-[#E8EDE3] text-[#262A22]'
+                                                              : 'bg-[#E8EDE3] text-heading'
                                                       }`}
                                                       onClick={() => {
                                                           setRowsByTab((prev) => {
@@ -453,7 +453,7 @@ export default function MealTiersLibraryPage({
                                               ))}
                                           </div>
                                           {activeBucketHint ? (
-                                              <p className="font-body text-xs text-[#555555]">{activeBucketHint}</p>
+                                              <p className="font-body text-xs text-body">{activeBucketHint}</p>
                                           ) : null}
                                           <MealIngredientRowsEditor
                                               rows={rowsByTab[activeTab] ?? [{ ...EMPTY_ROW }]}

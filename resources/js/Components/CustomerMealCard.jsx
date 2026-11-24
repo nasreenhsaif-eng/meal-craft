@@ -72,7 +72,7 @@ function MacroGridSection({ macros, variant, macroAbbreviated = false }) {
  * @param {boolean} [props.vibrantCraftWhenAtLimit] Deck only: when selection slots are full, keep cards/buttons full-opacity (no greyed deck).
  * @param {boolean} [props.hideCraftButton] Read-only decks: hide CRAFT THIS MEAL (detail view only).
  */
-export default function MealCardClientViewNano({
+export default function CustomerMealCard({
     title,
     imageUrl,
     imageAlt = '',
@@ -159,7 +159,7 @@ export default function MealCardClientViewNano({
                     className={`relative flex w-full min-h-0 flex-1 flex-col overflow-hidden bg-white ${innerR} ${cardShadowClass}`.trim()}
                 >
                     {/* Landscape-forward hero — shorter than 2:3 portrait so the deck feels wider / less tall. */}
-                    <div className="relative aspect-[4/3] w-full shrink-0 overflow-hidden bg-[#F8F9F6]">
+                    <div className="relative aspect-[4/3] w-full shrink-0 overflow-hidden bg-surface-soft">
                         {onEdit ? (
                             <div className="absolute left-3 top-3 z-30">
                                 <RoundIconButton
@@ -188,7 +188,7 @@ export default function MealCardClientViewNano({
                                 onError={() => setMediaFailed(true)}
                             />
                         ) : (
-                            <div className="absolute inset-0 flex items-center justify-center bg-[#F8F9F6]">
+                            <div className="absolute inset-0 flex items-center justify-center bg-surface-soft">
                                 <MealCraftLogo
                                     variant="seal-sm"
                                     width={56}
@@ -211,7 +211,7 @@ export default function MealCardClientViewNano({
                             }
                         >
                             <h3
-                                className={`mt-2 w-full text-center font-bold tracking-tight text-[#262A22] ${titleClass}`}
+                                className={`mt-2 w-full text-center font-bold tracking-tight text-heading ${titleClass}`}
                                 style={{
                                     display: '-webkit-box',
                                     WebkitBoxOrient: 'vertical',
@@ -272,7 +272,7 @@ export default function MealCardClientViewNano({
                         </div>
                     ) : null}
 
-                    <div className={`relative w-full shrink-0 overflow-hidden bg-[#F8F9F6] ${photoR}`}>
+                    <div className={`relative w-full shrink-0 overflow-hidden bg-surface-soft ${photoR}`}>
                         <div className="aspect-square w-full shrink-0">
                             {showImage ? (
                                 <img
@@ -284,7 +284,7 @@ export default function MealCardClientViewNano({
                                     onError={() => setMediaFailed(true)}
                                 />
                             ) : (
-                                <div className="absolute inset-0 flex items-center justify-center bg-[#F8F9F6]">
+                                <div className="absolute inset-0 flex items-center justify-center bg-surface-soft">
                                     <MealCraftLogo
                                         variant="seal-sm"
                                         width={68}
@@ -299,7 +299,7 @@ export default function MealCardClientViewNano({
 
                     <div className={`relative flex flex-1 flex-col ${bodyPad}`}>
                         <h3
-                            className={`w-full text-center ${titleClass} mt-0 font-bold tracking-tight text-[#262A22]`}
+                            className={`w-full text-center ${titleClass} mt-0 font-bold tracking-tight text-heading`}
                             style={{
                                 display: '-webkit-box',
                                 WebkitBoxOrient: 'vertical',

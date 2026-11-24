@@ -1,6 +1,7 @@
 @php
     $welcomeConfig = $welcomeConfig ?? [
         'loginHref' => route('login'),
+        'joinHref' => route('join'),
     ];
 @endphp
 <!DOCTYPE html>

@@ -35,7 +35,7 @@ import {
     daysUseLibraryPortions,
 } from '../../consultation/applyLibraryTierPortions.js';
 
-const PAGE_BG = 'bg-[#F8F9F6]';
+const PAGE_BG = 'bg-surface-soft';
 
 const WEEKDAY_LONG = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -721,7 +721,7 @@ export default function MealPlanDetailPage({
 
                     <div className="mt-4 grid items-start gap-x-6 gap-y-3 sm:grid-cols-[minmax(0,1fr)_minmax(240px,320px)]">
                         <div className="min-w-0 sm:col-start-1 sm:row-start-1">
-                            <h1 className="font-montserrat text-2xl font-bold tracking-tight text-[#262A22] sm:text-3xl">
+                            <h1 className="font-montserrat text-2xl font-bold tracking-tight text-heading sm:text-3xl">
                                 {mealPlan?.name ?? 'Meal plan'}
                             </h1>
                         </div>
@@ -745,12 +745,12 @@ export default function MealPlanDetailPage({
                                     onChange={(event) => setPlanDescription(event.target.value)}
                                     rows={4}
                                     placeholder="Nutrient-dense meal plan with balanced macronutrients and anti-inflammatory whole foods."
-                                    className="w-full resize-none rounded-[12px] border border-gray-200 bg-white px-3 py-2 font-body text-sm leading-relaxed text-[#262A22] placeholder:text-[#777777] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#6E8C47] focus-visible:ring-offset-2"
+                                    className="w-full resize-none rounded-[12px] border border-gray-200 bg-white px-3 py-2 font-body text-sm leading-relaxed text-heading placeholder:text-[#777777] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#6E8C47] focus-visible:ring-offset-2"
                                 />
                             </label>
-                            <p className="mt-3 max-w-3xl font-body text-sm text-[#555555]">
+                            <p className="mt-3 max-w-3xl font-body text-sm text-body">
                                 Select the default meals for each day, then publish. Customers start with these picks and
-                                can still change them via SEE OTHER OPTIONS.
+                                can change them from the day carousels.
                             </p>
                             {flashSuccess ? (
                                 <p className="mt-3 font-body text-sm text-[#5A6B44]">{String(flashSuccess)}</p>
@@ -820,7 +820,7 @@ export default function MealPlanDetailPage({
                                         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5A6B44] focus-visible:ring-offset-2 focus-visible:ring-offset-white',
                                         'active:scale-[0.98] active:border-[#6E8C47] active:bg-[#6E8C47] active:text-white',
                                         viewSavedShoppingListOpen
-                                            ? 'border border-transparent bg-[color-mix(in_srgb,#6E8C47_50%,white)] text-[#364153] hover:bg-[color-mix(in_srgb,#6E8C47_70%,white)]'
+                                            ? 'border border-transparent bg-[color-mix(in_srgb,#6E8C47_50%,white)] text-body hover:bg-[color-mix(in_srgb,#6E8C47_70%,white)]'
                                             : 'border border-[#5A6B44] bg-transparent text-[#5A6B44] hover:bg-[#5A6B44]/10',
                                     ].join(' ')}
                                 >
@@ -919,7 +919,7 @@ export default function MealPlanDetailPage({
                                 craftTitle={mealPlan?.name ?? ''}
                             />
                         ) : (
-                            <p className="rounded-[12px] border border-dashed border-gray-200 bg-white p-8 text-center text-sm text-[#555555]">
+                            <p className="rounded-[12px] border border-dashed border-gray-200 bg-white p-8 text-center text-sm text-body">
                                 No day data available for this plan.
                             </p>
                         )}
@@ -945,7 +945,7 @@ export default function MealPlanDetailPage({
                               <div className="flex shrink-0 items-start justify-between gap-4 border-b border-gray-100 px-5 py-4">
                                   <h2
                                       id="meal-plan-detail-modal-title"
-                                      className="min-w-0 flex-1 break-words font-montserrat text-lg font-bold text-[#262A22]"
+                                      className="min-w-0 flex-1 break-words font-montserrat text-lg font-bold text-heading"
                                   >
                                       {mealDetailModal.title}
                                   </h2>

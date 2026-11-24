@@ -73,15 +73,15 @@ function KitchenLogisticsView({ initialProductionDate, kitchenDailySheetUrl = '/
     return (
         <div className="space-y-8">
             <div>
-                <h1 className="font-montserrat text-2xl font-semibold text-[#262A22]">Kitchen production</h1>
-                <p className="mt-2 text-sm text-[#555555]">
+                <h1 className="font-montserrat text-2xl font-semibold text-heading">Kitchen production</h1>
+                <p className="mt-2 text-sm text-body">
                     Customer craft plans for the selected production date, with scaled recipes and aggregated bulk
                     ingredients.
                 </p>
             </div>
 
             {loading ? (
-                <p className="rounded-[12px] border border-gray-200 bg-white px-4 py-3 text-sm text-[#555555]">
+                <p className="rounded-[12px] border border-gray-200 bg-white px-4 py-3 text-sm text-body">
                     Loading kitchen sheet…
                 </p>
             ) : null}

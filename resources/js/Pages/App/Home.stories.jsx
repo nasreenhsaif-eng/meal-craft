@@ -1,7 +1,6 @@
-import { WelcomeBackInner } from '../App/Home.jsx';
-import { withOnboardingMobileFrame } from './onboardingStoryDecorators.jsx';
+import { WelcomeBackInner } from './Home.jsx';
+import { withOnboardingMobileFrame } from '../Onboarding/onboardingStoryDecorators.jsx';
 
-/** Plan-ready welcome: targets + choose-meals CTA + feature teasers. */
 const PLAN_READY_PROFILE = {
     dailyCaloriesMin: 2540,
     dailyCaloriesMax: 2640,
@@ -15,22 +14,23 @@ const NASREEN_PROFILE = {
 };
 
 export default {
-    title: 'Design System/05. Templates & Pages/Onboarding/WelcomeBack',
+    title: 'Design System/06. Pages/App/Home',
     component: WelcomeBackInner,
     parameters: {
         layout: 'fullscreen',
         docs: {
             description: {
                 component:
-                    'Post-login home. **Plan ready** (default): welcome, calorie/macro summary, choose-meals CTA, and coming-soon teasers. **Already chose** hides the CTA. Receive (Partner Kitchen / DIY) lives in consultation after day selection; Storybook still demos that UI via receive mode.',
+                    'Customer home at `/app` — welcome back with targets, choose-meals CTA when plan is ready, and feature teasers.',
             },
         },
     },
     decorators: withOnboardingMobileFrame,
 };
 
-function PlanReadyWelcome() {
-    return (
+export const PlanReady = {
+    name: 'Plan ready — choose meals',
+    render: () => (
         <WelcomeBackInner
             customerName="Ishaq Ibrahim"
             profile={PLAN_READY_PROFILE}
@@ -40,23 +40,11 @@ function PlanReadyWelcome() {
             showPlanReady
             onChooseMeals={() => undefined}
         />
-    );
-}
-
-/** Default — plan ready with Choose your meals under the targets card. */
-export const Default = {
-    name: 'Welcome back — plan ready',
-    render: () => <PlanReadyWelcome />,
-};
-
-/** Same as Default — keeps older Storybook URLs (`--choose-meals`) working. */
-export const ChooseMeals = {
-    name: 'Welcome back — plan ready (choose meals)',
-    render: () => <PlanReadyWelcome />,
+    ),
 };
 
 export const AlreadyChose = {
-    name: 'Welcome back — already chose',
+    name: 'Already chose meals',
     render: () => (
         <WelcomeBackInner
             customerName="Ishaq Ibrahim"
@@ -68,8 +56,8 @@ export const AlreadyChose = {
     ),
 };
 
-export const FromSummary = {
-    name: 'From summary — receive meal plan',
+export const ReceiveMode = {
+    name: 'Receive meal plan',
     render: () => (
         <WelcomeBackInner
             customerName="Nasreen"

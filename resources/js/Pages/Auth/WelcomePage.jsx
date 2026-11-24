@@ -34,7 +34,7 @@ export default function WelcomePage({ loginHref = '/login', onGetStarted }) {
                     alt="Meal Craft"
                 />
 
-                <h1 className="mt-8 font-montserrat text-2xl font-bold tracking-tight text-[#262A22]">
+                <h1 className="mt-8 font-montserrat text-2xl font-bold tracking-tight text-heading">
                     Welcome to Meal Craft
                 </h1>
 

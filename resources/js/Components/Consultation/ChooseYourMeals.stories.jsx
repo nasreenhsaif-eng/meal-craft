@@ -59,7 +59,7 @@ function sumSelectionCalories(categorySelections) {
 }
 
 export default {
-    title: 'Design System/05. Templates & Pages/Crafted for you/ChooseYourMeals',
+    title: 'Design System/04. Organisms/Consultation/ChooseYourMeals',
     component: ChooseYourMeals,
     decorators: withConsultationMobileFrame,
     parameters: {
@@ -123,10 +123,10 @@ export const SingleDeckPropsApi = {
 };
 
 /**
- * Production Full Craft day view: selected meal cards + SEE OTHER OPTIONS modal + sides toggles.
+ * Production Full Craft day view: inline breakfast/main carousels (CRAFT THIS MEAL) + sides toggles.
  */
 export const VerticalFullCraftCategories = {
-    name: 'Full craft — cards + options modal',
+    name: 'Full craft — inline carousels',
     render: () => {
         const [categorySelections, setCategorySelections] = useState(seededFullCraftSelections);
 
@@ -186,10 +186,10 @@ export const VerticalFullCraftCategories = {
 };
 
 /**
- * Empty day — open SEE OTHER OPTIONS to pick meals from scratch.
+ * Empty day — craft meals from the front carousels.
  */
 export const FullCraftEmptyThenOptions = {
-    name: 'Full craft — empty then options',
+    name: 'Full craft — empty carousels',
     render: () => {
         const [categorySelections, setCategorySelections] = useState(emptyCategorySelections);
 

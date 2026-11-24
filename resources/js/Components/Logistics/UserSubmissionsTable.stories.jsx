@@ -21,7 +21,7 @@ export const UserSubmissionsTable = {
     render: function Render() {
         const [date, setDate] = useState('');
         return (
-            <div className="mx-auto max-w-6xl bg-[#F9FAFB] p-6">
+            <div className="mx-auto max-w-6xl bg-surface-soft p-6">
                 <UserSubmissions
                     submissions={mockUserSubmissions}
                     selectedDate={date}

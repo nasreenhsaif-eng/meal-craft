@@ -5,7 +5,7 @@ import { mealCraftTheme } from './mealCraftTheme.js';
 
 /** Canvas modes — same tokens as `resources/css/app.css` / landing. */
 const CANVAS = {
-    page: { backgroundColor: '#F9FAFB', color: '#262A22' },
+    page: { backgroundColor: '#F6F6F4', color: '#262A22' },
     white: { backgroundColor: '#FFFFFF', color: '#262A22' },
     ink: { backgroundColor: '#262A22', color: '#F6F6F4' },
 };
@@ -20,9 +20,9 @@ const preview = {
                 title: 'Canvas',
                 icon: 'mirror',
                 items: [
-                    { value: 'page', title: 'Page (#F9FAFB)' },
-                    { value: 'white', title: 'White' },
-                    { value: 'ink', title: 'Ink (#262A22)' },
+                    { value: 'page', title: 'Soft surface (#F6F6F4)' },
+                    { value: 'white', title: 'Canvas (White)' },
+                    { value: 'ink', title: 'Heading (#262A22)' },
                 ],
                 dynamicTitle: true,
             },
@@ -84,18 +84,19 @@ const preview = {
             test: 'todo',
         },
 
-        /** Design System: Foundations → Atoms → Molecules → Organisms → Templates. */
+        /** Design System: Tokens → Atoms → Molecules → Organisms → Templates → Pages. */
         options: {
             storySort: (a, b) => {
                 const ta = a.title ?? '';
                 const tb = b.title ?? '';
 
                 const topOrder = [
-                    'Design System/01. Foundations',
+                    'Design System/01. Tokens',
                     'Design System/02. Atoms',
                     'Design System/03. Molecules',
                     'Design System/04. Organisms',
-                    'Design System/05. Templates & Pages',
+                    'Design System/05. Templates',
+                    'Design System/06. Pages',
                 ];
 
                 const topOf = (t) => {
@@ -111,25 +112,23 @@ const preview = {
                     return raTop - rbTop;
                 }
 
-                const foundationsBase = 'Design System/01. Foundations/';
-                const inFoundationsA = ta.startsWith(foundationsBase);
-                const inFoundationsB = tb.startsWith(foundationsBase);
-                if (inFoundationsA && inFoundationsB) {
-                    const foundationsOrder = [
-                        `${foundationsBase}Colors`,
-                        `${foundationsBase}Typography`,
-                        `${foundationsBase}Spacing & Elevation`,
-                        `${foundationsBase}Icons`,
-                        `${foundationsBase}Logos/Horizontal Lockups`,
-                        `${foundationsBase}Logos/Vertical Lockups`,
-                        `${foundationsBase}Logos/Brand Marks`,
-                        `${foundationsBase}Logos/Animated`,
-                        `${foundationsBase}Logos/All Variants/Minimal`,
-                        `${foundationsBase}Logos/All Variants/Smart`,
-                        `${foundationsBase}Logos/All Variants/Marketing`,
+                const tokensBase = 'Design System/01. Tokens/';
+                if (ta.startsWith(tokensBase) && tb.startsWith(tokensBase)) {
+                    const tokensOrder = [
+                        `${tokensBase}Colors`,
+                        `${tokensBase}Typography`,
+                        `${tokensBase}Spacing & Elevation`,
+                        `${tokensBase}Icons`,
+                        `${tokensBase}Logos/Horizontal Lockups`,
+                        `${tokensBase}Logos/Vertical Lockups`,
+                        `${tokensBase}Logos/Brand Marks`,
+                        `${tokensBase}Logos/Animated`,
+                        `${tokensBase}Logos/All Variants/Minimal`,
+                        `${tokensBase}Logos/All Variants/Smart`,
+                        `${tokensBase}Logos/All Variants/Marketing`,
                     ];
-                    const ia = foundationsOrder.indexOf(ta);
-                    const ib = foundationsOrder.indexOf(tb);
+                    const ia = tokensOrder.indexOf(ta);
+                    const ib = tokensOrder.indexOf(tb);
                     const ra = ia === -1 ? 1000 : ia;
                     const rb = ib === -1 ? 1000 : ib;
                     if (ra !== rb) {
@@ -138,9 +137,7 @@ const preview = {
                 }
 
                 const atomsBase = 'Design System/02. Atoms/';
-                const inAtomsA = ta.startsWith(atomsBase);
-                const inAtomsB = tb.startsWith(atomsBase);
-                if (inAtomsA && inAtomsB) {
+                if (ta.startsWith(atomsBase) && tb.startsWith(atomsBase)) {
                     const atomsOrder = [
                         `${atomsBase}Button`,
                         `${atomsBase}Button/Tab`,
@@ -185,9 +182,7 @@ const preview = {
                 }
 
                 const moleculesBase = 'Design System/03. Molecules/';
-                const inMoleculesA = ta.startsWith(moleculesBase);
-                const inMoleculesB = tb.startsWith(moleculesBase);
-                if (inMoleculesA && inMoleculesB) {
+                if (ta.startsWith(moleculesBase) && tb.startsWith(moleculesBase)) {
                     const moleculesOrder = [
                         `${moleculesBase}Dropdown`,
                         `${moleculesBase}Dropdown/FoodFilterMultiSelect`,
@@ -197,6 +192,7 @@ const preview = {
                         `${moleculesBase}Form and pickers/Weight`,
                         `${moleculesBase}Form and pickers/Height`,
                         `${moleculesBase}Form and pickers/DairyFreeFilterNotice`,
+                        `${moleculesBase}Customer/CustomerAppBottomNav`,
                     ];
                     const ia = moleculesOrder.findIndex((t) => ta === t || ta.startsWith(`${t}/`));
                     const ib = moleculesOrder.findIndex((t) => tb === t || tb.startsWith(`${t}/`));
@@ -208,15 +204,18 @@ const preview = {
                 }
 
                 const organismsBase = 'Design System/04. Organisms/';
-                const inOrganismsA = ta.startsWith(organismsBase);
-                const inOrganismsB = tb.startsWith(organismsBase);
-                if (inOrganismsA && inOrganismsB) {
+                if (ta.startsWith(organismsBase) && tb.startsWith(organismsBase)) {
                     const organismsOrder = [
-                        `${organismsBase}Header Navbar/AdminLayout`,
-                        `${organismsBase}DataCard/MealCard`,
+                        `${organismsBase}DataCard/AdminMealCard`,
+                        `${organismsBase}DataCard/CustomerMealCard`,
                         `${organismsBase}DataCard/StackedDeckCarousel`,
                         `${organismsBase}DataCard/PartnerKitchenCard`,
                         `${organismsBase}DataCard/MealDetailView`,
+                        `${organismsBase}Consultation/ChooseYourMeals`,
+                        `${organismsBase}Consultation/ProtocolSelectedMeals`,
+                        `${organismsBase}Consultation/ProtocolFixedChoiceSides`,
+                        `${organismsBase}Consultation/DayNutritionalSummaryPanel`,
+                        `${organismsBase}Consultation/CaloricThresholdNotice`,
                         `${organismsBase}Table`,
                     ];
                     const ia = organismsOrder.findIndex((t) => ta === t || ta.startsWith(`${t}/`));
@@ -228,54 +227,32 @@ const preview = {
                     }
                 }
 
-                const pagesBase = 'Design System/05. Templates & Pages/';
-                const inPagesA = ta.startsWith(pagesBase);
-                const inPagesB = tb.startsWith(pagesBase);
-                if (inPagesA && inPagesB) {
-                    const consultationBase = `${pagesBase}Crafted for you`;
-                    const bothConsultation =
-                        (ta === consultationBase || ta.startsWith(`${consultationBase}/`)) &&
-                        (tb === consultationBase || tb.startsWith(`${consultationBase}/`));
-
-                    if (bothConsultation) {
-                        const consultationOrder = [
-                            `${consultationBase}`,
-                            `${consultationBase}/ChooseYourMeals`,
-                            `${consultationBase}/ProtocolSelectedMeals`,
-                            `${consultationBase}/ProtocolFixedChoiceSides`,
-                            `${consultationBase}/DayNutritionalSummaryPanel`,
-                            `${consultationBase}/CaloricThresholdNotice`,
-                        ];
-                        const ia = consultationOrder.findIndex((t) => {
-                            if (t === consultationBase) {
-                                return ta === consultationBase;
-                            }
-
-                            return ta === t || ta.startsWith(`${t}/`);
-                        });
-                        const ib = consultationOrder.findIndex((t) => {
-                            if (t === consultationBase) {
-                                return tb === consultationBase;
-                            }
-
-                            return tb === t || tb.startsWith(`${t}/`);
-                        });
-                        const ra = ia === -1 ? 1000 : ia;
-                        const rb = ib === -1 ? 1000 : ib;
-                        if (ra !== rb) {
-                            return ra - rb;
-                        }
+                const templatesBase = 'Design System/05. Templates/';
+                if (ta.startsWith(templatesBase) && tb.startsWith(templatesBase)) {
+                    const templatesOrder = [
+                        `${templatesBase}AdminLayout`,
+                        `${templatesBase}Admin/Logistics`,
+                    ];
+                    const ia = templatesOrder.findIndex((t) => ta === t || ta.startsWith(`${t}/`));
+                    const ib = templatesOrder.findIndex((t) => tb === t || tb.startsWith(`${t}/`));
+                    const ra = ia === -1 ? 1000 : ia;
+                    const rb = ib === -1 ? 1000 : ib;
+                    if (ra !== rb) {
+                        return ra - rb;
                     }
+                }
 
+                const pagesBase = 'Design System/06. Pages/';
+                if (ta.startsWith(pagesBase) && tb.startsWith(pagesBase)) {
                     const pagesOrder = [
                         `${pagesBase}Landing`,
-                        `${pagesBase}DashboardLayout`,
-                        `${pagesBase}SettingsView`,
                         `${pagesBase}Auth`,
                         `${pagesBase}Onboarding`,
                         `${pagesBase}App`,
-                        `${pagesBase}Admin`,
+                        `${pagesBase}Checkout`,
                         `${pagesBase}Crafted for you`,
+                        `${pagesBase}Admin`,
+                        `${pagesBase}Mocks`,
                     ];
                     const ia = pagesOrder.findIndex((t) => ta === t || ta.startsWith(`${t}/`));
                     const ib = pagesOrder.findIndex((t) => tb === t || tb.startsWith(`${t}/`));

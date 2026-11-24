@@ -48,7 +48,7 @@ function RatingStars({ rating, max = 5 }) {
 }
 
 /**
- * Horizontal partner-kitchen card for checkout — logo, rating, price, and select action.
+ * Vertical partner-kitchen card for checkout — logo, rating, and select action.
  *
  * @param {{
  *   name: string;
@@ -56,8 +56,6 @@ function RatingStars({ rating, max = 5 }) {
  *   logoAlt?: string;
  *   rating?: number;
  *   reviewCount?: number;
- *   price?: string | number;
- *   billingCadence?: string | null;
  *   selectLabel?: string;
  *   onReviewsClick?: () => void;
  *   onSelect?: () => void;
@@ -70,8 +68,6 @@ export default function PartnerKitchenCard({
     logoAlt,
     rating = 0,
     reviewCount = 0,
-    price,
-    billingCadence = null,
     selectLabel,
     onReviewsClick,
     onSelect,
@@ -82,18 +78,16 @@ export default function PartnerKitchenCard({
     const resolvedSelectLabel = selectLabel ?? (name ? `Select ${name}` : 'Select Kitchen');
     const reviewLabel = `${Number(reviewCount).toLocaleString()} ${Number(reviewCount) === 1 ? 'review' : 'reviews'}`;
     const ratingValue = Number(rating);
-    const priceLabel = price == null || price === '' ? null : String(price);
 
     return (
         <article
             className={[
                 'flex w-full flex-col overflow-hidden rounded-[16px] border border-border-light bg-white shadow-sm',
                 'transition-all duration-200 ease-in-out hover:border-brand-primary-pressed/40 hover:shadow-md',
-                'sm:flex-row',
                 className,
             ].join(' ')}
         >
-            <div className="aspect-[4/3] w-full shrink-0 overflow-hidden bg-grey-96 sm:aspect-square sm:w-44 md:w-52">
+            <div className="aspect-[4/3] w-full shrink-0 overflow-hidden bg-surface-soft">
                 {showLogo ? (
                     <img
                         src={logoUrl}
@@ -135,21 +129,12 @@ export default function PartnerKitchenCard({
                     </TextLink>
                 </div>
 
-                {priceLabel ? (
-                    <p className="font-montserrat text-lg font-bold tabular-nums text-brand-primary-pressed">
-                        {priceLabel}
-                        {billingCadence ? (
-                            <span className="ms-1 text-sm font-medium text-grey-33">/ {billingCadence}</span>
-                        ) : null}
-                    </p>
-                ) : null}
-
-                <div className="mt-auto pt-1 sm:flex sm:justify-end">
+                <div className="mt-auto pt-1">
                     <Button
                         type="button"
                         label={resolvedSelectLabel}
                         onClick={onSelect}
-                        className="w-full sm:w-auto"
+                        className="w-full"
                     />
                 </div>
             </div>

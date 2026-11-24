@@ -14,7 +14,7 @@ return new class extends Migration
             $table->date('frozen_on');
             $table->timestamps();
 
-            $table->unique(['customer_subscription_id', 'frozen_on']);
+            $table->unique(['customer_subscription_id', 'frozen_on'], 'subscription_freezes_day_unique');
         });
     }
 

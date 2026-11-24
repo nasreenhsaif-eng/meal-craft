@@ -1,15 +1,15 @@
-import { FulfillmentSelectionInner } from '../Checkout/FulfillmentSelection.jsx';
-import { withOnboardingMobileFrame } from './onboardingStoryDecorators.jsx';
+import { FulfillmentSelectionInner } from './FulfillmentSelection.jsx';
+import { withOnboardingMobileFrame } from '../Onboarding/onboardingStoryDecorators.jsx';
 
 export default {
-    title: 'Design System/05. Templates & Pages/Onboarding/FulfillmentSelection',
+    title: 'Design System/06. Pages/Checkout/FulfillmentSelection',
     component: FulfillmentSelectionInner,
     parameters: {
         layout: 'fullscreen',
         docs: {
             description: {
                 component:
-                    'Receive meal plan choice (Partner Kitchen / DIY). In consultation this step follows manual day selection; `/checkout` keeps the same UI for post-summary delivery.',
+                    'Checkout fulfillment step — Partner Kitchen delivery vs DIY recipes after plan selection.',
             },
         },
     },

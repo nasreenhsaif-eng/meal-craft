@@ -262,10 +262,10 @@ function ConfirmEditModal({ open, title, description, processing, onCancel, onCo
                 aria-labelledby={titleId}
                 className="relative z-10 w-full max-w-md rounded-[12px] border border-gray-200 bg-white p-6 shadow-lg"
             >
-                <h2 id={titleId} className="font-montserrat text-lg font-semibold text-[#262A22]">
+                <h2 id={titleId} className="font-montserrat text-lg font-semibold text-heading">
                     {title}
                 </h2>
-                <p className="mt-3 text-sm text-[#555555] whitespace-pre-wrap">{description}</p>
+                <p className="mt-3 text-sm text-body whitespace-pre-wrap">{description}</p>
                 <div className="mt-6 flex flex-wrap justify-end gap-3">
                     <Button label="Cancel" variant="ghost" size="sm" disabled={processing} onClick={onCancel} />
                     <Button
@@ -380,8 +380,8 @@ function CustomerProfilesView({ customers = [], canEdit = false, options = {} })
     return (
         <div className="space-y-6">
             <div>
-                <h1 className="font-montserrat text-2xl font-semibold text-[#262A22]">Customer Profiles</h1>
-                <p className="mt-2 text-sm text-[#555555]">
+                <h1 className="font-montserrat text-2xl font-semibold text-heading">Customer Profiles</h1>
+                <p className="mt-2 text-sm text-body">
                     {canEdit
                         ? 'Double-click a cell to edit onboarding details, then confirm the change.'
                         : 'Onboarding details by column group. You can view this sheet with Customer Profiles access.'}
@@ -407,7 +407,7 @@ function CustomerProfilesView({ customers = [], canEdit = false, options = {} })
                                 'rounded-[10px] px-3 py-2 font-montserrat text-sm font-semibold transition-colors',
                                 isActive
                                     ? 'bg-[#6E8C47]/15 text-[#3F4F2A]'
-                                    : 'text-[#555555] hover:bg-gray-100 hover:text-[#364153]',
+                                    : 'text-body hover:bg-gray-100 hover:text-body',
                             ].join(' ')}
                         >
                             {tab.label}
@@ -419,20 +419,20 @@ function CustomerProfilesView({ customers = [], canEdit = false, options = {} })
             <div className="overflow-auto rounded-[12px] border border-gray-200 bg-white shadow-sm">
                 <table className="min-w-full border-separate border-spacing-0 text-sm">
                     <thead>
-                        <tr className="bg-[#F8F9F6]">
-                            <th className="sticky left-0 z-20 min-w-[160px] border-b border-gray-200 bg-[#F8F9F6] px-4 py-3 text-left font-semibold text-[#555555]">
+                        <tr className="bg-surface-soft">
+                            <th className="sticky left-0 z-20 min-w-[160px] border-b border-gray-200 bg-surface-soft px-4 py-3 text-left font-semibold text-body">
                                 Name
                             </th>
-                            <th className="sticky left-[160px] z-20 min-w-[120px] border-b border-gray-200 bg-[#F8F9F6] px-4 py-3 text-left font-semibold text-[#555555]">
+                            <th className="sticky left-[160px] z-20 min-w-[120px] border-b border-gray-200 bg-surface-soft px-4 py-3 text-left font-semibold text-body">
                                 Unique ID
                             </th>
-                            <th className="sticky left-[280px] z-20 min-w-[100px] border-b border-r border-gray-200 bg-[#F8F9F6] px-4 py-3 text-left font-semibold text-[#555555] shadow-[2px_0_4px_-2px_rgba(0,0,0,0.08)]">
+                            <th className="sticky left-[280px] z-20 min-w-[100px] border-b border-r border-gray-200 bg-surface-soft px-4 py-3 text-left font-semibold text-body shadow-[2px_0_4px_-2px_rgba(0,0,0,0.08)]">
                                 Status
                             </th>
                             {groupColumns.map((column) => (
                                 <th
                                     key={column.key}
-                                    className="whitespace-nowrap border-b border-gray-200 px-4 py-3 text-left font-semibold text-[#555555]"
+                                    className="whitespace-nowrap border-b border-gray-200 px-4 py-3 text-left font-semibold text-body"
                                 >
                                     {column.label}
                                 </th>
@@ -451,11 +451,11 @@ function CustomerProfilesView({ customers = [], canEdit = false, options = {} })
                                 const isEditingRow = editing?.customerId === customer.id;
 
                                 return (
-                                    <tr key={customer.id} className="hover:bg-[#F8F9F6]/80">
-                                        <td className="sticky left-0 z-10 min-w-[160px] border-b border-gray-100 bg-white px-4 py-3 font-medium text-[#262A22]">
+                                    <tr key={customer.id} className="hover:bg-surface-soft/80">
+                                        <td className="sticky left-0 z-10 min-w-[160px] border-b border-gray-100 bg-white px-4 py-3 font-medium text-heading">
                                             {customer.name || '—'}
                                         </td>
-                                        <td className="sticky left-[160px] z-10 min-w-[120px] border-b border-gray-100 bg-white px-4 py-3 font-mono text-[#555555]">
+                                        <td className="sticky left-[160px] z-10 min-w-[120px] border-b border-gray-100 bg-white px-4 py-3 font-mono text-body">
                                             {customer.uniqueCode || '—'}
                                         </td>
                                         <td className="sticky left-[280px] z-10 min-w-[100px] border-b border-r border-gray-100 bg-white px-4 py-3 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.08)]">
@@ -482,7 +482,7 @@ function CustomerProfilesView({ customers = [], canEdit = false, options = {} })
                                                 <td
                                                     key={column.key}
                                                     className={[
-                                                        'max-w-[240px] border-b border-gray-100 px-4 py-3 text-[#555555]',
+                                                        'max-w-[240px] border-b border-gray-100 px-4 py-3 text-body',
                                                         canEditCell ? 'cursor-pointer' : '',
                                                     ].join(' ')}
                                                     title={

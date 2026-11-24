@@ -124,7 +124,7 @@ function setInputValue(input, value) {
 }
 
 export default {
-    title: 'Design System/05. Templates & Pages/Admin/IngredientsLibrary',
+    title: 'Design System/06. Pages/Admin/IngredientsLibrary',
     component: IngredientsLibraryPageView,
     parameters: {
         layout: 'fullscreen',

@@ -25,7 +25,7 @@ function OptionPillGroup({ label, value, options = [], onChange, error }) {
 
     return (
         <div className="md:col-span-2">
-            <p className="mb-2 font-montserrat text-sm font-bold leading-snug tracking-tight text-grey-94">
+            <p className="mb-2 font-montserrat text-sm font-bold leading-snug tracking-tight text-form-label">
                 {groupLabel}
             </p>
             <div className="flex flex-wrap gap-2" role="group" aria-label={groupLabel}>
@@ -59,7 +59,7 @@ function OptionPillGroup({ label, value, options = [], onChange, error }) {
 function OptionButtonStack({ label, value, options = [], onChange, error }) {
     return (
         <div className="md:col-span-2">
-            <p className="mb-2 font-montserrat text-sm font-bold leading-snug tracking-tight text-grey-94">
+            <p className="mb-2 font-montserrat text-sm font-bold leading-snug tracking-tight text-form-label">
                 {label}
             </p>
             <div className="flex w-full flex-col gap-2.5" role="group" aria-label={label}>
@@ -98,7 +98,7 @@ function TextAreaField({ label, value, onChange, error, rows = 4 }) {
         <div className="block w-full text-left">
             <label
                 htmlFor={id}
-                className="mb-2 block font-montserrat text-sm font-bold leading-snug tracking-tight text-grey-94"
+                className="mb-2 block font-montserrat text-sm font-bold leading-snug tracking-tight text-form-label"
             >
                 {label}
             </label>
@@ -110,12 +110,12 @@ function TextAreaField({ label, value, onChange, error, rows = 4 }) {
                 aria-invalid={error ? 'true' : 'false'}
                 aria-describedby={error ? errorId : undefined}
                 className={[
-                    'w-full rounded-[12px] border bg-white px-5 py-3 font-body text-[16px] tracking-tight text-[#364153]',
+                    'w-full rounded-[12px] border bg-white px-5 py-3 font-body text-[16px] tracking-tight text-body',
                     'shadow-sm outline-none transition-[border-color,box-shadow] duration-200',
-                    'placeholder:text-[#364153]/50',
+                    'placeholder:text-body/50',
                     error
                         ? 'border-status-error focus:border-status-error'
-                        : 'border-[#E5E7EB] focus:border-[#6E8C47]',
+                        : 'border-border-light focus:border-[#6E8C47]',
                 ].join(' ')}
             />
             {error ? (
@@ -149,7 +149,7 @@ function CheckboxField({ label, checked, onChange }) {
             <span className="mt-0.5 inline-flex shrink-0 rounded-[4px] peer-focus-visible:ring-2 peer-focus-visible:ring-[#556C37] peer-focus-visible:ring-offset-2">
                 <SquareCheckbox presentational checked={checked} />
             </span>
-            <span className="font-montserrat text-sm font-medium leading-snug text-[#364153]">{label}</span>
+            <span className="font-montserrat text-sm font-medium leading-snug text-body">{label}</span>
         </label>
     );
 }
@@ -160,7 +160,7 @@ function CheckboxField({ label, checked, onChange }) {
 function Section({ title, children }) {
     return (
         <section className="rounded-[12px] border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
-            <h2 className="m-0 font-montserrat text-base font-bold tracking-tight text-[#262A22]">{title}</h2>
+            <h2 className="m-0 font-montserrat text-base font-bold tracking-tight text-heading">{title}</h2>
             <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 [&>*]:min-w-0">{children}</div>
         </section>
     );
@@ -277,7 +277,7 @@ export default function CustomerIntakeForm({
                     className={fieldClass}
                 />
                 <div className="md:col-span-2">
-                    <p className="mb-2 font-montserrat text-sm font-bold leading-snug tracking-tight text-grey-94">
+                    <p className="mb-2 font-montserrat text-sm font-bold leading-snug tracking-tight text-form-label">
                         Gender
                     </p>
                     <div className="flex w-full flex-col gap-3" role="group" aria-label="Gender">

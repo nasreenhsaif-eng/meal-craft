@@ -25,7 +25,7 @@ function printPaperDecorator(Story) {
                     <Story />
                 </div>
             </div>
-            <p className="mx-auto mt-4 max-w-[8.5in] text-center text-xs font-medium text-[#555555] print:hidden">
+            <p className="mx-auto mt-4 max-w-[8.5in] text-center text-xs font-medium text-body print:hidden">
                 Print preview — use the browser print dialog to match paper output.
             </p>
         </div>
@@ -40,7 +40,7 @@ function logisticsCsvDownload(filenameBase) {
 }
 
 export default {
-    title: 'Design System/05. Templates & Pages/Admin/Logistics',
+    title: 'Design System/05. Templates/Admin/Logistics',
     parameters: {
         layout: 'fullscreen',
     },
@@ -71,7 +71,7 @@ export const KitchenProductionDaily = {
     render: function Render() {
         const [d, setD] = useState('2026-04-14');
         return (
-            <div className="mx-auto max-w-6xl bg-[#F9FAFB] p-6">
+            <div className="mx-auto max-w-6xl bg-surface-soft p-6">
                 <KitchenDailySheet
                     rows={mockKitchenDailyRows}
                     productionDate={d}
@@ -103,7 +103,7 @@ export const KitchenShoppingAggregated = {
     name: 'Kitchen operation sheets — recipes + bulk',
     parameters: { layout: 'padded' },
     render: () => (
-        <div className="mx-auto max-w-6xl bg-[#F9FAFB] p-6">
+        <div className="mx-auto max-w-6xl bg-surface-soft p-6">
             <KitchenShoppingList
                 adaptedMeals={mockAdaptedKitchenMeals}
                 baseRecipes={mockKitchenBaseRecipes}

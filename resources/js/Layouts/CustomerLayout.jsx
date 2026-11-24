@@ -1,5 +1,6 @@
 import { Link, usePage } from '@inertiajs/react';
 import MealCraftLogo from '../Components/Atoms/Logo/MealCraftLogo.jsx';
+import { IconCart } from '../Components/Atoms/SvgIcons.jsx';
 import CustomerOnboardingPhoneFrame from '../Components/Molecules/Customer/CustomerOnboardingPhoneFrame.jsx';
 
 /**
@@ -17,25 +18,6 @@ function useCartActive(cartUrl) {
     } catch {
         return false;
     }
-}
-
-/**
- * @param {{ className?: string }} props
- */
-function CartIcon({ className = '' }) {
-    return (
-        <svg className={className} width={18} height={18} viewBox="0 0 24 24" fill="none" aria-hidden>
-            <path
-                d="M6 6h15l-1.5 9h-12L6 6Zm0 0L5 3H2"
-                stroke="currentColor"
-                strokeWidth="1.75"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-            />
-            <circle cx="9" cy="20" r="1.25" fill="currentColor" />
-            <circle cx="18" cy="20" r="1.25" fill="currentColor" />
-        </svg>
-    );
 }
 
 /**
@@ -64,11 +46,11 @@ export default function CustomerLayout({
     const cartActive = useCartActive(cartUrl);
     const cartClassName = [
         'inline-flex h-10 shrink-0 items-center justify-end gap-1.5 font-montserrat text-sm font-semibold transition-colors',
-        cartActive ? 'text-[#5A6B44]' : 'text-[#555555] hover:text-[#262A22]',
+        cartActive ? 'text-[#5A6B44]' : 'text-body hover:text-heading',
     ].join(' ');
     const cartContents = (
         <>
-            <CartIcon className="shrink-0" />
+            <IconCart className="shrink-0" />
             Cart
         </>
     );
@@ -81,7 +63,7 @@ export default function CustomerLayout({
                         type="button"
                         onClick={onBack}
                         aria-label={backAriaLabel}
-                        className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-50 text-base leading-none text-[#262A22] outline-none transition [-webkit-tap-highlight-color:transparent] hover:bg-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#6E8C47] focus-visible:ring-offset-2"
+                        className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-50 text-base leading-none text-heading outline-none transition [-webkit-tap-highlight-color:transparent] hover:bg-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#6E8C47] focus-visible:ring-offset-2"
                     >
                         ←
                     </button>
@@ -119,7 +101,7 @@ export default function CustomerLayout({
 
     return (
         <CustomerOnboardingPhoneFrame embedded={embedded}>
-            <div className="relative flex h-full min-h-0 w-full flex-1 flex-col bg-white font-sans text-[#262A22]">
+            <div className="relative flex h-full min-h-0 w-full flex-1 flex-col bg-white font-sans text-heading">
                 {header}
                 <main
                     className={[

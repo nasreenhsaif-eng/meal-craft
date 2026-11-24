@@ -17,7 +17,7 @@ export default {
 export const AdminActions = {
     name: 'Admin actions',
     render: () => (
-        <div className="flex items-center gap-3 bg-[#F9FAFB] p-6">
+        <div className="flex items-center gap-3 bg-surface-soft p-6">
             <RoundIconButton icon={<IconEdit />} ariaLabel="Edit meal" intent="default" />
             <RoundIconButton icon={<IconDelete />} ariaLabel="Delete meal" intent="danger" />
         </div>
@@ -29,13 +29,13 @@ export const ViewModeToggle = {
     name: 'View mode toggle (grid / list)',
     render: function Render() {
         const [mode, setMode] = useState('grid');
-        const segmentActive = '!border-transparent bg-white text-[#262A22] shadow-sm';
+        const segmentActive = '!border-transparent bg-white text-heading shadow-sm';
         const segmentInactive = '!border-transparent bg-transparent text-[#6B7280] shadow-none hover:bg-white/70';
         return (
-            <div className="flex flex-col gap-3 bg-[#F9FAFB] p-6">
-                <p className="m-0 font-body text-sm text-[#555555]">Segmented control — matches Meal Library (rounded square, not circle).</p>
+            <div className="flex flex-col gap-3 bg-surface-soft p-6">
+                <p className="m-0 font-body text-sm text-body">Segmented control — matches Meal Library (rounded square, not circle).</p>
                 <div
-                    className="inline-flex w-max items-center gap-1 rounded-[12px] border border-[#E5E7EB] bg-[#F8F9F6] p-1"
+                    className="inline-flex w-max items-center gap-1 rounded-[12px] border border-border-light bg-surface-soft p-1"
                     role="group"
                     aria-label="Library view"
                 >

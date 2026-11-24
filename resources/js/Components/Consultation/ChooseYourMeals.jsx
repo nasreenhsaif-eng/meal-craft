@@ -3,8 +3,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import Button from '../Atoms/Button.jsx';
 import SquareCheckbox from '../Atoms/Icons/SquareCheckbox.jsx';
 import StackedDeckCarousel from '../MealCard/StackedDeckCarousel.jsx';
-import MealCardClientViewNano from '../MealCardClientViewNano.jsx';
-import ProtocolMealSlotCard from './ProtocolMealSlotCard.jsx';
+import CustomerMealCard from '../CustomerMealCard.jsx';
 import ProtocolMealOptionsScreen from './ProtocolMealOptionsScreen.jsx';
 import ProtocolFixedChoiceSides from './ProtocolFixedChoiceSides.jsx';
 import {
@@ -566,7 +565,8 @@ export function buildConsultationDeckCatalog(source) {
 }
 
 /**
- * Apply add/remove/swap rules for a deck category selection.
+ * Apply add/remove/FIFO-swap rules for a deck category selection.
+ * At capacity, selecting a new meal drops the oldest selection first.
  *
  * @param {string[]} existingIds
  * @param {string} mealId
@@ -586,15 +586,16 @@ export function applyDeckSelectionToggle(existingIds, mealId, max) {
         return [...existing, normalizedId];
     }
 
-    if (max === 1) {
+    if (max <= 1) {
         return [normalizedId];
     }
 
-    return existing;
+    return [...existing.slice(1), normalizedId];
 }
 
 /**
  * @param {number} maxSelected
+ * @deprecated FIFO swap replaces the deselect-first warning; kept for callers/tests.
  */
 export function selectionLimitWarningMessage(maxSelected) {
     if (maxSelected <= 1) {
@@ -603,7 +604,7 @@ export function selectionLimitWarningMessage(maxSelected) {
 
     const slotLabel = maxSelected === 2 ? '2 meals' : `${maxSelected} options`;
 
-    return `You can only select ${slotLabel}. Deselect one to choose a different meal.`;
+    return `You can only select ${slotLabel}. Choosing another meal replaces your earliest pick.`;
 }
 
 /** Default slot caps for Full Craft (pick 1–2 of side / dessert / soup). */
@@ -983,11 +984,11 @@ export function PlanDayMacroBreakdown({ categories, categoryTargets = null, dayL
                 {rows.map((row) => (
                     <div
                         key={row.key}
-                        className="rounded-[10px] bg-[#F8F9F6] px-3 py-2.5"
+                        className="rounded-[10px] bg-surface-soft px-3 py-2.5"
                         role="rowgroup"
                         aria-label={`${row.label} macros`}
                     >
-                        <p className="mb-2 font-montserrat text-[10px] font-bold leading-tight text-[#262A22]">
+                        <p className="mb-2 font-montserrat text-[10px] font-bold leading-tight text-heading">
                             {row.label}
                         </p>
                         <div className="grid w-full min-w-0 grid-cols-4 gap-x-2">
@@ -1014,14 +1015,14 @@ export function PlanDayMacroBreakdown({ categories, categoryTargets = null, dayL
                 <div key={row.key} className="contents" role="rowgroup" aria-label={`${row.label} macros`}>
                     <div className="contents" role="row">
                         <p
-                            className="min-w-0 break-words rounded-l-[10px] bg-[#F8F9F6] py-2.5 pl-2 font-montserrat text-[10px] font-bold leading-tight text-[#262A22] sm:pl-3 sm:text-xs"
+                            className="min-w-0 break-words rounded-l-[10px] bg-surface-soft py-2.5 pl-2 font-montserrat text-[10px] font-bold leading-tight text-heading sm:pl-3 sm:text-xs"
                             role="rowheader"
                         >
                             {row.label}
                         </p>
                         <PlanMacroValueCells
                             macros={row.totals}
-                            cellClassName="bg-[#F8F9F6] py-2.5"
+                            cellClassName="bg-surface-soft py-2.5"
                             lastCellClassName="rounded-r-[10px]"
                         />
                     </div>
@@ -1054,7 +1055,7 @@ export function PlanDayMacroBreakdown({ categories, categoryTargets = null, dayL
 export function SoupOfTheDayOptIn({ checked, onChange, header = 'Soups for this day' }) {
     return (
         <div className="relative isolate w-full overflow-x-clip overflow-y-visible py-0.5">
-            <p className="px-4 font-montserrat text-[15px] font-bold leading-snug tracking-tight text-[#262A22] sm:text-base md:px-0">
+            <p className="px-4 font-montserrat text-[15px] font-bold leading-snug tracking-tight text-heading sm:text-base md:px-0">
                 {header}
             </p>
             <button
@@ -1064,7 +1065,7 @@ export function SoupOfTheDayOptIn({ checked, onChange, header = 'Soups for this 
                 onClick={() => onChange(!checked)}
             >
                 <SquareCheckbox checked={checked} presentational className="shrink-0" />
-                <span className="min-w-0 truncate whitespace-nowrap font-body text-xs font-normal leading-none tracking-tight text-[#262A22] sm:text-sm">
+                <span className="min-w-0 truncate whitespace-nowrap font-body text-xs font-normal leading-none tracking-tight text-heading sm:text-sm">
                     Add soup for this day — pick one: vegan or bone broth (optional)
                 </span>
             </button>
@@ -1369,48 +1370,15 @@ export function MealSlotCarousel({
     isLoading = false,
 }) {
     const selectedSet = new Set(selectedIds.map((id) => normalizeConsultationMealId(id)));
-    const atLimit = selectedIds.length >= maxSelected;
     const stackZ = 35 + sectionStackOrder * 6;
     const isDesktopViewport = useMinWidth(768);
     const showSwipeHint = cards.length > 2 && !isDesktopViewport;
-    const [limitWarning, setLimitWarning] = useState(/** @type {string | null} */ (null));
-    const limitWarningTimerRef = useRef(0);
-
-    useEffect(() => {
-        setLimitWarning(null);
-    }, [selectedIds]);
-
-    useEffect(
-        () => () => {
-            window.clearTimeout(limitWarningTimerRef.current);
-        },
-        [],
-    );
-
-    const showSelectionLimitWarning = useCallback(() => {
-        const message = selectionLimitWarningMessage(maxSelected);
-        if (message === '') {
-            return;
-        }
-
-        setLimitWarning(message);
-        window.clearTimeout(limitWarningTimerRef.current);
-        limitWarningTimerRef.current = window.setTimeout(() => setLimitWarning(null), 3200);
-    }, [maxSelected]);
 
     const handleSelect = useCallback(
         (meal) => {
-            const mealId = normalizeConsultationMealId(/** @type {ConsultationMeal} */ (meal).id);
-            const isSelected = selectedSet.has(mealId);
-
-            if (!readOnly && !isSelected && atLimit && maxSelected > 1) {
-                showSelectionLimitWarning();
-                return;
-            }
-
             onSelect?.(/** @type {ConsultationMeal} */ (meal));
         },
-        [atLimit, maxSelected, onSelect, readOnly, selectedSet, showSelectionLimitWarning],
+        [onSelect],
     );
 
     const deckSubheader = (() => {
@@ -1438,7 +1406,7 @@ export function MealSlotCarousel({
             data-mc-section={sectionKey ?? ''}
             className={[
                 'relative isolate w-full overflow-x-clip overflow-y-visible rounded-xl py-0 transition-[box-shadow] duration-300',
-                validationFlash || limitWarning ? 'ring-2 ring-[#C44F5D] ring-offset-2 ring-offset-white' : '',
+                validationFlash ? 'ring-2 ring-[#C44F5D] ring-offset-2 ring-offset-white' : '',
             ]
                 .join(' ')
                 .trim()}
@@ -1447,29 +1415,17 @@ export function MealSlotCarousel({
             {!deckOnly || showSelectionSubheader ? (
                 <div className="mx-auto min-w-0 max-w-full px-4 text-center md:px-0">
                     {!deckOnly && title ? (
-                        <p className="font-montserrat text-[15px] font-bold leading-snug tracking-tight text-[#262A22] sm:text-base">
+                        <p className="font-montserrat text-[15px] font-bold leading-snug tracking-tight text-heading sm:text-base">
                             {title}
                         </p>
                     ) : null}
                     {!readOnly || showSelectedState ? (
                         <p
-                            className={`font-body text-xs leading-snug text-[#555555] sm:text-sm ${!deckOnly && title ? 'mt-0.5 sm:mt-1' : 'mt-0'}`}
+                            className={`font-body text-xs leading-snug text-body sm:text-sm ${!deckOnly && title ? 'mt-0.5 sm:mt-1' : 'mt-0'}`}
                         >
                             {deckSubheader}
                         </p>
                     ) : null}
-                </div>
-            ) : null}
-
-            {limitWarning ? (
-                <div
-                    className="mx-auto mt-1 max-w-full px-4 md:px-0"
-                    role="alert"
-                    aria-live="polite"
-                >
-                    <p className="rounded-[10px] border border-red-200 bg-red-50 px-3 py-2 text-center font-body text-xs font-semibold text-red-800 sm:text-sm">
-                        {limitWarning}
-                    </p>
                 </div>
             ) : null}
 
@@ -1514,16 +1470,14 @@ export function MealSlotCarousel({
                                 title=""
                                 meals={cards}
                                 deckScopeKey={deckScopeKey}
-                                forceRibbon={deckOnly}
+                                forceRibbon={deckOnly || cards.length > 1}
                                 getKey={(m) => /** @type {ConsultationMeal} */ (m).id}
                                 renderCard={(m, _idx, { isFront, deckLayout }) => {
                                     const meal = /** @type {ConsultationMeal} */ (m);
                                     const isSelected = selectedSet.has(normalizeConsultationMealId(meal.id));
-                                    const atSelectionLimit =
-                                        !readOnly && !isSelected && atLimit && maxSelected > 1;
 
                                     return (
-                                        <MealCardClientViewNano
+                                        <CustomerMealCard
                                             deck
                                             ribbon={deckLayout === 'ribbon'}
                                             alignActionsBottom={deckLayout === 'staticPair' || deckLayout === 'ribbon'}
@@ -1540,7 +1494,7 @@ export function MealSlotCarousel({
                                             onToggleSelected={readOnly ? undefined : () => handleSelect(meal)}
                                             onViewDetails={() => onViewDetails?.(meal)}
                                             onEdit={onEditMeal ? () => onEditMeal(meal) : undefined}
-                                            vibrantCraftWhenAtLimit={atSelectionLimit}
+                                            vibrantCraftWhenAtLimit={false}
                                         />
                                     );
                                 }}
@@ -1711,10 +1665,10 @@ export function FixedChoicePicker({
     return (
         <div className="relative isolate w-full overflow-x-clip overflow-y-visible py-0.5">
             <div className="mx-auto min-w-0 max-w-full px-4 text-center md:px-0">
-                <p className="font-montserrat text-[15px] font-bold leading-snug tracking-tight text-[#262A22] sm:text-base">
+                <p className="font-montserrat text-[15px] font-bold leading-snug tracking-tight text-heading sm:text-base">
                     Pick 1–2 of 3 sides
                 </p>
-                <p className="mt-0.5 font-body text-xs leading-snug text-[#555555] sm:text-sm">
+                <p className="mt-0.5 font-body text-xs leading-snug text-body sm:text-sm">
                     {pickEnabled
                         ? `Side salad, soup, or dessert • ${fixedChoiceCount}/${FIXED_CHOICE_MAX_COUNT} selected (min ${FIXED_CHOICE_MIN_COUNT})`
                         : `${fixedChoiceCount} selected (standard kitchen portion)`}
@@ -1793,7 +1747,7 @@ export function FixedChoicePicker({
  * @param {boolean} [props.documentScroll] Grow with content and scroll the parent (Storybook / embed).
  * @param {boolean} [props.isMenuPending] Adapted menu / weekly schedule still loading from the API.
  * @param {boolean} [props.showSealLoading] Seal / skeleton only on first curation day while pending.
- * @param {boolean} [props.protocolSelectedLayout] Force the customer onboarding slot cards (SEE OTHER OPTIONS).
+ * @param {boolean} [props.protocolSelectedLayout] Customer day view: inline breakfast/main carousels with CRAFT THIS MEAL.
  */
 export default function ChooseYourMeals({
     dayName = '',
@@ -2122,35 +2076,13 @@ export default function ChooseYourMeals({
             const mealTitle =
                 def.selectionKey === 'meals' && max === 1 ? 'Choose Your Meal of the Day' : def.header;
 
-            if (useProtocolSelectedLayout) {
-                const selectedMeals = selectedMealsForSlotFromDecks(
-                    selectedIds,
-                    cards,
-                    weeklyDisplayDecks,
-                );
-                const slotTitle =
-                    def.selectionKey === 'meals'
-                        ? 'Main Meals'
-                        : def.selectionKey === 'breakfasts'
-                          ? 'Breakfast'
-                          : mealTitle;
-
-                return (
-                    <ProtocolMealSlotCard
-                        key={def.selectionKey}
-                        title={slotTitle}
-                        selectedMeals={selectedMeals}
-                        multiSelect={max > 1}
-                        isLoading={showSealLoading}
-                        onSeeOtherOptions={
-                            categoryPickEnabled ? () => setOptionsSlotKey(def.selectionKey) : undefined
-                        }
-                        onViewDetails={onViewDetails}
-                        onEditMeal={onEditMeal}
-                        className={flash ? 'ring-2 ring-red-300' : ''}
-                    />
-                );
-            }
+            const slotTitle = useProtocolSelectedLayout
+                ? def.selectionKey === 'meals'
+                    ? 'Main Meals'
+                    : def.selectionKey === 'breakfasts'
+                      ? 'Breakfast'
+                      : mealTitle
+                : mealTitle;
 
             return (
                 <MealSlotCarousel
@@ -2158,15 +2090,27 @@ export default function ChooseYourMeals({
                     sectionKey={def.selectionKey}
                     validationFlash={flash}
                     sectionStackOrder={idx}
-                    title={mealTitle}
+                    title={slotTitle}
                     deckScopeKey={`${prefix}${def.deckSuffix}`}
                     cards={cards}
                     selectedIds={selectedIds}
                     maxSelected={max}
-                    readOnly={isAutoAssigned || !categoryPickEnabled}
-                    showSelectedState={isAutoAssigned}
-                    isLoading={showSealLoading && isAutoAssigned && cards.length === 0}
-                    onSelect={categoryPickEnabled && !isAutoAssigned ? (meal) => onToggleCategory?.(def.selectionKey, meal) : () => {}}
+                    readOnly={
+                        useProtocolSelectedLayout
+                            ? !categoryPickEnabled
+                            : isAutoAssigned || !categoryPickEnabled
+                    }
+                    showSelectedState={!useProtocolSelectedLayout && isAutoAssigned}
+                    isLoading={
+                        showSealLoading &&
+                        cards.length === 0 &&
+                        (useProtocolSelectedLayout || isAutoAssigned)
+                    }
+                    onSelect={
+                        categoryPickEnabled && (useProtocolSelectedLayout || !isAutoAssigned)
+                            ? (meal) => onToggleCategory?.(def.selectionKey, meal)
+                            : () => {}
+                    }
                     onViewDetails={onViewDetails}
                     onEditMeal={onEditMeal}
                 />
@@ -2392,7 +2336,7 @@ export default function ChooseYourMeals({
             ) : null}
 
             {dayProgressLabel ? (
-                <p className="mt-2 font-body text-sm leading-snug text-[#555555]">{dayProgressLabel}</p>
+                <p className="mt-2 font-body text-sm leading-snug text-body">{dayProgressLabel}</p>
             ) : null}
         </>
     );

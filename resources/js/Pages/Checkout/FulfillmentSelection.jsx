@@ -31,10 +31,10 @@ export function FulfillmentSelectionInner({
                 />
 
                 <div className="w-full">
-                    <h1 className="text-center font-montserrat text-2xl font-semibold leading-tight text-[#262A22]">
+                    <h1 className="text-center font-montserrat text-2xl font-semibold leading-tight text-heading">
                         How would you like to receive your meal plan?
                     </h1>
-                    <p className="mt-1.5 text-center text-sm leading-snug text-[#555555]">
+                    <p className="mt-1.5 text-center text-sm leading-snug text-body">
                         Choose between fresh daily preparation delivered to your door or self-prepared recipes at
                         home.
                     </p>

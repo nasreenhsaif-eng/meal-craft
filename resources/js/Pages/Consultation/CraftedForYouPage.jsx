@@ -48,7 +48,7 @@ import MealDetailModalPortal from '../../Components/Molecules/MealDetailModalPor
 import FulfillmentOptionCards from '../../Components/Molecules/Customer/FulfillmentOptionCards.jsx';
 import { useMealDetailModal } from '../../meal-library/useMealDetailModal.js';
 
-const PAGE_BG = 'bg-[#F8F9F6]';
+const PAGE_BG = 'bg-surface-soft';
 const WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const WEEKDAY_LONG = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const CONSULTATION_BACK_HREF_STORAGE_KEY = 'mc-consultation-back-href';
@@ -130,6 +130,27 @@ function readInitialConsultationRestoreDraft(initialEditDraft, initialResumeDraf
     }
 }
 
+/**
+ * Cutlery-only edit opens on the final cutlery/submit screen.
+ *
+ * @param {{ weekDuration?: number; selectedDays?: number[] } | null} draft
+ * @returns {number | null}
+ */
+function resolveCutleryOnlyInitialScreen(draft) {
+    if (!draft || typeof draft.weekDuration !== 'number' || draft.weekDuration <= 0) {
+        return null;
+    }
+
+    const selectedDays = Array.isArray(draft.selectedDays) ? draft.selectedDays : [];
+    if (selectedDays.length === 0) {
+        return null;
+    }
+
+    const curationStartScreen = draft.weekDuration !== 7 ? 5 : 4;
+
+    return curationStartScreen + selectedDays.length;
+}
+
 function mealTitleById(/** @type {string} */ id) {
     return MOCK_MEALS.find((m) => m.id === id)?.title ?? id;
 }
@@ -151,6 +172,7 @@ function slotId(dayIdx, slotKey, index) {
  *   deliveryUrl?: string;
  *   resumeChooseMeals?: boolean;
  *   forceReceive?: boolean;
+ *   focusCutleryOnly?: boolean;
  *   initialFulfillmentChoice?: 'diy' | 'partner_kitchen' | null;
  *   loginUrl?: string;
  *   signOutUrl?: string;
@@ -214,6 +236,7 @@ export default function CraftedForYouPage({
     deliveryUrl = '/checkout/delivery',
     resumeChooseMeals = false,
     forceReceive = false,
+    focusCutleryOnly = false,
     initialFulfillmentChoice = null,
     loginUrl,
     signOutUrl,
@@ -253,6 +276,13 @@ export default function CraftedForYouPage({
     const [screen, setScreen] = useState(() => {
         if (typeof initialScreen === 'number' && initialScreen >= 1) {
             return initialScreen;
+        }
+
+        if (focusCutleryOnly) {
+            const cutleryScreen = resolveCutleryOnlyInitialScreen(initialRestoreDraft);
+            if (cutleryScreen !== null) {
+                return cutleryScreen;
+            }
         }
 
         // Home Choose your meals → Receive: start at craft when fulfillment already picked.
@@ -723,6 +753,10 @@ export default function CraftedForYouPage({
             const payload = buildCraftPlanSubmissionPayload({
                 craftKey,
                 fulfillmentChoice,
+                includeCutlery:
+                    fulfillmentChoice === 'partner_kitchen' && environmentYes !== null
+                        ? environmentYes === false
+                        : null,
                 weekDuration,
                 planWeeks: fulfillmentChoice === 'partner_kitchen' && (planWeeks === 1 || planWeeks === 4)
                     ? planWeeks
@@ -764,6 +798,16 @@ export default function CraftedForYouPage({
     const totalScreens =
         weekDuration !== null ? curationStartScreen + weekDuration : Math.max(finalScreen, screen);
     const isPartnerFulfillment = fulfillmentChoice === 'partner_kitchen';
+
+    useEffect(() => {
+        if (!focusCutleryOnly || weekDuration === null || totalCurationDays <= 0) {
+            return;
+        }
+
+        if (screen !== finalScreen) {
+            setScreen(finalScreen);
+        }
+    }, [focusCutleryOnly, weekDuration, totalCurationDays, finalScreen, screen]);
 
     const isCurationScreen = screen >= curationStartScreen && screen <= curationStartScreen + totalCurationDays - 1;
     const curationIndex = isCurationScreen ? screen - curationStartScreen : -1; // 0..N-1
@@ -1723,7 +1767,7 @@ export default function CraftedForYouPage({
         setScreen(curationStartScreen);
     }
 
-    /** Weekly crafts share the default + SEE OTHER OPTIONS day view (no carousel). */
+    /** Weekly crafts share the inline carousel day view (CRAFT THIS MEAL on each card). */
     const usesWeeklyCategoryLayout = useMemo(
         () => Boolean(craft && ['full', 'afternoon', 'day', 'intermittent', 'business'].includes(craft.key)),
         [craft],
@@ -2013,8 +2057,8 @@ export default function CraftedForYouPage({
     }, [craft, curationDay, requiredSlotsByCraft, selectedByDay, businessSideChoiceByDay]);
 
     const mobileNavBarClass = embedInScrollParent
-        ? 'mt-8 flex items-center justify-between gap-3 border-t border-gray-200/70 bg-[#F8F9F6] p-3 sm:mt-6 sm:border-t-0 sm:bg-transparent sm:p-0'
-        : 'mt-8 flex items-center justify-between gap-3 fixed bottom-0 left-0 right-0 z-40 border-t border-gray-200/70 bg-[#F8F9F6]/95 p-3 backdrop-blur sm:static sm:mt-6 sm:border-t-0 sm:bg-transparent sm:p-0';
+        ? 'mt-8 flex items-center justify-between gap-3 border-t border-gray-200/70 bg-surface-soft p-3 sm:mt-6 sm:border-t-0 sm:bg-transparent sm:p-0'
+        : 'mt-8 flex items-center justify-between gap-3 fixed bottom-0 left-0 right-0 z-40 border-t border-gray-200/70 bg-surface-soft/95 p-3 backdrop-blur sm:static sm:mt-6 sm:border-t-0 sm:bg-transparent sm:p-0';
 
     const simpleSetupNextClass = embedInScrollParent
         ? 'mt-8 flex w-full justify-center'
@@ -2069,18 +2113,22 @@ export default function CraftedForYouPage({
                             progressNoun="Day"
                         />
                         <div className="mt-3 w-full">
-                            <h1 className="text-center font-montserrat text-2xl font-semibold leading-tight text-[#262A22]">
+                            <h1 className="text-center font-montserrat text-2xl font-semibold leading-tight text-heading">
                                 {WEEKDAY_LONG[curationDay - 1] ?? progressHeaderLabel}
                             </h1>
-                            <p className="mt-1.5 text-center text-sm leading-snug text-[#555555]">
+                            <p className="mt-1.5 text-center text-sm leading-snug text-body">
                                 Choose your meals for this day.
+                            </p>
+                            <p className="mx-auto mt-2 max-w-[22rem] text-center text-xs leading-snug text-body/80">
+                                Meals are chosen by your nutritionist to maximize nutrition density —
+                                you can always pick what you like by selecting and unselecting any meal.
                             </p>
                         </div>
                     </div>
                 ) : usesOnboardingChrome ? null : (
                     <div
                         className={[
-                            'z-50 border-b border-gray-200/70 bg-[#F8F9F6]/95 px-4 pb-3 pt-2 backdrop-blur sm:pb-4',
+                            'z-50 border-b border-gray-200/70 bg-surface-soft/95 px-4 pb-3 pt-2 backdrop-blur sm:pb-4',
                             embedInScrollParent
                                 ? '-mx-4'
                                 : 'sticky top-0 -mx-4 md:-mx-8 md:px-8',
@@ -2088,16 +2136,16 @@ export default function CraftedForYouPage({
                     >
                         <div className="mx-auto max-w-[1100px]">
                             <div>
-                                <p className="mb-1 font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#555555]">
+                                <p className="mb-1 font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-body">
                                     {pageEyebrow}
                                 </p>
-                                <h1 className="font-montserrat text-[22px] font-bold tracking-tight text-[#262A22]">
+                                <h1 className="font-montserrat text-[22px] font-bold tracking-tight text-heading">
                                     Crafted for YOU
                                 </h1>
                             </div>
 
                             <div className="mt-3 sm:mt-4">
-                                <div className="flex items-center justify-between gap-3 text-xs font-semibold tracking-tight text-[#555555]">
+                                <div className="flex items-center justify-between gap-3 text-xs font-semibold tracking-tight text-body">
                                     <span>{progressHeaderLabel}</span>
                                     {progressSubLabel ? <span>{progressSubLabel}</span> : null}
                                 </div>
@@ -2117,10 +2165,10 @@ export default function CraftedForYouPage({
                         <SimpleFlowNavHeader onBack={goBackFromPlanSetup} />
 
                         <div className="w-full">
-                            <h1 className="text-center font-montserrat text-2xl font-semibold leading-tight text-[#262A22]">
+                            <h1 className="text-center font-montserrat text-2xl font-semibold leading-tight text-heading">
                                 How would you like to receive your meal plan?
                             </h1>
-                            <p className="mt-1.5 text-center text-sm leading-snug text-[#555555]">
+                            <p className="mt-1.5 text-center text-sm leading-snug text-body">
                                 Choose between fresh daily preparation delivered to your door or self-prepared recipes
                                 at home.
                             </p>
@@ -2138,7 +2186,7 @@ export default function CraftedForYouPage({
                 ) : null}
 
                 {isCurationScreen && !disableAdaptedMenuFetch && menuLoading && liveMeals === null ? (
-                    <p className="mb-4 shrink-0 rounded-[12px] border border-gray-200 bg-white px-4 py-3 font-body text-sm text-[#555555]">
+                    <p className="mb-4 shrink-0 rounded-[12px] border border-gray-200 bg-white px-4 py-3 font-body text-sm text-body">
                         Loading your meal library with adapted portions…
                     </p>
                 ) : null}
@@ -2162,10 +2210,10 @@ export default function CraftedForYouPage({
                         <SimpleFlowNavHeader onBack={() => setScreen(receiveScreen)} />
 
                         <div className="w-full">
-                            <h1 className="text-center font-montserrat text-2xl font-semibold leading-tight text-[#262A22]">
+                            <h1 className="text-center font-montserrat text-2xl font-semibold leading-tight text-heading">
                                 What’s Your Craft
                             </h1>
-                            <p className="mt-1.5 text-center text-sm leading-snug text-[#555555]">
+                            <p className="mt-1.5 text-center text-sm leading-snug text-body">
                                 Choose the craft that matches how you want to eat this week.
                             </p>
 
@@ -2240,14 +2288,14 @@ export default function CraftedForYouPage({
                         />
 
                         <div className="w-full">
-                            <h1 className="text-center font-montserrat text-2xl font-semibold leading-tight text-[#262A22]">
+                            <h1 className="text-center font-montserrat text-2xl font-semibold leading-tight text-heading">
                                 {isPartnerFulfillment
                                     ? partnerLengthView === 'trial'
                                         ? '1 week trial'
                                         : 'Plan length'
                                     : 'Week duration'}
                             </h1>
-                            <p className="mt-1.5 text-center text-sm leading-snug text-[#555555]">
+                            <p className="mt-1.5 text-center text-sm leading-snug text-body">
                                 {isPartnerFulfillment
                                     ? partnerLengthView === 'trial'
                                         ? 'Choose how many days you want for your trial week.'
@@ -2301,7 +2349,7 @@ export default function CraftedForYouPage({
                                             />
                                         ))}
                                     </div>
-                                    <p className="mt-3 text-center font-body text-xs text-[#555555]">
+                                    <p className="mt-3 text-center font-body text-xs text-body">
                                         {weekDuration === 7
                                             ? 'All seven days will be included automatically.'
                                             : `You’ll pick exactly ${weekDuration ?? '…'} active day(s) next.`}
@@ -2338,10 +2386,10 @@ export default function CraftedForYouPage({
                         <SimpleFlowNavHeader onBack={() => setScreen(durationScreen)} />
 
                         <div className="w-full">
-                            <h1 className="text-center font-montserrat text-2xl font-semibold leading-tight text-[#262A22]">
+                            <h1 className="text-center font-montserrat text-2xl font-semibold leading-tight text-heading">
                                 Choose your days
                             </h1>
-                            <p className="mt-1.5 text-center text-sm leading-snug text-[#555555]">
+                            <p className="mt-1.5 text-center text-sm leading-snug text-body">
                                 {sortedSelectedDays.length} of {weekDuration ?? '…'} selected
                             </p>
 
@@ -2365,7 +2413,7 @@ export default function CraftedForYouPage({
                                         );
                                     })}
                                 </div>
-                                <p className="mt-3 text-center font-body text-xs text-[#555555]">
+                                <p className="mt-3 text-center font-body text-xs text-body">
                                     Selection must not exceed your Week Duration.
                                 </p>
                             </div>
@@ -2608,10 +2656,10 @@ export default function CraftedForYouPage({
                                                         />
 
                                                         <div className="rounded-[12px] border border-gray-200 bg-white p-4">
-                                                            <p className="font-montserrat text-sm font-bold tracking-tight text-[#262A22]">
+                                                            <p className="font-montserrat text-sm font-bold tracking-tight text-heading">
                                                                 Choose your side
                                                             </p>
-                                                            <p className="mt-1 font-body text-sm text-[#555555]">
+                                                            <p className="mt-1 font-body text-sm text-body">
                                                                 Only one side carousel can be active at a time.
                                                             </p>
                                                             <div className="mt-3 flex flex-wrap gap-2">
@@ -2738,7 +2786,7 @@ export default function CraftedForYouPage({
                             </div>
                             );
                         })() : (
-                            <p className="rounded-[12px] border border-dashed border-gray-200 bg-[#F8F9F6] p-8 text-center font-body text-sm text-[#555555]">
+                            <p className="rounded-[12px] border border-dashed border-gray-200 bg-surface-soft p-8 text-center font-body text-sm text-body">
                                 Choose your days first.
                             </p>
                         )}
@@ -2748,14 +2796,23 @@ export default function CraftedForYouPage({
                 {/* Final Screen — Partner: cutlery choice; DIY: Submit only */}
                 {screen === finalScreen ? (
                     <section className="mx-auto flex w-full max-w-xl flex-col gap-3 px-1 pb-24 sm:px-0 sm:pb-0">
-                        <SimpleFlowNavHeader onBack={() => setScreen(screen - 1)} />
+                        <SimpleFlowNavHeader
+                            onBack={() => {
+                                if (focusCutleryOnly) {
+                                    window.location.assign(summaryHref || homeHref || closeHref || '/app/meal-plan');
+                                    return;
+                                }
+
+                                setScreen(screen - 1);
+                            }}
+                        />
 
                         <div className="w-full">
-                            <h1 className="text-center font-montserrat text-2xl font-semibold leading-tight text-[#262A22]">
+                            <h1 className="text-center font-montserrat text-2xl font-semibold leading-tight text-heading">
                                 {isPartnerFulfillment ? 'Do you need cutlery?' : 'Submit your meal plan'}
                             </h1>
                             {isPartnerFulfillment ? null : (
-                                <p className="mt-1.5 text-center text-sm leading-snug text-[#555555]">
+                                <p className="mt-1.5 text-center text-sm leading-snug text-body">
                                     Save your selections to open your cook-it-yourself plan.
                                 </p>
                             )}
@@ -2844,7 +2901,7 @@ export default function CraftedForYouPage({
                                     <p className="mt-4 font-montserrat text-sm font-bold uppercase tracking-[0.18em] text-[#5A6B44]">
                                         Your meal plan is being crafted…
                                     </p>
-                                    <p className="mt-2 font-body text-sm text-[#555555]">
+                                    <p className="mt-2 font-body text-sm text-body">
                                         Please wait a moment.
                                     </p>
                                 </div>
@@ -2865,7 +2922,7 @@ export default function CraftedForYouPage({
                             }
                         >
                             <div className="rounded-[12px] border border-[#5A6B44]/30 bg-white px-4 py-3 shadow-lg">
-                                <p className="font-body text-sm font-semibold text-[#262A22]">
+                                <p className="font-body text-sm font-semibold text-heading">
                                     Your craft plan was saved. The kitchen can now produce your selections.
                                 </p>
                                 {homeHref ? (
@@ -2929,7 +2986,7 @@ export default function CraftedForYouPage({
                             }
                         >
                             <div className="rounded-[12px] border border-gray-200 bg-white px-4 py-3 shadow-lg">
-                                <p className="font-body text-sm text-[#555555]">{toast.message}</p>
+                                <p className="font-body text-sm text-body">{toast.message}</p>
                             </div>
                         </div>
                     )}

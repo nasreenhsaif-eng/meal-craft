@@ -240,6 +240,8 @@ export function clearConsultationDraft() {
  * @param {{
  *   craftKey?: string;
  *   fulfillmentChoice?: 'diy' | 'partner_kitchen' | null;
+ *   includeCutlery?: boolean | null;
+ *   environmentYes?: boolean | null;
  *   weekDuration?: number;
  *   selectedWeekdays?: number[];
  *   days?: Array<{
@@ -303,6 +305,16 @@ export function buildConsultationDraftFromSummary(craftPlan) {
         return null;
     }
 
+    // Default to no cutlery (eco). YES cutlery ⇒ environmentYes false.
+    /** @type {boolean} */
+    let environmentYes = true;
+
+    if (typeof craftPlan.environmentYes === 'boolean') {
+        environmentYes = craftPlan.environmentYes;
+    } else if (typeof craftPlan.includeCutlery === 'boolean') {
+        environmentYes = !craftPlan.includeCutlery;
+    }
+
     return normalizeConsultationDraft({
         version: DRAFT_VERSION,
         craftKey,
@@ -311,7 +323,7 @@ export function buildConsultationDraftFromSummary(craftPlan) {
         selectedByDay,
         businessSideChoiceByDay,
         afternoonSoupOptInByDay,
-        environmentYes: false,
+        environmentYes,
         fulfillmentChoice:
             craftPlan.fulfillmentChoice === 'diy' || craftPlan.fulfillmentChoice === 'partner_kitchen'
                 ? craftPlan.fulfillmentChoice

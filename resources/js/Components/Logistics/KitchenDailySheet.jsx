@@ -6,10 +6,10 @@ import { AllergyTagGroupCell, DislikeTagGroupCell } from './SafetyTagCells.jsx';
 import Calendar from '../Molecules/Calendar/Calendar.jsx';
 
 const MEAL_TH =
-    'min-w-[7.5rem] max-w-[12rem] whitespace-normal px-2 py-2 font-sans text-[10px] font-bold uppercase leading-tight tracking-wide text-[#262A22] print:min-w-[4.5rem] print:max-w-none print:px-1 print:py-1 print:text-[9px]';
+    'min-w-[7.5rem] max-w-[12rem] whitespace-normal px-2 py-2 font-sans text-[10px] font-bold uppercase leading-tight tracking-wide text-heading print:min-w-[4.5rem] print:max-w-none print:px-1 print:py-1 print:text-[9px]';
 
 const MEAL_TD =
-    'min-w-[7.5rem] max-w-[12rem] whitespace-normal break-words px-2 py-2 align-top text-[#364153] print:min-w-[4.5rem] print:max-w-none print:px-1 print:py-1 print:text-[10px] print:leading-snug';
+    'min-w-[7.5rem] max-w-[12rem] whitespace-normal break-words px-2 py-2 align-top text-body print:min-w-[4.5rem] print:max-w-none print:px-1 print:py-1 print:text-[10px] print:leading-snug';
 
 /**
  * @param {string} iso
@@ -116,10 +116,10 @@ export default function KitchenDailySheet({
                 }`}
             >
                 <div>
-                    <h2 className="m-0 font-sans text-lg font-bold tracking-tight text-[#262A22]">{title}</h2>
-                    <p className="mt-1 text-sm font-medium text-[#555555]">
+                    <h2 className="m-0 font-sans text-lg font-bold tracking-tight text-heading">{title}</h2>
+                    <p className="mt-1 text-sm font-medium text-body">
                         Production date:{' '}
-                        <time dateTime={productionDate} className="font-semibold text-[#262A22]">
+                        <time dateTime={productionDate} className="font-semibold text-heading">
                             {productionDate ? formatLongDate(productionDate) : '—'}
                         </time>
                     </p>
@@ -143,11 +143,11 @@ export default function KitchenDailySheet({
                                 aria-label="Filter by date"
                                 className="absolute right-0 z-40 mt-2 w-[min(100vw-2rem,400px)] max-w-[calc(100vw-2rem)]"
                             >
-                                <div className="flex flex-col gap-2 rounded-lg border border-gray-200 bg-[#F9FAFB] p-3 shadow-lg">
-                                    <p className="text-xs font-bold uppercase tracking-wide text-[#555555]">
+                                <div className="flex flex-col gap-2 rounded-lg border border-gray-200 bg-surface-soft p-3 shadow-lg">
+                                    <p className="text-xs font-bold uppercase tracking-wide text-body">
                                         FILTER BY DATE
                                     </p>
-                                    <p className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-sm font-medium leading-snug text-[#364153]">
+                                    <p className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-sm font-medium leading-snug text-body">
                                         <span className="shrink-0">Selected</span>
                                         <span
                                             className="whitespace-nowrap font-semibold text-[#6E8C47]"
@@ -202,10 +202,10 @@ export default function KitchenDailySheet({
                         <col style={{ width: '14%' }} />
                     </colgroup>
                     <thead>
-                        <tr className="border-b border-gray-200 bg-[#F9FAFB] print:bg-transparent">
+                        <tr className="border-b border-gray-200 bg-surface-soft print:bg-transparent">
                             <th
                                 scope="col"
-                                className="whitespace-nowrap px-2 py-2 font-sans text-[10px] font-bold uppercase tracking-wide text-[#262A22] print:px-1 print:text-[9px]"
+                                className="whitespace-nowrap px-2 py-2 font-sans text-[10px] font-bold uppercase tracking-wide text-heading print:px-1 print:text-[9px]"
                             >
                                 Name
                             </th>
@@ -216,25 +216,25 @@ export default function KitchenDailySheet({
                             ))}
                             <th
                                 scope="col"
-                                className="px-2 py-2 font-sans text-[10px] font-bold uppercase leading-tight tracking-wide text-[#262A22] print:px-1 print:text-[9px]"
+                                className="px-2 py-2 font-sans text-[10px] font-bold uppercase leading-tight tracking-wide text-heading print:px-1 print:text-[9px]"
                             >
                                 Cutlery
                             </th>
                             <th
                                 scope="col"
-                                className="px-2 py-2 font-sans text-[10px] font-bold uppercase leading-tight tracking-wide text-[#262A22] print:px-1 print:text-[9px]"
+                                className="px-2 py-2 font-sans text-[10px] font-bold uppercase leading-tight tracking-wide text-heading print:px-1 print:text-[9px]"
                             >
                                 Kitchen instructions
                             </th>
                             <th
                                 scope="col"
-                                className="px-2 py-2 font-sans text-[10px] font-bold uppercase leading-tight tracking-wide text-[#262A22] print:px-1 print:text-[9px]"
+                                className="px-2 py-2 font-sans text-[10px] font-bold uppercase leading-tight tracking-wide text-heading print:px-1 print:text-[9px]"
                             >
                                 Special requests
                             </th>
                             <th
                                 scope="col"
-                                className="px-2 py-2 font-sans text-[10px] font-bold uppercase leading-tight tracking-wide text-[#262A22] print:px-1 print:text-[9px]"
+                                className="px-2 py-2 font-sans text-[10px] font-bold uppercase leading-tight tracking-wide text-heading print:px-1 print:text-[9px]"
                             >
                                 Allergies
                             </th>
@@ -243,7 +243,7 @@ export default function KitchenDailySheet({
                     <tbody>
                         {rows.map((row) => (
                             <tr key={row.id} className="border-b border-gray-100 last:border-0">
-                                <td className="whitespace-normal break-words px-2 py-2 font-semibold text-[#262A22] print:px-1 print:text-[10px]">
+                                <td className="whitespace-normal break-words px-2 py-2 font-semibold text-heading print:px-1 print:text-[10px]">
                                     {row.name}
                                 </td>
                                 {MEAL_PLAN_KEYS.map((key) => (
@@ -251,23 +251,23 @@ export default function KitchenDailySheet({
                                         {displayMealCell(row[key])}
                                     </td>
                                 ))}
-                                <td className="whitespace-normal break-words px-2 py-2 align-top text-[#364153] print:px-1 print:text-[10px]">
+                                <td className="whitespace-normal break-words px-2 py-2 align-top text-body print:px-1 print:text-[10px]">
                                     {displayMealCell(row.cutlery)}
                                 </td>
-                                <td className="whitespace-pre-line break-words px-2 py-2 align-top text-[#364153] print:px-1 print:text-[10px]">
+                                <td className="whitespace-pre-line break-words px-2 py-2 align-top text-body print:px-1 print:text-[10px]">
                                     {displayMealCell(row.kitchenInstructions)}
                                 </td>
                                 <DislikeTagGroupCell
                                     allergies={row.allergies}
                                     specialRequests={row.specialRequests ?? ''}
                                     kitchenPrint
-                                    className="text-[#364153] print:text-[10px]"
+                                    className="text-body print:text-[10px]"
                                 />
                                 <AllergyTagGroupCell
                                     allergies={row.allergies}
                                     specialRequests={row.specialRequests ?? ''}
                                     kitchenPrint
-                                    className="text-[#364153] print:text-[10px]"
+                                    className="text-body print:text-[10px]"
                                 />
                             </tr>
                         ))}

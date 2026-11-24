@@ -23,6 +23,7 @@ export default defineConfig({
       'resources/js/auth-join-verify.jsx',
       'resources/js/auth-welcome.jsx',
       'resources/js/auth-portal-choice.jsx',
+      'resources/js/auth-sign-out.jsx',
       'resources/js/consultation-crafted-for-you.jsx',
     ],
     refresh: true

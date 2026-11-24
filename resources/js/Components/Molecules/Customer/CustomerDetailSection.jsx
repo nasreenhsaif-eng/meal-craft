@@ -79,7 +79,7 @@ export default function CustomerDetailSection({ title, rows, action = null, clas
                 .join(' ')}
         >
             <div className="flex items-start justify-between gap-4">
-                <h2 className="font-montserrat text-lg font-semibold tracking-tight text-[#262A22]">{title}</h2>
+                <h2 className="font-montserrat text-lg font-semibold tracking-tight text-heading">{title}</h2>
                 {action}
             </div>
             <dl className="mt-3 divide-y divide-gray-100">
@@ -90,7 +90,7 @@ export default function CustomerDetailSection({ title, rows, action = null, clas
                         </dt>
                         <dd
                             className={[
-                                'min-w-0 font-body text-base text-[#262A22]',
+                                'min-w-0 font-body text-base text-heading',
                                 row.preserveCase ? '' : 'capitalize',
                             ]
                                 .filter(Boolean)

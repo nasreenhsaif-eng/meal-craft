@@ -17,7 +17,7 @@ export default function LibraryCardMock({
     return (
         <article className={`${MEAL_CARD_DECK_SHELL_CLASS} shadow-md font-montserrat`}>
             <div className="relative flex w-full min-h-0 flex-1 flex-col overflow-hidden rounded-[12px] bg-white shadow-none">
-                <div className="relative aspect-[4/3] w-full shrink-0 overflow-hidden bg-[#F8F9F6]">
+                <div className="relative aspect-[4/3] w-full shrink-0 overflow-hidden bg-surface-soft">
                     <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 px-3">
                         <MealCraftLogo
                             variant="seal-sm"
@@ -27,7 +27,7 @@ export default function LibraryCardMock({
                             title="MealCraft"
                         />
                         <h3
-                            className="w-full text-center text-[17px] font-bold leading-snug tracking-tight text-[#262A22]"
+                            className="w-full text-center text-[17px] font-bold leading-snug tracking-tight text-heading"
                             style={{
                                 display: '-webkit-box',
                                 WebkitBoxOrient: 'vertical',

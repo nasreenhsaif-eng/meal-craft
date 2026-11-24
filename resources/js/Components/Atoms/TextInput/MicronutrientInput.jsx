@@ -32,7 +32,7 @@ export default function MicronutrientInput({
 
     const boxNormal =
         'relative box-border flex w-full min-h-[120px] min-w-0 max-w-full bg-white ' +
-        'rounded-[12px] border border-[#E5E7EB] shadow-sm ' +
+        'rounded-[12px] border border-border-light shadow-sm ' +
         'transition-[border-color,box-shadow] duration-200 ' +
         'focus-within:border-[#6E8C47] ' +
         'focus-within:shadow-[0_1px_2px_rgba(0,0,0,0.05),inset_0_0_0_1px_rgba(110,140,71,0.18)]';
@@ -48,10 +48,10 @@ export default function MicronutrientInput({
 
     const textareaClassName = [
         'box-border min-h-[120px] w-full min-w-0 max-w-full resize-y border-none bg-transparent font-body text-[16px] tracking-tight',
-        'text-[#364153] placeholder:text-[#364153]/50',
+        'text-body placeholder:text-body/50',
         'rounded-[12px] px-4 py-3 outline-none ring-0 sm:px-5 sm:py-[14px]',
         'focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0',
-        'disabled:cursor-not-allowed disabled:text-[#364153]/40 disabled:placeholder:text-[#364153]/25',
+        'disabled:cursor-not-allowed disabled:text-body/40 disabled:placeholder:text-body/25',
     ].join(' ');
 
     const describedBy = [error ? errorId : null, hintDomId].filter(Boolean).join(' ') || undefined;
@@ -60,12 +60,12 @@ export default function MicronutrientInput({
         <div className={`${TEXT_INPUT_ROOT} ${className}`.trim()}>
             <label
                 htmlFor={inputId}
-                className="mb-2 block font-montserrat text-sm font-bold leading-snug tracking-tight text-grey-94 dark:text-zinc-300"
+                className="mb-2 block font-montserrat text-sm font-bold leading-snug tracking-tight text-form-label dark:text-zinc-300"
             >
                 {label}
             </label>
             {hint ? (
-                <p id={hintDomId} className="mb-2 text-sm font-medium text-[#555555]">
+                <p id={hintDomId} className="mb-2 text-sm font-medium text-body">
                     {hint}
                 </p>
             ) : null}

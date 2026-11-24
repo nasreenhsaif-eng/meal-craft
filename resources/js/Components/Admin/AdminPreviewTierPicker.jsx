@@ -30,11 +30,11 @@ export default function AdminPreviewTierPicker({
             }
         >
             {!compact && description ? (
-                <p className="font-body text-sm text-[#262A22]">{description}</p>
+                <p className="font-body text-sm text-heading">{description}</p>
             ) : null}
             <p
                 className={[
-                    'font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#555555]',
+                    'font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-body',
                     !compact && description ? 'mt-3' : '',
                 ].join(' ')}
             >
@@ -54,9 +54,9 @@ export default function AdminPreviewTierPicker({
                 ))}
             </div>
             {loading ? (
-                <p className="mt-2 font-body text-xs text-[#555555]">Loading Meal Tiers Library portions…</p>
+                <p className="mt-2 font-body text-xs text-body">Loading Meal Tiers Library portions…</p>
             ) : compact && compactHint ? (
-                <p className="mt-2 font-body text-xs text-[#555555]">{compactHint}</p>
+                <p className="mt-2 font-body text-xs text-body">{compactHint}</p>
             ) : null}
         </div>
     );

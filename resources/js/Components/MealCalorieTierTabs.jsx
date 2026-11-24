@@ -56,8 +56,8 @@ export default function MealCalorieTierTabs({ tabValues, calorieTiers = [], onCa
                                 isActive
                                     ? 'bg-[#5A6B44] text-white'
                                     : isAuthored
-                                      ? 'bg-[#E8EDE3] text-[#262A22]'
-                                      : 'bg-[#F3F3F3] text-[#888888]'
+                                      ? 'bg-[#E8EDE3] text-heading'
+                                      : 'bg-[#F3F3F3] text-body'
                             }`}
                             onClick={(event) => {
                                 event.stopPropagation();
@@ -84,7 +84,7 @@ export default function MealCalorieTierTabs({ tabValues, calorieTiers = [], onCa
                     />
                 </div>
             ) : (
-                <p className="mt-2 text-center font-body text-[11px] text-[#888888]">Not designed yet</p>
+                <p className="mt-2 text-center font-body text-[11px] text-body">Not designed yet</p>
             )}
         </div>
     );

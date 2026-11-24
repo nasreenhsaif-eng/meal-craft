@@ -41,7 +41,7 @@ function MacroGridDeckSection({ macros }) {
 }
 
 /**
- * Unified meal card — layout matches {@link MealCardClientViewNano} **deck (consultation)** card:
+ * Admin meal card — layout matches {@link CustomerMealCard} **deck (consultation)** card:
  * `240px` shell, `aspect-[4/3]` hero, deck `MacroGrid` (fluid), title + VIEW DETAILS + CRAFT THIS MEAL.
  *
  * @param {object} props
@@ -68,7 +68,7 @@ function MacroGridDeckSection({ macros }) {
  * @param {object[]} [props.calorieTiers]
  * @param {(tier: number, payload: object | null) => void} [props.onCalorieTierChange]
  */
-export default function MealCard({
+export default function AdminMealCard({
     meal,
     isAdmin: isAdminProp,
     variant = 'client',
@@ -168,7 +168,7 @@ export default function MealCard({
                     </div>
                 ) : null}
 
-                <div className="relative aspect-[4/3] w-full shrink-0 overflow-hidden bg-[#F8F9F6]">
+                <div className="relative aspect-[4/3] w-full shrink-0 overflow-hidden bg-surface-soft">
                     {showAdminChrome ? (
                         <div className="pointer-events-none absolute left-3 top-3 z-30">
                             <CategoryBadge
@@ -187,7 +187,7 @@ export default function MealCard({
                             onError={() => setMediaFailed(true)}
                         />
                     ) : (
-                        <div className="absolute inset-0 flex items-center justify-center bg-[#F8F9F6]">
+                        <div className="absolute inset-0 flex items-center justify-center bg-surface-soft">
                             <MealCraftLogo
                                 variant="seal-sm"
                                 width={56}
@@ -202,7 +202,7 @@ export default function MealCard({
                 <div className="relative flex flex-col gap-0 px-3 pb-2 pt-0">
                     <div className="min-h-[2.5rem] shrink-0">
                         <h3
-                            className={`mt-2 w-full text-center font-bold tracking-tight text-[#262A22] ${titleClass}`}
+                            className={`mt-2 w-full text-center font-bold tracking-tight text-heading ${titleClass}`}
                             style={{
                                 display: '-webkit-box',
                                 WebkitBoxOrient: 'vertical',

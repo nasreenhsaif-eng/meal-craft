@@ -15,7 +15,7 @@ const displayDecks = {
 };
 
 export default {
-    title: 'Design System/05. Templates & Pages/Crafted for you/ProtocolFixedChoiceSides',
+    title: 'Design System/04. Organisms/Consultation/ProtocolFixedChoiceSides',
     component: ProtocolFixedChoiceSides,
     decorators: withConsultationMobileFrame,
     parameters: {

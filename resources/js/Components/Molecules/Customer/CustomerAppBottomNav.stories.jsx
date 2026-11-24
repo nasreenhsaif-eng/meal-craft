@@ -19,8 +19,8 @@ export default {
  */
 function NavPreview({ activeTab }) {
     return (
-        <div className="relative min-h-[12rem] bg-[#F8F9F6]">
-            <p className="px-4 pt-6 font-body text-sm text-[#555555]">Page content sits above the bar.</p>
+        <div className="relative min-h-[12rem] bg-surface-soft">
+            <p className="px-4 pt-6 font-body text-sm text-body">Page content sits above the bar.</p>
             <CustomerAppBottomNav activeTab={activeTab} />
         </div>
     );

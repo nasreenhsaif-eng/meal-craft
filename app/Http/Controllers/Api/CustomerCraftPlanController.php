@@ -32,6 +32,7 @@ class CustomerCraftPlanController extends Controller
                 'id' => $plan->id,
                 'craft_key' => $plan->craft_key,
                 'fulfillment_choice' => $plan->fulfillment_choice,
+                'include_cutlery' => $plan->include_cutlery,
                 'week_duration' => $plan->week_duration,
                 'selected_weekdays' => $plan->selected_weekdays,
                 'submitted_at' => $plan->submitted_at?->toIso8601String(),

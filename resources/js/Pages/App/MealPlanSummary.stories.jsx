@@ -123,6 +123,7 @@ const DAY_META = [
 const FULL_CRAFT_PLAN = {
     craftKey: 'full',
     craftTitle: 'Full Craft',
+    fulfillmentChoice: 'diy',
     weekDuration: 7,
     planTierCalories: 2000,
     dietProtocol: 'balanced',
@@ -138,8 +139,14 @@ const FULL_CRAFT_PLAN = {
     })),
 };
 
+const PARTNER_CRAFT_PLAN = {
+    ...FULL_CRAFT_PLAN,
+    fulfillmentChoice: 'partner_kitchen',
+    includeCutlery: false,
+};
+
 export default {
-    title: 'Design System/05. Templates & Pages/App/MealPlanSummary',
+    title: 'Design System/06. Pages/App/MealPlanSummary',
     component: MealPlanSummaryInner,
     parameters: {
         layout: 'fullscreen',
@@ -164,6 +171,27 @@ export const Default = {
         <MealPlanSummaryInner
             customerName="Nasreen"
             craftPlan={FULL_CRAFT_PLAN}
+            sex="female"
+            activityLevel="moderately_active"
+            dailyCalorieTarget={2000}
+            enableMealDetailModal={false}
+        />
+    ),
+};
+
+/** Partner kitchen — cutlery note with edit link. */
+export const PartnerCutleryNote = {
+    name: 'Partner — cutlery note',
+    parameters: {
+        viewport: {
+            defaultViewport: 'desktop',
+        },
+    },
+    render: () => (
+        <MealPlanSummaryInner
+            customerName="Nasreen"
+            craftPlan={PARTNER_CRAFT_PLAN}
+            consultationEditUrl="/consultation/crafted-for-you/edit"
             sex="female"
             activityLevel="moderately_active"
             dailyCalorieTarget={2000}

@@ -113,7 +113,7 @@ const SICKLE_RDI_FOOTNOTE = 'High Source: ≥20% of daily RDI per serving';
 
 function SummarySection({ title, description, children, tone = 'white' }) {
     const toneClass =
-        tone === 'muted' ? 'border-gray-200 bg-[#F8F9F6]' : 'border-gray-200 bg-white';
+        tone === 'muted' ? 'border-gray-200 bg-surface-soft' : 'border-gray-200 bg-white';
     const hasHeading = Boolean(title) || Boolean(description);
 
     return (
@@ -139,7 +139,7 @@ function SummarySection({ title, description, children, tone = 'white' }) {
  */
 export function DayMealsTabPanel({ meals, onOpenMeal, fullDetails: _fullDetails = false }) {
     if (meals.length === 0) {
-        return <p className="font-body text-sm text-[#555555]">No meals assigned for this day.</p>;
+        return <p className="font-body text-sm text-body">No meals assigned for this day.</p>;
     }
 
     /** @type {Array<{ title: string; meals: typeof meals }>} */
@@ -155,7 +155,7 @@ export function DayMealsTabPanel({ meals, onOpenMeal, fullDetails: _fullDetails 
     }
 
     if (slots.length === 0) {
-        return <p className="font-body text-sm text-[#555555]">No meals assigned for this day.</p>;
+        return <p className="font-body text-sm text-body">No meals assigned for this day.</p>;
     }
 
     return (
@@ -206,7 +206,7 @@ export function DayMacronutrientsTabPanel({
 function MicronutrientRdiTable({ rows }) {
     if (rows.length === 0) {
         return (
-            <p className="font-body text-sm text-[#555555]">No micronutrient data available for this day.</p>
+            <p className="font-body text-sm text-body">No micronutrient data available for this day.</p>
         );
     }
 
@@ -240,7 +240,7 @@ function MicronutrientRdiTable({ rows }) {
         >
             <table className="w-full min-w-0 border-collapse text-left text-sm">
                 <thead>
-                    <tr className="border-b border-gray-200 bg-[#F8F9F6]">
+                    <tr className="border-b border-gray-200 bg-surface-soft">
                         <th className="px-3 py-2.5 font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#374151]">
                             Nutrient
                         </th>
@@ -255,7 +255,7 @@ function MicronutrientRdiTable({ rows }) {
                 <tbody>
                     {sections.map((section) => (
                         <Fragment key={section.title}>
-                            <tr className="bg-[#F8F9F6]">
+                            <tr className="bg-surface-soft">
                                 <td
                                     colSpan={3}
                                     className="px-3 py-2 font-montserrat text-xs font-bold uppercase tracking-[0.12em] text-[#5A6B44]"
@@ -268,7 +268,7 @@ function MicronutrientRdiTable({ rows }) {
                                     <td className="px-3 py-2.5 font-montserrat text-sm font-medium leading-snug text-[#374151]">
                                         {row.label}
                                         {BEST_EFFORT_NUTRIENT_LABELS.has(row.label) ? (
-                                            <span className="ml-1.5 font-body text-xs font-normal text-[#555555]">
+                                            <span className="ml-1.5 font-body text-xs font-normal text-body">
                                                 (best effort)
                                             </span>
                                         ) : null}
@@ -379,7 +379,7 @@ export function DayAllergySafetyTabPanel({ categories }) {
                 {insights.safetyAlerts.length > 0 ? (
                     <SafetyAlerts alerts={insights.safetyAlerts} />
                 ) : (
-                    <p className="font-body text-sm text-[#555555]">No allergy or safety alerts for this day.</p>
+                    <p className="font-body text-sm text-body">No allergy or safety alerts for this day.</p>
                 )}
             </SummarySection>
         </div>
@@ -408,7 +408,7 @@ export function DaySickleCellTabPanel({ categories }) {
                     {insights.sickleCellHighlights.length > 0 ? (
                         insights.sickleCellHighlights.map((badge) => <NutrientBadge key={badge} type={badge} />)
                     ) : (
-                        <p className="font-body text-sm text-[#555555]">—</p>
+                        <p className="font-body text-sm text-body">—</p>
                     )}
                 </div>
             </SummarySection>
@@ -418,8 +418,8 @@ export function DaySickleCellTabPanel({ categories }) {
                     <ul className="space-y-4">
                         {mealsWithSickle.map((meal) => (
                             <li key={meal.id} className="border-t border-gray-100 pt-4 first:border-t-0 first:pt-0">
-                                <p className="font-montserrat text-sm font-bold text-[#262A22]">{meal.title}</p>
-                                <p className="font-body text-xs text-[#555555]">{meal.category}</p>
+                                <p className="font-montserrat text-sm font-bold text-heading">{meal.title}</p>
+                                <p className="font-body text-xs text-body">{meal.category}</p>
                                 {meal.sickleCellHighlights.length > 0 ? (
                                     <div className="mt-2 flex flex-wrap gap-2">
                                         {meal.sickleCellHighlights.map((badge) => (

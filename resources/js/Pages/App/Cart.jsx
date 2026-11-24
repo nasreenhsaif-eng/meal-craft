@@ -38,7 +38,7 @@ export function CartInner({
         >
             <div className="w-full min-w-0 rounded-[16px] border border-gray-200 bg-white px-4 py-6 shadow-sm sm:p-8">
                 <div className="flex items-start justify-between gap-3">
-                    <h1 className="min-w-0 font-montserrat text-3xl font-semibold tracking-tight text-[#262A22]">
+                    <h1 className="min-w-0 font-montserrat text-3xl font-semibold tracking-tight text-heading">
                         Cart
                     </h1>
                     <Link
@@ -48,7 +48,7 @@ export function CartInner({
                         Close
                     </Link>
                 </div>
-                <p className="mt-3 font-body text-sm leading-relaxed text-[#555555] sm:text-base">
+                <p className="mt-3 font-body text-sm leading-relaxed text-body sm:text-base">
                     Your shopping cart is empty.
                 </p>
             </div>

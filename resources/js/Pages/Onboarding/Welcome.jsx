@@ -60,12 +60,12 @@ export function OnboardingShell({
                     {hideDefaultHeader ? null : (
                         <>
                             <h1
-                                className={`font-montserrat text-2xl font-semibold leading-tight text-[#262A22] ${headerAlign} ${titleClassName}`.trim()}
+                                className={`font-montserrat text-2xl font-semibold leading-tight text-heading ${headerAlign} ${titleClassName}`.trim()}
                             >
                                 {title}
                             </h1>
                             {description ? (
-                                <p className={`mt-1.5 text-sm leading-snug text-[#555555] ${headerAlign}`.trim()}>
+                                <p className={`mt-1.5 text-sm leading-snug text-body ${headerAlign}`.trim()}>
                                     {description}
                                 </p>
                             ) : null}

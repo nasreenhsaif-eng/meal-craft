@@ -11,7 +11,7 @@ export default {
 
 export const Default = {
     render: () => (
-        <div className="bg-white p-8 text-[#364153]">
+        <div className="bg-white p-8 text-body">
             <button
                 type="button"
                 className="inline-flex items-center gap-2 rounded-md px-2 py-1 font-body text-sm text-[#1F2937] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#556C37] focus-visible:ring-offset-2"

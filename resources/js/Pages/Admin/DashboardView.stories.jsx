@@ -4,7 +4,7 @@ import { ADMIN_NAV_PATHS } from '../../Components/Admin/AdminSidebar.jsx';
 import { AdminDashboardInner } from './Dashboard.jsx';
 
 export default {
-    title: 'Design System/05. Templates & Pages/DashboardLayout',
+    title: 'Design System/06. Pages/Admin/Dashboard',
     component: AdminDashboardInner,
     parameters: { layout: 'fullscreen' },
 };

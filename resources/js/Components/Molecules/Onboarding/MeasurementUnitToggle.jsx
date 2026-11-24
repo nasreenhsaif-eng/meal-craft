@@ -36,7 +36,7 @@ export function MeasurementUnitToggle({ value, onChange, className = '' }) {
                             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6E8C47] focus-visible:ring-offset-1',
                             active
                                 ? 'bg-[#5A6B44] text-white'
-                                : 'bg-transparent text-[#364153] hover:bg-[#6E8C47]/10',
+                                : 'bg-transparent text-body hover:bg-[#6E8C47]/10',
                         ].join(' ')}
                     >
                         {option.label}

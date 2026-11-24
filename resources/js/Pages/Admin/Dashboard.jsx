@@ -17,7 +17,7 @@ import adminInertiaLayout from '../../lib/adminInertiaLayout.jsx';
  */
 function BrandCheckbox({ checked, onChange, children }) {
     return (
-        <label className="group/item flex cursor-pointer items-center gap-2 font-montserrat text-sm text-[#262A22]">
+        <label className="group/item flex cursor-pointer items-center gap-2 font-montserrat text-sm text-heading">
             <input type="checkbox" className="sr-only" checked={checked} onChange={onChange} />
             <SquareCheckbox checked={checked} presentational />
             {children}
@@ -47,7 +47,7 @@ function formatCount(value) {
 function SummaryCard({ label, value, valueClassName = 'text-[#5A6B44]' }) {
     return (
         <article className="rounded-[12px] border border-gray-200 bg-white p-5 shadow-sm">
-            <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#555555]">{label}</p>
+            <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-body">{label}</p>
             <p className={`mt-2 text-2xl font-bold tracking-tight ${valueClassName}`.trim()}>{value}</p>
         </article>
     );
@@ -56,7 +56,7 @@ function SummaryCard({ label, value, valueClassName = 'text-[#5A6B44]' }) {
 function MetricMini({ label, value, valueClassName = 'text-[#5A6B44]' }) {
     return (
         <article className="min-w-[150px] flex-1 rounded-[12px] border border-gray-200 bg-white p-4 shadow-sm">
-            <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#555555]">{label}</p>
+            <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-body">{label}</p>
             <p className={`mt-2 text-2xl font-bold leading-none tracking-tight ${valueClassName}`.trim()}>{value}</p>
         </article>
     );
@@ -89,10 +89,10 @@ function PermissionChecklist({ value, onChange, checklist = [] }) {
     const selected = Array.isArray(value) ? value : [];
 
     return (
-        <div className="space-y-4 rounded-[12px] border border-gray-200 bg-[#F8F9F6] px-4 py-4">
+        <div className="space-y-4 rounded-[12px] border border-gray-200 bg-surface-soft px-4 py-4">
             {groups.map((group) => (
                 <div key={group.group}>
-                    <p className="m-0 mb-2 font-montserrat text-[11px] font-bold uppercase tracking-[0.14em] text-[#555555]">
+                    <p className="m-0 mb-2 font-montserrat text-[11px] font-bold uppercase tracking-[0.14em] text-body">
                         {group.group}
                     </p>
                     <div className="space-y-2">
@@ -214,8 +214,8 @@ export function AdminDashboardInner({
         <div className="space-y-6 font-montserrat">
             <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                    <h2 className="m-0 text-lg font-bold tracking-tight text-[#262A22]">Dashboard</h2>
-                    <p className="mt-1 text-sm font-medium text-[#555555]">
+                    <h2 className="m-0 text-lg font-bold tracking-tight text-heading">Dashboard</h2>
+                    <p className="mt-1 text-sm font-medium text-body">
                         {isCraftMasterGeneral
                             ? 'Manage admin portal users and assign Kitchen engine + User intelligence access.'
                             : 'High-level command center for kitchen operations.'}
@@ -242,15 +242,15 @@ export function AdminDashboardInner({
             </section>
 
             <section className="grid gap-4 md:grid-cols-3">
-                <SummaryCard label="Revenues" value={formatCurrency(totalRevenues)} valueClassName="text-[#262A22]" />
+                <SummaryCard label="Revenues" value={formatCurrency(totalRevenues)} valueClassName="text-heading" />
                 <SummaryCard label="Total Cost" value={formatCurrency(totalCost)} valueClassName="text-[#D12A1C]" />
                 <SummaryCard label="Gross Profit" value={formatCurrency(grossProfit)} valueClassName="text-[#5A6B44]" />
             </section>
 
             {isCraftMasterGeneral && showCreate ? (
                 <section className="rounded-[12px] border border-gray-200 bg-white p-6 shadow-sm">
-                    <h3 className="m-0 text-base font-bold tracking-tight text-[#262A22]">Create admin user</h3>
-                    <p className="mt-1 text-sm font-medium text-[#555555]">
+                    <h3 className="m-0 text-base font-bold tracking-tight text-heading">Create admin user</h3>
+                    <p className="mt-1 text-sm font-medium text-body">
                         Assign a temporary password and checklist of portal sections.
                     </p>
 
@@ -310,7 +310,7 @@ export function AdminDashboardInner({
                         />
 
                         <div className="sm:col-span-2">
-                            <p className="mb-2 text-sm font-semibold text-[#262A22]">Access rights</p>
+                            <p className="mb-2 text-sm font-semibold text-heading">Access rights</p>
                             <PermissionChecklist
                                 value={createForm.data.admin_permissions}
                                 checklist={permissionChecklist}
@@ -346,10 +346,10 @@ export function AdminDashboardInner({
                 <section className="rounded-[12px] border border-gray-200 bg-white p-6 shadow-sm">
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                         <div>
-                            <h3 className="m-0 text-base font-bold tracking-tight text-[#262A22]">
+                            <h3 className="m-0 text-base font-bold tracking-tight text-heading">
                                 Access rights — {rightsUser.name}
                             </h3>
-                            <p className="mt-1 text-sm font-medium text-[#555555]">
+                            <p className="mt-1 text-sm font-medium text-body">
                                 Click a checkbox to add or remove a portal section. Changes save immediately.
                                 {rightsSaving ? ' Saving…' : null}
                             </p>
@@ -374,7 +374,7 @@ export function AdminDashboardInner({
 
             {isCraftMasterGeneral && passwordUser ? (
                 <section className="rounded-[12px] border border-gray-200 bg-white p-6 shadow-sm">
-                    <h3 className="m-0 text-base font-bold tracking-tight text-[#262A22]">
+                    <h3 className="m-0 text-base font-bold tracking-tight text-heading">
                         Change password — {passwordUser.name}
                     </h3>
                     <form

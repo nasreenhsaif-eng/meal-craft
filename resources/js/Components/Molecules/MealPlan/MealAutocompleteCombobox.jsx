@@ -280,14 +280,14 @@ export default function MealAutocompleteCombobox({
                           <div
                               id={listboxId}
                               role="listbox"
-                              className="w-full rounded-[12px] border border-[#E5E7EB] bg-white p-2 shadow-2xl"
+                              className="w-full rounded-[12px] border border-border-light bg-white p-2 shadow-2xl"
                           >
                               {isLoading ? (
-                                  <p className="px-4 py-2 font-body text-sm text-[#555555]">Searching…</p>
+                                  <p className="px-4 py-2 font-body text-sm text-body">Searching…</p>
                               ) : searchError ? (
                                   <p className="px-4 py-2 font-body text-sm text-status-error">{searchError}</p>
                               ) : suggestions.length === 0 ? (
-                                  <p className="px-4 py-2 font-body text-sm text-[#555555]">{emptyLabel}</p>
+                                  <p className="px-4 py-2 font-body text-sm text-body">{emptyLabel}</p>
                               ) : (
                                   <div className="max-h-56 overflow-auto">
                                       {suggestions.map((meal, index) => {
@@ -300,8 +300,8 @@ export default function MealAutocompleteCombobox({
                                                   type="button"
                                                   role="option"
                                                   aria-selected={mealId === meal.id || isHighlighted}
-                                                  className={`flex w-full items-center justify-between gap-3 rounded-[12px] px-4 py-2 text-left font-montserrat text-sm font-bold text-[#262A22] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5A6B44] focus-visible:ring-inset ${
-                                                      isHighlighted ? 'bg-[#F0F4EA]' : 'hover:bg-[#F8F9F6]'
+                                                  className={`flex w-full items-center justify-between gap-3 rounded-[12px] px-4 py-2 text-left font-montserrat text-sm font-bold text-heading transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5A6B44] focus-visible:ring-inset ${
+                                                      isHighlighted ? 'bg-[#F0F4EA]' : 'hover:bg-surface-soft'
                                                   }`}
                                                   onMouseEnter={() => setHighlightedIndex(index)}
                                                   onMouseDown={(e) => e.preventDefault()}
@@ -309,7 +309,7 @@ export default function MealAutocompleteCombobox({
                                               >
                                                   <span className="min-w-0 truncate">{meal.name}</span>
                                                   {badge ? (
-                                                      <span className="shrink-0 rounded-full border border-[#E5E7EB] bg-[#F8F9F6] px-2 py-0.5 text-[11px] font-semibold tracking-wide text-[#555555] uppercase">
+                                                      <span className="shrink-0 rounded-full border border-border-light bg-surface-soft px-2 py-0.5 text-[11px] font-semibold tracking-wide text-body uppercase">
                                                           {badge}
                                                       </span>
                                                   ) : null}

@@ -132,32 +132,32 @@ export function WelcomeBackInner({
                     )
                 ) : null}
 
-                <h1 className="font-montserrat text-3xl font-semibold tracking-tight text-[#262A22]">
+                <h1 className="font-montserrat text-3xl font-semibold tracking-tight text-heading">
                     {isReceive
                         ? 'How would you like to receive your meal plan?'
                         : `Welcome back${customerName ? `, ${customerName}` : ''}`}
                 </h1>
 
                 {isReceive ? (
-                    <p className="mt-3 max-w-2xl font-body text-sm leading-relaxed text-[#555555] sm:text-base">
+                    <p className="mt-3 max-w-2xl font-body text-sm leading-relaxed text-body sm:text-base">
                         Choose between fresh daily preparation delivered to your door or self-prepared recipes at
                         home.
                     </p>
                 ) : (
-                    <p className="mt-3 max-w-2xl font-body text-sm leading-relaxed text-[#555555] sm:text-base">
+                    <p className="mt-3 max-w-2xl font-body text-sm leading-relaxed text-body sm:text-base">
                         Looking forward to crafting your meals!
                     </p>
                 )}
 
                 {!isReceive && profile ? (
-                    <dl className="mt-8 grid w-full gap-4 rounded-[12px] bg-[#F8F9F6] p-4 text-sm sm:grid-cols-2 sm:p-5">
+                    <dl className="mt-8 grid w-full gap-4 rounded-[12px] bg-surface-soft p-4 text-sm sm:grid-cols-2 sm:p-5">
                         <div className="min-w-0">
-                            <dt className="text-[#555555]">Daily calories</dt>
-                            <dd className="mt-1 text-lg font-semibold text-[#262A22]">{dailyCaloriesLabel ?? '—'}</dd>
+                            <dt className="text-body">Daily calories</dt>
+                            <dd className="mt-1 text-lg font-semibold text-heading">{dailyCaloriesLabel ?? '—'}</dd>
                         </div>
                         <div className="min-w-0">
-                            <dt className="text-[#555555]">Macro style</dt>
-                            <dd className="mt-1 text-lg font-semibold capitalize text-[#262A22]">
+                            <dt className="text-body">Macro style</dt>
+                            <dd className="mt-1 text-lg font-semibold capitalize text-heading">
                                 {profile.macroSplitStyle?.replace('_', ' ')}
                             </dd>
                         </div>
@@ -166,7 +166,7 @@ export function WelcomeBackInner({
 
                 {!isReceive && profile && showPlanReady ? (
                     <div className="mt-6">
-                        <p className="max-w-2xl font-body text-sm leading-relaxed text-[#555555] sm:text-base">
+                        <p className="max-w-2xl font-body text-sm leading-relaxed text-body sm:text-base">
                             Your meal plan is ready.
                         </p>
                         <p className="mt-2 max-w-2xl font-body text-[11px] leading-snug tracking-wide text-[#777777] uppercase sm:text-xs">
@@ -174,7 +174,7 @@ export function WelcomeBackInner({
                             {chooseByFridayLabel ? (
                                 <>
                                     ,{' '}
-                                    <span className="font-semibold text-[#555555]">{chooseByFridayLabel}</span>
+                                    <span className="font-semibold text-body">{chooseByFridayLabel}</span>
                                 </>
                             ) : null}
                             , or our system will automatically choose the meals for your kind self!
@@ -196,12 +196,12 @@ export function WelcomeBackInner({
                         {HOME_FEATURE_TEASERS.map((feature) => (
                             <li
                                 key={feature.title}
-                                className="rounded-[12px] border border-gray-200 bg-[#F8F9F6] px-4 py-4 sm:px-5"
+                                className="rounded-[12px] border border-gray-200 bg-surface-soft px-4 py-4 sm:px-5"
                             >
-                                <h2 className="font-montserrat text-base font-semibold tracking-tight text-[#262A22]">
+                                <h2 className="font-montserrat text-base font-semibold tracking-tight text-heading">
                                     {feature.title}
                                 </h2>
-                                <p className="mt-2 font-body text-sm leading-relaxed text-[#555555]">
+                                <p className="mt-2 font-body text-sm leading-relaxed text-body">
                                     {feature.description}
                                 </p>
                                 <p className="mt-3 font-montserrat text-xs font-bold uppercase tracking-[0.08em] text-[#5A6B44]">

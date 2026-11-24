@@ -46,7 +46,7 @@ function effectiveTotal(base, discounted) {
  */
 function BrandCheckbox({ checked, onChange, children }) {
     return (
-        <label className="group/item flex cursor-pointer items-center gap-2 font-body text-sm text-[#262A22]">
+        <label className="group/item flex cursor-pointer items-center gap-2 font-body text-sm text-heading">
             <input
                 type="checkbox"
                 className="sr-only"
@@ -114,7 +114,7 @@ function PriceTrendChart({ series }) {
                 return (
                     <g key={step}>
                         <line x1={pad.left} x2={width - pad.right} y1={y} y2={y} stroke="#E5E7EB" />
-                        <text x={4} y={y + 4} className="fill-[#888888] text-[10px]">
+                        <text x={4} y={y + 4} className="fill-body text-[10px]">
                             {Math.round(maxY * step)}
                         </text>
                     </g>
@@ -426,22 +426,22 @@ export default function PartnerKitchenPricing({
     return (
         <div className="mx-auto w-full max-w-6xl space-y-8">
             <header>
-                <h1 className="font-montserrat text-2xl font-bold tracking-tight text-[#262A22]">
+                <h1 className="font-montserrat text-2xl font-bold tracking-tight text-heading">
                     Subscription pricing matrix
                 </h1>
-                <p className="mt-2 font-body text-sm text-[#555555]">
+                <p className="mt-2 font-body text-sm text-body">
                     Integer {currency} package prices feed consultation and checkout. Longer plans should
                     show a lower daily rate inside the same calorie tier.
                 </p>
             </header>
 
-            <section className="rounded-[12px] border border-[#E5E7EB] bg-white p-5 shadow-sm">
-                <h2 className="font-montserrat text-sm font-bold uppercase tracking-[0.14em] text-[#555555]">
+            <section className="rounded-[12px] border border-border-light bg-white p-5 shadow-sm">
+                <h2 className="font-montserrat text-sm font-bold uppercase tracking-[0.14em] text-body">
                     Price trend
                 </h2>
                 <div className="mt-3 flex flex-wrap gap-3">
                     {chartSeries.map((line) => (
-                        <span key={line.tier} className="inline-flex items-center gap-2 font-body text-xs text-[#262A22]">
+                        <span key={line.tier} className="inline-flex items-center gap-2 font-body text-xs text-heading">
                             <span className="inline-block size-2.5 rounded-full" style={{ backgroundColor: TIER_COLORS[line.tier] }} />
                             {line.tier} kcal
                         </span>
@@ -465,7 +465,7 @@ export default function PartnerKitchenPricing({
                     {campaignOpen ? 'Hide discount campaign' : 'Discount campaign'}
                 </TextLink>
                 {campaignOpen ? (
-                    <section className="mt-3 rounded-[12px] border border-[#E5E7EB] bg-white p-5 shadow-sm">
+                    <section className="mt-3 rounded-[12px] border border-border-light bg-white p-5 shadow-sm">
                         <h2 className="font-montserrat text-sm font-bold uppercase tracking-[0.14em] text-[#6E8C47]">
                             Discount campaign
                         </h2>
@@ -488,7 +488,7 @@ export default function PartnerKitchenPricing({
                             </div>
                             <div className="space-y-4">
                                 <fieldset>
-                                    <legend className="font-montserrat text-[11px] font-semibold uppercase tracking-[0.14em] text-[#555555]">
+                                    <legend className="font-montserrat text-[11px] font-semibold uppercase tracking-[0.14em] text-body">
                                         Plans
                                     </legend>
                                     <div className="mt-2 flex flex-wrap gap-3">
@@ -516,7 +516,7 @@ export default function PartnerKitchenPricing({
                                     </div>
                                 </fieldset>
                                 <fieldset>
-                                    <legend className="font-montserrat text-[11px] font-semibold uppercase tracking-[0.14em] text-[#555555]">
+                                    <legend className="font-montserrat text-[11px] font-semibold uppercase tracking-[0.14em] text-body">
                                         Calorie tiers
                                     </legend>
                                     <div className="mt-2 flex flex-wrap gap-3">
@@ -548,7 +548,7 @@ export default function PartnerKitchenPricing({
                                     </div>
                                 </fieldset>
                                 <fieldset>
-                                    <legend className="font-montserrat text-[11px] font-semibold uppercase tracking-[0.14em] text-[#555555]">
+                                    <legend className="font-montserrat text-[11px] font-semibold uppercase tracking-[0.14em] text-body">
                                         Durations
                                     </legend>
                                     <div className="mt-2 flex flex-wrap items-center gap-3">
@@ -585,9 +585,9 @@ export default function PartnerKitchenPricing({
                 ) : null}
             </div>
 
-            <section className="rounded-[12px] border border-[#E5E7EB] bg-white p-5 shadow-sm">
+            <section className="rounded-[12px] border border-border-light bg-white p-5 shadow-sm">
                 <div className="flex flex-wrap items-end justify-between gap-4">
-                    <h2 className="font-montserrat text-sm font-bold uppercase tracking-[0.14em] text-[#555555]">
+                    <h2 className="font-montserrat text-sm font-bold uppercase tracking-[0.14em] text-body">
                         Pricing matrix
                     </h2>
                     <DropdownTextInput
@@ -619,7 +619,7 @@ export default function PartnerKitchenPricing({
                 <div className="mt-4 overflow-x-auto">
                     <table className="min-w-full text-left text-sm">
                         <thead>
-                            <tr className="border-b border-[#E5E7EB] bg-[#F6F6F4] text-[#555555]">
+                            <tr className="border-b border-border-light bg-surface-soft text-body">
                                 <th className="px-3 py-3 font-montserrat text-[11px] font-semibold uppercase tracking-[0.14em]">
                                     Calorie tier
                                 </th>
@@ -637,8 +637,8 @@ export default function PartnerKitchenPricing({
                         </thead>
                         <tbody>
                             {matrixTiers.map((tier) => (
-                                <tr key={tier} className="border-b border-[#F2F2F2] align-top">
-                                    <td className="px-3 py-3 font-montserrat font-semibold text-[#262A22]">
+                                <tr key={tier} className="border-b border-border-light align-top">
+                                    <td className="px-3 py-3 font-montserrat font-semibold text-heading">
                                         <span className="mr-2 inline-block size-2 rounded-full" style={{ backgroundColor: TIER_COLORS[tier] }} />
                                         {tier}
                                     </td>
@@ -647,7 +647,7 @@ export default function PartnerKitchenPricing({
 
                                         if (display === null) {
                                             return (
-                                                <td key={days} className="px-3 py-3 text-[#888888]">
+                                                <td key={days} className="px-3 py-3 text-body">
                                                     —
                                                 </td>
                                             );
@@ -678,7 +678,7 @@ export default function PartnerKitchenPricing({
                                                         }
                                                         className={[
                                                             '!max-w-none [&_label]:sr-only',
-                                                            showStrike ? '[&_input]:text-[#888888] [&_input]:line-through' : '',
+                                                            showStrike ? '[&_input]:text-body [&_input]:line-through' : '',
                                                         ].filter(Boolean).join(' ')}
                                                     />
                                                 )}
@@ -688,7 +688,7 @@ export default function PartnerKitchenPricing({
                                                     </span>
                                                 ) : null}
                                                 {dailyRate !== null ? (
-                                                    <p className="mt-1 font-body text-xs text-[#888888]">
+                                                    <p className="mt-1 font-body text-xs text-body">
                                                         {dailyRate} / day
                                                     </p>
                                                 ) : null}

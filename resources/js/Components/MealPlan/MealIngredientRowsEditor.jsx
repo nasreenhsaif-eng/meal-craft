@@ -97,7 +97,7 @@ export default function MealIngredientRowsEditor({
     return (
         <div className="rounded-[12px] border border-gray-200 bg-white p-4">
             <div className="flex items-center justify-between gap-3">
-                <p className="font-montserrat text-sm font-bold text-[#262A22]">Ingredients</p>
+                <p className="font-montserrat text-sm font-bold text-heading">Ingredients</p>
                 <Button
                     label="Add ingredient"
                     variant="secondary"
@@ -106,7 +106,7 @@ export default function MealIngredientRowsEditor({
                     onClick={() => onRowsChange((prev) => [...prev, { ...EMPTY_ROW }])}
                 />
             </div>
-            <p className="mt-1 font-body text-xs text-[#555555]">
+            <p className="mt-1 font-body text-xs text-body">
                 Search the ingredient library, adjust amounts, or remove rows — same as Meal Library edit.
             </p>
 
@@ -118,7 +118,7 @@ export default function MealIngredientRowsEditor({
                             : filterIngredientsForCombobox(ingredientDatabase, row.nameQuery, 15);
 
                     return (
-                        <div key={idx} className="rounded-[12px] border border-gray-100 bg-[#F8F9F6] p-3">
+                        <div key={idx} className="rounded-[12px] border border-gray-100 bg-surface-soft p-3">
                             <div className="grid gap-4 md:grid-cols-[1fr_100px_90px_auto] md:items-end">
                                 <div className="relative min-w-0">
                                     <TextInput
@@ -158,7 +158,7 @@ export default function MealIngredientRowsEditor({
                                                   <div
                                                       id={`${comboboxIdPrefix}-listbox-${idx}`}
                                                       role="listbox"
-                                                      className="w-full rounded-[12px] border border-[#E5E7EB] bg-white p-2 shadow-2xl"
+                                                      className="w-full rounded-[12px] border border-border-light bg-white p-2 shadow-2xl"
                                                   >
                                                       <div className="max-h-56 overflow-auto">
                                                           {matches.map((match) => (
@@ -166,7 +166,7 @@ export default function MealIngredientRowsEditor({
                                                                   key={match.id != null ? `ing-${match.id}` : match.name}
                                                                   type="button"
                                                                   role="option"
-                                                                  className="flex w-full items-center justify-between gap-3 rounded-[12px] px-4 py-2 text-left font-montserrat text-sm font-bold text-[#262A22] transition-colors hover:bg-[#F8F9F6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5A6B44] focus-visible:ring-inset"
+                                                                  className="flex w-full items-center justify-between gap-3 rounded-[12px] px-4 py-2 text-left font-montserrat text-sm font-bold text-heading transition-colors hover:bg-surface-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5A6B44] focus-visible:ring-inset"
                                                                   onClick={() => {
                                                                       onRowsChange((prev) =>
                                                                           prev.map((r, i) =>
@@ -199,7 +199,7 @@ export default function MealIngredientRowsEditor({
                                                                   }}
                                                               >
                                                                   <span className="min-w-0 truncate">{match.name}</span>
-                                                                  <span className="shrink-0 text-xs font-medium text-[#555555]">
+                                                                  <span className="shrink-0 text-xs font-medium text-body">
                                                                       per 100g
                                                                   </span>
                                                               </button>
@@ -249,7 +249,7 @@ export default function MealIngredientRowsEditor({
                                 </div>
                             </div>
                             {row.selectedName === CHICKEN_BREAST_RAW_NAME && row.unit === 'g' ? (
-                                <p className="font-body text-xs text-[#555555]">
+                                <p className="font-body text-xs text-body">
                                     {chickenBreastYieldHint(Number(String(row.amount ?? '').trim())) ??
                                         'Raw prep weight before cooking.'}
                                 </p>

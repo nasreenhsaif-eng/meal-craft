@@ -98,8 +98,8 @@ function normalizeLibraryRow(raw) {
         baseRecipeEdit: isPlainObject(raw.baseRecipeEdit) ? raw.baseRecipeEdit : null,
     };
 }
-const ROW_HOVER = 'hover:bg-[#F8F9F6]';
-const PAGE_BG = 'bg-[#F8F9F6]';
+const ROW_HOVER = 'hover:bg-surface-soft';
+const PAGE_BG = 'bg-surface-soft';
 
 const VITAMIN_COLS = [
     { key: 'vitA', label: 'Vit A' },
@@ -673,7 +673,7 @@ export function IngredientsLibraryPageView({
                 {flashSuccess ? (
                     <div
                         role="status"
-                        className="rounded-[12px] border border-[#5A6B44]/30 bg-[#F8F9F6] px-4 py-3 font-body text-sm text-[#262A22]"
+                        className="rounded-[12px] border border-[#5A6B44]/30 bg-surface-soft px-4 py-3 font-body text-sm text-heading"
                     >
                         {flashSuccess}
                     </div>
@@ -755,20 +755,20 @@ export function IngredientsLibraryPageView({
                                                   width: `${searchMenuRect.width}px`,
                                               }}
                                           >
-                                              <div className="w-full rounded-[12px] border border-[#E5E7EB] bg-white p-2 shadow-2xl">
+                                              <div className="w-full rounded-[12px] border border-border-light bg-white p-2 shadow-2xl">
                                                   <div className="max-h-56 overflow-auto">
                                                       {searchMatches.map((m) => (
                                                           <button
                                                               key={m.id}
                                                               type="button"
-                                                              className="flex w-full items-center justify-between gap-3 rounded-[12px] px-4 py-2 text-left font-montserrat text-sm font-bold text-[#262A22] transition-colors hover:bg-[#F8F9F6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5A6B44] focus-visible:ring-inset"
+                                                              className="flex w-full items-center justify-between gap-3 rounded-[12px] px-4 py-2 text-left font-montserrat text-sm font-bold text-heading transition-colors hover:bg-surface-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5A6B44] focus-visible:ring-inset"
                                                               onClick={() => {
                                                                   setQuery(m.name);
                                                                   setSearchOpen(false);
                                                               }}
                                                           >
                                                               <span className="min-w-0 truncate">{m.name}</span>
-                                                              <span className="shrink-0 text-xs font-medium text-[#555555]">
+                                                              <span className="shrink-0 text-xs font-medium text-body">
                                                                   {m.category}
                                                               </span>
                                                           </button>
@@ -784,8 +784,8 @@ export function IngredientsLibraryPageView({
 
                         <div className="-mx-5 flex flex-wrap items-center justify-between gap-3 border-t border-gray-200 px-5 pt-4">
                             <div className="min-w-0">
-                                <p className="font-montserrat text-sm font-bold tracking-tight text-[#262A22]">Ingredients</p>
-                                <p className="mt-0.5 font-body text-xs text-[#555555]">
+                                <p className="font-montserrat text-sm font-bold tracking-tight text-heading">Ingredients</p>
+                                <p className="mt-0.5 font-body text-xs text-body">
                                     <span className="font-semibold text-[#374151]">{libraryRows.length}</span> in library
                                     {' · '}
                                     {displayedRows.length} of {filteredRows.length} in table
@@ -943,7 +943,7 @@ export function IngredientsLibraryPageView({
                                                         </span>
                                                     ) : null}
                                                 </div>
-                                                <p className="mt-0.5 font-body text-xs text-[#555555]">
+                                                <p className="mt-0.5 font-body text-xs text-body">
                                                     ID: {r.id}
                                                 </p>
                                             </div>
@@ -1064,11 +1064,11 @@ export function IngredientsLibraryPageView({
                         role="dialog"
                         aria-modal="true"
                         aria-labelledby="ingredient-library-detail-title"
-                        className="relative flex max-h-[min(92vh,calc(100dvh-2rem))] w-full max-w-5xl flex-col rounded-[12px] bg-[#F8F9F6] p-4 shadow-2xl md:p-6"
+                        className="relative flex max-h-[min(92vh,calc(100dvh-2rem))] w-full max-w-5xl flex-col rounded-[12px] bg-surface-soft p-4 shadow-2xl md:p-6"
                     >
                         <div className="mb-4 flex shrink-0 items-start justify-between gap-3">
                             <div className="min-w-0 flex-1 space-y-3">
-                                <p className="font-montserrat text-sm font-bold uppercase tracking-[0.14em] text-[#555555]">
+                                <p className="font-montserrat text-sm font-bold uppercase tracking-[0.14em] text-body">
                                     Edit base recipe
                                 </p>
                                 <TextInput
@@ -1141,10 +1141,10 @@ export function IngredientsLibraryPageView({
                     <div className="absolute right-0 top-0 flex h-full w-full max-w-5xl flex-col bg-white shadow-2xl">
                         <div className="flex shrink-0 items-center justify-between border-b border-gray-200 px-8 py-5 lg:px-10">
                             <div>
-                                <p className="font-montserrat text-sm font-bold uppercase tracking-[0.14em] text-[#555555]">
+                                <p className="font-montserrat text-sm font-bold uppercase tracking-[0.14em] text-body">
                                     Ingredient library
                                 </p>
-                                <p className="mt-0.5 font-montserrat text-[18px] font-bold tracking-tight text-[#262A22]">
+                                <p className="mt-0.5 font-montserrat text-[18px] font-bold tracking-tight text-heading">
                                     {createIsBaseRecipe ? 'Create base recipe' : 'Create ingredient'}
                                 </p>
                             </div>
@@ -1167,11 +1167,11 @@ export function IngredientsLibraryPageView({
                                         aria-pressed={createIsBaseRecipe}
                                     >
                                         <SquareCheckbox checked={createIsBaseRecipe} />
-                                        <span className="font-montserrat text-sm font-bold text-[#262A22]">
+                                        <span className="font-montserrat text-sm font-bold text-heading">
                                             This is a Base Recipe
                                         </span>
                                     </button>
-                                    <p className="mt-2 font-body text-sm text-[#555555]">
+                                    <p className="mt-2 font-body text-sm text-body">
                                         Base recipes combine other library ingredients; macros are calculated per 100g and
                                         stored in the ingredient library only.
                                     </p>
@@ -1294,10 +1294,10 @@ export function IngredientsLibraryPageView({
                         <p className="text-center font-montserrat text-xs font-bold uppercase tracking-[0.22em] text-[#C44F5D]">
                             Warning
                         </p>
-                        <p className="mt-3 text-center font-montserrat text-[22px] font-bold tracking-tight text-[#262A22]">
+                        <p className="mt-3 text-center font-montserrat text-[22px] font-bold tracking-tight text-heading">
                             Delete selected ingredients permanently?
                         </p>
-                        <p className="mt-3 text-center font-body text-sm text-[#555555]">
+                        <p className="mt-3 text-center font-body text-sm text-body">
                             This action can’t be undone. You can also export a CSV first.
                         </p>
 

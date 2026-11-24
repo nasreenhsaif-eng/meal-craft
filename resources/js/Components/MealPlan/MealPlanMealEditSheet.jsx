@@ -140,10 +140,10 @@ export default function MealPlanMealEditSheet({
         <>
             <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-5 py-4">
                 <div className="min-w-0">
-                    <h2 id="meal-plan-edit-modal-title" className="font-montserrat text-lg font-bold text-[#262A22]">
+                    <h2 id="meal-plan-edit-modal-title" className="font-montserrat text-lg font-bold text-heading">
                         {meal.title ?? editFormSeed.name ?? 'Edit meal'}
                     </h2>
-                    <p className="mt-1 font-body text-sm text-[#555555]">
+                    <p className="mt-1 font-body text-sm text-body">
                         {showKitchenPortions
                             ? 'Kitchen portions for this tier are read-only. Edit the library recipe separately if needed.'
                             : 'Adjust ingredient amounts and bulk settings. Changes update this plan view immediately.'}
@@ -153,7 +153,7 @@ export default function MealPlanMealEditSheet({
             </div>
 
             <div className="flex-1 overflow-y-auto px-5 py-4">
-                <div className="rounded-[12px] border border-gray-200 bg-[#F8F9F6] px-4 py-3">
+                <div className="rounded-[12px] border border-gray-200 bg-surface-soft px-4 py-3">
                     <p className="font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#5A6B44]">
                         {showKitchenPortions ? `Reconciled macros @ ${planTier} kcal` : 'Live macros (per serving)'}
                     </p>
@@ -172,10 +172,10 @@ export default function MealPlanMealEditSheet({
 
                 {showKitchenPortions ? (
                     <div className="mt-4 rounded-[12px] border border-gray-200 bg-white p-4">
-                        <p className="font-montserrat text-sm font-bold text-[#262A22]">
+                        <p className="font-montserrat text-sm font-bold text-heading">
                             Kitchen portions @ {planTier} kcal
                         </p>
-                        <p className="mt-1 font-body text-sm text-[#555555]">
+                        <p className="mt-1 font-body text-sm text-body">
                             These gram amounts are what production uses after day-level reconciliation.
                         </p>
                         <div className="mt-4 pointer-events-none opacity-90">
@@ -220,9 +220,9 @@ export default function MealPlanMealEditSheet({
                                 aria-pressed={isBulk}
                             >
                                 <SquareCheckbox checked={isBulk} />
-                                <span className="font-montserrat text-sm font-bold text-[#262A22]">Bulk recipe</span>
+                                <span className="font-montserrat text-sm font-bold text-heading">Bulk recipe</span>
                             </button>
-                            <p className="mt-2 font-body text-sm text-[#555555]">
+                            <p className="mt-2 font-body text-sm text-body">
                                 Batch totals roll up from ingredients; card macros show per-serving values when servings are set.
                             </p>
                             {isBulk ? (

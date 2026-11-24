@@ -119,7 +119,7 @@ export default function Payment({
         >
             <div className="mx-auto w-full min-w-0 max-w-3xl">
                 <div className="flex items-start justify-between gap-3">
-                    <h1 className="min-w-0 font-montserrat text-3xl font-semibold tracking-tight text-[#262A22]">
+                    <h1 className="min-w-0 font-montserrat text-3xl font-semibold tracking-tight text-heading">
                         Payment checkout
                     </h1>
                     <Button
@@ -131,7 +131,7 @@ export default function Payment({
                         className="shrink-0"
                     />
                 </div>
-                <p className="mt-3 font-body text-sm leading-relaxed text-[#555555] sm:text-base">
+                <p className="mt-3 font-body text-sm leading-relaxed text-body sm:text-base">
                     Review your basket, confirm delivery, and pay with Benefit Pay.
                 </p>
                 {flashSuccess ? (
@@ -144,26 +144,26 @@ export default function Payment({
                 ) : null}
 
                 <section className="mt-8 rounded-[12px] border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
-                    <h2 className="m-0 font-montserrat text-base font-bold tracking-tight text-[#262A22]">
+                    <h2 className="m-0 font-montserrat text-base font-bold tracking-tight text-heading">
                         Basket summary
                     </h2>
-                    <p className="mt-3 font-body text-sm font-medium text-[#262A22]">
+                    <p className="mt-3 font-body text-sm font-medium text-heading">
                         {basket.planLabel ?? 'Meal plan'}
                     </p>
 
                     <dl className="mt-5 space-y-3 border-t border-gray-100 pt-4 font-body text-sm">
                         <div className="flex items-start justify-between gap-4">
-                            <dt className="text-[#555555]">Subtotal</dt>
-                            <dd className="font-semibold text-[#262A22]">{formatMoney(totals.subtotal, currency)}</dd>
+                            <dt className="text-body">Subtotal</dt>
+                            <dd className="font-semibold text-heading">{formatMoney(totals.subtotal, currency)}</dd>
                         </div>
                         <div className="flex items-start justify-between gap-4">
-                            <dt className="text-[#555555]">Delivery cost</dt>
-                            <dd className="font-semibold text-[#262A22]">
+                            <dt className="text-body">Delivery cost</dt>
+                            <dd className="font-semibold text-heading">
                                 {formatMoney(totals.deliveryCost, currency)}
                             </dd>
                         </div>
                         <div className="flex items-start justify-between gap-4">
-                            <dt className="text-[#555555]">
+                            <dt className="text-body">
                                 Total discount
                                 <span className="mt-0.5 block text-xs font-normal text-[#5A6B44]">
                                     {basket.limitedTimeDiscountLabel ?? 'Limited time offer'}
@@ -175,7 +175,7 @@ export default function Payment({
                         </div>
                         {totals.promoDiscount > 0 ? (
                             <div className="flex items-start justify-between gap-4">
-                                <dt className="text-[#555555]">
+                                <dt className="text-body">
                                     Promo code
                                     <span className="mt-0.5 block text-xs font-normal text-[#5A6B44]">
                                         {basket.promoCode}
@@ -187,8 +187,8 @@ export default function Payment({
                             </div>
                         ) : null}
                         <div className="flex items-start justify-between gap-4 border-t border-gray-100 pt-3">
-                            <dt className="font-montserrat text-base font-bold text-[#262A22]">Total</dt>
-                            <dd className="font-montserrat text-base font-bold text-[#262A22]">
+                            <dt className="font-montserrat text-base font-bold text-heading">Total</dt>
+                            <dd className="font-montserrat text-base font-bold text-heading">
                                 {formatMoney(totals.total, currency)}
                             </dd>
                         </div>
@@ -221,30 +221,30 @@ export default function Payment({
                 </section>
 
                 <section className="mt-5 rounded-[12px] border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
-                    <h2 className="m-0 font-montserrat text-base font-bold tracking-tight text-[#262A22]">
+                    <h2 className="m-0 font-montserrat text-base font-bold tracking-tight text-heading">
                         Delivery address
                     </h2>
-                    <p className="mt-3 font-body text-sm leading-relaxed text-[#262A22]">
+                    <p className="mt-3 font-body text-sm leading-relaxed text-heading">
                         {address.formatted || '—'}
                     </p>
                     {address.plannedStartDate || address.deliveryTime ? (
                         <dl className="mt-4 grid gap-3 sm:grid-cols-2">
                             {address.plannedStartDate ? (
-                                <div className="rounded-[12px] bg-[#F8F9F6] px-4 py-3">
-                                    <dt className="font-montserrat text-xs font-bold uppercase tracking-wide text-[#555555]">
+                                <div className="rounded-[12px] bg-surface-soft px-4 py-3">
+                                    <dt className="font-montserrat text-xs font-bold uppercase tracking-wide text-body">
                                         Planned start
                                     </dt>
-                                    <dd className="mt-1 font-body text-sm font-medium text-[#262A22]">
+                                    <dd className="mt-1 font-body text-sm font-medium text-heading">
                                         {address.plannedStartDate}
                                     </dd>
                                 </div>
                             ) : null}
                             {address.deliveryTime ? (
-                                <div className="rounded-[12px] bg-[#F8F9F6] px-4 py-3">
-                                    <dt className="font-montserrat text-xs font-bold uppercase tracking-wide text-[#555555]">
+                                <div className="rounded-[12px] bg-surface-soft px-4 py-3">
+                                    <dt className="font-montserrat text-xs font-bold uppercase tracking-wide text-body">
                                         Delivery time
                                     </dt>
-                                    <dd className="mt-1 font-body text-sm font-medium capitalize text-[#262A22]">
+                                    <dd className="mt-1 font-body text-sm font-medium capitalize text-heading">
                                         {String(address.deliveryTime).replaceAll('_', ' ')}
                                     </dd>
                                 </div>
@@ -262,14 +262,14 @@ export default function Payment({
                         <span className="mt-0.5 inline-flex shrink-0 rounded-[4px] peer-focus-visible:ring-2 peer-focus-visible:ring-[#556C37] peer-focus-visible:ring-offset-2">
                             <SquareCheckbox presentational checked={Boolean(data.invoice_same_address)} />
                         </span>
-                        <span className="font-body text-sm leading-snug text-[#262A22]">
+                        <span className="font-body text-sm leading-snug text-heading">
                             Send invoice to the same address
                         </span>
                     </label>
                 </section>
 
                 <section className="mt-5 rounded-[12px] border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
-                    <h2 className="m-0 font-montserrat text-base font-bold tracking-tight text-[#262A22]">
+                    <h2 className="m-0 font-montserrat text-base font-bold tracking-tight text-heading">
                         Payment options
                     </h2>
                     <div className="mt-4 flex flex-wrap gap-2" role="group" aria-label="Payment options">
@@ -285,9 +285,9 @@ export default function Payment({
                         </p>
                     ) : null}
 
-                    <div className="mt-6 space-y-4 rounded-[12px] bg-[#F8F9F6] p-4">
+                    <div className="mt-6 space-y-4 rounded-[12px] bg-surface-soft p-4">
                         <div>
-                            <h3 className="m-0 font-montserrat text-sm font-bold tracking-tight text-[#262A22]">
+                            <h3 className="m-0 font-montserrat text-sm font-bold tracking-tight text-heading">
                                 <a
                                     href={basket.freezePolicyUrl || '/refund-policy#freeze'}
                                     className="text-[#5A6B44] underline decoration-[#5A6B44]/40 underline-offset-2 hover:decoration-[#5A6B44]"
@@ -295,13 +295,13 @@ export default function Payment({
                                     Freeze policy
                                 </a>
                             </h3>
-                            <p className="mt-2 font-body text-sm leading-relaxed text-[#555555]">
+                            <p className="mt-2 font-body text-sm leading-relaxed text-body">
                                 If you wish to freeze your package, the packages are calculated as a 20 day package and
                                 a 24 day package. The maximum total number of days to be frozen are 14 days.
                             </p>
                         </div>
                         <div>
-                            <h3 className="m-0 font-montserrat text-sm font-bold tracking-tight text-[#262A22]">
+                            <h3 className="m-0 font-montserrat text-sm font-bold tracking-tight text-heading">
                                 <a
                                     href={basket.refundPolicyUrl || '/refund-policy#refund'}
                                     className="text-[#5A6B44] underline decoration-[#5A6B44]/40 underline-offset-2 hover:decoration-[#5A6B44]"
@@ -309,7 +309,7 @@ export default function Payment({
                                     Refund policy
                                 </a>
                             </h3>
-                            <p className="mt-2 font-body text-sm leading-relaxed text-[#555555]">
+                            <p className="mt-2 font-body text-sm leading-relaxed text-body">
                                 As we do not offer a refund policy, we suggest that you do a 5 day trial, if for any
                                 reason during the 20 day package you would like to stop please keep in mind that the
                                 credit is transferable to a loved one.
@@ -330,7 +330,7 @@ export default function Payment({
                         <span className="mt-0.5 inline-flex shrink-0 rounded-[4px] peer-focus-visible:ring-2 peer-focus-visible:ring-[#556C37] peer-focus-visible:ring-offset-2">
                             <SquareCheckbox presentational checked={Boolean(data.cart_confirmed)} />
                         </span>
-                        <span className="font-montserrat text-sm font-bold uppercase leading-snug tracking-wide text-[#262A22]">
+                        <span className="font-montserrat text-sm font-bold uppercase leading-snug tracking-wide text-heading">
                             Confirm cart
                         </span>
                     </label>
@@ -353,7 +353,7 @@ export default function Payment({
                         <span className="mt-0.5 inline-flex shrink-0 rounded-[4px] peer-focus-visible:ring-2 peer-focus-visible:ring-[#556C37] peer-focus-visible:ring-offset-2">
                             <SquareCheckbox presentational checked={Boolean(data.refund_policy_accepted)} />
                         </span>
-                        <span className="font-body text-sm leading-snug text-[#555555]">
+                        <span className="font-body text-sm leading-snug text-body">
                             By making the payment, you agree to the{' '}
                             <a
                                 href={basket.refundPolicyUrl || '/refund-policy#refund'}

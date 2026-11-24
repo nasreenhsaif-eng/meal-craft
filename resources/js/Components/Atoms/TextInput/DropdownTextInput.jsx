@@ -230,7 +230,7 @@ export default function DropdownTextInput({
                 className={
                     hideLabel
                         ? 'sr-only'
-                        : 'mb-2 block font-montserrat text-sm font-bold leading-snug tracking-tight text-grey-94'
+                        : 'mb-2 block font-montserrat text-sm font-bold leading-snug tracking-tight text-form-label'
                 }
             >
                 {label}
@@ -246,7 +246,7 @@ export default function DropdownTextInput({
                     aria-controls={open ? menuId : undefined}
                     aria-label={hideLabel ? `${label}: open category menu` : 'Open dropdown'}
                     onClick={() => setOpen((o) => !o)}
-                    className="relative box-border flex h-[49px] w-full min-w-0 max-w-full appearance-none items-center justify-between gap-3 overflow-hidden rounded-[12px] border border-[#E5E7EB] bg-[#FFFFFF] px-4 text-left font-montserrat text-[16px] font-medium tracking-tight text-[#364153] shadow-sm outline-none transition-[border-color,box-shadow,background-color] duration-200 hover:bg-[#F8F9F6] focus-visible:border-[#5A6B44] focus-visible:ring-2 focus-visible:ring-[#5A6B44] focus-visible:ring-offset-2 sm:px-5"
+                    className="relative box-border flex h-[49px] w-full min-w-0 max-w-full appearance-none items-center justify-between gap-3 overflow-hidden rounded-[12px] border border-border-light bg-[#FFFFFF] px-4 text-left font-montserrat text-[16px] font-medium tracking-tight text-body shadow-sm outline-none transition-[border-color,box-shadow,background-color] duration-200 hover:bg-surface-soft focus-visible:border-[#5A6B44] focus-visible:ring-2 focus-visible:ring-[#5A6B44] focus-visible:ring-offset-2 sm:px-5"
                 >
                     <span className="min-w-0 truncate">{selectedLabel || 'Select…'}</span>
                     <div
@@ -269,7 +269,7 @@ export default function DropdownTextInput({
                               width: `${Math.max(menuRect.width, 220)}px`,
                           }}
                       >
-                          <div className="w-full rounded-[12px] border border-[#E5E7EB] bg-[#FFFFFF] p-2 shadow-2xl">
+                          <div className="w-full rounded-[12px] border border-border-light bg-[#FFFFFF] p-2 shadow-2xl">
                               <ul
                                   id={menuId}
                                   ref={listRef}
@@ -295,10 +295,10 @@ export default function DropdownTextInput({
                                                   }}
                                                   className={[
                                                       'flex w-full appearance-none items-center justify-between gap-3 rounded-[12px] border-0 px-3 py-2 text-left font-montserrat text-sm font-bold',
-                                                      'bg-transparent text-[#262A22] shadow-none outline-none',
+                                                      'bg-transparent text-heading shadow-none outline-none',
                                                       'transition-[background-color,color] duration-200 ease-in-out',
-                                                      'hover:bg-[#F8F9F6] hover:text-[#5A6B44]',
-                                                      'focus-visible:bg-[#F8F9F6] focus-visible:text-[#5A6B44] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5A6B44] focus-visible:ring-inset',
+                                                      'hover:bg-surface-soft hover:text-[#5A6B44]',
+                                                      'focus-visible:bg-surface-soft focus-visible:text-[#5A6B44] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5A6B44] focus-visible:ring-inset',
                                                   ].join(' ')}
                                               >
                                                   <span className="min-w-0 truncate">{opt.label}</span>

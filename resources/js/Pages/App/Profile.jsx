@@ -98,7 +98,7 @@ export function ProfileInner({
             }
         >
             <div className="flex w-full min-w-0 flex-col gap-4">
-                <h1 className="font-montserrat text-3xl font-semibold tracking-tight text-[#262A22]">
+                <h1 className="font-montserrat text-3xl font-semibold tracking-tight text-heading">
                     Your details
                 </h1>
 

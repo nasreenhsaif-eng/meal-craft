@@ -67,14 +67,14 @@ export default function CookMealCard({ meal, shoppingList, onToggleIngredient, f
             <p className="font-montserrat text-[10px] font-bold uppercase tracking-[0.12em] text-[#5A6B44]">
                 {meal.category}
             </p>
-            <h2 className="mt-1 font-montserrat text-lg font-bold tracking-tight text-[#262A22]">{meal.title}</h2>
+            <h2 className="mt-1 font-montserrat text-lg font-bold tracking-tight text-heading">{meal.title}</h2>
 
             {mealBlurb ? (
                 <section className="mt-3 space-y-1">
                     <p className="font-montserrat text-xs font-bold uppercase tracking-[0.12em] text-[#374151]">
                         Description
                     </p>
-                    <p className="font-body text-sm leading-relaxed text-[#555555]">{mealBlurb}</p>
+                    <p className="font-body text-sm leading-relaxed text-body">{mealBlurb}</p>
                 </section>
             ) : null}
 
@@ -152,12 +152,12 @@ export default function CookMealCard({ meal, shoppingList, onToggleIngredient, f
                     <section aria-labelledby={`cook-ingredients-${meal.id}`}>
                         <h3
                             id={`cook-ingredients-${meal.id}`}
-                            className="font-montserrat text-sm font-bold tracking-tight text-[#262A22]"
+                            className="font-montserrat text-sm font-bold tracking-tight text-heading"
                         >
                             Ingredients
                         </h3>
                         {shoppingRows.length === 0 ? (
-                            <p className="mt-2 font-body text-sm text-[#555555]">
+                            <p className="mt-2 font-body text-sm text-body">
                                 No ingredient amounts available for this meal.
                             </p>
                         ) : (
@@ -177,7 +177,7 @@ export default function CookMealCard({ meal, shoppingList, onToggleIngredient, f
                     <section aria-labelledby={`cook-instructions-${meal.id}`}>
                         <h3
                             id={`cook-instructions-${meal.id}`}
-                            className="font-montserrat text-sm font-bold tracking-tight text-[#262A22]"
+                            className="font-montserrat text-sm font-bold tracking-tight text-heading"
                         >
                             Instructions
                         </h3>
@@ -207,7 +207,7 @@ export default function CookMealCard({ meal, shoppingList, onToggleIngredient, f
                                 ))}
                             </ol>
                         ) : (
-                            <p className="mt-2 font-body text-sm text-[#555555]">
+                            <p className="mt-2 font-body text-sm text-body">
                                 No cooking instructions for this meal yet.
                             </p>
                         )}
@@ -222,16 +222,16 @@ export default function CookMealCard({ meal, shoppingList, onToggleIngredient, f
                 <div>
                     <h3
                         id={`cook-nutrition-${meal.id}`}
-                        className="font-montserrat text-sm font-bold tracking-tight text-[#262A22]"
+                        className="font-montserrat text-sm font-bold tracking-tight text-heading"
                     >
                         Nutritional summary
                     </h3>
-                    <p className="mt-1 font-body text-xs text-[#555555]">{nutritionSubheading}</p>
+                    <p className="mt-1 font-body text-xs text-body">{nutritionSubheading}</p>
                 </div>
                 {nutritionalData?.sections?.length ? (
                     <MealNutritionSummaryTable data={nutritionalData} />
                 ) : (
-                    <p className="font-body text-sm text-[#555555]">No nutrition data for this meal.</p>
+                    <p className="font-body text-sm text-body">No nutrition data for this meal.</p>
                 )}
             </section>
         </article>

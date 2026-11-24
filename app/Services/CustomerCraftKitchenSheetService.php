@@ -288,7 +288,11 @@ final class CustomerCraftKitchenSheetService
                 'soup' => $slotLabels['soup'],
                 'sideSalad' => $slotLabels['sideSalad'],
                 'dessert' => $slotLabels['dessert'],
-                'cutlery' => '',
+                'cutlery' => match ($planDay->craftPlan->include_cutlery) {
+                    true => 'Yes',
+                    false => 'No',
+                    default => '',
+                },
                 'kitchen_instructions' => self::kitchenInstructionsFromAdaptedMeals($adaptedMeals),
                 'specialRequests' => '',
                 'allergies' => $allergies !== '' ? $allergies : '—',

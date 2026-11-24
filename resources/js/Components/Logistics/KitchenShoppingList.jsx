@@ -186,15 +186,15 @@ export default function KitchenShoppingList({
         <section className={`space-y-6 font-sans ${className}`.trim()}>
             <div className={`flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between ${printBatches.length > 0 ? 'print:hidden' : ''}`}>
                 <div>
-                    <h2 className="m-0 font-sans text-xl font-bold tracking-tight text-[#262A22]">
+                    <h2 className="m-0 font-sans text-xl font-bold tracking-tight text-heading">
                         Kitchen operation sheets
                     </h2>
                     {dayLabel ? (
-                        <p className="mt-1 text-sm font-medium text-[#555555]">
-                            Day: <span className="font-semibold text-[#262A22]">{dayLabel}</span>
+                        <p className="mt-1 text-sm font-medium text-body">
+                            Day: <span className="font-semibold text-heading">{dayLabel}</span>
                         </p>
                     ) : null}
-                    <p className="mt-1 max-w-2xl text-sm leading-relaxed text-[#555555]">
+                    <p className="mt-1 max-w-2xl text-sm leading-relaxed text-body">
                         Select recipes to download scaled prep packs. Bulk totals sum ingredients across every recipe
                         on this list (portions × per-plate grams).
                     </p>
@@ -205,10 +205,10 @@ export default function KitchenShoppingList({
             <div className={`overflow-x-auto rounded-xl border border-gray-200 bg-white shadow-sm print:hidden print:border-gray-400`}>
                 <div className="flex flex-col gap-3 border-b border-gray-100 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                        <h3 className="m-0 font-sans text-sm font-bold uppercase tracking-wide text-[#262A22]">
+                        <h3 className="m-0 font-sans text-sm font-bold uppercase tracking-wide text-heading">
                             Recipes needed for the day
                         </h3>
-                        <p className="mt-1 text-xs text-[#555555]">
+                        <p className="mt-1 text-xs text-body">
                             Meals from customer craft selections, plus prepared base recipes needed that day.
                         </p>
                     </div>
@@ -228,7 +228,7 @@ export default function KitchenShoppingList({
                 </div>
                 <table className="w-full min-w-[420px] border-collapse text-left text-sm">
                     <thead>
-                        <tr className="bg-[#F9FAFB]">
+                        <tr className="bg-surface-soft">
                             <th className="w-12 px-4 py-2 align-middle">
                                 <button
                                     type="button"
@@ -245,13 +245,13 @@ export default function KitchenShoppingList({
                                     />
                                 </button>
                             </th>
-                            <th className="px-4 py-2 font-sans text-xs font-bold uppercase tracking-wide text-[#262A22]">
+                            <th className="px-4 py-2 font-sans text-xs font-bold uppercase tracking-wide text-heading">
                                 Recipe
                             </th>
-                            <th className="px-4 py-2 font-sans text-xs font-bold uppercase tracking-wide text-[#262A22]">
+                            <th className="px-4 py-2 font-sans text-xs font-bold uppercase tracking-wide text-heading">
                                 Type
                             </th>
-                            <th className="px-4 py-2 font-sans text-xs font-bold uppercase tracking-wide text-[#262A22]">
+                            <th className="px-4 py-2 font-sans text-xs font-bold uppercase tracking-wide text-heading">
                                 Portions / amount
                             </th>
                         </tr>
@@ -259,7 +259,7 @@ export default function KitchenShoppingList({
                     <tbody>
                         {recipeBatches.length === 0 ? (
                             <tr className="border-t border-gray-100">
-                                <td colSpan={4} className="px-4 py-6 text-sm text-[#555555]">
+                                <td colSpan={4} className="px-4 py-6 text-sm text-body">
                                     No adapted recipes for this day yet.
                                 </td>
                             </tr>
@@ -272,11 +272,11 @@ export default function KitchenShoppingList({
                                         <td className="px-4 py-2 align-middle">
                                             <SquareCheckbox checked={checked} onChange={() => toggleKey(batch.key)} />
                                         </td>
-                                        <td className="px-4 py-2 font-semibold text-[#262A22]">{batch.mealName}</td>
-                                        <td className="px-4 py-2 text-[#555555]">
+                                        <td className="px-4 py-2 font-semibold text-heading">{batch.mealName}</td>
+                                        <td className="px-4 py-2 text-body">
                                             {batch.typeLabel ?? (batch.kind === 'base' ? 'base recipe' : 'meal')}
                                         </td>
-                                        <td className="px-4 py-2 font-mono text-[#364153]">
+                                        <td className="px-4 py-2 font-mono text-body">
                                             {batch.portionsLabel ?? batch.portions}
                                         </td>
                                     </tr>
@@ -290,7 +290,7 @@ export default function KitchenShoppingList({
             <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white shadow-sm print:hidden print:border-gray-400">
                 <div className="space-y-3 border-b border-gray-100 px-4 py-3">
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                        <h3 className="m-0 font-sans text-sm font-bold uppercase tracking-wide text-[#262A22]">
+                        <h3 className="m-0 font-sans text-sm font-bold uppercase tracking-wide text-heading">
                             Bulk ingredients
                         </h3>
                         <PrimaryButton
@@ -301,7 +301,7 @@ export default function KitchenShoppingList({
                         />
                     </div>
                     <label className="flex w-full max-w-2xl flex-col gap-1">
-                        <span className="text-[10px] font-bold uppercase tracking-wide text-[#555555]">
+                        <span className="text-[10px] font-bold uppercase tracking-wide text-body">
                             Filter ingredients
                         </span>
                         <input
@@ -310,23 +310,23 @@ export default function KitchenShoppingList({
                             onChange={(event) => setBulkSearchQuery(event.target.value)}
                             placeholder="Search ingredient or recipe…"
                             aria-label="Filter bulk ingredients"
-                            className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 font-sans text-sm text-[#262A22] outline-none placeholder:text-[#9CA3AF] focus:border-[#6E8C47] focus:ring-2 focus:ring-[#6E8C47]/30"
+                            className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 font-sans text-sm text-heading outline-none placeholder:text-[#9CA3AF] focus:border-[#6E8C47] focus:ring-2 focus:ring-[#6E8C47]/30"
                         />
                     </label>
                 </div>
                 <table className="w-full min-w-[640px] border-collapse text-left text-sm">
                     <thead>
-                        <tr className="bg-[#F9FAFB]">
-                            <th className="px-4 py-2 font-sans text-xs font-bold uppercase tracking-wide text-[#262A22]">
+                        <tr className="bg-surface-soft">
+                            <th className="px-4 py-2 font-sans text-xs font-bold uppercase tracking-wide text-heading">
                                 Ingredient
                             </th>
-                            <th className="px-4 py-2 font-sans text-xs font-bold uppercase tracking-wide text-[#262A22]">
+                            <th className="px-4 py-2 font-sans text-xs font-bold uppercase tracking-wide text-heading">
                                 Unit
                             </th>
-                            <th className="px-4 py-2 font-sans text-xs font-bold uppercase tracking-wide text-[#262A22]">
+                            <th className="px-4 py-2 font-sans text-xs font-bold uppercase tracking-wide text-heading">
                                 Total needed
                             </th>
-                            <th className="px-4 py-2 font-sans text-xs font-bold uppercase tracking-wide text-[#262A22]">
+                            <th className="px-4 py-2 font-sans text-xs font-bold uppercase tracking-wide text-heading">
                                 Used in
                             </th>
                         </tr>
@@ -334,25 +334,25 @@ export default function KitchenShoppingList({
                     <tbody>
                         {bulk.length === 0 ? (
                             <tr className="border-t border-gray-100">
-                                <td colSpan={4} className="px-4 py-6 text-sm text-[#555555]">
+                                <td colSpan={4} className="px-4 py-6 text-sm text-body">
                                     No recipe ingredients to aggregate for this day yet.
                                 </td>
                             </tr>
                         ) : filteredBulk.length === 0 ? (
                             <tr className="border-t border-gray-100">
-                                <td colSpan={4} className="px-4 py-6 text-sm text-[#555555]">
+                                <td colSpan={4} className="px-4 py-6 text-sm text-body">
                                     No ingredients match “{bulkSearchQuery.trim()}”.
                                 </td>
                             </tr>
                         ) : (
                             filteredBulk.map((b) => (
                                 <tr key={`${b.ingredient}-${b.unit}`} className="border-t border-gray-100">
-                                    <td className="px-4 py-2 font-semibold text-[#262A22]">{b.ingredient}</td>
-                                    <td className="px-4 py-2 text-[#364153]">{b.unit}</td>
-                                    <td className="px-4 py-2 font-mono text-[#364153]">
+                                    <td className="px-4 py-2 font-semibold text-heading">{b.ingredient}</td>
+                                    <td className="px-4 py-2 text-body">{b.unit}</td>
+                                    <td className="px-4 py-2 font-mono text-body">
                                         {b.totalAmount.toLocaleString()}
                                     </td>
-                                    <td className="max-w-[18rem] px-4 py-2 text-[#555555]">
+                                    <td className="max-w-[18rem] px-4 py-2 text-body">
                                         {(b.usedInRecipes ?? []).join(', ') || '—'}
                                     </td>
                                 </tr>
@@ -412,7 +412,7 @@ export default function KitchenShoppingList({
                               return (
                                   <article
                                       key={batch.key}
-                                      className="kitchen-recipe-print-card mx-auto max-w-[7.5in] space-y-5 pb-8 font-sans text-[#262A22]"
+                                      className="kitchen-recipe-print-card mx-auto max-w-[7.5in] space-y-5 pb-8 font-sans text-heading"
                                   >
                                       <header className="space-y-1 border-b border-gray-200 pb-3">
                                           <h2 className="m-0 text-2xl font-bold tracking-tight">{batch.mealName}</h2>
@@ -422,13 +422,13 @@ export default function KitchenShoppingList({
                                                   : `Scaled to ${batch.portions} ${batch.portions === 1 ? 'serving' : 'servings'}`}
                                           </p>
                                           {dayLabel ? (
-                                              <p className="m-0 text-xs text-[#555555]">
+                                              <p className="m-0 text-xs text-body">
                                                   Production day: {dayLabel}
                                               </p>
                                           ) : null}
                                       </header>
 
-                                      <div className="overflow-hidden rounded-lg border border-gray-200 bg-[#F8F9F6]">
+                                      <div className="overflow-hidden rounded-lg border border-gray-200 bg-surface-soft">
                                           {imageUrl ? (
                                               <img
                                                   src={imageUrl}

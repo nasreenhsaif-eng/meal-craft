@@ -35,7 +35,7 @@ export default function OnboardingNavHeader({
                     onClick={onBack}
                     disabled={!canGoBack}
                     aria-label="Go back to previous step"
-                    className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-50 text-base leading-none text-[#262A22] outline-none transition [-webkit-tap-highlight-color:transparent] hover:bg-gray-100 focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6E8C47] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40"
+                    className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-50 text-base leading-none text-heading outline-none transition [-webkit-tap-highlight-color:transparent] hover:bg-gray-100 focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6E8C47] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                     ←
                 </button>

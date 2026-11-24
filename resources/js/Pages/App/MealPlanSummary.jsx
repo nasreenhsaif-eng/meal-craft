@@ -25,6 +25,7 @@ const slideTransition = { type: 'spring', stiffness: 260, damping: 30, mass: 0.8
  *   craftKey?: string;
  *   craftTitle?: string;
  *   fulfillmentChoice?: 'diy' | 'partner_kitchen' | null;
+ *   includeCutlery?: boolean | null;
  *   weekDuration?: number;
  *   planTierCalories?: number;
  *   dietProtocol?: string | null;
@@ -97,7 +98,27 @@ export function MealPlanSummaryInner({
     const days = craftPlan.days ?? [];
     const hasMultipleDays = days.length > 1;
     const isDiyFulfillment = craftPlan.fulfillmentChoice === 'diy';
+    const isPartnerFulfillment = craftPlan.fulfillmentChoice === 'partner_kitchen';
     const startingStep = resolveStartingStep(initialStep ?? initialMobileStep, hasMultipleDays);
+
+    const cutleryEditUrl = useMemo(() => {
+        if (typeof consultationEditUrl !== 'string' || consultationEditUrl.trim() === '') {
+            return '';
+        }
+
+        const base = consultationEditUrl.trim();
+        const joiner = base.includes('?') ? '&' : '?';
+
+        return `${base}${joiner}focus=cutlery`;
+    }, [consultationEditUrl]);
+
+    const handleEditCutlery = useCallback(() => {
+        if (preview || cutleryEditUrl === '') {
+            return;
+        }
+
+        window.location.assign(cutleryEditUrl);
+    }, [cutleryEditUrl, preview]);
 
     const [activeDay, setActiveDay] = useState(() => days[0]?.dayNumber ?? 1);
     /** @type {[DaySummaryTabId, import('react').Dispatch<import('react').SetStateAction<DaySummaryTabId>>]} */
@@ -185,12 +206,29 @@ export function MealPlanSummaryInner({
         window.scrollTo(0, 0);
     }, [activeDay, contentTab, step, preview]);
 
+    const cutleryNote =
+        isPartnerFulfillment && !preview && cutleryEditUrl !== '' ? (
+            <p className="mt-3 text-center font-body text-sm leading-snug text-body">
+                {craftPlan.includeCutlery === true
+                    ? 'Your meals include cutlery. If you want to change that, '
+                    : "You don't have cutlery with your meals. If you want to change that, "}
+                <button
+                    type="button"
+                    onClick={handleEditCutlery}
+                    className="font-semibold text-[#5A6B44] underline underline-offset-2 hover:text-[#4a5938]"
+                >
+                    click here
+                </button>
+                .
+            </p>
+        ) : null;
+
     const pageIntro = (
         <div className="mb-3 min-w-0">
-            <h1 className="text-center font-montserrat text-2xl font-semibold leading-tight text-[#262A22] sm:text-3xl">
+            <h1 className="text-center font-montserrat text-2xl font-semibold leading-tight text-heading sm:text-3xl">
                 Your week, crafted.
             </h1>
-            <p className="mt-1.5 text-center text-sm leading-snug text-[#555555] sm:text-base">
+            <p className="mt-1.5 text-center text-sm leading-snug text-body sm:text-base">
                 Open a day. Every meal, every ingredient, every detail.
             </p>
             <p className="mt-1 text-center font-body text-xs text-[#6B7280] sm:text-sm">
@@ -198,6 +236,7 @@ export function MealPlanSummaryInner({
                 {craftPlan.planDateRange?.label ? ` · ${craftPlan.planDateRange.label}` : null}
                 {days.length > 0 ? ` · ${days.length} delivery ${days.length === 1 ? 'day' : 'days'}` : null}
             </p>
+            {cutleryNote}
         </div>
     );
 
@@ -222,7 +261,7 @@ export function MealPlanSummaryInner({
     const daysScreen = (
         <>
             {pageIntro}
-            <p className="mb-3 text-center font-body text-sm text-[#555555]">Pick a day to open your meals.</p>
+            <p className="mb-3 text-center font-body text-sm text-body">Pick a day to open your meals.</p>
             <div className="mx-auto flex w-full max-w-xl flex-col gap-2" role="list" aria-label="Plan days">
                 {days.map((day) => {
                     const label = day.dateLabel ? `${day.label} ${day.dateLabel}` : day.label;
@@ -246,10 +285,10 @@ export function MealPlanSummaryInner({
             <div className="mb-2 min-w-0">
                 {hasMultipleDays ? (
                     <>
-                        <h1 className="text-center font-montserrat text-2xl font-semibold leading-tight text-[#262A22] sm:text-3xl">
+                        <h1 className="text-center font-montserrat text-2xl font-semibold leading-tight text-heading sm:text-3xl">
                             {activeDayLabel}
                         </h1>
-                        <p className="mt-1.5 text-center text-sm leading-snug text-[#555555]">
+                        <p className="mt-1.5 text-center text-sm leading-snug text-body">
                             Every meal, every ingredient, every detail.
                         </p>
                     </>
@@ -277,7 +316,7 @@ export function MealPlanSummaryInner({
                                 'shrink-0 rounded-full px-2.5 py-1 font-montserrat text-[11px] font-bold tracking-wide transition-colors',
                                 selected
                                     ? 'bg-[#5A6B44] text-white'
-                                    : 'bg-white text-[#555555] ring-1 ring-gray-200 hover:text-[#262A22]',
+                                    : 'bg-white text-body ring-1 ring-gray-200 hover:text-heading',
                             ].join(' ')}
                         >
                             {tab.label}

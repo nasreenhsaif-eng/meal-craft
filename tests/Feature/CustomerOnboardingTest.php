@@ -516,6 +516,21 @@ test('completed onboarding redirects to crafted for you', function () {
         ->assertRedirect(route('consultation.crafted-for-you'));
 });
 
+test('food filters accept fish and sesame', function () {
+    $customer = User::factory()->customer()->create();
+    CustomerProfile::factory()->for($customer)->withoutOnboarding()->create([
+        'onboarding_step' => OnboardingStep::FoodFilters,
+    ]);
+
+    $this->actingAs($customer)
+        ->post(route('onboarding.food-filters.store'), [
+            'allergies' => ['fish', 'sesame', 'shellfish'],
+        ])
+        ->assertRedirect(route('consultation.crafted-for-you'));
+
+    expect($customer->fresh()->customerProfile?->food_filters)->toBe(['fish', 'sesame', 'shellfish']);
+});
+
 test('customer home shows the onboarding calorie target range instead of the snapped plan tier', function () {
     $customer = User::factory()->customer()->create();
     $profile = CustomerProfile::factory()->for($customer)->create([

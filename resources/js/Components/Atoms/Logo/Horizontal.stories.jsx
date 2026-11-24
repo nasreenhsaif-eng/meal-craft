@@ -3,7 +3,7 @@ import { mealCraftLogoHorizontalStoryDecorator } from './logoStoryDecorators.jsx
 
 /** @type {import('@storybook/react-vite').Meta} */
 const meta = {
-    title: 'Design System/01. Foundations/Logos/Horizontal Lockups',
+    title: 'Design System/01. Tokens/Logos/Horizontal Lockups',
     component: MealCraftLogo,
     decorators: [mealCraftLogoHorizontalStoryDecorator],
     argTypes: mealCraftLogoArgTypes,

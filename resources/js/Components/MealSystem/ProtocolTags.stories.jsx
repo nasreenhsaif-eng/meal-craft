@@ -21,7 +21,7 @@ export const Set = {
 export const OnCard = {
     name: 'On card',
     render: () => (
-        <div className="relative h-32 w-64 overflow-hidden rounded-[12px] bg-[#F8F9F6] p-8">
+        <div className="relative h-32 w-64 overflow-hidden rounded-[12px] bg-surface-soft p-8">
             <div className="absolute right-3 top-3">
                 <ProtocolTag label="Sickle Cell" className="bg-white/90 shadow-sm backdrop-blur-sm" />
             </div>

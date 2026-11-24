@@ -91,6 +91,7 @@ test('partner kitchen fulfillment choice is persisted on the craft plan', functi
     $this->actingAs($user)->postJson('/api/customer/craft-plan', [
         'craft_key' => 'day',
         'fulfillment_choice' => 'partner_kitchen',
+        'include_cutlery' => false,
         'week_duration' => 1,
         'selected_days' => [1],
         'days' => [
@@ -103,9 +104,11 @@ test('partner kitchen fulfillment choice is persisted on the craft plan', functi
             ],
         ],
     ])->assertCreated()
-        ->assertJsonPath('plan.fulfillment_choice', 'partner_kitchen');
+        ->assertJsonPath('plan.fulfillment_choice', 'partner_kitchen')
+        ->assertJsonPath('plan.include_cutlery', false);
 
     expect(CustomerCraftPlan::query()->latest('id')->value('fulfillment_choice'))->toBe('partner_kitchen');
+    expect(CustomerCraftPlan::query()->latest('id')->value('include_cutlery'))->toBeFalse();
 
     $this->actingAs($user)
         ->get(route('app.meal-plan'))
@@ -113,7 +116,86 @@ test('partner kitchen fulfillment choice is persisted on the craft plan', functi
         ->assertInertia(fn ($page) => $page
             ->component('App/MealPlanSummary')
             ->where('craftPlan.fulfillmentChoice', 'partner_kitchen')
+            ->where('craftPlan.includeCutlery', false)
             ->missing('fulfillmentUrl'));
+});
+
+test('partner kitchen craft plan requires include_cutlery', function () {
+    $user = User::factory()->create(['role' => UserRole::Customer]);
+    CustomerProfile::factory()->for($user)->create([
+        'daily_calorie_target' => 1800,
+    ]);
+
+    $main = Meal::factory()->create([
+        'meal_type' => MealType::Main,
+        'category' => RecipeCategory::Meal,
+        'total_calories' => 400,
+    ]);
+
+    $this->actingAs($user)->postJson('/api/customer/craft-plan', [
+        'craft_key' => 'day',
+        'fulfillment_choice' => 'partner_kitchen',
+        'week_duration' => 1,
+        'selected_days' => [1],
+        'days' => [
+            [
+                'day_of_week' => 1,
+                'include_soup' => false,
+                'selections' => [
+                    'meals' => [$main->id],
+                ],
+            ],
+        ],
+    ])->assertUnprocessable()
+        ->assertJsonValidationErrors(['include_cutlery']);
+});
+
+test('cutlery focus edit redirects to cutlery-only consultation screen', function () {
+    $user = User::factory()->create(['role' => UserRole::Customer]);
+    CustomerProfile::factory()->for($user)->create([
+        'daily_calorie_target' => 1800,
+    ]);
+
+    $main = Meal::factory()->create([
+        'meal_type' => MealType::Main,
+        'category' => RecipeCategory::Meal,
+        'total_calories' => 400,
+    ]);
+
+    $this->actingAs($user)->postJson('/api/customer/craft-plan', [
+        'craft_key' => 'day',
+        'fulfillment_choice' => 'partner_kitchen',
+        'include_cutlery' => false,
+        'week_duration' => 1,
+        'selected_days' => [1],
+        'days' => [
+            [
+                'day_of_week' => 1,
+                'include_soup' => false,
+                'selections' => [
+                    'meals' => [$main->id],
+                ],
+            ],
+        ],
+    ])->assertCreated();
+
+    $this->actingAs($user)
+        ->get(route('consultation.crafted-for-you.edit', ['focus' => 'cutlery']))
+        ->assertRedirect(route('consultation.crafted-for-you', [
+            'edit' => 1,
+            'focus' => 'cutlery',
+        ], absolute: false));
+
+    $response = $this->actingAs($user)
+        ->get(route('consultation.crafted-for-you', [
+            'edit' => 1,
+            'focus' => 'cutlery',
+        ]))
+        ->assertSuccessful();
+
+    $response->assertSee('focusCutleryOnly', false);
+    $response->assertSee('"focusCutleryOnly":true', false);
+    $response->assertSee('"includeCutlery":false', false);
 });
 
 test('craft plan requires a fulfillment choice', function () {

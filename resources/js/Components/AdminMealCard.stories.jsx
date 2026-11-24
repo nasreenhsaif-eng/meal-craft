@@ -1,14 +1,14 @@
-import MealCard from './MealCard.jsx';
+import AdminMealCard from './AdminMealCard.jsx';
 import MealDetailView from './Molecules/MealDetailView/MealDetailView';
 import { mealDetailViewFixture } from './Molecules/MealDetailView/mealDetailViewFixture';
 import { mushroomOmeletteAdminMealFixture } from './mealCardStoryFixtures.js';
 
 /**
- * Mirrors the meal library grid shell: white panel on `#F8F9F6`, `p-5`, column width matches {@link MealCard} deck shell (`240px`).
+ * Mirrors the meal library grid shell: white panel on `#F8F9F6`, `p-5`, column width matches {@link AdminMealCard} deck shell (`240px`).
  */
 function MealCardStoryCanvas({ children }) {
     return (
-        <div className="min-h-[80vh] w-full bg-[#F8F9F6] px-4 py-8 md:px-8">
+        <div className="min-h-[80vh] w-full bg-surface-soft px-4 py-8 md:px-8">
             <div className="mx-auto max-w-5xl rounded-[12px] border border-gray-200 bg-white p-5 shadow-sm">
                 <ul className="m-0 flex list-none justify-center p-0">
                     <li className="flex w-full max-w-[240px] justify-center">{children}</li>
@@ -19,8 +19,8 @@ function MealCardStoryCanvas({ children }) {
 }
 
 export default {
-    title: 'Design System/04. Organisms/DataCard/MealCard',
-    component: MealCard,
+    title: 'Design System/04. Organisms/DataCard/AdminMealCard',
+    component: AdminMealCard,
     parameters: {
         layout: 'fullscreen',
     },
@@ -46,7 +46,7 @@ export const AdminViewWithActions = {
     },
     render: (args) => (
         <MealCardStoryCanvas>
-            <MealCard {...args} />
+            <AdminMealCard {...args} />
         </MealCardStoryCanvas>
     ),
 };
@@ -66,7 +66,7 @@ export const ClientViewWithActions = {
     },
     render: (args) => (
         <MealCardStoryCanvas>
-            <MealCard {...args} />
+            <AdminMealCard {...args} />
         </MealCardStoryCanvas>
     ),
 };
@@ -88,7 +88,7 @@ export const ImageFallback = {
     },
     render: (args) => (
         <MealCardStoryCanvas>
-            <MealCard {...args} />
+            <AdminMealCard {...args} />
         </MealCardStoryCanvas>
     ),
 };
@@ -96,11 +96,11 @@ export const ImageFallback = {
 export const SideBySide = {
     name: 'Side-by-side',
     render: () => (
-        <div className="min-h-[80vh] w-full bg-[#F8F9F6] px-4 py-8 md:px-8">
+        <div className="min-h-[80vh] w-full bg-surface-soft px-4 py-8 md:px-8">
             <div className="mx-auto box-border w-full max-w-5xl rounded-[12px] border border-gray-200 bg-white p-5 shadow-sm md:p-6">
                 <ul className="m-0 grid list-none grid-cols-1 justify-items-center gap-6 p-0 sm:grid-cols-2 lg:grid-cols-3">
                     <li className="flex justify-center">
-                        <MealCard
+                        <AdminMealCard
                             isAdmin={false}
                             meal={{
                                 title: 'Turmeric Lentil Soup',
@@ -114,7 +114,7 @@ export const SideBySide = {
                         />
                     </li>
                     <li className="flex justify-center">
-                        <MealCard
+                        <AdminMealCard
                             isAdmin
                             adminControls
                             showActions
@@ -130,7 +130,7 @@ export const SideBySide = {
                         />
                     </li>
                     <li className="flex justify-center">
-                        <MealCard
+                        <AdminMealCard
                             isAdmin={false}
                             meal={{
                                 title: 'Garden Salad',
@@ -152,7 +152,7 @@ export const ExpandedDetailView = {
         layout: 'fullscreen',
     },
     render: () => (
-        <div className="min-h-screen bg-[#F8F9F6] px-4 py-10 md:px-8">
+        <div className="min-h-screen bg-surface-soft px-4 py-10 md:px-8">
             <MealDetailView meal={mealDetailViewFixture} />
         </div>
     ),

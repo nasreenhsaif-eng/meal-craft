@@ -8,7 +8,7 @@ export default {
         docs: {
             description: {
                 component:
-                    'Horizontal partner-kitchen card for checkout — logo, star rating, reviews link, plan price, and primary select action.',
+                    'Vertical partner-kitchen card for checkout — logo on top, then rating, reviews, and select.',
             },
         },
     },
@@ -21,36 +21,15 @@ export default {
         logoUrl: '/images/partners/picniq-gourmet.png',
         rating: 4.5,
         reviewCount: 128,
-        price: 'BHD 385',
-        billingCadence: 'week',
     },
 };
 
+/** Vertical Picniq card with logo (matches checkout delivery). */
 export const Default = {
     name: 'Picniq',
     render: (args) => (
-        <div className="w-full max-w-3xl bg-bg-page p-6">
-            <PartnerKitchenCard {...args} />
-        </div>
-    ),
-};
-
-export const WithoutLogo = {
-    name: 'Without logo',
-    args: {
-        logoUrl: null,
-    },
-    render: (args) => (
-        <div className="w-full max-w-3xl bg-bg-page p-6">
-            <PartnerKitchenCard {...args} />
-        </div>
-    ),
-};
-
-export const Mobile = {
-    name: 'Mobile stack',
-    render: (args) => (
-        <div className="w-full max-w-sm bg-bg-page p-4">
+        // Avoid max-w-sm/md/lg — theme --spacing-sm/md/lg collide with those utilities.
+        <div className="w-full max-w-[24rem] p-6">
             <PartnerKitchenCard {...args} />
         </div>
     ),

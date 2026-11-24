@@ -1,10 +1,10 @@
-import MealCardClientViewNano from '../MealCardClientViewNano.jsx';
+import CustomerMealCard from '../CustomerMealCard.jsx';
 
 /**
  * Thin wrapper so stories / legacy imports still resolve to the old portrait craft card.
  *
  * Protocol shells (`ProtocolMealSlotCard`, options screen, fixed sides) render
- * {@link MealCardClientViewNano} directly.
+ * {@link CustomerMealCard} directly.
  *
  * @param {object} props
  * @param {{ id?: string; title?: string; imageUrl?: string; macros?: { calories?: string|number; protein?: string|number; carbs?: string|number; fat?: string|number } }} props.meal
@@ -36,7 +36,7 @@ export default function ProtocolMealRow({
     const interactive = typeof onSelect === 'function';
 
     return (
-        <MealCardClientViewNano
+        <CustomerMealCard
             deck
             alignActionsBottom
             className={className}

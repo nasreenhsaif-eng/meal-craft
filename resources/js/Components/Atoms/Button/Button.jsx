@@ -2,7 +2,7 @@
  * Smart Kitchen action button — single design-system atom.
  *
  * Variants:
- * - primary: solid brand dark green
+ * - primary: solid brand primary (matches landing Get Started)
  * - secondary: Figma hover wash — 50% `#6E8C47` mixed with white
  * - outline: same as ghost (transparent green text)
  * - ghost: transparent, minimal affordance
@@ -31,7 +31,7 @@ export default function Button({
     const base =
         'inline-flex items-center justify-center rounded-[12px] font-montserrat font-bold uppercase tracking-wider ' +
         'transition-all duration-200 ease-in-out ' +
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5A6B44] focus-visible:ring-offset-2 focus-visible:ring-offset-white';
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2 focus-visible:ring-offset-white';
 
     const sizes = {
         md: 'h-[50px] min-h-[50px] px-6 text-[16px] leading-none',
@@ -39,8 +39,8 @@ export default function Button({
     };
 
     const secondaryWash = [
-        'border border-transparent bg-[color-mix(in_srgb,#6E8C47_50%,white)] text-[#364153]',
-        'hover:bg-[color-mix(in_srgb,#6E8C47_70%,white)] hover:text-[#364153]',
+        'border border-transparent bg-[color-mix(in_srgb,#6E8C47_50%,white)] text-body',
+        'hover:bg-[color-mix(in_srgb,#6E8C47_70%,white)] hover:text-body',
         'active:border-[#6E8C47] active:bg-[#6E8C47] active:text-white active:scale-[0.98]',
     ].join(' ');
 
@@ -49,9 +49,9 @@ export default function Button({
 
     const variants = {
         primary: [
-            'border border-transparent bg-[#5A6B44] text-white shadow-sm',
-            'hover:bg-[#485636] hover:shadow-md hover:scale-[1.02]',
-            'active:bg-[#485636] active:shadow-inner active:scale-[0.98]',
+            'border border-transparent bg-brand-primary text-white shadow-sm',
+            'hover:bg-brand-primary-hover hover:shadow-md hover:scale-[1.02]',
+            'active:bg-brand-primary-pressed active:shadow-inner active:scale-[0.98]',
         ].join(' '),
         secondary: secondaryWash,
         tab: secondaryWash,

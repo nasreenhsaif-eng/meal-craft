@@ -1,7 +1,7 @@
 import JoinPage from './JoinPage';
 
 export default {
-    title: 'Design System/05. Templates & Pages/Auth/JoinPage',
+    title: 'Design System/06. Pages/Auth/JoinPage',
     component: JoinPage,
     parameters: {
         layout: 'fullscreen',

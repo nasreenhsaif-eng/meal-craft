@@ -133,11 +133,11 @@ export default function DayShoppingListModal({
                     <div className="min-w-0 flex-1">
                         <h2
                             id="day-shopping-list-modal-title"
-                            className="font-montserrat text-lg font-bold text-[#262A22]"
+                            className="font-montserrat text-lg font-bold text-heading"
                         >
                             Ingredient list
                         </h2>
-                        <p className="mt-1 font-body text-sm text-[#555555]">
+                        <p className="mt-1 font-body text-sm text-body">
                             Ingredients for {dayLabel} selected meals
                         </p>
                     </div>
@@ -149,7 +149,7 @@ export default function DayShoppingListModal({
                     style={BODY_SCROLL_STYLE}
                 >
                     {ingredients.length === 0 ? (
-                        <p className="font-body text-sm text-[#555555]">
+                        <p className="font-body text-sm text-body">
                             No ingredients yet. Select meals for this day to build an ingredient list.
                         </p>
                     ) : (
@@ -170,7 +170,7 @@ export default function DayShoppingListModal({
                                         <li key={row.key}>
                                             <label
                                                 htmlFor={checkboxId}
-                                                className="group/item flex cursor-pointer items-center gap-3 rounded-[10px] px-2 py-2.5 hover:bg-[#F8F9F6]"
+                                                className="group/item flex cursor-pointer items-center gap-3 rounded-[10px] px-2 py-2.5 hover:bg-surface-soft"
                                             >
                                                 <input
                                                     id={checkboxId}
@@ -180,10 +180,10 @@ export default function DayShoppingListModal({
                                                     onChange={() => toggleKey(row.key)}
                                                 />
                                                 <SquareCheckbox checked={checked} presentational />
-                                                <span className="min-w-0 flex-1 font-body text-sm text-[#262A22]">
+                                                <span className="min-w-0 flex-1 font-body text-sm text-heading">
                                                     {row.name}
                                                 </span>
-                                                <span className="shrink-0 font-montserrat text-sm font-semibold tabular-nums text-[#555555]">
+                                                <span className="shrink-0 font-montserrat text-sm font-semibold tabular-nums text-body">
                                                     {formatAmount(row.amount, row.unit)}
                                                 </span>
                                             </label>
@@ -269,11 +269,11 @@ export function SavedShoppingListModal({ open, ingredients, onClose, onClear }) 
                     <div className="min-w-0 flex-1">
                         <h2
                             id="saved-shopping-list-modal-title"
-                            className="font-montserrat text-lg font-bold text-[#262A22]"
+                            className="font-montserrat text-lg font-bold text-heading"
                         >
                             Saved shopping list
                         </h2>
-                        <p className="mt-1 font-body text-sm text-[#555555]">
+                        <p className="mt-1 font-body text-sm text-body">
                             Ingredients added from this meal plan’s days
                         </p>
                     </div>
@@ -285,7 +285,7 @@ export function SavedShoppingListModal({ open, ingredients, onClose, onClear }) 
                     style={BODY_SCROLL_STYLE}
                 >
                     {ingredients.length === 0 ? (
-                        <p className="font-body text-sm text-[#555555]">Your shopping list is empty.</p>
+                        <p className="font-body text-sm text-body">Your shopping list is empty.</p>
                     ) : (
                         <ul className="space-y-1" role="list">
                             {ingredients.map((row) => (
@@ -293,8 +293,8 @@ export function SavedShoppingListModal({ open, ingredients, onClose, onClear }) 
                                     key={row.key}
                                     className="flex items-center justify-between gap-3 border-b border-gray-100 px-2 py-2.5 last:border-b-0"
                                 >
-                                    <span className="min-w-0 flex-1 font-body text-sm text-[#262A22]">{row.name}</span>
-                                    <span className="shrink-0 font-montserrat text-sm font-semibold tabular-nums text-[#555555]">
+                                    <span className="min-w-0 flex-1 font-body text-sm text-heading">{row.name}</span>
+                                    <span className="shrink-0 font-montserrat text-sm font-semibold tabular-nums text-body">
                                         {formatAmount(row.amount, row.unit)}
                                     </span>
                                 </li>

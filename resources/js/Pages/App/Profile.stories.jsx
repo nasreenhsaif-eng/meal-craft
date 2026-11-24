@@ -19,7 +19,7 @@ const NASREEN_SUBSCRIPTION = {
 };
 
 export default {
-    title: 'Design System/05. Templates & Pages/App/Profile',
+    title: 'Design System/06. Pages/App/Profile',
     component: ProfileInner,
     parameters: {
         layout: 'fullscreen',

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import Button from '../../../Components/Atoms/Button.jsx';
 import CalendarRangeField from '../../../Components/Molecules/Calendar/CalendarRangeField.jsx';
 
-const PAGE_BG = 'bg-[#F8F9F6]';
+const PAGE_BG = 'bg-surface-soft';
 const WEEKDAYS = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
 const TIERS = ['1250 KCAL', '1500 KCAL', '1800 KCAL', '2000 KCAL'];
 
@@ -33,7 +33,7 @@ export default function ProtocolEditorMock({
 
                 <div className="mt-4 grid items-start gap-x-6 gap-y-3 sm:grid-cols-[minmax(0,1fr)_minmax(240px,320px)]">
                     <div className="min-w-0 sm:col-start-1 sm:row-start-1">
-                        <h1 className="font-montserrat text-2xl font-bold tracking-tight text-[#262A22]">{title}</h1>
+                        <h1 className="font-montserrat text-2xl font-bold tracking-tight text-heading">{title}</h1>
                     </div>
 
                     <div className="flex justify-start sm:col-start-2 sm:row-start-1 sm:justify-end">
@@ -48,10 +48,10 @@ export default function ProtocolEditorMock({
                                 onChange={(event) => setDraft(event.target.value)}
                                 rows={4}
                                 placeholder="Nutrient-dense meal plan with balanced macronutrients and anti-inflammatory whole foods."
-                                className="w-full resize-none rounded-[12px] border border-gray-200 bg-white px-3 py-2 font-body text-sm leading-relaxed text-[#262A22] placeholder:text-[#777777] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#6E8C47] focus-visible:ring-offset-2"
+                                className="w-full resize-none rounded-[12px] border border-gray-200 bg-white px-3 py-2 font-body text-sm leading-relaxed text-heading placeholder:text-[#777777] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#6E8C47] focus-visible:ring-offset-2"
                             />
                         </label>
-                        <p className="mt-3 max-w-3xl font-body text-sm text-[#555555]">
+                        <p className="mt-3 max-w-3xl font-body text-sm text-body">
                             Select the default meals for each day, then publish. Customers start with these picks and
                             can still change them via SEE OTHER OPTIONS.
                         </p>
@@ -87,7 +87,7 @@ export default function ProtocolEditorMock({
                 </div>
 
                 <div className="mt-4 rounded-[12px] border border-[#D7E0CC] bg-[#F3F6EF] p-4">
-                    <p className="font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#555555]">
+                    <p className="font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-body">
                         Preview calorie tier
                     </p>
                     <div className="mt-2 flex flex-wrap gap-2" role="tablist" aria-label="Calorie tiers">

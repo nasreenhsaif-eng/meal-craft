@@ -4,7 +4,7 @@ import { AllergyTagGroupCell, DislikeTagGroupCell } from './SafetyTagCells.jsx';
 import Calendar from '../Molecules/Calendar/Calendar.jsx';
 
 const MEAL_CELL =
-    'min-w-[7.5rem] max-w-[11rem] whitespace-normal break-words px-3 py-2 align-top text-[#364153] print:min-w-0 print:max-w-none print:px-1.5 print:py-1 print:text-[10px] print:leading-snug';
+    'min-w-[7.5rem] max-w-[11rem] whitespace-normal break-words px-3 py-2 align-top text-body print:min-w-0 print:max-w-none print:px-1.5 print:py-1 print:text-[10px] print:leading-snug';
 
 function formatSubmittedAt(iso) {
     try {
@@ -89,8 +89,8 @@ export default function UserSubmissions({
         <section className={`font-sans ${className}`.trim()}>
             <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
                 <div className="flex flex-col gap-1">
-                    <p className="text-xs font-bold uppercase tracking-wide text-[#555555]">FILTER BY DATE</p>
-                    <p className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-sm font-medium leading-snug text-[#364153]">
+                    <p className="text-xs font-bold uppercase tracking-wide text-body">FILTER BY DATE</p>
+                    <p className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-sm font-medium leading-snug text-body">
                         <span className="shrink-0">Selected</span>
                         <span className="whitespace-nowrap font-semibold text-[#6E8C47]" aria-live="polite">
                             {formatLongDate(selectedDate)}
@@ -138,12 +138,12 @@ export default function UserSubmissions({
             >
                 <table className="min-w-[1780px] w-full border-collapse text-left text-sm print:min-w-full print:table-fixed">
                     <thead>
-                        <tr className="border-b border-gray-200 bg-[#F9FAFB]">
+                        <tr className="border-b border-gray-200 bg-surface-soft">
                             {tableHeaders.map((h) => (
                                 <th
                                     key={h}
                                     scope="col"
-                                    className="px-3 py-2.5 font-sans text-xs font-bold uppercase tracking-wide text-[#262A22] print:px-1.5 print:py-1.5 print:text-[9px]"
+                                    className="px-3 py-2.5 font-sans text-xs font-bold uppercase tracking-wide text-heading print:px-1.5 print:py-1.5 print:text-[9px]"
                                 >
                                     {h}
                                 </th>
@@ -153,14 +153,14 @@ export default function UserSubmissions({
                     <tbody>
                         {filtered.map((row) => (
                             <tr key={row.id} className="border-b border-gray-100 last:border-0 hover:bg-gray-50/80">
-                                <td className="whitespace-nowrap px-3 py-2 font-medium text-[#364153] print:whitespace-normal print:px-1.5 print:text-[10px]">
+                                <td className="whitespace-nowrap px-3 py-2 font-medium text-body print:whitespace-normal print:px-1.5 print:text-[10px]">
                                     {formatSubmittedAt(row.submittedAt)}
                                 </td>
-                                <td className="whitespace-nowrap px-3 py-2 font-semibold text-[#262A22] print:px-1.5 print:text-[10px]">
+                                <td className="whitespace-nowrap px-3 py-2 font-semibold text-heading print:px-1.5 print:text-[10px]">
                                     {row.name}
                                 </td>
-                                <td className="whitespace-nowrap px-3 py-2 text-[#364153] print:px-1.5 print:text-[10px]">{row.craft}</td>
-                                <td className="min-w-[7rem] whitespace-normal px-3 py-2 text-[#364153] print:px-1.5 print:text-[10px]">
+                                <td className="whitespace-nowrap px-3 py-2 text-body print:px-1.5 print:text-[10px]">{row.craft}</td>
+                                <td className="min-w-[7rem] whitespace-normal px-3 py-2 text-body print:px-1.5 print:text-[10px]">
                                     {row.plan}
                                 </td>
                                 {MEAL_PLAN_KEYS.map((key) => (
@@ -171,14 +171,14 @@ export default function UserSubmissions({
                                 <AllergyTagGroupCell
                                     allergyNotes={row.allergyNotes}
                                     specialRequests={row.specialRequests ?? ''}
-                                    className="text-[#364153] print:text-[10px]"
+                                    className="text-body print:text-[10px]"
                                 />
                                 <DislikeTagGroupCell
                                     allergyNotes={row.allergyNotes}
                                     specialRequests={row.specialRequests ?? ''}
-                                    className="text-[#364153] print:text-[10px]"
+                                    className="text-body print:text-[10px]"
                                 />
-                                <td className="whitespace-nowrap px-3 py-2 font-mono text-xs text-[#555555] print:px-1.5 print:text-[9px]">
+                                <td className="whitespace-nowrap px-3 py-2 font-mono text-xs text-body print:px-1.5 print:text-[9px]">
                                     {row.submissionId}
                                 </td>
                             </tr>
@@ -186,9 +186,9 @@ export default function UserSubmissions({
                     </tbody>
                 </table>
             </div>
-            <p className="mt-2 text-xs font-medium text-[#555555]">
-                Showing <span className="font-semibold text-[#262A22]">{filtered.length}</span> of{' '}
-                <span className="font-semibold text-[#262A22]">{submissions.length}</span> submissions
+            <p className="mt-2 text-xs font-medium text-body">
+                Showing <span className="font-semibold text-heading">{filtered.length}</span> of{' '}
+                <span className="font-semibold text-heading">{submissions.length}</span> submissions
                 {selectedDate ? ` for ${selectedDate}` : ''}. CSV / Drive exports use the same headers as the table (allergies and special requests as pipe-separated tag lists).
             </p>
         </section>

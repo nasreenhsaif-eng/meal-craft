@@ -9,17 +9,17 @@ test('authenticated users can view the sign out page with logout control', funct
     $this->actingAs($admin)
         ->get(route('sign-out'))
         ->assertOk()
-        ->assertSee('Log out', false)
-        ->assertSee('bg-[#5A6B44]', false)
-        ->assertDontSee('customer signup', false)
+        ->assertSee('mc-auth-sign-out-root', false)
+        ->assertSee('auth-sign-out', false)
+        ->assertSee('"authenticated":true', false)
         ->assertSee($admin->email, false);
 });
 
 test('guests see sign out page with signup guidance instead of login redirect', function () {
     $this->get(route('sign-out'))
         ->assertOk()
-        ->assertSee('You are not signed in', false)
-        ->assertSee('Customer signup', false);
+        ->assertSee('mc-auth-sign-out-root', false)
+        ->assertSee('"authenticated":false', false);
 });
 
 test('authenticated users visiting join are redirected to sign out', function () {

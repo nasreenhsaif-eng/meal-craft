@@ -27,7 +27,7 @@ return new class extends Migration
             $table->boolean('include_soup')->default(false);
             $table->timestamps();
 
-            $table->unique(['customer_craft_plan_id', 'day_of_week']);
+            $table->unique(['customer_craft_plan_id', 'day_of_week'], 'craft_plan_day_unique');
         });
 
         Schema::create('customer_craft_plan_day_meals', function (Blueprint $table) {

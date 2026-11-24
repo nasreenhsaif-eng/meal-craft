@@ -37,7 +37,7 @@ export default function Policies({
         >
             <div className="mx-auto w-full min-w-0">
                 <div className="flex items-start justify-between gap-3">
-                    <h1 className="min-w-0 font-montserrat text-3xl font-semibold tracking-tight text-[#262A22]">
+                    <h1 className="min-w-0 font-montserrat text-3xl font-semibold tracking-tight text-heading">
                         Policies
                     </h1>
                     <Button
@@ -49,7 +49,7 @@ export default function Policies({
                         className="shrink-0"
                     />
                 </div>
-                <p className="mt-3 font-body text-sm leading-relaxed text-[#555555] sm:text-base">
+                <p className="mt-3 font-body text-sm leading-relaxed text-body sm:text-base">
                     Freeze and refund terms for your Meal Craft package.
                 </p>
 
@@ -58,7 +58,7 @@ export default function Policies({
                     className="mt-6 scroll-mt-4 rounded-[12px] border border-gray-200 bg-white p-5 shadow-sm"
                 >
                     <h2 className="m-0 font-montserrat text-base font-bold tracking-tight">Freeze policy</h2>
-                    <p className="mt-3 font-body text-sm leading-relaxed text-[#555555]">
+                    <p className="mt-3 font-body text-sm leading-relaxed text-body">
                         If you wish to freeze your package, the packages are calculated as a 20 day package and a 24 day
                         package. The maximum total number of days to be frozen are 14 days.
                     </p>
@@ -69,12 +69,12 @@ export default function Policies({
                     className="mt-5 scroll-mt-4 rounded-[12px] border border-gray-200 bg-white p-5 shadow-sm"
                 >
                     <h2 className="m-0 font-montserrat text-base font-bold tracking-tight">Refund policy</h2>
-                    <p className="mt-3 font-body text-sm leading-relaxed text-[#555555]">
+                    <p className="mt-3 font-body text-sm leading-relaxed text-body">
                         As we do not offer a refund policy, we suggest that you do a 5 day trial, if for any reason during
                         the 20 day package you would like to stop please keep in mind that the credit is transferable to a
                         loved one.
                     </p>
-                    <p className="mt-3 font-body text-sm leading-relaxed text-[#555555]">
+                    <p className="mt-3 font-body text-sm leading-relaxed text-body">
                         By making the payment, you agree to the Refund Policy.
                     </p>
                 </section>

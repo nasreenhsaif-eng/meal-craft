@@ -7,7 +7,7 @@ import { AdminSettingsSecurityInner } from './Settings/Security.jsx';
 const SETTINGS_CONTENT_WRAPPER = 'mx-auto w-full max-w-[1400px]';
 
 export default {
-    title: 'Design System/05. Templates & Pages/SettingsView',
+    title: 'Design System/06. Pages/Admin/Settings',
     parameters: {
         layout: 'fullscreen',
         docs: {

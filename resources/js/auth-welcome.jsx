@@ -16,7 +16,10 @@ if (rootEl && configEl) {
 
     createRoot(rootEl).render(
         <StrictMode>
-            <LandingPage loginHref={config.loginHref ?? '/login'} />
+            <LandingPage
+                loginHref={config.loginHref ?? '/login'}
+                joinHref={config.joinHref ?? '/join'}
+            />
         </StrictMode>,
     );
 }

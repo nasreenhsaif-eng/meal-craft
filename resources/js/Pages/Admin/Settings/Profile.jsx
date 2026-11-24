@@ -86,7 +86,7 @@ export function AdminSettingsProfileInner({
                         <Button type="submit" label={processing ? 'Saving…' : 'Save'} disabled={processing} />
                     </div>
                 ) : (
-                    <p className="font-montserrat text-sm text-[#555555]">
+                    <p className="font-montserrat text-sm text-body">
                         Use Security to change your password. Ask the Craft Master General to update your name or email.
                     </p>
                 )}

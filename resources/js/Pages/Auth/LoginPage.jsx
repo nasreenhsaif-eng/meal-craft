@@ -167,7 +167,7 @@ export default function LoginPage({
             >
                 <SquareCheckbox presentational checked={rememberMe} />
             </span>
-            <span className="font-montserrat text-sm font-medium leading-snug text-[#364153] peer-focus-visible:outline-none">
+            <span className="font-montserrat text-sm font-medium leading-snug text-body peer-focus-visible:outline-none">
                 Remember me
             </span>
         </label>
@@ -263,7 +263,7 @@ export default function LoginPage({
                             </div>
 
                             {showSignUp ? (
-                                <p className="mx-auto mt-8 w-full text-center font-sans text-[13px] leading-relaxed text-grey-94 sm:text-sm">
+                                <p className="mx-auto mt-8 w-full text-center font-sans text-[13px] leading-relaxed text-form-label sm:text-sm">
                                     <span className="font-medium">New here?</span>{' '}
                                     <TextLink href={signUpHref} className="rounded-sm font-bold">
                                         Sign up

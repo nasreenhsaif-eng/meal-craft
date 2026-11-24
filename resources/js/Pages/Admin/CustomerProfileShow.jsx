@@ -69,10 +69,10 @@ export default function CustomerProfileShow({
                 >
                     ← Customer Profiles
                 </Link>
-                <h1 className="mt-3 font-montserrat text-2xl font-semibold text-[#262A22]">
+                <h1 className="mt-3 font-montserrat text-2xl font-semibold text-heading">
                     {customerName || 'Customer profile'}
                 </h1>
-                <p className="mt-2 text-sm text-[#555555]">
+                <p className="mt-2 text-sm text-body">
                     {canEdit
                         ? 'View and edit intake details collected at onboarding and checkout.'
                         : 'View intake details. Only the Craft Master General can edit customer profiles.'}
@@ -95,7 +95,7 @@ export default function CustomerProfileShow({
                                 'rounded-[10px] px-3 py-2 font-montserrat text-sm font-semibold transition-colors',
                                 isActive
                                     ? 'bg-[#6E8C47]/15 text-[#3F4F2A]'
-                                    : 'text-[#555555] hover:bg-gray-100 hover:text-[#364153]',
+                                    : 'text-body hover:bg-gray-100 hover:text-body',
                             ].join(' ')}
                         >
                             {tab.label}
@@ -164,80 +164,80 @@ export default function CustomerProfileShow({
 
             {activeTab === 'subscription' ? (
                 <section className="rounded-[12px] border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
-                    <h2 className="m-0 font-montserrat text-base font-bold tracking-tight text-[#262A22]">
+                    <h2 className="m-0 font-montserrat text-base font-bold tracking-tight text-heading">
                         Subscription
                     </h2>
-                    <p className="mt-1 font-montserrat text-sm text-[#555555]">
+                    <p className="mt-1 font-montserrat text-sm text-body">
                         Paid Partner Kitchen lifecycle for this customer.
                     </p>
 
                     {!subscription ? (
-                        <p className="mt-5 font-montserrat text-sm text-[#555555]">
+                        <p className="mt-5 font-montserrat text-sm text-body">
                             No paid subscription recorded yet. Completing checkout Make payment creates one.
                         </p>
                     ) : (
                         <dl className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
                             <div>
-                                <dt className="font-montserrat text-[11px] font-bold uppercase tracking-[0.14em] text-[#555555]">
+                                <dt className="font-montserrat text-[11px] font-bold uppercase tracking-[0.14em] text-body">
                                     Status
                                 </dt>
-                                <dd className="mt-1 font-montserrat text-sm font-semibold text-[#262A22]">
+                                <dd className="mt-1 font-montserrat text-sm font-semibold text-heading">
                                     {subscription.statusLabel ?? subscription.status ?? '—'}
                                 </dd>
                             </div>
                             <div>
-                                <dt className="font-montserrat text-[11px] font-bold uppercase tracking-[0.14em] text-[#555555]">
+                                <dt className="font-montserrat text-[11px] font-bold uppercase tracking-[0.14em] text-body">
                                     Payment date
                                 </dt>
-                                <dd className="mt-1 font-montserrat text-sm font-semibold text-[#262A22]">
+                                <dd className="mt-1 font-montserrat text-sm font-semibold text-heading">
                                     {formatDate(subscription.paidAt)}
                                 </dd>
                             </div>
                             <div>
-                                <dt className="font-montserrat text-[11px] font-bold uppercase tracking-[0.14em] text-[#555555]">
+                                <dt className="font-montserrat text-[11px] font-bold uppercase tracking-[0.14em] text-body">
                                     Meal plan
                                 </dt>
-                                <dd className="mt-1 font-montserrat text-sm font-semibold text-[#262A22]">
+                                <dd className="mt-1 font-montserrat text-sm font-semibold text-heading">
                                     {subscription.mealPlanName ?? '—'}
                                 </dd>
                             </div>
                             <div>
-                                <dt className="font-montserrat text-[11px] font-bold uppercase tracking-[0.14em] text-[#555555]">
+                                <dt className="font-montserrat text-[11px] font-bold uppercase tracking-[0.14em] text-body">
                                     Package days
                                 </dt>
-                                <dd className="mt-1 font-montserrat text-sm font-semibold text-[#262A22]">
+                                <dd className="mt-1 font-montserrat text-sm font-semibold text-heading">
                                     {subscription.days ?? '—'}
                                 </dd>
                             </div>
                             <div>
-                                <dt className="font-montserrat text-[11px] font-bold uppercase tracking-[0.14em] text-[#555555]">
+                                <dt className="font-montserrat text-[11px] font-bold uppercase tracking-[0.14em] text-body">
                                     Start
                                 </dt>
-                                <dd className="mt-1 font-montserrat text-sm font-semibold text-[#262A22]">
+                                <dd className="mt-1 font-montserrat text-sm font-semibold text-heading">
                                     {formatDate(subscription.startDate)}
                                 </dd>
                             </div>
                             <div>
-                                <dt className="font-montserrat text-[11px] font-bold uppercase tracking-[0.14em] text-[#555555]">
+                                <dt className="font-montserrat text-[11px] font-bold uppercase tracking-[0.14em] text-body">
                                     Expiry
                                 </dt>
-                                <dd className="mt-1 font-montserrat text-sm font-semibold text-[#262A22]">
+                                <dd className="mt-1 font-montserrat text-sm font-semibold text-heading">
                                     {formatDate(subscription.expiryDate)}
                                 </dd>
                             </div>
                             <div>
-                                <dt className="font-montserrat text-[11px] font-bold uppercase tracking-[0.14em] text-[#555555]">
+                                <dt className="font-montserrat text-[11px] font-bold uppercase tracking-[0.14em] text-body">
                                     Deliveries
                                 </dt>
-                                <dd className="mt-1 font-montserrat text-sm font-semibold text-[#262A22]">
+                                <dd className="mt-1 font-montserrat text-sm font-semibold text-heading">
                                     {subscription.deliveries ?? 0}
                                 </dd>
                             </div>
                             <div>
-                                <dt className="font-montserrat text-[11px] font-bold uppercase tracking-[0.14em] text-[#555555]">
+                                <dt className="font-montserrat text-[11px] font-bold uppercase tracking-[0.14em] text-body">
                                     Fulfillment
                                 </dt>
-                                <dd className="mt-1 font-montserrat text-sm font-semibold text-[#262A22]">
+                                <dd className="mt-1 font-montserrat text-sm font-semibold text-heading">
                                     {subscription.fulfillmentChoice === 'partner_kitchen'
                                         ? 'Partner Kitchen'
                                         : subscription.fulfillmentChoice === 'diy'
@@ -246,10 +246,10 @@ export default function CustomerProfileShow({
                                 </dd>
                             </div>
                             <div className="sm:col-span-2">
-                                <dt className="font-montserrat text-[11px] font-bold uppercase tracking-[0.14em] text-[#555555]">
+                                <dt className="font-montserrat text-[11px] font-bold uppercase tracking-[0.14em] text-body">
                                     Frozen days
                                 </dt>
-                                <dd className="mt-1 font-montserrat text-sm text-[#262A22]">
+                                <dd className="mt-1 font-montserrat text-sm text-heading">
                                     {Array.isArray(subscription.frozenDays) && subscription.frozenDays.length > 0 ? (
                                         <ul className="m-0 list-disc space-y-1 pl-5">
                                             {subscription.frozenDays.map((day) => (
@@ -257,7 +257,7 @@ export default function CustomerProfileShow({
                                             ))}
                                         </ul>
                                     ) : (
-                                        <span className="text-[#555555]">No frozen days yet</span>
+                                        <span className="text-body">No frozen days yet</span>
                                     )}
                                 </dd>
                             </div>

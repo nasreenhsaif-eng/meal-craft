@@ -184,7 +184,7 @@ export function CookItYourselfInner({
 
     const pageIntro = (
         <div className="mb-3 min-w-0">
-            <h1 className="font-montserrat text-2xl font-bold tracking-tight text-[#262A22] sm:text-3xl">
+            <h1 className="font-montserrat text-2xl font-bold tracking-tight text-heading sm:text-3xl">
                 Cook it yourself
             </h1>
             <p className="mt-1 font-body text-sm leading-snug text-[#374151] sm:text-base">
@@ -201,7 +201,7 @@ export function CookItYourselfInner({
     const daysScreen = (
         <>
             {pageIntro}
-            <p className="mb-3 font-body text-sm text-[#555555]">Pick a day to open your recipes.</p>
+            <p className="mb-3 font-body text-sm text-body">Pick a day to open your recipes.</p>
             <div className="mx-auto flex w-full max-w-xl flex-col gap-2" role="list" aria-label="Plan days">
                 {days.map((day) => {
                     const label = day.dateLabel ? `${day.label} ${day.dateLabel}` : day.label;
@@ -264,7 +264,7 @@ export function CookItYourselfInner({
                 {hasMultipleDays ? (
                     <>
                         <div className="flex items-start justify-between gap-3">
-                            <h1 className="min-w-0 font-montserrat text-2xl font-bold tracking-tight text-[#262A22] sm:text-3xl">
+                            <h1 className="min-w-0 font-montserrat text-2xl font-bold tracking-tight text-heading sm:text-3xl">
                                 {activeDayLabel}
                             </h1>
                             <Button
@@ -276,7 +276,7 @@ export function CookItYourselfInner({
                                 className="shrink-0"
                             />
                         </div>
-                        <p className="mt-0.5 font-body text-sm text-[#555555]">
+                        <p className="mt-0.5 font-body text-sm text-body">
                             Every meal, every ingredient, every detail.
                         </p>
                     </>
@@ -304,7 +304,7 @@ export function CookItYourselfInner({
                                 'shrink-0 rounded-full px-2.5 py-1 font-montserrat text-[11px] font-bold tracking-wide transition-colors',
                                 selected
                                     ? 'bg-[#5A6B44] text-white'
-                                    : 'bg-white text-[#555555] ring-1 ring-gray-200 hover:text-[#262A22]',
+                                    : 'bg-white text-body ring-1 ring-gray-200 hover:text-heading',
                             ].join(' ')}
                         >
                             {tab.label}
@@ -325,7 +325,7 @@ export function CookItYourselfInner({
                         <p className="font-montserrat text-[10px] font-bold uppercase tracking-[0.12em] text-[#5A6B44]">
                             {activeDayLabel}
                         </p>
-                        <h1 className="mt-0.5 font-montserrat text-xl font-bold tracking-tight text-[#262A22] sm:text-2xl">
+                        <h1 className="mt-0.5 font-montserrat text-xl font-bold tracking-tight text-heading sm:text-2xl">
                             Recipe details
                         </h1>
                     </div>

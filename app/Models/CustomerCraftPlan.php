@@ -12,6 +12,7 @@ class CustomerCraftPlan extends Model
         'customer_profile_id',
         'craft_key',
         'fulfillment_choice',
+        'include_cutlery',
         'week_duration',
         'plan_weeks',
         'selected_weekdays',
@@ -21,6 +22,7 @@ class CustomerCraftPlan extends Model
     protected function casts(): array
     {
         return [
+            'include_cutlery' => 'boolean',
             'week_duration' => 'integer',
             'plan_weeks' => 'integer',
             'selected_weekdays' => 'array',

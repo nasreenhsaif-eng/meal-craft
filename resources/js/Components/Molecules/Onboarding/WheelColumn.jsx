@@ -214,7 +214,7 @@ export function WheelColumn({
                                     ? 'mx-0.5 px-0.5'
                                     : 'mx-1 px-1 sm:mx-2 sm:px-2',
                                 visual.tier === 'selected'
-                                    ? 'font-bold text-[#364153]'
+                                    ? 'font-bold text-body'
                                     : 'font-medium text-[#6B7280]',
                                 visual.tier === 'hidden' ? 'pointer-events-none' : '',
                             ].join(' ')}
@@ -223,7 +223,7 @@ export function WheelColumn({
                             {visual.tier === 'selected' && unitLabel ? (
                                 <span
                                     className={[
-                                        'shrink-0 font-semibold text-[#364153]',
+                                        'shrink-0 font-semibold text-body',
                                         compact ? 'ml-1 text-xs' : 'ml-1.5 text-sm',
                                     ].join(' ')}
                                 >

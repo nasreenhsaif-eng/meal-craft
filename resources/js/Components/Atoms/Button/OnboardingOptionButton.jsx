@@ -46,24 +46,24 @@ export function OnboardingOptionButton({
                 sizeClass,
                 isCentered ? 'justify-center text-center' : 'text-left',
                 icon ? 'gap-3' : '',
-                'font-montserrat text-[13px] font-bold uppercase leading-tight tracking-wide text-[#364153]',
+                'font-montserrat text-[13px] font-bold uppercase leading-tight tracking-wide text-body',
                 'transition-all duration-200 ease-in-out',
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6E8C47] focus-visible:ring-offset-2',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2',
                 'disabled:pointer-events-none disabled:opacity-60',
                 selected
-                    ? 'bg-[#6E8C47]/30 active:bg-[#6E8C47]/35'
-                    : 'bg-[#6E8C47]/10 hover:bg-[#6E8C47]/20 active:bg-[#6E8C47]/30',
+                    ? 'bg-brand-primary/30'
+                    : 'bg-brand-primary/10 hover:bg-brand-primary/20 active:bg-brand-primary/30',
                 className,
             ].join(' ')}
         >
             {icon ? (
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center text-[#364153]" aria-hidden>
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center text-body [&>*]:!h-9 [&>*]:!w-9" aria-hidden>
                     {icon}
                 </span>
             ) : null}
             <span className={isCentered ? 'min-w-0' : 'min-w-0 flex-1'}>{label}</span>
             {detailLabel ? (
-                <span className="ms-3 shrink-0 font-montserrat text-[12px] font-semibold normal-case tracking-normal tabular-nums text-[#364153]">
+                <span className="ms-3 shrink-0 font-montserrat text-[12px] font-semibold normal-case tracking-normal tabular-nums text-body">
                     {detailLabel}
                 </span>
             ) : null}

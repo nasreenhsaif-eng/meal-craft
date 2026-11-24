@@ -113,12 +113,12 @@ export default function ProtocolMealOptionsScreen({
                     <div className="w-full">
                         <h2
                             id="mc-options-modal-title"
-                            className="text-center font-montserrat text-2xl font-semibold leading-tight text-[#262A22]"
+                            className="text-center font-montserrat text-2xl font-semibold leading-tight text-heading"
                         >
                             {sectionTitle}
                         </h2>
                         {subtitle ? (
-                            <p className="mt-1.5 text-center text-sm leading-snug text-[#555555]">{subtitle}</p>
+                            <p className="mt-1.5 text-center text-sm leading-snug text-body">{subtitle}</p>
                         ) : null}
                     </div>
                 </div>

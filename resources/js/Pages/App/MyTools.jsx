@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { Link, usePage } from '@inertiajs/react';
 import Button from '../../Components/Atoms/Button.jsx';
-import MealCardClientViewNano from '../../Components/MealCardClientViewNano.jsx';
+import CustomerMealCard from '../../Components/CustomerMealCard.jsx';
 import { listDayMealsWithHighlights } from '../../Components/Consultation/DayNutritionalSummaryPanel.jsx';
 import CookMealCard from '../../Components/Molecules/Customer/CookMealCard.jsx';
 import CustomerAppBottomNav from '../../Components/Molecules/Customer/CustomerAppBottomNav.jsx';
@@ -212,11 +212,11 @@ export function MyToolsInner({
 
     const shoppingPanel = (
         <section className="rounded-[16px] border border-gray-200 bg-white px-4 py-5 shadow-sm sm:px-6">
-            <h2 className="font-montserrat text-lg font-bold tracking-tight text-[#262A22]">Shopping list</h2>
-            <p className="mt-1 font-body text-sm text-[#555555]">Ingredients you checked on your DIY meals.</p>
+            <h2 className="font-montserrat text-lg font-bold tracking-tight text-heading">Shopping list</h2>
+            <p className="mt-1 font-body text-sm text-body">Ingredients you checked on your DIY meals.</p>
 
             {shoppingList.length === 0 ? (
-                <p className="mt-4 font-body text-sm text-[#555555]">Your shopping list is empty.</p>
+                <p className="mt-4 font-body text-sm text-body">Your shopping list is empty.</p>
             ) : (
                 <ul className="mt-4 space-y-1" role="list">
                     {shoppingList.map((row) => (
@@ -224,9 +224,9 @@ export function MyToolsInner({
                             key={row.key}
                             className="flex items-center justify-between gap-3 border-b border-gray-100 px-1 py-2.5 last:border-b-0"
                         >
-                            <span className="min-w-0 flex-1 font-body text-sm text-[#262A22]">{row.name}</span>
+                            <span className="min-w-0 flex-1 font-body text-sm text-heading">{row.name}</span>
                             {formatShoppingAmount(row.amount, row.unit) ? (
-                                <span className="shrink-0 font-montserrat text-sm font-semibold tabular-nums text-[#555555]">
+                                <span className="shrink-0 font-montserrat text-sm font-semibold tabular-nums text-body">
                                     {formatShoppingAmount(row.amount, row.unit)}
                                 </span>
                             ) : null}
@@ -259,7 +259,7 @@ export function MyToolsInner({
         selectedMeal != null ? (
             <div className="w-full min-w-0">
                 <div className="mb-3 flex items-start justify-between gap-3">
-                    <h2 className="font-montserrat text-xl font-bold tracking-tight text-[#262A22] sm:text-2xl">
+                    <h2 className="font-montserrat text-xl font-bold tracking-tight text-heading sm:text-2xl">
                         Recipe details
                     </h2>
                     <Button
@@ -281,12 +281,12 @@ export function MyToolsInner({
             </div>
         ) : (
             <section className="rounded-[16px] border border-gray-200 bg-white px-4 py-5 shadow-sm sm:px-6">
-                <h2 className="font-montserrat text-lg font-bold tracking-tight text-[#262A22]">Saved</h2>
-                <p className="mt-1 font-body text-sm text-[#555555]">Recipes you saved while cooking it yourself.</p>
+                <h2 className="font-montserrat text-lg font-bold tracking-tight text-heading">Saved</h2>
+                <p className="mt-1 font-body text-sm text-body">Recipes you saved while cooking it yourself.</p>
 
                 {savedMeals.length === 0 ? (
                     <div className="mt-4 text-center">
-                        <p className="font-body text-sm text-[#555555]">No favourites yet.</p>
+                        <p className="font-body text-sm text-body">No favourites yet.</p>
                         <Link
                             href={recipesUrl}
                             className="mt-4 inline-flex font-montserrat text-sm font-semibold text-[#5A6B44] hover:underline"
@@ -301,7 +301,7 @@ export function MyToolsInner({
 
                             return (
                                 <li key={meal.id} className="shrink-0">
-                                    <MealCardClientViewNano
+                                    <CustomerMealCard
                                         deck
                                         alignActionsBottom
                                         hideCraftButton
@@ -364,8 +364,8 @@ export function MyToolsInner({
         >
             <div className="flex w-full min-w-0 flex-col gap-4">
                 <div>
-                    <h1 className="font-montserrat text-3xl font-semibold tracking-tight text-[#262A22]">My Tools</h1>
-                    <p className="mt-2 font-body text-sm leading-relaxed text-[#555555] sm:text-base">
+                    <h1 className="font-montserrat text-3xl font-semibold tracking-tight text-heading">My Tools</h1>
+                    <p className="mt-2 font-body text-sm leading-relaxed text-body sm:text-base">
                         Saved recipes, shopping list, targets, and body & plan.
                     </p>
                 </div>
@@ -389,7 +389,7 @@ export function MyToolsInner({
                                     'inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 font-montserrat text-[11px] font-bold tracking-wide transition-colors',
                                     selected
                                         ? 'bg-[#5A6B44] text-white'
-                                        : 'bg-white text-[#555555] ring-1 ring-gray-200 hover:text-[#262A22]',
+                                        : 'bg-white text-body ring-1 ring-gray-200 hover:text-heading',
                                 ].join(' ')}
                             >
                                 {'heart' in tab && tab.heart ? (

@@ -1,3 +1,4 @@
+import { IconFemale, IconMale } from '../SvgIcons.jsx';
 import { OnboardingOptionButton } from './OnboardingOptionButton.jsx';
 
 /**
@@ -34,24 +35,6 @@ export function GenderOptionButton({
             align="center"
             className={className}
         />
-    );
-}
-
-function IconMale() {
-    return (
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
-            <circle cx="10" cy="14" r="4" stroke="currentColor" strokeWidth="1.75" />
-            <path d="M14 10l6-6M16 4h4v4" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
-        </svg>
-    );
-}
-
-function IconFemale() {
-    return (
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
-            <circle cx="12" cy="9" r="4" stroke="currentColor" strokeWidth="1.75" />
-            <path d="M12 13v7M9 17h6" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
-        </svg>
     );
 }
 

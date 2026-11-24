@@ -41,7 +41,7 @@ export default function MealPlanCard({
     return (
         <article className={`relative ${DECK_SHELL} ${className}`.trim()}>
             <div className="relative flex w-full min-h-0 flex-1 flex-col overflow-hidden rounded-[12px] bg-white shadow-none">
-                <div className="relative aspect-[4/3] w-full shrink-0 overflow-hidden bg-[#F8F9F6]">
+                <div className="relative aspect-[4/3] w-full shrink-0 overflow-hidden bg-surface-soft">
                     {showImage ? (
                         <img
                             src={imageUrl}
@@ -61,7 +61,7 @@ export default function MealPlanCard({
                                 title="MealCraft"
                             />
                             <h3
-                                className="w-full text-center text-[17px] font-bold leading-snug tracking-tight text-[#262A22]"
+                                className="w-full text-center text-[17px] font-bold leading-snug tracking-tight text-heading"
                                 style={{
                                     display: '-webkit-box',
                                     WebkitBoxOrient: 'vertical',
@@ -79,7 +79,7 @@ export default function MealPlanCard({
                     {showImage ? (
                         <div className="min-h-[2.5rem] shrink-0">
                             <h3
-                                className="mt-2 w-full text-center text-[17px] font-bold leading-snug tracking-tight text-[#262A22]"
+                                className="mt-2 w-full text-center text-[17px] font-bold leading-snug tracking-tight text-heading"
                                 style={{
                                     display: '-webkit-box',
                                     WebkitBoxOrient: 'vertical',

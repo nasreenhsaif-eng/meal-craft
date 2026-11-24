@@ -82,7 +82,7 @@ function HighlightList({ items }) {
     return (
         <ul className="mt-2 flex flex-col gap-1.5 px-1 pb-1">
             {items.map((item) => (
-                <li key={item} className="flex items-start gap-2 font-body text-sm text-[#555555]">
+                <li key={item} className="flex items-start gap-2 font-body text-sm text-body">
                     <span
                         className="mt-0.5 inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-[#6E8C47]/15 text-[#5A6B44]"
                         aria-hidden="true"
@@ -192,10 +192,10 @@ export default function FulfillmentOptionCards({
                                 'inline-flex h-[50px] w-full min-h-[50px] items-center justify-center rounded-[12px]',
                                 'font-montserrat text-[16px] font-bold uppercase leading-none tracking-[0.08em] text-white',
                                 'transition-all duration-200 ease-in-out',
-                                'border-2 border-protocol-selected bg-protocol-selected',
-                                'hover:border-protocol-selected-hover hover:bg-protocol-selected-hover',
-                                'active:border-protocol-selected-pressed active:bg-protocol-selected-pressed',
-                                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-protocol-selected focus-visible:ring-offset-2',
+                                'border-2 border-brand-primary bg-brand-primary',
+                                'hover:border-brand-primary-hover hover:bg-brand-primary-hover',
+                                'active:border-brand-primary-pressed active:bg-brand-primary-pressed',
+                                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2',
                             ].join(' ')}
                         >
                             Next

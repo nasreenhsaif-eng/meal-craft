@@ -37,8 +37,8 @@ export function ShopInner({
             }
         >
             <div className="w-full min-w-0 rounded-[16px] border border-gray-200 bg-white px-4 py-6 shadow-sm sm:p-8">
-                <h1 className="font-montserrat text-3xl font-semibold tracking-tight text-[#262A22]">Shop</h1>
-                <p className="mt-3 font-body text-sm leading-relaxed text-[#555555] sm:text-base">
+                <h1 className="font-montserrat text-3xl font-semibold tracking-tight text-heading">Shop</h1>
+                <p className="mt-3 font-body text-sm leading-relaxed text-body sm:text-base">
                     Partner kitchen products and add-ons will show up here soon.
                 </p>
             </div>

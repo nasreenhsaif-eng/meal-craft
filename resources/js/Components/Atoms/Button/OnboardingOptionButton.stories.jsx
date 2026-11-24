@@ -18,7 +18,7 @@ export default {
     },
     decorators: [
         (Story) => (
-            <div className="flex min-h-screen w-full justify-center bg-[#F8F9F6] px-6 py-10">
+            <div className="flex min-h-screen w-full justify-center bg-surface-soft px-6 py-10">
                 <div className={STACK}>
                     <Story />
                 </div>

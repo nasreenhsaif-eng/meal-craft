@@ -106,10 +106,10 @@ export default function CustomerDetails({
                 <SimpleFlowNavHeader onBack={goBack} />
 
                 <div className="w-full min-w-0">
-                    <h1 className="text-center font-montserrat text-2xl font-semibold leading-tight text-[#262A22]">
+                    <h1 className="text-center font-montserrat text-2xl font-semibold leading-tight text-heading">
                         Your details
                     </h1>
-                    <p className="mt-1.5 text-center text-sm leading-snug text-[#555555]">
+                    <p className="mt-1.5 text-center text-sm leading-snug text-body">
                         Review your onboarding details, complete delivery information, and confirm everything is
                         correct.
                     </p>

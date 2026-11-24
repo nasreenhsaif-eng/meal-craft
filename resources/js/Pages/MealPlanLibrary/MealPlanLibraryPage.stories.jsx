@@ -23,7 +23,7 @@ function MealPlanLibraryStoryShell({ children }) {
 }
 
 export default {
-    title: 'Design System/05. Templates & Pages/Admin/MealPlanLibrary',
+    title: 'Design System/06. Pages/Admin/MealPlanLibrary',
     component: MealPlanLibraryPageContent,
     parameters: {
         layout: 'fullscreen',

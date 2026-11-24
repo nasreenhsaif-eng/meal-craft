@@ -97,6 +97,7 @@ class ConsultationCraftedForYouController extends Controller
             'resumeChooseMeals' => $resumeChooseMeals,
             'initialFulfillmentChoice' => $initialFulfillmentChoice,
             'forceReceive' => $forceReceive,
+            'focusCutleryOnly' => $request->query('focus') === 'cutlery' && $editDraft !== null,
         ];
 
         $baseCalories = (int) (

@@ -23,7 +23,7 @@ import {
  * }} FoodFilterOption
  */
 
-/** Strict 10-item food filter matrix. */
+/** Customer onboarding / intake food filter matrix (includes Other). */
 /** @type {FoodFilterOption[]} */
 export const FOOD_FILTER_OPTIONS = [
     { id: 'dairy', label: 'Dairy', Icon: IconDairy },
@@ -35,6 +35,8 @@ export const FOOD_FILTER_OPTIONS = [
     { id: 'nuts', label: 'Nuts', Icon: IconNuts },
     { id: 'spicy', label: 'Spicy', Icon: IconSpicy },
     { id: 'shellfish', label: 'Shellfish', Icon: IconShellfish },
+    { id: 'fish', label: 'Fish', Icon: IconFish },
+    { id: 'sesame', label: 'Sesame', Icon: IconSesame },
     { id: 'other', label: 'Other', Icon: IconOther },
 ];
 

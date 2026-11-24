@@ -186,7 +186,7 @@ function Section({ title, children, action = null, invalid = false, errorMessage
                 <h2
                     className={[
                         'm-0 font-montserrat text-base font-bold tracking-tight',
-                        invalid ? 'text-status-error' : 'text-[#262A22]',
+                        invalid ? 'text-status-error' : 'text-heading',
                     ].join(' ')}
                 >
                     {title}
@@ -227,13 +227,13 @@ function DefinitionList({ rows }) {
                     key={row.label}
                     className={[
                         'min-w-0 rounded-[12px] px-4 py-3',
-                        row.invalid ? 'bg-status-error/10 ring-1 ring-status-error' : 'bg-[#F8F9F6]',
+                        row.invalid ? 'bg-status-error/10 ring-1 ring-status-error' : 'bg-surface-soft',
                     ].join(' ')}
                 >
                     <dt
                         className={[
                             'font-montserrat text-xs font-bold uppercase tracking-wide',
-                            row.invalid ? 'text-status-error' : 'text-[#555555]',
+                            row.invalid ? 'text-status-error' : 'text-body',
                         ].join(' ')}
                     >
                         {row.label}
@@ -241,7 +241,7 @@ function DefinitionList({ rows }) {
                     <dd
                         className={[
                             'mt-1 break-words font-body text-sm font-medium',
-                            row.invalid ? 'text-status-error' : 'text-[#262A22]',
+                            row.invalid ? 'text-status-error' : 'text-heading',
                         ].join(' ')}
                     >
                         {row.value}
@@ -267,7 +267,7 @@ function OptionPillGroup({ label, value, options = [], onChange, error }) {
             <p
                 className={[
                     'mb-2 font-montserrat text-sm font-bold leading-snug tracking-tight',
-                    error ? 'text-status-error' : 'text-grey-94',
+                    error ? 'text-status-error' : 'text-form-label',
                 ].join(' ')}
             >
                 {label}
@@ -558,7 +558,7 @@ export default function CustomerCheckoutDetailsReview({
                             <p
                                 className={[
                                     'mb-2 font-montserrat text-sm font-bold leading-snug tracking-tight',
-                                    fieldErrors.delivery_time ? 'text-status-error' : 'text-grey-94',
+                                    fieldErrors.delivery_time ? 'text-status-error' : 'text-form-label',
                                 ].join(' ')}
                             >
                                 Delivery time
@@ -670,7 +670,7 @@ export default function CustomerCheckoutDetailsReview({
                         <span
                             className={[
                                 'font-montserrat text-sm font-bold uppercase leading-snug tracking-wide',
-                                confirmInvalid ? 'text-status-error' : 'text-[#262A22]',
+                                confirmInvalid ? 'text-status-error' : 'text-heading',
                             ].join(' ')}
                         >
                             I declare that all the information that was provided is true and to the best of my
@@ -683,7 +683,7 @@ export default function CustomerCheckoutDetailsReview({
                         </p>
                     ) : null}
 
-                    <ul className="space-y-2 font-body text-xs leading-relaxed text-[#555555] sm:text-sm">
+                    <ul className="space-y-2 font-body text-xs leading-relaxed text-body sm:text-sm">
                         <li>
                             Meal Craft only facilitates meal delivery. It is not responsible for Picniq kitchen
                             cross-contamination or allergy handling.

@@ -55,8 +55,8 @@ export default function UserManagementTable({
     return (
         <section className={`rounded-[12px] border border-gray-200 bg-white shadow-sm ${className}`.trim()}>
             <header className="flex flex-col gap-1 border-b border-gray-200 px-5 py-4">
-                <h3 className="m-0 font-montserrat text-base font-bold tracking-tight text-[#262A22]">User Management</h3>
-                <p className="m-0 font-montserrat text-sm font-medium text-[#555555]">
+                <h3 className="m-0 font-montserrat text-base font-bold tracking-tight text-heading">User Management</h3>
+                <p className="m-0 font-montserrat text-sm font-medium text-body">
                     Admin portal users and access rights.
                 </p>
             </header>
@@ -65,20 +65,20 @@ export default function UserManagementTable({
                 <table className="w-full min-w-[760px] border-collapse text-left font-montserrat text-sm">
                     <thead>
                         <tr className="bg-white">
-                            <th className="px-5 py-3 text-[11px] font-bold uppercase tracking-[0.14em] text-[#555555]">
+                            <th className="px-5 py-3 text-[11px] font-bold uppercase tracking-[0.14em] text-body">
                                 Name
                             </th>
-                            <th className="px-5 py-3 text-[11px] font-bold uppercase tracking-[0.14em] text-[#555555]">
+                            <th className="px-5 py-3 text-[11px] font-bold uppercase tracking-[0.14em] text-body">
                                 Email
                             </th>
-                            <th className="px-5 py-3 text-[11px] font-bold uppercase tracking-[0.14em] text-[#555555]">
+                            <th className="px-5 py-3 text-[11px] font-bold uppercase tracking-[0.14em] text-body">
                                 Role
                             </th>
-                            <th className="px-5 py-3 text-[11px] font-bold uppercase tracking-[0.14em] text-[#555555]">
+                            <th className="px-5 py-3 text-[11px] font-bold uppercase tracking-[0.14em] text-body">
                                 Access Rights
                             </th>
                             {canManage ? (
-                                <th className="px-5 py-3 text-[11px] font-bold uppercase tracking-[0.14em] text-[#555555]">
+                                <th className="px-5 py-3 text-[11px] font-bold uppercase tracking-[0.14em] text-body">
                                     Actions
                                 </th>
                             ) : null}
@@ -87,14 +87,14 @@ export default function UserManagementTable({
                     <tbody>
                         {sortedUsers.length === 0 ? (
                             <tr>
-                                <td colSpan={canManage ? 5 : 4} className="px-5 py-6 text-[#555555]">
+                                <td colSpan={canManage ? 5 : 4} className="px-5 py-6 text-body">
                                     No admin portal users yet.
                                 </td>
                             </tr>
                         ) : null}
                         {sortedUsers.map((u, idx) => {
                             const deactivated = Boolean(u.isDeactivated);
-                            const zebra = idx % 2 === 1 ? 'bg-[#F8F9F6]' : 'bg-white';
+                            const zebra = idx % 2 === 1 ? 'bg-surface-soft' : 'bg-white';
                             const rights = u.isCraftMasterGeneral
                                 ? 'All sections'
                                 : Array.isArray(u.permissions) && u.permissions.length > 0
@@ -105,7 +105,7 @@ export default function UserManagementTable({
                                 <tr key={u.id} className={`${zebra} border-t border-gray-100`}>
                                     <td
                                         className={`px-5 py-3 font-semibold ${
-                                            deactivated ? 'text-[#71717a] line-through' : 'text-[#262A22]'
+                                            deactivated ? 'text-[#71717a] line-through' : 'text-heading'
                                         }`.trim()}
                                     >
                                         {canManage && !u.isCraftMasterGeneral ? (
@@ -128,19 +128,19 @@ export default function UserManagementTable({
                                             u.name
                                         )}
                                     </td>
-                                    <td className={`px-5 py-3 ${deactivated ? 'text-[#71717a] line-through' : 'text-[#364153]'}`.trim()}>
+                                    <td className={`px-5 py-3 ${deactivated ? 'text-[#71717a] line-through' : 'text-body'}`.trim()}>
                                         {u.email}
                                     </td>
-                                    <td className={`px-5 py-3 ${deactivated ? 'text-[#71717a]' : 'text-[#364153]'}`.trim()}>
+                                    <td className={`px-5 py-3 ${deactivated ? 'text-[#71717a]' : 'text-body'}`.trim()}>
                                         {u.roleLabel ?? 'Admin'}
                                     </td>
-                                    <td className={`px-5 py-3 font-semibold ${deactivated ? 'text-[#71717a]' : 'text-[#364153]'}`.trim()}>
+                                    <td className={`px-5 py-3 font-semibold ${deactivated ? 'text-[#71717a]' : 'text-body'}`.trim()}>
                                         {rights}
                                     </td>
                                     {canManage ? (
                                         <td className="px-5 py-3">
                                             {u.isCraftMasterGeneral ? (
-                                                <span className="text-xs text-[#888888]">Protected</span>
+                                                <span className="text-xs text-body">Protected</span>
                                             ) : (
                                                 <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
                                                     <TextLink

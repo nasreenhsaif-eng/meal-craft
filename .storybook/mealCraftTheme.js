@@ -12,10 +12,10 @@ export const mealCraftTheme = create({
     colorPrimary: '#6E8C47',
     colorSecondary: '#6E8C47',
 
-    appBg: '#F9FAFB',
+    appBg: '#F6F6F4',
     appContentBg: '#FFFFFF',
     appHoverBg: '#F6F6F4',
-    appPreviewBg: '#F9FAFB',
+    appPreviewBg: '#F6F6F4',
     appBorderColor: '#E5E7EB',
     appBorderRadius: 12,
 
@@ -33,7 +33,7 @@ export const mealCraftTheme = create({
 
     buttonBg: '#FFFFFF',
     buttonBorder: '#E5E7EB',
-    booleanBg: '#F2F2F2',
+    booleanBg: '#F6F6F4',
     booleanSelectedBg: '#6E8C47',
 
     inputBg: '#FFFFFF',

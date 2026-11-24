@@ -655,7 +655,7 @@ export default function StackedDeckCarousel({
     const stageMaxW = ribbonStageMaxWidthClass(itemCount);
 
     const ribbonArrowButtonClass =
-        'pointer-events-auto flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-0 bg-white/90 text-[#262A22] shadow-sm shadow-[#262A22]/10 outline-none ring-0 backdrop-blur-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5A6B44]/35 focus-visible:ring-offset-0 disabled:pointer-events-none disabled:opacity-30';
+        'pointer-events-auto flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-0 bg-white/90 text-heading shadow-sm shadow-[#262A22]/10 outline-none ring-0 backdrop-blur-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5A6B44]/35 focus-visible:ring-offset-0 disabled:pointer-events-none disabled:opacity-30';
 
     const ribbonEdgeDimBaseClass = 'pointer-events-none absolute inset-y-4 z-[100]';
     /** Start-aligned options: left fade only covers the arrow gutter so the card stays clear. */

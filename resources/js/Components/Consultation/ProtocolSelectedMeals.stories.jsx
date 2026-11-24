@@ -129,7 +129,7 @@ function OptionsModalDemo({
 }
 
 export default {
-    title: 'Design System/05. Templates & Pages/Crafted for you/ProtocolSelectedMeals',
+    title: 'Design System/04. Organisms/Consultation/ProtocolSelectedMeals',
     decorators: withConsultationMobileFrame,
     parameters: {
         layout: 'fullscreen',

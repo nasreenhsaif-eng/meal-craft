@@ -14,7 +14,7 @@ if (typeof window !== 'undefined') {
     window.__MC_CONSULTATION_CURATION_BUNDLE_EPOCH__ = CONSULTATION_CURATION_BUNDLE_EPOCH;
 }
 
-/** @type {{ closeHref?: string; homeHref?: string; backHref?: string; summaryHref?: string; deliveryUrl?: string; loginUrl?: string; signOutUrl?: string; csrfToken?: string; isCustomerAccount?: boolean; isAdminPreview?: boolean; pageEyebrow?: string; adaptedMenuUrl?: string; mealLibraryRevision?: number; planTier?: number | null; planTiers?: number[]; editDraft?: object | null; resumeDraft?: object | null; dietProtocol?: string | null; sex?: string | null; activityLevel?: string | null; dailyCalorieTarget?: number | null; resumeChooseMeals?: boolean; forceReceive?: boolean; initialFulfillmentChoice?: 'diy' | 'partner_kitchen' | null }} */
+/** @type {{ closeHref?: string; homeHref?: string; backHref?: string; summaryHref?: string; deliveryUrl?: string; loginUrl?: string; signOutUrl?: string; csrfToken?: string; isCustomerAccount?: boolean; isAdminPreview?: boolean; pageEyebrow?: string; adaptedMenuUrl?: string; mealLibraryRevision?: number; planTier?: number | null; planTiers?: number[]; editDraft?: object | null; resumeDraft?: object | null; dietProtocol?: string | null; sex?: string | null; activityLevel?: string | null; dailyCalorieTarget?: number | null; resumeChooseMeals?: boolean; forceReceive?: boolean; focusCutleryOnly?: boolean; initialFulfillmentChoice?: 'diy' | 'partner_kitchen' | null }} */
 let config = {};
 
 if (configEl) {
@@ -55,10 +55,10 @@ class ConsultationErrorBoundary extends Component {
                     : String(this.state.error ?? 'Unknown error');
 
             return (
-                <div className="box-border min-h-[100dvh] w-full min-w-0 bg-[#F8F9F6] p-6">
-                    <div className="mx-auto w-full min-w-0 max-w-lg rounded-[12px] border border-red-200 bg-white p-6 font-sans text-sm text-[#262A22] shadow-sm">
+                <div className="box-border min-h-[100dvh] w-full min-w-0 bg-surface-soft p-6">
+                    <div className="mx-auto w-full min-w-0 max-w-lg rounded-[12px] border border-red-200 bg-white p-6 font-sans text-sm text-heading shadow-sm">
                         <h1 className="font-montserrat text-lg font-bold">Could not load meal selection</h1>
-                        <p className="mt-2 text-[#555555]">
+                        <p className="mt-2 text-body">
                             Refresh the page. If this keeps happening, open DevTools → Console and share the error with
                             support.
                         </p>
@@ -88,6 +88,7 @@ if (rootEl) {
             deliveryUrl={typeof config.deliveryUrl === 'string' ? config.deliveryUrl : '/checkout/delivery'}
             resumeChooseMeals={config.resumeChooseMeals === true}
             forceReceive={config.forceReceive === true}
+            focusCutleryOnly={config.focusCutleryOnly === true}
             initialFulfillmentChoice={
                 config.initialFulfillmentChoice === 'diy' || config.initialFulfillmentChoice === 'partner_kitchen'
                     ? config.initialFulfillmentChoice

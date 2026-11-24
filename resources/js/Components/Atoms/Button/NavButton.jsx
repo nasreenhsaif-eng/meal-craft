@@ -114,7 +114,7 @@ export default function NavButton({ icon, label, isActive = false, href, onClick
     };
 
     const commonClassName = `relative flex items-center gap-3 rounded-md py-2.5 pl-3 pr-3 font-sans text-sm font-semibold no-underline outline-none transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 ${
-        active ? `${tint} ${textActive}` : `text-[#262A22] hover:bg-[#6E8C47]/8 ${textHover}`
+        active ? `${tint} ${textActive}` : `text-heading hover:bg-[#6E8C47]/8 ${textHover}`
     } ${className}`.trim();
 
     const contents = (

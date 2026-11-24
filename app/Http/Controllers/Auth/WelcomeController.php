@@ -21,6 +21,7 @@ class WelcomeController extends Controller
         return view('welcome', [
             'welcomeConfig' => [
                 'loginHref' => route('login'),
+                'joinHref' => route('join'),
             ],
         ]);
     }

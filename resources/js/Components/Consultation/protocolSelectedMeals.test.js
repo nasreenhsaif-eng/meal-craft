@@ -13,8 +13,8 @@ describe('protocol selected-meal layout selection', () => {
         expect(applyDeckSelectionToggle(['chia'], 'omelette', 1)).toEqual(['omelette']);
     });
 
-    it('requires deselect before swapping a third main when two are selected', () => {
-        expect(applyDeckSelectionToggle(['1', '5'], '3', 2)).toEqual(['1', '5']);
+    it('drops the earliest main when crafting a third meal at capacity', () => {
+        expect(applyDeckSelectionToggle(['1', '5'], '3', 2)).toEqual(['5', '3']);
         expect(applyDeckSelectionToggle(['1', '5'], '5', 2)).toEqual(['1']);
         expect(applyDeckSelectionToggle(['1'], '3', 2)).toEqual(['1', '3']);
     });

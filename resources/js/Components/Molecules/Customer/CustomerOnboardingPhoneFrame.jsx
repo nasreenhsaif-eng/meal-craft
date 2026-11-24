@@ -23,7 +23,7 @@ export default function CustomerOnboardingPhoneFrame({
                     'relative flex h-full min-h-0 w-full flex-col overflow-clip',
                     'rounded-[36px] border border-gray-200 bg-white shadow-lg',
                     // Extra top inset so the header logo clears the rounded chrome.
-                    'px-3 pb-3 pt-8 font-sans text-[#262A22]',
+                    'px-3 pb-3 pt-8 font-sans text-heading',
                     className,
                 ]
                     .join(' ')
@@ -39,7 +39,7 @@ export default function CustomerOnboardingPhoneFrame({
         <div
             className={[
                 // Gray canvas whenever the rounded phone chrome is visible (≥430px).
-                'flex min-h-dvh w-full flex-col items-center justify-start bg-gray-50 px-3 py-4 font-sans text-[#262A22]',
+                'flex min-h-dvh w-full flex-col items-center justify-start bg-gray-50 px-3 py-4 font-sans text-heading',
                 'min-[430px]:px-8 min-[430px]:py-10',
                 'max-[429px]:bg-white max-[429px]:px-0 max-[429px]:py-0',
                 className,

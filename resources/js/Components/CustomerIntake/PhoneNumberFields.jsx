@@ -112,7 +112,7 @@ export default function PhoneNumberFields({
             <p
                 className={[
                     'mb-2 font-montserrat text-sm font-bold leading-snug tracking-tight',
-                    error ? 'text-status-error' : 'text-grey-94',
+                    error ? 'text-status-error' : 'text-form-label',
                 ].join(' ')}
             >
                 {label}

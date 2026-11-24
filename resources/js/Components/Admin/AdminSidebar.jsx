@@ -200,10 +200,10 @@ export function AdminSidebar({ activePath = '', onNavigate }) {
                         <MealCraftLogo variant="seal-xs" width={40} alt="" />
                     </div>
                     <div className="min-w-0">
-                        <div className="relative z-10 font-montserrat text-base font-bold leading-tight tracking-tight text-[#262A22]">
+                        <div className="relative z-10 font-montserrat text-base font-bold leading-tight tracking-tight text-heading">
                             Meal Craft
                         </div>
-                        <div className="relative z-10 font-montserrat text-[11px] font-bold uppercase tracking-[0.14em] text-[#555555]">
+                        <div className="relative z-10 font-montserrat text-[11px] font-bold uppercase tracking-[0.14em] text-body">
                             Smart Kitchen
                         </div>
                     </div>
@@ -213,7 +213,7 @@ export function AdminSidebar({ activePath = '', onNavigate }) {
             <nav className="relative z-0 flex-1 overflow-y-auto bg-white px-3 py-4" aria-label="Admin primary">
                 {visibleGroups.map((group) => (
                     <div key={group.label} className="mb-6 last:mb-0">
-                        <p className="relative z-10 mb-2 px-3 font-montserrat text-[11px] font-bold uppercase tracking-[0.14em] text-[#555555]">
+                        <p className="relative z-10 mb-2 px-3 font-montserrat text-[11px] font-bold uppercase tracking-[0.14em] text-body">
                             {group.label}
                         </p>
                         <ul className="m-0 list-none space-y-0.5 p-0">

@@ -32,7 +32,7 @@ export const Default = {
                     yearOptions={yearOptions}
                     onChange={setParts}
                 />
-                <p className="mt-4 text-center font-montserrat text-sm text-[#555555]">
+                <p className="mt-4 text-center font-montserrat text-sm text-body">
                     Selected: {toIsoDate(parts)}
                 </p>
             </div>

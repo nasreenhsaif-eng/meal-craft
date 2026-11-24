@@ -34,6 +34,12 @@ class ConsultationCraftedForYouEditController extends Controller
 
         $request->session()->put('consultation_edit_draft', $editDraft);
 
-        return redirect()->route('consultation.crafted-for-you', ['edit' => 1]);
+        $params = ['edit' => 1];
+
+        if ($request->query('focus') === 'cutlery') {
+            $params['focus'] = 'cutlery';
+        }
+
+        return redirect()->route('consultation.crafted-for-you', $params);
     }
 }

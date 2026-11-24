@@ -4,12 +4,12 @@ import { withConsultationMobileFrame } from './consultationStoryDecorators.jsx';
 import { consultationMeals } from '../../consultation/consultationMockMeals.js';
 import { consultationDeckOptionsForSlotKey } from '../../Components/Consultation/ChooseYourMeals.jsx';
 import StackedDeckCarousel from '../../Components/MealCard/StackedDeckCarousel.jsx';
-import MealCardClientViewNano from '../../Components/MealCardClientViewNano.jsx';
+import CustomerMealCard from '../../Components/CustomerMealCard.jsx';
 
 const mealOptionsDemo = consultationDeckOptionsForSlotKey(consultationMeals, 'meal');
 
 export default {
-    title: 'Design System/05. Templates & Pages/Crafted for you',
+    title: 'Design System/06. Pages/Crafted for you',
     component: CraftedForYouPage,
     decorators: withConsultationMobileFrame,
     parameters: {
@@ -74,7 +74,7 @@ export const StackedDeckConsultationMeals = {
 
         return (
             <div className="w-full px-3 py-4 sm:px-6 sm:py-6">
-                <p className="mb-4 font-montserrat text-sm font-bold text-[#262A22]">
+                <p className="mb-4 font-montserrat text-sm font-bold text-heading">
                     Meals of the Day deck — 6 options, select exactly 2 (mock fixtures)
                 </p>
                 <div className="w-full rounded-[12px] border border-gray-200 bg-white p-3 shadow-sm sm:p-6">
@@ -88,7 +88,7 @@ export const StackedDeckConsultationMeals = {
                             const atLimit = selectedIds.length >= 2;
 
                             return (
-                                <MealCardClientViewNano
+                                <CustomerMealCard
                                     deck
                                     ribbon={deckLayout === 'ribbon'}
                                     deckStackRole={isFront ? 'front' : 'back'}

@@ -14,7 +14,7 @@ const leafColors = ['gold', 'red', 'purple', 'green', 'blue'];
 
 /** @type {import('@storybook/react-vite').Meta} */
 const meta = {
-    title: 'Design System/01. Foundations/Logos/Brand Marks',
+    title: 'Design System/01. Tokens/Logos/Brand Marks',
     component: MealCraftLogo,
     decorators: [mealCraftLogoPageDecorator],
     parameters: {

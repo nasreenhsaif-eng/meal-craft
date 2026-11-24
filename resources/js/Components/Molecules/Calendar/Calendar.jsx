@@ -100,7 +100,7 @@ export default function Calendar({
      */
     const dayButtonClasses = (iso, inMonth) => {
         const disabled = isIsoDateDisabled(iso, minDate ?? undefined, maxDate ?? undefined);
-        const muted = !inMonth ? 'text-[#364153]/35' : 'text-[#364153]';
+        const muted = !inMonth ? 'text-body/35' : 'text-body';
 
         if (disabled) {
             return `${cellBase} ${cellFocus} cursor-not-allowed bg-white opacity-40 hover:bg-white ${muted}`;
@@ -171,7 +171,7 @@ export default function Calendar({
         >
             {identityState === 'loading' ? (
                 <div
-                    className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 rounded-[12px] border border-[#E5E7EB] bg-white/90 px-4 py-6 backdrop-blur-[2px]"
+                    className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 rounded-[12px] border border-border-light bg-white/90 px-4 py-6 backdrop-blur-[2px]"
                     role="status"
                     aria-live="polite"
                     aria-busy="true"
@@ -179,7 +179,7 @@ export default function Calendar({
                 >
                     <MealCraftLogo variant="minimal-animated" width={100} className="h-auto max-w-full" alt="" />
                     {identityMessage ? (
-                        <p className="text-center font-sans text-sm font-medium leading-snug text-[#364153]">{identityMessage}</p>
+                        <p className="text-center font-sans text-sm font-medium leading-snug text-body">{identityMessage}</p>
                     ) : null}
                 </div>
             ) : null}
@@ -201,21 +201,21 @@ export default function Calendar({
             ) : null}
 
             <div
-                className="box-border w-full min-w-[320px] overflow-hidden rounded-[12px] border border-[#E5E7EB] bg-white shadow-sm"
+                className="box-border w-full min-w-[320px] overflow-hidden rounded-[12px] border border-border-light bg-white shadow-sm"
                 role="group"
                 aria-label={ariaLabel}
             >
-                <div className="flex items-center justify-between gap-2 border-b border-[#E5E7EB] bg-white px-3 py-3 sm:px-4">
+                <div className="flex items-center justify-between gap-2 border-b border-border-light bg-white px-3 py-3 sm:px-4">
                     <button
                         type="button"
                         onClick={goPrev}
-                        className="inline-flex h-10 min-w-[40px] items-center justify-center rounded-[12px] border border-[#E5E7EB] bg-white font-sans text-sm font-semibold text-[#364153] shadow-sm outline-none transition-colors hover:border-[#6E8C47]/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6E8C47] focus-visible:ring-offset-2"
+                        className="inline-flex h-10 min-w-[40px] items-center justify-center rounded-[12px] border border-border-light bg-white font-sans text-sm font-semibold text-body shadow-sm outline-none transition-colors hover:border-[#6E8C47]/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6E8C47] focus-visible:ring-offset-2"
                         aria-label="Previous month"
                     >
                         ‹
                     </button>
                     <h2
-                        className="m-0 text-center font-sans text-base font-bold leading-snug tracking-tight text-[#364153]"
+                        className="m-0 text-center font-sans text-base font-bold leading-snug tracking-tight text-body"
                         id={monthHeadingId}
                     >
                         {monthLabel}
@@ -223,7 +223,7 @@ export default function Calendar({
                     <button
                         type="button"
                         onClick={goNext}
-                        className="inline-flex h-10 min-w-[40px] items-center justify-center rounded-[12px] border border-[#E5E7EB] bg-white font-sans text-sm font-semibold text-[#364153] shadow-sm outline-none transition-colors hover:border-[#6E8C47]/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6E8C47] focus-visible:ring-offset-2"
+                        className="inline-flex h-10 min-w-[40px] items-center justify-center rounded-[12px] border border-border-light bg-white font-sans text-sm font-semibold text-body shadow-sm outline-none transition-colors hover:border-[#6E8C47]/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6E8C47] focus-visible:ring-offset-2"
                         aria-label="Next month"
                     >
                         ›
@@ -236,7 +236,7 @@ export default function Calendar({
                             <div
                                 key={wd}
                                 role="columnheader"
-                                className="flex min-w-0 items-center justify-center font-sans text-[11px] font-bold uppercase tracking-wide text-[#555555]"
+                                className="flex min-w-0 items-center justify-center font-sans text-[11px] font-bold uppercase tracking-wide text-body"
                             >
                                 {wd}
                             </div>

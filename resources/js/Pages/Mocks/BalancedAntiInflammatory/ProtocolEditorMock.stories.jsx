@@ -5,7 +5,7 @@ import LibraryCardMock from './LibraryCardMock.jsx';
 import ProtocolEditorMock from './ProtocolEditorMock.jsx';
 
 export default {
-    title: 'Design System/05. Templates & Pages/Mocks/Balanced Anti-inflammatory',
+    title: 'Design System/06. Pages/Mocks/Balanced Anti-inflammatory',
     component: ProtocolEditorMock,
     parameters: {
         layout: 'fullscreen',
@@ -40,7 +40,7 @@ export const LibraryCard = {
     name: 'Library card',
     parameters: { layout: 'padded' },
     render: () => (
-        <div className="box-border flex w-full justify-center bg-[#F8F9F6] p-6">
+        <div className="box-border flex w-full justify-center bg-surface-soft p-6">
             <div className="w-[240px] max-w-[240px]">
                 <LibraryCardMock />
             </div>

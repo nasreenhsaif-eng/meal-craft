@@ -59,7 +59,7 @@ export default function DairyFreeFilterNotice({ onDismiss }) {
                 <div className="overflow-y-auto overscroll-contain px-4 py-5 sm:px-5">
                     <h3
                         id="dairy-free-filter-notice-title"
-                        className="font-montserrat text-sm font-bold text-[#262A22] sm:text-base"
+                        className="font-montserrat text-sm font-bold text-heading sm:text-base"
                     >
                         A Note on Going Dairy-Free
                     </h3>
@@ -79,11 +79,11 @@ export default function DairyFreeFilterNotice({ onDismiss }) {
                             additives.
                         </p>
                         <p>
-                            <span className="font-medium text-[#262A22]">Avoiding for health/medical reasons?</span>{' '}
+                            <span className="font-medium text-heading">Avoiding for health/medical reasons?</span>{' '}
                             Your plan will remain strictly dairy-free.
                         </p>
                         <p>
-                            <span className="font-medium text-[#262A22]">Choosing by preference?</span> We highly
+                            <span className="font-medium text-heading">Choosing by preference?</span> We highly
                             encourage keeping our clean dairy options for optimal nutrition. If you still wish
                             to exclude it, we will prioritize alternative whole-food sources (like leafy greens,
                             tahini, and sardines) to help bridge the nutritional gap.

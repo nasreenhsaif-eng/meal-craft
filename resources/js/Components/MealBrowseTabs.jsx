@@ -26,7 +26,7 @@ export default function MealBrowseTabs({ tabs = [], activeId, onChange, ariaLabe
                         role="tab"
                         aria-selected={isActive}
                         className={`rounded-full px-3 py-1.5 font-montserrat text-xs font-bold tracking-wide ${
-                            isActive ? 'bg-[#5A6B44] text-white' : 'bg-[#E8EDE3] text-[#262A22]'
+                            isActive ? 'bg-[#5A6B44] text-white' : 'bg-[#E8EDE3] text-heading'
                         }`}
                         onClick={() => onChange?.(tab.id)}
                     >

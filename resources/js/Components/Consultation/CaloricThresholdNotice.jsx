@@ -25,7 +25,7 @@ export default function CaloricThresholdNotice({ planTierCalories = 0 }) {
             <p className="font-montserrat text-xs font-bold uppercase tracking-[0.12em] text-amber-900">
                 Please note
             </p>
-            <h3 className="mt-2 font-montserrat text-sm font-bold leading-snug text-[#262A22]">
+            <h3 className="mt-2 font-montserrat text-sm font-bold leading-snug text-heading">
                 <span aria-hidden="true">⚠️ </span>
                 {CALORIC_THRESHOLD_NOTICE.title}
             </h3>

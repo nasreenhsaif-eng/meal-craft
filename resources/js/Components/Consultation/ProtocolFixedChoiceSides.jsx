@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import Button from '../Atoms/Button/Button.jsx';
 import SquareCheckbox from '../Atoms/Icons/SquareCheckbox.jsx';
-import MealCardClientViewNano from '../MealCardClientViewNano.jsx';
+import CustomerMealCard from '../CustomerMealCard.jsx';
 import {
     FIXED_CHOICE_MAX_COUNT,
     FIXED_CHOICE_MIN_COUNT,
@@ -99,10 +99,10 @@ export default function ProtocolFixedChoiceSides({
             aria-label="Pick 1 to 2 of 3 sides"
         >
             <div className="border-b border-gray-100 px-4 py-3">
-                <h2 className="font-montserrat text-base font-bold text-[#262A22] sm:text-lg">
+                <h2 className="font-montserrat text-base font-bold text-heading sm:text-lg">
                     Pick 1–2 of 3 sides
                 </h2>
-                <p className="mt-0.5 font-body text-sm text-[#555555]">
+                <p className="mt-0.5 font-body text-sm text-body">
                     Side salad, soup, or dessert • {fixedChoiceCount}/{FIXED_CHOICE_MAX_COUNT} selected (min{' '}
                     {FIXED_CHOICE_MIN_COUNT})
                 </p>
@@ -165,7 +165,7 @@ export default function ProtocolFixedChoiceSides({
 
                                 <button
                                     type="button"
-                                    className="min-w-0 flex-1 text-left font-montserrat text-sm font-bold text-[#262A22] disabled:opacity-50"
+                                    className="min-w-0 flex-1 text-left font-montserrat text-sm font-bold text-heading disabled:opacity-50"
                                     disabled={!pickEnabled || !hasOptions}
                                     onClick={() => toggleCategory(option.selectionKey, cards, isChecked)}
                                 >
@@ -193,7 +193,7 @@ export default function ProtocolFixedChoiceSides({
                             {isChecked && selectedMeals.length > 0 ? (
                                 <div className="mt-3 flex w-full justify-center">
                                     {selectedMeals.map((meal, index) => (
-                                        <MealCardClientViewNano
+                                        <CustomerMealCard
                                             key={normalizeMealId(meal?.id) || index}
                                             deck
                                             alignActionsBottom

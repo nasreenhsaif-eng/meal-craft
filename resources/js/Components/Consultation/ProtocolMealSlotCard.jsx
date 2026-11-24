@@ -1,6 +1,6 @@
 import Button from '../Atoms/Button/Button.jsx';
 import MealCraftLogo from '../Atoms/Logo/MealCraftLogo.jsx';
-import MealCardClientViewNano from '../MealCardClientViewNano.jsx';
+import CustomerMealCard from '../CustomerMealCard.jsx';
 
 /** Fixed meal card width used across consultation selected slots. */
 const CARD_PX = 240;
@@ -41,7 +41,7 @@ export default function ProtocolMealSlotCard({
             aria-label={title}
         >
             <div className="flex items-start justify-between gap-2 px-3 pb-2 pt-3">
-                <h3 className="min-w-0 pt-0.5 font-montserrat text-sm font-bold text-[#262A22] sm:text-base">
+                <h3 className="min-w-0 pt-0.5 font-montserrat text-sm font-bold text-heading sm:text-base">
                     {title}
                 </h3>
                 {typeof onSeeOtherOptions === 'function' ? (
@@ -84,7 +84,7 @@ export default function ProtocolMealSlotCard({
                                     className="shrink-0 snap-start"
                                     style={{ width: CARD_PX }}
                                 >
-                                    <MealCardClientViewNano
+                                    <CustomerMealCard
                                         deck
                                         alignActionsBottom
                                         hideCraftButton
@@ -112,7 +112,7 @@ export default function ProtocolMealSlotCard({
                 ) : (
                     <div className="flex w-full justify-center py-1.5">
                         <div className="shrink-0" style={{ width: CARD_PX }}>
-                            <MealCardClientViewNano
+                            <CustomerMealCard
                                 deck
                                 alignActionsBottom
                                 hideCraftButton
