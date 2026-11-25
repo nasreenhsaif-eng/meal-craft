@@ -81,7 +81,9 @@ export const LeafVariants = {
 
 /** Browser tab / PWA icons — Meal Craft seal (public/favicon.*). */
 const faviconAssets = [
-    { src: '/favicon.svg', label: 'favicon.svg', caption: 'Primary tab icon', size: 64 },
+    { src: '/favicon.svg', label: 'favicon.svg', caption: 'Primary tab icon · transparent', size: 64 },
+    { src: '/favicon-32x32.png', label: 'favicon-32x32.png', caption: 'PNG tab icon · 32×32', size: 64 },
+    { src: '/favicon-16x16.png', label: 'favicon-16x16.png', caption: 'PNG tab icon · 16×16', size: 48 },
     { src: '/favicon.ico', label: 'favicon.ico', caption: 'Fallback tab icon', size: 64 },
     {
         src: '/apple-touch-icon.png',
@@ -90,15 +92,9 @@ const faviconAssets = [
         size: 96,
     },
     {
-        src: '/images/branding/seal-favicon-192.png',
-        label: 'seal-favicon-192.png',
-        caption: 'High-res seal · 192×192',
-        size: 96,
-    },
-    {
         src: '/images/branding/seal-favicon-512.png',
         label: 'seal-favicon-512.png',
-        caption: 'Source seal · 512×512',
+        caption: 'Cropped seal source · transparent',
         size: 128,
     },
 ];
