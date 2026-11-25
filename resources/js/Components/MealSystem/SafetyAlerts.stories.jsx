@@ -29,3 +29,18 @@ export const CommonAllergies = {
     ),
 };
 
+export const Dislikes = {
+    name: 'Dislikes',
+    render: () => (
+        <div className="max-w-2xl bg-white p-8">
+            <SafetyAlerts
+                alerts={[
+                    { label: 'Dairy', variant: 'dislike' },
+                    { label: 'Mushrooms', variant: 'dislike' },
+                    { label: 'Cilantro', variant: 'dislike' },
+                ]}
+            />
+        </div>
+    ),
+};
+

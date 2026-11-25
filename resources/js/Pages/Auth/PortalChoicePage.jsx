@@ -1,8 +1,9 @@
 import MealCraftLogo from '../../Components/Atoms/Logo/MealCraftLogo.jsx';
 import Button from '../../Components/Atoms/Button/Button.jsx';
+import CustomerOnboardingPhoneFrame from '../../Components/Molecules/Customer/CustomerOnboardingPhoneFrame.jsx';
 
-/** Same responsive width band as `LoginPage` — 90% on mobile, capped on desktop. */
-const contentWidthClass = 'mx-auto w-full max-w-[90%] md:max-w-[440px]';
+/** Content width inside the onboarding phone frame. */
+const contentWidthClass = 'mx-auto w-full max-w-full px-1 text-center';
 
 /** Secondary portal choices — full width, multi-line safe. */
 const portalChoiceButtonClass =
@@ -47,47 +48,47 @@ export default function PortalChoicePage({
     };
 
     return (
-        <div className="relative min-h-screen w-screen bg-white">
-            <main className="flex min-h-screen w-screen flex-col items-center justify-center px-2 py-8 sm:px-4 md:px-6">
-                <div className={contentWidthClass}>
-                    <div className="flex justify-center">
+        <CustomerOnboardingPhoneFrame>
+            <div className="relative flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden bg-white">
+                <main className="relative z-0 flex min-h-0 flex-1 flex-col items-center justify-center overflow-y-auto overscroll-contain px-3 py-6">
+                    <div className={`flex w-full flex-col items-center ${contentWidthClass}`}>
                         <MealCraftLogo
                             variant="vertical-smart"
                             width={280}
-                            className="h-auto max-w-full"
+                            className="mx-auto h-auto max-w-full"
                             alt="Meal Craft"
                         />
+
+                        <header className="mt-8 w-full text-center">
+                            <p className="font-montserrat text-sm font-semibold text-[#6E8C47]">{greeting}</p>
+
+                            <h1 className="mt-3 font-montserrat text-2xl font-bold tracking-tight text-heading">
+                                Choose your workspace
+                            </h1>
+
+                            <p className="mx-auto mt-3 max-w-prose text-base font-medium leading-relaxed text-[#4B5563]">
+                                Where would you like to go today?
+                            </p>
+                        </header>
+
+                        <div className="mt-10 flex w-full flex-col gap-4">
+                            <Button
+                                label="Customer Onboarding / Experience"
+                                variant="secondary"
+                                className={portalChoiceButtonClass}
+                                onClick={goToCustomerExperience}
+                            />
+
+                            <Button
+                                label="Admin Portal Dashboard"
+                                variant="secondary"
+                                className={portalChoiceButtonClass}
+                                onClick={goToAdminPortal}
+                            />
+                        </div>
                     </div>
-
-                    <header className="mt-8 text-center">
-                        <p className="font-montserrat text-sm font-semibold text-[#6E8C47]">{greeting}</p>
-
-                        <h1 className="mt-3 font-montserrat text-2xl font-bold tracking-tight text-heading sm:text-3xl">
-                            Choose your workspace
-                        </h1>
-
-                        <p className="mx-auto mt-3 max-w-prose text-base font-medium leading-relaxed text-[#4B5563] sm:text-lg">
-                            Where would you like to go today?
-                        </p>
-                    </header>
-
-                    <div className="mt-10 flex w-full flex-col gap-4">
-                        <Button
-                            label="Customer Onboarding / Experience"
-                            variant="secondary"
-                            className={portalChoiceButtonClass}
-                            onClick={goToCustomerExperience}
-                        />
-
-                        <Button
-                            label="Admin Portal Dashboard"
-                            variant="secondary"
-                            className={portalChoiceButtonClass}
-                            onClick={goToAdminPortal}
-                        />
-                    </div>
-                </div>
-            </main>
-        </div>
+                </main>
+            </div>
+        </CustomerOnboardingPhoneFrame>
     );
 }

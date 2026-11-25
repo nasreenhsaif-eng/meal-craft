@@ -139,9 +139,21 @@ final class CustomerIntake
      */
     public static function checkoutRules(?CustomerProfile $profile): array
     {
+        $phoneUnique = Rule::unique(CustomerProfile::class, 'phone');
+
+        if ($profile !== null) {
+            $phoneUnique = $phoneUnique->ignore($profile->id);
+        }
+
         return [
             'declaration_accepted' => ['accepted'],
-            'phone' => ['required', 'string', 'max:32'],
+            'phone' => [
+                'required',
+                'string',
+                'max:32',
+                'regex:/^\+[1-9]\d{7,14}$/',
+                $phoneUnique,
+            ],
             'contact_preference' => ['required', 'string', Rule::enum(CustomerContactPreference::class)],
             'delivery_time' => ['required', 'string', Rule::enum(CustomerDeliveryTime::class)],
             'area' => ['required', 'string', 'max:120'],
@@ -163,6 +175,15 @@ final class CustomerIntake
      */
     public static function prepareCheckout(array $input): array
     {
+        if (array_key_exists('phone', $input)) {
+            $normalized = PhoneNumber::normalize(
+                is_string($input['phone']) || is_numeric($input['phone'])
+                    ? (string) $input['phone']
+                    : null
+            );
+            $input['phone'] = $normalized ?? (is_string($input['phone']) ? trim($input['phone']) : $input['phone']);
+        }
+
         $nullable = [
             'phone',
             'contact_preference',

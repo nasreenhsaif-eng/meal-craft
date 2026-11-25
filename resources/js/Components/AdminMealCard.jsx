@@ -12,7 +12,7 @@ import SelectionCheckBadge from './Atoms/Icons/SelectionCheckBadge.jsx';
 import { MEAL_CARD_DECK_SHELL_CLASS } from './Consultation/consultationNanoCardWidth.js';
 
 /**
- * Same shell as consultation Nano / options-modal cards (fixed 240px).
+ * Same shell as consultation Nano / options-modal cards (fixed 336px).
  */
 const DECK_SHELL = `${MEAL_CARD_DECK_SHELL_CLASS} shadow-md font-montserrat`;
 
@@ -42,7 +42,7 @@ function MacroGridDeckSection({ macros }) {
 
 /**
  * Admin meal card — layout matches {@link CustomerMealCard} **deck (consultation)** card:
- * `240px` shell, `aspect-[4/3]` hero, deck `MacroGrid` (fluid), title + VIEW DETAILS + CRAFT THIS MEAL.
+ * `336px` shell, `aspect-[4/3]` hero, deck `MacroGrid` (fluid), title + VIEW DETAILS + CRAFT THIS MEAL.
  *
  * @param {object} props
  * @param {object} [props.meal]

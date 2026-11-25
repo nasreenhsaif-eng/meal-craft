@@ -379,24 +379,21 @@ export function MyToolsInner({
                         const selected = activeTab === tab.id;
 
                         return (
-                            <button
+                            <Button
                                 key={tab.id}
                                 type="button"
                                 role="tab"
                                 aria-selected={selected}
+                                variant={selected ? 'primary' : 'tab'}
+                                size="sm"
+                                className="shrink-0 gap-1.5"
                                 onClick={() => handleSelectTab(/** @type {ToolsTabId} */ (tab.id))}
-                                className={[
-                                    'inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 font-montserrat text-[11px] font-bold tracking-wide transition-colors',
-                                    selected
-                                        ? 'bg-[#5A6B44] text-white'
-                                        : 'bg-white text-body ring-1 ring-gray-200 hover:text-heading',
-                                ].join(' ')}
                             >
                                 {'heart' in tab && tab.heart ? (
                                     <HeartIcon filled={selected} className="shrink-0" />
                                 ) : null}
                                 {tab.label}
-                            </button>
+                            </Button>
                         );
                     })}
                 </div>

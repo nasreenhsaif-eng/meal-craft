@@ -471,7 +471,7 @@ export function MealPlanLibraryPageContent({
                         ) : (
                             <ul className="m-0 grid list-none grid-cols-1 justify-items-center gap-8 p-0 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
                                 {filteredPlans.map((p) => (
-                                    <li key={p.id} className="w-[240px] max-w-[240px]">
+                                    <li key={p.id} className="w-[336px] max-w-[336px]">
                                         <MealPlanCard
                                             title={p.name}
                                             dateRangeLabel={p.dateRangeLabel ?? null}

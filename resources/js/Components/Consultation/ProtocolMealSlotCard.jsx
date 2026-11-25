@@ -3,11 +3,11 @@ import MealCraftLogo from '../Atoms/Logo/MealCraftLogo.jsx';
 import CustomerMealCard from '../CustomerMealCard.jsx';
 
 /** Fixed meal card width used across consultation selected slots. */
-const CARD_PX = 240;
+const CARD_PX = 336;
 
 /**
  * Day-overview slot: soft gray border frame, title + SEE OTHER OPTIONS, selected meal cards.
- * Multi-select uses a horizontal peek carousel — one full 240px card, next card peeks
+ * Multi-select uses a horizontal peek carousel — one full 336px card, next card peeks
  * through to the frame edge (full width of the framed content area).
  *
  * @param {object} props

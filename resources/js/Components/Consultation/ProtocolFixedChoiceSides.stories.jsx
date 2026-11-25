@@ -23,7 +23,7 @@ export default {
         docs: {
             description: {
                 component:
-                    'Pick 1–2 of side salad / dessert / soup — used in Full Craft nutrient-dense and fixed-choice flows.',
+                    'Pick 1–2 of side salad / dessert / soup. Every option sits in front, like breakfast and main meals. Checked cards are the admin-portal selections.',
             },
         },
     },
@@ -50,10 +50,6 @@ export const Interactive = {
                             return blocked ? prev : next;
                         });
                     }}
-                    onClearCategory={(categoryKey) => {
-                        setCategorySelections((prev) => ({ ...prev, [categoryKey]: [] }));
-                    }}
-                    onSeeOtherOptions={() => {}}
                     onViewDetails={() => {}}
                 />
             </div>
@@ -72,8 +68,6 @@ export const WithSelections = {
                     soup: [],
                 }}
                 displayDecks={displayDecks}
-                onSelectMeal={() => {}}
-                onClearCategory={() => {}}
                 onViewDetails={() => {}}
             />
         </div>

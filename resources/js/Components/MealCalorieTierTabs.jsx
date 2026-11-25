@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import Button from './Atoms/Button.jsx';
 import MacroGrid from './MacroGrid.jsx';
 
 /**
@@ -42,31 +43,27 @@ export default function MealCalorieTierTabs({ tabValues, calorieTiers = [], onCa
 
     return (
         <div className="mt-0 w-full min-w-0 shrink px-0">
-            <div className="flex flex-wrap justify-center gap-1" role="tablist" aria-label="Calorie tiers">
+            <div className="flex flex-wrap justify-center gap-2" role="tablist" aria-label="Calorie tiers">
                 {numericTabs.map((tier) => {
                     const isActive = tier === activeTier;
                     const isAuthored = Boolean(byTier[tier]?.authored);
+
                     return (
-                        <button
+                        <Button
                             key={tier}
                             type="button"
                             role="tab"
                             aria-selected={isActive}
-                            className={`rounded-full px-2 py-0.5 font-montserrat text-[10px] font-bold tracking-wide ${
-                                isActive
-                                    ? 'bg-[#5A6B44] text-white'
-                                    : isAuthored
-                                      ? 'bg-[#E8EDE3] text-heading'
-                                      : 'bg-[#F3F3F3] text-body'
-                            }`}
+                            label={String(tier)}
+                            variant={isActive ? 'primary' : 'tab'}
+                            size="sm"
+                            className={['shrink-0', !isActive && !isAuthored ? 'opacity-60' : ''].filter(Boolean).join(' ')}
                             onClick={(event) => {
                                 event.stopPropagation();
                                 setActive(tier);
                                 onCalorieTierChange?.(tier, byTier[tier] ?? null);
                             }}
-                        >
-                            {tier}
-                        </button>
+                        />
                     );
                 })}
             </div>

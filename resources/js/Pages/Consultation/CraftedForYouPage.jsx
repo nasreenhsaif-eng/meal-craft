@@ -455,6 +455,7 @@ export default function CraftedForYouPage({
     const [productionMealPlanId, setProductionMealPlanId] = useState(/** @type {number | null} */ (null));
     const [menuLoading, setMenuLoading] = useState(false);
     const [menuError, setMenuError] = useState(/** @type {string | null} */ (null));
+    const [nutritionistNoteDismissed, setNutritionistNoteDismissed] = useState(false);
     const hasLoadedAdaptedMenuRef = useRef(false);
     const adaptedMenuFetchGenerationRef = useRef(0);
     /** @type {React.MutableRefObject<string>} */
@@ -2110,18 +2111,11 @@ export default function CraftedForYouPage({
                             activeStep={String(curationDay)}
                             onBack={goBackFromCuration}
                             canGoBack
-                            progressNoun="Day"
+                            progressLabel={WEEKDAY_LONG[curationDay - 1] ?? `Day ${curationDay}`}
                         />
                         <div className="mt-3 w-full">
-                            <h1 className="text-center font-montserrat text-2xl font-semibold leading-tight text-heading">
-                                {WEEKDAY_LONG[curationDay - 1] ?? progressHeaderLabel}
-                            </h1>
-                            <p className="mt-1.5 text-center text-sm leading-snug text-body">
+                            <p className="text-center text-sm leading-snug text-body">
                                 Choose your meals for this day.
-                            </p>
-                            <p className="mx-auto mt-2 max-w-[22rem] text-center text-xs leading-snug text-body/80">
-                                Meals are chosen by your nutritionist to maximize nutrition density —
-                                you can always pick what you like by selecting and unselecting any meal.
                             </p>
                         </div>
                     </div>
@@ -2192,7 +2186,7 @@ export default function CraftedForYouPage({
                 ) : null}
                 {isCurationScreen && !disableAdaptedMenuFetch && menuError ? (
                     <p className="mb-4 shrink-0 rounded-[12px] border border-amber-200 bg-amber-50 px-4 py-3 font-body text-sm text-amber-900">
-                        {menuError} Showing sample meals until your plan is available.
+                        {menuError}
                         {loginUrl && /log in again/i.test(menuError) ? (
                             <>
                                 {' '}
@@ -2824,7 +2818,7 @@ export default function CraftedForYouPage({
                                         selected={environmentYes === false}
                                         onSelect={() => setEnvironmentYes(false)}
                                     />
-                                    <div className="flex w-full flex-col">
+                                    <div className="flex w-full flex-col gap-2.5">
                                         <OnboardingOptionButton
                                             label="NO"
                                             selected={environmentYes === true}
@@ -2843,17 +2837,17 @@ export default function CraftedForYouPage({
                                                     <motion.p
                                                         id="cutlery-no-thanks"
                                                         role="status"
-                                                        initial={{ opacity: 0, scale: 0.82, y: 12 }}
-                                                        animate={{ opacity: 1, scale: 1.04, y: 0 }}
+                                                        initial={{ opacity: 0, y: 8 }}
+                                                        animate={{ opacity: 1, y: 0 }}
                                                         transition={{
                                                             type: 'spring',
                                                             stiffness: 380,
-                                                            damping: 16,
+                                                            damping: 22,
                                                             mass: 0.7,
                                                         }}
-                                                        className="relative z-10 mt-3 origin-center rounded-[14px] border border-[#6E8C47]/30 bg-white px-4 py-3.5 text-center font-montserrat text-lg font-bold leading-snug text-[#5A6B44] shadow-[0_10px_28px_rgba(90,107,68,0.22)] sm:text-xl"
+                                                        className="px-1 pt-0.5 text-center font-montserrat text-base font-bold leading-snug text-brand-primary sm:text-lg"
                                                     >
-                                                        <span className="me-2 inline-block text-[1.35em] leading-none" aria-hidden>
+                                                        <span className="me-2 inline-block text-[1.25em] leading-none" aria-hidden>
                                                             👏
                                                         </span>
                                                         Thank you for helping us save the environment.
@@ -2881,6 +2875,45 @@ export default function CraftedForYouPage({
                     </section>
                 ) : null}
             </div>
+
+            {isCurationScreen && curationIndex === 0 && !nutritionistNoteDismissed ? (
+                <PhoneFramePortal>
+                    {({ nested }) => (
+                        <div
+                            className={
+                                nested
+                                    ? 'absolute inset-0 z-[120] flex items-center justify-center overflow-hidden p-4'
+                                    : 'fixed inset-0 z-[120] flex items-center justify-center p-4 sm:p-6'
+                            }
+                        >
+                            <div className="absolute inset-0 bg-black/40" />
+                            <div
+                                role="dialog"
+                                aria-modal="true"
+                                aria-labelledby="nutritionist-meal-note"
+                                className="relative z-10 w-full max-w-[min(100%,22rem)] rounded-[16px] border border-gray-200 bg-white px-5 py-5 shadow-xl"
+                            >
+                                <p
+                                    id="nutritionist-meal-note"
+                                    className="text-center font-body text-sm leading-relaxed text-body"
+                                >
+                                    Meals are chosen by your nutritionist to maximize nutrition density — you can
+                                    always pick what you like by selecting and unselecting any meal.
+                                </p>
+                                <div className="mt-5">
+                                    <Button
+                                        type="button"
+                                        label="Got it"
+                                        variant="primary"
+                                        className="w-full uppercase tracking-[0.08em]"
+                                        onClick={() => setNutritionistNoteDismissed(true)}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </PhoneFramePortal>
+            ) : null}
 
             {submitting ? (
                 <PhoneFramePortal>

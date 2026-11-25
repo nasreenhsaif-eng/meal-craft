@@ -214,6 +214,42 @@ test('checkout confirmation requires a phone number even when profile already ha
         ->assertSessionHasErrors('phone');
 });
 
+test('checkout confirmation rejects a phone already used by another customer', function () {
+    $other = User::factory()->customer()->create();
+    CustomerProfile::factory()->for($other)->create([
+        'phone' => '+97333177718',
+    ]);
+
+    $customer = User::factory()->customer()->create();
+    CustomerProfile::factory()->for($customer)->create([
+        'phone' => '+97311112222',
+        'contact_preference' => CustomerContactPreference::Email,
+    ]);
+
+    $this->actingAs($customer)
+        ->from(route('checkout.details'))
+        ->post(route('checkout.details.store'), checkoutConfirmPayload([
+            'phone' => '+973 3317 7718',
+        ]))
+        ->assertRedirect(route('checkout.details'))
+        ->assertSessionHasErrors('phone');
+});
+
+test('checkout confirmation allows keeping the same phone on the current profile', function () {
+    $customer = User::factory()->customer()->create();
+    CustomerProfile::factory()->for($customer)->create([
+        'phone' => '+97333177718',
+        'contact_preference' => CustomerContactPreference::Email,
+    ]);
+
+    $this->actingAs($customer)
+        ->post(route('checkout.details.store'), checkoutConfirmPayload([
+            'phone' => '+973 3317 7718',
+        ]))
+        ->assertRedirect(route('checkout.payment'))
+        ->assertSessionHas('success');
+});
+
 test('checkout confirmation requires delivery address fields', function () {
     $customer = User::factory()->customer()->create();
     CustomerProfile::factory()->for($customer)->create([

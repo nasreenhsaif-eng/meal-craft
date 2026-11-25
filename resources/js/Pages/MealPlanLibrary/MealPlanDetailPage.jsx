@@ -789,10 +789,10 @@ export default function MealPlanDetailPage({
                                             role="tab"
                                             aria-selected={selected}
                                             label={day.label}
-                                            variant={selected ? 'secondary' : 'ghost'}
+                                            variant={selected ? 'primary' : 'tab'}
                                             size="sm"
                                             onClick={() => setActiveDay(day.dayNumber)}
-                                            className={['shrink-0', selected ? '' : 'border border-[#5A6B44]'].join(' ').trim()}
+                                            className="shrink-0"
                                         />
                                     );
                                 })}
@@ -818,9 +818,9 @@ export default function MealPlanDetailPage({
                                         'relative inline-flex h-[40px] min-h-[40px] w-[40px] shrink-0 cursor-pointer items-center justify-center',
                                         'rounded-[12px] transition-all duration-200 ease-in-out',
                                         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5A6B44] focus-visible:ring-offset-2 focus-visible:ring-offset-white',
-                                        'active:scale-[0.98] active:border-[#6E8C47] active:bg-[#6E8C47] active:text-white',
+                                        'active:scale-[0.98] active:bg-brand-primary/30 active:text-body',
                                         viewSavedShoppingListOpen
-                                            ? 'border border-transparent bg-[color-mix(in_srgb,#6E8C47_50%,white)] text-body hover:bg-[color-mix(in_srgb,#6E8C47_70%,white)]'
+                                            ? 'border border-transparent bg-brand-primary/10 text-body hover:bg-brand-primary/20'
                                             : 'border border-[#5A6B44] bg-transparent text-[#5A6B44] hover:bg-[#5A6B44]/10',
                                     ].join(' ')}
                                 >

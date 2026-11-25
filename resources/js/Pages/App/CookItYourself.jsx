@@ -294,21 +294,17 @@ export function CookItYourselfInner({
                     const selected = contentTab === tab.id;
 
                     return (
-                        <button
+                        <Button
                             key={tab.id}
                             type="button"
                             role="tab"
                             aria-selected={selected}
+                            label={tab.label}
+                            variant={selected ? 'primary' : 'tab'}
+                            size="sm"
+                            className="shrink-0"
                             onClick={() => setContentTab(/** @type {DaySummaryTabId} */ (tab.id))}
-                            className={[
-                                'shrink-0 rounded-full px-2.5 py-1 font-montserrat text-[11px] font-bold tracking-wide transition-colors',
-                                selected
-                                    ? 'bg-[#5A6B44] text-white'
-                                    : 'bg-white text-body ring-1 ring-gray-200 hover:text-heading',
-                            ].join(' ')}
-                        >
-                            {tab.label}
-                        </button>
+                        />
                     );
                 })}
             </div>

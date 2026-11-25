@@ -293,16 +293,8 @@ export function buildAdaptedMenuQueryString(options = {}) {
             params.append('selected_fixed_slots[]', slot);
         }
     }
-    if (Array.isArray(options.selectedMainMealIds) && options.selectedMainMealIds.length > 0) {
-        for (const mealId of options.selectedMainMealIds) {
-            params.append('selected_main_meal_ids[]', String(mealId));
-        }
-    }
-    if (Array.isArray(options.selectedBreakfastMealIds) && options.selectedBreakfastMealIds.length > 0) {
-        for (const mealId of options.selectedBreakfastMealIds) {
-            params.append('selected_breakfast_meal_ids[]', String(mealId));
-        }
-    }
+    appendPositiveIntegerIds(params, 'selected_main_meal_ids[]', options.selectedMainMealIds);
+    appendPositiveIntegerIds(params, 'selected_breakfast_meal_ids[]', options.selectedBreakfastMealIds);
     if (typeof options.soupCalories === 'number' && options.soupCalories > 0) {
         params.set('soup_calories', String(Math.round(options.soupCalories)));
     }
@@ -323,6 +315,32 @@ export function buildAdaptedMenuQueryString(options = {}) {
     }
 
     return params.toString();
+}
+
+/**
+ * Sample-deck ids (for example `meal-2`) are not library meal ids and must not be sent.
+ *
+ * @param {URLSearchParams} params
+ * @param {string} key
+ * @param {unknown} ids
+ */
+function appendPositiveIntegerIds(params, key, ids) {
+    if (!Array.isArray(ids)) {
+        return;
+    }
+
+    const seen = new Set();
+
+    for (const mealId of ids) {
+        const normalized = String(mealId ?? '').trim();
+
+        if (!/^[1-9]\d*$/.test(normalized) || seen.has(normalized)) {
+            continue;
+        }
+
+        seen.add(normalized);
+        params.append(key, normalized);
+    }
 }
 
 /**

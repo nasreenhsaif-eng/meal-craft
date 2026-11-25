@@ -1,5 +1,6 @@
 /**
- * Onboarding selection button — pale green wash, left icon + label.
+ * Onboarding selection button — same brand-primary wash as Button `secondary`
+ * (`/10` · hover `/20` · selected `/30`), with optional icon + label.
  * Used for diet protocol, activity, and gender.
  *
  * @param {{
@@ -42,13 +43,15 @@ export function OnboardingOptionButton({
             aria-busy={busy}
             aria-describedby={selected && describedBy ? describedBy : undefined}
             className={[
-                'box-border flex w-full min-w-0 items-center rounded-[12px] border-0 px-4 py-2 shadow-none',
+                'box-border flex w-full min-w-0 items-center rounded-[12px] border border-transparent px-4 py-2 shadow-none',
+                'no-underline [-webkit-tap-highlight-color:transparent]',
                 sizeClass,
                 isCentered ? 'justify-center text-center' : 'text-left',
                 icon ? 'gap-3' : '',
                 'font-montserrat text-[13px] font-bold uppercase leading-tight tracking-wide text-body',
                 'transition-all duration-200 ease-in-out',
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2',
+                'outline-none focus:outline-none focus-visible:outline-none',
+                'focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-primary',
                 'disabled:pointer-events-none disabled:opacity-60',
                 selected
                     ? 'bg-brand-primary/30'
@@ -57,11 +60,11 @@ export function OnboardingOptionButton({
             ].join(' ')}
         >
             {icon ? (
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center text-body [&>*]:!h-9 [&>*]:!w-9" aria-hidden>
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center text-body no-underline [&>*]:!h-9 [&>*]:!w-9" aria-hidden>
                     {icon}
                 </span>
             ) : null}
-            <span className={isCentered ? 'min-w-0' : 'min-w-0 flex-1'}>{label}</span>
+            <span className={['no-underline', isCentered ? 'min-w-0' : 'min-w-0 flex-1'].join(' ')}>{label}</span>
             {detailLabel ? (
                 <span className="ms-3 shrink-0 font-montserrat text-[12px] font-semibold normal-case tracking-normal tabular-nums text-body">
                     {detailLabel}

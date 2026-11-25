@@ -2,15 +2,17 @@
  * Smart Kitchen action button — single design-system atom.
  *
  * Variants:
- * - primary: solid brand primary (matches landing Get Started)
- * - secondary: Figma hover wash — 50% `#6E8C47` mixed with white
- * - outline: same as ghost (transparent green text)
- * - ghost: transparent, minimal affordance
- * - tab: same wash family as secondary (day/filter chips; selected chips use primary)
+ * - primary: solid brand primary (Landing Get Started, auth, onboarding Continue, saves)
+ * - reversed: inverse of primary — white fill, brand border, pressed-green text (AA on white)
+ * - secondary: brand-primary wash (`/10` → hover `/20` → active `/30`) — same family as onboarding option buttons
+ * - outline: same as ghost (transparent green text) — prefer ghost
+ * - ghost: transparent, minimal affordance (Cancel / Close)
+ * - tab: same wash family as secondary (unselected day/filter chips; selected chips use primary)
  *
  * @param {{
- *   label: string;
- *   variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'tab';
+ *   label?: string;
+ *   children?: import('react').ReactNode;
+ *   variant?: 'primary' | 'reversed' | 'secondary' | 'outline' | 'ghost' | 'tab';
  *   size?: 'md' | 'sm';
  *   className?: string;
  *   type?: 'button' | 'submit' | 'reset';
@@ -20,6 +22,7 @@
  */
 export default function Button({
     label,
+    children,
     variant = 'primary',
     type = 'button',
     size = 'md',
@@ -39,9 +42,9 @@ export default function Button({
     };
 
     const secondaryWash = [
-        'border border-transparent bg-[color-mix(in_srgb,#6E8C47_50%,white)] text-body',
-        'hover:bg-[color-mix(in_srgb,#6E8C47_70%,white)] hover:text-body',
-        'active:border-[#6E8C47] active:bg-[#6E8C47] active:text-white active:scale-[0.98]',
+        'border border-transparent bg-brand-primary/10 text-body',
+        'hover:bg-brand-primary/20 hover:text-body',
+        'active:bg-brand-primary/30 active:text-body active:scale-[0.98]',
     ].join(' ');
 
     const ghost =
@@ -52,6 +55,11 @@ export default function Button({
             'border border-transparent bg-brand-primary text-white shadow-sm',
             'hover:bg-brand-primary-hover hover:shadow-md hover:scale-[1.02]',
             'active:bg-brand-primary-pressed active:shadow-inner active:scale-[0.98]',
+        ].join(' '),
+        reversed: [
+            'border border-brand-primary bg-white text-brand-primary-pressed shadow-sm',
+            'hover:bg-brand-primary/10 hover:text-brand-primary-pressed hover:shadow-md hover:scale-[1.02]',
+            'active:bg-brand-primary/20 active:text-brand-primary-pressed active:scale-[0.98]',
         ].join(' '),
         secondary: secondaryWash,
         tab: secondaryWash,
@@ -71,7 +79,7 @@ export default function Button({
             style={style}
             {...props}
         >
-            {label}
+            {children ?? label}
         </button>
     );
 }

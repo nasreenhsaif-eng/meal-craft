@@ -8,30 +8,24 @@ const RIBBON_COPIES = 3;
 const RIBBON_ARROW_ZONE_CLASS = 'w-10 lg:w-11';
 
 /**
- * Edge dim from the frame to the focused card (half of fixed 240px + craft pad).
- */
-const RIBBON_EDGE_DIM_WIDTH_CLASS =
-    'w-[max(2.75rem,calc(50%-7.5rem+0.75rem))]';
-
-/**
  * Ribbon slide — gentle start (aggressive ease-out felt like a jump on arrow click).
  */
 function ribbonSlideTransition() {
     return { type: 'tween', duration: 0.42, ease: [0.4, 0, 0.2, 1] };
 }
 
-/** Slide cell — fixed 240px everywhere. */
+/** Slide cell — fixed 336px everywhere. */
 const RIBBON_CARD_SHELL =
-    'flex w-[240px] max-w-[240px] shrink-0 flex-col items-stretch transform-gpu';
+    'flex w-[336px] max-w-[336px] shrink-0 flex-col items-stretch transform-gpu';
 
 const STATIC_CARD_SHELL_SINGLE =
-    'flex w-[240px] max-w-[240px] shrink-0 flex-col items-stretch transform-gpu';
+    'flex w-[336px] max-w-[336px] shrink-0 flex-col items-stretch transform-gpu';
 
 const STATIC_PAIR_CARD_SHELL =
-    'flex w-[240px] max-w-[240px] shrink-0 flex-col transform-gpu';
+    'flex w-[336px] max-w-[336px] shrink-0 flex-col transform-gpu';
 
 const STATIC_TRIPLE_CARD_SHELL =
-    'flex w-[240px] max-w-[240px] shrink-0 flex-col transform-gpu';
+    'flex w-[336px] max-w-[336px] shrink-0 flex-col transform-gpu';
 
 const DESKTOP_MIN_WIDTH_PX = 768;
 
@@ -64,31 +58,27 @@ function useMinWidth(minWidthPx) {
  */
 function ribbonStageMaxWidthClass(itemCount) {
     if (itemCount >= 6) {
-        return 'w-full max-w-[1480px]';
+        return 'w-full max-w-[1840px]';
     }
 
     if (itemCount >= 4) {
-        return 'w-full max-w-[1040px]';
+        return 'w-full max-w-[1320px]';
     }
 
     if (itemCount === 3) {
-        return 'w-full max-w-[820px]';
+        return 'w-full max-w-[1080px]';
     }
 
     return 'w-full max-w-full';
 }
 
 /**
- * Two-option decks use a single track (no duplicate peeks). Three+ meals triplicate for infinite wrap.
+ * One card stays a single slide. Two or more triplicate so a meal peeks on both sides, same as main meals.
  *
  * @param {number} itemCount
  */
 function ribbonCopyCount(itemCount) {
     if (itemCount <= 1) {
-        return 1;
-    }
-
-    if (itemCount === 2) {
         return 1;
     }
 
@@ -111,12 +101,6 @@ function focusedPhysicalIndex(logicalIdx, itemCount, copies) {
 
     return itemCount + logicalIdx;
 }
-
-/**
- * Gap from gallery left so a start-aligned card sits to the right of the prev arrow
- * (`RIBBON_ARROW_ZONE_CLASS` is w-10 / 2.5rem on mobile).
- */
-const RIBBON_START_INSET_PX = 52;
 
 /**
  * Target track `x` to center a logical card.
@@ -157,50 +141,6 @@ function trackXForCenteredLogical(logicalIdx, container, track, cards, itemCount
 }
 
 /**
- * Target track `x` so the active card sits fully on the left with the next card peeking on the right.
- *
- * @param {number} logicalIdx
- * @param {HTMLDivElement} container
- * @param {HTMLDivElement} track
- * @param {(HTMLDivElement|null)[]} cards
- * @param {number} itemCount
- * @param {number} copies
- * @param {number} [leftInsetPx]
- */
-function trackXForStartAlignedLogical(
-    logicalIdx,
-    container,
-    track,
-    cards,
-    itemCount,
-    copies,
-    leftInsetPx = RIBBON_START_INSET_PX,
-) {
-    const physical = focusedPhysicalIndex(logicalIdx, itemCount, copies);
-    const card = cards[physical];
-    if (!card) {
-        return undefined;
-    }
-
-    const cw = container.clientWidth;
-    if (cw <= 0) {
-        return undefined;
-    }
-
-    let x = leftInsetPx - card.offsetLeft;
-
-    if (copies < RIBBON_COPIES) {
-        const tw = Math.max(track.scrollWidth, track.offsetWidth);
-        if (tw > cw) {
-            const minX = cw - tw;
-            x = Math.max(minX, Math.min(leftInsetPx, x));
-        }
-    }
-
-    return x;
-}
-
-/**
  * Horizontal ribbon carousel — mobile peek ribbon; desktop uses a static pair for two-option decks.
  *
  * Selection state is owned by the parent: pass `selected` / `onToggleSelected` from `renderCard`.
@@ -213,7 +153,8 @@ function trackXForStartAlignedLogical(
  * @param {string} [props.deckScopeKey] When this identity changes (e.g. day + slot), deck indices reset without breaking circular wrap logic.
  * @param {(item: T, index: number) => string} props.getKey
  * @param {(item: T, index: number, ctx: { isFront: boolean, stackPos: (1|2|3|null), deckLayout: 'ribbon'|'stack'|'staticPair' }) => import('react').ReactNode} props.renderCard
- * @param {boolean} [props.forceRibbon] Always use the peek ribbon (blurry edges) — e.g. phone-frame options modal.
+ * @param {boolean} [props.forceRibbon] Keep the peek ribbon on wide screens (phone frame, options modal).
+ * @param {number} [props.focusIndex] Logical slide to center so that card is fully visible.
  */
 export default function StackedDeckCarousel({
     title: _title,
@@ -223,6 +164,7 @@ export default function StackedDeckCarousel({
     renderCard,
     deckScopeKey,
     forceRibbon = false,
+    focusIndex = null,
 }) {
     const items = meals ?? itemsProp ?? [];
     const itemCount = items.length;
@@ -268,9 +210,11 @@ export default function StackedDeckCarousel({
             return;
         }
         deckScopePrevRef.current = deckScopeKey;
-        setRibbonActiveIndex(0);
+        const bounded = itemCount > 0 ? Math.max(0, Math.min(itemCount - 1, focusIndex ?? 0)) : 0;
+        setRibbonActiveIndex(bounded);
+        ribbonActiveIndexRef.current = bounded;
         trackX.set(0);
-    }, [deckScopeKey, trackX]);
+    }, [deckScopeKey, focusIndex, itemCount, trackX]);
 
     /**
      * Parent owns selection; clone only to guarantee handlers exist for breakpoint toggles.
@@ -305,9 +249,7 @@ export default function StackedDeckCarousel({
     };
 
     /**
-     * Align the track so the active logical card is in view.
-     * `forceRibbon` (options modal): start-align so the left/active card is fully visible.
-     * Otherwise: center the active card with peeks on both sides.
+     * Center the active card so the whole card sits inside the phone, with peeks in the side gutters.
      *
      * @param {number} logicalIdx
      */
@@ -319,17 +261,6 @@ export default function StackedDeckCarousel({
                 return undefined;
             }
 
-            if (forceRibbon) {
-                return trackXForStartAlignedLogical(
-                    logicalIdx,
-                    container,
-                    track,
-                    cardRefs.current,
-                    itemCount,
-                    copies,
-                );
-            }
-
             return trackXForCenteredLogical(
                 logicalIdx,
                 container,
@@ -339,30 +270,34 @@ export default function StackedDeckCarousel({
                 copies,
             );
         },
-        [copies, forceRibbon, itemCount],
+        [copies, itemCount],
     );
 
     const usesInfiniteRibbon = copies === RIBBON_COPIES;
 
     /**
-     * Signed horizontal distance between two logical slides (uses adjacent copy when wrapping).
+     * Signed horizontal distance between two logical slides.
+     * Forward across the last card, and backward across the first, use the neighboring clone
+     * so the track keeps moving the same way. Two-card decks must use direction: index order
+     * alone cannot tell a forward step from a wrap.
      *
      * @param {number} from
      * @param {number} to
+     * @param {1 | -1} direction
      */
     const getStepBetweenLogical = useCallback(
-        (from, to) => {
+        (from, to, direction) => {
             if (itemCount <= 1) {
                 return 0;
             }
             const n = itemCount;
-            let physicalFrom = focusedPhysicalIndex(from, n, copies);
+            const physicalFrom = focusedPhysicalIndex(from, n, copies);
             let physicalTo = focusedPhysicalIndex(to, n, copies);
 
             if (usesInfiniteRibbon) {
-                if (from === n - 1 && to === 0) {
+                if (direction === 1 && from === n - 1 && to === 0) {
                     physicalTo = 2 * n;
-                } else if (from === 0 && to === n - 1) {
+                } else if (direction === -1 && from === 0 && to === n - 1) {
                     physicalTo = n - 1;
                 }
             }
@@ -400,6 +335,17 @@ export default function StackedDeckCarousel({
         },
         [alignTrackToLogical, trackX],
     );
+
+    useEffect(() => {
+        if (focusIndex == null || itemCount === 0) {
+            return;
+        }
+
+        const bounded = Math.max(0, Math.min(itemCount - 1, focusIndex));
+        setRibbonActiveIndex(bounded);
+        ribbonActiveIndexRef.current = bounded;
+        snapTrackToLogical(bounded, { force: true });
+    }, [focusIndex, itemCount, snapTrackToLogical]);
 
     /**
      * After sliding onto a clone at the loop seam, instantly re-home to the matching middle-copy card
@@ -442,12 +388,13 @@ export default function StackedDeckCarousel({
                 const to = direction === 1 ? (from + 1) % n : (from - 1 + n) % n;
                 const wraps =
                     usesInfiniteRibbon &&
-                    ((from === n - 1 && to === 0) || (from === 0 && to === n - 1));
+                    ((direction === 1 && from === n - 1 && to === 0) ||
+                        (direction === -1 && from === 0 && to === n - 1));
 
-                let stepPx = getStepBetweenLogical(from, to);
+                let stepPx = getStepBetweenLogical(from, to, direction);
                 if (stepPx === 0) {
                     await new Promise((r) => requestAnimationFrame(r));
-                    stepPx = getStepBetweenLogical(from, to);
+                    stepPx = getStepBetweenLogical(from, to, direction);
                 }
                 if (stepPx === 0) {
                     return;
@@ -502,14 +449,18 @@ export default function StackedDeckCarousel({
             try {
                 const from = ribbonActiveIndexRef.current;
                 const n = itemCount;
+                const forwardSteps = (bounded - from + n) % n;
+                const backwardSteps = (from - bounded + n) % n;
+                const direction = backwardSteps < forwardSteps ? /** @type {-1} */ (-1) : /** @type {1} */ (1);
                 const wraps =
                     usesInfiniteRibbon &&
-                    ((from === n - 1 && bounded === 0) || (from === 0 && bounded === n - 1));
+                    ((direction === 1 && from === n - 1 && bounded === 0) ||
+                        (direction === -1 && from === 0 && bounded === n - 1));
 
-                let stepPx = getStepBetweenLogical(from, bounded);
+                let stepPx = getStepBetweenLogical(from, bounded, direction);
                 if (stepPx === 0) {
                     await new Promise((r) => requestAnimationFrame(r));
-                    stepPx = getStepBetweenLogical(from, bounded);
+                    stepPx = getStepBetweenLogical(from, bounded, direction);
                 }
 
                 if (stepPx !== 0) {
@@ -600,10 +551,10 @@ export default function StackedDeckCarousel({
         };
     }, [alignTrackToLogical, galleryResizeSeq, itemCount, copies, trackX, useDesktopStaticPair, useDesktopStaticTriple]);
 
-    if (itemCount === 1) {
+    if (itemCount === 1 && !forceRibbon) {
         return (
             <div className="relative w-full px-4 py-4">
-                <div className="mx-auto w-[240px] max-w-[240px]">
+                <div className="mx-auto w-[336px] max-w-[336px]">
                     <div className={STATIC_CARD_SHELL_SINGLE}>
                         {renderMealCard(items[0], 0, {
                             isFront: true,
@@ -619,7 +570,7 @@ export default function StackedDeckCarousel({
     if (useDesktopStaticPair) {
         return (
             <div className="w-full px-4 py-4">
-                <div className="mx-auto flex w-full max-w-[680px] items-stretch justify-center gap-4 md:gap-6">
+                <div className="mx-auto flex w-full max-w-[760px] items-stretch justify-center gap-4 md:gap-6">
                     {items.map((item, idx) => (
                         <div key={`static-pair-${getKey(item, idx)}`} className={STATIC_PAIR_CARD_SHELL}>
                             {renderMealCard(item, idx, {
@@ -637,7 +588,7 @@ export default function StackedDeckCarousel({
     if (useDesktopStaticTriple) {
         return (
             <div className="w-full px-4 py-4">
-                <div className="mx-auto flex w-full max-w-[960px] items-stretch justify-center gap-3 md:gap-4 lg:gap-6">
+                <div className="mx-auto flex w-full max-w-[1120px] items-stretch justify-center gap-3 md:gap-4 lg:gap-6">
                     {items.map((item, idx) => (
                         <div key={`static-triple-${getKey(item, idx)}`} className={STATIC_TRIPLE_CARD_SHELL}>
                             {renderMealCard(item, idx, {
@@ -656,13 +607,6 @@ export default function StackedDeckCarousel({
 
     const ribbonArrowButtonClass =
         'pointer-events-auto flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-0 bg-white/90 text-heading shadow-sm shadow-[#262A22]/10 outline-none ring-0 backdrop-blur-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5A6B44]/35 focus-visible:ring-offset-0 disabled:pointer-events-none disabled:opacity-30';
-
-    const ribbonEdgeDimBaseClass = 'pointer-events-none absolute inset-y-4 z-[100]';
-    /** Start-aligned options: left fade only covers the arrow gutter so the card stays clear. */
-    const leftEdgeDimWidthClass = forceRibbon
-        ? 'w-[3.25rem]'
-        : RIBBON_EDGE_DIM_WIDTH_CLASS;
-    const rightEdgeDimWidthClass = RIBBON_EDGE_DIM_WIDTH_CLASS;
 
     return (
         <div className="group relative w-full">
@@ -709,14 +653,6 @@ export default function StackedDeckCarousel({
                                 }),
                             ).flat()}
                         </motion.div>
-                        <div
-                            className={`${ribbonEdgeDimBaseClass} ${leftEdgeDimWidthClass} left-0 bg-gradient-to-r from-[#F8F9F6] from-[12%] via-[#F8F9F6]/55 via-[28%] to-transparent [mask-image:linear-gradient(to_right,black_0%,black_18%,transparent_62%)] [-webkit-mask-image:linear-gradient(to_right,black_0%,black_18%,transparent_62%)]`}
-                            aria-hidden="true"
-                        />
-                        <div
-                            className={`${ribbonEdgeDimBaseClass} ${rightEdgeDimWidthClass} right-0 bg-gradient-to-l from-[#F8F9F6] from-[12%] via-[#F8F9F6]/55 via-[28%] to-transparent [mask-image:linear-gradient(to_left,black_0%,black_18%,transparent_62%)] [-webkit-mask-image:linear-gradient(to_left,black_0%,black_18%,transparent_62%)]`}
-                            aria-hidden="true"
-                        />
                     </div>
 
                     <div

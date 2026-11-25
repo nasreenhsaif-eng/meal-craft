@@ -5,7 +5,6 @@ import SquareCheckbox from '../Atoms/Icons/SquareCheckbox.jsx';
 import StackedDeckCarousel from '../MealCard/StackedDeckCarousel.jsx';
 import CustomerMealCard from '../CustomerMealCard.jsx';
 import ProtocolMealOptionsScreen from './ProtocolMealOptionsScreen.jsx';
-import ProtocolFixedChoiceSides from './ProtocolFixedChoiceSides.jsx';
 import {
     FIXED_CHOICE_CATEGORY_KEYS,
     FIXED_CHOICE_MAX_COUNT,
@@ -1350,6 +1349,7 @@ function useMinWidth(minWidthPx) {
  * @param {(meal: ConsultationMeal) => void} [props.onViewDetails]
  * @param {(meal: ConsultationMeal) => void} [props.onEditMeal]
  * @param {boolean} [props.isLoading] Show a skeleton while scheduled meals are still loading.
+ * @param {string | null} [props.notice] Message shown on this section only.
  */
 export function MealSlotCarousel({
     title,
@@ -1368,18 +1368,39 @@ export function MealSlotCarousel({
     onViewDetails,
     onEditMeal,
     isLoading = false,
+    notice = null,
 }) {
     const selectedSet = new Set(selectedIds.map((id) => normalizeConsultationMealId(id)));
     const stackZ = 35 + sectionStackOrder * 6;
     const isDesktopViewport = useMinWidth(768);
     const showSwipeHint = cards.length > 2 && !isDesktopViewport;
 
+    const [focusedMealId, setFocusedMealId] = useState(/** @type {string | null} */ (null));
+
+    useEffect(() => {
+        setFocusedMealId(null);
+    }, [deckScopeKey]);
+
     const handleSelect = useCallback(
         (meal) => {
+            setFocusedMealId(normalizeConsultationMealId(meal.id));
             onSelect?.(/** @type {ConsultationMeal} */ (meal));
         },
         [onSelect],
     );
+
+    const focusIndex = (() => {
+        const preferred = focusedMealId ?? (selectedIds[0] != null ? normalizeConsultationMealId(selectedIds[0]) : '');
+        if (!preferred) {
+            return 0;
+        }
+
+        const index = cards.findIndex(
+            (meal) => normalizeConsultationMealId(/** @type {ConsultationMeal} */ (meal).id) === preferred,
+        );
+
+        return index >= 0 ? index : 0;
+    })();
 
     const deckSubheader = (() => {
         if (readOnly && showSelectedState) {
@@ -1428,9 +1449,16 @@ export function MealSlotCarousel({
                     ) : null}
                 </div>
             ) : null}
+            {notice ? (
+                <p className="mx-auto mt-2 max-w-full px-4 text-center md:px-0" role="alert">
+                    <span className="inline-block rounded-[10px] border border-red-200 bg-red-50 px-3 py-2 font-body text-xs font-semibold text-red-800 sm:text-sm">
+                        {notice}
+                    </span>
+                </p>
+            ) : null}
 
             <div
-                className={`relative mx-auto flex w-full max-w-full flex-col items-center justify-center overflow-y-visible [-webkit-overflow-scrolling:touch] max-md:overflow-x-clip md:overflow-x-visible ${deckOnly ? 'mt-0 min-h-[calc(240px+4.5rem)] px-0 py-0' : 'mt-0.5 min-h-[calc(240px+5.5rem)] px-4 py-1 md:px-0'}`}
+                className={`relative mx-auto flex w-full max-w-full flex-col items-center justify-center overflow-y-visible [-webkit-overflow-scrolling:touch] max-md:overflow-x-clip md:overflow-x-visible ${deckOnly ? 'mt-0 min-h-[calc(280px+4.5rem)] px-0 py-0' : 'mt-0.5 min-h-[calc(280px+5.5rem)] px-0 py-1 md:px-0'}`}
                 data-consultation-deck=""
             >
                 {cards.length === 0 ? (
@@ -1459,8 +1487,8 @@ export function MealSlotCarousel({
                     <div
                         className={[
                             'w-full',
-                            cards.length === 2 ? 'md:mx-auto md:max-w-[680px]' : '',
-                            cards.length === 3 ? 'md:mx-auto md:max-w-[960px]' : '',
+                            cards.length === 2 ? 'md:mx-auto md:max-w-[760px]' : '',
+                            cards.length === 3 ? 'md:mx-auto md:max-w-[1120px]' : '',
                         ]
                             .filter(Boolean)
                             .join(' ')}
@@ -1470,7 +1498,8 @@ export function MealSlotCarousel({
                                 title=""
                                 meals={cards}
                                 deckScopeKey={deckScopeKey}
-                                forceRibbon={deckOnly || cards.length > 1}
+                                forceRibbon={deckOnly || cards.length > 0}
+                                focusIndex={focusIndex}
                                 getKey={(m) => /** @type {ConsultationMeal} */ (m).id}
                                 renderCard={(m, _idx, { isFront, deckLayout }) => {
                                     const meal = /** @type {ConsultationMeal} */ (m);
@@ -1588,10 +1617,7 @@ export function FixedChoicePicker({
             const { blocked } = applyFixedChoiceToggle(categorySelections, categoryKey, meal.id);
 
             if (blocked) {
-                showTransientWarning(
-                    setMealLimitWarning,
-                    'You can pick a maximum of 2 sides. Deselect one to choose a different option.',
-                );
+                showTransientWarning(setMealLimitWarning, categoryKey);
 
                 return;
             }
@@ -1675,14 +1701,6 @@ export function FixedChoicePicker({
                 </p>
             </div>
 
-            {mealLimitWarning ? (
-                <div className="mx-auto mt-2 max-w-full px-4 md:px-0" role="alert" aria-live="polite">
-                    <p className="rounded-[10px] border border-red-200 bg-red-50 px-3 py-2 text-center font-body text-xs font-semibold text-red-800 sm:text-sm">
-                        {mealLimitWarning}
-                    </p>
-                </div>
-            ) : null}
-
             <div
                 className={[
                     'mt-3 space-y-4 transition-[box-shadow] duration-300',
@@ -1718,6 +1736,11 @@ export function FixedChoicePicker({
                             selectedIds={selectedIds}
                             maxSelected={1}
                             readOnly={!pickEnabled}
+                            notice={
+                                mealLimitWarning === def.selectionKey
+                                    ? 'You can pick a maximum of 2 sides. Deselect one to choose a different option.'
+                                    : null
+                            }
                             onSelect={pickEnabled ? (meal) => handleMealSelect(def.selectionKey, meal) : () => {}}
                             onViewDetails={onViewDetails}
                         />
@@ -1740,7 +1763,6 @@ export function FixedChoicePicker({
  * @param {Partial<Record<SelectionCategoryKey, ConsultationMeal[]>>} [props.assignedMealsByCategory]
  * @param {Partial<Record<SelectionCategoryKey, ConsultationMeal[]>>} [props.displayDecks] Parent-built decks — prefer over rebuilding so footer matches carousels.
  * @param {boolean} [props.categoriesReadOnly]
- * @param {(categoryKey: SelectionCategoryKey) => void} [props.onClearFixedChoiceCategory]
  * @param {(meal: ConsultationMeal) => void} [props.onViewDetails]
  * @param {(meal: ConsultationMeal) => void} [props.onEditMeal]
  * @param {string} [props.panelClassName] Height class for the viewport-locked panel shell.
@@ -1784,7 +1806,6 @@ export default function ChooseYourMeals({
     assignedMealsByCategory = null,
     displayDecks = null,
     categoriesReadOnly = false,
-    onClearFixedChoiceCategory,
     onViewDetails,
     onEditMeal,
     panelClassName,
@@ -1803,11 +1824,15 @@ export default function ChooseYourMeals({
     const [validationFlashKeys, setValidationFlashKeys] = useState(/** @type {(SelectionCategoryKey | 'fixedChoice')[]} */ ([]));
     const [incompleteWarning, setIncompleteWarning] = useState(/** @type {string | null} */ (null));
     const [optionsSlotKey, setOptionsSlotKey] = useState(/** @type {SelectionCategoryKey | null} */ (null));
+    const [sideLimitSection, setSideLimitSection] = useState(
+        /** @type {SelectionCategoryKey | null} */ (null),
+    );
 
     const scrollContainerRef = useRef(/** @type {HTMLDivElement | null} */ (null));
 
     useEffect(() => {
         setOptionsSlotKey(null);
+        setSideLimitSection(null);
     }, [dayName, deckScopePrefix]);
 
     const categoryMaxForDisplay = useMemo(
@@ -2140,19 +2165,65 @@ export default function ChooseYourMeals({
         layout === 'categories' &&
         categorySelections &&
         (categoryPickEnabled || categoriesReadOnly) ? (
-            <ProtocolFixedChoiceSides
-                categorySelections={categorySelections}
-                displayDecks={weeklyDisplayDecks ?? {}}
-                readOnly={!categoryPickEnabled}
-                validationFlash={validationFlashKeys.includes('fixedChoice')}
-                onSelectMeal={categoryPickEnabled ? onToggleCategory : undefined}
-                onClearCategory={categoryPickEnabled ? onClearFixedChoiceCategory : undefined}
-                onSeeOtherOptions={
-                    categoryPickEnabled ? (key) => setOptionsSlotKey(key) : undefined
-                }
-                onViewDetails={onViewDetails}
-                onEditMeal={onEditMeal}
-            />
+            <div className="flex flex-col gap-3">
+                <div className="px-4 text-center md:px-0">
+                    <p className="font-montserrat text-[15px] font-bold leading-snug tracking-tight text-heading sm:text-base">
+                        Pick 1–2 of 3 sides
+                    </p>
+                    <p className="mt-0.5 font-body text-xs leading-snug text-body sm:text-sm">
+                        {`Side salad, soup, or dessert • ${countFixedChoiceSelections(categorySelections)}/${FIXED_CHOICE_MAX_COUNT} selected (min ${FIXED_CHOICE_MIN_COUNT})`}
+                    </p>
+                </div>
+                {FIXED_CHOICE_TOGGLE_OPTIONS.map((def, idx) => {
+                    const cards = weeklyDisplayDecks?.[def.selectionKey] ?? [];
+                    const selectedIds = (categorySelections[def.selectionKey] ?? []).map((id) =>
+                        normalizeConsultationMealId(id),
+                    );
+                    const prefix = deckScopePrefix ? `${deckScopePrefix}-` : '';
+
+                    return (
+                        <MealSlotCarousel
+                            key={def.selectionKey}
+                            sectionKey={def.selectionKey}
+                            sectionStackOrder={FULL_CRAFT_CATEGORY_SECTIONS.length + idx}
+                            title={def.header}
+                            deckScopeKey={`${prefix}${def.deckSuffix}`}
+                            cards={cards}
+                            selectedIds={selectedIds}
+                            maxSelected={1}
+                            readOnly={!categoryPickEnabled}
+                            validationFlash={validationFlashKeys.includes('fixedChoice')}
+                            notice={
+                                sideLimitSection === def.selectionKey
+                                    ? 'You can pick a maximum of 2 sides. Deselect one to choose a different option.'
+                                    : null
+                            }
+                            onSelect={
+                                categoryPickEnabled
+                                    ? (meal) => {
+                                          const { blocked } = applyFixedChoiceToggle(
+                                              categorySelections,
+                                              def.selectionKey,
+                                              meal.id,
+                                          );
+
+                                          if (blocked) {
+                                              setSideLimitSection(def.selectionKey);
+
+                                              return;
+                                          }
+
+                                          setSideLimitSection(null);
+                                          onToggleCategory?.(def.selectionKey, meal);
+                                      }
+                                    : () => {}
+                            }
+                            onViewDetails={onViewDetails}
+                            onEditMeal={onEditMeal}
+                        />
+                    );
+                })}
+            </div>
         ) : null;
 
     const fixedChoiceBlock =
