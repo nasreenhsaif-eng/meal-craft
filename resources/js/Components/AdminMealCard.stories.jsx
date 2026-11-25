@@ -11,7 +11,7 @@ function MealCardStoryCanvas({ children }) {
         <div className="min-h-[80vh] w-full bg-surface-soft px-4 py-8 md:px-8">
             <div className="mx-auto max-w-5xl rounded-[12px] border border-gray-200 bg-white p-5 shadow-sm">
                 <ul className="m-0 flex list-none justify-center p-0">
-                    <li className="flex w-full max-w-[240px] justify-center">{children}</li>
+                    <li className="flex w-full max-w-[336px] justify-center">{children}</li>
                 </ul>
             </div>
         </div>

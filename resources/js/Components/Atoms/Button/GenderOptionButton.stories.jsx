@@ -15,7 +15,8 @@ export default {
         docs: {
             description: {
                 component:
-                    'Male and female choices. Same pale-green selection button as Atoms / Button / OnboardingOptionButton.',
+                    'OnboardingOptionButton preset for gender: same pale-green selection button with `align="center"`, ' +
+                    'plus `genderOptionIcon` for Male / Female. Not a separate button type — prefer documenting patterns on OnboardingOptionButton.',
             },
         },
     },

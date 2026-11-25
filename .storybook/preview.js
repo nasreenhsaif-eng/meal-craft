@@ -140,11 +140,11 @@ const preview = {
                 if (ta.startsWith(atomsBase) && tb.startsWith(atomsBase)) {
                     const atomsOrder = [
                         `${atomsBase}Button`,
-                        `${atomsBase}Button/Tab`,
+                        `${atomsBase}Button/Button`,
                         `${atomsBase}Button/PrimaryButton`,
                         `${atomsBase}Button/NavButton`,
-                        `${atomsBase}Button/GenderOptionButton`,
                         `${atomsBase}Button/OnboardingOptionButton`,
+                        `${atomsBase}Button/GenderOptionButton`,
                         `${atomsBase}Button/IconButton`,
                         `${atomsBase}Button/DragHandle`,
                         `${atomsBase}Button/SquareCheckbox`,
@@ -156,7 +156,6 @@ const preview = {
                         `${atomsBase}Badge/DietaryTags`,
                         `${atomsBase}Badge/SafetyAlerts`,
                         `${atomsBase}Badge/ProtocolTags`,
-                        `${atomsBase}Badge/PreferenceTags`,
                         `${atomsBase}Badge/SelectionCheckBadge`,
                         `${atomsBase}Badge/FoodFilterPill`,
                     ];

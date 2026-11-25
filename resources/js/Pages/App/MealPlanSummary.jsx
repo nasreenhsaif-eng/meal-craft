@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { router } from '@inertiajs/react';
 import { AnimatePresence, motion } from 'framer-motion';
+import Button from '../../Components/Atoms/Button.jsx';
 import OnboardingOptionButton from '../../Components/Atoms/Button/OnboardingOptionButton.jsx';
 import DayNutritionalSummaryPanel, {
     DAY_SUMMARY_TABS,
@@ -306,21 +307,17 @@ export function MealPlanSummaryInner({
                     const selected = contentTab === tab.id;
 
                     return (
-                        <button
+                        <Button
                             key={tab.id}
                             type="button"
                             role="tab"
                             aria-selected={selected}
+                            label={tab.label}
+                            variant={selected ? 'primary' : 'tab'}
+                            size="sm"
+                            className="shrink-0"
                             onClick={() => setContentTab(/** @type {DaySummaryTabId} */ (tab.id))}
-                            className={[
-                                'shrink-0 rounded-full px-2.5 py-1 font-montserrat text-[11px] font-bold tracking-wide transition-colors',
-                                selected
-                                    ? 'bg-[#5A6B44] text-white'
-                                    : 'bg-white text-body ring-1 ring-gray-200 hover:text-heading',
-                            ].join(' ')}
-                        >
-                            {tab.label}
-                        </button>
+                        />
                     );
                 })}
             </div>

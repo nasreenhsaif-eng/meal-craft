@@ -134,11 +134,11 @@ export default function CustomerMealCard({
         deck && selected ? 'relative z-[1]' : '';
 
     /**
-     * Fixed 240px everywhere (selected slots, sides, options modal).
+     * Fixed 336px everywhere (selected slots, sides, options modal).
      */
     const shell = deck
-        ? 'mx-auto w-[240px] max-w-[240px] shrink-0 rounded-[12px] flex flex-col bg-[#FFFFFF]'
-        : 'w-[240px] h-[320px] rounded-[12px]';
+        ? 'mx-auto w-[336px] max-w-[336px] shrink-0 rounded-[12px] flex flex-col bg-[#FFFFFF]'
+        : 'w-[336px] h-[396px] rounded-[12px]';
     /** Inner face radius — uniform; no gradient padding inset. */
     const innerR = deck ? 'rounded-[12px]' : 'rounded-[10px]';
     const photoR = deck ? '' : 'rounded-t-[10px]';
@@ -206,17 +206,17 @@ export default function CustomerMealCard({
                         <div
                             className={
                                 pinActionsBottom
-                                    ? 'flex h-[3rem] shrink-0 items-start justify-center'
-                                    : 'min-h-[2.5rem] shrink-0'
+                                    ? 'flex h-[5.25rem] shrink-0 items-start justify-center'
+                                    : 'min-h-[4.5rem] shrink-0'
                             }
                         >
                             <h3
-                                className={`mt-2 w-full text-center font-bold tracking-tight text-heading ${titleClass}`}
+                                className={`mt-2 w-full text-center font-bold leading-snug tracking-tight text-heading ${titleClass}`}
                                 style={{
                                     display: '-webkit-box',
                                     WebkitBoxOrient: 'vertical',
                                     overflow: 'hidden',
-                                    WebkitLineClamp: 2,
+                                    WebkitLineClamp: 3,
                                 }}
                             >
                                 {title}

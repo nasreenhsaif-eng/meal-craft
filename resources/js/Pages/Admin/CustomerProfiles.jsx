@@ -391,27 +391,25 @@ function CustomerProfilesView({ customers = [], canEdit = false, options = {} })
                 ) : null}
             </div>
 
-            <nav aria-label="Customer profile column groups" className="flex flex-wrap gap-2">
+            <nav aria-label="Customer profile column groups" className="flex flex-wrap gap-2" role="tablist">
                 {TABS.map((tab) => {
                     const isActive = tab.id === activeTab;
                     return (
-                        <button
+                        <Button
                             key={tab.id}
                             type="button"
+                            role="tab"
+                            aria-selected={isActive}
+                            aria-current={isActive ? 'page' : undefined}
+                            label={tab.label}
+                            variant={isActive ? 'primary' : 'tab'}
+                            size="sm"
+                            className="shrink-0"
                             onClick={() => {
                                 setActiveTab(tab.id);
                                 setEditing(null);
                             }}
-                            aria-current={isActive ? 'page' : undefined}
-                            className={[
-                                'rounded-[10px] px-3 py-2 font-montserrat text-sm font-semibold transition-colors',
-                                isActive
-                                    ? 'bg-[#6E8C47]/15 text-[#3F4F2A]'
-                                    : 'text-body hover:bg-gray-100 hover:text-body',
-                            ].join(' ')}
-                        >
-                            {tab.label}
-                        </button>
+                        />
                     );
                 })}
             </nav>

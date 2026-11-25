@@ -79,17 +79,21 @@ export const LeafVariants = {
     ),
 };
 
-/** Browser tab / PWA icons — Meal Craft seal (public/favicon.*). */
+/**
+ * Browser tab / PWA icons — Meal Craft seal (public/favicon.*).
+ * `size` is the native pixel size (or a safe display size for vector/hi-res).
+ * Never upscale 16/32 bitmaps — that is what made the Storybook previews look blurry.
+ */
 const faviconAssets = [
     { src: '/favicon.svg', label: 'favicon.svg', caption: 'Primary tab icon · transparent', size: 64 },
-    { src: '/favicon-32x32.png', label: 'favicon-32x32.png', caption: 'PNG tab icon · 32×32', size: 64 },
-    { src: '/favicon-16x16.png', label: 'favicon-16x16.png', caption: 'PNG tab icon · 16×16', size: 48 },
-    { src: '/favicon.ico', label: 'favicon.ico', caption: 'Fallback tab icon', size: 64 },
+    { src: '/favicon-32x32.png', label: 'favicon-32x32.png', caption: 'PNG tab icon · native 32×32', size: 32 },
+    { src: '/favicon-16x16.png', label: 'favicon-16x16.png', caption: 'PNG tab icon · native 16×16', size: 16 },
+    { src: '/favicon.ico', label: 'favicon.ico', caption: 'Fallback tab icon · native 16×16', size: 16 },
     {
         src: '/apple-touch-icon.png',
         label: 'apple-touch-icon.png',
-        caption: 'iOS home screen · 180×180',
-        size: 96,
+        caption: 'iOS home screen · 180×180 (shown 90×90)',
+        size: 90,
     },
     {
         src: '/images/branding/seal-favicon-512.png',
@@ -106,7 +110,8 @@ export const Favicon = {
         <div className="box-border w-full min-w-0 max-w-none self-stretch">
             <div className="box-border flex w-full min-w-0 max-w-none flex-col items-start gap-8 py-10 pl-0 pr-8 sm:pr-10">
                 <p className="max-w-xl text-sm text-neutral-600">
-                    Browser tab and touch icons use the Meal Craft seal. Landing title:{' '}
+                    Browser tab and touch icons use the Meal Craft seal. Bitmaps are shown at native
+                    size so they stay sharp. Landing title:{' '}
                     <span className="font-medium text-neutral-900">Home - mealcraft</span>
                 </p>
                 <div className="flex flex-wrap items-end gap-10">
@@ -117,14 +122,18 @@ export const Favicon = {
                             </p>
                             <div
                                 className="flex items-center justify-center rounded-lg border border-neutral-200 bg-white p-3"
-                                style={{ width: size + 24, height: size + 24 }}
+                                style={{
+                                    width: Math.max(size + 24, 64),
+                                    height: Math.max(size + 24, 64),
+                                }}
                             >
                                 <img
                                     src={src}
                                     alt={label}
                                     width={size}
                                     height={size}
-                                    className="block object-contain"
+                                    className="block"
+                                    style={{ width: size, height: size, imageRendering: 'auto' }}
                                 />
                             </div>
                             <span className="text-xs text-neutral-500">{caption}</span>

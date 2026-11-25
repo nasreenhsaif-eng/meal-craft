@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import Button from '../../Components/Atoms/Button/Button.jsx';
 import MealCraftLogo from '../../Components/Atoms/Logo/MealCraftLogo.jsx';
 import {
     IconCalendar,
@@ -135,46 +136,15 @@ function SmartKitchenGlyph({ name }) {
 }
 
 /**
- * @param {{
- *   href: string;
- *   onStartNow?: () => void;
- *   children: import('react').ReactNode;
- *   className: string;
- * }} props
- */
-function StartLink({ href, onStartNow, children, className }) {
-    if (onStartNow) {
-        return (
-            <button type="button" onClick={onStartNow} className={className}>
-                {children}
-            </button>
-        );
-    }
-
-    return (
-        <a href={href} className={className}>
-            {children}
-        </a>
-    );
-}
-
-const primaryButton =
-    'inline-flex items-center justify-center gap-2 rounded-full bg-brand-primary px-8 py-3.5 font-montserrat text-base font-semibold text-white transition-colors hover:bg-brand-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2';
-
-const outlineButton =
-    'inline-flex items-center justify-center rounded-full border-2 border-[#6E8C47] bg-transparent px-8 py-3 font-montserrat text-base font-semibold text-[#6E8C47] transition-colors hover:bg-[#6E8C47]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6E8C47] focus-visible:ring-offset-2';
-
-/**
  * Public marketing landing, matched to the Figma landing page.
  *
  * @param {{
  *   loginHref?: string;
  *   joinHref?: string;
  *   onStartNow?: () => void;
- *   onLearnMore?: (planName: string) => void;
  * }} props
  */
-export default function LandingPage({ loginHref = '/login', joinHref = '/join', onStartNow, onLearnMore }) {
+export default function LandingPage({ loginHref = '/login', joinHref = '/join', onStartNow }) {
     const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
     useEffect(() => {
@@ -308,24 +278,27 @@ export default function LandingPage({ loginHref = '/login', joinHref = '/join', 
                             philosophy and zero tolerance for harmful additives.
                         </p>
                         <div className="mt-10 flex flex-wrap items-center gap-4">
-                            <StartLink href={joinHref} onStartNow={onStartNow} className={primaryButton}>
-                                Get Started
-                                <span aria-hidden>›</span>
-                            </StartLink>
-                            <button
-                                type="button"
-                                className={outlineButton}
+                            <Button
+                                label="Get Started"
+                                variant="primary"
+                                size="md"
                                 onClick={() => {
-                                    onLearnMore?.('Learn More');
-                                    scrollToSection('#meal-plans');
+                                    if (onStartNow) {
+                                        onStartNow();
+                                        return;
+                                    }
+                                    window.location.assign(joinHref);
                                 }}
-                            >
-                                Learn More
-                            </button>
+                            />
                         </div>
                     </div>
                     <div className="flex justify-center">
-                        <MealCraftLogo variant="seal-xl" width={280} alt="Meal Craft" />
+                        <MealCraftLogo
+                            variant="vertical-marketing"
+                            width={400}
+                            className="h-auto max-w-full"
+                            alt="Meal Craft"
+                        />
                     </div>
                 </div>
             </section>
@@ -446,7 +419,7 @@ export default function LandingPage({ loginHref = '/login', joinHref = '/join', 
                 </div>
             </section>
 
-            <section className="bg-surface-dark px-5 py-20 text-white" aria-label="Zero tolerance standard">
+            <section className="bg-brand-primary/10 px-5 py-20 text-heading" aria-label="Zero tolerance standard">
                 <div className="mx-auto w-full max-w-[1100px]">
                     <h2 className="text-center font-montserrat text-3xl font-bold sm:text-4xl">
                         Our Zero Tolerance Standard
@@ -459,9 +432,9 @@ export default function LandingPage({ loginHref = '/login', joinHref = '/join', 
                             ['ZERO', 'Processed Ingredients', 'text-[#E07A86]', 'bg-[#E07A86]'],
                             ['100%', 'Bioavailable Nutrition', 'text-[#6E8C47]', 'bg-[#6E8C47]'],
                         ].map(([value, label, color, line]) => (
-                            <div key={label} className="rounded-2xl border border-white/10 bg-white/5 px-4 py-8 text-center">
+                            <div key={label} className="rounded-2xl border border-brand-primary/15 bg-white px-4 py-8 text-center shadow-sm">
                                 <p className={['font-montserrat text-4xl font-bold', color].join(' ')}>{value}</p>
-                                <p className="mt-2 text-sm text-white/80">{label}</p>
+                                <p className="mt-2 text-sm text-body">{label}</p>
                                 <span className={['mx-auto mt-4 block h-1 w-12 rounded-full', line].join(' ')} />
                             </div>
                         ))}
@@ -470,7 +443,7 @@ export default function LandingPage({ loginHref = '/login', joinHref = '/join', 
             </section>
 
             <section id="contact" className="scroll-mt-28">
-                <div className="bg-[#6E8C47] px-5 py-20 text-center text-white">
+                <div className="bg-[#2F4C9B] px-5 py-20 text-center text-white">
                     <div className="mx-auto w-full max-w-3xl">
                         <h2 className="font-montserrat text-4xl font-bold tracking-tight sm:text-5xl">
                             Start Your Healing Journey Today
@@ -479,21 +452,26 @@ export default function LandingPage({ loginHref = '/login', joinHref = '/join', 
                             Join thousands who have transformed their health through whole foods and clean eating.
                         </p>
                         <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
-                            <StartLink
-                                href={joinHref}
-                                onStartNow={onStartNow}
-                                className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-8 py-4 font-montserrat text-lg font-semibold text-[#6E8C47]"
-                            >
-                                Chat with AI Agent
-                                <span aria-hidden>›</span>
-                            </StartLink>
-                            <StartLink
-                                href={loginHref}
-                                onStartNow={onStartNow}
-                                className="inline-flex items-center justify-center rounded-full border-2 border-white px-8 py-4 font-montserrat text-lg font-semibold text-white"
-                            >
-                                Chat with a Customer Service Agent
-                            </StartLink>
+                            <Button
+                                label="Chat with AI Agent ›"
+                                variant="reversed"
+                                size="md"
+                                onClick={() => {
+                                    if (onStartNow) {
+                                        onStartNow();
+                                        return;
+                                    }
+                                    window.location.assign(joinHref);
+                                }}
+                            />
+                            <Button
+                                label="Chat with a Customer Service Agent"
+                                variant="reversed"
+                                size="md"
+                                onClick={() => {
+                                    window.location.assign(loginHref);
+                                }}
+                            />
                         </div>
                     </div>
                 </div>
@@ -534,13 +512,12 @@ export default function LandingPage({ loginHref = '/login', joinHref = '/join', 
             <footer className="bg-surface-dark px-5 py-16 text-white">
                 <div className="mx-auto grid w-full max-w-[1100px] gap-10 md:grid-cols-[1.4fr_1fr_1fr]">
                     <div>
-                        <div className="flex items-center gap-3">
-                            <MealCraftLogo variant="seal-sm" width={44} alt="" />
-                            <span className="font-montserrat text-2xl font-bold text-[#6E8C47]">Meal Craft</span>
-                        </div>
-                        <p className="mt-4 font-montserrat text-xs tracking-[0.16em] text-white/50">
-                            ANTI-INFLAMMATORY SMART KITCHEN
-                        </p>
+                        <MealCraftLogo
+                            variant="vertical-marketing"
+                            width={160}
+                            alt="Meal Craft"
+                            className="h-auto max-w-full"
+                        />
                     </div>
                     <div>
                         <h2 className="font-montserrat text-base font-bold">Meal Plans</h2>

@@ -479,10 +479,10 @@ export function DayMacroMicroTabPanel({
                         role="tab"
                         aria-selected={tab === item.id}
                         label={item.label}
-                        variant="ghost"
+                        variant={tab === item.id ? 'primary' : 'tab'}
                         size="sm"
                         onClick={() => setTab(item.id)}
-                        className={['shrink-0', tab === item.id ? 'bg-[#5A6B44]/10' : ''].join(' ').trim()}
+                        className="shrink-0"
                     />
                 ))}
             </div>

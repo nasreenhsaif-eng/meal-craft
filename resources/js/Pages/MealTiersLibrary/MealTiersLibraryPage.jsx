@@ -414,16 +414,17 @@ export default function MealTiersLibraryPage({
                                   </label>
                                   {usesTabs ? (
                                       <>
-                                          <div className="flex flex-wrap gap-1" role="tablist" aria-label="Edit calorie tier">
+                                          <div className="flex flex-wrap gap-2" role="tablist" aria-label="Edit calorie tier">
                                               {tabValues.map((tier) => (
-                                                  <button
+                                                  <Button
                                                       key={tier}
                                                       type="button"
-                                                      className={`rounded-full px-3 py-1 font-montserrat text-xs font-bold ${
-                                                          activeTab === tier
-                                                              ? 'bg-[#5A6B44] text-white'
-                                                              : 'bg-[#E8EDE3] text-heading'
-                                                      }`}
+                                                      role="tab"
+                                                      aria-selected={activeTab === tier}
+                                                      label={String(tier)}
+                                                      variant={activeTab === tier ? 'primary' : 'tab'}
+                                                      size="sm"
+                                                      className="shrink-0"
                                                       onClick={() => {
                                                           setRowsByTab((prev) => {
                                                               const existing = prev[tier];
@@ -447,9 +448,7 @@ export default function MealTiersLibraryPage({
                                                           });
                                                           setActiveTier(tier);
                                                       }}
-                                                  >
-                                                      {tier}
-                                                  </button>
+                                                  />
                                               ))}
                                           </div>
                                           {activeBucketHint ? (

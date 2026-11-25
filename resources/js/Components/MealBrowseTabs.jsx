@@ -1,3 +1,5 @@
+import Button from './Atoms/Button.jsx';
+
 /**
  * Protein family and recipe-category browse tabs for Meal Library and Meal Tiers Library.
  *
@@ -13,25 +15,24 @@ export default function MealBrowseTabs({ tabs = [], activeId, onChange, ariaLabe
     }
 
     return (
-        <div className="flex flex-wrap gap-1" role="tablist" aria-label={ariaLabel}>
+        <div className="flex flex-wrap gap-2" role="tablist" aria-label={ariaLabel}>
             {tabs.map((tab) => {
                 const isActive = tab.id === activeId;
                 const count = typeof tab.count === 'number' ? tab.count : null;
                 const label = count === null ? tab.label : `${tab.label} (${count})`;
 
                 return (
-                    <button
+                    <Button
                         key={tab.id}
                         type="button"
                         role="tab"
                         aria-selected={isActive}
-                        className={`rounded-full px-3 py-1.5 font-montserrat text-xs font-bold tracking-wide ${
-                            isActive ? 'bg-[#5A6B44] text-white' : 'bg-[#E8EDE3] text-heading'
-                        }`}
+                        label={label}
+                        variant={isActive ? 'primary' : 'tab'}
+                        size="sm"
+                        className="shrink-0"
                         onClick={() => onChange?.(tab.id)}
-                    >
-                        {label}
-                    </button>
+                    />
                 );
             })}
         </div>

@@ -9,7 +9,7 @@ export default {
         docs: {
             description: {
                 component:
-                    'Public marketing landing: seal hero, four meal plans (diet-protocol icons — Balanced, Ketobiotic, Cycle Sync, Sickle Cell Warrior), journey, heritage foods, zero-tolerance standard, and footer. Get Started opens join. The person icon at the top right opens login.',
+                    'Public marketing landing: vertical-marketing logo hero, four meal plans (diet-protocol icons — Balanced, Ketobiotic, Cycle Sync, Sickle Cell Warrior), journey, heritage foods, zero-tolerance standard, and footer. Hero Get Started uses the design-system Button atom (primary) and opens join. The person icon at the top right opens login.',
             },
         },
     },
@@ -26,7 +26,6 @@ export const Default = {
             <LandingPage
                 loginHref={useHerd ? 'https://meal-craft.test/login' : '/login'}
                 joinHref={useHerd ? 'https://meal-craft.test/join' : '/join'}
-                onLearnMore={() => {}}
             />
         );
     },

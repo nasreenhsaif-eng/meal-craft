@@ -13,6 +13,7 @@ import {
  *   onBack?: () => void;
  *   canGoBack?: boolean;
  *   progressNoun?: string;
+ *   progressLabel?: string;
  * }} props
  */
 export default function OnboardingNavHeader({
@@ -21,11 +22,14 @@ export default function OnboardingNavHeader({
     onBack,
     canGoBack = false,
     progressNoun = 'Step',
+    progressLabel = '',
 }) {
     const totalSteps = steps.length;
     const activeIndex = getOnboardingStepIndex(activeStep, steps);
     const displayIndex = activeIndex >= 0 ? activeIndex + 1 : 1;
     const noun = typeof progressNoun === 'string' && progressNoun.trim() !== '' ? progressNoun.trim() : 'Step';
+    const customLabel = typeof progressLabel === 'string' ? progressLabel.trim() : '';
+    const progressText = customLabel !== '' ? customLabel : `${noun} ${displayIndex} of ${totalSteps}`;
 
     return (
         <header className="w-full shrink-0 pt-1" aria-label="Onboarding navigation">
@@ -44,8 +48,13 @@ export default function OnboardingNavHeader({
                     <MealCraftLogo variant="minimal" width={108} alt="Meal Craft" className="h-auto max-w-full" />
                 </div>
 
-                <p className="shrink-0 text-right text-xs font-semibold uppercase tracking-wider text-gray-400">
-                    {noun} {displayIndex} of {totalSteps}
+                <p
+                    className={[
+                        'shrink-0 text-right text-xs font-semibold text-gray-400',
+                        customLabel !== '' ? 'tracking-wide' : 'uppercase tracking-wider',
+                    ].join(' ')}
+                >
+                    {progressText}
                 </p>
             </div>
 
@@ -56,7 +65,11 @@ export default function OnboardingNavHeader({
                 aria-valuemin={1}
                 aria-valuemax={totalSteps}
                 aria-valuenow={displayIndex}
-                aria-label={`${noun} ${displayIndex} of ${totalSteps}`}
+                aria-label={
+                    customLabel !== ''
+                        ? `${customLabel}, ${displayIndex} of ${totalSteps}`
+                        : `${noun} ${displayIndex} of ${totalSteps}`
+                }
             >
                 {steps.map((step) => {
                     const status = resolveOnboardingTabStatus(activeStep, step.value, steps);

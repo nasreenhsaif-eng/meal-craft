@@ -123,7 +123,7 @@ export const SingleDeckPropsApi = {
 };
 
 /**
- * Production Full Craft day view: inline breakfast/main carousels (CRAFT THIS MEAL) + sides toggles.
+ * Production Full Craft day view: breakfast, main meals, and sides all in front. Side checks follow the admin selection.
  */
 export const VerticalFullCraftCategories = {
     name: 'Full craft — inline carousels',

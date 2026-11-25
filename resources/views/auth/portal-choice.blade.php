@@ -13,9 +13,9 @@
         'title' => __('Choose your workspace'),
     ])
 </head>
-<body class="min-h-screen w-full bg-white antialiased">
+<body class="h-full min-h-[100dvh] bg-white antialiased">
     <script id="mc-auth-portal-choice-config" type="application/json">@json($portalChoiceConfig)</script>
-    <div id="mc-auth-portal-choice-root" class="min-h-screen w-full"></div>
+    <div id="mc-auth-portal-choice-root" class="min-h-[100dvh] w-full"></div>
     @fluxScripts
 </body>
 </html>

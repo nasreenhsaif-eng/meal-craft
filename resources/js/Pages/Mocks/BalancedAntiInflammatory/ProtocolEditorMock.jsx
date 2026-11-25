@@ -77,10 +77,9 @@ export default function ProtocolEditorMock({
                                 role="tab"
                                 aria-selected={index === activeDay}
                                 label={day}
-                                variant={index === activeDay ? 'secondary' : 'ghost'}
+                                variant={index === activeDay ? 'primary' : 'tab'}
                                 size="sm"
                                 onClick={() => setActiveDay(index)}
-                                className={index === activeDay ? '' : 'border border-[#5A6B44]'}
                             />
                         ))}
                     </div>
@@ -98,10 +97,9 @@ export default function ProtocolEditorMock({
                                 role="tab"
                                 aria-selected={index === activeTier}
                                 label={tier}
-                                variant={index === activeTier ? 'secondary' : 'ghost'}
+                                variant={index === activeTier ? 'primary' : 'tab'}
                                 size="sm"
                                 onClick={() => setActiveTier(index)}
-                                className={index === activeTier ? '' : 'border border-[#5A6B44]'}
                             />
                         ))}
                     </div>

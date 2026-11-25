@@ -40,16 +40,19 @@ export default function AdminPreviewTierPicker({
             >
                 Preview calorie tier
             </p>
-            <div className="mt-2 flex flex-wrap gap-2">
+            <div className="mt-2 flex flex-wrap gap-2" role="tablist" aria-label="Preview calorie tier">
                 {tiers.map((tier) => (
                     <Button
                         key={tier}
+                        type="button"
+                        role="tab"
+                        aria-selected={selectedTier === tier}
                         label={`${tier} kcal`}
-                        variant={selectedTier === tier ? 'secondary' : 'ghost'}
+                        variant={selectedTier === tier ? 'primary' : 'tab'}
                         size="sm"
                         disabled={loading}
                         onClick={() => onSelectTier(tier)}
-                        className={selectedTier === tier ? '' : 'border border-[#5A6B44]'}
+                        className="shrink-0"
                     />
                 ))}
             </div>

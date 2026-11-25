@@ -36,9 +36,8 @@ final class AdaptedMenuBuildOptionsFromRequest
             'fixed_slot_actual_macros.protein_g' => ['sometimes', 'numeric', 'min:0'],
             'fixed_slot_actual_macros.carbs_g' => ['sometimes', 'numeric', 'min:0'],
             'fixed_slot_actual_macros.fat_g' => ['sometimes', 'numeric', 'min:0'],
-            'selected_main_meal_ids.*' => ['integer', 'min:1'],
+            'selected_main_meal_ids' => ['sometimes', 'array'],
             'selected_breakfast_meal_ids' => ['sometimes', 'array'],
-            'selected_breakfast_meal_ids.*' => ['integer', 'min:1'],
         ]);
 
         $selectedFixedSlots = isset($validated['selected_fixed_slots'])
@@ -77,18 +76,16 @@ final class AdaptedMenuBuildOptionsFromRequest
             $buildOptions['craft_key'] = $validated['craft_key'];
         }
 
-        if (isset($validated['selected_main_meal_ids'])) {
-            $buildOptions['selected_main_meal_ids'] = array_values(array_unique(array_map(
-                static fn (mixed $id): int => (int) $id,
-                $validated['selected_main_meal_ids'],
-            )));
+        $selectedMainMealIds = self::positiveIntegerIds($request->input('selected_main_meal_ids'));
+
+        if ($selectedMainMealIds !== []) {
+            $buildOptions['selected_main_meal_ids'] = $selectedMainMealIds;
         }
 
-        if (isset($validated['selected_breakfast_meal_ids'])) {
-            $buildOptions['selected_breakfast_meal_ids'] = array_values(array_unique(array_map(
-                static fn (mixed $id): int => (int) $id,
-                $validated['selected_breakfast_meal_ids'],
-            )));
+        $selectedBreakfastMealIds = self::positiveIntegerIds($request->input('selected_breakfast_meal_ids'));
+
+        if ($selectedBreakfastMealIds !== []) {
+            $buildOptions['selected_breakfast_meal_ids'] = $selectedBreakfastMealIds;
         }
 
         if (isset($validated['fixed_slot_actual_macros']) && is_array($validated['fixed_slot_actual_macros'])) {
@@ -96,5 +93,35 @@ final class AdaptedMenuBuildOptionsFromRequest
         }
 
         return AdaptedMenuFixedPortionResolver::mergeIntoBuildOptions($buildOptions);
+    }
+
+    /**
+     * Keep real meal ids and drop placeholders such as sample-deck ids.
+     *
+     * @return list<int>
+     */
+    private static function positiveIntegerIds(mixed $raw): array
+    {
+        if (! is_array($raw)) {
+            return [];
+        }
+
+        $ids = [];
+
+        foreach ($raw as $id) {
+            if (is_int($id)) {
+                $normalized = $id;
+            } elseif (is_string($id) && preg_match('/^[1-9]\d*$/', $id) === 1) {
+                $normalized = (int) $id;
+            } else {
+                continue;
+            }
+
+            if ($normalized > 0) {
+                $ids[] = $normalized;
+            }
+        }
+
+        return array_values(array_unique($ids));
     }
 }
