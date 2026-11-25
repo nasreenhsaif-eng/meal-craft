@@ -5,6 +5,8 @@ use App\Models\User;
 test('guests visiting home see the marketing landing page', function () {
     $response = $this->get(route('home'))
         ->assertOk()
+        ->assertSee('Home - mealcraft', false)
+        ->assertSee('favicon.svg', false)
         ->assertSee('mc-auth-welcome-root', false);
 
     $configJson = $response->getContent();

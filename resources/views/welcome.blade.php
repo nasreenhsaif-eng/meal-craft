@@ -9,7 +9,7 @@
 <head>
     @include('partials.head', [
         'viteEntries' => ['resources/css/app.css', 'resources/js/auth-welcome.jsx'],
-        'title' => config('app.name'),
+        'documentTitle' => 'Home - mealcraft',
     ])
 </head>
 <body class="min-h-screen w-full bg-white antialiased">
