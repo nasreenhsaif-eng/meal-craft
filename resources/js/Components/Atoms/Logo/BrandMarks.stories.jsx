@@ -78,3 +78,75 @@ export const LeafVariants = {
         </div>
     ),
 };
+
+/** Browser tab / PWA icons — Meal Craft seal (public/favicon.*). */
+const faviconAssets = [
+    { src: '/favicon.svg', label: 'favicon.svg', caption: 'Primary tab icon', size: 64 },
+    { src: '/favicon.ico', label: 'favicon.ico', caption: 'Fallback tab icon', size: 64 },
+    {
+        src: '/apple-touch-icon.png',
+        label: 'apple-touch-icon.png',
+        caption: 'iOS home screen · 180×180',
+        size: 96,
+    },
+    {
+        src: '/images/branding/seal-favicon-192.png',
+        label: 'seal-favicon-192.png',
+        caption: 'High-res seal · 192×192',
+        size: 96,
+    },
+    {
+        src: '/images/branding/seal-favicon-512.png',
+        label: 'seal-favicon-512.png',
+        caption: 'Source seal · 512×512',
+        size: 128,
+    },
+];
+
+/** @type {import('@storybook/react-vite').StoryObj} */
+export const Favicon = {
+    name: 'Favicon',
+    render: () => (
+        <div className="box-border w-full min-w-0 max-w-none self-stretch">
+            <div className="box-border flex w-full min-w-0 max-w-none flex-col items-start gap-8 py-10 pl-0 pr-8 sm:pr-10">
+                <p className="max-w-xl text-sm text-neutral-600">
+                    Browser tab and touch icons use the Meal Craft seal. Landing title:{' '}
+                    <span className="font-medium text-neutral-900">Home - mealcraft</span>
+                </p>
+                <div className="flex flex-wrap items-end gap-10">
+                    {faviconAssets.map(({ src, label, caption, size }) => (
+                        <div key={src} className="flex flex-col items-start gap-2">
+                            <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                                {label}
+                            </p>
+                            <div
+                                className="flex items-center justify-center rounded-lg border border-neutral-200 bg-white p-3"
+                                style={{ width: size + 24, height: size + 24 }}
+                            >
+                                <img
+                                    src={src}
+                                    alt={label}
+                                    width={size}
+                                    height={size}
+                                    className="block object-contain"
+                                />
+                            </div>
+                            <span className="text-xs text-neutral-500">{caption}</span>
+                        </div>
+                    ))}
+                </div>
+                <div className="flex items-center gap-3 rounded-lg border border-neutral-200 bg-neutral-50 px-4 py-3">
+                    <img
+                        src="/favicon.svg"
+                        alt=""
+                        width={16}
+                        height={16}
+                        className="block"
+                        aria-hidden="true"
+                    />
+                    <span className="font-montserrat text-sm text-neutral-800">Home - mealcraft</span>
+                </div>
+            </div>
+        </div>
+    ),
+};

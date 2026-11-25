@@ -8,11 +8,16 @@
 @endphp
 
 <title>
-    {{ filled($title ?? null) ? $title.' - '.$brandName : $brandName }}
+    @if (filled($documentTitle ?? null))
+        {{ $documentTitle }}
+    @else
+        {{ filled($title ?? null) ? $title.' - '.$brandName : $brandName }}
+    @endif
 </title>
 
-<link rel="icon" href="/favicon.ico" sizes="any">
-<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="icon" href="/favicon.svg?v=seal-1" type="image/svg+xml">
+<link rel="icon" href="/favicon.ico?v=seal-1" sizes="any">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png?v=seal-1">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
