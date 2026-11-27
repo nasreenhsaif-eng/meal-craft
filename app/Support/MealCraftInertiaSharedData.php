@@ -6,6 +6,7 @@ use App\Enums\CustomerActivityLevel;
 use App\Enums\CustomerGoal;
 use App\Enums\CustomerSex;
 use App\Enums\CyclePhase;
+use App\Enums\CycleProtocolMode;
 use App\Enums\DietTag;
 use App\Enums\DietType;
 use App\Enums\MacroSplitStyle;
@@ -106,6 +107,11 @@ final class MealCraftInertiaSharedData
                 'importCsv' => route('admin.meal-library.import-csv'),
                 'exportCsv' => route('meals.library.export-csv'),
             ],
+            'mealTiersLibrary' => [
+                'index' => route('admin.meal-tiers-library'),
+                'store' => route('admin.meal-tiers-library.store'),
+                'copy' => route('admin.meal-tiers-library.copy'),
+            ],
             'mealPlanLibrary' => [
                 'index' => route('admin.meal-plan-library'),
                 'store' => route('admin.meal-plan-library.store'),
@@ -124,6 +130,8 @@ final class MealCraftInertiaSharedData
             'index' => route('onboarding.index'),
             'gender' => route('onboarding.gender.store'),
             'periodTracking' => route('onboarding.period-tracking.store'),
+            'protocolSelection' => route('onboarding.protocol-selection.store'),
+            'activePhase' => route('onboarding.active-phase.store'),
             'birthday' => route('onboarding.birthday.store'),
             'height' => route('onboarding.height.store'),
             'weight' => route('onboarding.weight.store'),
@@ -209,6 +217,8 @@ final class MealCraftInertiaSharedData
             'period_tracking_data' => $profile->period_tracking_data ?? [],
             'averageCycleLength' => $profile->average_cycle_length,
             'average_cycle_length' => $profile->average_cycle_length,
+            'protocolMode' => ($profile->protocol_mode ?? CycleProtocolMode::default())->value,
+            'protocol_mode' => ($profile->protocol_mode ?? CycleProtocolMode::default())->value,
             'weight_kg' => $profile->weight_kg,
             'target_weight_kg' => $profile->target_weight_kg,
             'height_cm' => $profile->height_cm,

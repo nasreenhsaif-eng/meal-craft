@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
     applyDeckSelectionToggle,
+    selectedMealsForSlotFromDecks,
     selectedMealsFromDisplayDecks,
     sumSelectedMacrosFromDisplayDecks,
 } from './ChooseYourMeals.jsx';
@@ -12,8 +13,8 @@ describe('protocol selected-meal layout selection', () => {
         expect(applyDeckSelectionToggle(['chia'], 'omelette', 1)).toEqual(['omelette']);
     });
 
-    it('requires deselect before swapping a third main when two are selected', () => {
-        expect(applyDeckSelectionToggle(['1', '5'], '3', 2)).toEqual(['1', '5']);
+    it('drops the earliest main when crafting a third meal at capacity', () => {
+        expect(applyDeckSelectionToggle(['1', '5'], '3', 2)).toEqual(['5', '3']);
         expect(applyDeckSelectionToggle(['1', '5'], '5', 2)).toEqual(['1']);
         expect(applyDeckSelectionToggle(['1'], '3', 2)).toEqual(['1', '3']);
     });
@@ -77,5 +78,27 @@ describe('protocol selected-meal layout selection', () => {
         const totals = sumSelectedMacrosFromDisplayDecks(selections, decks);
         expect(totals.calories).toBe(300 + 520 + 480);
         expect(Math.round(totals.protein)).toBe(24 + 48 + 42);
+    });
+
+    it('shows a breakfast selection even when the card currently lives on another deck', () => {
+        const omelette = { id: 'b1', title: 'Mediterranean Omelet' };
+        const chia = { id: 'b2', title: 'Blueberry Walnut Greek Yogurt Chia Pudding' };
+        const salad = { id: 's1', title: 'Garden Side Salad' };
+
+        const decks = {
+            breakfasts: [omelette],
+            meals: [],
+            sideSalads: [],
+            desserts: [chia],
+            soup: [],
+        };
+
+        expect(
+            selectedMealsForSlotFromDecks(['b2'], decks.breakfasts, decks).map((meal) => meal.title),
+        ).toEqual(['Blueberry Walnut Greek Yogurt Chia Pudding']);
+
+        expect(
+            selectedMealsForSlotFromDecks(['s1'], [], { ...decks, sideSalads: [salad] }).map((meal) => meal.id),
+        ).toEqual(['s1']);
     });
 });

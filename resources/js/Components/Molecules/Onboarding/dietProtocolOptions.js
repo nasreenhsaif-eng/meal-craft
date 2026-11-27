@@ -2,7 +2,6 @@ import {
     IconBalanced,
     IconCycleSync,
     IconKetobiotic,
-    IconNutrientDense,
     IconSickleCellWarrior,
     IconThyroid,
 } from './DietProtocolIcons.jsx';
@@ -26,17 +25,17 @@ export const AUTO_ADVANCE_DIET_PROTOCOL_ID = 'balanced';
 /** @type {DietProtocolOption[]} */
 export const DIET_PROTOCOL_OPTIONS = [
     {
-        id: 'balanced',
-        label: 'Balanced Protocol',
-        description: 'Flexible macros with varied whole foods for everyday wellness.',
-        Icon: IconBalanced,
+        id: 'cycle_sync',
+        label: 'Cycle Sync nutrition for women',
+        description: 'Phase-aware meals aligned with your menstrual cycle.',
+        Icon: IconCycleSync,
     },
     {
-        id: 'nutrient_dense',
-        label: 'Nutrient Density Protocol',
+        id: 'balanced',
+        label: 'Balanced Anti-inflammatory',
         description:
-            'Micronutrient-optimized whole foods — 98% daily RDI targets at 1500+ kcal. Recommended minimum tier: 1500 kcal.',
-        Icon: IconNutrientDense,
+            'Nutrient-dense meal plan with balanced macronutrients and anti-inflammatory whole foods.',
+        Icon: IconBalanced,
     },
     {
         id: 'ketobiotic',
@@ -50,12 +49,6 @@ export const DIET_PROTOCOL_OPTIONS = [
         label: 'Thyroid Protocol',
         description: 'Iodine-aware, steady-energy nutrition designed to support thyroid health.',
         Icon: IconThyroid,
-    },
-    {
-        id: 'cycle_sync',
-        label: 'Cycle Sync nutrition for women',
-        description: 'Phase-aware meals aligned with your menstrual cycle.',
-        Icon: IconCycleSync,
     },
     {
         id: 'sickle_cell',

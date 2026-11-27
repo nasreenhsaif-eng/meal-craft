@@ -62,17 +62,17 @@ function CheckmarkBadge() {
 function TargetSummaryCard({ label, value, subLabel, summary, className = '' }) {
     return (
         <article
-            className={`w-full rounded-[12px] border border-border-light bg-grey-96 px-4 py-4 text-center sm:px-6 sm:py-5 ${className}`.trim()}
+            className={`w-full rounded-[12px] border border-border-light bg-surface-soft px-4 py-4 text-center sm:px-6 sm:py-5 ${className}`.trim()}
         >
-            <p className="font-montserrat text-[10px] font-bold uppercase tracking-[0.12em] text-grey-94 sm:text-[11px] sm:tracking-[0.14em]">
+            <p className="font-montserrat text-[10px] font-bold uppercase tracking-[0.12em] text-form-label sm:text-[11px] sm:tracking-[0.14em]">
                 {label}
             </p>
             <p className="mt-2 font-montserrat text-2xl font-bold leading-none tabular-nums text-brand-primary-pressed sm:text-3xl">
                 {value}
             </p>
-            <p className="mt-1 font-montserrat text-xs font-medium text-grey-33 sm:text-sm">{subLabel}</p>
+            <p className="mt-1 font-montserrat text-xs font-medium text-body sm:text-sm">{subLabel}</p>
             {summary ? (
-                <p className="mt-4 border-t border-border-light pt-4 text-center font-montserrat text-[13px] font-medium leading-relaxed text-grey-33 sm:text-sm">
+                <p className="mt-4 border-t border-border-light pt-4 text-center font-montserrat text-[13px] font-medium leading-relaxed text-body sm:text-sm">
                     {summary}
                 </p>
             ) : null}
@@ -144,7 +144,7 @@ export function DailyTargetsSummaryInner({
             customerName={customerName}
             hideDefaultHeader={embedded || hideDefaultHeader}
         >
-            <div className="w-full space-y-6">
+            <div className="w-full space-y-4">
                 <header className="flex flex-col items-center gap-2 text-center">
                     <CheckmarkBadge />
                     <h1 className="m-0 font-montserrat text-2xl font-bold tracking-tight text-brand-primary-pressed sm:text-3xl">
@@ -160,12 +160,12 @@ export function DailyTargetsSummaryInner({
                 />
 
                 <section
-                    className="w-full rounded-[12px] border border-border-light bg-grey-96 px-3 py-5 sm:px-5"
+                    className="w-full rounded-[12px] border border-border-light bg-surface-soft px-3 py-5 sm:px-5"
                     aria-labelledby="macro-breakdown-heading"
                 >
                     <h2
                         id="macro-breakdown-heading"
-                        className="font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-grey-94"
+                        className="font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-form-label"
                     >
                         Macro Breakdown
                     </h2>
@@ -218,7 +218,7 @@ export function DailyTargetsSummaryInner({
                             label="Craft my plan"
                             disabled={processing}
                             onClick={onStartPlan}
-                            className="!inline-flex !h-[50px] !min-h-[50px] w-auto min-w-[240px] max-w-xs shrink-0 whitespace-nowrap px-12 normal-case tracking-normal bg-[#606c4e] hover:bg-brand-primary-pressed disabled:opacity-60"
+                            className="!inline-flex !h-[50px] !min-h-[50px] w-auto min-w-[240px] max-w-xs shrink-0 whitespace-nowrap px-12 normal-case tracking-normal disabled:opacity-60"
                         />
                     </div>
                 )}

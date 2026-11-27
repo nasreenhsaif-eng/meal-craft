@@ -21,8 +21,8 @@ export function AdminSettingsLayout({ active, heading, subheading, children, onN
     return (
         <div className="mx-auto w-full max-w-[900px]">
             <header className="mb-8">
-                <h1 className="font-montserrat text-2xl font-bold tracking-tight text-[#364153]">Settings</h1>
-                <p className="mt-1 font-montserrat text-sm text-[#555555]">Manage your profile and account settings</p>
+                <h1 className="font-montserrat text-2xl font-bold tracking-tight text-body">Settings</h1>
+                <p className="mt-1 font-montserrat text-sm text-body">Manage your profile and account settings</p>
             </header>
 
             <div className="flex flex-col gap-8 lg:flex-row lg:items-start">
@@ -34,7 +34,7 @@ export function AdminSettingsLayout({ active, heading, subheading, children, onN
                             'rounded-[10px] px-3 py-2 font-montserrat text-sm font-semibold transition-colors',
                             isActive
                                 ? 'bg-[#6E8C47]/15 text-[#3F4F2A]'
-                                : 'text-[#555555] hover:bg-gray-100 hover:text-[#364153]',
+                                : 'text-body hover:bg-gray-100 hover:text-body',
                         ].join(' ');
 
                         if (onNavigate) {
@@ -66,8 +66,8 @@ export function AdminSettingsLayout({ active, heading, subheading, children, onN
 
                 <section className="min-w-0 w-full flex-1 rounded-[12px] border border-gray-200 bg-white p-6 shadow-sm">
                     <header className="mb-6 border-b border-gray-100 pb-4">
-                        <h2 className="font-montserrat text-lg font-bold text-[#364153]">{heading}</h2>
-                        <p className="mt-1 font-montserrat text-sm text-[#555555]">{subheading}</p>
+                        <h2 className="font-montserrat text-lg font-bold text-body">{heading}</h2>
+                        <p className="mt-1 font-montserrat text-sm text-body">{subheading}</p>
                     </header>
                     <div className="w-full">{children}</div>
                 </section>

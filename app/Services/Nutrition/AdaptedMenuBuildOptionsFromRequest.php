@@ -2,6 +2,8 @@
 
 namespace App\Services\Nutrition;
 
+use App\Enums\CycleProtocolMode;
+use App\Enums\CycleSyncPhase;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -17,8 +19,14 @@ final class AdaptedMenuBuildOptionsFromRequest
      *     dessert_calories?: float,
      *     day_of_week?: int,
      *     craft_key?: string,
-     *     plan_tier?: float,
      *     selected_main_meal_ids?: list<int>,
+     *     protocol_mode?: string,
+     *     phase_key?: string,
+     *     biological_phase?: string,
+     *     food_approach?: string,
+     *     fasting_window?: string,
+     *     fasting_type?: string,
+     *     schedules_full_daily_meals?: bool,
      * }
      */
     public static function resolve(Request $request, User $user): array
@@ -31,16 +39,21 @@ final class AdaptedMenuBuildOptionsFromRequest
             'side_salad_calories' => ['sometimes', 'numeric', 'min:0'],
             'dessert_calories' => ['sometimes', 'numeric', 'min:0'],
             'day_of_week' => ['sometimes', 'integer', 'min:1', 'max:7'],
-            'plan_tier' => ['sometimes', 'integer', Rule::in(UserPlanCalculator::planTiers())],
             'selected_fixed_slots' => ['sometimes', 'array'],
             'selected_fixed_slots.*' => ['string', Rule::in(UserPlanCalculator::fixedChoiceSlots())],
             'fixed_slot_actual_macros' => ['sometimes', 'array'],
             'fixed_slot_actual_macros.protein_g' => ['sometimes', 'numeric', 'min:0'],
             'fixed_slot_actual_macros.carbs_g' => ['sometimes', 'numeric', 'min:0'],
             'fixed_slot_actual_macros.fat_g' => ['sometimes', 'numeric', 'min:0'],
-            'selected_main_meal_ids.*' => ['integer', 'min:1'],
+            'selected_main_meal_ids' => ['sometimes', 'array'],
             'selected_breakfast_meal_ids' => ['sometimes', 'array'],
-            'selected_breakfast_meal_ids.*' => ['integer', 'min:1'],
+            'protocol_mode' => ['sometimes', 'string', Rule::in(array_column(CycleProtocolMode::cases(), 'value'))],
+            'phase_key' => ['sometimes', 'string', Rule::in(array_column(CycleSyncPhase::cases(), 'value'))],
+            'biological_phase' => ['sometimes', 'string', 'max:120'],
+            'food_approach' => ['sometimes', 'string', 'max:120'],
+            'fasting_window' => ['sometimes', 'string', 'max:120'],
+            'fasting_type' => ['sometimes', 'string', Rule::in(['fasting', 'no_fasting'])],
+            'schedules_full_daily_meals' => ['sometimes', 'boolean'],
         ]);
 
         $selectedFixedSlots = isset($validated['selected_fixed_slots'])
@@ -79,24 +92,39 @@ final class AdaptedMenuBuildOptionsFromRequest
             $buildOptions['craft_key'] = $validated['craft_key'];
         }
 
-        $isAdminPreview = $user->isAdmin() && $user->isCustomer() !== true;
-
-        if (isset($validated['plan_tier']) && $isAdminPreview) {
-            $buildOptions['plan_tier'] = (float) (int) $validated['plan_tier'];
+        foreach ([
+            'protocol_mode',
+            'phase_key',
+            'biological_phase',
+            'food_approach',
+            'fasting_window',
+            'fasting_type',
+        ] as $cycleKey) {
+            if (isset($validated[$cycleKey])) {
+                $buildOptions[$cycleKey] = $validated[$cycleKey];
+            }
         }
 
-        if (isset($validated['selected_main_meal_ids'])) {
-            $buildOptions['selected_main_meal_ids'] = array_values(array_unique(array_map(
-                static fn (mixed $id): int => (int) $id,
-                $validated['selected_main_meal_ids'],
-            )));
+        if (array_key_exists('schedules_full_daily_meals', $validated)) {
+            $buildOptions['schedules_full_daily_meals'] = (bool) $validated['schedules_full_daily_meals'];
+
+            if (! isset($buildOptions['craft_key'])) {
+                $buildOptions['craft_key'] = $buildOptions['schedules_full_daily_meals']
+                    ? CraftCaloriePlanner::CRAFT_FULL
+                    : CraftCaloriePlanner::CRAFT_INTERMITTENT;
+            }
         }
 
-        if (isset($validated['selected_breakfast_meal_ids'])) {
-            $buildOptions['selected_breakfast_meal_ids'] = array_values(array_unique(array_map(
-                static fn (mixed $id): int => (int) $id,
-                $validated['selected_breakfast_meal_ids'],
-            )));
+        $selectedMainMealIds = self::positiveIntegerIds($request->input('selected_main_meal_ids'));
+
+        if ($selectedMainMealIds !== []) {
+            $buildOptions['selected_main_meal_ids'] = $selectedMainMealIds;
+        }
+
+        $selectedBreakfastMealIds = self::positiveIntegerIds($request->input('selected_breakfast_meal_ids'));
+
+        if ($selectedBreakfastMealIds !== []) {
+            $buildOptions['selected_breakfast_meal_ids'] = $selectedBreakfastMealIds;
         }
 
         if (isset($validated['fixed_slot_actual_macros']) && is_array($validated['fixed_slot_actual_macros'])) {
@@ -104,5 +132,35 @@ final class AdaptedMenuBuildOptionsFromRequest
         }
 
         return AdaptedMenuFixedPortionResolver::mergeIntoBuildOptions($buildOptions);
+    }
+
+    /**
+     * Keep real meal ids and drop placeholders such as sample-deck ids.
+     *
+     * @return list<int>
+     */
+    private static function positiveIntegerIds(mixed $raw): array
+    {
+        if (! is_array($raw)) {
+            return [];
+        }
+
+        $ids = [];
+
+        foreach ($raw as $id) {
+            if (is_int($id)) {
+                $normalized = $id;
+            } elseif (is_string($id) && preg_match('/^[1-9]\d*$/', $id) === 1) {
+                $normalized = (int) $id;
+            } else {
+                continue;
+            }
+
+            if ($normalized > 0) {
+                $ids[] = $normalized;
+            }
+        }
+
+        return array_values(array_unique($ids));
     }
 }

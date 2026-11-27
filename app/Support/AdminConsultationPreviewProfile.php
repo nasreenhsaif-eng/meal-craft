@@ -2,23 +2,23 @@
 
 namespace App\Support;
 
+use App\Enums\CustomerActivityLevel;
+use App\Enums\CustomerSex;
+use App\Enums\DietProtocol;
 use App\Enums\MacroSplitStyle;
 use App\Enums\OnboardingStep;
 use App\Models\CustomerProfile;
 use App\Models\User;
 
 /**
- * Gives staff a minimal customer profile so consultation UI/API can be exercised end-to-end.
+ * Gives staff a complete customer-shaped profile so consultation UI/API
+ * adapts the same published meals a customer with those prefs would see.
  */
 final class AdminConsultationPreviewProfile
 {
     public static function resolve(User $user): ?CustomerProfile
     {
         $profile = $user->customerProfile;
-
-        if ($profile?->daily_calorie_target !== null) {
-            return $profile;
-        }
 
         if (! $user->isAdmin()) {
             return $profile;
@@ -29,7 +29,10 @@ final class AdminConsultationPreviewProfile
 
     public static function ensure(User $user, ?CustomerProfile $profile = null): CustomerProfile
     {
-        $profile ??= $user->customerProfile;
+        // Prefer an explicit profile, then the relation, then a DB lookup (relation may be
+        // cached null on a long-lived User instance after a later create).
+        $profile ??= $user->customerProfile
+            ?? CustomerProfile::query()->where('user_id', $user->id)->first();
 
         $style = MacroSplitStyle::Balanced;
         $percentages = $style->percentages();
@@ -41,6 +44,10 @@ final class AdminConsultationPreviewProfile
             'protein_percentage' => $percentages['protein_percentage'],
             'carb_percentage' => $percentages['carb_percentage'],
             'fat_percentage' => $percentages['fat_percentage'],
+            'diet_protocol' => DietProtocol::Balanced->value,
+            'sex' => CustomerSex::Female,
+            'activity_level' => CustomerActivityLevel::Moderate,
+            'food_filters' => [],
             'onboarding_completed_at' => now(),
         ];
 
@@ -52,12 +59,19 @@ final class AdminConsultationPreviewProfile
             }
             $profile->save();
 
-            return $profile->fresh();
+            $fresh = $profile->fresh() ?? $profile;
+            $user->setRelation('customerProfile', $fresh);
+
+            return $fresh;
         }
 
-        return CustomerProfile::query()->create([
+        $created = CustomerProfile::query()->create([
             'user_id' => $user->id,
             ...$attributes,
         ]);
+
+        $user->setRelation('customerProfile', $created);
+
+        return $created;
     }
 }

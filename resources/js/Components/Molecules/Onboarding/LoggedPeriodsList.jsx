@@ -40,14 +40,14 @@ export function LoggedPeriodsList({ periods = [], onRemove, className = '' }) {
         <section className={`w-full ${className}`.trim()} aria-labelledby="logged-periods-heading">
             <h2
                 id="logged-periods-heading"
-                className="font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-grey-94"
+                className="font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-form-label"
             >
                 Logged periods
             </h2>
 
             {periods.length === 0 ? (
-                <p className="mt-3 rounded-[12px] border border-border-light bg-grey-96 px-4 py-3 text-sm text-grey-94">
-                    Select a start and end date on the calendar to log a period.
+                <p className="mt-3 rounded-[12px] border border-border-light bg-surface-soft px-4 py-3 text-sm text-form-label">
+                    Tap days on the calendar to log bleed days.
                 </p>
             ) : (
                 <ul className="mt-3 flex flex-col gap-2">
@@ -56,17 +56,17 @@ export function LoggedPeriodsList({ periods = [], onRemove, className = '' }) {
 
                         return (
                             <li key={key}>
-                                <div className="flex items-center justify-between gap-3 rounded-[12px] border border-border-light bg-grey-96 px-4 py-3">
+                                <div className="flex items-center justify-between gap-3 rounded-[12px] border border-border-light bg-surface-soft px-4 py-3">
                                     <div className="flex min-w-0 items-center gap-2 text-status-error">
                                         <IconPeriodDrop />
-                                        <span className="truncate font-montserrat text-sm font-semibold text-grey-33">
+                                        <span className="truncate font-montserrat text-sm font-semibold text-body">
                                             {formatPeriodRangeLabel(period.start, period.end)}
                                         </span>
                                     </div>
                                     <button
                                         type="button"
                                         onClick={() => onRemove?.(key)}
-                                        className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] text-grey-94 transition-colors hover:bg-white hover:text-grey-33 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-status-error focus-visible:ring-offset-2"
+                                        className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] text-form-label transition-colors hover:bg-white hover:text-body focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-status-error focus-visible:ring-offset-2"
                                         aria-label={`Remove logged period ${formatPeriodRangeLabel(period.start, period.end)}`}
                                     >
                                         <IconTrash />

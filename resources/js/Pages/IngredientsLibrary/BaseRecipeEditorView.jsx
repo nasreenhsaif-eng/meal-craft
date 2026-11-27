@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import MealIngredientRowsEditor from '../../Components/MealPlan/MealIngredientRowsEditor.jsx';
 import TextInput from '../../Components/Atoms/TextInput/TextInput.jsx';
-import NutrientBadge from '../../Components/Atoms/MealSystem/NutrientBadge.jsx';
+import NutrientBadge from '../../Components/MealSystem/NutrientBadge.jsx';
 import { MealNutritionSummaryTable } from '../../Components/Molecules/MealDetailView/MealDetailView.tsx';
 import { aggregateNutritionFromIngredientRows } from '../../meal-library/aggregateIngredientNutrition.ts';
 import {
@@ -99,7 +99,7 @@ export default function BaseRecipeEditorView({
     const nutritionPanel = nutritionalData ? (
         <MealNutritionSummaryTable data={nutritionalData} />
     ) : (
-        <p className="font-body text-sm text-[#555555]">
+        <p className="font-body text-sm text-body">
             Add ingredients and enter finished cooked weight to preview per-100 g nutrition.
         </p>
     );
@@ -130,13 +130,13 @@ export default function BaseRecipeEditorView({
                         Enter a positive finished weight in grams.
                     </p>
                 ) : (
-                    <p className="font-body text-xs text-[#555555]">
+                    <p className="font-body text-xs text-body">
                         Total weight after cooking. Nutrition per 100 g is calculated from raw ingredient totals divided
                         by this yield.
                     </p>
                 )}
                 {chickenBatchYieldHint ? (
-                    <p className="font-body text-xs text-[#555555]">{chickenBatchYieldHint}</p>
+                    <p className="font-body text-xs text-body">{chickenBatchYieldHint}</p>
                 ) : null}
 
                 <label className="block space-y-1">
@@ -148,7 +148,7 @@ export default function BaseRecipeEditorView({
                         onChange={(e) => onDescriptionChange(e.target.value)}
                         placeholder="One-line summary shown under the recipe title"
                         rows={2}
-                        className="w-full resize-y rounded-[12px] border border-[#E5E7EB] bg-white px-4 py-3 font-body text-sm text-[#1F2937] outline-none ring-[#5A6B44]/35 placeholder:text-[#9CA3AF] focus:border-[#5A6B44]/35 focus:ring-2"
+                        className="w-full resize-y rounded-[12px] border border-border-light bg-white px-4 py-3 font-body text-sm text-[#1F2937] outline-none ring-[#5A6B44]/35 placeholder:text-[#9CA3AF] focus:border-[#5A6B44]/35 focus:ring-2"
                     />
                 </label>
 
@@ -159,7 +159,7 @@ export default function BaseRecipeEditorView({
                         onChange={(e) => onInstructionsChange(e.target.value)}
                         placeholder="One step per line"
                         rows={5}
-                        className="w-full resize-y rounded-[12px] border border-[#E5E7EB] bg-white px-4 py-3 font-body text-sm text-[#1F2937] outline-none ring-[#5A6B44]/35 placeholder:text-[#9CA3AF] focus:border-[#5A6B44]/35 focus:ring-2"
+                        className="w-full resize-y rounded-[12px] border border-border-light bg-white px-4 py-3 font-body text-sm text-[#1F2937] outline-none ring-[#5A6B44]/35 placeholder:text-[#9CA3AF] focus:border-[#5A6B44]/35 focus:ring-2"
                     />
                 </label>
 
@@ -167,17 +167,17 @@ export default function BaseRecipeEditorView({
                     <div>
                         <h2
                             id="base-recipe-nutrition-heading-mobile"
-                            className="font-montserrat text-lg font-bold tracking-tight text-[#262A22]"
+                            className="font-montserrat text-lg font-bold tracking-tight text-heading"
                         >
                             Nutritional summary
                         </h2>
-                        <p className="mt-1 font-montserrat text-sm font-medium text-[#555555]">Per 100 g totals</p>
+                        <p className="mt-1 font-montserrat text-sm font-medium text-body">Per 100 g totals</p>
                     </div>
                     {nutritionPanel}
                 </section>
             </div>
 
-            <aside className="space-y-6 bg-[#F8F9F6] p-6">
+            <aside className="space-y-6 bg-surface-soft p-6">
                 <div className="space-y-3">
                     <p className="font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#374151]">
                         Sickle Cell Highlights
@@ -187,7 +187,7 @@ export default function BaseRecipeEditorView({
                         {sickleCellHighlights.length > 0 ? (
                             sickleCellHighlights.map((badge) => <NutrientBadge key={badge} type={badge} />)
                         ) : (
-                            <p className="font-body text-sm text-[#555555]">—</p>
+                            <p className="font-body text-sm text-body">—</p>
                         )}
                     </div>
                 </div>
@@ -196,11 +196,11 @@ export default function BaseRecipeEditorView({
                     <div>
                         <h2
                             id="base-recipe-nutrition-heading"
-                            className="font-montserrat text-lg font-bold tracking-tight text-[#262A22]"
+                            className="font-montserrat text-lg font-bold tracking-tight text-heading"
                         >
                             Nutritional summary
                         </h2>
-                        <p className="mt-1 font-montserrat text-sm font-medium text-[#555555]">Per 100 g totals</p>
+                        <p className="mt-1 font-montserrat text-sm font-medium text-body">Per 100 g totals</p>
                     </div>
                     {nutritionPanel}
                 </section>

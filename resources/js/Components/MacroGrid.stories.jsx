@@ -1,7 +1,7 @@
 import MacroGrid from './MacroGrid.jsx';
 
 export default {
-    title: 'MealCraft/Components/MacroGrid',
+    title: 'Design System/03. Molecules/Form and pickers/MacroGrid',
     component: MacroGrid,
     parameters: { layout: 'padded' },
     argTypes: {

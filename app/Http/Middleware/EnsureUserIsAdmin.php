@@ -15,8 +15,8 @@ class EnsureUserIsAdmin
     {
         $user = $request->user();
 
-        if ($user === null || ! $user->isAdmin()) {
-            if ($user !== null && ! $user->isAdmin()) {
+        if ($user === null || ! $user->canAccessAdminPortal()) {
+            if ($user !== null && ! $user->canAccessAdminPortal()) {
                 return redirect($user->homePath())
                     ->with('error', __('That area is for admin staff only.'));
             }

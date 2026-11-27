@@ -1,16 +1,19 @@
+import { useState } from 'react';
+import Button from '../Atoms/Button/Button.jsx';
 import {
     CALORIC_THRESHOLD_NOTICE,
+    CALORIC_THRESHOLD_NOTICE_MAX_CALORIES,
     isBelowMicronutrientEnforcedCalories,
-    MICRONUTRIENT_ENFORCED_MIN_CALORIES,
 } from '../../meal-library/caloricThresholdNotice.ts';
-import { ENFORCED_MICRONUTRIENT_TIERS } from '../../meal-library/nutrientDailyRdi.ts';
 
 /**
  * @param {object} props
  * @param {number} [props.planTierCalories]
  */
 export default function CaloricThresholdNotice({ planTierCalories = 0 }) {
-    if (!isBelowMicronutrientEnforcedCalories(planTierCalories)) {
+    const [dismissed, setDismissed] = useState(false);
+
+    if (dismissed || !isBelowMicronutrientEnforcedCalories(planTierCalories)) {
         return null;
     }
 
@@ -22,14 +25,14 @@ export default function CaloricThresholdNotice({ planTierCalories = 0 }) {
             <p className="font-montserrat text-xs font-bold uppercase tracking-[0.12em] text-amber-900">
                 Please note
             </p>
-            <h3 className="mt-2 font-montserrat text-sm font-bold leading-snug text-[#262A22]">
+            <h3 className="mt-2 font-montserrat text-sm font-bold leading-snug text-heading">
                 <span aria-hidden="true">⚠️ </span>
                 {CALORIC_THRESHOLD_NOTICE.title}
             </h3>
             <p className="mt-2 font-body text-xs font-medium text-[#5A6B44]">
-                Your plan is {planTierCalories} kcal per delivery day — below the{' '}
-                {MICRONUTRIENT_ENFORCED_MIN_CALORIES} kcal threshold where Meal Craft optimizes recipes for{' '}
-                {ENFORCED_MICRONUTRIENT_TIERS.join(' / ')} kcal micronutrient coverage.
+                Your plan is {planTierCalories} kcal per delivery day — at or below the{' '}
+                {CALORIC_THRESHOLD_NOTICE_MAX_CALORIES} kcal threshold where micronutrient coverage from whole foods
+                becomes difficult to sustain.
             </p>
             <div className="mt-3 space-y-3">
                 {CALORIC_THRESHOLD_NOTICE.paragraphs.map((paragraph) => (
@@ -37,6 +40,15 @@ export default function CaloricThresholdNotice({ planTierCalories = 0 }) {
                         {paragraph}
                     </p>
                 ))}
+            </div>
+            <div className="mt-4">
+                <Button
+                    type="button"
+                    label="Got it"
+                    size="sm"
+                    className="w-full uppercase tracking-[0.08em] sm:w-auto sm:min-w-[140px]"
+                    onClick={() => setDismissed(true)}
+                />
             </div>
         </div>
     );

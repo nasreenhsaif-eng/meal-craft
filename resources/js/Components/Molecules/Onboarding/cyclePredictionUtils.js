@@ -3,7 +3,7 @@ import { isDateInAnyLoggedPeriod } from './periodTrackingUtils.js';
 
 /** @typedef {import('./periodTrackingUtils.js').LoggedPeriod} LoggedPeriod */
 
-export const DEFAULT_CYCLE_LENGTH_DAYS = 28;
+export const DEFAULT_CYCLE_LENGTH_DAYS = 30;
 export const MIN_CYCLE_LENGTH_DAYS = 21;
 export const PERIOD_BLEEDING_DAYS = 5;
 export const PERIOD_END_OFFSET_DAYS = PERIOD_BLEEDING_DAYS - 1;

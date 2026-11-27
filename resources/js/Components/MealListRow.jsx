@@ -48,7 +48,7 @@ const MealListRow = forwardRef(function MealListRow(
 
     const rowClass = [
         'border-b border-gray-200 text-[#1F2937] transition-colors',
-        isDragging ? 'relative z-10 bg-[#EEF4E8] shadow-md' : 'hover:bg-[#F8F9F6]',
+        isDragging ? 'relative z-10 bg-[#EEF4E8] shadow-md' : 'hover:bg-surface-soft',
         className,
     ]
         .filter(Boolean)
@@ -86,7 +86,7 @@ const MealListRow = forwardRef(function MealListRow(
             <td className="w-[100px] whitespace-nowrap px-3 py-3 text-right align-middle font-body text-sm tabular-nums text-[#374151]">
                 {fmtNum(m.calories)}
             </td>
-            <td className="min-w-[180px] px-3 py-3 align-middle font-body text-xs tabular-nums text-[#555555]">
+            <td className="min-w-[180px] px-3 py-3 align-middle font-body text-xs tabular-nums text-body">
                 {macroStr}
             </td>
         </tr>

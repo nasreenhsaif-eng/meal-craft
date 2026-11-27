@@ -1,11 +1,13 @@
 import { Fragment, type ReactElement, useState } from 'react';
 import SafetyAlerts from '../../MealSystem/SafetyAlerts.jsx';
-import NutrientBadge from '../../Atoms/MealSystem/NutrientBadge.jsx';
+import NutrientBadge from '../../MealSystem/NutrientBadge.jsx';
 import MealCraftLogo from '../../Atoms/Logo/MealCraftLogo.jsx';
 import { CyclePhaseTag, type CyclePhase } from './CyclePhaseTag';
 import { resolveMealImageUrl } from '../../../meal-library/resolveMealImageUrl.ts';
 import { mealInstructionStepsForDisplay } from '../../../meal-library/mealInstructionsDisplay.ts';
 import { G6PD_HIGHLIGHT_BADGE } from '../../../meal-library/mealSafetyAndSickle.ts';
+import { ShoppingIngredientCheckboxRow } from '../Customer/ShoppingIngredientChecklist.jsx';
+import { shoppingRowFromDisplayLine } from '../../../customer/customerShoppingList.js';
 
 export type { CyclePhase };
 export { CyclePhaseTag };
@@ -33,7 +35,13 @@ export type MealSafetyAlert = {
 
 export type MealIngredientSection = {
     title: string;
-    items: string[];
+    items: string[] | MealIngredientItem[];
+};
+
+export type MealIngredientItem = {
+    line: string;
+    ingredientId?: number;
+    isBaseRecipe?: boolean;
 };
 
 export type MealInstructionSection = {
@@ -54,7 +62,10 @@ export type MealDetailModel = {
     sickleRdiFootnote?: string;
     nutritionalData: MealNutritionalData;
     ingredients: string[];
+    ingredientItems?: MealIngredientItem[];
     ingredientSections?: MealIngredientSection[];
+    /** Legend for raw / dry / pre-cooked prep weights on every recipe. */
+    ingredientsPrepNote?: string | null;
     /** Estimated cooked plated weight from raw/dry inputs + pre-cooked bases. */
     cookingYieldNote?: string | null;
     instructions: string[] | string;
@@ -72,6 +83,17 @@ export type MealDetailViewProps = {
     hideImage?: boolean;
     /** When true, omit outer max-height so a parent modal owns scrolling (title stays visible). */
     embedded?: boolean;
+    /** Hide cooking instructions (e.g. customer meal-plan summary — DIY covers steps later). */
+    hideInstructions?: boolean;
+    /** Partner Kitchen: show all ingredients as one comma-separated line. */
+    inlineIngredients?: boolean;
+    /** DIY: each ingredient line is a checkbox that adds it to the shopping list. */
+    shoppingCheckedKeys?: ReadonlySet<string>;
+    onToggleShoppingIngredient?: (
+        row: { key: string; name: string; unit: string; amount: number; ingredientId: number },
+        shouldAdd: boolean,
+    ) => void;
+    onBaseRecipeClick?: (item: MealIngredientItem) => void;
 };
 
 const G6PD_SAFETY_ALERT_BADGE = 'G6PD Safety Alert';
@@ -88,15 +110,15 @@ export function MealNutritionSummaryTable({ data }: { data: MealNutritionalData 
             role="region"
             aria-label="Nutritional breakdown"
             tabIndex={0}
-            className="overflow-x-auto rounded-[12px] border border-gray-200 bg-white outline-none [-webkit-overflow-scrolling:touch] focus:outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#5A6B44]/35"
+            className="rounded-[12px] border border-gray-200 bg-white outline-none focus:outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#5A6B44]/35"
         >
-            <table className="w-full min-w-[280px] border-collapse text-left text-sm">
+            <table className="w-full border-collapse text-left">
                 <thead>
                     <tr className="border-b border-gray-200 bg-[#F8F9F6]">
-                        <th className="px-3 py-2.5 font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#374151]">
+                        <th className="min-w-0 px-2 py-1.5 font-montserrat text-[10px] font-bold uppercase tracking-[0.08em] text-[#374151] sm:px-3 sm:py-2 sm:text-xs sm:tracking-[0.14em]">
                             Nutrient
                         </th>
-                        <th className="px-3 py-2.5 text-right font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#374151]">
+                        <th className="w-[1%] whitespace-nowrap px-2 py-1.5 text-right font-montserrat text-[10px] font-bold uppercase tracking-[0.08em] text-[#374151] sm:px-3 sm:py-2 sm:text-xs sm:tracking-[0.14em]">
                             {valueColumnLabel}
                         </th>
                     </tr>
@@ -107,17 +129,19 @@ export function MealNutritionSummaryTable({ data }: { data: MealNutritionalData 
                             <tr className="bg-[#F8F9F6]">
                                 <td
                                     colSpan={2}
-                                    className="px-3 py-2 font-montserrat text-xs font-bold uppercase tracking-[0.12em] text-[#5A6B44]"
+                                    className="px-2 py-1.5 font-montserrat text-[10px] font-bold uppercase tracking-[0.08em] text-[#5A6B44] sm:px-3 sm:py-2 sm:text-xs sm:tracking-[0.12em]"
                                 >
                                     {sec.title}
                                 </td>
                             </tr>
                             {sec.rows.map((r) => (
                                 <tr key={`${sec.title}-${r.label}`} className="border-b border-gray-100 last:border-b-0">
-                                    <td className="px-3 py-2.5 font-montserrat text-sm font-medium text-[#374151]">{r.label}</td>
+                                    <td className="min-w-0 px-2 py-1.5 font-montserrat text-xs font-medium leading-snug text-[#374151] sm:px-3 sm:py-2 sm:text-sm">
+                                        {r.label}
+                                    </td>
                                     <td
                                         className={[
-                                            'px-3 py-2.5 text-right font-montserrat text-sm font-bold tabular-nums text-[#1F2937]',
+                                            'w-[1%] whitespace-nowrap px-2 py-1.5 text-right font-montserrat text-xs font-bold tabular-nums text-[#1F2937] sm:px-3 sm:py-2 sm:text-sm',
                                             r.valueClass ?? '',
                                         ].join(' ')}
                                     >
@@ -133,7 +157,55 @@ export function MealNutritionSummaryTable({ data }: { data: MealNutritionalData 
     );
 }
 
-export default function MealDetailView({ meal, className = '', hideImage = false, embedded = false }: MealDetailViewProps): ReactElement {
+function normalizeIngredientItem(item: string | MealIngredientItem): MealIngredientItem {
+    if (typeof item === 'string') {
+        return { line: item };
+    }
+
+    return {
+        line: String(item.line ?? ''),
+        ingredientId: item.ingredientId,
+        isBaseRecipe: item.isBaseRecipe,
+    };
+}
+
+function MealIngredientLine({
+    item,
+    onBaseRecipeClick,
+}: {
+    item: string | MealIngredientItem;
+    onBaseRecipeClick?: (item: MealIngredientItem) => void;
+}): ReactElement {
+    const normalized = normalizeIngredientItem(item);
+    const canOpenBaseRecipe =
+        normalized.isBaseRecipe === true && normalized.ingredientId != null && typeof onBaseRecipeClick === 'function';
+
+    if (canOpenBaseRecipe) {
+        return (
+            <button
+                type="button"
+                className="text-left underline decoration-[#5A6B44]/40 underline-offset-2 outline-none hover:text-[#5A6B44] focus-visible:ring-2 focus-visible:ring-[#5A6B44]/35"
+                onClick={() => onBaseRecipeClick(normalized)}
+            >
+                {normalized.line}
+            </button>
+        );
+    }
+
+    return <>{normalized.line}</>;
+}
+
+export default function MealDetailView({
+    meal,
+    className = '',
+    hideImage = false,
+    embedded = false,
+    hideInstructions = false,
+    inlineIngredients = false,
+    shoppingCheckedKeys,
+    onToggleShoppingIngredient,
+    onBaseRecipeClick,
+}: MealDetailViewProps): ReactElement {
     const [mediaFailed, setMediaFailed] = useState(false);
     const {
         shortDescription,
@@ -143,7 +215,9 @@ export default function MealDetailView({ meal, className = '', hideImage = false
         sickleCellHighlights = [],
         nutritionalData,
         ingredients,
+        ingredientItems,
         ingredientSections,
+        ingredientsPrepNote,
         cookingYieldNote,
         instructions,
         instructionSections,
@@ -151,18 +225,44 @@ export default function MealDetailView({ meal, className = '', hideImage = false
         imageAlt,
         description,
         nutritionSubheading,
-        sickleRdiFootnote,
     } = meal;
 
     const nutritionSubheadingText = nutritionSubheading ?? 'Per serving totals';
-    const sickleRdiFootnoteText = sickleRdiFootnote ?? 'High Source: ≥20% of daily RDI per serving';
     const resolvedImageUrl = resolveMealImageUrl(imageUrl);
     const resolvedImageAlt = String(imageAlt ?? '').trim();
     const showImage = resolvedImageUrl !== '' && !mediaFailed;
     const instructionSteps = mealInstructionStepsForDisplay(instructions);
     const scBadges = sickleCellHighlights.filter((b) => b !== G6PD_HIGHLIGHT_BADGE);
 
+    const shoppingEnabled = typeof onToggleShoppingIngredient === 'function' && !inlineIngredients;
     const hasIngredientSections = Array.isArray(ingredientSections) && ingredientSections.length > 0;
+
+    const renderIngredientContent = (item: string | MealIngredientItem, idSuffix: string) => {
+        const normalized = normalizeIngredientItem(item);
+
+        if (!shoppingEnabled || !onToggleShoppingIngredient) {
+            return <MealIngredientLine item={item} onBaseRecipeClick={onBaseRecipeClick} />;
+        }
+
+        const row = shoppingRowFromDisplayLine(normalized.line, normalized.ingredientId);
+
+        if (!row) {
+            return <MealIngredientLine item={item} onBaseRecipeClick={onBaseRecipeClick} />;
+        }
+
+        return (
+            <ShoppingIngredientCheckboxRow
+                row={{ ...row, label: normalized.line }}
+                checked={shoppingCheckedKeys?.has(row.key) ?? false}
+                onToggle={onToggleShoppingIngredient}
+                checkboxId={`meal-shop-${idSuffix}-${row.key}`}
+            />
+        );
+    };
+    const hasStructuredIngredientItems = Array.isArray(ingredientItems) && ingredientItems.length > 0;
+    const flatIngredientItems = hasStructuredIngredientItems
+        ? ingredientItems
+        : ingredients.map((line) => ({ line }));
     const hasInstructionSections = Array.isArray(instructionSections) && instructionSections.length > 0;
     const mealBlurb = String(shortDescription || description || '').trim();
 
@@ -172,19 +272,41 @@ export default function MealDetailView({ meal, className = '', hideImage = false
             aria-label="Meal details"
             tabIndex={0}
             className={[
+                // Embedded: parent modal owns scrolling; stay single-column (viewport `lg` must not split).
                 embedded
-                    ? 'min-h-0 flex-1 overflow-y-auto overscroll-y-contain outline-none'
-                    : 'mx-auto max-w-5xl max-h-[min(90vh,calc(100dvh-2rem))] overflow-y-auto overscroll-y-contain rounded-[12px] outline-none',
-                'focus:outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5A6B44]/45 focus-visible:ring-offset-2 focus-visible:ring-offset-[#F8F9F6]',
+                    ? 'w-full outline-none'
+                    : 'mx-auto max-w-5xl max-h-[min(90vh,calc(100dvh-2rem))] overflow-y-auto overscroll-y-contain rounded-[12px] outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-[#F8F9F6]',
+                'focus:outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5A6B44]/45',
                 className,
             ]
                 .filter(Boolean)
                 .join(' ')}
         >
-            <div className="grid grid-cols-1 gap-0 lg:grid-cols-[13fr_7fr]">
-                <article className="space-y-8 rounded-[12px] border border-gray-200 bg-white p-6 shadow-sm md:p-8 lg:rounded-r-none lg:border-r-0">
+            <div
+                className={
+                    embedded
+                        ? 'grid grid-cols-1 gap-0'
+                        : 'grid grid-cols-1 gap-0 lg:grid-cols-[13fr_7fr]'
+                }
+            >
+                <article
+                    className={
+                        embedded
+                            ? 'space-y-4 bg-white px-3 pb-4 pt-0 sm:space-y-5 sm:px-4'
+                            : [
+                                  'space-y-6 rounded-[12px] border border-gray-200 bg-white p-4 shadow-sm sm:space-y-8 sm:p-6 md:p-8',
+                                  'lg:rounded-r-none lg:border-r-0',
+                              ].join(' ')
+                    }
+                >
                     {!hideImage ? (
-                        <div className="-mx-6 -mt-6 mb-6 aspect-[4/3] w-[calc(100%+3rem)] max-w-none overflow-hidden rounded-t-[12px] bg-[#F8F9F6] md:-mx-8 md:-mt-8 md:w-[calc(100%+4rem)]">
+                        <div
+                            className={
+                                embedded
+                                    ? '-mx-3 mb-3 aspect-[4/3] w-[calc(100%+1.5rem)] max-w-none overflow-hidden bg-[#F8F9F6] sm:-mx-4 sm:w-[calc(100%+2rem)]'
+                                    : '-mx-4 -mt-4 mb-4 aspect-[4/3] w-[calc(100%+2rem)] max-w-none overflow-hidden rounded-t-[12px] bg-[#F8F9F6] sm:-mx-6 sm:-mt-6 sm:mb-6 sm:w-[calc(100%+3rem)] md:-mx-8 md:-mt-8 md:w-[calc(100%+4rem)]'
+                            }
+                        >
                             {showImage ? (
                                 <img
                                     src={resolvedImageUrl}
@@ -222,109 +344,6 @@ export default function MealDetailView({ meal, className = '', hideImage = false
                         </section>
                     ) : null}
 
-                    {cyclePhases?.length ? (
-                        <div className="flex flex-wrap gap-2" role="list" aria-label="Cycle phases">
-                            {cyclePhases.map((phase) => (
-                                <span key={phase} role="listitem" className="inline-flex">
-                                    <CyclePhaseTag phase={phase} />
-                                </span>
-                            ))}
-                        </div>
-                    ) : null}
-
-                    <section className="space-y-4" aria-labelledby="meal-detail-ingredients-heading">
-                        <h2
-                            id="meal-detail-ingredients-heading"
-                            className="font-montserrat text-lg font-bold tracking-tight text-[#262A22] md:text-[18px]"
-                        >
-                            Ingredients
-                        </h2>
-                        {hasIngredientSections ? (
-                            <div className="space-y-6">
-                                {ingredientSections.map((section) => (
-                                    <div key={section.title} className="space-y-3">
-                                        <h3 className="font-montserrat text-sm font-bold uppercase tracking-[0.12em] text-[#5A6B44]">
-                                            {section.title}
-                                        </h3>
-                                        <ul className="space-y-3 font-montserrat text-sm font-medium leading-relaxed text-[#374151] md:text-[15px]">
-                                            {section.items.map((line, idx) => (
-                                                <li
-                                                    key={`${section.title}-${idx}-${line}`}
-                                                    className="border-b border-gray-100 pb-3 last:border-b-0 last:pb-0"
-                                                >
-                                                    {line}
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </div>
-                                ))}
-                            </div>
-                        ) : (
-                            <ul className="space-y-3 font-montserrat text-sm font-medium leading-relaxed text-[#374151] md:text-[15px]">
-                                {ingredients.map((line, idx) => (
-                                    <li key={`${idx}-${line}`} className="border-b border-gray-100 pb-3 last:border-b-0 last:pb-0">
-                                        {line}
-                                    </li>
-                                ))}
-                            </ul>
-                        )}
-                        {String(cookingYieldNote ?? '').trim() !== '' ? (
-                            <p className="font-montserrat text-sm font-medium leading-relaxed text-[#5A6B44] md:text-[15px]">
-                                {String(cookingYieldNote).trim()}
-                            </p>
-                        ) : null}
-                    </section>
-
-                    <section className="space-y-4" aria-labelledby="meal-detail-instructions-heading">
-                        <h2
-                            id="meal-detail-instructions-heading"
-                            className="font-montserrat text-lg font-bold tracking-tight text-[#262A22] md:text-[18px]"
-                        >
-                            Instructions
-                        </h2>
-                        {hasInstructionSections ? (
-                            <div className="space-y-6">
-                                {instructionSections.map((section) => (
-                                    <div key={section.title} className="space-y-3">
-                                        <h3 className="font-montserrat text-sm font-bold uppercase tracking-[0.12em] text-[#5A6B44]">
-                                            {section.title}
-                                        </h3>
-                                        <ol className="list-decimal space-y-4 pl-5 font-montserrat text-sm font-medium leading-relaxed text-[#374151] marker:font-bold md:text-[15px] md:pl-6">
-                                            {section.steps.map((step, idx) => (
-                                                <li key={`${section.title}-${idx}`} className="whitespace-pre-line pl-2">
-                                                    {step}
-                                                </li>
-                                            ))}
-                                        </ol>
-                                    </div>
-                                ))}
-                            </div>
-                        ) : (
-                            <ol className="list-decimal space-y-4 pl-5 font-montserrat text-sm font-medium leading-relaxed text-[#374151] marker:font-bold md:text-[15px] md:pl-6">
-                                {instructionSteps.map((step, idx) => (
-                                    <li key={idx} className="whitespace-pre-line pl-2">
-                                        {step}
-                                    </li>
-                                ))}
-                            </ol>
-                        )}
-                    </section>
-
-                    <section className="space-y-4 lg:hidden" aria-labelledby="meal-detail-nutrition-heading-mobile">
-                        <div>
-                            <h2
-                                id="meal-detail-nutrition-heading-mobile"
-                                className="font-montserrat text-lg font-bold tracking-tight text-[#262A22] md:text-[18px]"
-                            >
-                                Nutritional summary
-                            </h2>
-                            <p className="mt-1 font-montserrat text-sm font-medium text-[#555555]">{nutritionSubheadingText}</p>
-                        </div>
-                        <MealNutritionSummaryTable data={nutritionalData} />
-                    </section>
-                </article>
-
-                <aside className="space-y-6 rounded-[12px] border border-gray-200 bg-[#F8F9F6] p-6 lg:rounded-l-none lg:border-l">
                     {hasG6pdTrigger ? (
                         <div className="rounded-[12px] border-2 border-[#B91C1C] bg-[#FEF2F2] p-4 shadow-sm">
                             <p className="font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#991B1B]">
@@ -348,24 +367,159 @@ export default function MealDetailView({ meal, className = '', hideImage = false
                         </div>
                     ) : null}
 
-                    <div className="space-y-3">
-                        <p className="font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#374151]">
-                            Sickle Cell Highlights
-                        </p>
-                        <p className="font-body text-xs text-[#6B7280]">{sickleRdiFootnoteText}</p>
-                        <div className="flex flex-wrap gap-2">
-                            {scBadges.length > 0 ? (
-                                scBadges.map((badge) => <NutrientBadge key={badge} type={badge} />)
-                            ) : (
-                                <p className="font-body text-sm text-[#555555]">—</p>
-                            )}
+                    {scBadges.length > 0 ? (
+                        <div className="space-y-2">
+                            <p className="font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#374151]">
+                                Nutrient highlights
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                                {scBadges.map((badge) => (
+                                    <NutrientBadge key={badge} type={badge} />
+                                ))}
+                            </div>
+                            <button
+                                type="button"
+                                className="font-montserrat text-sm font-semibold text-[#5A6B44] underline underline-offset-2 hover:text-[#4A5A38]"
+                                onClick={() => {
+                                    const target = document.getElementById(
+                                        embedded
+                                            ? 'meal-detail-nutrition-heading-mobile'
+                                            : 'meal-detail-nutrition-heading',
+                                    );
+                                    target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                }}
+                            >
+                                See full nutritional summary
+                            </button>
                         </div>
-                    </div>
+                    ) : null}
 
-                    <section className="hidden space-y-4 lg:block" aria-labelledby="meal-detail-nutrition-heading">
+                    {cyclePhases?.length ? (
+                        <div className="flex flex-wrap gap-2" role="list" aria-label="Cycle phases">
+                            {cyclePhases.map((phase) => (
+                                <span key={phase} role="listitem" className="inline-flex">
+                                    <CyclePhaseTag phase={phase} />
+                                </span>
+                            ))}
+                        </div>
+                    ) : null}
+
+                    <section className="space-y-4" aria-labelledby="meal-detail-ingredients-heading">
+                        <h2
+                            id="meal-detail-ingredients-heading"
+                            className="font-montserrat text-lg font-bold tracking-tight text-[#262A22] md:text-[18px]"
+                        >
+                            Ingredients
+                        </h2>
+                        {!hideInstructions && String(ingredientsPrepNote ?? '').trim() !== '' ? (
+                            <p className="font-montserrat text-sm font-medium leading-relaxed text-[#5A6B44] md:text-[15px]">
+                                {String(ingredientsPrepNote).trim()}
+                            </p>
+                        ) : null}
+                        {inlineIngredients ? (
+                            <p className="font-montserrat text-sm font-medium leading-relaxed text-[#374151] md:text-[15px]">
+                                {(hasIngredientSections
+                                    ? ingredientSections.flatMap((section) =>
+                                          section.items.map((item) => normalizeIngredientItem(item).line),
+                                      )
+                                    : flatIngredientItems.map((item) => item.line)
+                                )
+                                    .map((line) => String(line ?? '').trim())
+                                    .filter((line) => line !== '')
+                                    .join(', ') || 'No ingredients listed.'}
+                            </p>
+                        ) : hasIngredientSections ? (
+                            <div className="space-y-6">
+                                {ingredientSections.map((section) => (
+                                    <div key={section.title} className="space-y-3">
+                                        <h3 className="font-montserrat text-sm font-bold uppercase tracking-[0.12em] text-[#5A6B44]">
+                                            {section.title}
+                                        </h3>
+                                        <ul className="space-y-1 font-montserrat text-sm font-medium leading-relaxed text-[#374151] md:text-[15px]">
+                                            {section.items.map((item, idx) => {
+                                                const normalized = normalizeIngredientItem(item);
+
+                                                return (
+                                                    <li key={`${section.title}-${idx}-${normalized.line}`}>
+                                                        {renderIngredientContent(
+                                                            item,
+                                                            `${section.title}-${idx}`,
+                                                        )}
+                                                    </li>
+                                                );
+                                            })}
+                                        </ul>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <ul className="space-y-1 font-montserrat text-sm font-medium leading-relaxed text-[#374151] md:text-[15px]">
+                                {flatIngredientItems.map((item, idx) => (
+                                    <li key={`${idx}-${item.line}`}>
+                                        {renderIngredientContent(item, String(idx))}
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                        {shoppingEnabled ? (
+                            <p className="font-body text-xs text-[#6B7280]">
+                                Check an ingredient to add it to your shopping list in My Tools.
+                            </p>
+                        ) : null}
+                        {!hideInstructions && String(cookingYieldNote ?? '').trim() !== '' ? (
+                            <p className="font-montserrat text-sm font-medium leading-relaxed text-[#5A6B44] md:text-[15px]">
+                                {String(cookingYieldNote).trim()}
+                            </p>
+                        ) : null}
+                    </section>
+
+                    {!hideInstructions ? (
+                        <section className="space-y-4" aria-labelledby="meal-detail-instructions-heading">
+                            <h2
+                                id="meal-detail-instructions-heading"
+                                className="font-montserrat text-lg font-bold tracking-tight text-[#262A22] md:text-[18px]"
+                            >
+                                Instructions
+                            </h2>
+                            {hasInstructionSections ? (
+                                <div className="space-y-6">
+                                    {instructionSections.map((section) => (
+                                        <div key={section.title} className="space-y-3">
+                                            <h3 className="font-montserrat text-sm font-bold uppercase tracking-[0.12em] text-[#5A6B44]">
+                                                {section.title}
+                                            </h3>
+                                            <ol className="list-decimal space-y-4 pl-5 font-montserrat text-sm font-medium leading-relaxed text-[#374151] marker:font-bold md:text-[15px] md:pl-6">
+                                                {section.steps.map((step, idx) => (
+                                                    <li
+                                                        key={`${section.title}-${idx}`}
+                                                        className="whitespace-pre-line pl-2"
+                                                    >
+                                                        {step}
+                                                    </li>
+                                                ))}
+                                            </ol>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <ol className="list-decimal space-y-4 pl-5 font-montserrat text-sm font-medium leading-relaxed text-[#374151] marker:font-bold md:text-[15px] md:pl-6">
+                                    {instructionSteps.map((step, idx) => (
+                                        <li key={idx} className="whitespace-pre-line pl-2">
+                                            {step}
+                                        </li>
+                                    ))}
+                                </ol>
+                            )}
+                        </section>
+                    ) : null}
+
+                    <section
+                        className={embedded ? 'space-y-4' : 'space-y-4 lg:hidden'}
+                        aria-labelledby="meal-detail-nutrition-heading-mobile"
+                    >
                         <div>
                             <h2
-                                id="meal-detail-nutrition-heading"
+                                id="meal-detail-nutrition-heading-mobile"
                                 className="font-montserrat text-lg font-bold tracking-tight text-[#262A22] md:text-[18px]"
                             >
                                 Nutritional summary
@@ -374,7 +528,29 @@ export default function MealDetailView({ meal, className = '', hideImage = false
                         </div>
                         <MealNutritionSummaryTable data={nutritionalData} />
                     </section>
-                </aside>
+                </article>
+
+                {!embedded ? (
+                    <aside className="space-y-5 rounded-[12px] border border-gray-200 bg-[#F8F9F6] p-4 sm:space-y-6 sm:p-6 lg:rounded-l-none lg:border-l">
+                        <section
+                            className="hidden space-y-4 lg:block"
+                            aria-labelledby="meal-detail-nutrition-heading"
+                        >
+                            <div>
+                                <h2
+                                    id="meal-detail-nutrition-heading"
+                                    className="font-montserrat text-lg font-bold tracking-tight text-[#262A22] md:text-[18px]"
+                                >
+                                    Nutritional summary
+                                </h2>
+                                <p className="mt-1 font-montserrat text-sm font-medium text-[#555555]">
+                                    {nutritionSubheadingText}
+                                </p>
+                            </div>
+                            <MealNutritionSummaryTable data={nutritionalData} />
+                        </section>
+                    </aside>
+                ) : null}
             </div>
         </div>
     );

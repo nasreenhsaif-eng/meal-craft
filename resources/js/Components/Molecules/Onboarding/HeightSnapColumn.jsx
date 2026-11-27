@@ -114,7 +114,7 @@ export function HeightSnapColumn({
                                 'mx-1 flex shrink-0 snap-center items-center justify-center whitespace-nowrap rounded-[10px] px-2 font-montserrat leading-none',
                                 'transition-[opacity,font-size,font-weight,color,background-color] duration-150',
                                 state === 'selected'
-                                    ? 'bg-[#6E8C47]/10 text-lg font-bold text-[#364153] opacity-100'
+                                    ? 'bg-[#6E8C47]/10 text-lg font-bold text-body opacity-100'
                                     : state === 'adjacent'
                                       ? 'bg-transparent text-sm font-medium text-[#6B7280] opacity-30'
                                       : 'bg-transparent text-sm font-medium text-[#6B7280] opacity-20',
@@ -122,7 +122,7 @@ export function HeightSnapColumn({
                         >
                             <span>{formatItem(item)}</span>
                             {state === 'selected' && unitLabel ? (
-                                <span className="ml-1.5 shrink-0 text-sm font-semibold text-[#364153]">{unitLabel}</span>
+                                <span className="ml-1.5 shrink-0 text-sm font-semibold text-body">{unitLabel}</span>
                             ) : null}
                         </li>
                     );

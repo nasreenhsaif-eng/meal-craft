@@ -1,6 +1,6 @@
 /** @typedef {import('./onboardingConstants.js').OnboardingStepId} OnboardingStepId */
 
-import { shouldShowPeriodTrackingStep } from './onboardingFlow.js';
+import { isCycleSyncFlowStep, shouldShowPeriodTrackingStep } from './onboardingFlow.js';
 
 /**
  * @param {Array<{ value: string; label: string }>} steps
@@ -8,11 +8,11 @@ import { shouldShowPeriodTrackingStep } from './onboardingFlow.js';
  * @returns {Array<{ value: string; label: string }>}
  */
 export function getVisibleOnboardingSteps(steps, context = {}) {
-    if (!shouldShowPeriodTrackingStep(context)) {
-        return steps.filter((step) => step.value !== 'period_tracking');
+    if (shouldShowPeriodTrackingStep(context)) {
+        return steps;
     }
 
-    return steps;
+    return steps.filter((step) => !isCycleSyncFlowStep(step.value));
 }
 
 /**

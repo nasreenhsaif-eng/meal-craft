@@ -6,12 +6,22 @@ export const ONBOARDING_STEP_META = {
         title: 'Create your profile',
         description: 'Select your gender so we can personalize calorie and macro calculations.',
         centerHeader: true,
-        hideNext: true,
     },
     period_tracking: {
         title: 'Track your period',
         description:
             'Log recent cycles so we can personalize nutrition recommendations across your menstrual phases.',
+        centerHeader: true,
+        titleClassName: 'text-brand-primary-pressed',
+    },
+    protocol_selection: {
+        title: 'Include intermittent fasting?',
+        description: 'You can change this anytime.',
+        centerHeader: true,
+    },
+    active_phase: {
+        title: 'Your active cycle phase',
+        description: 'Food approach and guidance adapt to where you are in your cycle.',
         centerHeader: true,
         titleClassName: 'text-brand-primary-pressed',
     },

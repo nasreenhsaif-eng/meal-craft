@@ -3,23 +3,14 @@
 namespace App\Services\Nutrition;
 
 use App\Enums\CyclePhase;
-use Illuminate\Support\Carbon;
+use App\Enums\CycleProtocolMode;
+use App\Enums\CycleSyncPhase;
 
 /**
  * Derives menstrual cycle phase from onboarding period tracking data.
  */
 final class PeriodTrackingPhaseService
 {
-    private const DEFAULT_CYCLE_LENGTH = 28;
-
-    private const PERIOD_BLEEDING_DAYS = 5;
-
-    private const OVULATION_DAYS_BEFORE_NEXT_PERIOD = 14;
-
-    private const FERTILE_DAYS_BEFORE_OVULATION = 5;
-
-    private const FERTILE_DAYS_AFTER_OVULATION = 1;
-
     /**
      * @param  array<string, mixed>|null  $periodTrackingData
      */
@@ -29,81 +20,86 @@ final class PeriodTrackingPhaseService
             return null;
         }
 
-        $explicit = $periodTrackingData['currentPhase'] ?? $periodTrackingData['current_phase'] ?? null;
+        $syncPhase = self::resolveCurrentSyncPhase($periodTrackingData);
 
-        if (is_string($explicit) && $explicit !== '') {
-            return CyclePhase::tryFrom($explicit);
-        }
+        return $syncPhase?->toLegacyCyclePhase();
+    }
 
-        $lastPeriodDate = self::resolveLastPeriodDate($periodTrackingData);
-
-        if ($lastPeriodDate === null) {
+    /**
+     * @param  array<string, mixed>|null  $periodTrackingData
+     */
+    public static function resolveCurrentSyncPhase(?array $periodTrackingData): ?CycleSyncPhase
+    {
+        if ($periodTrackingData === null || $periodTrackingData === []) {
             return null;
         }
 
-        $cycleLength = max(
-            21,
-            (int) ($periodTrackingData['cycleLength'] ?? $periodTrackingData['cycle_length'] ?? $periodTrackingData['average_cycle_length'] ?? self::DEFAULT_CYCLE_LENGTH),
+        $explicitSync = $periodTrackingData['current_sync_phase']
+            ?? $periodTrackingData['currentSyncPhase']
+            ?? null;
+
+        if (is_string($explicitSync) && $explicitSync !== '') {
+            return CycleSyncPhase::tryFrom($explicitSync);
+        }
+
+        $explicit = $periodTrackingData['currentPhase'] ?? $periodTrackingData['current_phase'] ?? null;
+
+        if (is_string($explicit) && $explicit !== '') {
+            $sync = CycleSyncPhase::tryFrom($explicit);
+
+            if ($sync !== null) {
+                return $sync;
+            }
+
+            $legacy = CyclePhase::tryFrom($explicit);
+
+            return match ($legacy) {
+                CyclePhase::Menstrual => CycleSyncPhase::PowerPhase1,
+                CyclePhase::Follicular => CycleSyncPhase::PowerPhase2,
+                CyclePhase::Ovulatory => CycleSyncPhase::Manifestation,
+                CyclePhase::Luteal => CycleSyncPhase::NurturePhase,
+                default => null,
+            };
+        }
+
+        $logged = $periodTrackingData['logged_periods'] ?? $periodTrackingData['loggedPeriods'] ?? [];
+        $cycleLength = (int) (
+            $periodTrackingData['cycleLength']
+            ?? $periodTrackingData['cycle_length']
+            ?? $periodTrackingData['average_cycle_length']
+            ?? CycleSyncPhaseCalculator::DEFAULT_CYCLE_LENGTH
         );
 
-        $today = now()->startOfDay();
-        $periodStart = Carbon::parse($lastPeriodDate)->startOfDay();
-        $daysSinceStart = (int) $periodStart->diffInDays($today, false);
-
-        if ($daysSinceStart < 0) {
-            return CyclePhase::Follicular;
+        if (! is_array($logged) || $logged === []) {
+            return null;
         }
 
-        $dayInCycle = $daysSinceStart % $cycleLength;
+        $payload = CycleSyncPhaseCalculator::buildPeriodTrackingData($logged, $cycleLength);
 
-        if ($dayInCycle < self::PERIOD_BLEEDING_DAYS) {
-            return CyclePhase::Menstrual;
-        }
-
-        $ovulationDay = max(self::PERIOD_BLEEDING_DAYS, $cycleLength - self::OVULATION_DAYS_BEFORE_NEXT_PERIOD);
-        $fertileStart = max(self::PERIOD_BLEEDING_DAYS, $ovulationDay - self::FERTILE_DAYS_BEFORE_OVULATION);
-        $fertileEnd = min($cycleLength - 1, $ovulationDay + self::FERTILE_DAYS_AFTER_OVULATION);
-
-        if ($dayInCycle >= $fertileStart && $dayInCycle <= $fertileEnd) {
-            return $dayInCycle === $ovulationDay ? CyclePhase::Ovulatory : CyclePhase::Follicular;
-        }
-
-        if ($dayInCycle < $ovulationDay) {
-            return CyclePhase::Follicular;
-        }
-
-        return CyclePhase::Luteal;
+        return CycleSyncPhase::tryFrom($payload['current_sync_phase'] ?? '');
     }
 
     /**
      * @param  array<int, array{start: string, end?: string}>  $loggedPeriods
-     * @return array{
-     *     last_period_date: ?string,
-     *     cycle_length: int,
-     *     current_phase: ?string,
-     *     logged_periods: array<int, array{start: string, end?: string}>
-     * }
+     * @return array<string, mixed>
      */
     public static function buildPeriodTrackingData(
         array $loggedPeriods,
         ?int $averageCycleLength = null,
         ?CyclePhase $currentPhase = null,
+        CycleProtocolMode|string|null $protocolMode = null,
     ): array {
-        $lastPeriodDate = self::resolveLastPeriodDateFromLogs($loggedPeriods);
-        $cycleLength = $averageCycleLength ?? self::DEFAULT_CYCLE_LENGTH;
+        $payload = CycleSyncPhaseCalculator::buildPeriodTrackingData(
+            $loggedPeriods,
+            $averageCycleLength,
+            null,
+            $protocolMode,
+        );
 
-        $payload = [
-            'last_period_date' => $lastPeriodDate,
-            'lastPeriodDate' => $lastPeriodDate,
-            'cycle_length' => $cycleLength,
-            'cycleLength' => $cycleLength,
-            'logged_periods' => $loggedPeriods,
-            'loggedPeriods' => $loggedPeriods,
-        ];
-
-        $phase = $currentPhase ?? self::resolveCurrentPhase($payload);
-        $payload['current_phase'] = $phase?->value;
-        $payload['currentPhase'] = $phase?->value;
+        if ($currentPhase !== null) {
+            $payload['current_phase'] = $currentPhase->value;
+            $payload['currentPhase'] = $currentPhase->value;
+        }
 
         return $payload;
     }
@@ -111,9 +107,12 @@ final class PeriodTrackingPhaseService
     /**
      * @param  array<string, mixed>  $periodTrackingData
      */
-    private static function resolveLastPeriodDate(array $periodTrackingData): ?string
+    public static function resolveLastPeriodDate(array $periodTrackingData): ?string
     {
-        $explicit = $periodTrackingData['last_period_date'] ?? $periodTrackingData['lastPeriodDate'] ?? null;
+        $explicit = $periodTrackingData['last_period_date']
+            ?? $periodTrackingData['lastPeriodDate']
+            ?? $periodTrackingData['cycle_start']
+            ?? null;
 
         if (is_string($explicit) && $explicit !== '') {
             return $explicit;
@@ -121,20 +120,6 @@ final class PeriodTrackingPhaseService
 
         $logged = $periodTrackingData['logged_periods'] ?? $periodTrackingData['loggedPeriods'] ?? [];
 
-        return self::resolveLastPeriodDateFromLogs(is_array($logged) ? $logged : []);
-    }
-
-    /**
-     * @param  array<int, array{start: string, end?: string}>  $loggedPeriods
-     */
-    private static function resolveLastPeriodDateFromLogs(array $loggedPeriods): ?string
-    {
-        if ($loggedPeriods === []) {
-            return null;
-        }
-
-        usort($loggedPeriods, static fn (array $a, array $b): int => strcmp($b['start'], $a['start']));
-
-        return $loggedPeriods[0]['start'] ?? null;
+        return CycleSyncPhaseCalculator::resolveCycleStart(is_array($logged) ? $logged : []);
     }
 }

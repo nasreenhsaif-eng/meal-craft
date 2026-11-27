@@ -30,6 +30,9 @@ class StoreMealPlanDefaultDaySelectionsRequest extends FormRequest
             'selections.*.desserts.*' => ['integer', 'min:1'],
             'selections.*.soup' => ['sometimes', 'array'],
             'selections.*.soup.*' => ['integer', 'min:1'],
+            'description' => ['nullable', 'string', 'max:5000'],
+            'published_starts_on' => ['required', 'date'],
+            'published_ends_on' => ['required', 'date', 'after_or_equal:published_starts_on'],
         ];
     }
 

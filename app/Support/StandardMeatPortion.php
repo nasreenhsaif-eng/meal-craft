@@ -115,6 +115,7 @@ final class StandardMeatPortion
             'rosemary garlic chicken (base)',
             'tandoori chicken (base)',
             'turmeric chicken (base)',
+            'beef shawarma (base)',
             'tandoori salmon (base)',
             'spiced aleppo ground beef (base)',
             'italian meatballs (base)',

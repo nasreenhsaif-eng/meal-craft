@@ -13,7 +13,8 @@ test('admin users can access admin settings profile page', function () {
         ->assertInertia(fn ($page) => $page
             ->component('Admin/Settings/Profile')
             ->where('profile.name', $admin->name)
-            ->where('profile.email', $admin->email));
+            ->where('profile.email', $admin->email)
+            ->where('canEditProfile', false));
 });
 
 test('customers cannot access admin settings', function () {
@@ -41,7 +42,7 @@ test('admin users are redirected away from legacy settings routes', function () 
         ->assertRedirect(route('admin.settings.appearance'));
 });
 
-test('admin users can update their profile from admin settings', function () {
+test('regular admins cannot update their name or email from admin settings', function () {
     $admin = User::factory()->create([
         'role' => UserRole::Admin,
         'name' => 'Old Name',
@@ -53,13 +54,32 @@ test('admin users can update their profile from admin settings', function () {
             'name' => 'New Name',
             'email' => 'new@example.com',
         ])
-        ->assertRedirect(route('admin.settings.profile'))
-        ->assertSessionHas('success');
+        ->assertForbidden();
 
     $admin->refresh();
 
-    expect($admin->name)->toBe('New Name')
-        ->and($admin->email)->toBe('new@example.com');
+    expect($admin->name)->toBe('Old Name')
+        ->and($admin->email)->toBe('old@example.com');
+});
+
+test('craft master general can update their profile from admin settings', function () {
+    $cmg = User::factory()->craftMasterGeneral()->create([
+        'name' => 'Old Name',
+        'email' => 'old-cmg@example.com',
+    ]);
+
+    $this->actingAs($cmg)
+        ->patch(route('admin.settings.profile.update'), [
+            'name' => 'New Name',
+            'email' => 'new-cmg@example.com',
+        ])
+        ->assertRedirect(route('admin.settings.profile'))
+        ->assertSessionHas('success');
+
+    $cmg->refresh();
+
+    expect($cmg->name)->toBe('New Name')
+        ->and($cmg->email)->toBe('new-cmg@example.com');
 });
 
 test('admin users can update their password from admin settings', function () {

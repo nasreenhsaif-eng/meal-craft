@@ -3,7 +3,7 @@ import { withOnboardingMobileFrame } from './onboardingStoryDecorators.jsx';
 import { ONBOARDING_STEPS } from './onboardingSteps.js';
 
 export default {
-    title: 'MealCraft/Pages/Onboarding/BirthdayView',
+    title: 'Design System/06. Pages/Onboarding/BirthdayView',
     component: OnboardingBirthdayInner,
     parameters: {
         layout: 'fullscreen',

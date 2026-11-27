@@ -73,10 +73,17 @@ final class NutrientDenseBreakfastOptions
     {
         $name = self::chiaMealNameForDay($dayNumber, $profile);
 
-        $meal = Meal::queryForMealLibrary()
+        $meal = Meal::queryScheduledTiersMeals()
             ->where('name', $name)
             ->with('ingredients')
             ->first();
+
+        if (! $meal instanceof Meal) {
+            $meal = Meal::queryForMealLibrary()
+                ->where('name', $name)
+                ->with('ingredients')
+                ->first();
+        }
 
         return $meal instanceof Meal ? ChiaDessertMeals::resolveMealForProfile($meal, $profile) : null;
     }

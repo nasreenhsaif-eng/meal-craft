@@ -3,14 +3,14 @@ import { withOnboardingMobileFrame } from './onboardingStoryDecorators.jsx';
 import { ONBOARDING_STEPS } from './onboardingSteps.js';
 
 export default {
-    title: 'MealCraft/Pages/Onboarding/PeriodTrackingView',
+    title: 'Design System/06. Pages/Onboarding/PeriodTrackingView',
     component: OnboardingPeriodTrackingInner,
     parameters: {
         layout: 'fullscreen',
         docs: {
             description: {
                 component:
-                    'Female-only onboarding step for logging menstrual period date ranges with calendar range selection.',
+                    'Screen 1 of the Cycle Sync flow: toggle bleed days with live luteal-anchored phase coloring. Next saves periods and continues to Protocol Selection (Screen 2).',
             },
         },
     },

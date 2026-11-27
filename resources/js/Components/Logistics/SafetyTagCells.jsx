@@ -1,5 +1,4 @@
 import SafetyAlerts from '../MealSystem/SafetyAlerts.jsx';
-import PreferenceTags from '../MealSystem/PreferenceTags.jsx';
 import { partitionSafetyNotes } from './parseSafetyNotes.js';
 
 const EMPTY = <span className="text-sm font-medium text-[#9CA3AF]">—</span>;
@@ -50,7 +49,7 @@ export function DislikeTagGroupCell({ allergyNotes, allergies, specialRequests, 
     return (
         <td className={shell}>
             <div className={wrap}>
-                <PreferenceTags tags={dislikes} />
+                <SafetyAlerts alerts={dislikes.map((label) => ({ label, variant: 'dislike' }))} />
             </div>
         </td>
     );

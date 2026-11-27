@@ -14,7 +14,7 @@ const DEMO_PROFILE = {
 };
 
 export default {
-    title: 'MealCraft/Pages/Onboarding/DailyTargetsSummary',
+    title: 'Design System/06. Pages/Onboarding/DailyTargetsSummary',
     component: DailyTargetsSummaryInner,
     parameters: {
         layout: 'fullscreen',

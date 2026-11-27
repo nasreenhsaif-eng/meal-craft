@@ -12,22 +12,34 @@ import {
  *   activeStep: string;
  *   onBack?: () => void;
  *   canGoBack?: boolean;
+ *   progressNoun?: string;
+ *   progressLabel?: string;
  * }} props
  */
-export default function OnboardingNavHeader({ steps, activeStep, onBack, canGoBack = false }) {
+export default function OnboardingNavHeader({
+    steps,
+    activeStep,
+    onBack,
+    canGoBack = false,
+    progressNoun = 'Step',
+    progressLabel = '',
+}) {
     const totalSteps = steps.length;
     const activeIndex = getOnboardingStepIndex(activeStep, steps);
     const displayIndex = activeIndex >= 0 ? activeIndex + 1 : 1;
+    const noun = typeof progressNoun === 'string' && progressNoun.trim() !== '' ? progressNoun.trim() : 'Step';
+    const customLabel = typeof progressLabel === 'string' ? progressLabel.trim() : '';
+    const progressText = customLabel !== '' ? customLabel : `${noun} ${displayIndex} of ${totalSteps}`;
 
     return (
-        <header className="w-full" aria-label="Onboarding navigation">
+        <header className="w-full shrink-0 pt-1" aria-label="Onboarding navigation">
             <div className="grid w-full grid-cols-[2.5rem_1fr_auto] items-center gap-x-2">
                 <button
                     type="button"
                     onClick={onBack}
                     disabled={!canGoBack}
                     aria-label="Go back to previous step"
-                    className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-50 text-base leading-none text-[#262A22] outline-none transition [-webkit-tap-highlight-color:transparent] hover:bg-gray-100 focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6E8C47] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40"
+                    className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-50 text-base leading-none text-heading outline-none transition [-webkit-tap-highlight-color:transparent] hover:bg-gray-100 focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6E8C47] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                     ←
                 </button>
@@ -36,19 +48,28 @@ export default function OnboardingNavHeader({ steps, activeStep, onBack, canGoBa
                     <MealCraftLogo variant="minimal" width={108} alt="Meal Craft" className="h-auto max-w-full" />
                 </div>
 
-                <p className="shrink-0 text-right text-xs font-semibold uppercase tracking-wider text-gray-400">
-                    Step {displayIndex} of {totalSteps}
+                <p
+                    className={[
+                        'shrink-0 text-right text-xs font-semibold text-gray-400',
+                        customLabel !== '' ? 'tracking-wide' : 'uppercase tracking-wider',
+                    ].join(' ')}
+                >
+                    {progressText}
                 </p>
             </div>
 
             <div
-                className="mt-3 grid w-full gap-1.5"
+                className="mt-2 grid w-full gap-1"
                 style={{ gridTemplateColumns: `repeat(${Math.max(totalSteps, 1)}, minmax(0, 1fr))` }}
                 role="progressbar"
                 aria-valuemin={1}
                 aria-valuemax={totalSteps}
                 aria-valuenow={displayIndex}
-                aria-label={`Onboarding step ${displayIndex} of ${totalSteps}`}
+                aria-label={
+                    customLabel !== ''
+                        ? `${customLabel}, ${displayIndex} of ${totalSteps}`
+                        : `${noun} ${displayIndex} of ${totalSteps}`
+                }
             >
                 {steps.map((step) => {
                     const status = resolveOnboardingTabStatus(activeStep, step.value, steps);

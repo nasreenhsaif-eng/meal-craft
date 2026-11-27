@@ -18,6 +18,19 @@ class HandleInertiaRequests extends Middleware
     protected $rootView = 'app';
 
     /**
+     * Checkout must never ride Vite HMR (`public/hot` / :5173) — that left Chrome
+     * on a blank page with `__MC_INERTIA_ROOT__.render is not a function`.
+     */
+    public function rootView(Request $request): string
+    {
+        if ($request->is('checkout', 'checkout/*')) {
+            return 'app-built';
+        }
+
+        return $this->rootView;
+    }
+
+    /**
      * Determines the current asset version.
      *
      * @see https://inertiajs.com/asset-versioning
@@ -48,12 +61,17 @@ class HandleInertiaRequests extends Middleware
                     'email' => $request->user()->email,
                     'role' => $request->user()->role->value,
                     'initials' => $request->user()->initials(),
+                    'isCraftMasterGeneral' => $request->user()->isCraftMasterGeneral(),
+                    'adminPermissions' => $request->user()->canAccessAdminPortal()
+                        ? $request->user()->adminPermissionKeys()
+                        : [],
                 ] : null,
             ],
             'flash' => [
                 'success' => $request->session()->get('success'),
                 'error' => $request->session()->get('error'),
                 'mealCsvImportResult' => $request->session()->get('mealCsvImportResult'),
+                'mealPlanChangeNotice' => $request->session()->get('mealPlanChangeNotice'),
             ],
             'mealCraft' => $mealCraft !== [] ? $mealCraft : null,
             // Backward-compatible aliases (prefer `mealCraft.urls.*` in new code).

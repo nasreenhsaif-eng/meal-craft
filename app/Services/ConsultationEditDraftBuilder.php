@@ -22,6 +22,9 @@ final class ConsultationEditDraftBuilder
      *
      * @return array{
      *     craftKey: string,
+     *     fulfillmentChoice: string|null,
+     *     includeCutlery: bool|null,
+     *     environmentYes: bool|null,
      *     weekDuration: int,
      *     selectedWeekdays: list<int>,
      *     days: list<array{
@@ -78,8 +81,14 @@ final class ConsultationEditDraftBuilder
             return null;
         }
 
+        $includeCutlery = $plan->include_cutlery;
+        $environmentYes = is_bool($includeCutlery) ? ! $includeCutlery : null;
+
         return [
             'craftKey' => $plan->craft_key,
+            'fulfillmentChoice' => $plan->fulfillment_choice,
+            'includeCutlery' => $includeCutlery,
+            'environmentYes' => $environmentYes,
             'weekDuration' => (int) $plan->week_duration,
             'selectedWeekdays' => array_values($plan->selected_weekdays ?? []),
             'days' => $days,

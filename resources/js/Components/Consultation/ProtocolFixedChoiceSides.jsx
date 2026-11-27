@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import SquareCheckbox from '../Atoms/Icons/SquareCheckbox.jsx';
-import ProtocolMealRow from './ProtocolMealRow.jsx';
+import CustomerMealCard from '../CustomerMealCard.jsx';
+import StackedDeckCarousel from '../MealCard/StackedDeckCarousel.jsx';
 import {
     FIXED_CHOICE_MAX_COUNT,
     FIXED_CHOICE_MIN_COUNT,
     FIXED_CHOICE_TOGGLE_OPTIONS,
+    applyFixedChoiceToggle,
     countFixedChoiceSelections,
 } from '../../consultation/fixedChoiceSelection.js';
 
@@ -18,7 +19,8 @@ function normalizeMealId(id) {
 }
 
 /**
- * ND protocol sides: checkbox per category; expand selected meal rows when checked.
+ * Side salad, dessert, and soup — every option in front, same deck as breakfast and main meals.
+ * Checked cards come from `categorySelections` (seeded from the admin portal).
  *
  * @param {object} props
  * @param {Partial<Record<'sideSalads'|'desserts'|'soup', string[]>>} props.categorySelections
@@ -26,9 +28,9 @@ function normalizeMealId(id) {
  * @param {boolean} [props.readOnly]
  * @param {boolean} [props.validationFlash]
  * @param {(categoryKey: 'sideSalads'|'desserts'|'soup', meal: object) => void} [props.onSelectMeal]
- * @param {(categoryKey: 'sideSalads'|'desserts'|'soup') => void} [props.onClearCategory]
- * @param {(categoryKey: 'sideSalads'|'desserts'|'soup') => void} [props.onSeeOtherOptions]
  * @param {(meal: object) => void} [props.onViewDetails]
+ * @param {(meal: object) => void} [props.onEditMeal]
+ * @param {string} [props.deckScopePrefix]
  * @param {string} [props.className]
  */
 export default function ProtocolFixedChoiceSides({
@@ -37,171 +39,148 @@ export default function ProtocolFixedChoiceSides({
     readOnly = false,
     validationFlash = false,
     onSelectMeal,
-    onClearCategory,
-    onSeeOtherOptions,
     onViewDetails,
+    onEditMeal,
+    deckScopePrefix = '',
     className = '',
 }) {
-    const [limitWarning, setLimitWarning] = useState(/** @type {string | null} */ (null));
+    const [limitSection, setLimitSection] = useState(/** @type {'sideSalads' | 'desserts' | 'soup' | null} */ (null));
     const pickEnabled = typeof onSelectMeal === 'function' && !readOnly;
     const fixedChoiceCount = countFixedChoiceSelections(categorySelections);
+    const limitWarningMessage =
+        'You can pick a maximum of 2 sides. Deselect one to choose a different option.';
 
     /**
      * @param {'sideSalads'|'desserts'|'soup'} categoryKey
-     * @param {object[]} cards
-     * @param {boolean} isChecked
+     * @param {object} meal
      */
-    const toggleCategory = (categoryKey, cards, isChecked) => {
-        if (!pickEnabled) {
+    const handleSelect = (categoryKey, meal) => {
+        if (!pickEnabled || !meal?.id) {
             return;
         }
 
-        setLimitWarning(null);
+        const { blocked } = applyFixedChoiceToggle(categorySelections ?? {}, categoryKey, meal.id);
 
-        if (isChecked) {
-            onClearCategory?.(categoryKey);
-
-            return;
-        }
-
-        if (fixedChoiceCount >= FIXED_CHOICE_MAX_COUNT) {
-            setLimitWarning('You can pick a maximum of 2 sides. Deselect one to choose a different option.');
+        if (blocked) {
+            setLimitSection(categoryKey);
 
             return;
         }
 
-        const recommended = cards.find((meal) => meal?.isRecommended) ?? cards[0];
-
-        if (!recommended?.id) {
-            return;
-        }
-
-        onSelectMeal(categoryKey, recommended);
+        setLimitSection(null);
+        onSelectMeal(categoryKey, meal);
     };
 
     return (
         <section
             className={[
-                'rounded-[12px] border border-[#5A6B44] bg-white',
-                validationFlash ? 'ring-2 ring-[#C44F5D] ring-offset-2' : '',
+                'flex flex-col gap-3',
+                validationFlash ? 'rounded-xl ring-2 ring-[#C44F5D] ring-offset-2 ring-offset-white' : '',
                 className,
             ]
                 .join(' ')
                 .trim()}
             aria-label="Pick 1 to 2 of 3 sides"
         >
-            <div className="border-b border-gray-100 px-4 py-3">
-                <h2 className="font-montserrat text-base font-bold text-[#262A22] sm:text-lg">
+            <div className="px-4 text-center">
+                <h2 className="font-montserrat text-[15px] font-bold leading-snug tracking-tight text-heading sm:text-base">
                     Pick 1–2 of 3 sides
                 </h2>
-                <p className="mt-0.5 font-body text-sm text-[#555555]">
+                <p className="mt-0.5 font-body text-xs leading-snug text-body sm:text-sm">
                     Side salad, soup, or dessert • {fixedChoiceCount}/{FIXED_CHOICE_MAX_COUNT} selected (min{' '}
                     {FIXED_CHOICE_MIN_COUNT})
                 </p>
             </div>
 
-            {limitWarning ? (
-                <div className="border-b border-red-100 bg-red-50 px-4 py-2" role="alert" aria-live="polite">
-                    <p className="font-body text-xs font-semibold text-red-800 sm:text-sm">{limitWarning}</p>
-                </div>
-            ) : null}
+            {FIXED_CHOICE_TOGGLE_OPTIONS.map((option) => {
+                const assignedCards = displayDecks?.[option.selectionKey] ?? [];
+                const cards =
+                    assignedCards.length > 0
+                        ? assignedCards
+                        : Object.values(displayDecks ?? {})
+                              .flat()
+                              .filter((meal) => {
+                                  const label = String(meal?.mealType ?? meal?.category ?? '').toLowerCase();
+                                  const expected = String(option.mealTypeLabel ?? option.label).toLowerCase();
 
-            <ul className="m-0 list-none divide-y divide-gray-100 p-0">
-                {FIXED_CHOICE_TOGGLE_OPTIONS.map((option) => {
-                    const cards = displayDecks?.[option.selectionKey] ?? [];
-                    const selectedIds = (categorySelections?.[option.selectionKey] ?? []).map((id) =>
-                        normalizeMealId(id),
-                    );
-                    const selectedSet = new Set(selectedIds);
-                    const selectedMeals = cards.filter((meal) =>
-                        selectedSet.has(normalizeMealId(meal?.id)),
-                    );
-                    const isChecked = selectedMeals.length > 0 || selectedIds.length > 0;
+                                  return label === expected || label === `${expected}s`;
+                              });
+                const selectedIds = new Set(
+                    (categorySelections?.[option.selectionKey] ?? []).map((id) => normalizeMealId(id)),
+                );
+                const prefix = deckScopePrefix ? `${deckScopePrefix}-` : '';
 
-                    return (
-                        <li key={option.selectionKey} className="px-3 py-3 sm:px-4">
-                            <div className="flex items-start gap-3">
-                                <button
-                                    type="button"
-                                    className="mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-[4px] border-0 bg-transparent p-0 outline-none focus-visible:ring-2 focus-visible:ring-[#5A6B44] focus-visible:ring-offset-1 disabled:opacity-50"
-                                    disabled={!pickEnabled || cards.length === 0}
-                                    onClick={() => toggleCategory(option.selectionKey, cards, isChecked)}
-                                    aria-pressed={isChecked}
-                                    aria-label={
-                                        isChecked
-                                            ? `Deselect ${option.label}`
-                                            : `Select ${option.label}`
-                                    }
-                                >
-                                    <SquareCheckbox checked={isChecked} presentational />
-                                </button>
+                return (
+                    <div key={option.selectionKey} className="relative w-full overflow-x-clip">
+                        <div className="px-4 text-center">
+                            <p className="font-montserrat text-[15px] font-bold leading-snug tracking-tight text-heading sm:text-base">
+                                {option.header}
+                            </p>
+                            <p className="mt-0.5 font-body text-xs leading-snug text-body sm:text-sm">
+                                {cards.length === 0
+                                    ? `No ${option.label.toLowerCase()} options for this day yet.`
+                                    : `${cards.length} option${cards.length === 1 ? '' : 's'} • ${selectedIds.size}/1 selected`}
+                            </p>
+                        </div>
 
-                                <div className="min-w-0 flex-1">
-                                    <div className="flex items-center justify-between gap-2">
-                                        <button
-                                            type="button"
-                                            className="text-left font-montserrat text-sm font-bold text-[#262A22] disabled:opacity-50"
-                                            disabled={!pickEnabled || cards.length === 0}
-                                            onClick={() => toggleCategory(option.selectionKey, cards, isChecked)}
-                                        >
-                                            {option.label}
-                                        </button>
+                        {limitSection === option.selectionKey ? (
+                            <p className="mx-auto mt-2 max-w-full px-4 text-center" role="alert">
+                                <span className="inline-block rounded-[10px] border border-red-200 bg-red-50 px-3 py-2 font-body text-xs font-semibold text-red-800 sm:text-sm">
+                                    {limitWarningMessage}
+                                </span>
+                            </p>
+                        ) : null}
 
-                                        {isChecked && typeof onSeeOtherOptions === 'function' && pickEnabled ? (
-                                            <button
-                                                type="button"
-                                                onClick={() => onSeeOtherOptions(option.selectionKey)}
-                                                className="shrink-0 rounded-[8px] border border-[#5A6B44]/40 bg-[#F8F9F6] px-2 py-1 font-montserrat text-[10px] font-bold uppercase tracking-wide text-[#5A6B44] hover:bg-[#6E8C47]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5A6B44] sm:text-[11px]"
-                                            >
-                                                SEE OTHER OPTIONS
-                                            </button>
-                                        ) : null}
-                                    </div>
+                        {cards.length > 0 ? (
+                            <div className="relative mx-auto mt-0.5 flex w-full max-w-full flex-col items-center px-4 py-1">
+                                <StackedDeckCarousel
+                                    meals={cards}
+                                    deckScopeKey={`${prefix}${option.deckSuffix}`}
+                                    forceRibbon={cards.length > 1}
+                                    getKey={(meal) => normalizeMealId(meal?.id)}
+                                    renderCard={(meal, _index, { isFront, deckLayout }) => {
+                                        const isSelected = selectedIds.has(normalizeMealId(meal?.id));
 
-                                    {cards.length === 0 ? (
-                                        <p className="mt-1 font-body text-xs text-[#666666]">
-                                            No {option.label.toLowerCase()} options for this day yet.
-                                        </p>
-                                    ) : null}
-
-                                    {isChecked && selectedMeals.length > 0 ? (
-                                        <div
-                                            className={[
-                                                'mt-3 flex gap-3',
-                                                selectedMeals.length <= 2
-                                                    ? 'flex-wrap justify-center'
-                                                    : 'flex-col',
-                                            ].join(' ')}
-                                        >
-                                            {selectedMeals.map((meal, index) => (
-                                                <div
-                                                    key={normalizeMealId(meal?.id) || index}
-                                                    className={[
-                                                        'overflow-hidden rounded-[10px] border border-gray-200 bg-[#F8F9F6]',
-                                                        selectedMeals.length <= 2
-                                                            ? 'w-full min-w-0 md:w-[calc(50%-0.375rem)] md:max-w-[calc(50%-0.375rem)]'
-                                                            : 'w-full',
-                                                    ].join(' ')}
-                                                >
-                                                    <ProtocolMealRow
-                                                        meal={meal}
-                                                        compact
-                                                        onViewDetails={
-                                                            typeof onViewDetails === 'function'
-                                                                ? () => onViewDetails(meal)
-                                                                : undefined
-                                                        }
-                                                    />
-                                                </div>
-                                            ))}
-                                        </div>
-                                    ) : null}
-                                </div>
+                                        return (
+                                            <CustomerMealCard
+                                                deck
+                                                ribbon={deckLayout === 'ribbon'}
+                                                alignActionsBottom={
+                                                    deckLayout === 'staticPair' || deckLayout === 'ribbon'
+                                                }
+                                                deckStackRole={isFront ? 'front' : 'back'}
+                                                title={String(meal?.title ?? '').trim() || 'Meal'}
+                                                imageUrl={
+                                                    typeof meal?.imageUrl === 'string' ? meal.imageUrl : undefined
+                                                }
+                                                macros={meal?.macros}
+                                                selected={isSelected}
+                                                disabled={false}
+                                                hideCraftButton={readOnly}
+                                                imageLoading={isFront ? 'eager' : 'lazy'}
+                                                imageAlt={String(meal?.title ?? '')}
+                                                onToggleSelected={
+                                                    pickEnabled ? () => handleSelect(option.selectionKey, meal) : undefined
+                                                }
+                                                onViewDetails={
+                                                    typeof onViewDetails === 'function'
+                                                        ? () => onViewDetails(meal)
+                                                        : undefined
+                                                }
+                                                onEdit={
+                                                    typeof onEditMeal === 'function'
+                                                        ? () => onEditMeal(meal)
+                                                        : undefined
+                                                }
+                                            />
+                                        );
+                                    }}
+                                />
                             </div>
-                        </li>
-                    );
-                })}
-            </ul>
+                        ) : null}
+                    </div>
+                );
+            })}
         </section>
     );
 }

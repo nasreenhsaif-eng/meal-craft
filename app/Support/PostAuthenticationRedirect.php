@@ -12,12 +12,22 @@ final class PostAuthenticationRedirect
 {
     public static function pathFor(User $user): string
     {
+        if ($user->needsSignupVerification()) {
+            return route('join.verify', absolute: false);
+        }
+
         if ($user->isAdmin()) {
             return route('login.portal-choice', absolute: false);
         }
 
-        if ($user->hasCompletedOnboarding()) {
+        // Welcome back once profile and meals are both submitted.
+        if ($user->shouldLandOnWelcomeBack()) {
             return route('app.home', absolute: false);
+        }
+
+        // After body/plan onboarding, choose meals on Crafted for YOU.
+        if ($user->shouldLandOnCraftedForYou()) {
+            return route('consultation.crafted-for-you', absolute: false);
         }
 
         return route('onboarding.show', [

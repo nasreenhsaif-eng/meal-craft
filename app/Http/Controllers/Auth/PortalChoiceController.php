@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers\Auth;
 
-use App\Enums\OnboardingStep;
 use App\Http\Controllers\Controller;
+use App\Support\AdminConsultationPreviewProfile;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -16,10 +16,14 @@ class PortalChoiceController extends Controller
     {
         $user = $request->user();
 
+        if ($user !== null && $user->isAdmin()) {
+            AdminConsultationPreviewProfile::resolve($user);
+        }
+
         return view('auth.portal-choice', [
             'portalChoiceConfig' => [
                 'userName' => $user?->name ?? '',
-                'onboardingHref' => route('onboarding.show', ['step' => OnboardingStep::Gender->value]),
+                'onboardingHref' => route('app.home'),
                 'adminHref' => route('admin.dashboard'),
             ],
         ]);

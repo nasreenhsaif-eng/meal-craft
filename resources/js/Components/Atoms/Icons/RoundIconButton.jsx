@@ -1,7 +1,7 @@
 const BASE =
     'inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] ' +
-    'border border-[#E5E7EB] bg-white shadow-sm ' +
-    'text-[#262A22] transition-colors ' +
+    'border border-border-light bg-white shadow-sm ' +
+    'text-heading transition-colors ' +
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#556C37] focus-visible:ring-offset-2';
 
 const INTENT = {
@@ -46,10 +46,10 @@ export default function RoundIconButton({
             aria-label={ariaLabel}
             className={[
                 BASE,
-                'hover:bg-[#F9FAFB] hover:border-[#E5E7EB]',
+                'hover:bg-surface-soft hover:border-border-light',
                 intentConfig.hoverText,
                 'active:scale-[0.98]',
-                'disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:border-[#E5E7EB] disabled:hover:text-[#262A22]',
+                'disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:border-border-light disabled:hover:text-heading',
                 className,
             ].join(' ')}
             {...props}

@@ -1,20 +1,28 @@
 import '../resources/css/app.css';
 import './preview.css';
 import React from 'react';
+import { mealCraftTheme } from './mealCraftTheme.js';
+
+/** Canvas modes — same tokens as `resources/css/app.css` / landing. */
+const CANVAS = {
+    page: { backgroundColor: '#F6F6F4', color: '#262A22' },
+    white: { backgroundColor: '#FFFFFF', color: '#262A22' },
+    ink: { backgroundColor: '#262A22', color: '#F6F6F4' },
+};
 
 /** @type { import('@storybook/react-vite').Preview } */
 const preview = {
     globalTypes: {
         canvasBackground: {
-            description: 'Preview canvas (helps white/low-contrast logos)',
-            defaultValue: 'grey',
+            description: 'Preview canvas (design-system page / white / ink)',
+            defaultValue: 'page',
             toolbar: {
                 title: 'Canvas',
                 icon: 'mirror',
                 items: [
-                    { value: 'grey', title: 'App grey (#F9FAFB)' },
-                    { value: 'white', title: 'White' },
-                    { value: 'dark', title: 'Dark' },
+                    { value: 'page', title: 'Soft surface (#F6F6F4)' },
+                    { value: 'white', title: 'Canvas (White)' },
+                    { value: 'ink', title: 'Heading (#262A22)' },
                 ],
                 dynamicTitle: true,
             },
@@ -22,28 +30,31 @@ const preview = {
     },
     decorators: [
         (Story, context) => {
-            const mode = context.globals.canvasBackground ?? 'grey';
-            const backgroundColor =
-                mode === 'dark' ? '#111827' : mode === 'white' ? '#FFFFFF' : '#F9FAFB';
-            const color = mode === 'dark' ? '#e5e7eb' : '#374151';
+            const mode = context.parameters.canvasBackground ?? context.globals.canvasBackground ?? 'page';
+            const resolved =
+                mode === 'white'
+                    ? 'white'
+                    : mode === 'ink' || mode === 'dark'
+                      ? 'ink'
+                      : 'page';
+            const { backgroundColor, color } = CANVAS[resolved];
 
+            // Avoid position:fixed + overflow:auto — it traps touch/wheel scroll inside
+            // Storybook's mobile viewport iframe. Let the document scroll instead.
             return React.createElement(
                 'div',
                 {
                     style: {
-                        position: 'fixed',
-                        inset: 0,
-                        backgroundColor,
-                        color,
                         boxSizing: 'border-box',
                         width: '100%',
                         minWidth: '100%',
                         maxWidth: 'none',
-                        minHeight: '100vh',
-                        height: '100%',
+                        minHeight: '100%',
                         margin: 0,
                         padding: 0,
-                        overflow: 'auto',
+                        backgroundColor,
+                        color,
+                        fontFamily: 'var(--font-family-font-2), ui-sans-serif, system-ui, sans-serif',
                     },
                 },
                 React.createElement(Story),
@@ -53,6 +64,14 @@ const preview = {
     parameters: {
         /** Full-bleed preview (avoids default `centered` max-width column on every story). */
         layout: 'fullscreen',
+
+        docs: {
+            theme: mealCraftTheme,
+        },
+
+        backgrounds: {
+            disable: true,
+        },
 
         controls: {
             matchers: {
@@ -65,19 +84,19 @@ const preview = {
             test: 'todo',
         },
 
-        /** MealCraft Identity: Brand Marks → axis stories → Vertical → tier focus (not A–Z). */
+        /** Design System: Tokens → Atoms → Molecules → Organisms → Templates → Pages. */
         options: {
             storySort: (a, b) => {
                 const ta = a.title ?? '';
                 const tb = b.title ?? '';
 
                 const topOrder = [
-                    'MealCraft/Identity',
-                    'MealCraft/Atoms',
-                    'MealCraft/Meal System',
-                    'MealCraft/Molecules',
-                    'MealCraft/Components',
-                    'MealCraft/Pages',
+                    'Design System/01. Tokens',
+                    'Design System/02. Atoms',
+                    'Design System/03. Molecules',
+                    'Design System/04. Organisms',
+                    'Design System/05. Templates',
+                    'Design System/06. Pages',
                 ];
 
                 const topOf = (t) => {
@@ -93,21 +112,23 @@ const preview = {
                     return raTop - rbTop;
                 }
 
-                const identityBase = 'MealCraft/Identity/';
-                const inIdentityA = ta.startsWith(identityBase);
-                const inIdentityB = tb.startsWith(identityBase);
-                if (inIdentityA && inIdentityB) {
-                    const identityOrder = [
-                        `${identityBase}Horizontal Lockups`,
-                        `${identityBase}Vertical Lockups`,
-                        `${identityBase}Brand Marks`,
-                        `${identityBase}Animated`,
-                        `${identityBase}All Variants/Minimal`,
-                        `${identityBase}All Variants/Smart`,
-                        `${identityBase}All Variants/Marketing`,
+                const tokensBase = 'Design System/01. Tokens/';
+                if (ta.startsWith(tokensBase) && tb.startsWith(tokensBase)) {
+                    const tokensOrder = [
+                        `${tokensBase}Colors`,
+                        `${tokensBase}Typography`,
+                        `${tokensBase}Spacing & Elevation`,
+                        `${tokensBase}Icons`,
+                        `${tokensBase}Logos/Horizontal Lockups`,
+                        `${tokensBase}Logos/Vertical Lockups`,
+                        `${tokensBase}Logos/Brand Marks`,
+                        `${tokensBase}Logos/Animated`,
+                        `${tokensBase}Logos/All Variants/Minimal`,
+                        `${tokensBase}Logos/All Variants/Smart`,
+                        `${tokensBase}Logos/All Variants/Marketing`,
                     ];
-                    const ia = identityOrder.indexOf(ta);
-                    const ib = identityOrder.indexOf(tb);
+                    const ia = tokensOrder.indexOf(ta);
+                    const ib = tokensOrder.indexOf(tb);
                     const ra = ia === -1 ? 1000 : ia;
                     const rb = ib === -1 ? 1000 : ib;
                     if (ra !== rb) {
@@ -115,19 +136,65 @@ const preview = {
                     }
                 }
 
-                const actionAtomsBase = 'MealCraft/Atoms/Buttons & Links/';
-                const inActionA = ta.startsWith(actionAtomsBase);
-                const inActionB = tb.startsWith(actionAtomsBase);
-                if (inActionA && inActionB) {
-                    const actionOrder = [
-                        `${actionAtomsBase}Buttons`,
-                        `${actionAtomsBase}NavButton`,
-                        `${actionAtomsBase}Icons/RoundIconButton`,
-                        `${actionAtomsBase}Icons/SquareCheckbox`,
-                        `${actionAtomsBase}TextLink`,
+                const atomsBase = 'Design System/02. Atoms/';
+                if (ta.startsWith(atomsBase) && tb.startsWith(atomsBase)) {
+                    const atomsOrder = [
+                        `${atomsBase}Button`,
+                        `${atomsBase}Button/Button`,
+                        `${atomsBase}Button/PrimaryButton`,
+                        `${atomsBase}Button/NavButton`,
+                        `${atomsBase}Button/OnboardingOptionButton`,
+                        `${atomsBase}Button/GenderOptionButton`,
+                        `${atomsBase}Button/IconButton`,
+                        `${atomsBase}Button/DragHandle`,
+                        `${atomsBase}Button/SquareCheckbox`,
+                        `${atomsBase}Button/TextLink`,
+                        `${atomsBase}Input`,
+                        `${atomsBase}Badge/CategoryBadges`,
+                        `${atomsBase}Badge/TimeBadge`,
+                        `${atomsBase}Badge/NutrientBadge`,
+                        `${atomsBase}Badge/DietaryTags`,
+                        `${atomsBase}Badge/SafetyAlerts`,
+                        `${atomsBase}Badge/ProtocolTags`,
+                        `${atomsBase}Badge/SelectionCheckBadge`,
+                        `${atomsBase}Badge/FoodFilterPill`,
                     ];
-                    const ia = actionOrder.indexOf(ta);
-                    const ib = actionOrder.indexOf(tb);
+                    const atomIndex = (title) => {
+                        let best = -1;
+                        let bestLen = -1;
+                        atomsOrder.forEach((t, i) => {
+                            if (title === t || title.startsWith(`${t}/`)) {
+                                if (t.length > bestLen) {
+                                    best = i;
+                                    bestLen = t.length;
+                                }
+                            }
+                        });
+
+                        return best === -1 ? 1000 : best;
+                    };
+                    const ra = atomIndex(ta);
+                    const rb = atomIndex(tb);
+                    if (ra !== rb) {
+                        return ra - rb;
+                    }
+                }
+
+                const moleculesBase = 'Design System/03. Molecules/';
+                if (ta.startsWith(moleculesBase) && tb.startsWith(moleculesBase)) {
+                    const moleculesOrder = [
+                        `${moleculesBase}Dropdown`,
+                        `${moleculesBase}Dropdown/FoodFilterMultiSelect`,
+                        `${moleculesBase}Form and pickers/Calendar`,
+                        `${moleculesBase}Form and pickers/MacroGrid`,
+                        `${moleculesBase}Form and pickers/WheelDatePicker`,
+                        `${moleculesBase}Form and pickers/Weight`,
+                        `${moleculesBase}Form and pickers/Height`,
+                        `${moleculesBase}Form and pickers/DairyFreeFilterNotice`,
+                        `${moleculesBase}Customer/CustomerAppBottomNav`,
+                    ];
+                    const ia = moleculesOrder.findIndex((t) => ta === t || ta.startsWith(`${t}/`));
+                    const ib = moleculesOrder.findIndex((t) => tb === t || tb.startsWith(`${t}/`));
                     const ra = ia === -1 ? 1000 : ia;
                     const rb = ib === -1 ? 1000 : ib;
                     if (ra !== rb) {
@@ -135,17 +202,59 @@ const preview = {
                     }
                 }
 
-                const componentsBase = 'MealCraft/Components/';
-                const inComponentsA = ta.startsWith(componentsBase);
-                const inComponentsB = tb.startsWith(componentsBase);
-                if (inComponentsA && inComponentsB) {
-                    const componentsOrder = [
-                        `${componentsBase}Calendar`,
-                        `${componentsBase}MacroGrid`,
-                        `${componentsBase}MealCard`,
+                const organismsBase = 'Design System/04. Organisms/';
+                if (ta.startsWith(organismsBase) && tb.startsWith(organismsBase)) {
+                    const organismsOrder = [
+                        `${organismsBase}DataCard/AdminMealCard`,
+                        `${organismsBase}DataCard/CustomerMealCard`,
+                        `${organismsBase}DataCard/StackedDeckCarousel`,
+                        `${organismsBase}DataCard/PartnerKitchenCard`,
+                        `${organismsBase}DataCard/MealDetailView`,
+                        `${organismsBase}Consultation/ChooseYourMeals`,
+                        `${organismsBase}Consultation/ProtocolSelectedMeals`,
+                        `${organismsBase}Consultation/ProtocolFixedChoiceSides`,
+                        `${organismsBase}Consultation/DayNutritionalSummaryPanel`,
+                        `${organismsBase}Consultation/CaloricThresholdNotice`,
+                        `${organismsBase}Table`,
                     ];
-                    const ia = componentsOrder.indexOf(ta);
-                    const ib = componentsOrder.indexOf(tb);
+                    const ia = organismsOrder.findIndex((t) => ta === t || ta.startsWith(`${t}/`));
+                    const ib = organismsOrder.findIndex((t) => tb === t || tb.startsWith(`${t}/`));
+                    const ra = ia === -1 ? 1000 : ia;
+                    const rb = ib === -1 ? 1000 : ib;
+                    if (ra !== rb) {
+                        return ra - rb;
+                    }
+                }
+
+                const templatesBase = 'Design System/05. Templates/';
+                if (ta.startsWith(templatesBase) && tb.startsWith(templatesBase)) {
+                    const templatesOrder = [
+                        `${templatesBase}AdminLayout`,
+                        `${templatesBase}Admin/Logistics`,
+                    ];
+                    const ia = templatesOrder.findIndex((t) => ta === t || ta.startsWith(`${t}/`));
+                    const ib = templatesOrder.findIndex((t) => tb === t || tb.startsWith(`${t}/`));
+                    const ra = ia === -1 ? 1000 : ia;
+                    const rb = ib === -1 ? 1000 : ib;
+                    if (ra !== rb) {
+                        return ra - rb;
+                    }
+                }
+
+                const pagesBase = 'Design System/06. Pages/';
+                if (ta.startsWith(pagesBase) && tb.startsWith(pagesBase)) {
+                    const pagesOrder = [
+                        `${pagesBase}Landing`,
+                        `${pagesBase}Auth`,
+                        `${pagesBase}Onboarding`,
+                        `${pagesBase}App`,
+                        `${pagesBase}Checkout`,
+                        `${pagesBase}Crafted for you`,
+                        `${pagesBase}Admin`,
+                        `${pagesBase}Mocks`,
+                    ];
+                    const ia = pagesOrder.findIndex((t) => ta === t || ta.startsWith(`${t}/`));
+                    const ib = pagesOrder.findIndex((t) => tb === t || tb.startsWith(`${t}/`));
                     const ra = ia === -1 ? 1000 : ia;
                     const rb = ib === -1 ? 1000 : ib;
                     if (ra !== rb) {

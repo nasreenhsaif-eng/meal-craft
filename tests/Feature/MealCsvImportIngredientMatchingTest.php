@@ -154,7 +154,7 @@ test('meal csv import only lists unresolved ingredients when comma separated cel
         'is_verified' => true,
     ]);
     Ingredient::factory()->create([
-        'name' => 'Quinoa Bread (Base)',
+        'name' => 'Quinoa Flatbread (Base)',
         'usda_food_category' => 'Base Ingredient',
         'is_verified' => true,
     ]);
@@ -164,7 +164,7 @@ test('meal csv import only lists unresolved ingredients when comma separated cel
         'is_verified' => true,
     ]);
 
-    $cell = 'Creamy Cumin Hummus (Base) (200g), Spiced Aleppo Ground Beef (Base) (150g), Quinoa Bread (Base) (80g), Almond whole (30g)';
+    $cell = 'Creamy Cumin Hummus (Base) (200g), Spiced Aleppo Ground Beef (Base) (150g), Quinoa Flatbread (Base) (80g), Almond whole (30g)';
 
     $csv = 'name,ingredients'."\n"
         .'Hummus Bowl,"'.$cell.'"'."\n";
@@ -180,7 +180,7 @@ test('meal csv import only lists unresolved ingredients when comma separated cel
 
     expect($pending)->toBe(['Spiced Aleppo Ground Beef (Base)'])
         ->and($pending)->not->toContain('Creamy Cumin Hummus (Base)')
-        ->and($pending)->not->toContain('Quinoa Bread (Base)')
+        ->and($pending)->not->toContain('Quinoa Flatbread (Base)')
         ->and($pending)->not->toContain('Almond whole');
 });
 

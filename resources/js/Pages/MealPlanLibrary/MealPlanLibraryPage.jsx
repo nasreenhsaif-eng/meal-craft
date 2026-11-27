@@ -4,7 +4,6 @@ import { router, usePage } from '@inertiajs/react';
 import adminInertiaLayout from '../../lib/adminInertiaLayout.jsx';
 import { mealPlanLibraryUrls, resolveUrl } from '../../meal-craft/mealCraftPageProps.js';
 import Button from '../../Components/Atoms/Button.jsx';
-import PillButton from '../../Components/Atoms/Button/Button.jsx';
 import TextInput from '../../Components/Atoms/TextInput/TextInput.jsx';
 import CSVUploader from '../../Components/CSVUploader.jsx';
 import MealPlanCard from '../../Components/MealPlanCard.jsx';
@@ -13,7 +12,7 @@ import MealAutocompleteCombobox from '../../Components/Molecules/MealPlan/MealAu
 import { MEAL_PLAN_TAG_OPTIONS } from '../../meal-library/mealTaxonomy.js';
 import { SCHEDULER_SLOT_SECTIONS } from '../../meal-library/mealSearch.ts';
 
-const PAGE_BG = 'bg-[#F8F9F6]';
+const PAGE_BG = 'bg-surface-soft';
 
 const WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -379,7 +378,7 @@ export function MealPlanLibraryPageContent({
                     </p>
 
                     {flashSuccess ? (
-                        <p className="mx-5 mt-5 rounded-[12px] border border-[#5A6B44]/30 bg-[#F8F9F6] px-4 py-3 font-body text-sm text-[#262A22]">
+                        <p className="mx-5 mt-5 rounded-[12px] border border-[#5A6B44]/30 bg-surface-soft px-4 py-3 font-body text-sm text-heading">
                             {flashSuccess}
                         </p>
                     ) : null}
@@ -436,20 +435,20 @@ export function MealPlanLibraryPageContent({
                                                   width: `${searchMenuRect.width}px`,
                                               }}
                                           >
-                                              <div className="w-full rounded-[12px] border border-[#E5E7EB] bg-white p-2 shadow-2xl">
+                                              <div className="w-full rounded-[12px] border border-border-light bg-white p-2 shadow-2xl">
                                                   <div className="max-h-56 overflow-auto">
                                                       {searchMatches.map((m) => (
                                                           <button
                                                               key={m.id}
                                                               type="button"
-                                                              className="flex w-full items-center justify-between gap-3 rounded-[12px] px-4 py-2 text-left font-montserrat text-sm font-bold text-[#262A22] transition-colors hover:bg-[#F8F9F6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5A6B44] focus-visible:ring-inset"
+                                                              className="flex w-full items-center justify-between gap-3 rounded-[12px] px-4 py-2 text-left font-montserrat text-sm font-bold text-heading transition-colors hover:bg-surface-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5A6B44] focus-visible:ring-inset"
                                                               onClick={() => {
                                                                   setQuery(m.name);
                                                                   setSearchOpen(false);
                                                               }}
                                                           >
                                                               <span className="min-w-0 truncate">{m.name}</span>
-                                                              <span className="shrink-0 text-xs font-medium text-[#555555]">
+                                                              <span className="shrink-0 text-xs font-medium text-body">
                                                                   {m.category}
                                                               </span>
                                                           </button>
@@ -466,18 +465,17 @@ export function MealPlanLibraryPageContent({
 
                     <div className="p-5">
                         {filteredPlans.length === 0 ? (
-                            <p className="rounded-[12px] border border-dashed border-gray-200 bg-[#F8F9F6] p-8 text-center font-body text-sm text-[#555555]">
+                            <p className="rounded-[12px] border border-dashed border-gray-200 bg-surface-soft p-8 text-center font-body text-sm text-body">
                                 No meal plans match your search. Try another name, category, or tag.
                             </p>
                         ) : (
                             <ul className="m-0 grid list-none grid-cols-1 justify-items-center gap-8 p-0 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
                                 {filteredPlans.map((p) => (
-                                    <li key={p.id} className="w-full max-w-[310px]">
+                                    <li key={p.id} className="w-[336px] max-w-[336px]">
                                         <MealPlanCard
                                             title={p.name}
+                                            dateRangeLabel={p.dateRangeLabel ?? null}
                                             imageUrl={p.imageUrl}
-                                            dailyMacros={p.dailyMacros}
-                                            tags={p.tags}
                                             onPrimaryAction={() => {
                                                 const url = p.showUrl ?? `/admin/meal-plan-library/${p.id}`;
                                                 router.visit(url);
@@ -505,7 +503,7 @@ export function MealPlanLibraryPageContent({
                         role="dialog"
                         aria-modal="true"
                         aria-label="Create new meal plan"
-                        className="relative w-full max-w-[1200px] overflow-hidden rounded-[12px] bg-[#F8F9F6] shadow-2xl"
+                        className="relative w-full max-w-[1200px] overflow-hidden rounded-[12px] bg-surface-soft shadow-2xl"
                     >
                         <div className="absolute right-3 top-3 z-20">
                             <Button label="Close" variant="ghost" onClick={closeCreateModal} />
@@ -514,10 +512,10 @@ export function MealPlanLibraryPageContent({
                         <div className="flex max-h-[85vh] flex-col overflow-hidden">
                             <div className="flex-1 overflow-y-auto p-10">
                                 <div className="rounded-[12px] border border-gray-200 bg-white p-6">
-                                    <h2 className="font-montserrat text-[22px] font-bold tracking-tight text-[#262A22]">
+                                    <h2 className="font-montserrat text-[22px] font-bold tracking-tight text-heading">
                                         Create New Meal Plan
                                     </h2>
-                                    <p className="mt-1 font-body text-sm text-[#555555]">
+                                    <p className="mt-1 font-body text-sm text-body">
                                         Define protocol strategy, targets, and schedule meals across 7 days.
                                     </p>
 
@@ -531,7 +529,7 @@ export function MealPlanLibraryPageContent({
                                                 className="!max-w-none"
                                             />
                                             <div className="block w-full text-left">
-                                                <p className="mb-2 font-montserrat text-sm font-bold leading-snug tracking-tight text-grey-94">
+                                                <p className="mb-2 font-montserrat text-sm font-bold leading-snug tracking-tight text-form-label">
                                                     Meal Plan Tag
                                                 </p>
                                                 <DietaryTagsMultiSelect
@@ -543,14 +541,14 @@ export function MealPlanLibraryPageContent({
                                         </div>
 
                                         <div className="block w-full text-left">
-                                            <label className="mb-2 block font-montserrat text-sm font-bold leading-snug tracking-tight text-grey-94">
+                                            <label className="mb-2 block font-montserrat text-sm font-bold leading-snug tracking-tight text-form-label">
                                                 Plan description &amp; goal
                                             </label>
                                             <textarea
                                                 value={formDescription}
                                                 onChange={(e) => setFormDescription(e.target.value)}
                                                 rows={3}
-                                                className="block w-full resize-y rounded-[12px] border border-[#E5E7EB] bg-white px-4 py-3 font-body text-[15px] text-[#1F2937] shadow-sm outline-none focus-visible:border-[#5A6B44] focus-visible:ring-2 focus-visible:ring-[#5A6B44] focus-visible:ring-offset-2"
+                                                className="block w-full resize-y rounded-[12px] border border-border-light bg-white px-4 py-3 font-body text-[15px] text-[#1F2937] shadow-sm outline-none focus-visible:border-[#5A6B44] focus-visible:ring-2 focus-visible:ring-[#5A6B44] focus-visible:ring-offset-2"
                                                 placeholder="Clinical or wellness objectives…"
                                             />
                                         </div>
@@ -559,7 +557,7 @@ export function MealPlanLibraryPageContent({
                                             <div className="block w-full text-left">
                                                 <label
                                                     htmlFor="meal-plan-cycle-phase"
-                                                    className="mb-2 block font-montserrat text-sm font-bold leading-snug tracking-tight text-grey-94"
+                                                    className="mb-2 block font-montserrat text-sm font-bold leading-snug tracking-tight text-form-label"
                                                 >
                                                     Cycle phase
                                                 </label>
@@ -567,7 +565,7 @@ export function MealPlanLibraryPageContent({
                                                     id="meal-plan-cycle-phase"
                                                     value={formCyclePhase}
                                                     onChange={(e) => setFormCyclePhase(e.target.value)}
-                                                    className="block w-full rounded-[12px] border border-[#E5E7EB] bg-white px-4 py-3 font-body text-[15px] text-[#1F2937] shadow-sm outline-none focus-visible:border-[#5A6B44] focus-visible:ring-2 focus-visible:ring-[#5A6B44] focus-visible:ring-offset-2"
+                                                    className="block w-full rounded-[12px] border border-border-light bg-white px-4 py-3 font-body text-[15px] text-[#1F2937] shadow-sm outline-none focus-visible:border-[#5A6B44] focus-visible:ring-2 focus-visible:ring-[#5A6B44] focus-visible:ring-offset-2"
                                                 >
                                                     <option value="">Select a phase…</option>
                                                     {cyclePhases.map((phase) => (
@@ -579,8 +577,8 @@ export function MealPlanLibraryPageContent({
                                             </div>
                                         ) : null}
 
-                                        <div className="rounded-[12px] border border-gray-200 bg-[#F8F9F6] p-4">
-                                            <p className="font-montserrat text-sm font-bold text-[#262A22]">Targets</p>
+                                        <div className="rounded-[12px] border border-gray-200 bg-surface-soft p-4">
+                                            <p className="font-montserrat text-sm font-bold text-heading">Targets</p>
                                             <div className="mt-4 grid gap-4 sm:grid-cols-2">
                                                 <TextInput
                                                     label="Avg Calories"
@@ -622,10 +620,10 @@ export function MealPlanLibraryPageContent({
                                 <div className="mt-6 rounded-[12px] border border-gray-200 bg-white p-6">
                                     <div className="flex flex-wrap items-end justify-between gap-4">
                                         <div className="min-w-[220px]">
-                                            <p className="font-montserrat text-sm font-bold tracking-tight text-[#262A22]">
+                                            <p className="font-montserrat text-sm font-bold tracking-tight text-heading">
                                                 Smart Scheduler
                                             </p>
-                                            <p className="mt-1 font-body text-sm text-[#555555]">
+                                            <p className="mt-1 font-body text-sm text-body">
                                                 Select a day and assign meals to each slot.
                                             </p>
                                         </div>
@@ -634,13 +632,12 @@ export function MealPlanLibraryPageContent({
                                                 const day = i + 1; // internal day index (1..7)
                                                 const isActive = day === activeDay;
                                                 return (
-                                                    <PillButton
+                                                    <Button
                                                         key={day}
                                                         label={label}
-                                                        variant={isActive ? 'primary' : 'outline'}
+                                                        variant={isActive ? 'primary' : 'tab'}
                                                         size="sm"
                                                         onClick={() => setActiveDay(day)}
-                                                        className={isActive ? '' : 'ring-1 ring-[#E5E7EB]'}
                                                     />
                                                 );
                                             })}
@@ -650,7 +647,7 @@ export function MealPlanLibraryPageContent({
                                     <div className="mt-6 space-y-5">
                                         {SCHEDULER_SLOT_SECTIONS.map((section) => (
                                             <div key={section.key}>
-                                                <p className="mb-2 font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#555555]">
+                                                <p className="mb-2 font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-body">
                                                     {section.label} ({section.count})
                                                 </p>
                                                 <div className="space-y-3">
@@ -661,11 +658,11 @@ export function MealPlanLibraryPageContent({
 
                                                         return (
                                                             <div key={id} className="grid gap-3 md:grid-cols-[120px_1fr] md:items-end">
-                                                                <div className="rounded-[12px] border border-gray-200 bg-[#F8F9F6] px-4 py-3">
-                                                                    <p className="font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-[#555555]">
+                                                                <div className="rounded-[12px] border border-gray-200 bg-surface-soft px-4 py-3">
+                                                                    <p className="font-montserrat text-xs font-bold uppercase tracking-[0.14em] text-body">
                                                                         Option
                                                                     </p>
-                                                                    <p className="mt-1 font-montserrat text-sm font-bold text-[#262A22]">
+                                                                    <p className="mt-1 font-montserrat text-sm font-bold text-heading">
                                                                         {idx}
                                                                     </p>
                                                                 </div>
@@ -693,7 +690,7 @@ export function MealPlanLibraryPageContent({
                                 </div>
                             </div>
 
-                            <div className="border-t border-gray-200 bg-[#F8F9F6] px-10 pb-8 pt-6">
+                            <div className="border-t border-gray-200 bg-surface-soft px-10 pb-8 pt-6">
                                 {saveErrors.length > 0 ? (
                                     <div
                                         className="mb-4 rounded-[12px] border border-red-200 bg-red-50 px-4 py-3"

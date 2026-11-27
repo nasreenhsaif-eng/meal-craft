@@ -8,11 +8,14 @@
 @endphp
 
 <title>
-    {{ filled($title ?? null) ? $title.' - '.$brandName : $brandName }}
+    @if (filled($documentTitle ?? null))
+        {{ $documentTitle }}
+    @else
+        {{ filled($title ?? null) ? $title.' - '.$brandName : $brandName }}
+    @endif
 </title>
 
-<link rel="icon" href="/favicon.ico" sizes="any">
-<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+@include('partials.favicons')
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

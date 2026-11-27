@@ -31,14 +31,14 @@ export default function AverageCycleLengthMetric({ days, isStandard = false, cla
 
     return (
         <div
-            className={`flex items-center gap-3 rounded-[12px] border border-border-light bg-grey-96 px-4 py-3 ${className}`.trim()}
+            className={`flex items-center gap-3 rounded-[12px] border border-border-light bg-surface-soft px-4 py-3 ${className}`.trim()}
             role="status"
             aria-live="polite"
         >
             <span className="flex size-9 shrink-0 items-center justify-center rounded-full border border-border-light bg-white text-brand-primary-pressed">
                 <IconCycleArrow />
             </span>
-            <p className="m-0 font-montserrat text-sm leading-snug text-grey-33">
+            <p className="m-0 font-montserrat text-sm leading-snug text-body">
                 Your Calculated Cycle Length:{' '}
                 <span className="font-bold text-brand-primary-pressed">{label}</span>
             </p>

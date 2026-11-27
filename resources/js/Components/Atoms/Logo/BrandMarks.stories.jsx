@@ -14,7 +14,7 @@ const leafColors = ['gold', 'red', 'purple', 'green', 'blue'];
 
 /** @type {import('@storybook/react-vite').Meta} */
 const meta = {
-    title: 'MealCraft/Identity/Brand Marks',
+    title: 'Design System/01. Tokens/Logos/Brand Marks',
     component: MealCraftLogo,
     decorators: [mealCraftLogoPageDecorator],
     parameters: {
@@ -75,6 +75,83 @@ export const LeafVariants = {
                     <span className="text-xs uppercase tracking-wide text-neutral-500">{token}</span>
                 </div>
             ))}
+        </div>
+    ),
+};
+
+/**
+ * Browser tab / PWA icons — Meal Craft seal (public/favicon.*).
+ * `size` is the native pixel size (or a safe display size for vector/hi-res).
+ * Never upscale 16/32 bitmaps — that is what made the Storybook previews look blurry.
+ */
+const faviconAssets = [
+    { src: '/favicon.svg', label: 'favicon.svg', caption: 'Primary tab icon · transparent', size: 64 },
+    { src: '/favicon-32x32.png', label: 'favicon-32x32.png', caption: 'PNG tab icon · native 32×32', size: 32 },
+    { src: '/favicon-16x16.png', label: 'favicon-16x16.png', caption: 'PNG tab icon · native 16×16', size: 16 },
+    { src: '/favicon.ico', label: 'favicon.ico', caption: 'Fallback tab icon · native 16×16', size: 16 },
+    {
+        src: '/apple-touch-icon.png',
+        label: 'apple-touch-icon.png',
+        caption: 'iOS home screen · 180×180 (shown 90×90)',
+        size: 90,
+    },
+    {
+        src: '/images/branding/seal-favicon-512.png',
+        label: 'seal-favicon-512.png',
+        caption: 'Cropped seal source · transparent',
+        size: 128,
+    },
+];
+
+/** @type {import('@storybook/react-vite').StoryObj} */
+export const Favicon = {
+    name: 'Favicon',
+    render: () => (
+        <div className="box-border w-full min-w-0 max-w-none self-stretch">
+            <div className="box-border flex w-full min-w-0 max-w-none flex-col items-start gap-8 py-10 pl-0 pr-8 sm:pr-10">
+                <p className="max-w-xl text-sm text-neutral-600">
+                    Browser tab and touch icons use the Meal Craft seal. Bitmaps are shown at native
+                    size so they stay sharp. Landing title:{' '}
+                    <span className="font-medium text-neutral-900">Home - mealcraft</span>
+                </p>
+                <div className="flex flex-wrap items-end gap-10">
+                    {faviconAssets.map(({ src, label, caption, size }) => (
+                        <div key={src} className="flex flex-col items-start gap-2">
+                            <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                                {label}
+                            </p>
+                            <div
+                                className="flex items-center justify-center rounded-lg border border-neutral-200 bg-white p-3"
+                                style={{
+                                    width: Math.max(size + 24, 64),
+                                    height: Math.max(size + 24, 64),
+                                }}
+                            >
+                                <img
+                                    src={src}
+                                    alt={label}
+                                    width={size}
+                                    height={size}
+                                    className="block"
+                                    style={{ width: size, height: size, imageRendering: 'auto' }}
+                                />
+                            </div>
+                            <span className="text-xs text-neutral-500">{caption}</span>
+                        </div>
+                    ))}
+                </div>
+                <div className="flex items-center gap-3 rounded-lg border border-neutral-200 bg-neutral-50 px-4 py-3">
+                    <img
+                        src="/favicon.svg"
+                        alt=""
+                        width={16}
+                        height={16}
+                        className="block"
+                        aria-hidden="true"
+                    />
+                    <span className="font-montserrat text-sm text-neutral-800">Home - mealcraft</span>
+                </div>
+            </div>
         </div>
     ),
 };

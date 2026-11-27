@@ -3,13 +3,15 @@
  */
 export const ONBOARDING_STEPS = [
     { value: 'gender', label: 'Gender' },
-    { value: 'diet_protocol', label: 'Diet protocol' },
-    { value: 'period_tracking', label: 'Track your period' },
     { value: 'birthday', label: 'Birthday' },
     { value: 'height', label: 'Height' },
     { value: 'weight', label: 'Weight' },
     { value: 'target_weight', label: 'Target weight' },
     { value: 'activity', label: 'Activity' },
+    { value: 'diet_protocol', label: 'Diet protocol' },
+    { value: 'period_tracking', label: 'Track your period' },
+    { value: 'protocol_selection', label: 'Protocol' },
+    { value: 'active_phase', label: 'Active phase' },
     { value: 'daily_targets', label: 'Daily targets' },
     { value: 'food_filters', label: 'Food filters' },
 ];
@@ -23,5 +25,10 @@ export function onboardingSteps({ includePeriodTracking = true } = {}) {
         return ONBOARDING_STEPS;
     }
 
-    return ONBOARDING_STEPS.filter((step) => step.value !== 'period_tracking');
+    return ONBOARDING_STEPS.filter(
+        (step) =>
+            step.value !== 'period_tracking' &&
+            step.value !== 'protocol_selection' &&
+            step.value !== 'active_phase',
+    );
 }

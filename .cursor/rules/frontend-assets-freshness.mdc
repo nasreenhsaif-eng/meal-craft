@@ -1,0 +1,26 @@
+---
+description: Prevent stale Vite builds from looking like UI reverts
+alwaysApply: true
+---
+
+# Frontend assets freshness
+
+Laravel Herd serves `public/build` unless Vite is live via `public/hot`. Old builds look like “reverted” UI even when git source is correct.
+
+## After any frontend change (`resources/js/**`, `resources/css/**`, Vite/Tailwind config)
+
+1. Ensure either `npm run dev` is running **and** `public/hot` exists, **or** run `npm run build`.
+2. Before visual QA or “does the UI look right?”, check:
+   - `public/hot` present → live Vite
+   - no `public/hot` → confirm `public/build` is newer than the edit (rebuild if not)
+3. When the user says **save** / **save everything** and JS/CSS changed: commit/push **and** rebuild (`npm run build`) unless `npm run dev` + `public/hot` is already confirmed.
+
+## When the user reports “reverted”, “old UI”, or “not the size/copy we fixed”
+
+Do **not** assume git lost work. First verify:
+
+1. String/component exists in **HEAD source**
+2. Same string in **`public/build`** (or that `public/hot` points at a live Vite)
+3. If source has the fix but build/hot does not → stale assets; rebuild and hard-refresh
+
+Tell the user plainly: source is fine / assets are stale (or the reverse).

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import TextInput from '../Atoms/TextInput/TextInput.jsx';
+import { IconClose, IconMenu, IconSearch } from '../Atoms/SvgIcons.jsx';
 import AdminSidebar from './AdminSidebar.jsx';
 
 const SIDEBAR_W = 280;
@@ -23,31 +24,6 @@ function useMatchMedia(query) {
     }, [query]);
 
     return matches;
-}
-
-function IconMenu({ className }) {
-    return (
-        <svg className={className} width={24} height={24} viewBox="0 0 24 24" fill="none" aria-hidden>
-            <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-        </svg>
-    );
-}
-
-function IconClose({ className }) {
-    return (
-        <svg className={className} width={24} height={24} viewBox="0 0 24 24" fill="none" aria-hidden>
-            <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-        </svg>
-    );
-}
-
-function IconSearchPrefix() {
-    return (
-        <svg width={18} height={18} viewBox="0 0 24 24" fill="none" aria-hidden>
-            <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2" />
-            <path d="M20 20l-3.5-3.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-        </svg>
-    );
 }
 
 /**
@@ -175,7 +151,7 @@ export function AdminLayout({
                             <div className="flex min-w-0 flex-1 items-center gap-3">
                                 <button
                                     type="button"
-                                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md text-[#262A22] md:hidden hover:bg-[#556C37]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#556C37] focus-visible:ring-offset-2"
+                                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md text-heading md:hidden hover:bg-[#556C37]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#556C37] focus-visible:ring-offset-2"
                                     aria-expanded={mobileNavOpen}
                                     aria-controls="admin-sidebar-panel"
                                     onClick={() => setMobileNavOpen((o) => !o)}
@@ -190,7 +166,7 @@ export function AdminLayout({
                                 {hidePageTitle ? (
                                     <span className="sr-only">{pageTitle}</span>
                                 ) : (
-                                    <h1 className="m-0 min-w-0 flex-1 truncate font-sans text-lg font-bold tracking-tight text-[#262A22]">
+                                    <h1 className="m-0 min-w-0 flex-1 truncate font-sans text-lg font-bold tracking-tight text-heading">
                                         {pageTitle}
                                     </h1>
                                 )}
@@ -198,7 +174,7 @@ export function AdminLayout({
                             <div className="flex shrink-0 items-center gap-2">
                                 <a
                                     href="/sign-out"
-                                    className="rounded-[10px] px-3 py-2 font-montserrat text-sm font-semibold text-[#555555] transition-colors hover:bg-[#556C37]/10 hover:text-[#3F4F2A] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#556C37] focus-visible:ring-offset-2"
+                                    className="rounded-[10px] px-3 py-2 font-montserrat text-sm font-semibold text-body transition-colors hover:bg-[#556C37]/10 hover:text-[#3F4F2A] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#556C37] focus-visible:ring-offset-2"
                                 >
                                     Log out
                                 </a>
@@ -218,7 +194,7 @@ export function AdminLayout({
                                 placeholder={searchPlaceholder}
                                 value={searchValue}
                                 onChange={setSearch}
-                                prefixIcon={<IconSearchPrefix />}
+                                prefixIcon={<IconSearch />}
                                 className="w-full max-w-full min-w-0 md:max-w-xl lg:max-w-2xl"
                             />
                         ) : null}
@@ -228,7 +204,7 @@ export function AdminLayout({
                 <main
                     id="admin-main"
                     className={
-                        'flex-1 bg-[#F8F9F6] px-4 md:px-6 ' +
+                        'flex-1 bg-surface-soft px-4 md:px-6 ' +
                         (showSearch ? 'py-6' : 'pt-8 pb-6')
                     }
                     style={{ fontFamily: 'Montserrat, ui-sans-serif, system-ui, sans-serif' }}

@@ -12,12 +12,23 @@ export function buildOnboardingStepPayload(step, state) {
     switch (step) {
         case 'gender':
             return { sex: state.gender };
-        case 'period_tracking':
+        case 'period_tracking': {
+            const cycleLength = Number(state.periodTracking.averageCycleLength ?? 28);
+            const clampedCycleLength = Number.isFinite(cycleLength)
+                ? Math.min(45, Math.max(21, Math.round(cycleLength)))
+                : 28;
+
             return {
                 logged_periods: state.periodTracking.loggedPeriods,
-                average_cycle_length:
-                    state.periodTracking.averageCycleLength ?? 28,
+                average_cycle_length: clampedCycleLength,
             };
+        }
+        case 'protocol_selection':
+            return {
+                protocol_mode: state.periodTracking.protocolMode ?? 'non_fasting',
+            };
+        case 'active_phase':
+            return {};
         case 'birthday':
             return { date_of_birth: state.birthdate };
         case 'height':
@@ -59,6 +70,8 @@ export function resolveOnboardingStepPostUrl(step, urls) {
     const map = {
         gender: urls.gender,
         period_tracking: urls.periodTracking,
+        protocol_selection: urls.protocolSelection,
+        active_phase: urls.activePhase,
         birthday: urls.birthday,
         height: urls.height,
         weight: urls.weight,

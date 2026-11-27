@@ -14,7 +14,7 @@ export function AdminSettingsAppearanceInner({ onNavigate }) {
             subheading="Update the appearance settings for your account"
             onNavigate={onNavigate}
         >
-            <p className="font-montserrat text-sm leading-relaxed text-[#555555]">
+            <p className="font-montserrat text-sm leading-relaxed text-body">
                 The admin portal currently uses the light theme. Dark mode and system appearance preferences are
                 available in the legacy kitchen settings for Livewire pages.
             </p>

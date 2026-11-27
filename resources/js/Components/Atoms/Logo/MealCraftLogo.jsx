@@ -242,6 +242,7 @@ function parseCssLengthToPx(value) {
  *   alt?: string;
  *   title?: string;
  *   presentation?: 'inline' | 'splash';
+ *   loop?: boolean;
  *   onSplashComplete?: () => void;
  *   onAnimationComplete?: () => void;
  * }} props
@@ -254,6 +255,7 @@ export default function MealCraftLogo({
     alt = 'Meal Craft',
     title,
     presentation = 'inline',
+    loop = false,
     onSplashComplete,
     onAnimationComplete,
 }) {
@@ -274,6 +276,7 @@ export default function MealCraftLogo({
                 alt={alt}
                 title={title}
                 presentation={splash ? 'splash' : 'inline'}
+                loop={loop}
                 onSplashComplete={onSplashComplete}
                 onAnimationComplete={onAnimationComplete}
             />

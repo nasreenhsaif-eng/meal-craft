@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Customer;
 
 use App\Enums\CustomerActivityLevel;
 use App\Enums\CustomerSex;
+use App\Enums\CycleProtocolMode;
 use App\Enums\DietProtocol;
 use App\Enums\OnboardingStep;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Customer\StoreOnboardingActivePhaseRequest;
 use App\Http\Requests\Customer\StoreOnboardingActivityRequest;
 use App\Http\Requests\Customer\StoreOnboardingBirthdayRequest;
 use App\Http\Requests\Customer\StoreOnboardingDietProtocolRequest;
@@ -14,9 +16,11 @@ use App\Http\Requests\Customer\StoreOnboardingFoodFiltersRequest;
 use App\Http\Requests\Customer\StoreOnboardingGenderRequest;
 use App\Http\Requests\Customer\StoreOnboardingHeightRequest;
 use App\Http\Requests\Customer\StoreOnboardingPeriodTrackingRequest;
+use App\Http\Requests\Customer\StoreOnboardingProtocolSelectionRequest;
 use App\Http\Requests\Customer\StoreOnboardingTargetWeightRequest;
 use App\Http\Requests\Customer\StoreOnboardingWeightRequest;
 use App\Models\User;
+use App\Services\Nutrition\CycleSyncPhaseCalculator;
 use App\Services\Nutrition\OnboardingDailyTargetsCalculator;
 use App\Services\Nutrition\PeriodTrackingPhaseService;
 use Illuminate\Http\RedirectResponse;
@@ -24,13 +28,20 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Inertia\Inertia;
 use Inertia\Response;
-use Symfony\Component\HttpFoundation\Response as HttpFoundationResponse;
 
 class OnboardingController extends Controller
 {
     public function index(Request $request): RedirectResponse
     {
         $user = $request->user();
+
+        if ($user !== null && $user->shouldLandOnWelcomeBack()) {
+            return redirect()->route('app.home');
+        }
+
+        if ($user !== null && $user->shouldLandOnCraftedForYou()) {
+            return redirect()->route('consultation.crafted-for-you');
+        }
 
         return redirect()->route('onboarding.show', [
             'step' => $user?->currentOnboardingStep()->value ?? OnboardingStep::entry()->value,
@@ -85,10 +96,14 @@ class OnboardingController extends Controller
         $user = $request->user();
         $loggedPeriods = $request->validated('logged_periods');
         $averageCycleLength = $request->validated('average_cycle_length');
+        $protocolMode = $user->customerProfile?->protocol_mode
+            ?? CycleProtocolMode::default();
 
         $periodTrackingData = PeriodTrackingPhaseService::buildPeriodTrackingData(
             $loggedPeriods,
             $averageCycleLength,
+            null,
+            $protocolMode,
         );
 
         $user->customerProfile()->updateOrCreate(
@@ -101,6 +116,36 @@ class OnboardingController extends Controller
         );
 
         return $this->advanceStep($request, OnboardingStep::PeriodTracking);
+    }
+
+    public function storeProtocolSelection(StoreOnboardingProtocolSelectionRequest $request): RedirectResponse
+    {
+        $user = $request->user();
+        $profile = $user->customerProfile;
+        $protocolMode = CycleProtocolMode::tryFromStored($request->validated('protocol_mode'));
+        $loggedPeriods = is_array($profile?->logged_periods) ? $profile->logged_periods : [];
+
+        $periodTrackingData = PeriodTrackingPhaseService::buildPeriodTrackingData(
+            $loggedPeriods,
+            $profile?->average_cycle_length,
+            null,
+            $protocolMode,
+        );
+
+        $user->customerProfile()->updateOrCreate(
+            ['user_id' => $user->id],
+            [
+                'protocol_mode' => $protocolMode,
+                'period_tracking_data' => $periodTrackingData,
+            ],
+        );
+
+        return $this->advanceStep($request, OnboardingStep::ProtocolSelection);
+    }
+
+    public function storeActivePhase(StoreOnboardingActivePhaseRequest $request): RedirectResponse
+    {
+        return $this->advanceStep($request, OnboardingStep::ActivePhase);
     }
 
     public function storeBirthday(StoreOnboardingBirthdayRequest $request): RedirectResponse
@@ -239,14 +284,21 @@ class OnboardingController extends Controller
         return $this->advanceStep($request, OnboardingStep::DailyTargets);
     }
 
-    public function storeFoodFilters(StoreOnboardingFoodFiltersRequest $request): RedirectResponse|HttpFoundationResponse
+    public function storeFoodFilters(StoreOnboardingFoodFiltersRequest $request): RedirectResponse
     {
         $user = $request->user();
         $profile = $user?->customerProfile;
 
-        if ($profile === null || $user->currentOnboardingStep() !== OnboardingStep::FoodFilters) {
+        if ($profile === null) {
+            abort(403);
+        }
+
+        $atFoodFilters = $user->currentOnboardingStep() === OnboardingStep::FoodFilters;
+        $revisitingCompletedProfile = $user->hasCompletedOnboarding();
+
+        if (! $atFoodFilters && ! $revisitingCompletedProfile) {
             return redirect()->route('onboarding.show', [
-                'step' => $user?->currentOnboardingStep()->value ?? OnboardingStep::entry()->value,
+                'step' => $user->currentOnboardingStep()->value,
             ]);
         }
 
@@ -262,15 +314,15 @@ class OnboardingController extends Controller
         return $this->redirectAfterOnboardingComplete();
     }
 
-    private function redirectAfterOnboardingComplete(): RedirectResponse|HttpFoundationResponse
+    private function redirectAfterOnboardingComplete(): RedirectResponse
     {
-        $url = route('consultation.crafted-for-you', ['from' => 'onboarding'], absolute: false);
+        $user = request()->user();
 
-        if (request()->header('X-Inertia')) {
-            return Inertia::location($url);
+        if ($user !== null && $user->shouldLandOnWelcomeBack()) {
+            return redirect()->route('app.home');
         }
 
-        return redirect($url);
+        return redirect()->route('consultation.crafted-for-you');
     }
 
     private function advanceStep(Request $request, OnboardingStep $completedStep): RedirectResponse
@@ -311,6 +363,8 @@ class OnboardingController extends Controller
         return match ($step) {
             OnboardingStep::Gender => 'Onboarding/Gender',
             OnboardingStep::PeriodTracking => 'Onboarding/PeriodTracking',
+            OnboardingStep::ProtocolSelection => 'Onboarding/ProtocolSelection',
+            OnboardingStep::ActivePhase => 'Onboarding/ActivePhase',
             OnboardingStep::Birthday => 'Onboarding/Birthday',
             OnboardingStep::Height => 'Onboarding/Height',
             OnboardingStep::Weight => 'Onboarding/Weight',
@@ -330,11 +384,41 @@ class OnboardingController extends Controller
      */
     private function stepProps(?User $user, OnboardingStep $step): array
     {
-        if ($step !== OnboardingStep::DailyTargets || $user?->customerProfile === null) {
+        $profile = $user?->customerProfile;
+
+        if ($step === OnboardingStep::ActivePhase && $profile !== null) {
+            $protocolMode = CycleProtocolMode::tryFromStored($profile->protocol_mode);
+            $loggedPeriods = is_array($profile->logged_periods) ? $profile->logged_periods : [];
+            $payload = CycleSyncPhaseCalculator::buildPeriodTrackingData(
+                $loggedPeriods,
+                $profile->average_cycle_length,
+                null,
+                $protocolMode,
+            );
+
+            return [
+                'activePhase' => [
+                    'protocolMode' => $protocolMode->value,
+                    'cycleDay' => $payload['cycle_day'],
+                    'cycleLength' => $payload['cycle_length'],
+                    'currentSyncPhase' => $payload['current_sync_phase'],
+                    'currentPhaseMetadata' => $payload['current_phase_metadata'],
+                    'mealPlanGenerationPayload' => $payload['meal_plan_generation_payload'],
+                    'phaseCatalog' => $payload['phase_catalog'],
+                    'loggedPeriods' => $loggedPeriods,
+                ],
+                'craftedForYouUrl' => route('consultation.crafted-for-you'),
+                'protocolSelectionUrl' => route('onboarding.show', [
+                    'step' => OnboardingStep::ProtocolSelection->value,
+                ]),
+            ];
+        }
+
+        if ($step !== OnboardingStep::DailyTargets || $profile === null) {
             return [];
         }
 
-        $targets = OnboardingDailyTargetsCalculator::calculate($user->customerProfile);
+        $targets = OnboardingDailyTargetsCalculator::calculate($profile);
 
         return [
             'computedTargets' => [

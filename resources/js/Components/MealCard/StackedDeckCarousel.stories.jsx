@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import StackedDeckCarousel from './StackedDeckCarousel.jsx';
-import MealCardClientViewNano from '../MealCardClientViewNano.jsx';
+import CustomerMealCard from '../CustomerMealCard.jsx';
 
 const MEALS = [
     {
@@ -60,7 +60,7 @@ function DeckCard({ meal, ctx, selectedId, onToggle }) {
     const { isFront, deckLayout } = ctx;
 
     return (
-        <MealCardClientViewNano
+        <CustomerMealCard
             deck
             ribbon={deckLayout === 'ribbon'}
             deckStackRole={isFront ? 'front' : 'back'}
@@ -77,7 +77,7 @@ function DeckCard({ meal, ctx, selectedId, onToggle }) {
 }
 
 export default {
-    title: 'MealCraft/Components/MealCard/StackedDeckCarousel',
+    title: 'Design System/04. Organisms/DataCard/StackedDeckCarousel',
     component: StackedDeckCarousel,
     parameters: {
         layout: 'padded',
@@ -93,7 +93,7 @@ export const ConsultationMealsRibbon = {
 
         return (
             <div className="max-w-5xl bg-white p-6">
-                <p className="mb-4 font-montserrat text-sm font-bold text-[#262A22]">
+                <p className="mb-4 font-montserrat text-sm font-bold text-heading">
                     Choose Your Meals of the Day — 6 options, select exactly 2
                 </p>
                 <StackedDeckCarousel
@@ -124,7 +124,7 @@ export const TwoOptionRibbon = {
 
         return (
             <div className="max-w-5xl bg-white p-6">
-                <p className="mb-4 font-montserrat text-sm font-bold text-[#262A22]">Desserts — select 1</p>
+                <p className="mb-4 font-montserrat text-sm font-bold text-heading">Desserts — select 1</p>
                 <StackedDeckCarousel
                     title=""
                     meals={DESSERTS}

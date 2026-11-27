@@ -58,3 +58,13 @@ test('olive oil culinary floor stays five grams across breakfast tiers', functio
         ->and(CulinaryPortionConstraints::minimumGrams($meal, $oil, 1500.0))->toBe(5.0)
         ->and(CulinaryPortionConstraints::minimumGrams($meal, $oil, 2000.0))->toBe(5.0);
 });
+
+test('butternut squash frittata keeps cookable squash and two teaspoons of oil', function (): void {
+    $meal = new Meal(['name' => 'Butternut Squash Frittata']);
+    $squash = new Ingredient(['name' => 'Butternut Squash']);
+    $oil = new Ingredient(['name' => 'Olive Oil']);
+
+    expect(CulinaryPortionConstraints::minimumGrams($meal, $squash))->toBe(80.0)
+        ->and(CulinaryPortionConstraints::minimumGrams($meal, $oil))->toBe(10.0)
+        ->and(CulinaryPortionConstraints::isTitleStructuralIngredient($meal, 'Butternut Squash'))->toBeTrue();
+});

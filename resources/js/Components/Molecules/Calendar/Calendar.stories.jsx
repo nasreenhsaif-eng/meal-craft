@@ -33,7 +33,7 @@ function DashboardDemoChrome({ children }) {
 
 /** @type {import('@storybook/react-vite').Meta} */
 const meta = {
-    title: 'MealCraft/Components/Calendar',
+    title: 'Design System/03. Molecules/Form and pickers/Calendar',
     component: Calendar,
     parameters: {
         layout: 'padded',
@@ -59,7 +59,7 @@ export const SingleSelection = {
         return (
             <DashboardDemoChrome>
                 <div className="space-y-3 font-sans">
-                    <p className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-sm font-medium leading-snug text-[#364153]">
+                    <p className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-sm font-medium leading-snug text-body">
                         <span className="shrink-0">Selected date</span>
                         <span className="whitespace-nowrap font-semibold text-[#6E8C47]" aria-live="polite">
                             {formatLongDate(v)}
@@ -86,7 +86,7 @@ export const RangeSelection = {
         return (
             <DashboardDemoChrome>
                 <div className="space-y-3 font-sans">
-                    <p className="text-sm font-medium leading-snug text-[#364153]">
+                    <p className="text-sm font-medium leading-snug text-body">
                         <span className="mr-2 shrink-0 font-medium">Range</span>
                         <span className="inline whitespace-nowrap font-semibold text-[#6E8C47]">
                             {formatLongDate(r.start)} → {r.end ? formatLongDate(r.end) : '…'}

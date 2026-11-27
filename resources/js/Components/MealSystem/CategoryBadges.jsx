@@ -19,7 +19,7 @@ export default function CategoryBadge({ variant = 'meal', label, className = '' 
         <div
             className={`inline-flex h-[26px] w-auto items-center justify-center px-[14px] bg-white rounded-full shadow-sm border border-gray-100 ring-1 ring-black/5 ${className}`}
         >
-            <span className="font-montserrat text-[11px] font-bold uppercase leading-none tracking-wide text-[#262A22] block whitespace-nowrap">
+            <span className="font-montserrat text-[11px] font-bold uppercase leading-none tracking-wide text-heading block whitespace-nowrap">
                 {displayLabel}
             </span>
         </div>

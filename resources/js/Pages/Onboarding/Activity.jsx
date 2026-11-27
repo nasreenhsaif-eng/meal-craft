@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useForm, usePage } from '@inertiajs/react';
 import OnboardingInlineDescription from '../../Components/Molecules/Onboarding/OnboardingInlineDescription.jsx';
-import OnboardingOptionButton from '../../Components/Molecules/Onboarding/OnboardingOptionButton.jsx';
+import OnboardingOptionButton from '../../Components/Atoms/Button/OnboardingOptionButton.jsx';
 import {
     ACTIVITY_LEVEL_OPTIONS,
     defaultActivityLevel,
@@ -69,7 +69,7 @@ export function OnboardingActivityInner({
             centerHeader
         >
             <form
-                className="flex w-full flex-col gap-5"
+                className="flex w-full flex-col gap-4"
                 onSubmit={(event) => {
                     event.preventDefault();
                     onSubmit?.();
@@ -123,10 +123,10 @@ export function OnboardingActivityInner({
                                 'inline-flex h-[50px] w-full min-h-[50px] items-center justify-center rounded-[12px]',
                                 'font-montserrat text-[16px] font-bold uppercase leading-none tracking-[0.08em] text-white',
                                 'transition-all duration-200 ease-in-out',
-                                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-protocol-selected focus-visible:ring-offset-2',
+                                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2',
                                 processing
-                                    ? 'cursor-not-allowed border-2 border-protocol-selected/40 bg-protocol-selected/40'
-                                    : 'border-2 border-protocol-selected bg-protocol-selected hover:border-protocol-selected-hover hover:bg-protocol-selected-hover active:border-protocol-selected-pressed active:bg-protocol-selected-pressed',
+                                    ? 'cursor-not-allowed border-2 border-brand-primary/40 bg-brand-primary/40'
+                                    : 'border-2 border-brand-primary bg-brand-primary hover:border-brand-primary-hover hover:bg-brand-primary-hover active:border-brand-primary-pressed active:bg-brand-primary-pressed',
                             ].join(' ')}
                         >
                             {processing ? 'Saving…' : 'Next'}
