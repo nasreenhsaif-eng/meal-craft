@@ -181,6 +181,8 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
                     ->name('show');
                 Route::post('/gender', [OnboardingController::class, 'storeGender'])->name('gender.store');
                 Route::post('/period-tracking', [OnboardingController::class, 'storePeriodTracking'])->name('period-tracking.store');
+                Route::post('/protocol-selection', [OnboardingController::class, 'storeProtocolSelection'])->name('protocol-selection.store');
+                Route::post('/active-phase', [OnboardingController::class, 'storeActivePhase'])->name('active-phase.store');
                 Route::post('/birthday', [OnboardingController::class, 'storeBirthday'])->name('birthday.store');
                 Route::post('/height', [OnboardingController::class, 'storeHeight'])->name('height.store');
                 Route::post('/weight', [OnboardingController::class, 'storeWeight'])->name('weight.store');
@@ -203,6 +205,8 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
                     Route::get('/shop', [CustomerAppController::class, 'shop'])->name('shop');
                     Route::get('/favourites', [CustomerAppController::class, 'favourites'])->name('favourites');
                     Route::get('/tools', [CustomerAppController::class, 'tools'])->name('tools');
+                    Route::put('/protocol-mode', [CustomerAppController::class, 'updateProtocolMode'])
+                        ->name('protocol-mode.update');
                     Route::get('/cart', [CustomerAppController::class, 'cart'])->name('cart');
                 });
             });

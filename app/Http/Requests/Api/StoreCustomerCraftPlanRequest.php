@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests\Api;
 
+use App\Enums\CycleProtocolMode;
+use App\Enums\CycleSyncPhase;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -43,6 +45,15 @@ class StoreCustomerCraftPlanRequest extends FormRequest
             'days.*.selections.desserts.*' => ['integer', 'exists:meals,id'],
             'days.*.selections.soup' => ['sometimes', 'array'],
             'days.*.selections.soup.*' => ['integer', 'exists:meals,id'],
+            'cycle_sync' => ['sometimes', 'array'],
+            'cycle_sync.protocol_mode' => ['required_with:cycle_sync', 'string', Rule::in(array_column(CycleProtocolMode::cases(), 'value'))],
+            'cycle_sync.phase_key' => ['required_with:cycle_sync', 'string', Rule::in(array_column(CycleSyncPhase::cases(), 'value'))],
+            'cycle_sync.biological_phase' => ['sometimes', 'string', 'max:120'],
+            'cycle_sync.food_approach' => ['sometimes', 'string', 'max:120'],
+            'cycle_sync.fasting_window' => ['sometimes', 'string', 'max:120'],
+            'cycle_sync.fasting_type' => ['sometimes', 'string', Rule::in(['fasting', 'no_fasting'])],
+            'cycle_sync.schedules_full_daily_meals' => ['sometimes', 'boolean'],
+            'cycle_sync.craft_key' => ['sometimes', 'string', Rule::in(['full', 'day', 'afternoon', 'intermittent', 'business'])],
         ];
     }
 }

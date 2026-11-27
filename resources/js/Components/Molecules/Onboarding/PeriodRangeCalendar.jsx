@@ -1,20 +1,12 @@
 import { useId, useMemo, useState } from 'react';
 import { buildCalendarCells, isIsoDateDisabled, parseIsoDate, toIsoDate } from '../Calendar/calendarDateUtils.js';
-import {
-    buildProjectedCycles,
-    canViewNextForecastMonth,
-    isIsoInFuture,
-    resolveDayCellVisualState,
-} from './cyclePredictionUtils.js';
 import CycleCalendarLegend from './CycleCalendarLegend.jsx';
 import {
-    endpointCornerClass,
-    findContainingRange,
-    findLoggedPeriodContaining,
-    isInActiveSelection,
-    periodEntryKey,
-    resolveCombinedDayRangeRole,
-} from './periodTrackingUtils.js';
+    buildCycleSyncCalendarState,
+    LOGGED_BLEED_COLOR,
+    resolveCycleSyncDayVisualState,
+} from './cycleSyncPhaseUtils.js';
+import { canViewNextForecastMonth } from './cyclePredictionUtils.js';
 
 const gridCols7 = 'grid w-full min-w-0 [grid-template-columns:repeat(7,minmax(0,1fr))]';
 
@@ -26,62 +18,48 @@ const cellFocus =
 const WEEKDAY_LABELS_MON_FIRST = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 /**
- * @param {import('./cyclePredictionUtils.js').DayCellVisualState} visualState
+ * @param {{
+ *   logged: boolean;
+ *   phase: string | null;
+ *   color: string | null;
+ * }} visualState
  * @param {boolean} inMonth
- * @param {{ start: string; end: string } | null} containingRange
- * @param {string} iso
  * @param {boolean} isClickDisabled
  * @param {boolean} isToday
  */
-function dayButtonClasses(visualState, inMonth, containingRange, iso, isClickDisabled, isToday) {
+function dayButtonClasses(visualState, inMonth, isClickDisabled, isToday) {
     const muted = !inMonth ? 'text-form-label/60' : 'text-body';
-    const futureCursor = isClickDisabled ? 'cursor-default' : '';
 
     if (visualState.logged && inMonth) {
-        const corners = containingRange ? endpointCornerClass(iso, containingRange) : '';
-
-        return `${cellBase} ${cellFocus} bg-status-error text-white ring-1 ring-status-error hover:bg-status-error${corners}`;
+        return `${cellBase} ${cellFocus} bg-status-error text-white ring-1 ring-status-error hover:bg-status-error`;
     }
 
     if (!inMonth) {
         return `${cellBase} ${cellFocus} bg-white hover:bg-surface-soft ${muted}`;
     }
 
-    const layers = [cellBase, cellFocus];
-
-    if (visualState.isPredictedPeriod) {
-        layers.push('bg-status-error/50 hover:bg-status-error/50');
+    if (visualState.color) {
+        return `${cellBase} ${cellFocus} text-body hover:opacity-90`;
     }
 
-    if (visualState.isFertile) {
-        layers.push('bg-brand-accent/20 hover:bg-brand-accent/25');
+    if (isToday) {
+        return `${cellBase} ${cellFocus} bg-white ring-1 ring-border-light hover:bg-surface-soft ${muted}`;
     }
 
-    if (visualState.isOvulation) {
-        layers.push('text-brand-accent ring-1 ring-brand-accent');
-    } else if (!visualState.isFertile && !visualState.isPredictedPeriod) {
-        if (isToday) {
-            layers.push('bg-white ring-1 ring-border-light hover:bg-surface-soft', muted);
-        } else if (isClickDisabled) {
-            layers.push('cursor-default bg-white text-form-label/70 hover:bg-white');
-        } else {
-            layers.push('bg-white hover:bg-surface-soft', muted);
-        }
-    } else {
-        layers.push('text-body', futureCursor);
+    if (isClickDisabled) {
+        return `${cellBase} ${cellFocus} cursor-default bg-white text-form-label/70 hover:bg-white`;
     }
 
-    return layers.join(' ');
+    return `${cellBase} ${cellFocus} bg-white hover:bg-surface-soft ${muted}`;
 }
 
 /**
- * Period-tracking calendar — logged ranges, pre-computed cycle projections, fertile window, ovulation markers.
+ * Period-tracking calendar — day toggles with live Cycle Sync phase coloring.
  *
  * @param {{
- *   rangeValue?: { start: string | null; end: string | null };
- *   onRangeChange?: (range: { start: string | null; end: string | null }) => void;
  *   loggedPeriods?: Array<{ start: string; end: string }>;
- *   onLoggedPeriodRemove?: (key: string) => void;
+ *   onToggleBleedDay?: (iso: string) => void;
+ *   cycleLength?: number;
  *   defaultMonth?: Date;
  *   maxDate?: string | null;
  *   className?: string;
@@ -90,10 +68,9 @@ function dayButtonClasses(visualState, inMonth, containingRange, iso, isClickDis
  * }} props
  */
 export default function PeriodRangeCalendar({
-    rangeValue = { start: null, end: null },
-    onRangeChange,
     loggedPeriods = [],
-    onLoggedPeriodRemove,
+    onToggleBleedDay,
+    cycleLength,
     defaultMonth,
     maxDate = null,
     className = '',
@@ -105,14 +82,14 @@ export default function PeriodRangeCalendar({
     const todayIso = toIsoDate(referenceDate);
     const effectiveMaxDate = maxDate ?? todayIso;
 
-    const cycleProjection = useMemo(
-        () => buildProjectedCycles(loggedPeriods, referenceDate),
-        [loggedPeriods, referenceDate],
+    const cycleState = useMemo(
+        () => buildCycleSyncCalendarState(loggedPeriods, cycleLength, referenceDate),
+        [loggedPeriods, cycleLength, referenceDate],
     );
 
     const initialMonth =
         defaultMonth ??
-        parseIsoDate(rangeValue?.start ?? '') ??
+        parseIsoDate(cycleState.cycleStart ?? '') ??
         parseIsoDate(loggedPeriods[0]?.start ?? '') ??
         referenceDate;
     const [viewMonth, setViewMonth] = useState(() => new Date(initialMonth.getFullYear(), initialMonth.getMonth(), 1));
@@ -129,7 +106,6 @@ export default function PeriodRangeCalendar({
     }, [cells]);
 
     const monthLabel = new Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric' }).format(viewMonth);
-
     const canGoNext = canViewNextForecastMonth(viewMonth, referenceDate);
 
     const goPrev = () => {
@@ -149,39 +125,8 @@ export default function PeriodRangeCalendar({
             return;
         }
 
-        const start = rangeValue?.start ?? null;
-        const end = rangeValue?.end ?? null;
-
-        if (isInActiveSelection(iso, start, end)) {
-            onRangeChange?.({ start: null, end: null });
-
-            return;
-        }
-
-        const loggedMatch = findLoggedPeriodContaining(iso, loggedPeriods);
-
-        if (loggedMatch) {
-            onLoggedPeriodRemove?.(periodEntryKey(loggedMatch));
-
-            return;
-        }
-
-        if (!start || (start && end)) {
-            onRangeChange?.({ start: iso, end: null });
-
-            return;
-        }
-
-        if (iso < start) {
-            onRangeChange?.({ start: iso, end: start });
-
-            return;
-        }
-
-        onRangeChange?.({ start, end: iso });
+        onToggleBleedDay?.(iso);
     };
-
-    const ariaSelectedFor = (iso) => resolveCombinedDayRangeRole(iso, rangeValue, loggedPeriods) !== null;
 
     return (
         <div
@@ -219,11 +164,7 @@ export default function PeriodRangeCalendar({
                     </button>
                 </div>
 
-                <div
-                    className="w-full min-w-0 p-2 sm:p-3"
-                    role="grid"
-                    aria-labelledby={monthHeadingId}
-                >
+                <div className="w-full min-w-0 p-2 sm:p-3" role="grid" aria-labelledby={monthHeadingId}>
                     <div className={`${gridCols7} mb-2 gap-1`} role="row">
                         {WEEKDAY_LABELS_MON_FIRST.map((wd) => (
                             <div
@@ -238,25 +179,25 @@ export default function PeriodRangeCalendar({
 
                     <div className="w-full min-w-0" role="rowgroup">
                         {weeks.map((week, wi) => (
-                            <div key={wi} role="row" className={`${gridCols7} mb-1 gap-y-1 gap-x-0 last:mb-0`}>
+                            <div key={wi} role="row" className={`${gridCols7} mb-1 gap-x-0 gap-y-1 last:mb-0`}>
                                 {week.map(({ date, inMonth }) => {
                                     const iso = toIsoDate(date);
                                     const dNum = date.getDate();
                                     const isToday = iso === todayIso;
-                                    const isClickDisabled = isIsoInFuture(iso, referenceDate);
-
-                                    // Priority: logged/draft → ovulation → fertile → predicted period
-                                    const visualState = resolveDayCellVisualState(
+                                    const isClickDisabled = iso > todayIso;
+                                    const visualState = resolveCycleSyncDayVisualState(
                                         iso,
-                                        rangeValue,
                                         loggedPeriods,
-                                        cycleProjection,
-                                        referenceDate,
+                                        cycleState,
                                     );
-                                    const containingRange = visualState.logged
-                                        ? findContainingRange(iso, rangeValue, loggedPeriods)
-                                        : null;
-                                    const showOvulationDot = inMonth && visualState.isOvulation;
+                                    const tintStyle =
+                                        inMonth && !visualState.logged && visualState.color
+                                            ? {
+                                                  backgroundColor: `${visualState.color}33`,
+                                              }
+                                            : inMonth && visualState.logged
+                                              ? { backgroundColor: LOGGED_BLEED_COLOR }
+                                              : undefined;
 
                                     return (
                                         <div key={`${iso}-${wi}-${dNum}`} className="box-border min-w-0 p-0.5">
@@ -269,29 +210,21 @@ export default function PeriodRangeCalendar({
                                                 className={dayButtonClasses(
                                                     visualState,
                                                     inMonth,
-                                                    containingRange,
-                                                    iso,
                                                     isClickDisabled,
                                                     isToday,
                                                 )}
+                                                style={tintStyle}
                                                 aria-label={new Intl.DateTimeFormat(undefined, {
                                                     weekday: 'long',
                                                     month: 'long',
                                                     day: 'numeric',
                                                     year: 'numeric',
                                                 }).format(date)}
-                                                aria-selected={ariaSelectedFor(iso)}
+                                                aria-selected={visualState.logged}
                                                 aria-current={isToday && inMonth ? 'date' : undefined}
                                             >
                                                 <span>{dNum}</span>
-                                                {showOvulationDot ? (
-                                                    <span
-                                                        className="block h-1.5 w-1.5 shrink-0 rounded-full bg-brand-accent"
-                                                        aria-hidden="true"
-                                                    />
-                                                ) : (
-                                                    <span className="block h-1.5 w-1.5 shrink-0" aria-hidden="true" />
-                                                )}
+                                                <span className="block h-1.5 w-1.5 shrink-0" aria-hidden="true" />
                                             </button>
                                         </div>
                                     );

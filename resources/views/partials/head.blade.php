@@ -15,11 +15,7 @@
     @endif
 </title>
 
-<link rel="icon" href="/favicon.svg?v=seal-2" type="image/svg+xml">
-<link rel="icon" href="/favicon-32x32.png?v=seal-2" type="image/png" sizes="32x32">
-<link rel="icon" href="/favicon-16x16.png?v=seal-2" type="image/png" sizes="16x16">
-<link rel="icon" href="/favicon.ico?v=seal-2" sizes="any">
-<link rel="apple-touch-icon" href="/apple-touch-icon.png?v=seal-2">
+@include('partials.favicons')
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

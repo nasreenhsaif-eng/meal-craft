@@ -42,13 +42,13 @@ class CustomerOnboardingMiddleware
         $currentStep = OnboardingStep::normalizeStoredStep($user->currentOnboardingStep());
 
         if (! OnboardingStep::shouldShowPeriodTracking($profile)) {
-            if ($currentStep === OnboardingStep::PeriodTracking) {
-                $profile?->update(['onboarding_step' => OnboardingStep::Birthday]);
+            if (in_array($currentStep, OnboardingStep::cycleSyncSteps(), true)) {
+                $profile?->update(['onboarding_step' => OnboardingStep::DailyTargets]);
 
-                return redirect()->route('onboarding.show', ['step' => OnboardingStep::Birthday->value]);
+                return redirect()->route('onboarding.show', ['step' => OnboardingStep::DailyTargets->value]);
             }
 
-            if ($requestedStep === OnboardingStep::PeriodTracking) {
+            if (in_array($requestedStep, OnboardingStep::cycleSyncSteps(), true)) {
                 return redirect()->route('onboarding.show', ['step' => $currentStep->value]);
             }
         }

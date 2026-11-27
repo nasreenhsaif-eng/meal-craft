@@ -9,6 +9,7 @@ use App\Enums\CustomerGoal;
 use App\Enums\CustomerPlanType;
 use App\Enums\CustomerSex;
 use App\Enums\CustomerSubscriptionStatus;
+use App\Enums\CycleProtocolMode;
 use App\Enums\DietType;
 use App\Enums\MacroSplitStyle;
 use App\Enums\OnboardingStep;
@@ -54,6 +55,7 @@ class CustomerProfile extends Model
         'fat_percentage',
         'logged_periods',
         'average_cycle_length',
+        'protocol_mode',
         'period_tracking_data',
         'allergies',
         'food_filters',
@@ -101,6 +103,7 @@ class CustomerProfile extends Model
             'dislikes' => 'array',
             'logged_periods' => 'array',
             'average_cycle_length' => 'integer',
+            'protocol_mode' => CycleProtocolMode::class,
             'onboarding_step' => OnboardingStep::class,
             'onboarding_completed_at' => 'datetime',
             'contact_preference' => CustomerContactPreference::class,

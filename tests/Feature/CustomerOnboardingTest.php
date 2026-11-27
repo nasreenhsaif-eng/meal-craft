@@ -18,7 +18,7 @@ test('legacy onboarding welcome url redirects to gender', function () {
         ->assertRedirect(route('onboarding.show', ['step' => OnboardingStep::Gender->value]));
 });
 
-test('female customer advances to diet protocol after gender', function () {
+test('female customer advances to birthday after gender', function () {
     $customer = User::factory()->customer()->create();
     CustomerProfile::factory()->for($customer)->withoutOnboarding()->create([
         'onboarding_step' => OnboardingStep::Gender,
@@ -28,15 +28,15 @@ test('female customer advances to diet protocol after gender', function () {
         ->post(route('onboarding.gender.store'), [
             'sex' => 'female',
         ])
-        ->assertRedirect(route('onboarding.show', ['step' => OnboardingStep::DietProtocol->value]));
+        ->assertRedirect(route('onboarding.show', ['step' => OnboardingStep::Birthday->value]));
 
     $profile = $customer->fresh()->customerProfile;
 
     expect($profile?->sex?->value)->toBe('female')
-        ->and($customer->fresh()->currentOnboardingStep())->toBe(OnboardingStep::DietProtocol);
+        ->and($customer->fresh()->currentOnboardingStep())->toBe(OnboardingStep::Birthday);
 });
 
-test('male customer advances to diet protocol after gender', function () {
+test('male customer advances to birthday after gender', function () {
     $customer = User::factory()->customer()->create();
     CustomerProfile::factory()->for($customer)->withoutOnboarding()->create([
         'onboarding_step' => OnboardingStep::Gender,
@@ -46,12 +46,12 @@ test('male customer advances to diet protocol after gender', function () {
         ->post(route('onboarding.gender.store'), [
             'sex' => 'male',
         ])
-        ->assertRedirect(route('onboarding.show', ['step' => OnboardingStep::DietProtocol->value]));
+        ->assertRedirect(route('onboarding.show', ['step' => OnboardingStep::Birthday->value]));
 
-    expect($customer->fresh()->currentOnboardingStep())->toBe(OnboardingStep::DietProtocol);
+    expect($customer->fresh()->currentOnboardingStep())->toBe(OnboardingStep::Birthday);
 });
 
-test('customer can save period tracking and advance to birthday', function () {
+test('customer can save period tracking and advance to protocol selection', function () {
     $customer = User::factory()->customer()->create();
     CustomerProfile::factory()->for($customer)->withoutOnboarding()->create([
         'onboarding_step' => OnboardingStep::PeriodTracking,
@@ -64,20 +64,23 @@ test('customer can save period tracking and advance to birthday', function () {
             'logged_periods' => [
                 ['start' => '2026-04-20', 'end' => '2026-04-26'],
             ],
-            'average_cycle_length' => 28,
+            'average_cycle_length' => 30,
         ])
-        ->assertRedirect(route('onboarding.show', ['step' => OnboardingStep::Birthday->value]));
+        ->assertRedirect(route('onboarding.show', ['step' => OnboardingStep::ProtocolSelection->value]));
 
     $profile = $customer->fresh()->customerProfile;
 
     expect($profile?->logged_periods)->toBe([
         ['start' => '2026-04-20', 'end' => '2026-04-26'],
-    ])->and($profile?->average_cycle_length)->toBe(28)
+    ])->and($profile?->average_cycle_length)->toBe(30)
         ->and($profile?->period_tracking_data)->toBeArray()
         ->and($profile?->period_tracking_data['logged_periods'] ?? null)->toBe([
             ['start' => '2026-04-20', 'end' => '2026-04-26'],
         ])
-        ->and($customer->fresh()->currentOnboardingStep())->toBe(OnboardingStep::Birthday);
+        ->and($profile?->period_tracking_data['cycle_day'] ?? null)->not->toBeNull()
+        ->and($profile?->period_tracking_data['phase_ranges'] ?? null)->toBeArray()
+        ->and($profile?->period_tracking_data['dates'] ?? null)->toBeArray()
+        ->and($customer->fresh()->currentOnboardingStep())->toBe(OnboardingStep::ProtocolSelection);
 });
 
 test('customer period tracking stores calculated average cycle length from multiple logs', function () {
@@ -98,7 +101,7 @@ test('customer period tracking stores calculated average cycle length from multi
             ],
             'average_cycle_length' => 30,
         ])
-        ->assertRedirect(route('onboarding.show', ['step' => OnboardingStep::Birthday->value]));
+        ->assertRedirect(route('onboarding.show', ['step' => OnboardingStep::ProtocolSelection->value]));
 
     expect($customer->fresh()->customerProfile?->average_cycle_length)->toBe(30);
 });
@@ -116,7 +119,7 @@ test('customer without cycle sync cannot access period tracking onboarding page'
         ->assertRedirect(route('onboarding.show', ['step' => OnboardingStep::DietProtocol->value]));
 });
 
-test('customer without cycle sync stuck on period tracking step is advanced to birthday', function () {
+test('customer without cycle sync stuck on period tracking step is advanced to daily targets', function () {
     $customer = User::factory()->customer()->create();
     CustomerProfile::factory()->for($customer)->withoutOnboarding()->create([
         'onboarding_step' => OnboardingStep::PeriodTracking,
@@ -126,9 +129,9 @@ test('customer without cycle sync stuck on period tracking step is advanced to b
 
     $this->actingAs($customer)
         ->get(route('onboarding.show', ['step' => OnboardingStep::PeriodTracking->value]))
-        ->assertRedirect(route('onboarding.show', ['step' => OnboardingStep::Birthday->value]));
+        ->assertRedirect(route('onboarding.show', ['step' => OnboardingStep::DailyTargets->value]));
 
-    expect($customer->fresh()->currentOnboardingStep())->toBe(OnboardingStep::Birthday);
+    expect($customer->fresh()->currentOnboardingStep())->toBe(OnboardingStep::DailyTargets);
 });
 
 test('male customer cannot access period tracking onboarding page', function () {
@@ -143,7 +146,7 @@ test('male customer cannot access period tracking onboarding page', function () 
         ->assertRedirect(route('onboarding.show', ['step' => OnboardingStep::Gender->value]));
 });
 
-test('male customer stuck on period tracking step is advanced to birthday', function () {
+test('male customer stuck on period tracking step is advanced to daily targets', function () {
     $customer = User::factory()->customer()->create();
     CustomerProfile::factory()->for($customer)->withoutOnboarding()->create([
         'onboarding_step' => OnboardingStep::PeriodTracking,
@@ -152,9 +155,9 @@ test('male customer stuck on period tracking step is advanced to birthday', func
 
     $this->actingAs($customer)
         ->get(route('onboarding.show', ['step' => OnboardingStep::PeriodTracking->value]))
-        ->assertRedirect(route('onboarding.show', ['step' => OnboardingStep::Birthday->value]));
+        ->assertRedirect(route('onboarding.show', ['step' => OnboardingStep::DailyTargets->value]));
 
-    expect($customer->fresh()->currentOnboardingStep())->toBe(OnboardingStep::Birthday);
+    expect($customer->fresh()->currentOnboardingStep())->toBe(OnboardingStep::DailyTargets);
 });
 
 test('period tracking onboarding page renders for cycle sync customers', function () {
@@ -401,7 +404,7 @@ test('customer can save activity and advance to daily targets', function () {
         ->post(route('onboarding.activity.store'), [
             'activity_level' => 'lightly_active',
         ])
-        ->assertRedirect(route('onboarding.show', ['step' => OnboardingStep::DailyTargets->value]));
+        ->assertRedirect(route('onboarding.show', ['step' => OnboardingStep::DietProtocol->value]));
 
     $profile = $customer->fresh()->customerProfile;
 
@@ -409,7 +412,7 @@ test('customer can save activity and advance to daily targets', function () {
         ->and($profile?->protein_percentage)->toBe(35.0)
         ->and($profile?->carb_percentage)->toBe(35.0)
         ->and($profile?->fat_percentage)->toBe(30.0)
-        ->and($customer->fresh()->currentOnboardingStep())->toBe(OnboardingStep::DailyTargets);
+        ->and($customer->fresh()->currentOnboardingStep())->toBe(OnboardingStep::DietProtocol);
 });
 
 test('diet protocol submission calculates and persists daily targets', function () {
@@ -429,14 +432,14 @@ test('diet protocol submission calculates and persists daily targets', function 
         ->post(route('onboarding.diet-protocol.store'), [
             'diet_protocol' => 'ketobiotic',
         ])
-        ->assertRedirect(route('onboarding.show', ['step' => OnboardingStep::Birthday->value]));
+        ->assertRedirect(route('onboarding.show', ['step' => OnboardingStep::DailyTargets->value]));
 
     $profile = $customer->fresh()->customerProfile;
 
     expect($profile?->diet_protocol)->toBe('ketobiotic')
         ->and($profile?->daily_calorie_target)->toBeIn([1250, 1500, 1800, 2000])
         ->and($profile?->fat_percentage)->toBe(70.0)
-        ->and($customer->fresh()->currentOnboardingStep())->toBe(OnboardingStep::Birthday);
+        ->and($customer->fresh()->currentOnboardingStep())->toBe(OnboardingStep::DailyTargets);
 
     $shared = MealCraftInertiaSharedData::onboarding($customer->fresh());
 
@@ -659,7 +662,7 @@ test('completed customers can continue editing profile through onboarding steps'
         ->post(route('onboarding.gender.store'), [
             'sex' => 'female',
         ])
-        ->assertRedirect(route('onboarding.show', ['step' => OnboardingStep::DietProtocol->value]));
+        ->assertRedirect(route('onboarding.show', ['step' => OnboardingStep::Birthday->value]));
 
     expect($customer->fresh()->customerProfile?->sex?->value)->toBe('female');
 });

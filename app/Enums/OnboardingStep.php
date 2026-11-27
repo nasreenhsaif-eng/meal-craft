@@ -9,6 +9,8 @@ enum OnboardingStep: string
     case Welcome = 'welcome';
     case Gender = 'gender';
     case PeriodTracking = 'period_tracking';
+    case ProtocolSelection = 'protocol_selection';
+    case ActivePhase = 'active_phase';
     case Birthday = 'birthday';
     case Height = 'height';
     case Weight = 'weight';
@@ -36,6 +38,8 @@ enum OnboardingStep: string
             self::Welcome => __('Welcome'),
             self::Gender => __('Gender'),
             self::PeriodTracking => __('Track your period'),
+            self::ProtocolSelection => __('Protocol selection'),
+            self::ActivePhase => __('Active phase'),
             self::Birthday => __('Birthday'),
             self::Height => __('Height'),
             self::Weight => __('Weight'),
@@ -59,14 +63,16 @@ enum OnboardingStep: string
     {
         $next = match ($this) {
             self::Welcome => self::Gender,
-            self::Gender => self::DietProtocol,
-            self::DietProtocol => self::PeriodTracking,
-            self::PeriodTracking => self::Birthday,
+            self::Gender => self::Birthday,
             self::Birthday => self::Height,
             self::Height => self::Weight,
             self::Weight => self::TargetWeight,
             self::TargetWeight => self::Activity,
-            self::Activity => self::DailyTargets,
+            self::Activity => self::DietProtocol,
+            self::DietProtocol => self::PeriodTracking,
+            self::PeriodTracking => self::ProtocolSelection,
+            self::ProtocolSelection => self::ActivePhase,
+            self::ActivePhase => self::DailyTargets,
             self::DailyTargets => self::FoodFilters,
             self::FoodFilters => null,
             self::Macros => self::DietProtocol,
@@ -74,9 +80,10 @@ enum OnboardingStep: string
             self::Review => null,
         };
 
-        if ($next === self::PeriodTracking && ! self::shouldShowPeriodTracking($profile)) {
+        if (in_array($next, [self::PeriodTracking, self::ProtocolSelection, self::ActivePhase], true)
+            && ! self::shouldShowPeriodTracking($profile)) {
             return match ($this) {
-                self::DietProtocol => self::Birthday,
+                self::DietProtocol => self::DailyTargets,
                 default => $next,
             };
         }
@@ -88,16 +95,18 @@ enum OnboardingStep: string
     {
         return match ($this) {
             self::Welcome, self::Gender => null,
-            self::DietProtocol => self::Gender,
-            self::PeriodTracking => self::DietProtocol,
-            self::Birthday => self::shouldShowPeriodTracking($profile)
-                ? self::PeriodTracking
-                : self::DietProtocol,
+            self::Birthday => self::Gender,
             self::Height => self::Birthday,
             self::Weight => self::Height,
             self::TargetWeight => self::Weight,
             self::Activity => self::TargetWeight,
-            self::DailyTargets => self::Activity,
+            self::DietProtocol => self::Activity,
+            self::PeriodTracking => self::DietProtocol,
+            self::ProtocolSelection => self::PeriodTracking,
+            self::ActivePhase => self::ProtocolSelection,
+            self::DailyTargets => self::shouldShowPeriodTracking($profile)
+                ? self::ActivePhase
+                : self::DietProtocol,
             self::FoodFilters => self::DailyTargets,
             self::Macros => self::Activity,
             self::Meals => self::DietProtocol,
@@ -112,6 +121,20 @@ enum OnboardingStep: string
         }
 
         return DietProtocol::tryFromStored($profile->diet_protocol) === DietProtocol::CycleSync;
+    }
+
+    /**
+     * Cycle Sync-only steps that follow diet protocol selection.
+     *
+     * @return list<self>
+     */
+    public static function cycleSyncSteps(): array
+    {
+        return [
+            self::PeriodTracking,
+            self::ProtocolSelection,
+            self::ActivePhase,
+        ];
     }
 
     /**
@@ -146,13 +169,15 @@ enum OnboardingStep: string
     {
         return [
             self::Gender,
-            self::DietProtocol,
-            self::PeriodTracking,
             self::Birthday,
             self::Height,
             self::Weight,
             self::TargetWeight,
             self::Activity,
+            self::DietProtocol,
+            self::PeriodTracking,
+            self::ProtocolSelection,
+            self::ActivePhase,
             self::DailyTargets,
             self::FoodFilters,
         ];
@@ -163,10 +188,11 @@ enum OnboardingStep: string
      */
     public static function orderedFor(?CustomerProfile $profile): array
     {
+        $showCycleSync = self::shouldShowPeriodTracking($profile);
+
         return array_values(array_filter(
             self::ordered(),
-            static fn (self $step): bool => $step !== self::PeriodTracking
-                || self::shouldShowPeriodTracking($profile),
+            static fn (self $step): bool => ! in_array($step, self::cycleSyncSteps(), true) || $showCycleSync,
         ));
     }
 }

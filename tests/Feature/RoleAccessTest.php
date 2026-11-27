@@ -62,7 +62,7 @@ test('admins can save diet protocol while previewing onboarding', function () {
         ->post(route('onboarding.diet-protocol.store'), [
             'diet_protocol' => 'balanced',
         ])
-        ->assertRedirect(route('onboarding.show', ['step' => OnboardingStep::Birthday->value]));
+        ->assertRedirect(route('onboarding.show', ['step' => OnboardingStep::DailyTargets->value]));
 });
 
 test('customers cannot access the customer app before onboarding is complete', function () {

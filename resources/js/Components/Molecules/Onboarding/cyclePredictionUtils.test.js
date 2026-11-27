@@ -163,7 +163,9 @@ describe('resolveDayCellVisualState', () => {
     });
 
     it('marks predicted period days without ovulation styling', () => {
-        const periodDay = projection.projectedCycles[1].periodStart;
+        const todayIso = '2026-05-23';
+        const periodDay = projection.projectedCycles.find((cycle) => cycle.periodStart >= todayIso)
+            ?.periodStart;
         const state = resolveDayCellVisualState(
             periodDay,
             { start: null, end: null },
@@ -172,6 +174,7 @@ describe('resolveDayCellVisualState', () => {
             referenceDate,
         );
 
+        expect(periodDay).toBeTruthy();
         expect(state.isPredictedPeriod).toBe(true);
         expect(state.isOvulation).toBe(false);
     });
@@ -250,8 +253,9 @@ describe('resolveDayCellVisualState', () => {
         const currentCycle = projection.projectedCycles[0];
 
         expect(currentCycle.periodStart).toBe('2026-06-01');
-        expect(currentCycle.fertileStart).toBe('2026-06-10');
-        expect(currentCycle.fertileEnd).toBe('2026-06-16');
+        expect(projection.cycleLength).toBe(DEFAULT_CYCLE_LENGTH_DAYS);
+        expect(currentCycle.fertileStart).toBe('2026-06-12');
+        expect(currentCycle.fertileEnd).toBe('2026-06-18');
 
         const fertileState = resolveDayCellVisualState(
             currentCycle.fertileStart,

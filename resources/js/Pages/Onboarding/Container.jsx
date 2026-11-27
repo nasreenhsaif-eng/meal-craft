@@ -20,7 +20,9 @@ import { OnboardingDietProtocolInner } from './DietProtocol.jsx';
 import { OnboardingFoodFilterInner } from './FoodFilter.jsx';
 import { OnboardingGenderInner } from './Gender.jsx';
 import { OnboardingHeightInner } from './Height.jsx';
+import { OnboardingActivePhaseInner } from './ActivePhase.jsx';
 import { OnboardingPeriodTrackingInner } from './PeriodTracking.jsx';
+import { OnboardingProtocolSelectionInner } from './ProtocolSelection.jsx';
 import { OnboardingTargetWeightInner } from './TargetWeight.jsx';
 import { OnboardingWeightInner } from './Weight.jsx';
 import { ONBOARDING_STEP_META } from './onboardingStepMeta.js';
@@ -39,7 +41,7 @@ function nextButtonLabel(step) {
         return 'Confirm';
     }
 
-    if (step === 'gender') {
+    if (step === 'gender' || step === 'protocol_selection' || step === 'active_phase') {
         return 'Continue';
     }
 
@@ -271,6 +273,28 @@ export default function Container() {
                 }
             />
         ),
+        protocol_selection: (
+            <OnboardingProtocolSelectionInner
+                {...sharedInner}
+                protocolMode={state.periodTracking.protocolMode ?? 'non_fasting'}
+                onProtocolModeChange={(value) =>
+                    patch({ periodTracking: { protocolMode: value } })
+                }
+            />
+        ),
+        active_phase: (
+            <OnboardingActivePhaseInner
+                {...sharedInner}
+                activePhase={pageProps.activePhase ?? null}
+                protocolMode={state.periodTracking.protocolMode ?? 'non_fasting'}
+                loggedPeriods={state.periodTracking.loggedPeriods}
+                averageCycleLength={state.periodTracking.averageCycleLength}
+                protocolSelectionUrl={
+                    pageProps.protocolSelectionUrl ?? '/onboarding/protocol_selection'
+                }
+                craftedForYouUrl={pageProps.craftedForYouUrl ?? '/consultation/crafted-for-you'}
+            />
+        ),
         birthday: (
             <OnboardingBirthdayInner
                 {...sharedInner}
@@ -374,7 +398,11 @@ export default function Container() {
                     <Button
                         type="button"
                         label={processing ? 'Saving…' : nextButtonLabel(activeStep)}
-                        disabled={processing}
+                        disabled={
+                            processing ||
+                            (activeStep === 'period_tracking' &&
+                                state.periodTracking.loggedPeriods.length < 1)
+                        }
                         onClick={handleNext}
                         className="w-full min-w-[200px] max-w-sm uppercase tracking-[0.08em] sm:w-auto"
                     />

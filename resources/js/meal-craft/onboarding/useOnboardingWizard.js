@@ -10,6 +10,8 @@ import { useOnboardingStore } from './OnboardingProvider.jsx';
 const STEP_SUBMIT_URL = {
     gender: 'gender',
     period_tracking: 'periodTracking',
+    protocol_selection: 'protocolSelection',
+    active_phase: 'activePhase',
     birthday: 'birthday',
     height: 'height',
     weight: 'weight',
@@ -76,6 +78,12 @@ export function buildStepPayload(stepId, state) {
                 logged_periods: state.periodTracking.loggedPeriods,
                 average_cycle_length: state.periodTracking.averageCycleLength,
             };
+        case 'protocol_selection':
+            return {
+                protocol_mode: state.periodTracking.protocolMode ?? 'non_fasting',
+            };
+        case 'active_phase':
+            return {};
         case 'birthday':
             return { date_of_birth: state.birthdate };
         case 'height':

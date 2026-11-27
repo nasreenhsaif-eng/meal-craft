@@ -16,6 +16,7 @@ import {
  * @typedef {{
  *   loggedPeriods: Array<{ start: string; end: string }>;
  *   averageCycleLength: number | null;
+ *   protocolMode: 'non_fasting' | 'fasting';
  * }} PeriodTrackingState
  */
 
@@ -43,6 +44,7 @@ export function createInitialOnboardingState() {
         periodTracking: {
             loggedPeriods: [],
             averageCycleLength: null,
+            protocolMode: 'non_fasting',
         },
         birthdate: '',
         height: null,
@@ -114,6 +116,10 @@ export function hydrateOnboardingFromServer(state, onboarding) {
                   : state.periodTracking.loggedPeriods,
             averageCycleLength:
                 profile.average_cycle_length ?? profile.averageCycleLength ?? state.periodTracking.averageCycleLength,
+            protocolMode:
+                profile.protocol_mode === 'fasting' || profile.protocolMode === 'fasting'
+                    ? 'fasting'
+                    : (state.periodTracking.protocolMode ?? 'non_fasting'),
         },
         birthdate:
             firstIsoDate(profile.date_of_birth, profile.dateOfBirth, profile.birthdate, state.birthdate) ??

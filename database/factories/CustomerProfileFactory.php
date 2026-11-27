@@ -5,6 +5,7 @@ namespace Database\Factories;
 use App\Enums\CustomerActivityLevel;
 use App\Enums\CustomerGoal;
 use App\Enums\CustomerSex;
+use App\Enums\CycleProtocolMode;
 use App\Enums\DietType;
 use App\Enums\MacroSplitStyle;
 use App\Enums\OnboardingStep;
@@ -44,6 +45,7 @@ class CustomerProfileFactory extends Factory
             'activity_level' => CustomerActivityLevel::Moderate,
             'goal' => CustomerGoal::Maintain,
             'diet_type' => DietType::Balanced,
+            'protocol_mode' => CycleProtocolMode::NonFasting,
             'macro_split_style' => $style,
             'daily_calorie_target' => 2000,
             'protein_percentage' => $percentages['protein_percentage'],

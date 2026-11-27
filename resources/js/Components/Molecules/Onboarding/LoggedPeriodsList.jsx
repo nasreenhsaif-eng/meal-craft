@@ -47,7 +47,7 @@ export function LoggedPeriodsList({ periods = [], onRemove, className = '' }) {
 
             {periods.length === 0 ? (
                 <p className="mt-3 rounded-[12px] border border-border-light bg-surface-soft px-4 py-3 text-sm text-form-label">
-                    Select a start and end date on the calendar to log a period.
+                    Tap days on the calendar to log bleed days.
                 </p>
             ) : (
                 <ul className="mt-3 flex flex-col gap-2">

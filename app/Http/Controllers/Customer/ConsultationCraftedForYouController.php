@@ -6,6 +6,7 @@ use App\Enums\OnboardingStep;
 use App\Http\Controllers\Api\ConsultationResumeDraftController;
 use App\Http\Controllers\Controller;
 use App\Models\Meal;
+use App\Services\Nutrition\CraftCaloriePlanner;
 use App\Services\Nutrition\UserPlanCalculator;
 use App\Support\AdminConsultationPreviewProfile;
 use App\Support\PartnerKitchenPrice;
@@ -98,6 +99,8 @@ class ConsultationCraftedForYouController extends Controller
             'initialFulfillmentChoice' => $initialFulfillmentChoice,
             'forceReceive' => $forceReceive,
             'focusCutleryOnly' => $request->query('focus') === 'cutlery' && $editDraft !== null,
+            'initialCraftKey' => $this->resolveInitialCraftKey($request),
+            'cycleSyncMealPlanPayload' => $this->resolveCycleSyncMealPlanPayload($request),
         ];
 
         $baseCalories = (int) (
@@ -110,6 +113,44 @@ class ConsultationCraftedForYouController extends Controller
         return view('pages.consultation.crafted-for-you', [
             'consultationConfig' => $consultationConfig,
         ]);
+    }
+
+    private function resolveInitialCraftKey(Request $request): ?string
+    {
+        $craftKey = $request->query('craft_key');
+
+        if (! is_string($craftKey) || $craftKey === '') {
+            return null;
+        }
+
+        return in_array($craftKey, CraftCaloriePlanner::keys(), true) ? $craftKey : null;
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function resolveCycleSyncMealPlanPayload(Request $request): ?array
+    {
+        $protocolMode = $request->query('protocol_mode');
+        $phaseKey = $request->query('phase_key');
+
+        if (! is_string($protocolMode) || ! is_string($phaseKey) || $protocolMode === '' || $phaseKey === '') {
+            return null;
+        }
+
+        $schedulesFull = $request->boolean('schedules_full_daily_meals', $protocolMode === 'non_fasting');
+
+        return [
+            'protocol_mode' => $protocolMode,
+            'phase_key' => $phaseKey,
+            'biological_phase' => $request->query('biological_phase'),
+            'food_approach' => $request->query('food_approach'),
+            'fasting_window' => $request->query('fasting_window'),
+            'fasting_type' => $request->query('fasting_type'),
+            'schedules_full_daily_meals' => $schedulesFull,
+            'craft_key' => $this->resolveInitialCraftKey($request)
+                ?? ($schedulesFull ? CraftCaloriePlanner::CRAFT_FULL : CraftCaloriePlanner::CRAFT_INTERMITTENT),
+        ];
     }
 
     /**

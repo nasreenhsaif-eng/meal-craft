@@ -8,10 +8,8 @@ import {
     DEFAULT_CYCLE_LENGTH_DAYS,
     resolveAverageCycleLengthMetric,
 } from '../../Components/Molecules/Onboarding/cyclePredictionUtils.js';
-import {
-    appendPeriodIfMissing,
-    removePeriodByKey,
-} from '../../Components/Molecules/Onboarding/periodTrackingUtils.js';
+import { toggleLoggedBleedDay } from '../../Components/Molecules/Onboarding/cycleSyncPhaseUtils.js';
+import { removePeriodByKey } from '../../Components/Molecules/Onboarding/periodTrackingUtils.js';
 import { onboardingFromPage } from '../../meal-craft/mealCraftPageProps.js';
 import { useOnboardingStore } from '../../meal-craft/onboarding/OnboardingProvider.jsx';
 import OnboardingStepFrame from '../../Components/Molecules/Onboarding/OnboardingStepFrame.jsx';
@@ -22,15 +20,7 @@ import customerOnboardingLayout from '../../Layouts/customerOnboardingLayout.jsx
  */
 
 /**
- * @param {{ start: string | null; end: string | null }} range
- * @returns {range is { start: string; end: string }}
- */
-function isCompletedRange(range) {
-    return Boolean(range.start && range.end);
-}
-
-/**
- * Period tracking onboarding step (female customers only).
+ * Period tracking onboarding step (Cycle Sync customers).
  *
  * @param {{
  *   loggedPeriods?: LoggedPeriod[];
@@ -59,27 +49,24 @@ export function OnboardingPeriodTrackingInner({
     customerName = '',
     embedded = false,
 }) {
-    const [demoPeriods, setDemoPeriods] = useState(/** @type {LoggedPeriod[]} */ ([]));
-    const [draftRange, setDraftRange] = useState({ start: null, end: null });
+    const [demoPeriods, setDemoPeriods] = useState(
+        /** @type {LoggedPeriod[]} */ (loggedPeriodsProp ?? []),
+    );
     const [avgCycleLength, setAvgCycleLength] = useState(
         averageCycleLengthProp ?? DEFAULT_CYCLE_LENGTH_DAYS,
     );
     const [usesStandardCycleLength, setUsesStandardCycleLength] = useState(true);
-    const loggedPeriods = loggedPeriodsProp ?? demoPeriods;
-    const setLoggedPeriods = onLoggedPeriodsChange ?? setDemoPeriods;
+    const isLoggedPeriodsControlled = typeof onLoggedPeriodsChange === 'function';
+    const loggedPeriods = isLoggedPeriodsControlled
+        ? (loggedPeriodsProp ?? [])
+        : demoPeriods;
+    const setLoggedPeriods = isLoggedPeriodsControlled
+        ? onLoggedPeriodsChange
+        : setDemoPeriods;
 
-    const handleDraftRangeChange = useCallback(
-        (range) => {
-            if (isCompletedRange(range)) {
-                setLoggedPeriods((current) =>
-                    appendPeriodIfMissing(current, { start: range.start, end: range.end }),
-                );
-                setDraftRange({ start: null, end: null });
-
-                return;
-            }
-
-            setDraftRange(range);
+    const handleToggleBleedDay = useCallback(
+        (iso) => {
+            setLoggedPeriods((current) => toggleLoggedBleedDay(current, iso));
         },
         [setLoggedPeriods],
     );
@@ -87,6 +74,7 @@ export function OnboardingPeriodTrackingInner({
     const cycleMetric = useMemo(() => resolveAverageCycleLengthMetric(loggedPeriods), [loggedPeriods]);
     const syncAverageCycleLength = useRef(onAverageCycleLengthChange);
     syncAverageCycleLength.current = onAverageCycleLengthChange;
+    const canContinue = loggedPeriods.length > 0;
 
     useEffect(() => {
         setAvgCycleLength(cycleMetric.days);
@@ -109,17 +97,17 @@ export function OnboardingPeriodTrackingInner({
                 className="flex w-full flex-col gap-4 md:mx-auto md:max-w-xl"
                 onSubmit={(event) => {
                     event.preventDefault();
+                    if (!canContinue) {
+                        return;
+                    }
                     onSubmit?.();
                 }}
             >
                 <div className="flex w-full justify-center">
                     <PeriodRangeCalendar
-                        rangeValue={draftRange}
-                        onRangeChange={handleDraftRangeChange}
                         loggedPeriods={loggedPeriods}
-                        onLoggedPeriodRemove={(key) =>
-                            setLoggedPeriods((current) => removePeriodByKey(current, key))
-                        }
+                        onToggleBleedDay={handleToggleBleedDay}
+                        cycleLength={avgCycleLength}
                     />
                 </div>
 
@@ -150,7 +138,7 @@ export function OnboardingPeriodTrackingInner({
                         <Button
                             type="submit"
                             label={processing ? 'Saving…' : 'Next'}
-                            disabled={processing}
+                            disabled={processing || !canContinue}
                             className="min-w-[200px] uppercase tracking-[0.08em]"
                         />
                     </div>

@@ -23,7 +23,7 @@ export default function CustomerOnboardingPhoneFrame({
                     'relative flex h-full min-h-0 w-full flex-col overflow-clip',
                     'rounded-[36px] border border-gray-200 bg-white shadow-lg',
                     // Extra top inset so the header logo clears the rounded chrome.
-                    'px-3 pb-3 pt-8 font-sans text-heading',
+                    'px-3 pb-3 pt-8 font-sans text-heading [color-scheme:light]',
                     className,
                 ]
                     .join(' ')
@@ -53,7 +53,7 @@ export default function CustomerOnboardingPhoneFrame({
                     // On real small phones, fill the viewport without device chrome.
                     'max-[429px]:h-dvh max-[429px]:max-h-dvh max-[429px]:rounded-none max-[429px]:border-0 max-[429px]:shadow-none',
                     // Desktop chrome: room under the top radius. Real phones: safe-area + padding.
-                    'px-3 pb-3 pt-8',
+                    'px-3 pb-3 pt-8 [color-scheme:light]',
                     'max-[429px]:px-3 max-[429px]:pb-3 max-[429px]:pt-[max(2rem,env(safe-area-inset-top))]',
                 ].join(' ')}
                 data-customer-onboarding-frame={storybook ? undefined : ''}

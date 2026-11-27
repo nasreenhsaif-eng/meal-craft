@@ -86,18 +86,27 @@ function TextInput({
     }
 
     const inputClassName = [
-        'box-border h-full w-full min-w-0 max-w-full flex-1 appearance-none border-none bg-transparent font-body text-[16px] tracking-tight',
-        'text-body placeholder:text-body/50',
+        'box-border h-full w-full min-w-0 max-w-full flex-1 appearance-none border-none bg-white font-body text-[16px] tracking-tight',
+        /**
+         * Literal colors, not `text-body`. Safari keeps `color-scheme: dark` on
+         * tel/email controls and will not paint a CSS-variable color until focus,
+         * so the typed value stays invisible on the white field until it is tapped.
+         */
+        'text-[#555555] placeholder:text-[#8A8A8A]',
+        '[color-scheme:light] [-webkit-text-fill-color:#555555]',
         '[&::-webkit-datetime-edit]:min-w-0 [&::-webkit-date-and-time-value]:min-w-0',
         /** Match pill radius so focus/autofill never draws a square over the wrapper */
         'rounded-[12px] outline-none ring-0',
         'focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0',
-        'disabled:cursor-not-allowed disabled:text-body/40 disabled:placeholder:text-body/25',
+        'disabled:cursor-not-allowed disabled:text-[#555555]/40 disabled:placeholder:text-[#555555]/25',
+        'disabled:[-webkit-text-fill-color:#55555566]',
         /** Neutralize Chrome/Safari autofill (default + focus — avoids gray tile on tab/focus) */
         '[&:-webkit-autofill]:[-webkit-box-shadow:0_0_0px_1000px_white_inset]',
-        '[&:-webkit-autofill]:[-webkit-text-fill-color:inherit]',
+        '[&:-webkit-autofill]:[-webkit-text-fill-color:#555555]',
         '[&:-webkit-autofill:hover]:[-webkit-box-shadow:0_0_0px_1000px_white_inset]',
+        '[&:-webkit-autofill:hover]:[-webkit-text-fill-color:#555555]',
         '[&:-webkit-autofill:focus]:[-webkit-box-shadow:0_0_0px_1000px_white_inset]',
+        '[&:-webkit-autofill:focus]:[-webkit-text-fill-color:#555555]',
         inputPad,
     ].join(' ');
 

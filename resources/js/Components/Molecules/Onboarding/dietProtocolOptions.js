@@ -25,6 +25,12 @@ export const AUTO_ADVANCE_DIET_PROTOCOL_ID = 'balanced';
 /** @type {DietProtocolOption[]} */
 export const DIET_PROTOCOL_OPTIONS = [
     {
+        id: 'cycle_sync',
+        label: 'Cycle Sync nutrition for women',
+        description: 'Phase-aware meals aligned with your menstrual cycle.',
+        Icon: IconCycleSync,
+    },
+    {
         id: 'balanced',
         label: 'Balanced Anti-inflammatory',
         description:
@@ -43,12 +49,6 @@ export const DIET_PROTOCOL_OPTIONS = [
         label: 'Thyroid Protocol',
         description: 'Iodine-aware, steady-energy nutrition designed to support thyroid health.',
         Icon: IconThyroid,
-    },
-    {
-        id: 'cycle_sync',
-        label: 'Cycle Sync nutrition for women',
-        description: 'Phase-aware meals aligned with your menstrual cycle.',
-        Icon: IconCycleSync,
     },
     {
         id: 'sickle_cell',

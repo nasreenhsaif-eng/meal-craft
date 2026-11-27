@@ -20,29 +20,24 @@ describe('onboardingTabFlow', () => {
         dietProtocol: 'cycle_sync',
     });
 
-    it('walks male customers back through the reordered flow after diet protocol', () => {
-        expect(getPreviousTabStep('birthday', maleVisibleSteps)).toBe('diet_protocol');
-        expect(getPreviousTabStep('diet_protocol', maleVisibleSteps)).toBe('gender');
-        expect(getPreviousTabStep('gender', maleVisibleSteps)).toBeNull();
-    });
-
-    it('walks cycle sync customers back through period tracking after diet protocol', () => {
-        expect(getPreviousTabStep('birthday', cycleSyncVisibleSteps)).toBe('period_tracking');
+    it('keeps back navigation aligned to visible steps', () => {
+        expect(getPreviousTabStep('daily_targets', cycleSyncVisibleSteps)).toBe('active_phase');
+        expect(getPreviousTabStep('active_phase', cycleSyncVisibleSteps)).toBe('protocol_selection');
+        expect(getPreviousTabStep('protocol_selection', cycleSyncVisibleSteps)).toBe('period_tracking');
         expect(getPreviousTabStep('period_tracking', cycleSyncVisibleSteps)).toBe('diet_protocol');
-        expect(getPreviousTabStep('diet_protocol', cycleSyncVisibleSteps)).toBe('gender');
     });
 
-    it('skips period tracking for female customers without cycle sync', () => {
+    it('hides cycle sync steps for non cycle protocols', () => {
         expect(femaleBalancedSteps.some((step) => step.value === 'period_tracking')).toBe(false);
-        expect(getPreviousTabStep('birthday', femaleBalancedSteps)).toBe('diet_protocol');
-        expect(getNextTabStep('diet_protocol', femaleBalancedSteps)).toBe('birthday');
+        expect(femaleBalancedSteps.some((step) => step.value === 'protocol_selection')).toBe(false);
+        expect(femaleBalancedSteps.some((step) => step.value === 'active_phase')).toBe(false);
+        expect(maleVisibleSteps.some((step) => step.value === 'period_tracking')).toBe(false);
     });
 
-    it('advances cycle sync customers forward from diet protocol to period tracking', () => {
+    it('advances through the three cycle sync screens', () => {
         expect(getNextTabStep('diet_protocol', cycleSyncVisibleSteps)).toBe('period_tracking');
-    });
-
-    it('does not jump from diet protocol back to activity in the male flow', () => {
-        expect(getPreviousTabStep('diet_protocol', maleVisibleSteps)).not.toBe('activity');
+        expect(getNextTabStep('period_tracking', cycleSyncVisibleSteps)).toBe('protocol_selection');
+        expect(getNextTabStep('protocol_selection', cycleSyncVisibleSteps)).toBe('active_phase');
+        expect(getNextTabStep('active_phase', cycleSyncVisibleSteps)).toBe('daily_targets');
     });
 });

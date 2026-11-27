@@ -125,9 +125,18 @@ it('uses balanced macros for cycle sync during luteal phase', function () {
 it('builds period tracking data with a current phase', function () {
     $data = PeriodTrackingPhaseService::buildPeriodTrackingData(
         [['start' => now()->subDays(3)->toDateString(), 'end' => now()->subDay()->toDateString()]],
-        28,
+        30,
     );
 
-    expect($data)->toHaveKeys(['last_period_date', 'cycle_length', 'current_phase', 'logged_periods'])
-        ->and($data['current_phase'])->toBe(CyclePhase::Menstrual->value);
+    expect($data)->toHaveKeys([
+        'last_period_date',
+        'cycle_length',
+        'current_phase',
+        'current_sync_phase',
+        'phase_ranges',
+        'dates',
+        'logged_periods',
+    ])
+        ->and($data['current_phase'])->toBe(CyclePhase::Menstrual->value)
+        ->and($data['current_sync_phase'])->toBe('power_phase_1');
 });

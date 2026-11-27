@@ -5,12 +5,12 @@ describe('onboardingMaleFlow', () => {
     it('lists the male linear sequence without welcome or period tracking', () => {
         expect(listMaleOnboardingSteps()).toEqual([
             'gender',
-            'diet_protocol',
             'birthday',
             'height',
             'weight',
             'target_weight',
             'activity',
+            'diet_protocol',
             'daily_targets',
             'food_filters',
         ]);

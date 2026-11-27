@@ -11,6 +11,7 @@ import CustomerDetailSection, {
     humanizeSlug,
     listDisplay,
 } from '../../Components/Molecules/Customer/CustomerDetailSection.jsx';
+import ActivePhaseCard from '../../Components/Molecules/Onboarding/ActivePhaseCard.jsx';
 import { DailyTargetsSummaryInner } from '../Onboarding/DailyTargetsSummary.jsx';
 import CustomerInertiaShell from '../../Layouts/CustomerInertiaShell.jsx';
 import {
@@ -82,6 +83,9 @@ function mealsByIdFromCraftPlan(craftPlan) {
  * @param {object | null} [props.craftPlan]
  * @param {object} props.dailyTargets
  * @param {object | null} [props.bodyPlan]
+ * @param {object | null} [props.activePhase]
+ * @param {string} [props.updateProtocolModeUrl]
+ * @param {string} [props.craftedForYouUrl]
  * @param {string} [props.profileEditUrl]
  * @param {string} [props.homeUrl]
  * @param {string} [props.profileUrl]
@@ -96,6 +100,9 @@ export function MyToolsInner({
     craftPlan = null,
     dailyTargets,
     bodyPlan = null,
+    activePhase = null,
+    updateProtocolModeUrl = '/app/protocol-mode',
+    craftedForYouUrl = '/consultation/crafted-for-you',
     profileEditUrl = '/onboarding/gender',
     homeUrl = '/app',
     profileUrl = '/app/profile',
@@ -153,6 +160,14 @@ export function MyToolsInner({
     const bodyPlanRows = [
         { label: 'Sex', value: displayValue(bodyPlan?.sexLabel) },
         { label: 'Diet protocol', value: displayValue(bodyPlan?.dietProtocolLabel) },
+        ...(bodyPlan?.dietProtocol === 'cycle_sync'
+            ? [
+                  {
+                      label: 'Protocol mode',
+                      value: displayValue(bodyPlan?.protocolModeLabel),
+                  },
+              ]
+            : []),
         { label: 'Birthday / age', value: birthdayLabel, preserveCase: true },
         { label: 'Height', value: bodyPlan?.heightCm != null ? `${bodyPlan.heightCm} cm` : '—' },
         { label: 'Weight', value: bodyPlan?.weightKg != null ? `${bodyPlan.weightKg} kg` : '—' },
@@ -319,18 +334,33 @@ export function MyToolsInner({
         );
 
     const bodyPanel = (
-        <CustomerDetailSection
-            title="Body & plan"
-            rows={bodyPlanRows}
-            action={
-                <Link
-                    href={profileEditUrl}
-                    className="shrink-0 pt-0.5 font-montserrat text-sm font-semibold text-[#5A6B44] hover:underline"
-                >
-                    Edit
-                </Link>
-            }
-        />
+        <div className="flex flex-col gap-4">
+            {activePhase ? (
+                <ActivePhaseCard
+                    phaseId={activePhase.currentSyncPhase}
+                    protocolMode={activePhase.protocolMode}
+                    cycleDay={activePhase.cycleDay}
+                    cycleLength={activePhase.cycleLength}
+                    metadata={activePhase.currentPhaseMetadata}
+                    mealPlanPayload={activePhase.mealPlanGenerationPayload}
+                    updateProtocolModeUrl={updateProtocolModeUrl}
+                    craftedForYouUrl={craftedForYouUrl}
+                    showProtocolSelector
+                />
+            ) : null}
+            <CustomerDetailSection
+                title="Body & plan"
+                rows={bodyPlanRows}
+                action={
+                    <Link
+                        href={profileEditUrl}
+                        className="shrink-0 pt-0.5 font-montserrat text-sm font-semibold text-[#5A6B44] hover:underline"
+                    >
+                        Edit
+                    </Link>
+                }
+            />
+        </div>
     );
 
     const tabBody = (() => {
@@ -363,13 +393,6 @@ export function MyToolsInner({
             }
         >
             <div className="flex w-full min-w-0 flex-col gap-4">
-                <div>
-                    <h1 className="font-montserrat text-3xl font-semibold tracking-tight text-heading">My Tools</h1>
-                    <p className="mt-2 font-body text-sm leading-relaxed text-body sm:text-base">
-                        Saved recipes, shopping list, targets, and body & plan.
-                    </p>
-                </div>
-
                 <div
                     className="flex gap-1.5 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
                     role="tablist"

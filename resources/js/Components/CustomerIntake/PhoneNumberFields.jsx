@@ -136,8 +136,10 @@ export default function PhoneNumberFields({
                 <TextInput
                     label="National number"
                     className="!max-w-none [&_label]:sr-only"
-                    type="tel"
+                    type="text"
                     inputMode="tel"
+                    autoCorrect="off"
+                    spellCheck={false}
                     placeholder="XXXX XXXX"
                     value={nationalNumber}
                     onChange={(event) => {

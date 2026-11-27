@@ -52,7 +52,32 @@ export function buildCraftPlanSubmissionPayload(input) {
         payload.include_cutlery = input.includeCutlery;
     }
 
+    const cycleSync = input.cycleSync ?? readStoredCycleSyncMealPlanPayload();
+
+    if (cycleSync && typeof cycleSync === 'object') {
+        payload.cycle_sync = cycleSync;
+    }
+
     return payload;
+}
+
+/**
+ * @returns {Record<string, unknown> | null}
+ */
+export function readStoredCycleSyncMealPlanPayload() {
+    try {
+        const raw = window.sessionStorage.getItem('mealCraft.cycleSyncMealPlanPayload');
+
+        if (!raw) {
+            return null;
+        }
+
+        const parsed = JSON.parse(raw);
+
+        return parsed && typeof parsed === 'object' ? parsed : null;
+    } catch {
+        return null;
+    }
 }
 
 import { CSRF_SESSION_EXPIRED_MESSAGE, resolveCsrfToken, resolveXsrfHeaderToken } from '../lib/csrfToken.js';

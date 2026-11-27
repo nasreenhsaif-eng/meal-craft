@@ -14,6 +14,17 @@ export const ONBOARDING_STEP_META = {
         centerHeader: true,
         titleClassName: 'text-brand-primary-pressed',
     },
+    protocol_selection: {
+        title: 'Include intermittent fasting?',
+        description: 'You can change this anytime.',
+        centerHeader: true,
+    },
+    active_phase: {
+        title: 'Your active cycle phase',
+        description: 'Food approach and guidance adapt to where you are in your cycle.',
+        centerHeader: true,
+        titleClassName: 'text-brand-primary-pressed',
+    },
     birthday: {
         title: 'When is your birthday?',
         description:

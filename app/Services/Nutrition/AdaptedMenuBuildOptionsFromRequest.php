@@ -2,6 +2,8 @@
 
 namespace App\Services\Nutrition;
 
+use App\Enums\CycleProtocolMode;
+use App\Enums\CycleSyncPhase;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -18,6 +20,13 @@ final class AdaptedMenuBuildOptionsFromRequest
      *     day_of_week?: int,
      *     craft_key?: string,
      *     selected_main_meal_ids?: list<int>,
+     *     protocol_mode?: string,
+     *     phase_key?: string,
+     *     biological_phase?: string,
+     *     food_approach?: string,
+     *     fasting_window?: string,
+     *     fasting_type?: string,
+     *     schedules_full_daily_meals?: bool,
      * }
      */
     public static function resolve(Request $request, User $user): array
@@ -38,6 +47,13 @@ final class AdaptedMenuBuildOptionsFromRequest
             'fixed_slot_actual_macros.fat_g' => ['sometimes', 'numeric', 'min:0'],
             'selected_main_meal_ids' => ['sometimes', 'array'],
             'selected_breakfast_meal_ids' => ['sometimes', 'array'],
+            'protocol_mode' => ['sometimes', 'string', Rule::in(array_column(CycleProtocolMode::cases(), 'value'))],
+            'phase_key' => ['sometimes', 'string', Rule::in(array_column(CycleSyncPhase::cases(), 'value'))],
+            'biological_phase' => ['sometimes', 'string', 'max:120'],
+            'food_approach' => ['sometimes', 'string', 'max:120'],
+            'fasting_window' => ['sometimes', 'string', 'max:120'],
+            'fasting_type' => ['sometimes', 'string', Rule::in(['fasting', 'no_fasting'])],
+            'schedules_full_daily_meals' => ['sometimes', 'boolean'],
         ]);
 
         $selectedFixedSlots = isset($validated['selected_fixed_slots'])
@@ -74,6 +90,29 @@ final class AdaptedMenuBuildOptionsFromRequest
 
         if (isset($validated['craft_key'])) {
             $buildOptions['craft_key'] = $validated['craft_key'];
+        }
+
+        foreach ([
+            'protocol_mode',
+            'phase_key',
+            'biological_phase',
+            'food_approach',
+            'fasting_window',
+            'fasting_type',
+        ] as $cycleKey) {
+            if (isset($validated[$cycleKey])) {
+                $buildOptions[$cycleKey] = $validated[$cycleKey];
+            }
+        }
+
+        if (array_key_exists('schedules_full_daily_meals', $validated)) {
+            $buildOptions['schedules_full_daily_meals'] = (bool) $validated['schedules_full_daily_meals'];
+
+            if (! isset($buildOptions['craft_key'])) {
+                $buildOptions['craft_key'] = $buildOptions['schedules_full_daily_meals']
+                    ? CraftCaloriePlanner::CRAFT_FULL
+                    : CraftCaloriePlanner::CRAFT_INTERMITTENT;
+            }
         }
 
         $selectedMainMealIds = self::positiveIntegerIds($request->input('selected_main_meal_ids'));

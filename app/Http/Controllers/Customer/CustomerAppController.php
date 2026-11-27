@@ -2,13 +2,17 @@
 
 namespace App\Http\Controllers\Customer;
 
+use App\Enums\CycleProtocolMode;
 use App\Enums\DietProtocol;
 use App\Enums\OnboardingStep;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Customer\UpdateCycleProtocolModeRequest;
 use App\Models\CustomerCraftPlan;
 use App\Models\CustomerProfile;
 use App\Services\CustomerCraftPlanPresentationService;
+use App\Services\Nutrition\CycleSyncPhaseCalculator;
 use App\Services\Nutrition\OnboardingDailyTargetsCalculator;
+use App\Services\Nutrition\PeriodTrackingPhaseService;
 use App\Services\Nutrition\ProductionWeeklyMenuSchedule;
 use App\Services\Nutrition\UserPlanCalculator;
 use App\Support\AdminConsultationPreviewProfile;
@@ -194,12 +198,37 @@ class CustomerAppController extends Controller
             'craftPlan' => $this->submittedCraftPlanSummary($presentation),
             'dailyTargets' => $this->dailyTargetsSummary(),
             'bodyPlan' => $this->bodyPlanDetails(),
+            'activePhase' => $this->activePhaseDetails(),
+            'updateProtocolModeUrl' => route('app.protocol-mode.update'),
+            'craftedForYouUrl' => route('consultation.crafted-for-you'),
             'profileEditUrl' => route('onboarding.show', [
                 'step' => OnboardingStep::entry()->value,
             ]),
             'recipesUrl' => route('meal-plan.recipes'),
             ...self::customerAppShellUrls(),
         ]);
+    }
+
+    public function updateProtocolMode(UpdateCycleProtocolModeRequest $request): RedirectResponse
+    {
+        /** @var CustomerProfile $profile */
+        $profile = $request->user()->customerProfile;
+        $protocolMode = CycleProtocolMode::tryFromStored($request->validated('protocol_mode'));
+
+        $loggedPeriods = is_array($profile->logged_periods) ? $profile->logged_periods : [];
+        $periodTrackingData = PeriodTrackingPhaseService::buildPeriodTrackingData(
+            $loggedPeriods,
+            $profile->average_cycle_length,
+            null,
+            $protocolMode,
+        );
+
+        $profile->update([
+            'protocol_mode' => $protocolMode,
+            'period_tracking_data' => $periodTrackingData,
+        ]);
+
+        return back();
     }
 
     /**
@@ -275,10 +304,14 @@ class CustomerAppController extends Controller
         $profile = request()->user()->customerProfile;
         $calorieRange = self::calorieTargetRange($profile);
         $dietProtocol = DietProtocol::tryFromStored($profile->diet_protocol);
+        $protocolMode = CycleProtocolMode::tryFromStored($profile->protocol_mode);
 
         return [
             'sexLabel' => $profile->sex?->label() ?? null,
             'dietProtocolLabel' => $dietProtocol->label(),
+            'dietProtocol' => $dietProtocol->value,
+            'protocolMode' => $protocolMode->value,
+            'protocolModeLabel' => $protocolMode->shortLabel(),
             'dateOfBirth' => ($profile->birthdate ?? $profile->date_of_birth)?->toDateString(),
             'age' => $profile->age,
             'heightCm' => $profile->height_cm,
@@ -291,6 +324,41 @@ class CustomerAppController extends Controller
             'macroSplitStyle' => $profile->macro_split_style?->value,
             'foodFilters' => array_values($profile->food_filters ?? $profile->allergies ?? []),
             'allergies' => array_values($profile->allergies ?? []),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function activePhaseDetails(): ?array
+    {
+        /** @var CustomerProfile $profile */
+        $profile = request()->user()->customerProfile;
+        $dietProtocol = DietProtocol::tryFromStored($profile->diet_protocol);
+
+        if ($dietProtocol !== DietProtocol::CycleSync) {
+            return null;
+        }
+
+        $protocolMode = CycleProtocolMode::tryFromStored($profile->protocol_mode);
+        $loggedPeriods = is_array($profile->logged_periods) ? $profile->logged_periods : [];
+
+        $payload = CycleSyncPhaseCalculator::buildPeriodTrackingData(
+            $loggedPeriods,
+            $profile->average_cycle_length,
+            null,
+            $protocolMode,
+        );
+
+        return [
+            'protocolMode' => $protocolMode->value,
+            'cycleDay' => $payload['cycle_day'],
+            'cycleLength' => $payload['cycle_length'],
+            'currentSyncPhase' => $payload['current_sync_phase'],
+            'currentPhaseMetadata' => $payload['current_phase_metadata'],
+            'mealPlanGenerationPayload' => $payload['meal_plan_generation_payload'],
+            'phaseCatalog' => $payload['phase_catalog'],
+            'loggedPeriods' => $loggedPeriods,
         ];
     }
 

@@ -23,6 +23,12 @@ export function buildOnboardingStepPayload(step, state) {
                 average_cycle_length: clampedCycleLength,
             };
         }
+        case 'protocol_selection':
+            return {
+                protocol_mode: state.periodTracking.protocolMode ?? 'non_fasting',
+            };
+        case 'active_phase':
+            return {};
         case 'birthday':
             return { date_of_birth: state.birthdate };
         case 'height':
@@ -64,6 +70,8 @@ export function resolveOnboardingStepPostUrl(step, urls) {
     const map = {
         gender: urls.gender,
         period_tracking: urls.periodTracking,
+        protocol_selection: urls.protocolSelection,
+        active_phase: urls.activePhase,
         birthday: urls.birthday,
         height: urls.height,
         weight: urls.weight,

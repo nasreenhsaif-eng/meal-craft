@@ -7,16 +7,17 @@ import {
 } from './dietProtocolOptions.js';
 
 describe('dietProtocolOptionsForGender', () => {
-    it('includes cycle sync for female customers', () => {
+    it('includes cycle sync first for female customers', () => {
         const options = dietProtocolOptionsForGender('female');
 
-        expect(options.some((option) => option.id === 'cycle_sync')).toBe(true);
+        expect(options[0]?.id).toBe('cycle_sync');
         expect(options.some((option) => option.id === 'thyroid')).toBe(true);
     });
 
-    it('hides cycle sync for male customers', () => {
+    it('hides cycle sync for male customers and starts with balanced', () => {
         const options = dietProtocolOptionsForGender('male');
 
+        expect(options[0]?.id).toBe('balanced');
         expect(options.some((option) => option.id === 'cycle_sync')).toBe(false);
         expect(options.some((option) => option.id === 'thyroid')).toBe(true);
         expect(options.some((option) => option.id === 'balanced')).toBe(true);

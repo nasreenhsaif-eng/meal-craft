@@ -10,7 +10,7 @@ export default {
         docs: {
             description: {
                 component:
-                    'Female-only onboarding step for logging menstrual period date ranges with calendar range selection.',
+                    'Screen 1 of the Cycle Sync flow: toggle bleed days with live luteal-anchored phase coloring. Next saves periods and continues to Protocol Selection (Screen 2).',
             },
         },
     },

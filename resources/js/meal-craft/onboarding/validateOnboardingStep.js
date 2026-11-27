@@ -17,6 +17,19 @@ export function validateOnboardingStep(step, state) {
             }
             break;
         case 'period_tracking':
+            if (!Array.isArray(state.periodTracking?.loggedPeriods) || state.periodTracking.loggedPeriods.length < 1) {
+                errors.logged_periods = 'Log at least one period start day to continue.';
+            }
+            break;
+        case 'protocol_selection':
+            if (
+                state.periodTracking?.protocolMode !== 'non_fasting' &&
+                state.periodTracking?.protocolMode !== 'fasting'
+            ) {
+                errors.protocol_mode = 'Please choose a protocol preference.';
+            }
+            break;
+        case 'active_phase':
             break;
         case 'birthday':
             if (!state.birthdate) {

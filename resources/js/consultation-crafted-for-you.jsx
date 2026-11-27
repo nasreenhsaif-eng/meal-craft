@@ -118,9 +118,26 @@ if (rootEl) {
                     ? config.partnerKitchenPricing
                     : null
             }
+            initialCraftKey={
+                typeof config.initialCraftKey === 'string' &&
+                ['full', 'afternoon', 'day', 'intermittent', 'business'].includes(config.initialCraftKey)
+                    ? config.initialCraftKey
+                    : null
+            }
             embedInScrollParent
         />
     );
+
+    if (config.cycleSyncMealPlanPayload && typeof config.cycleSyncMealPlanPayload === 'object') {
+        try {
+            window.sessionStorage.setItem(
+                'mealCraft.cycleSyncMealPlanPayload',
+                JSON.stringify(config.cycleSyncMealPlanPayload),
+            );
+        } catch {
+            // Ignore storage failures.
+        }
+    }
 
     /** @type {{ current: import('react-dom/client').Root | null }} */
     const consultationRootRef = (window.__MC_CONSULTATION_ROOT__ ??= { current: null });
