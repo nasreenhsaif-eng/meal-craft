@@ -1,25 +1,26 @@
 import { Link } from '@inertiajs/react';
-import { IconHome, IconMeals, IconProfile, IconShop, IconTools } from '../../Atoms/SvgIcons.jsx';
+import { IconFavourites, IconHome, IconProfile, IconShop, IconTools } from '../../Atoms/SvgIcons.jsx';
 
 /**
- * @typedef {'home' | 'meals' | 'shop' | 'tools' | 'profile'} CustomerAppTab
+ * @typedef {'home' | 'favourites' | 'shop' | 'tools' | 'profile'} CustomerAppTab
  */
 
 const TAB_ICONS = {
     home: IconHome,
-    meals: IconMeals,
+    favourites: IconFavourites,
     shop: IconShop,
     tools: IconTools,
     profile: IconProfile,
 };
 
 /**
- * Persistent customer app footer tabs: Home / Meal plan / Shop / Tools / Profile.
+ * Persistent customer app footer tabs: Home / Favourites / Shop / Tools / Profile.
+ * Meal plan lives under Tools.
  *
  * @param {object} props
  * @param {CustomerAppTab | null} [props.activeTab]
  * @param {string} [props.homeUrl]
- * @param {string} [props.mealsUrl]
+ * @param {string} [props.favouritesUrl]
  * @param {string} [props.shopUrl]
  * @param {string} [props.toolsUrl]
  * @param {string} [props.profileUrl]
@@ -29,7 +30,7 @@ const TAB_ICONS = {
 export default function CustomerAppBottomNav({
     activeTab = null,
     homeUrl = '/app',
-    mealsUrl = '/app/meal-plan',
+    favouritesUrl = '/app/favourites',
     shopUrl = '/app/shop',
     toolsUrl = '/app/tools',
     profileUrl = '/app/profile',
@@ -38,7 +39,7 @@ export default function CustomerAppBottomNav({
 }) {
     const items = [
         { id: /** @type {CustomerAppTab} */ ('home'), label: 'Home', href: homeUrl },
-        { id: /** @type {CustomerAppTab} */ ('meals'), label: 'Meal plan', href: mealsUrl },
+        { id: /** @type {CustomerAppTab} */ ('favourites'), label: 'Favourites', href: favouritesUrl },
         { id: /** @type {CustomerAppTab} */ ('shop'), label: 'Shop', href: shopUrl },
         { id: /** @type {CustomerAppTab} */ ('tools'), label: 'Tools', href: toolsUrl },
         { id: /** @type {CustomerAppTab} */ ('profile'), label: 'Profile', href: profileUrl },

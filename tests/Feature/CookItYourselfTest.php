@@ -93,7 +93,7 @@ test('digital recipes path renders cook it yourself after a craft plan is submit
             ->has('craftPlan.days', 2)
             ->where('craftPlan.days.0.categories.breakfasts.0.title', 'Sunday Oats')
             ->where('recipesUrl', route('meal-plan.recipes'))
-            ->missing('favouritesUrl')
+            ->where('favouritesUrl', route('app.favourites'))
             ->where('toolsUrl', route('app.tools')));
 
     $this->actingAs($user)
@@ -108,16 +108,22 @@ test('digital recipes path renders cook it yourself after a craft plan is submit
             ->has('bodyPlan.heightCm')
             ->has('bodyPlan.weightKg')
             ->where('profileEditUrl', route('onboarding.show', ['step' => OnboardingStep::Gender->value]))
-            ->missing('favouritesUrl'));
+            ->where('favouritesUrl', route('app.favourites')));
 });
 
-test('completed customers open tools for saved recipes and favourites redirects there', function () {
+test('completed customers open favourites and tools as separate destinations', function () {
     $customer = User::factory()->customer()->create();
     CustomerProfile::factory()->for($customer)->create();
 
     $this->actingAs($customer)
         ->get(route('app.favourites'))
-        ->assertRedirect(route('app.tools'));
+        ->assertSuccessful()
+        ->assertInertia(fn ($page) => $page
+            ->component('App/Favourites')
+            ->where('homeUrl', route('app.home'))
+            ->where('recipesUrl', route('meal-plan.recipes'))
+            ->where('favouritesUrl', route('app.favourites'))
+            ->where('toolsUrl', route('app.tools')));
 
     $this->actingAs($customer)
         ->get(route('app.tools'))
@@ -126,12 +132,11 @@ test('completed customers open tools for saved recipes and favourites redirects 
             ->component('App/MyTools')
             ->where('homeUrl', route('app.home'))
             ->where('recipesUrl', route('meal-plan.recipes'))
-            ->where('craftPlan', null)
             ->has('dailyTargets.dailyCaloriesMin')
             ->has('dailyTargets.proteinGrams')
             ->has('bodyPlan.dietProtocolLabel')
             ->where('profileEditUrl', route('onboarding.show', ['step' => OnboardingStep::Gender->value]))
-            ->missing('favouritesUrl')
+            ->where('favouritesUrl', route('app.favourites'))
             ->where('toolsUrl', route('app.tools'))
             ->where('cartUrl', route('app.cart')));
 });

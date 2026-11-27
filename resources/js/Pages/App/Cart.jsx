@@ -11,6 +11,7 @@ import { resolveInertiaLayoutChild } from '../../lib/resolveInertiaLayoutChild.j
  * @param {string} [props.shopUrl]
  * @param {string} [props.mealPlanSummaryUrl]
  * @param {string} [props.toolsUrl]
+ * @param {string} [props.favouritesUrl]
  * @param {string} [props.cartUrl]
  */
 export function CartInner({
@@ -20,6 +21,7 @@ export function CartInner({
     shopUrl = '/app/shop',
     mealPlanSummaryUrl = '/app/meal-plan',
     toolsUrl = '/app/tools',
+    favouritesUrl = '/app/favourites',
     cartUrl = '/app/cart',
 }) {
     return (
@@ -31,8 +33,8 @@ export function CartInner({
                     homeUrl={homeUrl}
                     profileUrl={profileUrl}
                     shopUrl={shopUrl}
-                    mealsUrl={mealPlanSummaryUrl}
                     toolsUrl={toolsUrl}
+                    favouritesUrl={favouritesUrl}
                 />
             }
         >

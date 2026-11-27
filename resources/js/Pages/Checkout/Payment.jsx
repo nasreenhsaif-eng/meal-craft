@@ -113,7 +113,6 @@ export default function Payment({
                     homeUrl={homeUrl}
                     profileUrl={profileUrl}
                     shopUrl={shopUrl}
-                    mealsUrl={mealPlanSummaryUrl}
                 />
             }
         >

@@ -13,7 +13,7 @@ export default {
         docs: {
             description: {
                 component:
-                    'Full-width selection button using the same brand-primary wash as Button `secondary` (`/10` · `/20` · selected `/30`). ' +
+                    'Full-width selection button using the same brand-primary wash as Button `secondary` (`/10` · `/20` · selected `/30`) with a visible brand border. ' +
                     'Used for diet protocol, activity, fulfillment, and craft. ' +
                     '`GenderOptionButton` is the same atom with `align="center"` (Male / Female preset). ' +
                     'Pair with OnboardingInlineDescription under the selected row when needed.',

@@ -104,6 +104,69 @@ enum CycleSyncPhase: string
     }
 
     /**
+     * Short hormonal / energy summary for the Analysis tab.
+     */
+    public function analysisSummary(): string
+    {
+        return match ($this) {
+            self::PowerPhase1 => 'Estrogen is rising after bleed. Energy, recovery, and motivation typically climb — a strong window for building habits and strength.',
+            self::Manifestation => 'Estrogen (and a small testosterone bump) peak around ovulation. Outward energy, verbal fluency, and power output are often at their highest.',
+            self::PowerPhase2 => 'Estrogen dips while progesterone begins to rise. Steady, structured effort suits this early-luteal stretch better than max intensity.',
+            self::NurturePhase => 'Progesterone stays higher then both hormones decline before bleed. Core temperature and resting heart rate rise — prioritize recovery and lower stimulation.',
+        };
+    }
+
+    /**
+     * @return array{focus: string, why: string}
+     */
+    public function exerciseGuidance(): array
+    {
+        return match ($this) {
+            self::PowerPhase1 => [
+                'focus' => 'Progressive strength training, hypertrophy/lifting, and moderate-to-high intensity cardio or runs. Ease in during early bleed days, then build as estrogen rises.',
+                'why' => 'Rising estrogen supports muscle recovery, higher pain tolerance, and strength gains.',
+            ],
+            self::Manifestation => [
+                'focus' => 'Peak output — heavy lifts, PR attempts, sprints, HIIT, or upbeat group workouts, with solid warm-ups and joint stability.',
+                'why' => 'Peak estrogen and testosterone boost neuromuscular drive (watch ligament laxity around ovulation — prioritize form).',
+            ],
+            self::PowerPhase2 => [
+                'focus' => 'Moderate strength, steady-state Zone 2 runs, Pilates, and controlled tempo work.',
+                'why' => 'Estrogen dips while progesterone rises; steady effort maintains fitness without overtaxing recovery.',
+            ],
+            self::NurturePhase => [
+                'focus' => 'Low-impact movement — walking, restorative yoga, gentle Pilates, mobility, and lighter deload strength.',
+                'why' => 'Higher progesterone raises core temperature and resting heart rate; lowering high-intensity cortisol spikes supports sleep and balance before menstruation.',
+            ],
+        };
+    }
+
+    /**
+     * @return array{focus: string, what_to_do: string}
+     */
+    public function brainGuidance(): array
+    {
+        return match ($this) {
+            self::PowerPhase1 => [
+                'focus' => 'Fresh mental clarity, curiosity, problem-solving, and strategic planning as estrogen rises.',
+                'what_to_do' => 'Start new projects, tackle analytical or complex planning work, brainstorm ideas, and set goals for the month.',
+            ],
+            self::Manifestation => [
+                'focus' => 'Peak verbal fluency, social confidence, collaboration, and outward energy.',
+                'what_to_do' => 'Schedule presentations, negotiations, interviews, networking, creative collaboration, and important conversations.',
+            ],
+            self::PowerPhase2 => [
+                'focus' => 'Detail-oriented focus, structured execution, and task completion as calming progesterone enters.',
+                'what_to_do' => 'Deep work, organizing systems, editing, finishing ongoing deliverables, and tying up loose ends.',
+            ],
+            self::NurturePhase => [
+                'focus' => 'Reflective, inward-facing intuition with lower tolerance for overstimulation or heavy multitasking.',
+                'what_to_do' => 'Prioritize rest, protect calendar boundaries, batch administrative tasks, journal/review progress, and avoid overloading late-night schedules.',
+            ],
+        };
+    }
+
+    /**
      * Effective fasting fields after applying the user's protocol preference.
      * Nurture phase always resolves to no fasting, even when protocol_mode is fasting.
      *

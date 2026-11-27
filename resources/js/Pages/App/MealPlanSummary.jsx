@@ -85,6 +85,8 @@ export function MealPlanSummaryInner({
     homeUrl = '/app',
     profileUrl = '/app/profile',
     shopUrl = '/app/shop',
+    toolsUrl = '/app/tools',
+    favouritesUrl = '/app/favourites',
     mealPlanSummaryUrl = '/app/meal-plan',
     cartUrl = '/app/cart',
     sex = null,
@@ -341,11 +343,12 @@ export function MealPlanSummaryInner({
             backAriaLabel="Back to days"
             footerNav={
                 <CustomerAppBottomNav
-                    activeTab="meals"
+                    activeTab="tools"
                     homeUrl={homeUrl}
                     profileUrl={profileUrl}
                     shopUrl={shopUrl}
-                    mealsUrl={mealPlanSummaryUrl}
+                    toolsUrl={toolsUrl}
+                    favouritesUrl={favouritesUrl}
                     navigationDisabled={preview}
                 />
             }
@@ -389,6 +392,8 @@ export function MealPlanSummaryInner({
  * @param {string} [props.homeUrl]
  * @param {string} [props.profileUrl]
  * @param {string} [props.shopUrl]
+ * @param {string} [props.toolsUrl]
+ * @param {string} [props.favouritesUrl]
  * @param {string} [props.mealPlanSummaryUrl]
  * @param {string} [props.cartUrl]
  * @param {string | null} [props.sex]
@@ -403,6 +408,8 @@ export default function MealPlanSummary({
     homeUrl = '/app',
     profileUrl = '/app/profile',
     shopUrl = '/app/shop',
+    toolsUrl = '/app/tools',
+    favouritesUrl = '/app/favourites',
     mealPlanSummaryUrl = '/app/meal-plan',
     cartUrl = '/app/cart',
     sex = null,
@@ -418,6 +425,8 @@ export default function MealPlanSummary({
             homeUrl={homeUrl}
             profileUrl={profileUrl}
             shopUrl={shopUrl}
+            toolsUrl={toolsUrl}
+            favouritesUrl={favouritesUrl}
             mealPlanSummaryUrl={mealPlanSummaryUrl}
             cartUrl={cartUrl}
             sex={sex}

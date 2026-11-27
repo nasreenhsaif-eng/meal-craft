@@ -14,6 +14,7 @@ import { resolveInertiaLayoutChild } from '../../lib/resolveInertiaLayoutChild.j
  * @param {string} [props.shopUrl]
  * @param {string} [props.mealPlanSummaryUrl]
  * @param {string} [props.toolsUrl]
+ * @param {string} [props.favouritesUrl]
  * @param {string} [props.cartUrl]
  * @param {string} [props.contactEditUrl]
  * @param {string} [props.logoutUrl]
@@ -40,6 +41,7 @@ export function ProfileInner({
     shopUrl = '/app/shop',
     mealPlanSummaryUrl = '/app/meal-plan',
     toolsUrl = '/app/tools',
+    favouritesUrl = '/app/favourites',
     cartUrl = '/app/cart',
     contactEditUrl = '/checkout/details',
     logoutUrl = '/logout',
@@ -92,8 +94,8 @@ export function ProfileInner({
                     homeUrl={homeUrl}
                     profileUrl={profileUrl}
                     shopUrl={shopUrl}
-                    mealsUrl={mealPlanSummaryUrl}
                     toolsUrl={toolsUrl}
+                    favouritesUrl={favouritesUrl}
                 />
             }
         >

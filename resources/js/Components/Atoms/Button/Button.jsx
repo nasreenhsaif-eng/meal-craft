@@ -42,9 +42,9 @@ export default function Button({
     };
 
     const secondaryWash = [
-        'border border-transparent bg-brand-primary/10 text-body',
-        'hover:bg-brand-primary/20 hover:text-body',
-        'active:bg-brand-primary/30 active:text-body active:scale-[0.98]',
+        'border border-brand-primary/30 bg-brand-primary/10 text-body',
+        'hover:border-brand-primary/50 hover:bg-brand-primary/20 hover:text-body',
+        'active:border-brand-primary active:bg-brand-primary/30 active:text-body active:scale-[0.98]',
     ].join(' ');
 
     const ghost =

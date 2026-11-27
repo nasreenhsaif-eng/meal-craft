@@ -31,7 +31,6 @@ export default function Policies({
                     homeUrl={homeUrl}
                     profileUrl={profileUrl}
                     shopUrl={shopUrl}
-                    mealsUrl={mealPlanSummaryUrl}
                 />
             }
         >

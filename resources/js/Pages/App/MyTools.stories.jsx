@@ -34,7 +34,8 @@ export default {
         layout: 'fullscreen',
         docs: {
             description: {
-                component: 'My Tools — saved recipes, shopping list, daily targets, and body & plan tabs.',
+                component:
+                    'My Tools — meal plan + period tracker entries, shopping list, daily targets, and body & plan tabs. Favourites live in the footer nav.',
             },
         },
     },
@@ -42,13 +43,13 @@ export default {
 };
 
 export const Default = {
-    name: 'Saved tab',
+    name: 'Shopping list tab',
     render: () => (
         <MyToolsInner
             customerName="Nasreen"
-            craftPlan={{ days: [] }}
             dailyTargets={calculateDailyTargets(DEMO_PROFILE)}
             bodyPlan={BODY_PLAN}
+            mealPlanSummaryUrl="/app/meal-plan"
         />
     ),
 };
@@ -58,7 +59,6 @@ export const DailyTargets = {
     render: () => (
         <MyToolsInner
             customerName="Nasreen"
-            craftPlan={{ days: [] }}
             dailyTargets={calculateDailyTargets(DEMO_PROFILE)}
             bodyPlan={BODY_PLAN}
         />

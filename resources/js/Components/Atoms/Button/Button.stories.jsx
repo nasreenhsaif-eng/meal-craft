@@ -27,7 +27,7 @@ export default {
                 component:
                     'Canonical action button. Import from `Components/Atoms/Button/Button.jsx` (or `Atoms/Button.jsx` re-export). ' +
                     'Variants: primary, reversed (inverse primary — white fill, brand border, pressed-green text; Landing contact CTAs), ' +
-                    'secondary (brand-primary `/10`·`/20`·`/30` wash), ghost (transparent; `outline` is the same — use `ghost`), ' +
+                    'secondary (brand-primary `/10`·`/20`·`/30` wash + brand border), ghost (transparent; `outline` is the same — use `ghost`), ' +
                     'tab (same wash as secondary; selected tab uses primary). ' +
                     'Tab chips are the shared pattern for day / filter / section switches. ' +
                     'Kitchen logistics `PrimaryButton` is the same primary atom.',

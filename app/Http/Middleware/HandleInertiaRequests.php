@@ -71,6 +71,7 @@ class HandleInertiaRequests extends Middleware
                 'success' => $request->session()->get('success'),
                 'error' => $request->session()->get('error'),
                 'mealCsvImportResult' => $request->session()->get('mealCsvImportResult'),
+                'mealPlanChangeNotice' => $request->session()->get('mealPlanChangeNotice'),
             ],
             'mealCraft' => $mealCraft !== [] ? $mealCraft : null,
             // Backward-compatible aliases (prefer `mealCraft.urls.*` in new code).

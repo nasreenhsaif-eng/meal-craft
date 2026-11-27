@@ -43,7 +43,7 @@ export function OnboardingOptionButton({
             aria-busy={busy}
             aria-describedby={selected && describedBy ? describedBy : undefined}
             className={[
-                'box-border flex w-full min-w-0 items-center rounded-[12px] border border-transparent px-4 py-2 shadow-none',
+                'box-border flex w-full min-w-0 items-center rounded-[12px] border px-4 py-2 shadow-none',
                 'no-underline [-webkit-tap-highlight-color:transparent]',
                 sizeClass,
                 isCentered ? 'justify-center text-center' : 'text-left',
@@ -54,8 +54,8 @@ export function OnboardingOptionButton({
                 'focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-primary',
                 'disabled:pointer-events-none disabled:opacity-60',
                 selected
-                    ? 'bg-brand-primary/30'
-                    : 'bg-brand-primary/10 hover:bg-brand-primary/20 active:bg-brand-primary/30',
+                    ? 'border-brand-primary bg-brand-primary/30'
+                    : 'border-brand-primary/30 bg-brand-primary/10 hover:border-brand-primary/50 hover:bg-brand-primary/20 active:border-brand-primary active:bg-brand-primary/30',
                 className,
             ].join(' ')}
         >

@@ -11,6 +11,7 @@ import { resolveInertiaLayoutChild } from '../../lib/resolveInertiaLayoutChild.j
  * @param {string} [props.shopUrl]
  * @param {string} [props.cartUrl]
  * @param {string} [props.toolsUrl]
+ * @param {string} [props.favouritesUrl]
  */
 export function ShopInner({
     customerName = '',
@@ -20,6 +21,7 @@ export function ShopInner({
     shopUrl = '/app/shop',
     cartUrl = '/app/cart',
     toolsUrl = '/app/tools',
+    favouritesUrl = '/app/favourites',
 }) {
     return (
         <CustomerInertiaShell
@@ -30,9 +32,9 @@ export function ShopInner({
                     activeTab="shop"
                     homeUrl={homeUrl}
                     profileUrl={profileUrl}
-                    mealsUrl={mealPlanSummaryUrl}
                     shopUrl={shopUrl}
                     toolsUrl={toolsUrl}
+                    favouritesUrl={favouritesUrl}
                 />
             }
         >

@@ -63,6 +63,7 @@ function dailyCaloriesDisplay(profile) {
  * @param {string} [props.homeUrl]
  * @param {string} [props.profileUrl]
  * @param {string} [props.shopUrl]
+ * @param {string} [props.favouritesUrl]
  * @param {string} [props.mealPlanSummaryUrl]
  * @param {string} [props.cartUrl]
  * @param {() => void} [props.onChooseMeals]
@@ -81,6 +82,7 @@ export function WelcomeBackInner({
     homeUrl = '/app',
     profileUrl = '/app/profile',
     shopUrl = '/app/shop',
+    favouritesUrl = '/app/favourites',
     mealPlanSummaryUrl = '/app/meal-plan',
     cartUrl = '/app/cart',
     onChooseMeals,
@@ -106,7 +108,7 @@ export function WelcomeBackInner({
                         homeUrl={homeHref}
                         profileUrl={profileUrl}
                         shopUrl={shopUrl}
-                        mealsUrl={mealPlanSummaryUrl}
+                        favouritesUrl={favouritesUrl}
                         navigationDisabled={preview}
                     />
                 )

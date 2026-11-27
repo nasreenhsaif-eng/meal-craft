@@ -205,6 +205,10 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
                     Route::get('/shop', [CustomerAppController::class, 'shop'])->name('shop');
                     Route::get('/favourites', [CustomerAppController::class, 'favourites'])->name('favourites');
                     Route::get('/tools', [CustomerAppController::class, 'tools'])->name('tools');
+                    Route::get('/tools/period-tracker', [CustomerAppController::class, 'periodTracker'])
+                        ->name('tools.period-tracker');
+                    Route::put('/tools/period-tracker', [CustomerAppController::class, 'updatePeriodTrackerCycle'])
+                        ->name('tools.period-tracker.update');
                     Route::put('/protocol-mode', [CustomerAppController::class, 'updateProtocolMode'])
                         ->name('protocol-mode.update');
                     Route::get('/cart', [CustomerAppController::class, 'cart'])->name('cart');

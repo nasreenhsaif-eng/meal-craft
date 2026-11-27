@@ -1,9 +1,6 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useState } from 'react';
 import { Link, usePage } from '@inertiajs/react';
 import Button from '../../Components/Atoms/Button.jsx';
-import CustomerMealCard from '../../Components/CustomerMealCard.jsx';
-import { listDayMealsWithHighlights } from '../../Components/Consultation/DayNutritionalSummaryPanel.jsx';
-import CookMealCard from '../../Components/Molecules/Customer/CookMealCard.jsx';
 import CustomerAppBottomNav from '../../Components/Molecules/Customer/CustomerAppBottomNav.jsx';
 import CustomerDetailSection, {
     caloriesDisplay,
@@ -15,75 +12,28 @@ import ActivePhaseCard from '../../Components/Molecules/Onboarding/ActivePhaseCa
 import { DailyTargetsSummaryInner } from '../Onboarding/DailyTargetsSummary.jsx';
 import CustomerInertiaShell from '../../Layouts/CustomerInertiaShell.jsx';
 import {
-    mealFromFavouriteRecipe,
-    readCustomerFavourites,
-    removeFavouriteRecipe,
-    writeCustomerFavourites,
-} from '../../customer/customerFavourites.js';
-import {
     formatShoppingAmount,
-    mergeShoppingListItems,
     readCustomerShoppingList,
-    removeShoppingListKeys,
     writeCustomerShoppingList,
 } from '../../customer/customerShoppingList.js';
 import { resolveInertiaLayoutChild } from '../../lib/resolveInertiaLayoutChild.js';
-import { resolveMealImageUrl } from '../../meal-library/resolveMealImageUrl.ts';
 
-/** @typedef {'saved' | 'shopping' | 'targets' | 'body'} ToolsTabId */
+/** @typedef {'shopping' | 'targets' | 'body'} ToolsTabId */
 
 const TOOLS_TABS = /** @type {const} */ ([
-    { id: 'saved', label: 'Saved', heart: true },
     { id: 'shopping', label: 'Shopping list' },
     { id: 'targets', label: 'Daily targets' },
     { id: 'body', label: 'Body & plan' },
 ]);
 
 /**
- * @param {{ className?: string; filled?: boolean }} props
- */
-function HeartIcon({ className = '', filled = false }) {
-    return (
-        <svg className={className} width={14} height={14} viewBox="0 0 24 24" fill="none" aria-hidden>
-            <path
-                d="M19.5 12.572 12 20l-7.5-7.428A5 5 0 1 1 12 6.013a5 5 0 1 1 7.5 6.559Z"
-                stroke="currentColor"
-                strokeWidth="1.75"
-                strokeLinejoin="round"
-                fill={filled ? 'currentColor' : 'none'}
-            />
-        </svg>
-    );
-}
-
-/**
- * @param {object | null | undefined} craftPlan
- * @returns {Map<string, object>}
- */
-function mealsByIdFromCraftPlan(craftPlan) {
-    /** @type {Map<string, object>} */
-    const byId = new Map();
-
-    for (const day of craftPlan?.days ?? []) {
-        for (const meal of listDayMealsWithHighlights(day?.categories ?? {})) {
-            const id = String(meal.id);
-
-            if (!byId.has(id)) {
-                byId.set(id, meal);
-            }
-        }
-    }
-
-    return byId;
-}
-
-/**
  * @param {object} props
  * @param {string} [props.customerName]
- * @param {object | null} [props.craftPlan]
  * @param {object} props.dailyTargets
  * @param {object | null} [props.bodyPlan]
  * @param {object | null} [props.activePhase]
+ * @param {boolean} [props.showPeriodTracker]
+ * @param {string | null} [props.periodTrackerUrl]
  * @param {string} [props.updateProtocolModeUrl]
  * @param {string} [props.craftedForYouUrl]
  * @param {string} [props.profileEditUrl]
@@ -92,15 +42,16 @@ function mealsByIdFromCraftPlan(craftPlan) {
  * @param {string} [props.shopUrl]
  * @param {string} [props.mealPlanSummaryUrl]
  * @param {string} [props.toolsUrl]
+ * @param {string} [props.favouritesUrl]
  * @param {string} [props.cartUrl]
- * @param {string} [props.recipesUrl]
  */
 export function MyToolsInner({
     customerName = '',
-    craftPlan = null,
     dailyTargets,
     bodyPlan = null,
     activePhase = null,
+    showPeriodTracker = false,
+    periodTrackerUrl = null,
     updateProtocolModeUrl = '/app/protocol-mode',
     craftedForYouUrl = '/consultation/crafted-for-you',
     profileEditUrl = '/onboarding/gender',
@@ -109,38 +60,18 @@ export function MyToolsInner({
     shopUrl = '/app/shop',
     mealPlanSummaryUrl = '/app/meal-plan',
     toolsUrl = '/app/tools',
+    favouritesUrl = '/app/favourites',
     cartUrl = '/app/cart',
-    recipesUrl = '/meal-plan/recipes',
 }) {
     const page = usePage();
     const userId = page.props?.auth?.user?.id ?? null;
     const [shoppingList, setShoppingList] = useState(() => readCustomerShoppingList(userId));
-    const [favourites, setFavourites] = useState(() => readCustomerFavourites(userId));
-    const [selectedMealId, setSelectedMealId] = useState(/** @type {string | null} */ (null));
     /** @type {[ToolsTabId, import('react').Dispatch<import('react').SetStateAction<ToolsTabId>>]} */
-    const [activeTab, setActiveTab] = useState(/** @type {ToolsTabId} */ ('saved'));
+    const [activeTab, setActiveTab] = useState(/** @type {ToolsTabId} */ ('shopping'));
 
     useEffect(() => {
         setShoppingList(readCustomerShoppingList(userId));
-        setFavourites(readCustomerFavourites(userId));
     }, [userId]);
-
-    const liveMeals = useMemo(() => mealsByIdFromCraftPlan(craftPlan), [craftPlan]);
-
-    const savedMeals = useMemo(
-        () =>
-            favourites.map((recipe) => {
-                const live = liveMeals.get(recipe.id);
-
-                return live ?? mealFromFavouriteRecipe(recipe);
-            }),
-        [favourites, liveMeals],
-    );
-
-    const selectedMeal = useMemo(
-        () => savedMeals.find((meal) => String(meal.id) === String(selectedMealId)) ?? null,
-        [savedMeals, selectedMealId],
-    );
 
     const birthdayLabel =
         bodyPlan?.dateOfBirth != null && bodyPlan.dateOfBirth !== ''
@@ -183,46 +114,15 @@ export function MyToolsInner({
 
     useLayoutEffect(() => {
         window.scrollTo(0, 0);
-    }, [activeTab, selectedMealId]);
+    }, [activeTab]);
 
     const handleClear = () => {
         setShoppingList([]);
         writeCustomerShoppingList(userId, []);
     };
 
-    const handleToggleIngredient = useCallback(
-        (rows, shouldAdd) => {
-            setShoppingList((prev) => {
-                const next = shouldAdd
-                    ? mergeShoppingListItems(prev, rows)
-                    : removeShoppingListKeys(
-                          prev,
-                          rows.map((row) => row.key),
-                      );
-                writeCustomerShoppingList(userId, next);
-
-                return next;
-            });
-        },
-        [userId],
-    );
-
-    const handleRemoveFavourite = useCallback(
-        (recipeId) => {
-            setFavourites((prev) => {
-                const next = removeFavouriteRecipe(prev, recipeId);
-                writeCustomerFavourites(userId, next);
-
-                return next;
-            });
-            setSelectedMealId((current) => (String(current) === String(recipeId) ? null : current));
-        },
-        [userId],
-    );
-
     const handleSelectTab = useCallback((tabId) => {
         setActiveTab(tabId);
-        setSelectedMealId(null);
     }, []);
 
     const shoppingPanel = (
@@ -270,69 +170,6 @@ export function MyToolsInner({
         </section>
     );
 
-    const savedPanel =
-        selectedMeal != null ? (
-            <div className="w-full min-w-0">
-                <div className="mb-3 flex items-start justify-between gap-3">
-                    <h2 className="font-montserrat text-xl font-bold tracking-tight text-heading sm:text-2xl">
-                        Recipe details
-                    </h2>
-                    <Button
-                        type="button"
-                        label="Back"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setSelectedMealId(null)}
-                        className="shrink-0"
-                    />
-                </div>
-                <CookMealCard
-                    meal={selectedMeal}
-                    shoppingList={shoppingList}
-                    onToggleIngredient={handleToggleIngredient}
-                    favourited
-                    onToggleFavourite={() => handleRemoveFavourite(selectedMeal.id)}
-                />
-            </div>
-        ) : (
-            <section className="rounded-[16px] border border-gray-200 bg-white px-4 py-5 shadow-sm sm:px-6">
-                <h2 className="font-montserrat text-lg font-bold tracking-tight text-heading">Saved</h2>
-                <p className="mt-1 font-body text-sm text-body">Recipes you saved while cooking it yourself.</p>
-
-                {savedMeals.length === 0 ? (
-                    <div className="mt-4 text-center">
-                        <p className="font-body text-sm text-body">No favourites yet.</p>
-                        <Link
-                            href={recipesUrl}
-                            className="mt-4 inline-flex font-montserrat text-sm font-semibold text-[#5A6B44] hover:underline"
-                        >
-                            Open Cook it yourself
-                        </Link>
-                    </div>
-                ) : (
-                    <ul className="mt-4 flex flex-wrap justify-center gap-4" role="list">
-                        {savedMeals.map((meal) => {
-                            const imageUrl = resolveMealImageUrl(meal.imageUrl) || undefined;
-
-                            return (
-                                <li key={meal.id} className="shrink-0">
-                                    <CustomerMealCard
-                                        deck
-                                        alignActionsBottom
-                                        hideCraftButton
-                                        title={meal.title}
-                                        imageUrl={imageUrl}
-                                        macros={meal.macros}
-                                        onViewDetails={() => setSelectedMealId(String(meal.id))}
-                                    />
-                                </li>
-                            );
-                        })}
-                    </ul>
-                )}
-            </section>
-        );
-
     const bodyPanel = (
         <div className="flex flex-col gap-4">
             {activePhase ? (
@@ -365,15 +202,13 @@ export function MyToolsInner({
 
     const tabBody = (() => {
         switch (activeTab) {
-            case 'shopping':
-                return shoppingPanel;
             case 'targets':
                 return targetsPanel;
             case 'body':
                 return bodyPanel;
-            case 'saved':
+            case 'shopping':
             default:
-                return savedPanel;
+                return shoppingPanel;
         }
     })();
 
@@ -387,12 +222,35 @@ export function MyToolsInner({
                     homeUrl={homeUrl}
                     profileUrl={profileUrl}
                     shopUrl={shopUrl}
-                    mealsUrl={mealPlanSummaryUrl}
                     toolsUrl={toolsUrl}
+                    favouritesUrl={favouritesUrl}
                 />
             }
         >
             <div className="flex w-full min-w-0 flex-col gap-4">
+                <div className="flex flex-col gap-2">
+                    <Link
+                        href={mealPlanSummaryUrl}
+                        className="flex w-full items-center justify-between rounded-[12px] border border-brand-primary/30 bg-brand-primary/10 px-4 py-3 no-underline transition hover:border-brand-primary/50 hover:bg-brand-primary/20"
+                    >
+                        <span className="font-montserrat text-sm font-bold uppercase tracking-[0.08em] text-heading">
+                            Meal plan
+                        </span>
+                        <span className="font-body text-xs text-body">Open your week</span>
+                    </Link>
+                    {showPeriodTracker && periodTrackerUrl ? (
+                        <Link
+                            href={periodTrackerUrl}
+                            className="flex w-full items-center justify-between rounded-[12px] border border-brand-primary/30 bg-brand-primary/10 px-4 py-3 no-underline transition hover:border-brand-primary/50 hover:bg-brand-primary/20"
+                        >
+                            <span className="font-montserrat text-sm font-bold uppercase tracking-[0.08em] text-heading">
+                                Period Tracker
+                            </span>
+                            <span className="font-body text-xs text-body">Analysis · Food · Exercise · Brain</span>
+                        </Link>
+                    ) : null}
+                </div>
+
                 <div
                     className="flex gap-1.5 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
                     role="tablist"
@@ -409,12 +267,9 @@ export function MyToolsInner({
                                 aria-selected={selected}
                                 variant={selected ? 'primary' : 'tab'}
                                 size="sm"
-                                className="shrink-0 gap-1.5"
+                                className="shrink-0"
                                 onClick={() => handleSelectTab(/** @type {ToolsTabId} */ (tab.id))}
                             >
-                                {'heart' in tab && tab.heart ? (
-                                    <HeartIcon filled={selected} className="shrink-0" />
-                                ) : null}
                                 {tab.label}
                             </Button>
                         );

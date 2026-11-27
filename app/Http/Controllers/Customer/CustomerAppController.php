@@ -2,16 +2,19 @@
 
 namespace App\Http\Controllers\Customer;
 
+use App\Enums\CustomerSex;
 use App\Enums\CycleProtocolMode;
 use App\Enums\DietProtocol;
 use App\Enums\OnboardingStep;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Customer\UpdateCycleProtocolModeRequest;
+use App\Http\Requests\Customer\UpdatePeriodTrackerCycleRequest;
 use App\Models\CustomerCraftPlan;
 use App\Models\CustomerProfile;
 use App\Services\CustomerCraftPlanPresentationService;
 use App\Services\Nutrition\CycleSyncPhaseCalculator;
 use App\Services\Nutrition\OnboardingDailyTargetsCalculator;
+use App\Services\Nutrition\PeriodTrackerPresenter;
 use App\Services\Nutrition\PeriodTrackingPhaseService;
 use App\Services\Nutrition\ProductionWeeklyMenuSchedule;
 use App\Services\Nutrition\UserPlanCalculator;
@@ -186,19 +189,29 @@ class CustomerAppController extends Controller
         ]);
     }
 
-    public function favourites(): RedirectResponse
+    public function favourites(CustomerCraftPlanPresentationService $presentation): Response
     {
-        return redirect()->route('app.tools');
+        return Inertia::render('App/Favourites', [
+            'customerName' => request()->user()?->name ?? '',
+            'craftPlan' => $this->submittedCraftPlanSummary($presentation),
+            'recipesUrl' => route('meal-plan.recipes'),
+            ...self::customerAppShellUrls(),
+        ]);
     }
 
     public function tools(CustomerCraftPlanPresentationService $presentation): Response
     {
+        $profile = request()->user()?->customerProfile;
+        $showPeriodTracker = $profile?->sex === CustomerSex::Female;
+
         return Inertia::render('App/MyTools', [
             'customerName' => request()->user()?->name ?? '',
             'craftPlan' => $this->submittedCraftPlanSummary($presentation),
             'dailyTargets' => $this->dailyTargetsSummary(),
             'bodyPlan' => $this->bodyPlanDetails(),
             'activePhase' => $this->activePhaseDetails(),
+            'showPeriodTracker' => $showPeriodTracker,
+            'periodTrackerUrl' => $showPeriodTracker ? route('app.tools.period-tracker') : null,
             'updateProtocolModeUrl' => route('app.protocol-mode.update'),
             'craftedForYouUrl' => route('consultation.crafted-for-you'),
             'profileEditUrl' => route('onboarding.show', [
@@ -207,6 +220,61 @@ class CustomerAppController extends Controller
             'recipesUrl' => route('meal-plan.recipes'),
             ...self::customerAppShellUrls(),
         ]);
+    }
+
+    public function periodTracker(): Response|RedirectResponse
+    {
+        $profile = request()->user()?->customerProfile;
+        $payload = PeriodTrackerPresenter::present($profile);
+
+        if ($payload === null) {
+            return redirect()->route('app.tools');
+        }
+
+        return Inertia::render('App/PeriodTracker', [
+            'customerName' => request()->user()?->name ?? '',
+            'tracker' => $payload,
+            'updateCycleUrl' => route('app.tools.period-tracker.update'),
+            'updateProtocolModeUrl' => route('app.protocol-mode.update'),
+            'craftedForYouUrl' => route('consultation.crafted-for-you'),
+            'toolsUrl' => route('app.tools'),
+            ...self::customerAppShellUrls(),
+        ]);
+    }
+
+    public function updatePeriodTrackerCycle(UpdatePeriodTrackerCycleRequest $request): RedirectResponse
+    {
+        /** @var CustomerProfile $profile */
+        $profile = $request->user()->customerProfile;
+        $validated = $request->validated();
+        $protocolMode = CycleProtocolMode::tryFromStored($validated['protocol_mode']);
+        $loggedPeriods = array_values($validated['logged_periods']);
+        $cycleLength = (int) $validated['average_cycle_length'];
+
+        $periodTrackingData = PeriodTrackingPhaseService::buildPeriodTrackingData(
+            $loggedPeriods,
+            $cycleLength,
+            null,
+            $protocolMode,
+        );
+
+        $dietProtocol = DietProtocol::tryFromStored($profile->diet_protocol);
+        $mealPlanChangeNotice = null;
+
+        if ($dietProtocol === DietProtocol::CycleSync) {
+            $effectiveFrom = Carbon::tomorrow()->toDateString();
+            $periodTrackingData['meal_plan_effective_from'] = $effectiveFrom;
+            $mealPlanChangeNotice = 'Your meal plan will change starting tomorrow.';
+        }
+
+        $profile->update([
+            'logged_periods' => $loggedPeriods,
+            'average_cycle_length' => $cycleLength,
+            'protocol_mode' => $protocolMode,
+            'period_tracking_data' => $periodTrackingData,
+        ]);
+
+        return back()->with('mealPlanChangeNotice', $mealPlanChangeNotice);
     }
 
     public function updateProtocolMode(UpdateCycleProtocolModeRequest $request): RedirectResponse
@@ -396,7 +464,9 @@ class CustomerAppController extends Controller
      *     profileUrl: string,
      *     shopUrl: string,
      *     mealPlanSummaryUrl: string,
-     *     toolsUrl: string
+     *     toolsUrl: string,
+     *     favouritesUrl: string,
+     *     cartUrl: string
      * }
      */
     private static function customerAppShellUrls(): array
@@ -407,6 +477,7 @@ class CustomerAppController extends Controller
             'shopUrl' => route('app.shop'),
             'mealPlanSummaryUrl' => route('app.meal-plan'),
             'toolsUrl' => route('app.tools'),
+            'favouritesUrl' => route('app.favourites'),
             'cartUrl' => route('app.cart'),
         ];
     }

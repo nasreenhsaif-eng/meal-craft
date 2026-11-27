@@ -46,6 +46,7 @@ const PAGE_BG = 'bg-white';
  * @param {string} [props.shopUrl]
  * @param {string} [props.mealPlanSummaryUrl]
  * @param {string} [props.toolsUrl]
+ * @param {string} [props.favouritesUrl]
  * @param {string} [props.cartUrl]
  * @param {string} [props.recipesUrl]
  * @param {string | null} [props.sex]
@@ -60,6 +61,7 @@ export function CookItYourselfInner({
     shopUrl = '/app/shop',
     mealPlanSummaryUrl = '/app/meal-plan',
     toolsUrl = '/app/tools',
+    favouritesUrl = '/app/favourites',
     cartUrl = '/app/cart',
     recipesUrl: _recipesUrl = '/meal-plan/recipes',
     sex = null,
@@ -359,12 +361,12 @@ export function CookItYourselfInner({
             cartUrl={cartUrl}
             footerNav={
                 <CustomerAppBottomNav
-                    activeTab="meals"
+                    activeTab="tools"
                     homeUrl={homeUrl}
                     profileUrl={profileUrl}
                     shopUrl={shopUrl}
-                    mealsUrl={mealPlanSummaryUrl}
                     toolsUrl={toolsUrl}
+                    favouritesUrl={favouritesUrl}
                 />
             }
         >

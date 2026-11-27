@@ -14,6 +14,7 @@ import {
     IconCheckCircle,
     IconHome,
     IconMeals,
+    IconFavourites,
     IconShop,
     IconTools,
     IconProfile,
@@ -75,6 +76,7 @@ const UI_ICONS = [
 
 const APP_NAV_ICONS = [
     { name: 'Home', Icon: IconHome },
+    { name: 'Favourites', Icon: IconFavourites },
     { name: 'Meals', Icon: IconMeals },
     { name: 'Shop', Icon: IconShop },
     { name: 'Tools', Icon: IconTools },

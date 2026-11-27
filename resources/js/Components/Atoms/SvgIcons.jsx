@@ -207,6 +207,20 @@ export function IconMeals({ className }) {
     );
 }
 
+/** Customer app tab — favourites (heart). */
+export function IconFavourites({ className }) {
+    return (
+        <svg className={className} width={22} height={22} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path
+                d="M19.5 12.572 12 20l-7.5-7.428A5 5 0 1 1 12 6.013a5 5 0 1 1 7.5 6.559Z"
+                stroke="currentColor"
+                strokeWidth="1.75"
+                strokeLinejoin="round"
+            />
+        </svg>
+    );
+}
+
 /** Customer app tab — shop bag. */
 export function IconShop({ className }) {
     return (
